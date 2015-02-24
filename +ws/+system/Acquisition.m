@@ -516,11 +516,11 @@ classdef Acquisition < ws.system.Subsystem
             %self.syncFromElectrodes();
         end  % function
         
-        function didPerformExperiment(self, wavesurferModel)            
+        function didPerformExperiment(self, wavesurferModel)  %#ok<INUSD>
             self.FiniteInputAnalogTask_.unregisterCallbacks();
         end  % function
         
-        function didAbortExperiment(self, wavesurferModel)
+        function didAbortExperiment(self, wavesurferModel)  %#ok<INUSD>
             if ~isempty(self.FiniteInputAnalogTask_) && self.FiniteInputAnalogTask_.AreCallbacksRegistered ,
                 self.FiniteInputAnalogTask_.unregisterCallbacks();
             end
@@ -528,10 +528,10 @@ classdef Acquisition < ws.system.Subsystem
             self.IsArmedOrAcquiring = false;
         end  % function
         
-        function willPerformTrial(self, wavesurferObj)            
+        function willPerformTrial(self, wavesurferModel)
             %fprintf('Acquisition::willPerformTrial()\n');
             self.IsArmedOrAcquiring = true;
-            if wavesurferObj.ExperimentCompletedTrialCount == 0 ,
+            if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
                 self.FiniteInputAnalogTask_.setup();
             else
                 self.FiniteInputAnalogTask_.reset();  % this doesn't actually do anything for a FiniteOutputAnalogTask...

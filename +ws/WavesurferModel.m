@@ -508,7 +508,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end            
         end  % function
         
-        function samplesAcquired(self, ~, event)
+        function samplesAcquired(self, source, event) %#ok<INUSL>
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
             % time between subsequent calls to this

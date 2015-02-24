@@ -331,12 +331,12 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
 %             obj.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
 %         end  % function
         
-        function registerCallbacksImplementation(obj)
-            if obj.SamplesAvailableFunctionTime > 0
-                obj.prvDaqTask.registerEveryNSamplesEvent(@obj.zprvEveryNSamplesEvent, obj.SamplesAvailableFunctionCount);
+        function registerCallbacksImplementation(self)
+            if self.SamplesAvailableFunctionTime > 0
+                self.prvDaqTask.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.SamplesAvailableFunctionCount);
             end
             
-            obj.prvDaqTask.doneEventCallbacks = {@obj.zcbkDoneEvent};
+            self.prvDaqTask.doneEventCallbacks = {@self.taskDone_};
         end  % function
         
         function unregisterCallbacksImplementation(obj)
@@ -347,22 +347,24 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     end  % protected methods block
     
     methods (Access = protected)
-        function zprvEveryNSamplesEvent(obj, src, ~)
-            %fprintf('FiniteInputAnalogTask::zprvEveryNSamplesEvent()\n');
-            obj.notify('SamplesAvailable', ws.ni.SamplesAvailableEventData(src.readAnalogData(obj.SamplesAvailableFunctionCount)));
+        function nSamplesAvailable_(self, source, event) %#ok<INUSD>
+            %fprintf('FiniteInputAnalogTask::nSamplesAvailable_()\n');
+            data = source.readAnalogData(self.SamplesAvailableFunctionCount) ;
+            eventData = ws.ni.SamplesAvailableEventData(data) ;
+            self.notify('SamplesAvailable', eventData);
         end  % function
         
-        function zcbkDoneEvent(obj, ~, ~)
-            %fprintf('FiniteInputAnalogTask::zcbkDoneEvent()\n');
+        function taskDone_(self, source, event) %#ok<INUSD>
+            %fprintf('FiniteInputAnalogTask::taskDone_()\n');
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Acquisition object.
-            obj.prvDaqTask.abort();
+            self.prvDaqTask.abort();
             
             % Fire the event before unregistering the callback functions.  At the end of a
             % script the DAQmx callbacks may be the only references preventing the object
             % from deleting before the events are sent/complete.
-            obj.notify('AcquisitionComplete');
+            self.notify('AcquisitionComplete');
         end  % function
         
 %         function ziniPrepareAcquisitionDAQ(self, device, availableChannels, taskName, channelNames)
