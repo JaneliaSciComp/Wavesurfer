@@ -17,8 +17,11 @@ System Requirements
 -------------------
 
 64-bit Windows 7 computer
+
 National Instruments X Series card (i.e. 63xx)
+
 National Instruments DAQmx driver 9.8 or later
+
 Matlab R2013b or later (64-bit)
 
 
@@ -73,9 +76,9 @@ Authors
 
 Wavesurfer started out as version 3 of Ephus, another
 electrophysiology package, largely authored by Vijay Iyer, with
-contributions by Tim O'Connor and others.  Vijay was also the primary
+contributions by Tim O'Connor and others.  Vijay is also the primary
 author of the DABS library, from which the code in +ws/+dabs/+ni was
-taken and of the MOST library, in +ws/+most.
+taken, and of the MOST library, in +ws/+most.
 
 The original developer of Wavesurfer was Patrick Edson.  
 
