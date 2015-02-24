@@ -32,14 +32,14 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     properties (Dependent = true, SetAccess = immutable)
         % These are not directly settable
         ExpectedScanCount
-        SamplesAvailableFunctionCount
+        NScansPerDataAvailableCallback
     end
     
     properties (Dependent = true)
         ActiveChannels  % Zero-based AI channel Ids, all of them
         SampleRate      % Hz
         AcquisitionDuration  % Seconds
-        SamplesAvailableFunctionTime  % Seconds
+        DurationPerDataAvailableCallback  % Seconds
         ClockTiming 
         TriggerDelegate  % empty or a trigger Destination or a trigger Source
     end
@@ -49,7 +49,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
         AvailableChannels_ = zeros(1,0)  % Zero-based AI channel IDs, all of them
         ActiveChannels_ = zeros(1,0)
         AcquisitionDuration_ = 1     % Seconds
-        SamplesAvailableFunctionTime_ = 0.1  % Seconds
+        DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
         TriggerDelegate_ = []  % empty or a trigger Destination or a trigger Source
     end
@@ -231,20 +231,22 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
             obj.SampleRate_ = value;
         end  % function
         
-        function value = get.SamplesAvailableFunctionCount(obj)
-            value = round(obj.SamplesAvailableFunctionTime * obj.SampleRate);
+        function value = get.NScansPerDataAvailableCallback(obj)
+            value = round(obj.DurationPerDataAvailableCallback * obj.SampleRate);
+              % The sample rate is technically a scan rate, so this is
+              % correct.
         end  % function
         
-        function set.SamplesAvailableFunctionTime(obj, value)
+        function set.DurationPerDataAvailableCallback(obj, value)
             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
                 error('most:Model:invalidPropVal', ...
-                      'SamplesAvailableFunctionTime must be a nonnegative scalar');       
+                      'DurationPerDataAvailableCallback must be a nonnegative scalar');       
             end            
-            obj.SamplesAvailableFunctionTime_ = value;
+            obj.DurationPerDataAvailableCallback_ = value;
         end  % function
 
-        function value = get.SamplesAvailableFunctionTime(obj)
-            value = min(obj.AcquisitionDuration_, obj.SamplesAvailableFunctionTime_);
+        function value = get.DurationPerDataAvailableCallback(obj)
+            value = min(obj.AcquisitionDuration_, obj.DurationPerDataAvailableCallback_);
         end  % function
         
         function out = get.TaskName(self)
@@ -326,14 +328,17 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
 %             obj.setPropertyAttributeFeatures('ActiveChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
 %             obj.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
 %             obj.setPropertyAttributeFeatures('AcquisitionDuration', 'Attributes', {'positive', 'scalar'});            
-%             obj.setPropertyAttributeFeatures('SamplesAvailableFunctionTime', 'Attributes', {'nonnegative', 'scalar'});
+%             obj.setPropertyAttributeFeatures('DurationPerDataAvailableCallback', 'Attributes', {'nonnegative', 'scalar'});
 %             obj.setPropertyAttributeFeatures('TriggerDelegate', 'Classes', 'ws.ni.HasPFIIDAndEdge', 'Attributes', 'scalar', 'AllowEmpty', true);          
 %             obj.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
 %         end  % function
         
         function registerCallbacksImplementation(self)
-            if self.SamplesAvailableFunctionTime > 0
-                self.prvDaqTask.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.SamplesAvailableFunctionCount);
+            if self.DurationPerDataAvailableCallback > 0
+                self.prvDaqTask.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
+                  % This registers the callback function that is called
+                  % when self.NScansPerDataAvailableCallback samples are
+                  % available
             end
             
             self.prvDaqTask.doneEventCallbacks = {@self.taskDone_};
@@ -349,7 +354,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
             %fprintf('FiniteInputAnalogTask::nSamplesAvailable_()\n');
-            data = source.readAnalogData(self.SamplesAvailableFunctionCount) ;
+            data = source.readAnalogData(self.NScansPerDataAvailableCallback) ;
             eventData = ws.ni.SamplesAvailableEventData(data) ;
             self.notify('SamplesAvailable', eventData);
         end  % function

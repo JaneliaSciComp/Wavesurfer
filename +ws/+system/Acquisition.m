@@ -418,7 +418,7 @@ classdef Acquisition < ws.system.Subsystem
 %                                                 mdfStructure.inputChannelIDs, ...
 %                                                 'Wavesurfer Analog Acquisition Task', ...
 %                                                 mdfStructure.inputChannelNames);
-%                 self.FiniteInputAnalogTask_.SamplesAvailableFunctionTime = self.Duration_;
+%                 self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
 %                 self.FiniteInputAnalogTask_.SampleRate = self.SampleRate;
                 
 %                 self.FiniteInputAnalogTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
@@ -449,7 +449,7 @@ classdef Acquisition < ws.system.Subsystem
                                                 self.ChannelIDs, ...
                                                 'Wavesurfer Analog Acquisition Task', ...
                                                 self.ChannelNames);
-                self.FiniteInputAnalogTask_.SamplesAvailableFunctionTime = self.Duration_;
+                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.FiniteInputAnalogTask_.SampleRate = self.SampleRate;                
                 self.FiniteInputAnalogTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
                 self.FiniteInputAnalogTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
@@ -491,17 +491,17 @@ classdef Acquisition < ws.system.Subsystem
             end
             
             if experimentMode == ws.ApplicationState.TestPulsing
-                self.FiniteInputAnalogTask_.SamplesAvailableFunctionTime = wavesurferObj.Ephys.MinTestPeriod;
+                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
             else
                 displayDuration = 1/wavesurferObj.Display.UpdateRate;
                 if self.Duration < displayDuration
-                    self.FiniteInputAnalogTask_.SamplesAvailableFunctionTime = self.Duration_;
+                    self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
                 else
                     numIncrements = floor(self.Duration/displayDuration);
                     assert(floor(self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate) == ...
                            self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate, ...
                         'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
-                    self.FiniteInputAnalogTask_.SamplesAvailableFunctionTime = self.Duration/numIncrements;
+                    self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
                 end
             end
             
