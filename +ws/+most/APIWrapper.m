@@ -739,7 +739,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
             %
             %
             origPath = pwd();
-            fprintf(1,[obj.apiPrettyName ': Detecting API version...']);
+            %fprintf(1,[obj.apiPrettyName ': Detecting API version...']);
             
             try
                 %Unload previously-loaded library
@@ -791,9 +791,9 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
             end
             
             if ~isempty(apiCurrentVersion) && ismember(apiCurrentVersion,obj.apiSupportedVersionNames)
-                fprintf(1,'Done! (%s)\n',apiCurrentVersion);
+                %fprintf(1,'Done! (%s)\n',apiCurrentVersion);
             else
-                fprintf(1,'\n');
+                %fprintf(1,'\n');
             end
             
         end
@@ -924,7 +924,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
         
         function smartLoadLibrary(obj)
             
-            fprintf(1,[obj.apiPrettyName ': Loading DLL...']);
+            %fprintf(1,[obj.apiPrettyName ': Loading DLL...']);
             try
                 %Cache current state of loadlibrary warnings
                 warningIDs = {'MATLAB:loadlibrary:parsewarnings' 'MATLAB:loadlibrary:FunctionNotFound' 'MATLAB:loadlibrary:TypeNotFound' 'MATLAB:loadlibrary:cppoutput'};
@@ -985,12 +985,12 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                 cellfun(@(warnID)warning(warningStateMap(warnID).state,warnID),warningIDs);
                 
             catch ME
-                fprintf(1,'\n');
+                %fprintf(1,'\n');
                 ME.rethrow();
             end
             
             if ~showLoadLibWarnings
-                fprintf(1,'Done!\n');
+                %fprintf(1,'Done!\n');
             end
         end
         

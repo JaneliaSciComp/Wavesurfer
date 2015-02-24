@@ -53,7 +53,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     properties (SetAccess = protected)
         DeviceIDs  % the device IDs of the NI board for each channel, a cell array of strings
-        SampleRate_ = 20000  % Hz
     end
     
     properties (Transient=true)
@@ -72,6 +71,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
 
     properties (Access = protected)
+        SampleRate_ = 20000  % Hz
         StimulusOutputable_ = {}
         %DelegateDoneFcn_
         %TriggerListener_
