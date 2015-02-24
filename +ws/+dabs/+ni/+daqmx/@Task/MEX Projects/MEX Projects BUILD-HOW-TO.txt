@@ -1,0 +1,9 @@
+The "MEX Projects" VS solution contains a number of projects. When built, these projects create MEX DLLs that are copied into the @Task folder. This C++ code links against MATLAB and NIDAQmx, and can be built for win32 and x64.
+
+In the solution there are two solution build configurations, Debug and Release. (Debug is not functional at the moment). There are two solution build platforms, win32 and x64. The solution build configs/platforms map to the identically-named project configs/platforms as can be seen in the Configuration Manager.
+
+The build itself is implemented/parameterized by a number of VS propsheets. The propsheets are either shared sheets from +Dabs/dev, or they are specific to this project and live in the solution folder. All projects in the solution have the same prop sheets in the same order.
+
+To set up the build on a machine, simply define the user-defined macros (variables) in the LOCAL INSTALL propsheet. This sheet contains the "environment" variables $(MATLABPATH), $(NIDAQVERFOLDER), etc. By setting these variables, you can specify the version of MATLAB and the version of NIDAQmx against which you would like to build. Note that, as described previously, MATLAB headers/libs are not currently archived in SVN; thus you will only be able build against a version of MATLAB that is actually locally installed on your machine. In contrast, you will be able to build against any NIDAQmx version that has been archived in SVN.
+
+To reiterate: to set up your build in VS, edit the LOCAL INSTALL vsprops sheet (eg in the property manager). Don’t edit anything else! Then select your platform (win32 or x64) and you are good to go.
