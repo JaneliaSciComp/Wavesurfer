@@ -168,7 +168,7 @@ classdef Logging < ws.system.Subsystem
             
             % Determine the absolute file names
             self.LogFileNameAbsolute_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            sidecarFileNameAbsolute = fullfile(self.FileLocation, [trueLogFileName '.mat']);
+            %sidecarFileNameAbsolute = fullfile(self.FileLocation, [trueLogFileName '.mat']);
             
             % If the target dir doesn't exist, create it
             if ~exist(self.FileLocation, 'dir')
@@ -183,36 +183,36 @@ classdef Logging < ws.system.Subsystem
                 if exist(self.LogFileNameAbsolute_, 'file') == 2 ,
                     ws.utility.deleteFileWithoutWarning(self.LogFileNameAbsolute_);
                 end
-                if exist(sidecarFileNameAbsolute, 'file') == 2 ,
-                    ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
-                end
+%                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
+%                     ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
+%                 end
             else
                 % Check if the log file already exists, and error if so
                 if exist(self.LogFileNameAbsolute_, 'file') == 2 ,
                     error('wavesurfer:logFileAlreadyExists', ...
                           'The data file %s already exists', self.LogFileNameAbsolute_);
                 end
-                if exist(sidecarFileNameAbsolute, 'file') == 2 ,
-                    error('wavesurfer:sidecarFileAlreadyExists', ...
-                          'The sidecar file %s already exists', self.LogFileNameAbsolute_);
-                end
+%                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
+%                     error('wavesurfer:sidecarFileAlreadyExists', ...
+%                           'The sidecar file %s already exists', self.LogFileNameAbsolute_);
+%                 end
             end
 
             % Extract all the "headerable" info in the WS model into a
             % structure
-            headerStruct = wavesurferModel.encodeForFileType('header'); %#ok<NASGU>
+            headerStruct = wavesurferModel.encodeForFileType('header');
             
-%             % Put the header into into the log file header
-%             numericPrecision=4;
-%             stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
-%             doCreateFile=true;
-%             ws.most.fileutil.h5savestr(self.LogFileNameAbsolute_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-%             ws.most.fileutil.h5save(self.LogFileNameAbsolute_, '/header', headerStruct);
+            % Put the header into into the log file header
+            numericPrecision=4;
+            stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
+            doCreateFile=true;
+            ws.most.fileutil.h5savestr(self.LogFileNameAbsolute_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.most.fileutil.h5save(self.LogFileNameAbsolute_, '/header', headerStruct);
             
-            % Save the "header" information to a sidecar file instead.
-            % This should be more flexible that embedding the "header" data
-            % in with the data sensu strictu.
-            save('-mat',sidecarFileNameAbsolute,'-struct','headerStruct');
+%             % Save the "header" information to a sidecar file instead.
+%             % This should be more flexible that embedding the "header" data
+%             % in with the data sensu strictu.
+%             save('-mat',sidecarFileNameAbsolute,'-struct','headerStruct');
             
             % Set the write-to trial ID so it's correct when data needs to
             % be written

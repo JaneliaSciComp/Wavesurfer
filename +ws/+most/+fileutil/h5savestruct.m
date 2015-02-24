@@ -1,4 +1,4 @@
-function h5savestruct(file, dataset, value, useCreate)
+function h5savestruct(file, pathName, value, useCreate)
 
 if nargin < 4
     useCreate = false;
@@ -15,13 +15,17 @@ else
     fileID = file;
 end
 
-groupId = H5G.create(fileID, dataset, 0);
+if isscalar(value) ,
+    % Awkward special case, but without it we get tons of "element1" groups
+    ws.most.fileutil.h5savescalarstruct(fileID, pathName, value);
+else
+    % Create a group (a.k.a. directory) corresponding to the path to us
+    groupName = pathName;
+    groupId = H5G.create(fileID, groupName, 0);
+    H5G.close(groupId);
 
-H5G.close(groupId);
-
-fieldNames = fieldnames(value);
-
-for idx = 1:numel(fieldNames)
-    fieldName=fieldNames{idx};
-    ws.most.fileutil.h5save(fileID, [dataset '/', fieldName], value.(fieldName));
+    for i = 1:numel(value) ,
+        subPathName = sprintf('%s/element%d',pathName,i);
+        ws.most.fileutil.h5savescalarstruct(fileID, subPathName, value(i));
+    end    
 end
