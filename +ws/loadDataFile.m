@@ -9,24 +9,24 @@ function data = loadDataFile(filename)
 
     % Extract dataset at each group level, recursively.
     data = struct();
-    data = local_crawl_h5_tree('/', filename, data);
+    data = crawl_h5_tree('/', filename, data);
 end
 
 
 
 % ------------------------------------------------------------------------------
-% local_crawl_h5_tree
+% crawl_h5_tree
 % ------------------------------------------------------------------------------
-function s = local_crawl_h5_tree(parentGroup, filename, s)
-    [datasets,childGroups] = local_get_group_info(parentGroup, filename);
+function s = crawl_h5_tree(pathToGroup, filename, s)
+    [datasetNames,subGroupNames] = get_group_info(pathToGroup, filename);
 
-    s = local_add_group_data(parentGroup, datasets, filename, s);
+    s = add_group_data(pathToGroup, datasetNames, filename, s);
 
-    if isempty(childGroups)
-        return;
+    if isempty(subGroupNames)
+        return
     else
-        for idx = 1:length(childGroups)
-            s = local_crawl_h5_tree(childGroups{idx}, filename, s);
+        for idx = 1:length(subGroupNames)
+            s = crawl_h5_tree(subGroupNames{idx}, filename, s);
         end
     end
 end
@@ -34,61 +34,70 @@ end
 
 
 % ------------------------------------------------------------------------------
-% local_get_group_info
+% get_group_info
 % ------------------------------------------------------------------------------
-function [datasets, childGroups] = local_get_group_info(parentGroup, filename)
-    info = h5info(filename, parentGroup);
+function [datasetNames, childGroupNames] = get_group_info(pathToGroup, filename)
+    info = h5info(filename, pathToGroup);
 
     if isempty(info.Groups)
-        childGroups = {};
+        childGroupNames = {};
     else
-        childGroups = {info.Groups.Name};
+        childGroupNames = {info.Groups.Name};
     end
 
     if isempty(info.Datasets)
-        datasets = {};
+        datasetNames = {};
     else
-        datasets = {info.Datasets.Name};
+        datasetNames = {info.Datasets.Name};
     end
 end
 
 
 
 % ------------------------------------------------------------------------------
-% local_add_group_data
+% add_group_data
 % ------------------------------------------------------------------------------
-function s = local_add_group_data(parentGroup, datasets, filename, s)
-    C = textscan(parentGroup, '%s', 'Delimiter', '/');
-    C = C{1}(2:end);
-    C = cellfun(@(c)local_force_valid_fieldname(c), C, 'UniformOutput', false);
+function s = add_group_data(pathToGroup, datasetNames, filename, sSoFar)
+    elementsOfPathToGroupRawSingleton = textscan(pathToGroup, '%s', 'Delimiter', '/');
+    elementsOfPathToGroupRaw = elementsOfPathToGroupRawSingleton{1} ;
+    elementsOfPathToGroup = elementsOfPathToGroupRaw(2:end);  % first one is generally empty string
+    elementsOfPathToField = ...
+        cellfun(@field_name_from_group_name, elementsOfPathToGroup, 'UniformOutput', false);
 
-    % Create sub-struct.
-    sub = struct();
-    for idx = 1:length(datasets)
-        sub.(datasets{idx}) = h5read(filename, [parentGroup '/' datasets{idx}]);
+    % Create structure to be "appended" to sSoFar
+    sToAppend = struct();
+    for idx = 1:length(datasetNames) ,
+        datasetName = datasetNames{idx};
+        sToAppend.(datasetName) = h5read(filename, [pathToGroup '/' datasetName]);
     end
 
-    % Append to main struct.
-    if ~isempty(C)
-        s = setfield(s, {1}, C{:}, {1}, sub);
+    % "Append" fields to main struct, in the right sub-field
+    if isempty(elementsOfPathToField) ,
+        s = sSoFar;
+    else
+        s = setfield(sSoFar, {1}, elementsOfPathToField{:}, {1}, sToAppend);
     end
 end
 
 
 
 % ------------------------------------------------------------------------------
-% local_force_valid_fieldname
+% force_valid_fieldname
 % ------------------------------------------------------------------------------
-function fieldname = local_force_valid_fieldname(fieldname)
-    numVal = str2double(fieldname);
+function fieldName = field_name_from_group_name(groupName)
+    numVal = str2double(groupName);
 
-    if ~isnan(numVal)
+    if isnan(numVal)
+        % This is actually a good thing, b/c it means the groupName is not
+        % simply a number, which would be an illegal field name
+        fieldName = groupName;
+    else
         try
             validateattributes(numVal, {'numeric'}, {'integer' 'scalar'});
         catch me
-            error('Unsupported group name detected: %s', fieldname);
+            error('Unable to convert group name %s to a valid field name.', groupName);
         end
 
-        fieldname = ['n' fieldname];
+        fieldName = ['n' groupName];
     end
 end
