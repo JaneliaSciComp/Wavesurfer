@@ -508,7 +508,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end            
         end  % function
         
-        function samplesAcquired(self, source, event) %#ok<INUSL>
+        function samplesAcquired(self, rawData)
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
             % time between subsequent calls to this
@@ -522,9 +522,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.TimeOfLastSamplesAcquired_=t;
            
             % Actually handle the data
-            data = event.Samples;
+            %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.didAcquireData(data);
+            self.didAcquireData(rawData);
             %profile off
         end
         
@@ -804,8 +804,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
         end  % function
         
-        function didAcquireData(self, data)
-            nScans=size(data,1);
+        function didAcquireData(self, rawData)
+            nScans=size(rawData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
                         
@@ -820,9 +820,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
             
             % scale the data by the channel scales
-            if isempty(data) ,
-                scaledData=data;
+            if isempty(rawData) ,
+                scaledData=zeros(size(rawData));
             else
+                data = 3.0517578125e-4 * double(rawData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
                 scaledData=bsxfun(@times,data,inverseChannelScales);
             end
             
@@ -831,7 +832,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             for idx = 1: numel(self.Subsystems_)
                 %tic
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didAcquireData(self.t_, scaledData);
+                    self.Subsystems_{idx}.didAcquireData(self.t_, scaledData, rawData);
                 end
                 %T(idx)=toc;
             end
@@ -839,7 +840,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + size(data, 1);
             
-            self.broadcast('DataWasAcquired',ws.DataWasAcquiredEventData(scaledData));
+            %self.broadcast('DataWasAcquired',ws.DataWasAcquiredEventData(scaledData));
+            self.broadcast('DataWasAcquired');
         end  % function
         
     end % protected methods block

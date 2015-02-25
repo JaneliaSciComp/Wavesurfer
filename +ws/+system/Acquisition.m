@@ -2,14 +2,10 @@ classdef Acquisition < ws.system.Subsystem
     
     properties (Dependent = true)
         Duration   % s
-    end
-    
-    properties (Dependent = true)        
         SampleRate  % Hz
     end
     
-    properties (Dependent = true, Hidden=true, Transient=true)
-        ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
+    properties (Dependent = true)        
     end
     
     properties (SetAccess = protected, Dependent = true)
@@ -35,18 +31,19 @@ classdef Acquisition < ws.system.Subsystem
     end
 
     properties (Dependent=true)
-        ChannelScales;  
+        ChannelScales
           % An array of scale factors to convert each channel from volts on the coax to 
           % whatever native units each signal corresponds to in the world.
           % This is in units of volts per ChannelUnits (see below)
-        ChannelUnits;  
+        ChannelUnits
           % A list of SIUnit instances that describes the real-world units 
           % for each channel.
     end
     
-    properties (SetAccess=protected,  Dependent = true, Hidden=true, Transient=true)
-        ActiveChannelScales;  % a row vector containing the scale factor for each AI channel, for converting V to native units
-        ActiveChannelUnits;
+    properties (Dependent = true, SetAccess=protected, Transient=true)
+        ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
+        ActiveChannelScales  % a row vector containing the scale factor for each AI channel, for converting V to native units
+        ActiveChannelUnits
     end
     
     properties (Transient=true)
@@ -686,11 +683,14 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, source, event)
+        function samplesAcquired_(self, source, eventData) %#ok<INUSL>
+            % This is registered as a listener callback on the
+            % FiniteInputAnalogTask's SamplesAvailable event
             %fprintf('Acquisition::samplesAcquired_()\n');
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                parent.samplesAcquired(source,event);
+                rawData = eventData.RawData;  % int16                
+                parent.samplesAcquired(rawData);
             end
         end  % function
     end  % protected methods block

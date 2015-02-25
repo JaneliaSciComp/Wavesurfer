@@ -230,7 +230,7 @@ classdef Logging < ws.system.Subsystem
                                      self.WriteToTrialId_ + (indexOfTrialWithinSet-1)), ...
                              self.ExpectedTrialSize_, ...
                              'ChunkSize', chunkSize, ...
-                             'DataType','single');
+                             'DataType','int16');
                 end
             end
             
@@ -269,23 +269,23 @@ classdef Logging < ws.system.Subsystem
     end
        
     methods
-        function self = didAcquireData(self, t, data) %#ok<INUSL>
+        function self = didAcquireData(self, t, scaledData, rawData) %#ok<INUSL>
             %ticId=tic();
             
             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
                 return
             end
             
-            dataSingle=single(data);
+            %dataSingle=single(scaledData);
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~isempty(self.FileBaseName) ,
                 h5write(self.LogFileNameAbsolute_, ...
                         sprintf('/trial_%04d', ...
                                 self.WriteToTrialId_), ...
-                        dataSingle, ...
+                        rawData, ...
                         [self.CurrentDatasetOffset_ 1], ...
-                        size(dataSingle));                
+                        size(rawData));                
 %                 for idx = 1:numel(inputChannelNames) ,
 %                     thisInputChannelName=inputChannelNames{idx};
 %                     %cdx = find(strcmp(thisInputChannelName,wavesurferObj.Acquisition.ActiveChannels), 1);
@@ -300,7 +300,7 @@ classdef Logging < ws.system.Subsystem
 %                 end
             end
             
-            self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(data, 1);
+            self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledData, 1);
             
             if self.CurrentDatasetOffset_ > self.ExpectedTrialSize_(1) ,
                 self.CurrentDatasetOffset_ = 1;

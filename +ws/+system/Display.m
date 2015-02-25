@@ -290,7 +290,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function self=didAcquireData(self, t, data)
+        function self=didAcquireData(self, t, scaledData, rawData) %#ok<INUSD>
             %T=zeros(4,1);
             %ticId=tic();            
             if self.prvClearOnNextData
@@ -337,7 +337,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 
                 % Add the data for the appropriate channels to this scope
                 if ~isempty(jInData) ,
-                    dataForThisScope=data(:, jInData);
+                    dataForThisScope=scaledData(:, jInData);
                     self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);

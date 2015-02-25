@@ -354,8 +354,8 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
             %fprintf('FiniteInputAnalogTask::nSamplesAvailable_()\n');
-            data = source.readAnalogData(self.NScansPerDataAvailableCallback) ;
-            eventData = ws.ni.SamplesAvailableEventData(data) ;
+            rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+            eventData = ws.ni.SamplesAvailableEventData(rawData) ;
             self.notify('SamplesAvailable', eventData);
         end  % function
         

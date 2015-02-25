@@ -1,11 +1,11 @@
 classdef SamplesAvailableEventData < event.EventData
     properties (SetAccess = protected)
-        Samples
+        RawData  % int16
     end
     
     methods
-        function obj = SamplesAvailableEventData(data)
-            obj.Samples = data;
+        function obj = SamplesAvailableEventData(rawData)
+            obj.RawData = rawData;  % int16
         end
     end
 end
