@@ -67,8 +67,8 @@ Installation
 Copyright
 ---------
 
-Except where noted, all code and documentation in Wavesurfer is
-copyrighted by the Howard Hughes Medical Institute, 2015.
+Except where noted, all code, documentation, images, and anything else
+in Wavesurfer is copyright 2015 by the Howard Hughes Medical Institute.
 
 
 License
