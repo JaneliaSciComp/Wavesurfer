@@ -125,3 +125,13 @@ Maintainers
 [Howard Hughes Medical Institute](http://www.hhmi.org)
 
 [![Picture](/hhmi_janelia_160px.png)](http://www.janelia.org)
+
+
+Version History
+---------------
+
+0.74: (February 26, 2015) Added Axon Multiclamp support.  Now store
+      stimulus metadata in the data file header.  Now save data as
+      int16 instead of double-precision floating point.  Improved
+      ScanImage integration.
+
