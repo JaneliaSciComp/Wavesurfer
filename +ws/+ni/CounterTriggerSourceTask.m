@@ -1,8 +1,8 @@
 classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.AttributableProperties
     
     properties (SetAccess = protected)
-        device = '';
-        counter = 0;
+        device = '';  % NI device name to use
+        counter = 0;  % Index of NI counter (CTR) to use (zero-based)
         taskName = 'Counter Trigger Source Task';        
     end
     
