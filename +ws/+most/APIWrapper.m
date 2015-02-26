@@ -418,7 +418,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                 function ziniUpdateAPIDataFile()
                     %Create/update APIDataFile for /this/ API
                     
-                    fprintf(1,[obj.apiPrettyName ': Caching API Data...']);
+                    %fprintf(1,[obj.apiPrettyName ': Caching API Data...']);
                     
                     try
                         
@@ -466,11 +466,11 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                         %Save variables to file & update the classData
                         save(obj.apiDataFullFileName,'-struct','apiDataStruct');
                     catch ME
-                        fprintf(1,'\n');
+                        %fprintf(1,'\n');
                         ME.rethrow();
                     end
                     
-                    fprintf(1,'Done!\n');
+                    %fprintf(1,'Done!\n');
                 end
             end
             
