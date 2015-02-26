@@ -1,9 +1,15 @@
 classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.AttributableProperties
     
-    properties (SetAccess = protected)
-        device = '';  % NI device name to use
-        counter = 0;  % Index of NI counter (CTR) to use (zero-based)
-        taskName = 'Counter Trigger Source Task';        
+%     properties (Dependent=true, SetAccess=immutable)
+%         DeviceName
+%         CounterID
+%         TaskName
+%     end
+    
+    properties (Access = private)
+        DeviceName_ = '';  % NI device name to use
+        CounterID_ = 0;  % Index of NI counter (CTR) to use (zero-based)
+        TaskName_ = 'Counter Trigger Source Task';        
     end
     
     properties (Access = protected)
@@ -20,106 +26,110 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
     end
     
     methods
-        function obj = CounterTriggerSourceTask(device, counter, taskName, doneCallback)
-            obj = obj@ws.ni.TriggerSourceTask();
-            obj.isRepeatable = true;
+        function self = CounterTriggerSourceTask(device, counter, taskName, doneCallback)
+            self = self@ws.ni.TriggerSourceTask();
+            self.isRepeatable = true;
             
             if nargin > 0
-                obj.device = device;
+                self.DeviceName_ = device;
             end
             
             if nargin > 1
-                obj.counter = counter;
+                self.CounterID_ = counter;
             end
             
             if nargin > 2
-                obj.taskName = taskName;
+                self.TaskName_ = taskName;
             end
             
             if nargin > 3
-                obj.DoneCallback_ = doneCallback;
+                self.DoneCallback_ = doneCallback;
             end
             
-%             % obj.ziniDefinePropertyAttributes();
-%             obj.setPropertyAttributeFeatures('device', 'Classes', {'char'}, 'Attributes', {'vector'});
-%             obj.setPropertyAttributeFeatures('counter', 'Classes', 'numeric', 'Attributes', {'nonnegative', 'integer', 'scalar'}, 'AllowEmpty', false);
-%             obj.setPropertyAttributeFeatures('taskName', 'Classes', {'char'}, 'Attributes', {'vector'});
+%             % self.ziniDefinePropertyAttributes();
+%             self.setPropertyAttributeFeatures('device', 'Classes', {'char'}, 'Attributes', {'vector'});
+%             self.setPropertyAttributeFeatures('counter', 'Classes', 'numeric', 'Attributes', {'nonnegative', 'integer', 'scalar'}, 'AllowEmpty', false);
+%             self.setPropertyAttributeFeatures('taskName', 'Classes', {'char'}, 'Attributes', {'vector'});
 
-            % obj.ziniPrepareTriggerDAQ();
-            obj.prtDaqTask = [];
-            if ~isempty(obj.device) && ~isempty(obj.counter)
-                obj.prtDaqTask = ws.dabs.ni.daqmx.Task(obj.taskName);
-                obj.prtDaqTask.createCOPulseChanFreq(obj.device, obj.counter, '', obj.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
-                obj.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', obj.repeatCount);
+            % self.ziniPrepareTriggerDAQ();
+            self.prtDaqTask = [];
+            if ~isempty(self.DeviceName_) && ~isempty(self.CounterID_)
+                self.prtDaqTask = ws.dabs.ni.daqmx.Task(self.TaskName_);
+                self.prtDaqTask.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
+                self.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.repeatCount);
             end
             
-            %obj.prvListeners(1) = obj.addlistener('repeatCount', 'PostSet', @(src, evt)evt.AffectedObject.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', evt.AffectedObject.repeatCount));
-            %obj.prvListeners(2) = obj.addlistener('repeatFrequency', 'PostSet', @(src, evt)evt.AffectedObject.prtDaqTask.channels(1).set('pulseFreq', evt.AffectedObject.repeatFrequency));
+            %self.prvListeners(1) = self.addlistener('repeatCount', 'PostSet', @(src, evt)evt.AffectedObject.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', evt.AffectedObject.repeatCount));
+            %self.prvListeners(2) = self.addlistener('repeatFrequency', 'PostSet', @(src, evt)evt.AffectedObject.prtDaqTask.channels(1).set('pulseFreq', evt.AffectedObject.repeatFrequency));
         end
         
         function delete(self) 
             self.DoneCallback_=[];
-%             if ~isempty(obj.prvListeners)
-%                 delete(obj.prvListeners);
-%                 obj.prvListeners = [];
+%             if ~isempty(self.prvListeners)
+%                 delete(self.prvListeners);
+%                 self.prvListeners = [];
 %             end
         end
         
-        function start(obj)
-            %fprintf('CounterTriggerSourceTask::start(), CTR %d\n',obj.counter);
-            if ~isempty(obj.prtDaqTask)
-                obj.prtDaqTask.doneEventCallbacks = {@obj.zcbkTriggerDone};
-                obj.prtDaqTask.start();
+        function start(self)
+            %fprintf('CounterTriggerSourceTask::start(), CTR %d\n',self.CounterID_);
+            if ~isempty(self.prtDaqTask)
+                self.prtDaqTask.doneEventCallbacks = {@self.zcbkTriggerDone};
+                self.prtDaqTask.start();
             end
         end
         
-%         function startWhenDone(obj,maxWaitTime)
-%             fprintf('CounterTriggerSourceTask::startWhenDone(), CTR %d\n',obj.counter);
-%             if ~isempty(obj.prtDaqTask)
-%                 obj.prtDaqTask.doneEventCallbacks = {@obj.zcbkTriggerDone};
-%                 obj.prtDaqTask.start();
+%         function startWhenDone(self,maxWaitTime)
+%             fprintf('CounterTriggerSourceTask::startWhenDone(), CTR %d\n',self.CounterID_);
+%             if ~isempty(self.prtDaqTask)
+%                 self.prtDaqTask.doneEventCallbacks = {@self.zcbkTriggerDone};
+%                 self.prtDaqTask.start();
 %             end
 %         end
         
-        function stop(obj)
-            %fprintf('CounterTriggerSourceTask::stop(), CTR %d\n', obj.counter);
+        function stop(self)
+            %fprintf('CounterTriggerSourceTask::stop(), CTR %d\n', self.CounterID_);
             %dbstack
-            stop@ws.ni.TriggerSourceTask(obj);
-            obj.prtDaqTask.doneEventCallbacks = {};
+            stop@ws.ni.TriggerSourceTask(self);
+            self.prtDaqTask.doneEventCallbacks = {};
         end
         
-%         function set.counter(obj, value)
+%         function set.CounterID_(self, value)
 %             if isnumeric(value) && isscalar(value) && isinteger(value) && (value>=0) ,
-%                 obj.counter = value;
+%                 self.CounterID_ = value;
 %             else
-%                 error('most:Model:invalidPropVal','counter must be a nonegative integer');
+%                 error('most:Model:invalidPropVal','CounterID_ must be a nonegative integer');
 %             end
 %         end
         
-        function exportsignal(obj, terminalList)
-            obj.prtDaqTask.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)
+        function exportsignal(self, terminalList)
+            self.prtDaqTask.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)
         end
         
-        function configureStartTrigger(obj, pfiId, edge)
+        function configureStartTrigger(self, pfiId, edge)
             %fprintf('CounterTriggerSourceTask::configureStartTrigger()\n');
-            obj.prtDaqTask.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), edge.daqmxName());
+            self.prtDaqTask.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), edge.daqmxName());
         end
         
-%         function set.device(obj, value)
+%         function set.DeviceName_(self, value)
 %             if ischar(val) && isrow(value) ,
-%                 obj.device = value;
+%                 self.DeviceName_ = value;
 %             else
-%                 error('most:Model:invalidPropVal','device must be a string');
+%                 error('most:Model:invalidPropVal','DeviceName_ must be a string');
 %             end
 %         end
         
-%         function set.taskName(obj, value)
+%         function set.taskName(self, value)
 %             if ischar(value) && isrow(value) ,
-%                 obj.taskName = value;
+%                 self.taskName = value;
 %             else
 %                 error('most:Model:invalidPropVal','taskName must be a string');
 %             end
 %         end
+
+%         function result = get.TaskName(self)
+%             result = self.TaskName_ ;
+%         end        
     end
     
     methods (Access=protected)
@@ -135,12 +145,12 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
     end
     
     methods (Access = protected)
-%         function ziniPrepareTriggerDAQ(obj)
-%             obj.prtDaqTask = [];
-%             if ~isempty(obj.device) && ~isempty(obj.counter)
-%                 obj.prtDaqTask = ws.dabs.ni.daqmx.Task(obj.taskName);
-%                 obj.prtDaqTask.createCOPulseChanFreq(obj.device, obj.counter, '', obj.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
-%                 obj.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', obj.repeatCount);
+%         function ziniPrepareTriggerDAQ(self)
+%             self.prtDaqTask = [];
+%             if ~isempty(self.DeviceName_) && ~isempty(self.CounterID_)
+%                 self.prtDaqTask = ws.dabs.ni.daqmx.Task(self.taskName);
+%                 self.prtDaqTask.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
+%                 self.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.repeatCount);
 %             end
 %         end
         
@@ -153,10 +163,10 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
             end
         end
         
-%         function ziniDefinePropertyAttributes(obj)
-%             obj.setPropertyAttributeFeatures('device', 'Classes', {'char'}, 'Attributes', {'vector'});
-%             obj.setPropertyAttributeFeatures('counter', 'Classes', 'numeric', 'Attributes', {'nonnegative', 'integer', 'scalar'}, 'AllowEmpty', false);
-%             obj.setPropertyAttributeFeatures('taskName', 'Classes', {'char'}, 'Attributes', {'vector'});
+%         function ziniDefinePropertyAttributes(self)
+%             self.setPropertyAttributeFeatures('DeviceName_', 'Classes', {'char'}, 'Attributes', {'vector'});
+%             self.setPropertyAttributeFeatures('CounterID_', 'Classes', 'numeric', 'Attributes', {'nonnegative', 'integer', 'scalar'}, 'AllowEmpty', false);
+%             self.setPropertyAttributeFeatures('taskName', 'Classes', {'char'}, 'Attributes', {'vector'});
 %         end
     end
 end
