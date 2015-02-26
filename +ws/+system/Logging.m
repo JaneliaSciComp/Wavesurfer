@@ -33,6 +33,7 @@ classdef Logging < ws.system.Subsystem
             % would be the size of that array.  
             % I.e. [nScans nActiveChannels]        
         WriteToTrialId_  % During the acquisition of a trial set, the current trial index being written to
+        ChunkSize_
     end
 
     events
@@ -142,9 +143,9 @@ classdef Logging < ws.system.Subsystem
                 case ws.ApplicationState.AcquiringTrialBased ,
                     self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount wavesurferModel.Acquisition.NActiveChannels];
                     if any(isinf(self.ExpectedTrialSize_))
-                        chunkSize = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
+                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
                     else
-                        chunkSize = self.ExpectedTrialSize_;
+                        self.ChunkSize_ = self.ExpectedTrialSize_;
                     end
                     if wavesurferModel.ExperimentTrialCount == 1 ,
                         trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextTrialIndex);
@@ -156,7 +157,7 @@ classdef Logging < ws.system.Subsystem
                     end
                 case ws.ApplicationState.AcquiringContinuously ,
                     self.ExpectedTrialSize_ = [Inf wavesurferModel.Acquisition.NActiveChannels];
-                    chunkSize = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
+                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
                 case ws.ApplicationState.TestPulsing ,
                     self.CurrentDatasetOffset_ = -1;
@@ -203,11 +204,11 @@ classdef Logging < ws.system.Subsystem
             headerStruct = wavesurferModel.encodeForFileType('header');
             
             % Put the header into into the log file header
-            numericPrecision=4;
-            stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
+            %numericPrecision=4;
+            %stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
             doCreateFile=true;
-            ws.most.fileutil.h5savestr(self.LogFileNameAbsolute_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-            ws.most.fileutil.h5save(self.LogFileNameAbsolute_, '/header', headerStruct);
+            %ws.most.fileutil.h5savestr(self.LogFileNameAbsolute_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.most.fileutil.h5save(self.LogFileNameAbsolute_, '/header', headerStruct, doCreateFile);
             
 %             % Save the "header" information to a sidecar file instead.
 %             % This should be more flexible that embedding the "header" data
@@ -223,23 +224,33 @@ classdef Logging < ws.system.Subsystem
             % TODO: Try moving the dataset creation for each trial to
             % willPerformTrial() --- This is the cause of slowness at trial
             % set start for Justin Little, possibly others.
-            if ~isempty(wavesurferModel.Acquisition) ,
-                for indexOfTrialWithinSet = 1:wavesurferModel.ExperimentTrialCount ,
-                    h5create(self.LogFileNameAbsolute_, ...
-                             sprintf('/trial_%04d', ...
-                                     self.WriteToTrialId_ + (indexOfTrialWithinSet-1)), ...
-                             self.ExpectedTrialSize_, ...
-                             'ChunkSize', chunkSize, ...
-                             'DataType','int16');
-                end
-            end
+%             if ~isempty(wavesurferModel.Acquisition) ,
+%                 for indexOfTrialWithinSet = 1:wavesurferModel.ExperimentTrialCount ,
+%                     h5create(self.LogFileNameAbsolute_, ...
+%                              sprintf('/trial_%04d', ...
+%                                      self.WriteToTrialId_ + (indexOfTrialWithinSet-1)), ...
+%                              self.ExpectedTrialSize_, ...
+%                              'ChunkSize', chunkSize, ...
+%                              'DataType','int16');
+%                 end
+%             end
             
             % The next incoming scan will be written to this (one-based)
             % index in the dataset
             self.CurrentDatasetOffset_ = 1;
         end
         
-        function willPerformTrial(~, ~)
+        function willPerformTrial(self, wavesurferModel)
+            %profile resume
+            if ~isempty(wavesurferModel.Acquisition) ,
+                datasetName = sprintf('/trial_%04d',self.NextTrialIndex) ;
+                h5create(self.LogFileNameAbsolute_, ...
+                         datasetName, ...
+                         self.ExpectedTrialSize_, ...
+                         'ChunkSize', self.ChunkSize_, ...
+                         'DataType','int16');
+            end
+            %profile off
         end
         
         function didPerformTrial(self, wavesurferModel)
@@ -265,6 +276,7 @@ classdef Logging < ws.system.Subsystem
             self.CurrentDatasetOffset_ = [];
             self.ExpectedTrialSize_ = [];
             self.WriteToTrialId_ = [];
+            self.ChunkSize_ = [];
         end
     end
        

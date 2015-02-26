@@ -142,21 +142,37 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         end
         
         function play(self, varargin)
-            self.Model.Logging.Enabled=false;
-            if self.Model.IsTrialBased ,
-                self.startTrialBasedAcquisition_(varargin{:});
-            else
-                self.startContinuousAcquisition_(varargin{:});
-            end
+            self.Figure.changeReadiness(-1);
+            try
+                self.Model.Logging.Enabled=false;
+                if self.Model.IsTrialBased ,
+                    self.startTrialBasedAcquisition_(varargin{:});
+                else
+                    self.startContinuousAcquisition_(varargin{:});
+                end
+            catch me
+                self.Figure.changeReadiness(+1);
+                rethrow(me)
+            end                
+            self.Figure.changeReadiness(+1);            
         end
         
         function record(self, varargin)
-            self.Model.Logging.Enabled=true;
-            if self.Model.IsTrialBased ,
-                self.startTrialBasedAcquisition_(varargin{:});
-            else
-                self.startContinuousAcquisition_(varargin{:});
-            end
+            %profile on
+            self.Figure.changeReadiness(-1);            
+            try
+                self.Model.Logging.Enabled=true;
+                if self.Model.IsTrialBased ,
+                    self.startTrialBasedAcquisition_(varargin{:});
+                else
+                    self.startContinuousAcquisition_(varargin{:});
+                end
+            catch me
+                self.Figure.changeReadiness(+1);
+                rethrow(me)
+            end                                
+            self.Figure.changeReadiness(+1);            
+            %profile off
         end
         
 %         function startTestPulseControlActuated(self, varargin)
