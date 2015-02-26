@@ -1,0 +1,8 @@
+# git automatically normalizes all end of lines in the repository to LF (linefeed)
+# git has a built in algorithm to detect if a file is a text or binary file
+# git incorrectly assumes that .ngc files (Xilinx Netlist files with constraint information)
+#	are textfiles, so it tries to normalize the EOLs, which corrupts the file
+# '*.ngc -text' explicitly declares .ngc files as binary files (the minus in -text means 'not')
+# see http://git-scm.com/docs/gitattributes.html
+
+*.ngc -text

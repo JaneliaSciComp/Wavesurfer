@@ -1,0 +1,29 @@
+Users: This files contains information for the Wavesurfer
+developer(s).  You can safely ignore it.
+
+
+
+To bump version
+---------------
+
+1.  Change +ws/versionString.m to return the new version.
+
+
+
+To run automated tests
+----------------------
+
+To run all tests: Run 'ws.test()'.
+
+All tests are written using Matlab's built in unittest framework.
+ws.test() runs all the tests.
+
+If hardware is not present or is not configured, the +nohw packages in
+each framework can be run just the tests that do not require an active
+hardware connection.
+
+ws.clean() is a utility function related to testing, but not
+used by the actual tests.  It clears any persistent information (saved
+preferences, etc).  This allows running and testing Wavesurfer in a
+"clean" environment.
+

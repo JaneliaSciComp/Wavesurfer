@@ -1,0 +1,1 @@
+Package consists of short functions that serve as commonly used/useful Matlab 'idioms'

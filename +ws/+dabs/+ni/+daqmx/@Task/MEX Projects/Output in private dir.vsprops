@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="Output in private dir"
+	>
+	<Tool
+		Name="VCCustomBuildTool"
+		CommandLine="copy &quot;$(OutDir)\$(ProjectName).$(PLATFORM_MATLAB_MEX_EXT)&quot; &quot;$(SolutionDir)\..\private&quot;"
+		Outputs="dummy_so_event_always_fires"
+	/>
+</VisualStudioPropertySheet>
