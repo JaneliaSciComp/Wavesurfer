@@ -149,8 +149,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Configure subystem trigger relationships.
             self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
             self.Stimulation.TriggerScheme = self.Triggering.StimulationTriggerScheme;
-            self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
-            self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
+            %self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
+            %self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.

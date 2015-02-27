@@ -267,14 +267,14 @@ classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
         function reset(self)
             %fprintf('FiniteOutputAnalogTask::reset()\n');
             if self.OutputSampleCount == 0
-                return;
+                return
             end
             
             assert(self.OutputSampleCount > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
             
             bufSize = self.prvDaqTask.get('bufOutputBufSize');
             
-            if bufSize ~= self.OutputSampleCount
+            if bufSize ~= self.OutputSampleCount ,
                 self.prvDaqTask.cfgOutputBuffer(self.OutputSampleCount);
             end
             

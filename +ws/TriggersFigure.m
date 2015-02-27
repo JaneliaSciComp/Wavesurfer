@@ -10,9 +10,9 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
         TrialBasedStimulationSchemeText
         TrialBasedStimulationSchemePopupmenu
         
-        ContinuousPanel
-        ContinuousSchemeText
-        ContinuousSchemePopupmenu
+%         ContinuousPanel
+%         ContinuousSchemeText
+%         ContinuousSchemePopupmenu
         
         TriggerSourcesPanel
         TriggerSourcesTable
@@ -77,7 +77,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
-                        'Title','Trial-based Acquisition');
+                        'Title','Acquisition');
             self.UseASAPTriggeringCheckbox = ...
                 uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
                           'Style','checkbox', ...
@@ -97,11 +97,11 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
-                        'Title','Trial-based Stimulation');
+                        'Title','Stimulation');
             self.UseAcquisitionTriggerCheckbox = ...
                 uicontrol('Parent',self.TrialBasedStimulationPanel, ...
                           'Style','checkbox', ...
-                          'String','Use trial-based acquisition scheme');
+                          'String','Use acquisition scheme');
             self.TrialBasedStimulationSchemeText = ...
                 uicontrol('Parent',self.TrialBasedStimulationPanel, ...
                           'Style','text', ...
@@ -111,21 +111,21 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
 
-            % Continuous Acqusition+Stimulation Panel
-            self.ContinuousPanel = ...
-                uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels', ...
-                        'BorderType','none', ...
-                        'FontWeight','bold', ...
-                        'Title','Continuous Acquisition+Stimulation');
-            self.ContinuousSchemeText = ...
-                uicontrol('Parent',self.ContinuousPanel, ...
-                          'Style','text', ...
-                          'String','Scheme:');
-            self.ContinuousSchemePopupmenu = ...
-                uicontrol('Parent',self.ContinuousPanel, ...
-                          'Style','popupmenu', ...
-                          'String',{'Thing 1';'Thing 2'});
+%             % Continuous Acqusition+Stimulation Panel
+%             self.ContinuousPanel = ...
+%                 uipanel('Parent',self.FigureGH, ...
+%                         'Units','pixels', ...
+%                         'BorderType','none', ...
+%                         'FontWeight','bold', ...
+%                         'Title','Continuous Acquisition+Stimulation');
+%             self.ContinuousSchemeText = ...
+%                 uicontrol('Parent',self.ContinuousPanel, ...
+%                           'Style','text', ...
+%                           'String','Scheme:');
+%             self.ContinuousSchemePopupmenu = ...
+%                 uicontrol('Parent',self.ContinuousPanel, ...
+%                           'Style','popupmenu', ...
+%                           'String',{'Thing 1';'Thing 2'});
 
             % Trigger Sources Panel
             self.TriggerSourcesPanel = ...
@@ -258,9 +258,9 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             continuousPanelAreaYOffset=trialBasedStimulationPanelAreaYOffset-continuousPanelAreaHeight-spaceBetweenPanelsHeight;
             continuousPanelYOffset=continuousPanelAreaYOffset+panelInset;            
             continuousPanelHeight=continuousPanelAreaHeight-panelInset-panelInset;
-            set(self.ContinuousPanel, ...
-                'Position',[continuousPanelXOffset continuousPanelYOffset ...
-                            continuousPanelWidth continuousPanelHeight]);
+%             set(self.ContinuousPanel, ...
+%                 'Position',[continuousPanelXOffset continuousPanelYOffset ...
+%                             continuousPanelWidth continuousPanelHeight]);
 
             % The Trigger Sources panel
             tablesAreaXOffset=schemesAreaWidth;
@@ -286,7 +286,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             % Contents of panels
             self.layoutTrialBasedAcquisitionPanel_(trialBasedAcquisitionPanelWidth,trialBasedAcquisitionPanelHeight);
             self.layoutTrialBasedStimulationPanel_(trialBasedStimulationPanelWidth,trialBasedStimulationPanelHeight);
-            self.layoutContinuousPanel_(continuousPanelWidth,continuousPanelHeight);
+            %self.layoutContinuousPanel_(continuousPanelWidth,continuousPanelHeight);
             self.layoutTriggerSourcesPanel_(triggerSourcesPanelWidth,triggerSourcesPanelHeight);
             self.layoutTriggerDestinationsPanel_(triggerDestinationsPanelWidth,triggerDestinationsPanelHeight);
                         
@@ -362,23 +362,23 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
 
     methods (Access = protected)
-        function layoutContinuousPanel_(self,panelWidth,panelHeight) %#ok<INUSL>
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
-
-            % Dimensions
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToRest=6;
-            rulerXOffset=60;
-            popupmenuWidth=200;
-            
-            % Source popupmenu
-            position=get(self.ContinuousSchemePopupmenu,'Position');
-            height=position(4);
-            popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToRest-height;
-            positionPopupmenuAndLabelBang(self.ContinuousSchemeText,self.ContinuousSchemePopupmenu, ...
-                                          rulerXOffset,popupmenuYOffset,popupmenuWidth)            
-        end
+%         function layoutContinuousPanel_(self,panelWidth,panelHeight) %#ok<INUSL>
+%             import ws.utility.positionEditLabelAndUnitsBang
+%             import ws.utility.positionPopupmenuAndLabelBang
+% 
+%             % Dimensions
+%             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
+%             heightFromTopToRest=6;
+%             rulerXOffset=60;
+%             popupmenuWidth=200;
+%             
+%             % Source popupmenu
+%             position=get(self.ContinuousSchemePopupmenu,'Position');
+%             height=position(4);
+%             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToRest-height;
+%             positionPopupmenuAndLabelBang(self.ContinuousSchemeText,self.ContinuousSchemePopupmenu, ...
+%                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
+%         end
     end
     
     methods (Access = protected)
@@ -401,7 +401,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             intervalWidth=66;
             pfiWidth=40;
             edgeWidth=50;
-            nameWidth=tableWidth-(ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+34);  % 30 for the row titles col
+            nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+34);  % 30 for the row titles col
             
             % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'
             set(self.TriggerSourcesTable, ...
@@ -462,7 +462,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             end            
             self.updateTrialBasedAcquisitionControls();
             self.updateTrialBasedStimulationControls();
-            self.updateContinuousModeControls();
+            %self.updateContinuousModeControls();
             self.updateTriggerSourcesTable();
             self.updateTriggerDestinationsTable();                   
         end  % function
@@ -488,7 +488,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~acquisitionUsesASAPTriggering));
             set(self.TrialBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
             
-            set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
+            %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
             set(self.TriggerSourcesTable,'Enable',onIff(isIdle));
             set(self.TriggerDestinationsTable,'Enable',onIff(isIdle));
@@ -530,19 +530,19 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end  % methods
     
     methods
-        function updateContinuousModeControls(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            import ws.utility.setPopupMenuItemsAndSelectionBang
-            import ws.utility.onIff
-            rawMenuItems={model.Sources.Name};
-            rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
-            setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...
-                                              rawMenuItems, ...
-                                              rawCurrentItem);
-        end  % function       
+%         function updateContinuousModeControls(self,varargin)
+%             model=self.Model;
+%             if isempty(model) ,
+%                 return
+%             end
+%             import ws.utility.setPopupMenuItemsAndSelectionBang
+%             import ws.utility.onIff
+%             rawMenuItems={model.Sources.Name};
+%             rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
+%             setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...
+%                                               rawMenuItems, ...
+%                                               rawCurrentItem);
+%         end  % function       
     end  % methods
 
     methods
@@ -607,7 +607,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
 %                 model.ContinuousModeTriggerScheme.subscribeMe(self,'PostSet','Target','updateContinuousModeControls');  
                 model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateTrialBasedAcquisitionControls');
                 model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateTrialBasedStimulationControls');  
-                model.ContinuousModeTriggerScheme.subscribeMe(self,'DidSetTarget','','updateContinuousModeControls');  
+                %model.ContinuousModeTriggerScheme.subscribeMe(self,'DidSetTarget','','updateContinuousModeControls');  
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');

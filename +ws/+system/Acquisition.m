@@ -55,7 +55,7 @@ classdef Acquisition < ws.system.Subsystem
     
     properties (Transient=true)
        	TriggerScheme
-        ContinuousModeTriggerScheme
+        %ContinuousModeTriggerScheme
     end
 
     properties (Access = protected, Transient=true)
@@ -481,11 +481,11 @@ classdef Acquisition < ws.system.Subsystem
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources();
             
-            if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing ,
-                self.FiniteInputAnalogTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
-            else
-                self.FiniteInputAnalogTask_.TriggerDelegate = self.TriggerScheme.Target;
-            end
+            %if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing ,
+            %    self.FiniteInputAnalogTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
+            %else
+            self.FiniteInputAnalogTask_.TriggerDelegate = self.TriggerScheme.Target;
+            %end
             
             if experimentMode == ws.ApplicationState.TestPulsing
                 self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
