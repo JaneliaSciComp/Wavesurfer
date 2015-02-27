@@ -494,7 +494,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function set.AcquisitionUsesASAPTriggering(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 % Can only change this if the trigger scheme is internal
-                if self.AcquisitionTriggerScheme.IsInternal ,
+                if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsTrialBased) ,
                     if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
                         self.AcquisitionUsesASAPTriggering_ = logical(newValue);
                         self.syncTriggerSourcesFromTriggeringState_();
@@ -510,9 +510,17 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 
         function value=get.AcquisitionUsesASAPTriggering(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
-                value=self.AcquisitionUsesASAPTriggering_ ;
+                if isempty(self.Parent) ,
+                    value = self.AcquisitionUsesASAPTriggering_ ;
+                else
+                    if self.Parent.IsTrialBased ,
+                        value = self.AcquisitionUsesASAPTriggering_ ;
+                    else
+                        value = false;
+                    end
+                end
             else
-                value=false;
+                value = false;
             end
         end  % function
 

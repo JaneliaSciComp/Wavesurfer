@@ -476,6 +476,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             end            
             wsModel=triggeringModel.Parent;  % this is the WavesurferModel
             isIdle=(wsModel.State==ws.ApplicationState.Idle);
+            isTrialBased = wsModel.IsTrialBased;
             
             import ws.utility.onIff
             
@@ -483,8 +484,8 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             
             acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
             isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
-            isTrialBasedAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
-            set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isTrialBasedAcquisitionSchemeInternal));
+            isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
+            set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isTrialBased&&isAcquisitionSchemeInternal));
             set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~acquisitionUsesASAPTriggering));
             set(self.TrialBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
             
@@ -611,6 +612,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
+                model.Parent.subscribeMe(self,'DidSetIsTrialBasedContinuous','','update');
 %                 model.subscribeMe(self,'PostSet','AcquisitionUsesASAPTriggering','update');
 %                 model.subscribeMe(self,'PostSet','StimulationUsesAcquisitionTriggerScheme','update');
                 model.subscribeMe(self,'Update','','update');

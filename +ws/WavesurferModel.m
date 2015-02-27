@@ -116,6 +116,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
+        DidSetIsTrialBasedContinuous
     end
     
     methods
@@ -322,6 +323,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.stimulusMapDurationPrecursorMayHaveChanged();
                 self.Triggering.didSetIsTrialBased();
             end
+            self.broadcast('DidSetIsTrialBasedContinuous');            
             self.broadcast('Update');
         end
         
