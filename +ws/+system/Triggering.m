@@ -495,11 +495,14 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             if ws.utility.isASettableValue(newValue) ,
                 % Can only change this if the trigger scheme is internal
                 if self.AcquisitionTriggerScheme.IsInternal ,
-                    self.validatePropArg(newValue,'AcquisitionUsesASAPTriggering');
-                    self.AcquisitionUsesASAPTriggering_ = newValue;
-                    self.syncTriggerSourcesFromTriggeringState_();
-                    self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-                    self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+                    if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
+                        self.AcquisitionUsesASAPTriggering_ = logical(newValue);
+                        self.syncTriggerSourcesFromTriggeringState_();
+                        self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+                        self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+                    else
+                        error('most:Model:invalidPropVal','Invalid value for AcquisitionUsesASAPTriggering.');
+                    end
                 end
             end
             self.broadcast('Update');
