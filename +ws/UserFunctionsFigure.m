@@ -14,6 +14,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
         TrialSetAbortText
         TrialSetAbortEdit
 
+        DataAvailableText
+        DataAvailableEdit        
+        
         AbortCallsCompleteCheckbox
     end  % properties
     
@@ -111,6 +114,14 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             self.TrialSetAbortEdit = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','edit');
+
+            self.DataAvailableText = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','text', ...
+                          'String','Data Available:');
+            self.DataAvailableEdit = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','edit');
                       
             self.AbortCallsCompleteCheckbox = ...
                 uicontrol('Parent',self.FigureGH, ...
@@ -194,8 +205,15 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Compute the figure dimensions
             figureWidth=leftPadWidth+labelWidth+editWidth+rightPadWidth;
-            figureHeight= bottomPadHeight + checkboxHeight + heightFromCheckboxToBottomEdit + 3*editHeight + 2*typicalHeightBetweenEdits + ...
-                          heightBetweenEditBlocks + 3*editHeight + 2*typicalHeightBetweenEdits + topPadHeight;
+            figureHeight= bottomPadHeight + ...
+                          checkboxHeight + ...
+                          heightFromCheckboxToBottomEdit + ...
+                          editHeight + ...
+                          heightBetweenEditBlocks + ...
+                          3*editHeight + 2*typicalHeightBetweenEdits + ...
+                          heightBetweenEditBlocks + ...
+                          3*editHeight + 2*typicalHeightBetweenEdits + ...
+                          topPadHeight;
             
             % The edits and their labels
             editXOffset=leftPadWidth+labelWidth;
@@ -223,6 +241,11 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             
             rowYOffset=rowYOffset-typicalHeightBetweenEdits-editHeight;
             positionEditLabelAndUnitsBang(self.TrialSetAbortText,self.TrialSetAbortEdit,[], ....
+                                          editXOffset,rowYOffset,editWidth)                                      
+                                      
+                                      
+            rowYOffset=rowYOffset-heightBetweenEditBlocks-editHeight;
+            positionEditLabelAndUnitsBang(self.DataAvailableText,self.DataAvailableEdit,[], ....
                                           editXOffset,rowYOffset,editWidth)
 
             % Checkbox
@@ -271,6 +294,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.TrialSetStartEdit,'String',model.ExperimentWillStart);
             set(self.TrialSetCompleteEdit,'String',model.ExperimentDidComplete);
             set(self.TrialSetAbortEdit,'String',model.ExperimentDidAbort);            
+            set(self.DataAvailableEdit,'String',model.DataAvailable);            
             set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
         end
     end
@@ -293,6 +317,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.TrialSetStartEdit,'Enable',onIff(isIdle));
             set(self.TrialSetCompleteEdit,'Enable',onIff(isIdle));
             set(self.TrialSetAbortEdit,'Enable',onIff(isIdle));            
+            set(self.DataAvailableEdit,'Enable',onIff(isIdle));            
             set(self.AbortCallsCompleteCheckbox,'Enable',onIff(isIdle));
         end
     end

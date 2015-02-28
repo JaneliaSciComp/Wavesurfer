@@ -97,7 +97,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        DataWasAcquired
+        DataAvailable
         TrialWillStart
         TrialDidComplete
         TrialDidAbort
@@ -526,7 +526,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.didAcquireData(rawData);
+            self.dataAvailable(rawData);
             %profile off
         end
         
@@ -806,7 +806,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
         end  % function
         
-        function didAcquireData(self, rawData)
+        function dataAvailable(self, rawData)
             nScans=size(rawData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
@@ -834,7 +834,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             for idx = 1: numel(self.Subsystems_)
                 %tic
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didAcquireData(self.t_, scaledData, rawData);
+                    self.Subsystems_{idx}.dataAvailable(self.t_, scaledData, rawData);
                 end
                 %T(idx)=toc;
             end
@@ -842,8 +842,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + size(data, 1);
             
-            %self.broadcast('DataWasAcquired',ws.DataWasAcquiredEventData(scaledData));
-            self.broadcast('DataWasAcquired');
+            %self.broadcast('DataAvailable');
+            self.callUserFunctionsAndBroadcastEvent('DataAvailable');
         end  % function
         
     end % protected methods block

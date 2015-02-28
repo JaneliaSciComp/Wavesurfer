@@ -152,7 +152,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
                
                model.subscribeMe(self,'TrialDidComplete','','updateControlProperties');
-               model.subscribeMe(self,'DataWasAcquired','','dataWasAcquired');
+               model.subscribeMe(self,'DataAvailable','','dataWasAcquired');
                
                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
                  % no longer publicly settable
