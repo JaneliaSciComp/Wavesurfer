@@ -77,7 +77,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         DidSetScopeIsVisibleWhenDisplayEnabled
         DidSetIsXSpanSlavedToAcquistionDuration
         DidSetUpdateRate
-        DidSetXSpan
+        UpdateXSpan
     end
 
     methods
@@ -146,7 +146,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                     self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                 end
             end    
-            self.broadcast('DidSetXSpan');            
+            self.broadcast('UpdateXSpan');            
         end  % function
                 
         function value = get.XOffset(self)
@@ -178,11 +178,15 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             if ws.utility.isASettableValue(newValue) ,
                 self.validatePropArg('IsXSpanSlavedToAcquistionDuration',newValue);
                 self.IsXSpanSlavedToAcquistionDuration_=newValue;
-                self.XSpan=ws.most.util.Nonvalue.The;  % fake a set to XSpan to generate the appropriate events
+                %self.XSpan=ws.most.util.Nonvalue.The;  % fake a set to XSpan to generate the appropriate events
+                for idx = 1:numel(self.Scopes) ,
+                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                end
+                self.broadcast('UpdateXSpan');                
             end
             self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
         end
-           
+        
         function self=didSetChannelUnitsOrScales(self)
             scopes=self.Scopes;
             for i=1:length(scopes) ,
@@ -357,7 +361,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             % duration
             
             % Want any listeners on XSpan set to get called
-            self.XSpan = nan;
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                for idx = 1:numel(self.Scopes) ,
+                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                end
+                self.broadcast('UpdateXSpan');
+            end    
+            %self.XSpan = nan;
         end
         
         function out = get.NScopes(self)
