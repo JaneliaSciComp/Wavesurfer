@@ -498,9 +498,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            xl=self.Model.XLim;
+            xlimInModel=self.Model.XLim;
             %ws.utility.setifhg(self.AxesGH, 'XLim', xl);
-            self.XLim=xl;
+            if any(xlimInModel~=self.XLim) ,                
+                self.XLim=xlimInModel;
+            end
         end        
 
         function updateYAxisLimits(self)
@@ -508,9 +510,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            yl=self.Model.YLim;
+            ylimInModel=self.Model.YLim;
             %ws.utility.setifhg(self.AxesGH, 'YLim', yl);
-            self.YLim=yl;
+            if any(ylimInModel~=self.YLim) ,                
+                self.YLim=ylimInModel;
+            end
         end        
         
 %         function updateAxisLimits(self)
