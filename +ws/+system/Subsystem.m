@@ -88,7 +88,7 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
             % This code MUST be exception free.
         end
         
-        function self = dataAvailable(self, t, scaledData, rawData) %#ok<INUSD>
+        function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSD>
         end
     end  % methods block
     

@@ -825,16 +825,19 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if isempty(rawData) ,
                 scaledData=zeros(size(rawData));
             else
-                data = 3.0517578125e-4 * double(rawData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledData=bsxfun(@times,data,inverseChannelScales);
+                data = double(rawData);
+                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                scaledData=bsxfun(@times,data,combinedScaleFactors); 
             end
             
             % Notify each subsystem that data has just been acquired
             %T=zeros(1,7);
-            for idx = 1: numel(self.Subsystems_)
+            state = self.State_ ;
+            t = self.t_;
+            for idx = 1: numel(self.Subsystems_) ,
                 %tic
-                if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.dataAvailable(self.t_, scaledData, rawData);
+                if self.Subsystems_{idx}.Enabled ,
+                    self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
                 end
                 %T(idx)=toc;
             end

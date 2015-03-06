@@ -257,13 +257,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode)
-            if experimentMode == ws.ApplicationState.TestPulsing ,
-                self.prvCachedDisplayXSpan = self.XSpan;
-                self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
-            else
-                self.XOffset = 0;
-                self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            end
+%             if experimentMode == ws.ApplicationState.TestPulsing ,
+%                 self.prvCachedDisplayXSpan = self.XSpan;
+%                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
+%             else
+            self.XOffset = 0;
+            self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
+%             end
             self.XAutoScroll= (experimentMode == ws.ApplicationState.AcquiringContinuously);
         end  % function
         
@@ -290,7 +290,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function self=dataAvailable(self, t, scaledData, rawData) %#ok<INUSD>
+        function self=dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSD>
             %T=zeros(4,1);
             %ticId=tic();            
             if self.prvClearOnNextData

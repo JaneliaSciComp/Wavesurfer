@@ -83,6 +83,16 @@ classdef Acquisition < ws.system.Subsystem
         NumberOfElectrodesClaimingChannel
     end
     
+    properties (Access = protected, Transient=true)
+        LatestData_ = [] ;
+        LatestRawData_ = [] ;
+        DataCacheDurationWhenContinuous_ = 10;  % s
+        RawDataCache_ = [];
+        IndexOfLastScanInCache_ = [];
+        NScansFromLatestCallback_
+        IsAllDataInCacheValid_
+    end    
+    
     events 
         DidSetChannelUnitsOrScales
         DidSetIsChannelActive
@@ -427,12 +437,6 @@ classdef Acquisition < ws.system.Subsystem
                 self.ChannelUnits_=repmat(V,[1 nChannels]);
                 %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
                 self.IsChannelActive_ = true(1,nChannels);
-
-                % TODO Should verify expected channels here and send data on with accurately
-                % labeled channels.
-                %if ~isempty(self.DelegateSamplesFcn_)
-%                 self.FiniteInputAnalogTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
-                %end
                 
                 self.CanEnable = true;
                 self.Enabled = true;
@@ -487,47 +491,66 @@ classdef Acquisition < ws.system.Subsystem
             self.FiniteInputAnalogTask_.TriggerDelegate = self.TriggerScheme.Target;
             %end
             
-            if experimentMode == ws.ApplicationState.TestPulsing
-                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
+%             if experimentMode == ws.ApplicationState.TestPulsing
+%                 self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
+%             else
+            displayDuration = 1/wavesurferObj.Display.UpdateRate;
+            if self.Duration < displayDuration ,
+                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
             else
-                displayDuration = 1/wavesurferObj.Display.UpdateRate;
-                if self.Duration < displayDuration
-                    self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
-                else
-                    numIncrements = floor(self.Duration/displayDuration);
-                    assert(floor(self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate) == ...
-                           self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate, ...
-                        'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
-                    self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
-                end
+                numIncrements = floor(self.Duration/displayDuration);
+                assert(floor(self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate) == ...
+                       self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate, ...
+                    'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
+                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
             end
+%             end
             
             self.FiniteInputAnalogTask_.registerCallbacks();
             
-            if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) || experimentMode == ws.ApplicationState.TestPulsing
+            if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) , %|| experimentMode == ws.ApplicationState.TestPulsing
                 self.FiniteInputAnalogTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
                 self.FiniteInputAnalogTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
             end
             
-            %self.syncFromElectrodes();
+            % Dimension the cache that will hold acquired data in main
+            % memory
+            if experimentMode == ws.ApplicationState.AcquiringContinuously ,
+                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
+                self.RawDataCache_ = zeros(nScans,self.NActiveChannels,'int16');
+            elseif experimentMode == ws.ApplicationState.AcquiringTrialBased ,
+                self.RawDataCache_ = zeros(self.ExpectedScanCount,self.NActiveChannels,'int16');
+            else
+                self.RawDataCache_ = [];                
+            end
         end  % function
         
-        function didPerformExperiment(self, wavesurferModel)  %#ok<INUSD>
-            self.FiniteInputAnalogTask_.unregisterCallbacks();
+        function didPerformExperiment(self, wavesurferModel)
+            self.didPerformOrAbortExperiment_(wavesurferModel);
         end  % function
         
-        function didAbortExperiment(self, wavesurferModel)  %#ok<INUSD>
+        function didAbortExperiment(self, wavesurferModel)
+            self.didPerformOrAbortExperiment_(wavesurferModel);
+        end  % function
+    end
+    
+    methods (Access = protected)
+        function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
             if ~isempty(self.FiniteInputAnalogTask_) && self.FiniteInputAnalogTask_.AreCallbacksRegistered ,
                 self.FiniteInputAnalogTask_.unregisterCallbacks();
-            end
-            
-            self.IsArmedOrAcquiring = false;
-        end  % function
-        
+            end            
+            self.IsArmedOrAcquiring = false;            
+        end
+    end
+    
+    methods
         function willPerformTrial(self, wavesurferModel)
             %fprintf('Acquisition::willPerformTrial()\n');
             self.IsArmedOrAcquiring = true;
+            self.NScansFromLatestCallback_ = [] ;
+            self.IndexOfLastScanInCache_ = 0 ;
+            self.IsAllDataInCacheValid_ = false ;
             if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
                 self.FiniteInputAnalogTask_.setup();
             else
@@ -635,6 +658,108 @@ classdef Acquisition < ws.system.Subsystem
         function debug(self) %#ok<MANU>
             keyboard
         end
+        
+        function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
+            self.LatestData_ = scaledData ;
+            self.LatestRawData_ = rawData ;
+            if state == ws.ApplicationState.AcquiringContinuously ,
+                % Add data to cache, wrapping around if needed
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawData,1);
+                jf=j0+n-1;
+                nScansInCache = size(self.RawDataCache_,1);
+                if jf<=nScansInCache ,
+                    % the usual case
+                    self.RawDataCache_(j0:jf,:) = rawData;
+                    self.IndexOfLastScanInCache_ = jf ;
+                elseif jf==nScansInCache ,
+                    % the cache is just large enough to accommodate rawData
+                    self.RawDataCache_(j0:jf,:) = rawData;
+                    self.IndexOfLastScanInCache_ = 0 ;
+                    self.IsAllDataInCacheValid_ = true ;
+                else
+                    % Need to write part of rawData to end of data cache,
+                    % part to start of data cache                    
+                    nScansAtStartOfCache = jf - nScansInCache ;
+                    nScansAtEndOfCache = n - nScansAtStartOfCache ;
+                    self.RawDataCache_(j0:end,:) = rawData(1:nScansAtEndOfCache,:) ;
+                    self.RawDataCache_(1:nScansAtStartOfCache,:) = rawData(end-nScansAtStartOfCache+1:end,:) ;
+                    self.IsAllDataInCacheValid_ = true ;
+                    self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
+                end
+                self.NScansFromLatestCallback_ = n ;
+            elseif state == ws.ApplicationState.AcquiringTrialBased ,
+                % add data to cache
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawData,1);
+                jf=j0+n-1;
+                self.RawDataCache_(j0:jf,:) = rawData;
+                self.IndexOfLastScanInCache_ = jf ;
+                self.NScansFromLatestCallback_ = n ;                
+                if jf == size(self.RawDataCache_,1) ,
+                     self.IsAllDataInCacheValid_ = true;
+                end
+            else
+                % do nothing
+            end
+        end  % function
+        
+        function data = getLatestData(self)
+            data = self.LatestData_ ;
+        end  % function
+
+        function data = getLatestRawData(self)
+            data = self.LatestRawData_ ;
+        end  % function
+
+        function scaledData = getDataFromCache(self)
+            rawData = self.getRawDataFromCache();
+            channelScales=self.ActiveChannelScales;
+            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+            % scale the data by the channel scales
+            if isempty(rawData) ,
+                scaledData=zeros(size(rawData));
+            else
+                data = double(rawData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                scaledData=bsxfun(@times,data,combinedScaleFactors);
+            end            
+        end  % function
+
+        function scaledData = getSinglePrecisionDataFromCache(self)
+            rawData = self.getRawDataFromCache();
+            channelScales=self.ActiveChannelScales;
+            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+            % scale the data by the channel scales
+            if isempty(rawData) ,
+                scaledData=zeros(size(rawData),'single');
+            else
+                data = single(rawData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                scaledData=bsxfun(@times,data,combinedScaleFactors);
+            end            
+        end  % function
+        
+        function data = getRawDataFromCache(self)
+            if self.IsAllDataInCacheValid_ ,
+                if self.IndexOfLastScanInCache_ == 0 ,
+                    data = self.RawDataCache_ ;
+                else
+                    % Need to unwrap circular buffer
+                    nScansInCache = size(self.RawDataCache_,1) ;
+                    indexOfLastScanInCache = self.IndexOfLastScanInCache_ ;
+                    nEarlyScans = nScansInCache - indexOfLastScanInCache ;
+                    data=zeros(size(self.RawDataCache_),'int16');
+                    data(1:nEarlyScans,:) = self.RawDataCache_(indexOfLastScanInCache+1:end,:);
+                    data(nEarlyScans+1:end,:) = self.RawDataCache_(1:indexOfLastScanInCache,:);
+                end
+            else
+                jf = self.IndexOfLastScanInCache_ ;
+                data = self.RawDataCache_(1:jf,:);
+            end
+        end  % function
+        
+        
     end  % methods block
     
     methods (Access = protected)
@@ -683,7 +808,7 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, source, eventData) %#ok<INUSL>
+        function samplesAcquired_(self, source, eventData)  %#ok<INUSL>
             % This is registered as a listener callback on the
             % FiniteInputAnalogTask's SamplesAvailable event
             %fprintf('Acquisition::samplesAcquired_()\n');

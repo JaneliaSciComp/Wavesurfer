@@ -281,12 +281,12 @@ classdef Logging < ws.system.Subsystem
     end
        
     methods
-        function self = dataAvailable(self, t, scaledData, rawData) %#ok<INUSL>
+        function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
             %ticId=tic();
             
-            if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
-                return
-            end
+%             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
+%                 return
+%             end
             
             %dataSingle=single(scaledData);
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
