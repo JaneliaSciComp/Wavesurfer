@@ -233,7 +233,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         
         function value=get.XSpan(self)
             value = self.XSpan_ ;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
         
         function value=get.XLim(self)
