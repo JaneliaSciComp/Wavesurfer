@@ -443,7 +443,9 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
                 self.YData{iChannel}=yData;
             end
             
-            self.XOffset=newXOffset;
+            if newXOffset~=self.XOffset , 
+                self.XOffset=newXOffset;
+            end
             %T(4)=toc(ticId);
             %self.updateYLim();
             %T(5)=toc(ticId);

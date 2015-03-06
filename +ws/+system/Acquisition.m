@@ -812,11 +812,13 @@ classdef Acquisition < ws.system.Subsystem
             % This is registered as a listener callback on the
             % FiniteInputAnalogTask's SamplesAvailable event
             %fprintf('Acquisition::samplesAcquired_()\n');
+            %profile resume
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
                 rawData = eventData.RawData;  % int16                
                 parent.samplesAcquired(rawData);
             end
+            %profile off
         end  % function
     end  % protected methods block
     
