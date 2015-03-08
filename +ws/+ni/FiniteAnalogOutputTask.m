@@ -1,4 +1,4 @@
-classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
+classdef FiniteAnalogOutputTask < ws.ni.AnalogTask
     %FINITEANALOGOUTPUT Finite analog output class for dabs MATLAB DAQmx interface.
     
     properties (Dependent = true, SetAccess = protected)
@@ -45,7 +45,7 @@ classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
     end
     
     methods
-        function self = FiniteOutputAnalogTask(deviceNames, channelIndices, taskName, channelNames)
+        function self = FiniteAnalogOutputTask(deviceNames, channelIndices, taskName, channelNames)
             % aoChannelIndices should be zero-based
             
             nChannels=length(channelIndices);
@@ -61,7 +61,7 @@ classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
             if  iscellstr(deviceNames) && length(deviceNames)==nChannels ,
                 % do nothing
             else
-                error('FiniteOutputAnalogTask:deviceNamesBad' , ...
+                error('FiniteAnalogOutputTask:deviceNamesBad' , ...
                       'deviceNames is wrong type or wrong length.');
             end
             
@@ -71,7 +71,7 @@ classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
                 if  iscellstr(channelNames) && length(channelNames)==nChannels ,
                     % do nothing
                 else
-                    error('FiniteOutputAnalogTask:channelNamesBad' , ...
+                    error('FiniteAnalogOutputTask:channelNamesBad' , ...
                           'channelNames is wrong type or wrong length.');
                 end                
             else
@@ -238,7 +238,7 @@ classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
         end
         
         function setup(self)
-            %fprintf('FiniteOutputAnalogTask::setup()\n');
+            %fprintf('FiniteAnalogOutputTask::setup()\n');
             if self.OutputSampleCount == 0
                 return
             end
@@ -265,7 +265,7 @@ classdef FiniteOutputAnalogTask < ws.ni.AnalogTask
         end
 
         function reset(self)
-            %fprintf('FiniteOutputAnalogTask::reset()\n');
+            %fprintf('FiniteAnalogOutputTask::reset()\n');
             if self.OutputSampleCount == 0
                 return
             end

@@ -1,10 +1,10 @@
-classdef FiniteInputAnalogTask < ws.ni.AnalogTask
+classdef AnalogInputTask < ws.ni.AnalogTask
     %FINITEACQUISITION Finite acquisition class for dabs MATLAB DAQmx interface.
     %
-    %   The FiniteInputAnalogTask provides a high level interface around the dabs DAQmx
+    %   The AnalogInputTask provides a high level interface around the dabs DAQmx
     %   classes for finite sample acquisition using channels from a single board.
     %
-    %   FiniteInputAnalogTask provides a configurable active channels property,
+    %   AnalogInputTask provides a configurable active channels property,
     %   registration for sample and done events using standard addlistener() calls,
     %   a trigger delegate for optionally providing on-demand trigger settings, and
     %   time-based acquisition duration and sample available events (i.e. sample
@@ -15,10 +15,10 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     %   non-error conditions.
     %
     %   Note that management of the internal DAQmx tasks is the responsibility of
-    %   the FiniteInputAnalogTask class.  For example, the class does not provide a
+    %   the AnalogInputTask class.  For example, the class does not provide a
     %   stop() method.  For operations that complete normally, required method calls
     %   on the underlying task, such as stop(), are handled automically.
-    %   FiniteInputAnalogTask does provide an abort() method to interrupt a running
+    %   AnalogInputTask does provide an abort() method to interrupt a running
     %   task.
     
     properties (Dependent = true, SetAccess = immutable)
@@ -60,7 +60,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     end
     
     methods
-        function self = FiniteInputAnalogTask(deviceNames, channelIndices, taskName, channelNames)
+        function self = AnalogInputTask(deviceNames, channelIndices, taskName, channelNames)
             nChannels=length(channelIndices);
             
             %self.AvailableChannels = channelIndices;
@@ -81,7 +81,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
             if  iscellstr(deviceNames) && length(deviceNames)==nChannels ,
                 % do nothing
             else
-                error('FiniteInputAnalogTask:deviceNamesBad' , ...
+                error('AnalogInputTask:deviceNamesBad' , ...
                       'deviceNames is wrong type or wrong length.');
             end
             
@@ -91,7 +91,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
                 if  iscellstr(channelNames) && length(channelNames)==nChannels ,
                     % do nothing
                 else
-                    error('FiniteInputAnalogTask:channelNamesBad' , ...
+                    error('AnalogInputTask:channelNamesBad' , ...
                           'channelNames is wrong type or wrong length.');
                 end                
             else
@@ -294,7 +294,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
         end  % function                
         
         function setup(obj)
-            %fprintf('FiniteInputAnalogTask::setup()\n');
+            %fprintf('AnalogInputTask::setup()\n');
             switch obj.ClockTiming ,
                 case ws.ni.SampleClockTiming.FiniteSamples
                     obj.prvDaqTask.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_FiniteSamps', obj.ExpectedScanCount);
@@ -317,7 +317,7 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
         end  % function
 
         function reset(obj) %#ok<MANU>
-            %fprintf('FiniteInputAnalogTask::reset()\n');                        
+            %fprintf('AnalogInputTask::reset()\n');                        
             % Don't have to do anything to reset a finite input analog task
         end  % function
     end
@@ -353,14 +353,14 @@ classdef FiniteInputAnalogTask < ws.ni.AnalogTask
     
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
-            %fprintf('FiniteInputAnalogTask::nSamplesAvailable_()\n');
+            %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
             rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
             eventData = ws.ni.SamplesAvailableEventData(rawData) ;
             self.notify('SamplesAvailable', eventData);
         end  % function
         
         function taskDone_(self, source, event) %#ok<INUSD>
-            %fprintf('FiniteInputAnalogTask::taskDone_()\n');
+            %fprintf('AnalogInputTask::taskDone_()\n');
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Acquisition object.

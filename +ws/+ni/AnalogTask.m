@@ -38,8 +38,8 @@ classdef AnalogTask < handle   %ws.mixin.AttributableProperties
         end
         
         function start(obj)
-%             if isa(obj,'ws.ni.FiniteOutputAnalogTask') ,
-%                 %fprintf('About to start FiniteOutputAnalogTask.\n');
+%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%                 %fprintf('About to start FiniteAnalogOutputTask.\n');
 %                 %obj
 %                 %dbstack
 %             end               
@@ -53,7 +53,7 @@ classdef AnalogTask < handle   %ws.mixin.AttributableProperties
 %             % Convenience method for caller to not have to check with this particular object
 %             % (the associated hardware) supports hardware retriggering.  Call start() if
 %             % needed otherwise no-op.
-%             if isa(obj,'ws.ni.FiniteInputAnalogTask') ,
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
 %                 fprintf('Task::retrigger()\n');
 %             end
 %             if ~isempty(obj.prvDaqTask)
@@ -64,11 +64,11 @@ classdef AnalogTask < handle   %ws.mixin.AttributableProperties
 %         end
         
         function abort(obj)
-%             if isa(obj,'ws.ni.FiniteInputAnalogTask') ,
-%                 fprintf('FiniteInputAnalogTask::abort()\n');
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('AnalogInputTask::abort()\n');
 %             end
-%             if isa(obj,'ws.ni.FiniteOutputAnalogTask') ,
-%                 fprintf('FiniteOutputAnalogTask::abort()\n');
+%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%                 fprintf('FiniteAnalogOutputTask::abort()\n');
 %             end
             if ~isempty(obj.prvDaqTask)
                 obj.prvDaqTask.abort();
@@ -76,11 +76,11 @@ classdef AnalogTask < handle   %ws.mixin.AttributableProperties
         end
         
         function stop(obj)
-%             if isa(obj,'ws.ni.FiniteInputAnalogTask') ,
-%                 fprintf('FiniteInputAnalogTask::stop()\n');
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('AnalogInputTask::stop()\n');
 %             end
-%             if isa(obj,'ws.ni.FiniteOutputAnalogTask') ,
-%                 fprintf('FiniteOutputAnalogTask::stop()\n');
+%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%                 fprintf('FiniteAnalogOutputTask::stop()\n');
 %             end
             if ~isempty(obj.prvDaqTask) && ~obj.prvDaqTask.isTaskDoneQuiet()
                 obj.prvDaqTask.stop();
@@ -88,7 +88,7 @@ classdef AnalogTask < handle   %ws.mixin.AttributableProperties
         end
         
         function registerCallbacks(obj)
-%             if isa(obj,'ws.ni.FiniteInputAnalogTask') ,
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
 %                 fprintf('Task::registerCallbacks()\n');
 %             end
             % Public method that causes the every-n-samples callbacks (and
@@ -116,7 +116,7 @@ classdef AnalogTask < handle   %ws.mixin.AttributableProperties
             % variables with references to this object, the object may become invalid after
             % these sets.  Call this method last in any method where it is used.
 
-%             if isa(obj,'ws.ni.FiniteInputAnalogTask') ,
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
 %                 fprintf('Task::unregisterCallbacks()\n');
 %             end
 

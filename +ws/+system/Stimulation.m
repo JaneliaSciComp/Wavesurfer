@@ -67,7 +67,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %     end
     
     properties (Access = protected, Transient=true)
-        TheFiniteOutputAnalogTask_
+        TheFiniteAnalogOutputTask_
     end
 
     properties (Access = protected)
@@ -122,10 +122,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function delete(self)
             %fprintf('Stimulation::delete()\n');            
             %delete(self.TriggerListener_);
-            if ~isempty(self.TheFiniteOutputAnalogTask_) && isvalid(self.TheFiniteOutputAnalogTask_) ,
-                delete(self.TheFiniteOutputAnalogTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
+                delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
             end
-            self.TheFiniteOutputAnalogTask_=[];
+            self.TheFiniteAnalogOutputTask_=[];
             self.Parent=[];
         end
         
@@ -165,8 +165,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function set.SampleRate(self, value)
             self.SampleRate_ = value;
-            if ~isempty(self.TheFiniteOutputAnalogTask_)
-                self.TheFiniteOutputAnalogTask_.SampleRate = value;
+            if ~isempty(self.TheFiniteAnalogOutputTask_)
+                self.TheFiniteAnalogOutputTask_.SampleRate = value;
             end
             self.broadcast('DidSetSampleRate');
         end
@@ -191,16 +191,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
 %         function result = get.ChannelIDs(self)
-%             if ~isempty(self.TheFiniteOutputAnalogTask_)
-%                 result = self.TheFiniteOutputAnalogTask_.AvailableChannels;
+%             if ~isempty(self.TheFiniteAnalogOutputTask_)
+%                 result = self.TheFiniteAnalogOutputTask_.AvailableChannels;
 %             else
 %                 result = zeros(1,0);
 %             end
 %         end
 %         
 %         function out = get.ChannelNames(self)
-%             if ~isempty(self.TheFiniteOutputAnalogTask_)
-%                 out = self.TheFiniteOutputAnalogTask_.ChannelNames;
+%             if ~isempty(self.TheFiniteAnalogOutputTask_)
+%                 out = self.TheFiniteAnalogOutputTask_.ChannelNames;
 %             else
 %                 out = {};
 %             end
@@ -208,10 +208,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function value = get.NChannels(self)
             value = length(self.ChannelIDs_);
-%             if isempty(self.TheFiniteOutputAnalogTask_) ,
+%             if isempty(self.TheFiniteAnalogOutputTask_) ,
 %                 value=0;
 %             else
-%                 value=length(self.TheFiniteOutputAnalogTask_.ChannelNames);
+%                 value=length(self.TheFiniteAnalogOutputTask_.ChannelNames);
 %             end
         end
         
@@ -320,19 +320,19 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.DeviceIDs=mdfStructure.outputDeviceIDs;
                 self.ChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
                 self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
-%                 self.TheFiniteOutputAnalogTask_ = ...
-%                     ws.ni.FiniteOutputAnalogTask(mdfStructure.outputDeviceIDs, ...
+%                 self.TheFiniteAnalogOutputTask_ = ...
+%                     ws.ni.FiniteAnalogOutputTask(mdfStructure.outputDeviceIDs, ...
 %                                                          mdfStructure.outputAnalogChannelIDs, ...
 %                                                          'Wavesurfer Analog Stimulation Task', ...
 %                                                          mdfStructure.outputAnalogChannelNames);
-%                 self.TheFiniteOutputAnalogTask_.SampleRate=self.SampleRate;                                     
+%                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
                 
                 nChannels=length(mdfStructure.outputAnalogChannelIDs);
                 self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
                 self.ChannelUnits_=repmat(V,[1 nChannels]);
                                                   
-%                 self.TheFiniteOutputAnalogTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
+%                 self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
            
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
@@ -341,19 +341,19 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
 
         function acquireHardwareResources(self)            
-            if isempty(self.TheFiniteOutputAnalogTask_) ,
-                self.TheFiniteOutputAnalogTask_ = ...
-                    ws.ni.FiniteOutputAnalogTask(self.DeviceIDs, ...
+            if isempty(self.TheFiniteAnalogOutputTask_) ,
+                self.TheFiniteAnalogOutputTask_ = ...
+                    ws.ni.FiniteAnalogOutputTask(self.DeviceIDs, ...
                                                  self.ChannelIDs, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
                                                  self.ChannelNames);
-                self.TheFiniteOutputAnalogTask_.SampleRate=self.SampleRate;                                     
-                self.TheFiniteOutputAnalogTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
+                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
+                self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
             end
         end
         
         function releaseHardwareResources(self)
-            self.TheFiniteOutputAnalogTask_ = [];            
+            self.TheFiniteAnalogOutputTask_ = [];            
         end
         
 %         function pushStimulusCycle(self, stimCycle, varargin)
@@ -418,13 +418,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.acquireHardwareResources();
             
 %             if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing
-%                 self.TheFiniteOutputAnalogTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
+%                 self.TheFiniteAnalogOutputTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
 %             else
-            self.TheFiniteOutputAnalogTask_.TriggerDelegate = self.TriggerScheme.Target;
+            self.TheFiniteAnalogOutputTask_.TriggerDelegate = self.TriggerScheme.Target;
 %             end
             
-            %self.TheFiniteOutputAnalogTask_.ChannelData = zeros(0, 0);
-            self.TheFiniteOutputAnalogTask_.clearChannelData;
+            %self.TheFiniteAnalogOutputTask_.ChannelData = zeros(0, 0);
+            self.TheFiniteAnalogOutputTask_.clearChannelData;
             
             stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
             
@@ -473,15 +473,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             self.StimulusSequenceIterator_.beginIteration();
             
             % register the output task callbacks
-            self.TheFiniteOutputAnalogTask_.registerCallbacks();
+            self.TheFiniteAnalogOutputTask_.registerCallbacks();
             
             % Set the state
             self.IsWithinExperiment=true;
         end  % willPerformExperiment() function
         
         function didPerformExperiment(self, ~)
-            self.TheFiniteOutputAnalogTask_.unregisterCallbacks();
-            self.TheFiniteOutputAnalogTask_.unreserve();
+            self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
+            self.TheFiniteAnalogOutputTask_.unreserve();
             
             %delete(self.StimulusSequenceIterator_);
             self.StimulusOutputable_ = {};
@@ -489,11 +489,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function didAbortExperiment(self, ~)
-            if ~isempty(self.TheFiniteOutputAnalogTask_) ,
-                if self.TheFiniteOutputAnalogTask_.AreCallbacksRegistered ,
-                    self.TheFiniteOutputAnalogTask_.unregisterCallbacks();
+            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+                if self.TheFiniteAnalogOutputTask_.AreCallbacksRegistered ,
+                    self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
                 end
-                self.TheFiniteOutputAnalogTask_.unreserve();
+                self.TheFiniteAnalogOutputTask_.unreserve();
             end
             
             %delete(self.StimulusSequenceIterator_);
@@ -563,16 +563,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 
             if sampleCount > 0 ,
 %                 if self.EpisodesCompleted_ == 0
-%                     self.TheFiniteOutputAnalogTask_.start();
+%                     self.TheFiniteAnalogOutputTask_.start();
 %                 else
-%                     self.TheFiniteOutputAnalogTask_.retrigger();
+%                     self.TheFiniteAnalogOutputTask_.retrigger();
 %                 end
                 if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteOutputAnalogTask_.setup();
+                    self.TheFiniteAnalogOutputTask_.setup();
                 else
-                    self.TheFiniteOutputAnalogTask_.reset();
+                    self.TheFiniteAnalogOutputTask_.reset();
                 end
-                self.TheFiniteOutputAnalogTask_.start();                
+                self.TheFiniteAnalogOutputTask_.start();                
             else
                 % This was triggered, it just has a map/stimulus that has zero samples.
                 self.IsArmedOrStimulating = false;
@@ -583,7 +583,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function didAbortTrial(self, ~)
-            self.TheFiniteOutputAnalogTask_.abort();
+            self.TheFiniteAnalogOutputTask_.abort();
             self.IsArmedOrStimulating = false;
         end  % function
         
@@ -860,7 +860,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Finally, assign the stimulation data to the the relevant part
             % of the output task
-            self.TheFiniteOutputAnalogTask_.ChannelData = aoDataScaledAndLimited;
+            self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
         end  % function
         
         function episodeCompleted_(self)

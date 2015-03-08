@@ -59,7 +59,7 @@ classdef Acquisition < ws.system.Subsystem
     end
 
     properties (Access = protected, Transient=true)
-        FiniteInputAnalogTask_ = [];
+        AnalogInputTask_ = [];
     end    
     
     properties (Access = protected) 
@@ -114,27 +114,27 @@ classdef Acquisition < ws.system.Subsystem
         function delete(self)
             %fprintf('Acquisition::delete()\n');
             %delete(self.TriggerListener_);
-            if ~isempty(self.FiniteInputAnalogTask_) && isvalid(self.FiniteInputAnalogTask_) ,
-                delete(self.FiniteInputAnalogTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+            if ~isempty(self.AnalogInputTask_) && isvalid(self.AnalogInputTask_) ,
+                delete(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
             end
-            self.FiniteInputAnalogTask_=[];
-            %ws.utility.deleteIfValidHandle(self.FiniteInputAnalogTask_);
+            self.AnalogInputTask_=[];
+            %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);
             self.Parent=[];
         end
         
         function result = get.ChannelNames(self)
             result = self.ChannelNames_ ;
-%             if isempty(self.FiniteInputAnalogTask_) ,
+%             if isempty(self.AnalogInputTask_) ,
 %                 result = cell(1,0);  % want row vector
 %             else
-%                 result=self.FiniteInputAnalogTask_.ChannelNames;
+%                 result=self.AnalogInputTask_.ChannelNames;
 %             end
         end
     
         function result = get.ChannelIDs(self)
             result = self.ChannelIDs_;
-%             if ~isempty(self.FiniteInputAnalogTask_)
-%                 result = self.FiniteInputAnalogTask_.AvailableChannels;
+%             if ~isempty(self.AnalogInputTask_)
+%                 result = self.AnalogInputTask_.AvailableChannels;
 %             else
 %                 result = zeros(1,0);
 %             end
@@ -148,8 +148,8 @@ classdef Acquisition < ws.system.Subsystem
             % Make it so the given channel names are the active channels
             channelNames=self.ChannelNames;
             isToBeActive=ismember(channelNames,newActiveChannelNames);
-            %newActiveChannelIDs=self.FiniteInputAnalogTask_.AvailableChannels(isToBeActive);
-            %self.FiniteInputAnalogTask_.ActiveChannels=newActiveChannelIDs;
+            %newActiveChannelIDs=self.AnalogInputTask_.AvailableChannels(isToBeActive);
+            %self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;
             self.IsChannelActive=isToBeActive;  % call the 'core' setter
         end
         
@@ -157,11 +157,11 @@ classdef Acquisition < ws.system.Subsystem
             % Boolean array indicating which of the available channels is
             % active.
             result=self.IsChannelActive_;
-%             if isempty(self.FiniteInputAnalogTask_) || isempty(self.FiniteInputAnalogTask_.AvailableChannels) ,
+%             if isempty(self.AnalogInputTask_) || isempty(self.AnalogInputTask_.AvailableChannels) ,
 %                 result = false(1,0);  % want row vector
 %             else
-%                 availableChannels=self.FiniteInputAnalogTask_.AvailableChannels;
-%                 activeChannels=self.FiniteInputAnalogTask_.ActiveChannels;
+%                 availableChannels=self.AnalogInputTask_.AvailableChannels;
+%                 activeChannels=self.AnalogInputTask_.ActiveChannels;
 %                 result=ismember(availableChannels,activeChannels);
 %             end
         end
@@ -171,11 +171,11 @@ classdef Acquisition < ws.system.Subsystem
             % active.
             if islogical(newIsChannelActive) && isequal(size(newIsChannelActive),size(self.IsChannelActive)) ,
                 self.IsChannelActive_ = newIsChannelActive;
-                if isempty(self.FiniteInputAnalogTask_) || isempty(self.FiniteInputAnalogTask_.AvailableChannels) ,
+                if isempty(self.AnalogInputTask_) || isempty(self.AnalogInputTask_.AvailableChannels) ,
                     % nothing to set
                 else
                     newActiveChannelIDs=self.ChannelIDs_(newIsChannelActive);
-                    self.FiniteInputAnalogTask_.ActiveChannels=newActiveChannelIDs;                    
+                    self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;                    
                 end
             end
             self.broadcast('DidSetIsChannelActive');
@@ -313,16 +313,16 @@ classdef Acquisition < ws.system.Subsystem
 %         end
         
 %         function out = get.Channels(self)
-%             if ~isempty(self.FiniteInputAnalogTask_)
-%                 out = self.FiniteInputAnalogTask_.AvailableChannels;
+%             if ~isempty(self.AnalogInputTask_)
+%                 out = self.AnalogInputTask_.AvailableChannels;
 %             else
 %                 out = zeros(1,0);
 %             end
 %         end
         
 %         function out = get.ChannelNames(self)
-%             if ~isempty(self.FiniteInputAnalogTask_)
-%                 out = self.FiniteInputAnalogTask_.ChannelNames;
+%             if ~isempty(self.AnalogInputTask_)
+%                 out = self.AnalogInputTask_.ChannelNames;
 %             else
 %                 out = cell(1,0);
 %             end
@@ -372,10 +372,10 @@ classdef Acquisition < ws.system.Subsystem
         
         function out = get.Duration(self)
             out = self.Duration_;
-%             if ~self.Enabled || isempty(self.FiniteInputAnalogTask_)
+%             if ~self.Enabled || isempty(self.AnalogInputTask_)
 %                 out = self.Duration_;
 %             else
-%                 out = self.FiniteInputAnalogTask_.AcquisitionDuration;
+%                 out = self.AnalogInputTask_.AcquisitionDuration;
 %             end
         end  % function
         
@@ -385,8 +385,8 @@ classdef Acquisition < ws.system.Subsystem
             if isa(value,'ws.most.util.Nonvalue'), return, end            
             self.validatePropArg(value,'Duration');
             self.Parent.willSetAcquisitionDuration();
-            if ~isempty(self.FiniteInputAnalogTask_)
-                self.FiniteInputAnalogTask_.AcquisitionDuration = value;
+            if ~isempty(self.AnalogInputTask_)
+                self.AnalogInputTask_.AcquisitionDuration = value;
             end            
             self.Duration_ = value;
             self.stimulusMapDurationPrecursorMayHaveChanged();
@@ -403,8 +403,8 @@ classdef Acquisition < ws.system.Subsystem
         
         function set.SampleRate(self, value)
             self.SampleRate_ = value;
-            if ~isempty(self.FiniteInputAnalogTask_)
-                self.FiniteInputAnalogTask_.SampleRate = value;
+            if ~isempty(self.AnalogInputTask_)
+                self.AnalogInputTask_.SampleRate = value;
             end
             self.broadcast('DidSetSampleRate');
         end  % function
@@ -420,15 +420,15 @@ classdef Acquisition < ws.system.Subsystem
                 self.DeviceIDs = mdfStructure.inputDeviceIDs;
                 self.ChannelIDs_ = mdfStructure.inputChannelIDs;
                 self.ChannelNames_ = mdfStructure.inputChannelNames;
-%                 self.FiniteInputAnalogTask_ = ...
-%                     ws.ni.FiniteInputAnalogTask(mdfStructure.inputDeviceIDs, ...
+%                 self.AnalogInputTask_ = ...
+%                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceIDs, ...
 %                                                 mdfStructure.inputChannelIDs, ...
 %                                                 'Wavesurfer Analog Acquisition Task', ...
 %                                                 mdfStructure.inputChannelNames);
-%                 self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
-%                 self.FiniteInputAnalogTask_.SampleRate = self.SampleRate;
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+%                 self.AnalogInputTask_.SampleRate = self.SampleRate;
                 
-%                 self.FiniteInputAnalogTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
+%                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
                 
                 nChannels=length(mdfStructure.inputChannelIDs);
                 self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
@@ -444,21 +444,21 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
 
         function acquireHardwareResources(self)
-            if isempty(self.FiniteInputAnalogTask_) ,
-                self.FiniteInputAnalogTask_ = ...
-                    ws.ni.FiniteInputAnalogTask(self.DeviceIDs, ...
+            if isempty(self.AnalogInputTask_) ,
+                self.AnalogInputTask_ = ...
+                    ws.ni.AnalogInputTask(self.DeviceIDs, ...
                                                 self.ChannelIDs, ...
                                                 'Wavesurfer Analog Acquisition Task', ...
                                                 self.ChannelNames);
-                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
-                self.FiniteInputAnalogTask_.SampleRate = self.SampleRate;                
-                self.FiniteInputAnalogTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
-                self.FiniteInputAnalogTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.AnalogInputTask_.SampleRate = self.SampleRate;                
+                self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
+                self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
         end  % function
 
         function releaseHardwareResources(self)
-            self.FiniteInputAnalogTask_=[];            
+            self.AnalogInputTask_=[];            
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode)
@@ -486,32 +486,32 @@ classdef Acquisition < ws.system.Subsystem
             self.acquireHardwareResources();
             
             %if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing ,
-            %    self.FiniteInputAnalogTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
+            %    self.AnalogInputTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
             %else
-            self.FiniteInputAnalogTask_.TriggerDelegate = self.TriggerScheme.Target;
+            self.AnalogInputTask_.TriggerDelegate = self.TriggerScheme.Target;
             %end
             
 %             if experimentMode == ws.ApplicationState.TestPulsing
-%                 self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
 %             else
             displayDuration = 1/wavesurferObj.Display.UpdateRate;
             if self.Duration < displayDuration ,
-                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
             else
                 numIncrements = floor(self.Duration/displayDuration);
-                assert(floor(self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate) == ...
-                       self.Duration/numIncrements * self.FiniteInputAnalogTask_.SampleRate, ...
+                assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
+                       self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
                     'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
-                self.FiniteInputAnalogTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
+                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
             end
 %             end
             
-            self.FiniteInputAnalogTask_.registerCallbacks();
+            self.AnalogInputTask_.registerCallbacks();
             
             if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) , %|| experimentMode == ws.ApplicationState.TestPulsing
-                self.FiniteInputAnalogTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
+                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
-                self.FiniteInputAnalogTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
             end
             
             % Dimension the cache that will hold acquired data in main
@@ -537,8 +537,8 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access = protected)
         function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            if ~isempty(self.FiniteInputAnalogTask_) && self.FiniteInputAnalogTask_.AreCallbacksRegistered ,
-                self.FiniteInputAnalogTask_.unregisterCallbacks();
+            if ~isempty(self.AnalogInputTask_) && self.AnalogInputTask_.AreCallbacksRegistered ,
+                self.AnalogInputTask_.unregisterCallbacks();
             end            
             self.IsArmedOrAcquiring = false;            
         end
@@ -552,15 +552,15 @@ classdef Acquisition < ws.system.Subsystem
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
             if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
-                self.FiniteInputAnalogTask_.setup();
+                self.AnalogInputTask_.setup();
             else
-                self.FiniteInputAnalogTask_.reset();  % this doesn't actually do anything for a FiniteOutputAnalogTask...
+                self.AnalogInputTask_.reset();  % this doesn't actually do anything for a FiniteAnalogOutputTask...
             end                
-            self.FiniteInputAnalogTask_.start();
+            self.AnalogInputTask_.start();
         end  % function
         
         function didAbortTrial(self, ~)
-            self.FiniteInputAnalogTask_.abort();
+            self.AnalogInputTask_.abort();
             self.IsArmedOrAcquiring = false;
         end  % function
         
@@ -574,7 +574,7 @@ classdef Acquisition < ws.system.Subsystem
             for cdx = 1:numel(channelNames)
                 validateattributes(channelNames{cdx}, {'char'}, {});
                 
-                idx = self.FiniteInputAnalogTask_.AvailableChannels(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
+                idx = self.AnalogInputTask_.AvailableChannels(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
                 
                 if isempty(idx)
                     ws.most.mimics.warning('wavesurfer:acquisition:unknownchannelname', ...
@@ -784,7 +784,7 @@ classdef Acquisition < ws.system.Subsystem
 %             self.setPropertyTags('ExpectedScanCount', 'ExcludeFromFileTypes', {'*'});
 %             self.setPropertyTags('ContinuousModeTriggerScheme', 'ExcludeFromFileTypes', {'*'});
 %             self.setPropertyTags('IsArmedOrAcquiring', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('FiniteInputAnalogTask_', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('AnalogInputTask_', 'ExcludeFromFileTypes', {'*'});
 %             %self.setPropertyTags('DelegateSamplesFcn_', 'ExcludeFromFileTypes', {'*'});
 %             %self.setPropertyTags('DelegateDoneFcn_', 'ExcludeFromFileTypes', {'*'});
 %             %self.setPropertyTags('TriggerListener_', 'ExcludeFromFileTypes', {'*'});
@@ -810,7 +810,7 @@ classdef Acquisition < ws.system.Subsystem
         
         function samplesAcquired_(self, source, eventData)  %#ok<INUSL>
             % This is registered as a listener callback on the
-            % FiniteInputAnalogTask's SamplesAvailable event
+            % AnalogInputTask's SamplesAvailable event
             %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
             parent=self.Parent;
