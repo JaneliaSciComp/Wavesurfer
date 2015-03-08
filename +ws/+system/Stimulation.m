@@ -461,16 +461,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
             self.StimulusOutputable_=stimulusOutputable;
             
-            % register the output task callbacks
-            self.TheFiniteAnalogOutputTask_.registerCallbacks();
+%             % register the output task callbacks
+%             self.TheFiniteAnalogOutputTask_.registerCallbacks();
             
             % Set the state
             self.IsWithinExperiment=true;
         end  % willPerformExperiment() function
         
         function didPerformExperiment(self, ~)
-            self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
-            self.TheFiniteAnalogOutputTask_.unreserve();
+%             self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
+%             self.TheFiniteAnalogOutputTask_.unreserve();
+            self.TheFiniteAnalogOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
             self.StimulusOutputable_ = {};
@@ -479,8 +480,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function didAbortExperiment(self, ~)
             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
-                self.TheFiniteAnalogOutputTask_.unreserve();
+%                 self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
+%                 self.TheFiniteAnalogOutputTask_.unreserve();
+                self.TheFiniteAnalogOutputTask_.disarm();
             end
             
             %delete(self.StimulusSequenceIterator_);
@@ -555,9 +557,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                     self.TheFiniteAnalogOutputTask_.retrigger();
 %                 end
                 if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteAnalogOutputTask_.setup();
+                    %self.TheFiniteAnalogOutputTask_.setup();
+                    self.TheFiniteAnalogOutputTask_.arm();
                 else
-                    self.TheFiniteAnalogOutputTask_.reset();
+                    %self.TheFiniteAnalogOutputTask_.reset();
                 end
                 self.TheFiniteAnalogOutputTask_.start();                
             else

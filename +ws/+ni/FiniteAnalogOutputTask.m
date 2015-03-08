@@ -9,19 +9,20 @@ classdef FiniteAnalogOutputTask < handle
         DabsDaqTask_ = [];
     end
     
-    properties (Access = protected)
-        RegistrationCount_ = 0;  
-            % Roughly, the number of times registerCallbacks() has been
-            % called, minus the number of times unregisterCallbacks() has
-            % been called Used to make sure the callbacks are only
-            % registered once even if registerCallbacks() is called
-            % multiple times in succession.
-    end
+%     properties (Access = protected)
+%         RegistrationCount_ = 0;  
+%             % Roughly, the number of times registerCallbacks() has been
+%             % called, minus the number of times unregisterCallbacks() has
+%             % been called Used to make sure the callbacks are only
+%             % registered once even if registerCallbacks() is called
+%             % multiple times in succession.
+%     end
     
     properties (Dependent = true, SetAccess = immutable)
         DeviceName
         TaskName
         ChannelNames
+        IsArmed  % generally shouldn't set props, etc when armed (but setting ChannelData is actually OK)
     end
     
     properties (Dependent = true)
@@ -54,12 +55,12 @@ classdef FiniteAnalogOutputTask < handle
         AvailableChannels_ = zeros(1,0)  % The indices of the AO channels available (zero-based)
         TriggerPFIID_
         TriggerEdge_
+        IsArmed_ = false
     end
     
     events
         OutputComplete
-    end
-    
+    end    
 
     methods
         function delete(self)
@@ -80,11 +81,13 @@ classdef FiniteAnalogOutputTask < handle
 %                 %self
 %                 %dbstack
 %             end               
-            if ~isempty(self.DabsDaqTask_)
-                %self.getReadyGetSet();
-                self.DabsDaqTask_.start();
+            if self.IsArmed_ ,
+                if ~isempty(self.DabsDaqTask_) ,
+                    %self.getReadyGetSet();
+                    self.DabsDaqTask_.start();
+                end
             end
-        end
+        end  % function
         
         function abort(self)
 %             if isa(self,'ws.ni.AnalogInputTask') ,
@@ -110,48 +113,52 @@ classdef FiniteAnalogOutputTask < handle
             end
         end
         
-        function registerCallbacks(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('Task::registerCallbacks()\n');
-%             end
-            % Public method that causes the every-n-samples callbacks (and
-            % others) to be set appropriately for the
-            % acquisition/stimulation task.  This calls a subclass-specific
-            % implementation method.  Typically called just before starting
-            % the task. Also includes logic to make sure the implementation
-            % method only gets called once, even if this method is called
-            % multiple times in succession.
-            if self.RegistrationCount_ == 0
-                self.registerCallbacksImplementation();
-            end
-            self.RegistrationCount_ = self.RegistrationCount_ + 1;
-        end
+        function value = get.IsArmed(self)
+            value = self.IsArmed_;
+        end  % function
         
-        function unregisterCallbacks(self)
-            % Public method that causes the every-n-samples callbacks (and
-            % others) to be cleared.  This calls a subclass-specific
-            % implementation method.  Typically called just after the task
-            % ends.  Also includes logic to make sure the implementation
-            % method only gets called once, even if this method is called
-            % multiple times in succession.
-            %
-            % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
-            % variables with references to this object, the object may become invalid after
-            % these sets.  Call this method last in any method where it is used.
-
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('Task::unregisterCallbacks()\n');
+%         function registerCallbacks(self)
+% %             if isa(self,'ws.ni.AnalogInputTask') ,
+% %                 fprintf('Task::registerCallbacks()\n');
+% %             end
+%             % Public method that causes the every-n-samples callbacks (and
+%             % others) to be set appropriately for the
+%             % acquisition/stimulation task.  This calls a subclass-specific
+%             % implementation method.  Typically called just before starting
+%             % the task. Also includes logic to make sure the implementation
+%             % method only gets called once, even if this method is called
+%             % multiple times in succession.
+%             if self.RegistrationCount_ == 0
+%                 self.registerCallbacksImplementation();
 %             end
-
-            %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
-            
-            if (self.RegistrationCount_>0) ,            
-                self.RegistrationCount_ = self.RegistrationCount_ - 1;            
-                if self.RegistrationCount_ == 0
-                    self.unregisterCallbacksImplementation();
-                end
-            end
-        end
+%             self.RegistrationCount_ = self.RegistrationCount_ + 1;
+%         end
+%         
+%         function unregisterCallbacks(self)
+%             % Public method that causes the every-n-samples callbacks (and
+%             % others) to be cleared.  This calls a subclass-specific
+%             % implementation method.  Typically called just after the task
+%             % ends.  Also includes logic to make sure the implementation
+%             % method only gets called once, even if this method is called
+%             % multiple times in succession.
+%             %
+%             % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
+%             % variables with references to this object, the object may become invalid after
+%             % these sets.  Call this method last in any method where it is used.
+% 
+% %             if isa(self,'ws.ni.AnalogInputTask') ,
+% %                 fprintf('Task::unregisterCallbacks()\n');
+% %             end
+% 
+%             %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
+%             
+%             if (self.RegistrationCount_>0) ,            
+%                 self.RegistrationCount_ = self.RegistrationCount_ - 1;            
+%                 if self.RegistrationCount_ == 0
+%                     self.unregisterCallbacksImplementation();
+%                 end
+%             end
+%         end
         
         function debug(self) %#ok<MANU>
             keyboard
@@ -310,7 +317,7 @@ classdef FiniteAnalogOutputTask < handle
             end
             
             self.SampleRate_ = value;
-        end
+        end  % function
         
         function out = get.TaskName(self)
             if isempty(self.DabsDaqTask_) ,
@@ -318,7 +325,7 @@ classdef FiniteAnalogOutputTask < handle
             else
                 out = self.DabsDaqTask_.taskName;
             end
-        end
+        end  % function
         
 %         function set.TriggerDelegate(self, value)
 %             if  isequal(value,[]) || ( isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value) )  ,
@@ -359,64 +366,68 @@ classdef FiniteAnalogOutputTask < handle
             value = self.TriggerEdge_ ;
         end  % function                
         
-        function unreserve(self)
-            % Unreserves NI-DAQmx resources currently reserved by the task
-            if ~isempty(self.DabsDaqTask_) ,
-                self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
-            end
-        end
+%         function unreserve(self)
+%             % Unreserves NI-DAQmx resources currently reserved by the task
+%             if ~isempty(self.DabsDaqTask_) ,
+%                 self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
+%             end
+%         end
         
-        function setup(self)
+        function arm(self)
             % called before the first call to start()            
 %             %fprintf('FiniteAnalogOutputTask::setup()\n');
-%             nScans = size(self.ChannelData_,1) ;
-%             if nScans < 2 ,
-%                 % Cannot setup a finite analog output task with less than 2 samples per channel
-%                 return
-%             end
-%             
-%             %assert(nScans > 1, 'Can not setup a finite analog output task with less than 2 samples per channel.');
-%             
-%             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
-%             
-%             if bufSize ~= nScans
-%                 self.DabsDaqTask_.cfgOutputBuffer(nScans);
-%             end
-%             
-%             self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', nScans);
+            if self.IsArmed_ ,
+                return
+            end
 
+            % Set up callbacks
+            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
+            
+            % Set up triggering
             if ~isempty(self.TriggerPFIID)
                 self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
             else
                 self.DabsDaqTask_.disableStartTrig();
             end
             
-%             self.DabsDaqTask_.reset('writeRelativeTo');
-%             self.DabsDaqTask_.reset('writeOffset');
-%             self.DabsDaqTask_.writeAnalogData(self.ChannelData);
+            % Note that we are now armed
+            self.IsArmed_ = true;
         end
 
-        function reset(self)
-%             % called before the second and subsequent calls to start()
-%             %fprintf('FiniteAnalogOutputTask::reset()\n');
-%             nScans = size(self.ChannelData_,1) ;
-%             if nScans < 2 ,
-%                 % Cannot setup a finite analog output task with less than 2 samples per channel
-%                 return
-%             end
-%             
-%             assert(nScans > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
-%             
-%             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
-%             
-%             if bufSize ~= nScans ,
-%                 self.DabsDaqTask_.cfgOutputBuffer(nScans);
-%             end
-%             
-%             self.DabsDaqTask_.reset('writeRelativeTo');
-%             self.DabsDaqTask_.reset('writeOffset');
-%             self.DabsDaqTask_.writeAnalogData(self.ChannelData);
+        function disarm(self)
+            if self.IsArmed_ ,            
+                % Unregister callbacks
+                self.DabsDaqTask_.doneEventCallbacks = {};
+
+                % Unreserve resources
+                self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
+                
+                % Note that we are now disarmed
+                self.IsArmed_ = false;
+            end
         end
+        
+%         function reset(self)
+% %             % called before the second and subsequent calls to start()
+% %             %fprintf('FiniteAnalogOutputTask::reset()\n');
+% %             nScans = size(self.ChannelData_,1) ;
+% %             if nScans < 2 ,
+% %                 % Cannot setup a finite analog output task with less than 2 samples per channel
+% %                 return
+% %             end
+% %             
+% %             assert(nScans > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
+% %             
+% %             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
+% %             
+% %             if bufSize ~= nScans ,
+% %                 self.DabsDaqTask_.cfgOutputBuffer(nScans);
+% %             end
+% %             
+% %             self.DabsDaqTask_.reset('writeRelativeTo');
+% %             self.DabsDaqTask_.reset('writeOffset');
+% %             self.DabsDaqTask_.writeAnalogData(self.ChannelData);
+%         end
         
     end
     
@@ -453,13 +464,13 @@ classdef FiniteAnalogOutputTask < handle
 %             self.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
 %         end
         
-        function registerCallbacksImplementation(self)
-            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-        end
-        
-        function unregisterCallbacksImplementation(self)
-            self.DabsDaqTask_.doneEventCallbacks = {};
-        end        
+%         function registerCallbacksImplementation(self)
+%             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
+%         end
+%         
+%         function unregisterCallbacksImplementation(self)
+%             self.DabsDaqTask_.doneEventCallbacks = {};
+%         end        
     end
 
     methods (Access = protected)
