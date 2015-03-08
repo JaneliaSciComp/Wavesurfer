@@ -1,6 +1,4 @@
-classdef AnalogInputTask < ws.ni.AnalogTask
-    %FINITEACQUISITION Finite acquisition class for dabs MATLAB DAQmx interface.
-    %
+classdef AnalogInputTask < handle
     %   The AnalogInputTask provides a high level interface around the dabs DAQmx
     %   classes for finite sample acquisition using channels from a single board.
     %
@@ -20,6 +18,153 @@ classdef AnalogInputTask < ws.ni.AnalogTask
     %   on the underlying task, such as stop(), are handled automically.
     %   AnalogInputTask does provide an abort() method to interrupt a running
     %   task.
+    
+    properties (Transient = true, Dependent = true, SetAccess = immutable)
+        AreCallbacksRegistered
+    end
+    
+    properties (Transient = true, Access = protected)
+        DabsDaqTask_ = [];
+    end
+    
+    properties (Access = protected)
+        RegistrationCount_ = 0;  
+            % Roughly, the number of times registerCallbacks() has been
+            % called, minus the number of times unregisterCallbacks() has
+            % been called Used to make sure the callbacks are only
+            % registered once even if registerCallbacks() is called
+            % multiple times in succession.
+    end
+    
+    methods
+        function delete(obj)
+            %obj.unregisterCallbacks();
+            if ~isempty(obj.DabsDaqTask_) && obj.DabsDaqTask_.isvalid() ,
+                delete(obj.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            end
+            obj.DabsDaqTask_=[];
+        end
+        
+        function out = get.AreCallbacksRegistered(self)
+            out = self.RegistrationCount_ > 0;
+        end
+        
+%         function setup(self) %#ok<MANU>
+%             % called before the first call to start()
+%         end
+%         
+%         function reset(self) %#ok<MANU>
+%             % called before the second and subsequent calls to start()
+%         end
+        
+        function start(obj)
+%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%                 %fprintf('About to start FiniteAnalogOutputTask.\n');
+%                 %obj
+%                 %dbstack
+%             end               
+            if ~isempty(obj.DabsDaqTask_)
+                %obj.getReadyGetSet();
+                obj.DabsDaqTask_.start();
+            end
+        end
+        
+%         function retrigger(obj)
+%             % Convenience method for caller to not have to check with this particular object
+%             % (the associated hardware) supports hardware retriggering.  Call start() if
+%             % needed otherwise no-op.
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('Task::retrigger()\n');
+%             end
+%             if ~isempty(obj.DabsDaqTask_)
+%                 isRetrigger=true;
+%                 obj.getReadyGetSet(isRetrigger);
+%                 obj.DabsDaqTask_.start();
+%             end
+%         end
+        
+        function abort(obj)
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('AnalogInputTask::abort()\n');
+%             end
+%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%                 fprintf('FiniteAnalogOutputTask::abort()\n');
+%             end
+            if ~isempty(obj.DabsDaqTask_)
+                obj.DabsDaqTask_.abort();
+            end
+        end
+        
+        function stop(obj)
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('AnalogInputTask::stop()\n');
+%             end
+%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%                 fprintf('FiniteAnalogOutputTask::stop()\n');
+%             end
+            if ~isempty(obj.DabsDaqTask_) && ~obj.DabsDaqTask_.isTaskDoneQuiet()
+                obj.DabsDaqTask_.stop();
+            end
+        end
+        
+        function registerCallbacks(obj)
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('Task::registerCallbacks()\n');
+%             end
+            % Public method that causes the every-n-samples callbacks (and
+            % others) to be set appropriately for the
+            % acquisition/stimulation task.  This calls a subclass-specific
+            % implementation method.  Typically called just before starting
+            % the task. Also includes logic to make sure the implementation
+            % method only gets called once, even if this method is called
+            % multiple times in succession.
+            if obj.RegistrationCount_ == 0
+                obj.registerCallbacksImplementation();
+            end
+            obj.RegistrationCount_ = obj.RegistrationCount_ + 1;
+        end
+        
+        function unregisterCallbacks(obj)
+            % Public method that causes the every-n-samples callbacks (and
+            % others) to be cleared.  This calls a subclass-specific
+            % implementation method.  Typically called just after the task
+            % ends.  Also includes logic to make sure the implementation
+            % method only gets called once, even if this method is called
+            % multiple times in succession.
+            %
+            % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
+            % variables with references to this object, the object may become invalid after
+            % these sets.  Call this method last in any method where it is used.
+
+%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%                 fprintf('Task::unregisterCallbacks()\n');
+%             end
+
+            %assert(obj.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
+            
+            if (obj.RegistrationCount_>0) ,            
+                obj.RegistrationCount_ = obj.RegistrationCount_ - 1;            
+                if obj.RegistrationCount_ == 0
+                    obj.unregisterCallbacksImplementation();
+                end
+            end
+        end
+        
+        function debug(self) %#ok<MANU>
+            keyboard
+        end        
+    end
+    
+%     methods (Access = protected)
+% %         function registerCallbacksImplementation(~)
+% %         end
+% %         
+% %         function unregisterCallbacksImplementation(~)
+% %         end
+%         
+%         function getReadyGetSet(self, isRetrigger) %#ok<INUSD>
+%         end
+%     end
     
     properties (Dependent = true, SetAccess = immutable)
         % These are all set in the constructor, and not changed
@@ -104,9 +249,9 @@ classdef AnalogInputTask < ws.ni.AnalogTask
             
             % Create the task, channels
             if nChannels==0 ,
-                self.prvDaqTask = [];
+                self.DabsDaqTask_ = [];
             else
-                self.prvDaqTask = ws.dabs.ni.daqmx.Task(taskName);
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
                 
                 % Sort out the devices, and the channelIndices and channelNames
                 % that go with each
@@ -117,18 +262,18 @@ classdef AnalogInputTask < ws.ni.AnalogTask
                     channelIndicesForThisDevice = channelIndices(isForThisDevice);
                     channelNamesForThisDevice = channelNames(isForThisDevice);
                     % create the channels
-                    self.prvDaqTask.createAIVoltageChan(deviceName, channelIndicesForThisDevice, channelNamesForThisDevice);
+                    self.DabsDaqTask_.createAIVoltageChan(deviceName, channelIndicesForThisDevice, channelNamesForThisDevice);
                 end
                 
                 % Set the timing mode
-                self.prvDaqTask.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');  % do we need this?  This stuff is set in setup()...
+                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');  % do we need this?  This stuff is set in setup()...
             end
             
             self.ActiveChannels = self.AvailableChannels;            
         end  % function
         
         % Shouldn't there be a delete() method to at least free up
-        % prvDaqTask?  Don't need one, that's handled by the superclass.
+        % DabsDaqTask_?  Don't need one, that's handled by the superclass.
         
         function value = get.AvailableChannels(obj)
             value = obj.AvailableChannels_;
@@ -150,7 +295,7 @@ classdef AnalogInputTask < ws.ni.AnalogTask
                 ws.most.mimics.warning('Wavesurfer:Aqcuisition:invalidChannels', 'Not all requested channels are available.\n');
             end
             
-            if ~isempty(self.prvDaqTask)
+            if ~isempty(self.DabsDaqTask_)
                 channelsToRead = '';
                 
                 for cdx = availableActive
@@ -160,7 +305,7 @@ classdef AnalogInputTask < ws.ni.AnalogTask
                 
                 channelsToRead = channelsToRead(1:end-2);
                 
-                set(self.prvDaqTask, 'readChannelsToRead', channelsToRead);
+                set(self.DabsDaqTask_, 'readChannelsToRead', channelsToRead);
             end
             
             self.ActiveChannels_ = availableActive;
@@ -180,8 +325,8 @@ classdef AnalogInputTask < ws.ni.AnalogTask
 %         end  % function
         
         function out = get.ChannelNames(self)
-            if ~isempty(self.prvDaqTask)
-                c = self.prvDaqTask.channels;
+            if ~isempty(self.DabsDaqTask_)
+                c = self.DabsDaqTask_.channels;
                 out = {c.chanName};
             else
                 out = {};
@@ -189,8 +334,8 @@ classdef AnalogInputTask < ws.ni.AnalogTask
         end  % function
         
         function out = get.DeviceNames(self)
-            if ~isempty(self.prvDaqTask)
-                out = self.prvDaqTask.deviceNames;
+            if ~isempty(self.DabsDaqTask_)
+                out = self.DabsDaqTask_.deviceNames;
             else
                 out = {};
             end
@@ -210,13 +355,13 @@ classdef AnalogInputTask < ws.ni.AnalogTask
                       'SampleRate must be a positive integer');       
             end            
             
-            if ~isempty(obj.prvDaqTask)
-                oldSampClkRate = obj.prvDaqTask.sampClkRate;
-                obj.prvDaqTask.sampClkRate = value;
+            if ~isempty(obj.DabsDaqTask_)
+                oldSampClkRate = obj.DabsDaqTask_.sampClkRate;
+                obj.DabsDaqTask_.sampClkRate = value;
                 try
-                    obj.prvDaqTask.control('DAQmx_Val_Task_Verify');
+                    obj.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
                 catch me
-                    obj.prvDaqTask.sampClkRate = oldSampClkRate;
+                    obj.DabsDaqTask_.sampClkRate = oldSampClkRate;
                     % This will put the sampleRate property in sync with the hardware, but it will
                     % be an odd artifact that the sampleRate value did not change to the reqested,
                     % but to something else.  This can be fixed by doing a verify when first setting
@@ -250,8 +395,8 @@ classdef AnalogInputTask < ws.ni.AnalogTask
         end  % function
         
         function out = get.TaskName(self)
-            if ~isempty(self.prvDaqTask)
-                out = self.prvDaqTask.taskName;
+            if ~isempty(self.DabsDaqTask_)
+                out = self.DabsDaqTask_.taskName;
             else
                 out = '';
             end
@@ -297,22 +442,22 @@ classdef AnalogInputTask < ws.ni.AnalogTask
             %fprintf('AnalogInputTask::setup()\n');
             switch obj.ClockTiming ,
                 case ws.ni.SampleClockTiming.FiniteSamples
-                    obj.prvDaqTask.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_FiniteSamps', obj.ExpectedScanCount);
+                    obj.DabsDaqTask_.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_FiniteSamps', obj.ExpectedScanCount);
                 case ws.ni.SampleClockTiming.ContinuousSamples
                     if isinf(obj.ExpectedScanCount)
                         bufferSize = obj.SampleRate_; % Default to 1 second of data as the buffer.
                     else
                         bufferSize = obj.ExpectedScanCount;
                     end
-                    obj.prvDaqTask.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+                    obj.DabsDaqTask_.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
                 otherwise
                     assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
             end
 
             if ~isempty(obj.TriggerDelegate)
-                obj.prvDaqTask.cfgDigEdgeStartTrig(sprintf('PFI%d', obj.TriggerDelegate.PFIID), obj.TriggerDelegate.Edge.daqmxName());
+                obj.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', obj.TriggerDelegate.PFIID), obj.TriggerDelegate.Edge.daqmxName());
             else
-                obj.prvDaqTask.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
+                obj.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
             end                
         end  % function
 
@@ -335,18 +480,18 @@ classdef AnalogInputTask < ws.ni.AnalogTask
         
         function registerCallbacksImplementation(self)
             if self.DurationPerDataAvailableCallback > 0
-                self.prvDaqTask.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
+                self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
                   % This registers the callback function that is called
                   % when self.NScansPerDataAvailableCallback samples are
                   % available
             end
             
-            self.prvDaqTask.doneEventCallbacks = {@self.taskDone_};
+            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
         end  % function
         
         function unregisterCallbacksImplementation(obj)
-            obj.prvDaqTask.registerEveryNSamplesEvent([]);
-            obj.prvDaqTask.doneEventCallbacks = {};
+            obj.DabsDaqTask_.registerEveryNSamplesEvent([]);
+            obj.DabsDaqTask_.doneEventCallbacks = {};
         end  % function
         
     end  % protected methods block
@@ -364,7 +509,7 @@ classdef AnalogInputTask < ws.ni.AnalogTask
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Acquisition object.
-            self.prvDaqTask.abort();
+            self.DabsDaqTask_.abort();
             
             % Fire the event before unregistering the callback functions.  At the end of a
             % script the DAQmx callbacks may be the only references preventing the object
@@ -380,18 +525,18 @@ classdef AnalogInputTask < ws.ni.AnalogTask
 %             end
 %             
 %             if ~isempty(device) && ~isempty(self.AvailableChannels)
-%                 self.prvDaqTask = ws.dabs.ni.daqmx.Task(taskName);
-%                 self.prvDaqTask.createAIVoltageChan(device, self.AvailableChannels, channelNames);
-%                 self.prvDaqTask.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
+%                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+%                 self.DabsDaqTask_.createAIVoltageChan(device, self.AvailableChannels, channelNames);
+%                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
 %                 
 %                 % Use hardware retriggering, if possible.  For boards that do support this
 %                 % property, a start trigger must be defined in order to query the value without
 %                 % error.
-%                 self.prvDaqTask.cfgDigEdgeStartTrig('PFI1', ws.ni.TriggerEdge.Rising.daqmxName());
-%                 self.isRetriggerable = ~isempty(get(self.prvDaqTask, 'startTrigRetriggerable'));
-%                 self.prvDaqTask.disableStartTrig();
+%                 self.DabsDaqTask_.cfgDigEdgeStartTrig('PFI1', ws.ni.TriggerEdge.Rising.daqmxName());
+%                 self.isRetriggerable = ~isempty(get(self.DabsDaqTask_, 'startTrigRetriggerable'));
+%                 self.DabsDaqTask_.disableStartTrig();
 %             else
-%                 self.prvDaqTask = [];
+%                 self.DabsDaqTask_ = [];
 %             end
 %             
 %             self.ActiveChannels = self.AvailableChannels;
