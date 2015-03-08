@@ -38,7 +38,7 @@ classdef FiniteAnalogOutputTask < handle
     
     properties (Dependent = true, SetAccess = immutable)
         OutputDuration
-        OutputSampleCount
+        %OutputSampleCount
     end
     
     % Read-only properties.
@@ -239,7 +239,7 @@ classdef FiniteAnalogOutputTask < handle
 %                 value = zeros(0, length(self.AvailableChannels));
 % %             elseif size(self.ChannelData_, 2) < numel(self.AvailableChannels)
 % %                 channelDiff = numel(self.AvailableChannels) - size(self.ChannelData_, 2);
-% %                 value = [self.ChannelData_, zeros(self.OutputSampleCount, channelDiff)];
+% %                 value = [self.ChannelData_, zeros(size(self.ChannelData_,1), channelDiff)];
 %             else
 %                 value = self.ChannelData_;
 %             end
@@ -273,12 +273,12 @@ classdef FiniteAnalogOutputTask < handle
         end
         
         function value = get.OutputDuration(self)
-            value = self.OutputSampleCount * self.SampleRate;
+            value = size(self.ChannelData_,1) * self.SampleRate;
         end
         
-        function value = get.OutputSampleCount(self)
-            value = size(self.ChannelData_, 1);
-        end
+%         function value = get.OutputSampleCount(self)
+%             value = size(self.ChannelData_, 1);
+%         end
         
         function value = get.SampleRate(self)
             value = self.SampleRate_;
@@ -368,19 +368,21 @@ classdef FiniteAnalogOutputTask < handle
         function setup(self)
             % called before the first call to start()            
             %fprintf('FiniteAnalogOutputTask::setup()\n');
-            if self.OutputSampleCount == 0
+            nScans = size(self.ChannelData_,1) ;
+            if nScans < 2 ,
+                % Cannot setup a finite analog output task with less than 2 samples per channel
                 return
             end
             
-            assert(self.OutputSampleCount > 1, 'Can not setup a finite analog output task with less than 2 samples per channel.');
+            %assert(nScans > 1, 'Can not setup a finite analog output task with less than 2 samples per channel.');
             
             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
             
-            if bufSize ~= self.OutputSampleCount
-                self.DabsDaqTask_.cfgOutputBuffer(self.OutputSampleCount);
+            if bufSize ~= nScans
+                self.DabsDaqTask_.cfgOutputBuffer(nScans);
             end
             
-            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.OutputSampleCount);
+            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', nScans);
 
             if ~isempty(self.TriggerPFIID)
                 self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
@@ -396,16 +398,18 @@ classdef FiniteAnalogOutputTask < handle
         function reset(self)
             % called before the second and subsequent calls to start()
             %fprintf('FiniteAnalogOutputTask::reset()\n');
-            if self.OutputSampleCount == 0
+            nScans = size(self.ChannelData_,1) ;
+            if nScans < 2 ,
+                % Cannot setup a finite analog output task with less than 2 samples per channel
                 return
             end
             
-            assert(self.OutputSampleCount > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
+            assert(nScans > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
             
             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
             
-            if bufSize ~= self.OutputSampleCount ,
-                self.DabsDaqTask_.cfgOutputBuffer(self.OutputSampleCount);
+            if bufSize ~= nScans ,
+                self.DabsDaqTask_.cfgOutputBuffer(nScans);
             end
             
             self.DabsDaqTask_.reset('writeRelativeTo');
