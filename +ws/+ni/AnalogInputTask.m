@@ -168,7 +168,7 @@ classdef AnalogInputTask < handle
     
     properties (Dependent = true, SetAccess = immutable)
         % These are all set in the constructor, and not changed
-        DeviceNames
+        DeviceName
         AvailableChannels  % Zero-based AI channel IDs, all of them
         TaskName
         ChannelNames
@@ -205,7 +205,7 @@ classdef AnalogInputTask < handle
     end
     
     methods
-        function self = AnalogInputTask(deviceNames, channelIndices, taskName, channelNames)
+        function self = AnalogInputTask(deviceName, channelIndices, taskName, channelNames)
             nChannels=length(channelIndices);
             
             %self.AvailableChannels = channelIndices;
@@ -216,18 +216,18 @@ classdef AnalogInputTask < handle
                       'AvailableChannels must be empty or a vector of nonnegative integers.');       
             end
 
-            % Convert deviceNames from string to cell array of strings if
-            % needed
-            if ischar(deviceNames) ,
-                deviceNames=repmat({deviceNames},[1 nChannels]);
-            end
+%             % Convert deviceNames from string to cell array of strings if
+%             % needed
+%             if ischar(deviceName) ,
+%                 deviceName=repmat({deviceName},[1 nChannels]);
+%             end
             
-            % Check that deviceNames is kosher
-            if  iscellstr(deviceNames) && length(deviceNames)==nChannels ,
+            % Check that deviceName is kosher
+            if ischar(deviceName) && (isempty(deviceName) || isrow(deviceName)) ,
                 % do nothing
             else
-                error('AnalogInputTask:deviceNamesBad' , ...
-                      'deviceNames is wrong type or wrong length.');
+                error('AnalogInputTask:deviceNameBad' , ...
+                      'deviceName is wrong type or not a row vector.');
             end
             
             % Use default channel names, if needed
@@ -243,7 +243,7 @@ classdef AnalogInputTask < handle
                 % Use default channelNames
                 channelNames = cell(1,nChannels) ;
                 for i=1:nChannels ,
-                    channelNames{i} = sprintf('%s/ai%s',deviceNames{i},channelIndices(i));
+                    channelNames{i} = sprintf('%s/ai%s',deviceName,channelIndices(i));
                 end
             end
             
@@ -253,17 +253,8 @@ classdef AnalogInputTask < handle
             else
                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
                 
-                % Sort out the devices, and the channelIndices and channelNames
-                % that go with each
-                uniqueDeviceNames=unique(deviceNames);
-                for i=1:length(uniqueDeviceNames) ,
-                    deviceName=uniqueDeviceNames{i};
-                    isForThisDevice=strcmp(deviceName,deviceNames);
-                    channelIndicesForThisDevice = channelIndices(isForThisDevice);
-                    channelNamesForThisDevice = channelNames(isForThisDevice);
-                    % create the channels
-                    self.DabsDaqTask_.createAIVoltageChan(deviceName, channelIndicesForThisDevice, channelNamesForThisDevice);
-                end
+                % create the channels
+                self.DabsDaqTask_.createAIVoltageChan(deviceName, channelIndices, channelNames);
                 
                 % Set the timing mode
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');  % do we need this?  This stuff is set in setup()...
@@ -333,11 +324,11 @@ classdef AnalogInputTask < handle
             end
         end  % function
         
-        function out = get.DeviceNames(self)
+        function out = get.DeviceName(self)
             if ~isempty(self.DabsDaqTask_)
-                out = self.DabsDaqTask_.deviceNames;
+                out = self.DabsDaqTask_.deviceNames{1};
             else
-                out = {};
+                out = '';
             end
         end  % function
         

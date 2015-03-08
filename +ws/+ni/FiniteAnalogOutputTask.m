@@ -188,24 +188,18 @@ classdef FiniteAnalogOutputTask < handle
     end
     
     methods
-        function self = FiniteAnalogOutputTask(deviceNames, channelIndices, taskName, channelNames)
+        function self = FiniteAnalogOutputTask(deviceName, channelIndices, taskName, channelNames)
             % aoChannelIndices should be zero-based
             
             nChannels=length(channelIndices);
             self.AvailableChannels = channelIndices;
-
-            % Convert deviceNames from string to cell array of strings if
-            % needed
-            if ischar(deviceNames) ,
-                deviceNames=repmat({deviceNames},[1 nChannels]);
-            end
             
             % Check that deviceNames is kosher
-            if  iscellstr(deviceNames) && length(deviceNames)==nChannels ,
+            if ischar(deviceName) && (isempty(deviceName) || isrow(deviceName)) ,
                 % do nothing
             else
-                error('FiniteAnalogOutputTask:deviceNamesBad' , ...
-                      'deviceNames is wrong type or wrong length.');
+                error('FiniteAnalogOutputTask:deviceNameBad' , ...
+                      'deviceName is wrong type or wrong shape.');
             end
             
             % Use default channel names, if needed
@@ -221,28 +215,18 @@ classdef FiniteAnalogOutputTask < handle
                 % Use default channelNames
                 channelNames = cell(1,nChannels) ;
                 for i=1:nChannels ,
-                    channelNames{i} = sprintf('%s/ao%s',deviceNames{i},channelIndices(i));
+                    channelNames{i} = sprintf('%s/ao%s',deviceName,channelIndices(i));
                 end
             end
-                        
+            
             % Create the task, channels
             if nChannels==0 ,
                 self.DabsDaqTask_ = [];
             else
                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
 
-                % Sort out the devices, and the channelIndices and channelNames
-                % that go with each
-                uniqueDeviceNames=unique(deviceNames);
-                for i=1:length(uniqueDeviceNames) ,
-                    deviceName=uniqueDeviceNames{i};
-                    isForThisDevice=strcmp(deviceName,deviceNames);
-                    channelIndicesForThisDevice = channelIndices(isForThisDevice);
-                    channelNamesForThisDevice = channelNames(isForThisDevice);
-                    % create the channels
-                    self.DabsDaqTask_.createAOVoltageChan(deviceName, channelIndicesForThisDevice, channelNamesForThisDevice);
-                end
-                %self.DabsDaqTask_.createAOVoltageChan(deviceNames, channelIndices, channelNames);
+                % create the channels
+                self.DabsDaqTask_.createAOVoltageChan(deviceNames, channelIndices, channelNames);
                 
                 % Set the timing mode
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
