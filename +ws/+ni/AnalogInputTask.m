@@ -27,14 +27,14 @@ classdef AnalogInputTask < handle
         DabsDaqTask_ = [];
     end
     
-    properties (Access = protected)
-        RegistrationCount_ = 0;  
-            % Roughly, the number of times registerCallbacks() has been
-            % called, minus the number of times unregisterCallbacks() has
-            % been called Used to make sure the callbacks are only
-            % registered once even if registerCallbacks() is called
-            % multiple times in succession.
-    end
+%     properties (Access = protected)
+%         RegistrationCount_ = 0;  
+%             % Roughly, the number of times registerCallbacks() has been
+%             % called, minus the number of times unregisterCallbacks() has
+%             % been called Used to make sure the callbacks are only
+%             % registered once even if registerCallbacks() is called
+%             % multiple times in succession.
+%     end
     
     properties (Dependent = true, SetAccess = immutable)
         % These are all set in the constructor, and not changed
@@ -42,6 +42,7 @@ classdef AnalogInputTask < handle
         AvailableChannels  % Zero-based AI channel IDs, all of them
         TaskName
         ChannelNames
+        IsArmed
     end
 
     properties (Dependent = true, SetAccess = immutable)
@@ -71,6 +72,7 @@ classdef AnalogInputTask < handle
         %TriggerDelegate_ = []  % empty or a trigger Destination or a trigger Source
         TriggerPFIID_
         TriggerEdge_
+        IsArmed_ = false
     end
     
     events
@@ -97,9 +99,11 @@ classdef AnalogInputTask < handle
 %                 %self
 %                 %dbstack
 %             end               
-            if ~isempty(self.DabsDaqTask_)
-                %self.getReadyGetSet();
-                self.DabsDaqTask_.start();
+            if self.IsArmed ,
+                if ~isempty(self.DabsDaqTask_) ,
+                    %self.getReadyGetSet();
+                    self.DabsDaqTask_.start();
+                end
             end
         end
                 
@@ -127,48 +131,48 @@ classdef AnalogInputTask < handle
             end
         end
         
-        function registerCallbacks(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('Task::registerCallbacks()\n');
+%         function registerCallbacks(self)
+% %             if isa(self,'ws.ni.AnalogInputTask') ,
+% %                 fprintf('Task::registerCallbacks()\n');
+% %             end
+%             % Public method that causes the every-n-samples callbacks (and
+%             % others) to be set appropriately for the
+%             % acquisition/stimulation task.  This calls a subclass-specific
+%             % implementation method.  Typically called just before starting
+%             % the task. Also includes logic to make sure the implementation
+%             % method only gets called once, even if this method is called
+%             % multiple times in succession.
+%             if self.RegistrationCount_ == 0
+%                 self.registerCallbacksImplementation();
 %             end
-            % Public method that causes the every-n-samples callbacks (and
-            % others) to be set appropriately for the
-            % acquisition/stimulation task.  This calls a subclass-specific
-            % implementation method.  Typically called just before starting
-            % the task. Also includes logic to make sure the implementation
-            % method only gets called once, even if this method is called
-            % multiple times in succession.
-            if self.RegistrationCount_ == 0
-                self.registerCallbacksImplementation();
-            end
-            self.RegistrationCount_ = self.RegistrationCount_ + 1;
-        end
+%             self.RegistrationCount_ = self.RegistrationCount_ + 1;
+%         end
         
-        function unregisterCallbacks(self)
-            % Public method that causes the every-n-samples callbacks (and
-            % others) to be cleared.  This calls a subclass-specific
-            % implementation method.  Typically called just after the task
-            % ends.  Also includes logic to make sure the implementation
-            % method only gets called once, even if this method is called
-            % multiple times in succession.
-            %
-            % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
-            % variables with references to this object, the object may become invalid after
-            % these sets.  Call this method last in any method where it is used.
-
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('Task::unregisterCallbacks()\n');
+%         function unregisterCallbacks(self)
+%             % Public method that causes the every-n-samples callbacks (and
+%             % others) to be cleared.  This calls a subclass-specific
+%             % implementation method.  Typically called just after the task
+%             % ends.  Also includes logic to make sure the implementation
+%             % method only gets called once, even if this method is called
+%             % multiple times in succession.
+%             %
+%             % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
+%             % variables with references to this object, the object may become invalid after
+%             % these sets.  Call this method last in any method where it is used.
+% 
+% %             if isa(self,'ws.ni.AnalogInputTask') ,
+% %                 fprintf('Task::unregisterCallbacks()\n');
+% %             end
+% 
+%             %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
+%             
+%             if (self.RegistrationCount_>0) ,            
+%                 self.RegistrationCount_ = self.RegistrationCount_ - 1;            
+%                 if self.RegistrationCount_ == 0
+%                     self.unregisterCallbacksImplementation();
+%                 end
 %             end
-
-            %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
-            
-            if (self.RegistrationCount_>0) ,            
-                self.RegistrationCount_ = self.RegistrationCount_ - 1;            
-                if self.RegistrationCount_ == 0
-                    self.unregisterCallbacksImplementation();
-                end
-            end
-        end
+%         end
         
         function debug(self) %#ok<MANU>
             keyboard
@@ -234,8 +238,9 @@ classdef AnalogInputTask < handle
             self.ActiveChannels = self.AvailableChannels;            
         end  % function
         
-        % Shouldn't there be a delete() method to at least free up
-        % DabsDaqTask_?  Don't need one, that's handled by the superclass.
+        function value = get.IsArmed(self)
+            value = self.IsArmed_;
+        end  % function
         
         function value = get.AvailableChannels(self)
             value = self.AvailableChannels_;
@@ -430,9 +435,23 @@ classdef AnalogInputTask < handle
             value = self.ClockTiming_ ;
         end  % function                
         
-        function setup(self)
-            % called before the first call to start()
+        function arm(self)
+            % Must be called before the first call to start()
             %fprintf('AnalogInputTask::setup()\n');
+            if self.IsArmed ,
+                return
+            end
+
+            % Register callbacks
+            if self.DurationPerDataAvailableCallback > 0 ,
+                self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
+                  % This registers the callback function that is called
+                  % when self.NScansPerDataAvailableCallback samples are
+                  % available
+            end            
+            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
+
+            % Set up timing
             switch self.ClockTiming ,
                 case ws.ni.SampleClockTiming.FiniteSamples
                     self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
@@ -446,49 +465,52 @@ classdef AnalogInputTask < handle
                 otherwise
                     assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
             end
-
+            
+            % Set up triggering
             if ~isempty(self.TriggerPFIID)
                 self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
             else
                 self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
-            end                
+            end        
+            
+            % Note that we are now armed
+            self.IsArmed_ = true;
         end  % function
 
-        function reset(self) %#ok<MANU>
-            % called before the second and subsequent calls to start()
-            %fprintf('AnalogInputTask::reset()\n');                        
-            % Don't have to do anything to reset a finite input analog task
-        end  % function
+        function disarm(self)
+            if self.IsArmed ,
+                % Unregister callbacks
+                self.DabsDaqTask_.registerEveryNSamplesEvent([]);
+                self.DabsDaqTask_.doneEventCallbacks = {};
+                self.IsArmed_ = false;            
+            end
+        end
+        
+%         function reset(self) %#ok<MANU>
+%             % called before the second and subsequent calls to start()
+%             %fprintf('AnalogInputTask::reset()\n');                        
+%             % Don't have to do anything to reset a finite input analog task
+%         end  % function
     end
     
-    methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.ni.AnalogTask(self);
-%             self.setPropertyAttributeFeatures('ActiveChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
-%             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
-%             self.setPropertyAttributeFeatures('AcquisitionDuration', 'Attributes', {'positive', 'scalar'});            
-%             self.setPropertyAttributeFeatures('DurationPerDataAvailableCallback', 'Attributes', {'nonnegative', 'scalar'});
-%             self.setPropertyAttributeFeatures('TriggerDelegate', 'Classes', 'ws.ni.HasPFIIDAndEdge', 'Attributes', 'scalar', 'AllowEmpty', true);          
-%             self.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
+%     methods (Access = protected)
+%         function registerCallbacksImplementation(self)
+%             if self.DurationPerDataAvailableCallback > 0 ,
+%                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
+%                   % This registers the callback function that is called
+%                   % when self.NScansPerDataAvailableCallback samples are
+%                   % available
+%             end
+%             
+%             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
 %         end  % function
-        
-        function registerCallbacksImplementation(self)
-            if self.DurationPerDataAvailableCallback > 0 ,
-                self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
-                  % This registers the callback function that is called
-                  % when self.NScansPerDataAvailableCallback samples are
-                  % available
-            end
-            
-            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-        end  % function
-        
-        function unregisterCallbacksImplementation(self)
-            self.DabsDaqTask_.registerEveryNSamplesEvent([]);
-            self.DabsDaqTask_.doneEventCallbacks = {};
-        end  % function
-        
-    end  % protected methods block
+%         
+%         function unregisterCallbacksImplementation(self)
+%             self.DabsDaqTask_.registerEveryNSamplesEvent([]);
+%             self.DabsDaqTask_.doneEventCallbacks = {};
+%         end  % function
+%         
+%     end  % protected methods block
     
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>

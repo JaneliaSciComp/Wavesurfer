@@ -511,8 +511,6 @@ classdef Acquisition < ws.system.Subsystem
             end
 %             end
             
-            self.AnalogInputTask_.registerCallbacks();
-            
             if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) , %|| experimentMode == ws.ApplicationState.TestPulsing
                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
@@ -529,6 +527,9 @@ classdef Acquisition < ws.system.Subsystem
             else
                 self.RawDataCache_ = [];                
             end
+            
+            % Arm the AI task
+            self.AnalogInputTask_.arm();
         end  % function
         
         function didPerformExperiment(self, wavesurferModel)
@@ -543,24 +544,25 @@ classdef Acquisition < ws.system.Subsystem
     methods (Access = protected)
         function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
             if ~isempty(self.AnalogInputTask_) ,
-                self.AnalogInputTask_.unregisterCallbacks();
+                %self.AnalogInputTask_.unregisterCallbacks();
+                self.AnalogInputTask_.disarm();
             end            
             self.IsArmedOrAcquiring = false;            
         end
     end
     
     methods
-        function willPerformTrial(self, wavesurferModel)
+        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %fprintf('Acquisition::willPerformTrial()\n');
             self.IsArmedOrAcquiring = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
-            if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
-                self.AnalogInputTask_.setup();
-            else
-                self.AnalogInputTask_.reset();  % this doesn't actually do anything for a FiniteAnalogOutputTask...
-            end                
+%             if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
+%                 self.AnalogInputTask_.arm();
+%             else
+%                 %self.AnalogInputTask_.reset();  % this doesn't actually do anything for a FiniteAnalogInputTask...
+%             end                
             self.AnalogInputTask_.start();
         end  % function
         
