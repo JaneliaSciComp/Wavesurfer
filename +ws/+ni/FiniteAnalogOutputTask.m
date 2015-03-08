@@ -258,6 +258,7 @@ classdef FiniteAnalogOutputTask < handle
             nChannels=length(self.AvailableChannels);
             if isa(value,'double') && ismatrix(value) && (size(value,2)==nChannels) ,
                 self.ChannelData_ = value;
+                self.copyChannelDataToOutputBuffer_();
             else
                 error('most:Model:invalidPropVal', ...
                       'ChannelData must be an NxR double matrix, R the number of available channels.');                       
@@ -367,22 +368,22 @@ classdef FiniteAnalogOutputTask < handle
         
         function setup(self)
             % called before the first call to start()            
-            %fprintf('FiniteAnalogOutputTask::setup()\n');
-            nScans = size(self.ChannelData_,1) ;
-            if nScans < 2 ,
-                % Cannot setup a finite analog output task with less than 2 samples per channel
-                return
-            end
-            
-            %assert(nScans > 1, 'Can not setup a finite analog output task with less than 2 samples per channel.');
-            
-            bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
-            
-            if bufSize ~= nScans
-                self.DabsDaqTask_.cfgOutputBuffer(nScans);
-            end
-            
-            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', nScans);
+%             %fprintf('FiniteAnalogOutputTask::setup()\n');
+%             nScans = size(self.ChannelData_,1) ;
+%             if nScans < 2 ,
+%                 % Cannot setup a finite analog output task with less than 2 samples per channel
+%                 return
+%             end
+%             
+%             %assert(nScans > 1, 'Can not setup a finite analog output task with less than 2 samples per channel.');
+%             
+%             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
+%             
+%             if bufSize ~= nScans
+%                 self.DabsDaqTask_.cfgOutputBuffer(nScans);
+%             end
+%             
+%             self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', nScans);
 
             if ~isempty(self.TriggerPFIID)
                 self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
@@ -390,36 +391,59 @@ classdef FiniteAnalogOutputTask < handle
                 self.DabsDaqTask_.disableStartTrig();
             end
             
-            self.DabsDaqTask_.reset('writeRelativeTo');
-            self.DabsDaqTask_.reset('writeOffset');
-            self.DabsDaqTask_.writeAnalogData(self.ChannelData);
+%             self.DabsDaqTask_.reset('writeRelativeTo');
+%             self.DabsDaqTask_.reset('writeOffset');
+%             self.DabsDaqTask_.writeAnalogData(self.ChannelData);
         end
 
         function reset(self)
-            % called before the second and subsequent calls to start()
-            %fprintf('FiniteAnalogOutputTask::reset()\n');
-            nScans = size(self.ChannelData_,1) ;
-            if nScans < 2 ,
-                % Cannot setup a finite analog output task with less than 2 samples per channel
-                return
-            end
-            
-            assert(nScans > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
-            
-            bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
-            
-            if bufSize ~= nScans ,
-                self.DabsDaqTask_.cfgOutputBuffer(nScans);
-            end
-            
-            self.DabsDaqTask_.reset('writeRelativeTo');
-            self.DabsDaqTask_.reset('writeOffset');
-            self.DabsDaqTask_.writeAnalogData(self.ChannelData);
+%             % called before the second and subsequent calls to start()
+%             %fprintf('FiniteAnalogOutputTask::reset()\n');
+%             nScans = size(self.ChannelData_,1) ;
+%             if nScans < 2 ,
+%                 % Cannot setup a finite analog output task with less than 2 samples per channel
+%                 return
+%             end
+%             
+%             assert(nScans > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
+%             
+%             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
+%             
+%             if bufSize ~= nScans ,
+%                 self.DabsDaqTask_.cfgOutputBuffer(nScans);
+%             end
+%             
+%             self.DabsDaqTask_.reset('writeRelativeTo');
+%             self.DabsDaqTask_.reset('writeOffset');
+%             self.DabsDaqTask_.writeAnalogData(self.ChannelData);
         end
         
     end
     
-    methods (Access = protected)
+    methods (Access = protected)        
+        function copyChannelDataToOutputBuffer_(self)
+            channelData=self.ChannelData;
+            nScansInData = size(channelData,1) ;
+            if nScansInData < 2 ,
+                % Cannot setup a finite analog output task with less than 2 samples per channel
+                return
+            end
+            
+            %assert(nScans > 1, 'Can not setup a finite analog output task with less than 2 samples per channel.');
+            
+            nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
+            
+            if nScansInBuffer ~= nScansInData ,
+                self.DabsDaqTask_.cfgOutputBuffer(nScansInData);
+            end
+            
+            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInData);
+            
+            self.DabsDaqTask_.reset('writeRelativeTo');
+            self.DabsDaqTask_.reset('writeOffset');
+            self.DabsDaqTask_.writeAnalogData(channelData);
+        end
+        
 %         function defineDefaultPropertyAttributes(self)
 %             defineDefaultPropertyAttributes@ws.ni.AnalogTask(self);
 %             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
