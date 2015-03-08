@@ -37,12 +37,12 @@ classdef AnalogInputTask < handle
     end
     
     methods
-        function delete(obj)
-            %obj.unregisterCallbacks();
-            if ~isempty(obj.DabsDaqTask_) && obj.DabsDaqTask_.isvalid() ,
-                delete(obj.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+        function delete(self)
+            %self.unregisterCallbacks();
+            if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
+                delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
-            obj.DabsDaqTask_=[];
+            self.DabsDaqTask_=[];
         end
         
         function out = get.AreCallbacksRegistered(self)
@@ -57,58 +57,58 @@ classdef AnalogInputTask < handle
 %             % called before the second and subsequent calls to start()
 %         end
         
-        function start(obj)
-%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+        function start(self)
+%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 %fprintf('About to start FiniteAnalogOutputTask.\n');
-%                 %obj
+%                 %self
 %                 %dbstack
 %             end               
-            if ~isempty(obj.DabsDaqTask_)
-                %obj.getReadyGetSet();
-                obj.DabsDaqTask_.start();
+            if ~isempty(self.DabsDaqTask_)
+                %self.getReadyGetSet();
+                self.DabsDaqTask_.start();
             end
         end
         
-%         function retrigger(obj)
+%         function retrigger(self)
 %             % Convenience method for caller to not have to check with this particular object
 %             % (the associated hardware) supports hardware retriggering.  Call start() if
 %             % needed otherwise no-op.
-%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%             if isa(self,'ws.ni.AnalogInputTask') ,
 %                 fprintf('Task::retrigger()\n');
 %             end
-%             if ~isempty(obj.DabsDaqTask_)
+%             if ~isempty(self.DabsDaqTask_)
 %                 isRetrigger=true;
-%                 obj.getReadyGetSet(isRetrigger);
-%                 obj.DabsDaqTask_.start();
+%                 self.getReadyGetSet(isRetrigger);
+%                 self.DabsDaqTask_.start();
 %             end
 %         end
         
-        function abort(obj)
-%             if isa(obj,'ws.ni.AnalogInputTask') ,
+        function abort(self)
+%             if isa(self,'ws.ni.AnalogInputTask') ,
 %                 fprintf('AnalogInputTask::abort()\n');
 %             end
-%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 fprintf('FiniteAnalogOutputTask::abort()\n');
 %             end
-            if ~isempty(obj.DabsDaqTask_)
-                obj.DabsDaqTask_.abort();
+            if ~isempty(self.DabsDaqTask_)
+                self.DabsDaqTask_.abort();
             end
         end
         
-        function stop(obj)
-%             if isa(obj,'ws.ni.AnalogInputTask') ,
+        function stop(self)
+%             if isa(self,'ws.ni.AnalogInputTask') ,
 %                 fprintf('AnalogInputTask::stop()\n');
 %             end
-%             if isa(obj,'ws.ni.FiniteAnalogOutputTask') ,
+%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 fprintf('FiniteAnalogOutputTask::stop()\n');
 %             end
-            if ~isempty(obj.DabsDaqTask_) && ~obj.DabsDaqTask_.isTaskDoneQuiet()
-                obj.DabsDaqTask_.stop();
+            if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
+                self.DabsDaqTask_.stop();
             end
         end
         
-        function registerCallbacks(obj)
-%             if isa(obj,'ws.ni.AnalogInputTask') ,
+        function registerCallbacks(self)
+%             if isa(self,'ws.ni.AnalogInputTask') ,
 %                 fprintf('Task::registerCallbacks()\n');
 %             end
             % Public method that causes the every-n-samples callbacks (and
@@ -118,13 +118,13 @@ classdef AnalogInputTask < handle
             % the task. Also includes logic to make sure the implementation
             % method only gets called once, even if this method is called
             % multiple times in succession.
-            if obj.RegistrationCount_ == 0
-                obj.registerCallbacksImplementation();
+            if self.RegistrationCount_ == 0
+                self.registerCallbacksImplementation();
             end
-            obj.RegistrationCount_ = obj.RegistrationCount_ + 1;
+            self.RegistrationCount_ = self.RegistrationCount_ + 1;
         end
         
-        function unregisterCallbacks(obj)
+        function unregisterCallbacks(self)
             % Public method that causes the every-n-samples callbacks (and
             % others) to be cleared.  This calls a subclass-specific
             % implementation method.  Typically called just after the task
@@ -136,16 +136,16 @@ classdef AnalogInputTask < handle
             % variables with references to this object, the object may become invalid after
             % these sets.  Call this method last in any method where it is used.
 
-%             if isa(obj,'ws.ni.AnalogInputTask') ,
+%             if isa(self,'ws.ni.AnalogInputTask') ,
 %                 fprintf('Task::unregisterCallbacks()\n');
 %             end
 
-            %assert(obj.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
+            %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
             
-            if (obj.RegistrationCount_>0) ,            
-                obj.RegistrationCount_ = obj.RegistrationCount_ - 1;            
-                if obj.RegistrationCount_ == 0
-                    obj.unregisterCallbacksImplementation();
+            if (self.RegistrationCount_>0) ,            
+                self.RegistrationCount_ = self.RegistrationCount_ - 1;            
+                if self.RegistrationCount_ == 0
+                    self.unregisterCallbacksImplementation();
                 end
             end
         end
@@ -275,12 +275,12 @@ classdef AnalogInputTask < handle
         % Shouldn't there be a delete() method to at least free up
         % DabsDaqTask_?  Don't need one, that's handled by the superclass.
         
-        function value = get.AvailableChannels(obj)
-            value = obj.AvailableChannels_;
+        function value = get.AvailableChannels(self)
+            value = self.AvailableChannels_;
         end  % function
         
-        function value = get.ActiveChannels(obj)
-            value = obj.ActiveChannels_;
+        function value = get.ActiveChannels(self)
+            value = self.ActiveChannels_;
         end  % function
         
         function set.ActiveChannels(self, value)
@@ -311,13 +311,13 @@ classdef AnalogInputTask < handle
             self.ActiveChannels_ = availableActive;
         end  % function
         
-%         function value = get.ActualAcquisitionDuration(obj)
-%             value = (obj.ExpectedScanCount)/obj.SampleRate_;
+%         function value = get.ActualAcquisitionDuration(self)
+%             value = (self.ExpectedScanCount)/self.SampleRate_;
 %         end  % function
         
-%         function set.AvailableChannels(obj, value)
+%         function set.AvailableChannels(self, value)
 %             if isnumeric(value) && isrow(value) && all(value==round(value)) ,
-%                 obj.AvailableChannels = value;
+%                 self.AvailableChannels = value;
 %             else
 %                 error('most:Model:invalidPropVal', ...
 %                       'AvailableChannels must be empty or a vector of integers.');       
@@ -341,57 +341,57 @@ classdef AnalogInputTask < handle
             end
         end  % function
         
-        function value = get.ExpectedScanCount(obj)
-            value = round(obj.AcquisitionDuration * obj.SampleRate_);
+        function value = get.ExpectedScanCount(self)
+            value = round(self.AcquisitionDuration * self.SampleRate_);
         end  % function
         
-        function value = get.SampleRate(obj)
-            value = obj.SampleRate_;
+        function value = get.SampleRate(self)
+            value = self.SampleRate_;
         end  % function
         
-        function set.SampleRate(obj,value)
+        function set.SampleRate(self,value)
             if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,
                 error('most:Model:invalidPropVal', ...
                       'SampleRate must be a positive integer');       
             end            
             
-            if ~isempty(obj.DabsDaqTask_)
-                oldSampClkRate = obj.DabsDaqTask_.sampClkRate;
-                obj.DabsDaqTask_.sampClkRate = value;
+            if ~isempty(self.DabsDaqTask_)
+                oldSampClkRate = self.DabsDaqTask_.sampClkRate;
+                self.DabsDaqTask_.sampClkRate = value;
                 try
-                    obj.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+                    self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
                 catch me
-                    obj.DabsDaqTask_.sampClkRate = oldSampClkRate;
+                    self.DabsDaqTask_.sampClkRate = oldSampClkRate;
                     % This will put the sampleRate property in sync with the hardware, but it will
                     % be an odd artifact that the sampleRate value did not change to the reqested,
                     % but to something else.  This can be fixed by doing a verify when first setting
                     % the clock in ziniPrepareAcquisitionDAQ and setting the sampleRate property to
                     % the clock value if it fails.  Since it is called at construction, the user
                     % will never see the original, invalid sampleRate property value.
-                    obj.SampleRate_ = oldSampClkRate;
+                    self.SampleRate_ = oldSampClkRate;
                     error('Invalid sample rate value');
                 end
             end
             
-            obj.SampleRate_ = value;
+            self.SampleRate_ = value;
         end  % function
         
-        function value = get.NScansPerDataAvailableCallback(obj)
-            value = round(obj.DurationPerDataAvailableCallback * obj.SampleRate);
+        function value = get.NScansPerDataAvailableCallback(self)
+            value = round(self.DurationPerDataAvailableCallback * self.SampleRate);
               % The sample rate is technically a scan rate, so this is
               % correct.
         end  % function
         
-        function set.DurationPerDataAvailableCallback(obj, value)
+        function set.DurationPerDataAvailableCallback(self, value)
             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
                 error('most:Model:invalidPropVal', ...
                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
             end            
-            obj.DurationPerDataAvailableCallback_ = value;
+            self.DurationPerDataAvailableCallback_ = value;
         end  % function
 
-        function value = get.DurationPerDataAvailableCallback(obj)
-            value = min(obj.AcquisitionDuration_, obj.DurationPerDataAvailableCallback_);
+        function value = get.DurationPerDataAvailableCallback(self)
+            value = min(self.AcquisitionDuration_, self.DurationPerDataAvailableCallback_);
         end  % function
         
         function out = get.TaskName(self)
@@ -402,80 +402,80 @@ classdef AnalogInputTask < handle
             end
         end  % function
         
-        function set.AcquisitionDuration(obj, value)
+        function set.AcquisitionDuration(self, value)
             if ~( isnumeric(value) && isscalar(value) && value>0 )  ,
                 error('most:Model:invalidPropVal', ...
                       'AcquisitionDuration must be a positive scalar');       
             end            
-            obj.AcquisitionDuration_ = value;
+            self.AcquisitionDuration_ = value;
         end  % function
         
-        function value = get.AcquisitionDuration(obj)
-            value = obj.AcquisitionDuration_ ;
+        function value = get.AcquisitionDuration(self)
+            value = self.AcquisitionDuration_ ;
         end  % function
         
-        function set.TriggerDelegate(obj, value)
+        function set.TriggerDelegate(self, value)
             if ~( isequal(value,[]) || (isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value)) )  ,
                 error('most:Model:invalidPropVal', ...
                       'TriggerDelegate must be empty or a scalar ws.ni.HasPFIIDAndEdge');       
             end            
-            obj.TriggerDelegate_ = value;
+            self.TriggerDelegate_ = value;
         end  % function
         
-        function value = get.TriggerDelegate(obj)
-            value = obj.TriggerDelegate_ ;
+        function value = get.TriggerDelegate(self)
+            value = self.TriggerDelegate_ ;
         end  % function                
         
-        function set.ClockTiming(obj,value)
+        function set.ClockTiming(self,value)
             if ~( isscalar(value) && isa(value,'ws.ni.SampleClockTiming') ) ,
                 error('most:Model:invalidPropVal', ...
                       'ClockTiming must be a scalar ws.ni.SampleClockTiming');       
             end            
-            obj.ClockTiming_ = value;
+            self.ClockTiming_ = value;
         end  % function           
         
-        function value = get.ClockTiming(obj)
-            value = obj.ClockTiming_ ;
+        function value = get.ClockTiming(self)
+            value = self.ClockTiming_ ;
         end  % function                
         
-        function setup(obj)
+        function setup(self)
             %fprintf('AnalogInputTask::setup()\n');
-            switch obj.ClockTiming ,
+            switch self.ClockTiming ,
                 case ws.ni.SampleClockTiming.FiniteSamples
-                    obj.DabsDaqTask_.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_FiniteSamps', obj.ExpectedScanCount);
+                    self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
                 case ws.ni.SampleClockTiming.ContinuousSamples
-                    if isinf(obj.ExpectedScanCount)
-                        bufferSize = obj.SampleRate_; % Default to 1 second of data as the buffer.
+                    if isinf(self.ExpectedScanCount)
+                        bufferSize = self.SampleRate_; % Default to 1 second of data as the buffer.
                     else
-                        bufferSize = obj.ExpectedScanCount;
+                        bufferSize = self.ExpectedScanCount;
                     end
-                    obj.DabsDaqTask_.cfgSampClkTiming(obj.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+                    self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
                 otherwise
                     assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
             end
 
-            if ~isempty(obj.TriggerDelegate)
-                obj.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', obj.TriggerDelegate.PFIID), obj.TriggerDelegate.Edge.daqmxName());
+            if ~isempty(self.TriggerDelegate)
+                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerDelegate.PFIID), self.TriggerDelegate.Edge.daqmxName());
             else
-                obj.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
+                self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
             end                
         end  % function
 
-        function reset(obj) %#ok<MANU>
+        function reset(self) %#ok<MANU>
             %fprintf('AnalogInputTask::reset()\n');                        
             % Don't have to do anything to reset a finite input analog task
         end  % function
     end
     
     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(obj)
-%             defineDefaultPropertyAttributes@ws.ni.AnalogTask(obj);
-%             obj.setPropertyAttributeFeatures('ActiveChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
-%             obj.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
-%             obj.setPropertyAttributeFeatures('AcquisitionDuration', 'Attributes', {'positive', 'scalar'});            
-%             obj.setPropertyAttributeFeatures('DurationPerDataAvailableCallback', 'Attributes', {'nonnegative', 'scalar'});
-%             obj.setPropertyAttributeFeatures('TriggerDelegate', 'Classes', 'ws.ni.HasPFIIDAndEdge', 'Attributes', 'scalar', 'AllowEmpty', true);          
-%             obj.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
+%         function defineDefaultPropertyAttributes(self)
+%             defineDefaultPropertyAttributes@ws.ni.AnalogTask(self);
+%             self.setPropertyAttributeFeatures('ActiveChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
+%             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
+%             self.setPropertyAttributeFeatures('AcquisitionDuration', 'Attributes', {'positive', 'scalar'});            
+%             self.setPropertyAttributeFeatures('DurationPerDataAvailableCallback', 'Attributes', {'nonnegative', 'scalar'});
+%             self.setPropertyAttributeFeatures('TriggerDelegate', 'Classes', 'ws.ni.HasPFIIDAndEdge', 'Attributes', 'scalar', 'AllowEmpty', true);          
+%             self.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
 %         end  % function
         
         function registerCallbacksImplementation(self)
@@ -489,9 +489,9 @@ classdef AnalogInputTask < handle
             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
         end  % function
         
-        function unregisterCallbacksImplementation(obj)
-            obj.DabsDaqTask_.registerEveryNSamplesEvent([]);
-            obj.DabsDaqTask_.doneEventCallbacks = {};
+        function unregisterCallbacksImplementation(self)
+            self.DabsDaqTask_.registerEveryNSamplesEvent([]);
+            self.DabsDaqTask_.doneEventCallbacks = {};
         end  % function
         
     end  % protected methods block
