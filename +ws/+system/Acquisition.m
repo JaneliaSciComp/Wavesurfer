@@ -417,7 +417,13 @@ classdef Acquisition < ws.system.Subsystem
        
         function initializeFromMDFStructure(self, mdfStructure)
             if ~isempty(mdfStructure.inputChannelIDs) ,
-                self.DeviceIDs = mdfStructure.inputDeviceIDs;
+                inputDeviceIDs = mdfStructure.inputDeviceIDs;
+                uniqueInputDeviceIDs=unique(inputDeviceIDs);
+                if ~isscalar(uniqueInputDeviceIDs) ,
+                    error('ws:MoreThanOneDeviceID', ...
+                          'Wavesurfer only supports a single NI card at present.');                      
+                end
+                self.DeviceIDs = inputDeviceIDs;
                 self.ChannelIDs_ = mdfStructure.inputChannelIDs;
                 self.ChannelNames_ = mdfStructure.inputChannelNames;
 %                 self.AnalogInputTask_ = ...
@@ -446,7 +452,7 @@ classdef Acquisition < ws.system.Subsystem
         function acquireHardwareResources(self)
             if isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_ = ...
-                    ws.ni.AnalogInputTask(self.DeviceIDs, ...
+                    ws.ni.AnalogInputTask(self.DeviceIDs{1}, ...
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);
@@ -537,7 +543,7 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access = protected)
         function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            if ~isempty(self.AnalogInputTask_) && self.AnalogInputTask_.AreCallbacksRegistered ,
+            if ~isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_.unregisterCallbacks();
             end            
             self.IsArmedOrAcquiring = false;            

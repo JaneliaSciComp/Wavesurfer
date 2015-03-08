@@ -1,9 +1,9 @@
 classdef FiniteAnalogOutputTask < handle
     %FINITEANALOGOUTPUT Finite analog output class for dabs MATLAB DAQmx interface.
     
-    properties (Transient = true, Dependent = true, SetAccess = immutable)
-        AreCallbacksRegistered
-    end
+%     properties (Transient = true, Dependent = true, SetAccess = immutable)
+%         AreCallbacksRegistered
+%     end
     
     properties (Transient = true, Access = protected)
         DabsDaqTask_ = [];
@@ -18,6 +18,46 @@ classdef FiniteAnalogOutputTask < handle
             % multiple times in succession.
     end
     
+    properties (Dependent = true, SetAccess = immutable)
+        DeviceName
+        TaskName
+        ChannelNames
+    end
+    
+    properties (Dependent = true)
+        SampleRate      % Hz
+        ChannelData     % NxR matrix of N samples per channel by R channels of output data.  
+                        % R must be equal to the number of available channels
+    end
+    
+    properties
+        TriggerDelegate = []  % empty, or a scalar ws.ni.HasPFIIDAndEdge
+    end
+    
+    properties (Dependent = true, SetAccess = immutable)
+        OutputDuration
+        OutputSampleCount
+    end
+    
+    % Read-only properties.
+    properties (Dependent=true, SetAccess = immutable)
+        AvailableChannels   % The indices of the AO channels available (zero-based)
+          % Invariants: size(AvailableChannels,1) == 1
+          %             size(AvailableChannels,2) == size(ChannelData,2)
+          
+    end
+    
+    properties (Access = protected)
+        SampleRate_ = 20000
+        ChannelData_ = zeros(0,0)
+        AvailableChannels_ = zeros(1,0)  % The indices of the AO channels available (zero-based)
+    end
+    
+    events
+        OutputComplete
+    end
+    
+
     methods
         function delete(self)
             %self.unregisterCallbacks();
@@ -27,16 +67,8 @@ classdef FiniteAnalogOutputTask < handle
             self.DabsDaqTask_=[];
         end
         
-        function out = get.AreCallbacksRegistered(self)
-            out = self.RegistrationCount_ > 0;
-        end
-        
-%         function setup(self) %#ok<MANU>
-%             % called before the first call to start()
-%         end
-%         
-%         function reset(self) %#ok<MANU>
-%             % called before the second and subsequent calls to start()
+%         function out = get.AreCallbacksRegistered(self)
+%             out = self.RegistrationCount_ > 0;
 %         end
         
         function start(self)
@@ -50,20 +82,6 @@ classdef FiniteAnalogOutputTask < handle
                 self.DabsDaqTask_.start();
             end
         end
-        
-%         function retrigger(self)
-%             % Convenience method for caller to not have to check with this particular object
-%             % (the associated hardware) supports hardware retriggering.  Call start() if
-%             % needed otherwise no-op.
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('Task::retrigger()\n');
-%             end
-%             if ~isempty(self.DabsDaqTask_)
-%                 isRetrigger=true;
-%                 self.getReadyGetSet(isRetrigger);
-%                 self.DabsDaqTask_.start();
-%             end
-%         end
         
         function abort(self)
 %             if isa(self,'ws.ni.AnalogInputTask') ,
@@ -135,58 +153,8 @@ classdef FiniteAnalogOutputTask < handle
         function debug(self) %#ok<MANU>
             keyboard
         end        
-    end
-    
-%     methods (Access = protected)
-% %         function registerCallbacksImplementation(~)
-% %         end
-% %         
-% %         function unregisterCallbacksImplementation(~)
-% %         end
-%         
-%         function getReadyGetSet(self, isRetrigger) %#ok<INUSD>
-%         end
-%     end
-    
-    properties (Dependent = true, SetAccess = immutable)
-        DeviceName
-        TaskName
-        ChannelNames
-    end
-    
-    properties (Dependent = true)
-        SampleRate      % Hz
-        ChannelData     % NxR matrix of N samples per channel by R channels of output data.  
-                        % R must be equal to the number of available channels
-    end
-    
-    properties
-        TriggerDelegate = []  % empty, or a scalar ws.ni.HasPFIIDAndEdge
-    end
-    
-    properties (Dependent = true, SetAccess = immutable)
-        OutputDuration
-        OutputSampleCount
-    end
-    
-    % Read-only properties.
-    properties (Dependent=true, SetAccess = immutable)
-        AvailableChannels   % The indices of the AO channels available (zero-based)
-          % Invariants: size(AvailableChannels,1) == 1
-          %             size(AvailableChannels,2) == size(ChannelData,2)
-          
-    end
-    
-    properties (Access = protected)
-        SampleRate_ = 20000
-        ChannelData_ = zeros(0,0)
-        AvailableChannels_ = zeros(1,0)  % The indices of the AO channels available (zero-based)
-    end
-    
-    events
-        OutputComplete
-    end
-    
+    end  % methods
+        
     methods
         function self = FiniteAnalogOutputTask(deviceName, channelIndices, taskName, channelNames)
             % aoChannelIndices should be zero-based
@@ -226,7 +194,7 @@ classdef FiniteAnalogOutputTask < handle
                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
 
                 % create the channels
-                self.DabsDaqTask_.createAOVoltageChan(deviceNames, channelIndices, channelNames);
+                self.DabsDaqTask_.createAOVoltageChan(deviceName, channelIndices, channelNames);
                 
                 % Set the timing mode
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
@@ -365,6 +333,7 @@ classdef FiniteAnalogOutputTask < handle
         end
         
         function setup(self)
+            % called before the first call to start()            
             %fprintf('FiniteAnalogOutputTask::setup()\n');
             if self.OutputSampleCount == 0
                 return
@@ -392,6 +361,7 @@ classdef FiniteAnalogOutputTask < handle
         end
 
         function reset(self)
+            % called before the second and subsequent calls to start()
             %fprintf('FiniteAnalogOutputTask::reset()\n');
             if self.OutputSampleCount == 0
                 return

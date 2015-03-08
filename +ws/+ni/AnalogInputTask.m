@@ -19,9 +19,9 @@ classdef AnalogInputTask < handle
     %   AnalogInputTask does provide an abort() method to interrupt a running
     %   task.
     
-    properties (Transient = true, Dependent = true, SetAccess = immutable)
-        AreCallbacksRegistered
-    end
+%     properties (Transient = true, Dependent = true, SetAccess = immutable)
+%         AreCallbacksRegistered
+%     end
     
     properties (Transient = true, Access = protected)
         DabsDaqTask_ = [];
@@ -36,6 +36,44 @@ classdef AnalogInputTask < handle
             % multiple times in succession.
     end
     
+    properties (Dependent = true, SetAccess = immutable)
+        % These are all set in the constructor, and not changed
+        DeviceName
+        AvailableChannels  % Zero-based AI channel IDs, all of them
+        TaskName
+        ChannelNames
+    end
+
+    properties (Dependent = true, SetAccess = immutable)
+        % These are not directly settable
+        ExpectedScanCount
+        NScansPerDataAvailableCallback
+    end
+    
+    properties (Dependent = true)
+        ActiveChannels  % Zero-based AI channel Ids, all of them
+        SampleRate      % Hz
+        AcquisitionDuration  % Seconds
+        DurationPerDataAvailableCallback  % Seconds
+        ClockTiming 
+        TriggerDelegate  % empty or a trigger Destination or a trigger Source
+    end
+    
+    properties (Access = protected)
+        SampleRate_ = 20000
+        AvailableChannels_ = zeros(1,0)  % Zero-based AI channel IDs, all of them
+        ActiveChannels_ = zeros(1,0)
+        AcquisitionDuration_ = 1     % Seconds
+        DurationPerDataAvailableCallback_ = 0.1  % Seconds
+        ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
+        TriggerDelegate_ = []  % empty or a trigger Destination or a trigger Source
+    end
+    
+    events
+        AcquisitionComplete
+        SamplesAvailable
+    end
+    
     methods
         function delete(self)
             %self.unregisterCallbacks();
@@ -45,18 +83,10 @@ classdef AnalogInputTask < handle
             self.DabsDaqTask_=[];
         end
         
-        function out = get.AreCallbacksRegistered(self)
-            out = self.RegistrationCount_ > 0;
-        end
-        
-%         function setup(self) %#ok<MANU>
-%             % called before the first call to start()
+%         function out = get.AreCallbacksRegistered(self)
+%             out = self.RegistrationCount_ > 0;
 %         end
-%         
-%         function reset(self) %#ok<MANU>
-%             % called before the second and subsequent calls to start()
-%         end
-        
+                
         function start(self)
 %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 %fprintf('About to start FiniteAnalogOutputTask.\n');
@@ -68,21 +98,7 @@ classdef AnalogInputTask < handle
                 self.DabsDaqTask_.start();
             end
         end
-        
-%         function retrigger(self)
-%             % Convenience method for caller to not have to check with this particular object
-%             % (the associated hardware) supports hardware retriggering.  Call start() if
-%             % needed otherwise no-op.
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('Task::retrigger()\n');
-%             end
-%             if ~isempty(self.DabsDaqTask_)
-%                 isRetrigger=true;
-%                 self.getReadyGetSet(isRetrigger);
-%                 self.DabsDaqTask_.start();
-%             end
-%         end
-        
+                
         function abort(self)
 %             if isa(self,'ws.ni.AnalogInputTask') ,
 %                 fprintf('AnalogInputTask::abort()\n');
@@ -153,55 +169,6 @@ classdef AnalogInputTask < handle
         function debug(self) %#ok<MANU>
             keyboard
         end        
-    end
-    
-%     methods (Access = protected)
-% %         function registerCallbacksImplementation(~)
-% %         end
-% %         
-% %         function unregisterCallbacksImplementation(~)
-% %         end
-%         
-%         function getReadyGetSet(self, isRetrigger) %#ok<INUSD>
-%         end
-%     end
-    
-    properties (Dependent = true, SetAccess = immutable)
-        % These are all set in the constructor, and not changed
-        DeviceName
-        AvailableChannels  % Zero-based AI channel IDs, all of them
-        TaskName
-        ChannelNames
-    end
-
-    properties (Dependent = true, SetAccess = immutable)
-        % These are not directly settable
-        ExpectedScanCount
-        NScansPerDataAvailableCallback
-    end
-    
-    properties (Dependent = true)
-        ActiveChannels  % Zero-based AI channel Ids, all of them
-        SampleRate      % Hz
-        AcquisitionDuration  % Seconds
-        DurationPerDataAvailableCallback  % Seconds
-        ClockTiming 
-        TriggerDelegate  % empty or a trigger Destination or a trigger Source
-    end
-    
-    properties (Access = protected)
-        SampleRate_ = 20000
-        AvailableChannels_ = zeros(1,0)  % Zero-based AI channel IDs, all of them
-        ActiveChannels_ = zeros(1,0)
-        AcquisitionDuration_ = 1     % Seconds
-        DurationPerDataAvailableCallback_ = 0.1  % Seconds
-        ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
-        TriggerDelegate_ = []  % empty or a trigger Destination or a trigger Source
-    end
-    
-    events
-        AcquisitionComplete
-        SamplesAvailable
     end
     
     methods
@@ -430,6 +397,7 @@ classdef AnalogInputTask < handle
         end  % function                
         
         function setup(self)
+            % called before the first call to start()
             %fprintf('AnalogInputTask::setup()\n');
             switch self.ClockTiming ,
                 case ws.ni.SampleClockTiming.FiniteSamples
@@ -453,6 +421,7 @@ classdef AnalogInputTask < handle
         end  % function
 
         function reset(self) %#ok<MANU>
+            % called before the second and subsequent calls to start()
             %fprintf('AnalogInputTask::reset()\n');                        
             % Don't have to do anything to reset a finite input analog task
         end  % function
@@ -470,7 +439,7 @@ classdef AnalogInputTask < handle
 %         end  % function
         
         function registerCallbacksImplementation(self)
-            if self.DurationPerDataAvailableCallback > 0
+            if self.DurationPerDataAvailableCallback > 0 ,
                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
                   % This registers the callback function that is called
                   % when self.NScansPerDataAvailableCallback samples are

@@ -317,7 +317,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     methods
         function initializeFromMDFStructure(self, mdfStructure)            
             if ~isempty(mdfStructure.outputAnalogChannelIDs) ,
-                self.DeviceIDs=mdfStructure.outputDeviceIDs;
+                outputDeviceIDs = mdfStructure.outputDeviceIDs;
+                uniqueOutputDeviceIDs=unique(outputDeviceIDs);
+                if ~isscalar(uniqueOutputDeviceIDs) ,
+                    error('ws:MoreThanOneDeviceID', ...
+                          'Wavesurfer only supports a single NI card at present.');                      
+                end
+                self.DeviceIDs=outputDeviceIDs;
                 self.ChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
                 self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
 %                 self.TheFiniteAnalogOutputTask_ = ...
@@ -343,7 +349,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteAnalogOutputTask(self.DeviceIDs, ...
+                    ws.ni.FiniteAnalogOutputTask(self.DeviceIDs{1}, ...
                                                  self.ChannelIDs, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
                                                  self.ChannelNames);
@@ -380,7 +386,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             self.RepeatsStimulusSequenceStack_ = [];
 %         end
         
-        function willPerformExperiment(self, wavesurferObj, experimentMode)
+        function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
             %fprintf('Stimulation::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
@@ -490,9 +496,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function didAbortExperiment(self, ~)
             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                if self.TheFiniteAnalogOutputTask_.AreCallbacksRegistered ,
-                    self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
-                end
+                self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
                 self.TheFiniteAnalogOutputTask_.unreserve();
             end
             
