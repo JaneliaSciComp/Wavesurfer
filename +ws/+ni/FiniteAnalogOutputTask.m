@@ -28,11 +28,13 @@ classdef FiniteAnalogOutputTask < handle
         SampleRate      % Hz
         ChannelData     % NxR matrix of N samples per channel by R channels of output data.  
                         % R must be equal to the number of available channels
+        TriggerPFIID
+        TriggerEdge
     end
     
-    properties
-        TriggerDelegate = []  % empty, or a scalar ws.ni.HasPFIIDAndEdge
-    end
+%     properties
+%         TriggerDelegate = []  % empty, or a scalar ws.ni.HasPFIIDAndEdge
+%     end
     
     properties (Dependent = true, SetAccess = immutable)
         OutputDuration
@@ -43,14 +45,15 @@ classdef FiniteAnalogOutputTask < handle
     properties (Dependent=true, SetAccess = immutable)
         AvailableChannels   % The indices of the AO channels available (zero-based)
           % Invariants: size(AvailableChannels,1) == 1
-          %             size(AvailableChannels,2) == size(ChannelData,2)
-          
+          %             size(AvailableChannels,2) == size(ChannelData,2)          
     end
     
     properties (Access = protected)
         SampleRate_ = 20000
         ChannelData_ = zeros(0,0)
         AvailableChannels_ = zeros(1,0)  % The indices of the AO channels available (zero-based)
+        TriggerPFIID_
+        TriggerEdge_
     end
     
     events
@@ -200,7 +203,7 @@ classdef FiniteAnalogOutputTask < handle
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
             end
             
-            self.TriggerDelegate = [];
+            %self.TriggerDelegate = [];
         end
  
 %         function debug(self) %#ok<MANU>
@@ -316,14 +319,44 @@ classdef FiniteAnalogOutputTask < handle
             end
         end
         
-        function set.TriggerDelegate(self, value)
-            if  isequal(value,[]) || ( isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value) )  ,
-                self.TriggerDelegate = value;
+%         function set.TriggerDelegate(self, value)
+%             if  isequal(value,[]) || ( isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value) )  ,
+%                 self.TriggerDelegate = value;
+%             else
+%                 error('most:Model:invalidPropVal', ...
+%                       'TriggerDelegate must be empty or a scalar ws.ni.HasPFIIDAndEdge');       
+%             end            
+%         end
+%         
+        function set.TriggerPFIID(self, newValue)
+            if isempty(newValue) ,
+                self.TriggerPFIID_ = [];
+            elseif isnumeric(newValue) && isscalar(newValue) && (newValue==round(newValue)) && (newValue>=0) ,
+                self.TriggerPFIID_ = double(newValue);
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerDelegate must be empty or a scalar ws.ni.HasPFIIDAndEdge');       
+                      'TriggerPFIID must be empty or a scalar natural number');       
             end            
-        end
+        end  % function
+        
+        function value = get.TriggerPFIID(self)
+            value = self.TriggerPFIID_ ;
+        end  % function                
+
+        function set.TriggerEdge(self, newValue)
+            if isempty(newValue) ,
+                self.TriggerEdge_ = [];
+            elseif isa(newValue,'ws.ni.TriggerEdge') && isscalar(newValue) ,
+                self.TriggerEdge_ = newValue;
+            else
+                error('most:Model:invalidPropVal', ...
+                      'TriggerEdge must be empty or a scalar ws.ni.TriggerEdge');       
+            end            
+        end  % function
+        
+        function value = get.TriggerEdge(self)
+            value = self.TriggerEdge_ ;
+        end  % function                
         
         function unreserve(self)
             % Unreserves NI-DAQmx resources currently reserved by the task
@@ -349,8 +382,8 @@ classdef FiniteAnalogOutputTask < handle
             
             self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.OutputSampleCount);
 
-            if ~isempty(self.TriggerDelegate)
-                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerDelegate.PFIID), self.TriggerDelegate.Edge.daqmxName());
+            if ~isempty(self.TriggerPFIID)
+                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
             else
                 self.DabsDaqTask_.disableStartTrig();
             end

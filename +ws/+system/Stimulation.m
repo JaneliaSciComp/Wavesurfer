@@ -423,29 +423,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources();
             
-%             if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing
-%                 self.TheFiniteAnalogOutputTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
-%             else
-            self.TheFiniteAnalogOutputTask_.TriggerDelegate = self.TriggerScheme.Target;
-%             end
+            % Set up the task triggering
+            %self.TheFiniteAnalogOutputTask_.TriggerDelegate = self.TriggerScheme.Target;
+            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
-            %self.TheFiniteAnalogOutputTask_.ChannelData = zeros(0, 0);
-            self.TheFiniteAnalogOutputTask_.clearChannelData;
+            % Clear out any pre-existing output waveforms
+            self.TheFiniteAnalogOutputTask_.clearChannelData();
             
-            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
-            
-%             if isa(stimulusOutputable, 'ws.stimulus.StimulusMap')
-%                 wrapperCycle = ws.stimulus.StimulusSequence;
-%                 wrapperCycle.addMap(stimulusOutputable);
-%                 stimulusOutputable = wrapperCycle;
-%             end
-            
-%             if stimCycle.CycleCount == 0
-%                 ws.most.mimics.warning('wavesurfer:stimulus:emptystimulusoutput', ...
-%                                     ['The Stimulation system is enabled however the selected StimulusSequence does contain any entries.  ' ...
-%                                      'There will be no stimulus output.']);
-%             end
-
             % Determine how many episodes there will be, if possible
             if self.TriggerScheme.IsExternal ,
                 self.EpisodesPerExperiment_ = [];
@@ -472,11 +457,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Initialize the episode counter
             self.EpisodesCompleted_ = 0;
             
-            % Set up the stim cycle iterator
+            % Set up the stimulus outputable
+            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
             self.StimulusOutputable_=stimulusOutputable;
-%             self.StimulusSequenceIterator_ = ws.stimulus.StimulusSequenceIterator(stimulusSequence);
-%             self.StimulusSequenceIterator_.Repeats = self.DoRepeatSequence;
-%             self.StimulusSequenceIterator_.beginIteration();
             
             % register the output task callbacks
             self.TheFiniteAnalogOutputTask_.registerCallbacks();
