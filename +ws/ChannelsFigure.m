@@ -442,7 +442,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             % update the AIs
             normalBackgroundColor=[1 1 1];
             warningBackgroundColor=[1 0.8 0.8];
-            deviceIDs=model.Acquisition.DeviceIDs;  % cell array of strings
+            deviceNames=model.Acquisition.DeviceNames;  % cell array of strings
             channelIDs=model.Acquisition.ChannelIDs;  % zero-based NI channel index
             channelNames=model.Acquisition.ChannelNames;
             channelScales=model.Acquisition.ChannelScales;
@@ -451,7 +451,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAIs ,
-                set(self.AILabelTexts(i),'String',sprintf('%s/ai%d (%s):',deviceIDs{i},channelIDs(i),channelNames{i}));                
+                set(self.AILabelTexts(i),'String',sprintf('%s/ai%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
@@ -463,7 +463,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % update the AOs
-            deviceIDs=model.Stimulation.DeviceIDs;  % cell array of strings
+            deviceNames=model.Stimulation.DeviceNames;  % cell array of strings
             channelIDs=model.Stimulation.ChannelIDs;  % zero-based NI channel index
             channelNames=model.Stimulation.ChannelNames;
             channelScales=model.Stimulation.ChannelScales;
@@ -472,7 +472,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAOs ,
-                set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceIDs{i},channelIDs(i),channelNames{i}));                
+                set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));

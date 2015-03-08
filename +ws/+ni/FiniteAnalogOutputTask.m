@@ -414,20 +414,20 @@ classdef FiniteAnalogOutputTask < handle
             self.notify('OutputComplete');
         end
         
-%         function ziniPrepareDAQ(self, deviceIDs, aoChannelIndices, taskName, channelNames)            
+%         function ziniPrepareDAQ(self, deviceNames, aoChannelIndices, taskName, channelNames)            
 %             % aoChannelIndices should be zero-based
 %             
 %             nChannels=length(aoChannelIndices);
 %             if nargin < 5 ,
 %                 channelNames=cell(1,nChannels);
 %                 for i=1:nChannels ,
-%                     channelNames{i}=sprintf('%s/%s',deviceIDs{i},aoChannelIndices{i});
+%                     channelNames{i}=sprintf('%s/%s',deviceNames{i},aoChannelIndices{i});
 %                 end
 %             end
 %             
-%             if ~isempty(deviceIDs) && ~isempty(aoChannelIndices)
+%             if ~isempty(deviceNames) && ~isempty(aoChannelIndices)
 %                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
-%                 self.DabsDaqTask_.createAOVoltageChan(deviceIDs, aoChannelIndices, channelNames);
+%                 self.DabsDaqTask_.createAOVoltageChan(deviceNames, aoChannelIndices, channelNames);
 %                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
 %                 
 % %                 % Probe the board to see if it supports hardware

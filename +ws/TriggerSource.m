@@ -31,7 +31,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
     end
     
     properties (Dependent=true)
-        DeviceID  % the NI device ID string, e.g. 'Dev1'
+        DeviceName  % the NI device ID string, e.g. 'Dev1'
         CounterID  % the index of the DAQmx Counter device (zero-based)
         Interval  % the inter-trigger interval, in seconds
         %PredefinedDestination  % a trigger destination that (I guess) is associated with this source by default
@@ -47,7 +47,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
 %     end
     
     properties (Access = protected)
-        DeviceID_
+        DeviceName_
         CounterID_
         %PredefinedDestination_
         PFIID_
@@ -67,7 +67,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             %self=self@ws.Source([],[]);
             self.Name_='TriggerSource';
             self.RepeatCount_=1;
-            self.DeviceID_ = 'Dev1';
+            self.DeviceName_ = 'Dev1';
             self.CounterID_ = 0;
             self.Interval_ = 1; % s
             self.PFIID_ = 12;
@@ -205,8 +205,8 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             self.Parent=[];            
         end
         
-        function value=get.DeviceID(self)
-            value=self.DeviceID_;
+        function value=get.DeviceName(self)
+            value=self.DeviceName_;
         end
         
         function value=get.CounterID(self)
@@ -225,12 +225,12 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             value=self.Edge_;
         end
         
-        function set.DeviceID(self, value)
+        function set.DeviceName(self, value)
             if isa(value,'ws.most.util.Nonvalue') , 
                 return
             end
-            self.validatePropArg('DeviceID', value);
-            self.DeviceID_ = value;
+            self.validatePropArg('DeviceName', value);
+            self.DeviceName_ = value;
         end
         
         function set.CounterID(self, value)
@@ -289,7 +289,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             self.clear();
             
             self.CounterTask_ = ...
-                ws.ni.CounterTriggerSourceTask(self.DeviceID, ...
+                ws.ni.CounterTriggerSourceTask(self.DeviceName, ...
                                                self.CounterID, ...
                                                ['Wavesurfer Counter Self Trigger Task' num2str(self.CounterID)], ...
                                                @self.doneCallback_);
@@ -370,7 +370,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             s.RepeatCount=struct('Classes', 'numeric', ...
                                  'Attributes', {{'scalar', 'integer', 'positive'}}, ...
                                  'AllowEmpty', false);
-            s.DeviceID=struct('Classes', 'char', ...
+            s.DeviceName=struct('Classes', 'char', ...
                             'Attributes', {{'vector'}}, ...
                             'AllowEmpty', true);
             s.CounterID=struct('Classes', 'numeric', ...

@@ -558,7 +558,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             for i=1:nRows ,
                 source=model.Sources(i);
                 data{i,1}=source.Name;
-                data{i,2}=source.DeviceID;
+                data{i,2}=source.DeviceName;
                 data{i,3}=source.CounterID;
                 data{i,4}=source.RepeatCount;
                 data{i,5}=source.Interval;
@@ -581,7 +581,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             for i=1:nRows ,
                 destination=model.Destinations(i);
                 data{i,1}=destination.Name;
-                data{i,2}=destination.DeviceID;
+                data{i,2}=destination.DeviceName;
                 data{i,3}=destination.PFIID;
                 data{i,4}=char(destination.Edge);
             end

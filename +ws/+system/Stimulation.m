@@ -52,7 +52,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
     
     properties (SetAccess = protected)
-        DeviceIDs  % the device IDs of the NI board for each channel, a cell array of strings
+        DeviceNames  % the device IDs of the NI board for each channel, a cell array of strings
     end
     
     properties (Transient=true)
@@ -317,17 +317,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     methods
         function initializeFromMDFStructure(self, mdfStructure)            
             if ~isempty(mdfStructure.outputAnalogChannelIDs) ,
-                outputDeviceIDs = mdfStructure.outputDeviceIDs;
-                uniqueOutputDeviceIDs=unique(outputDeviceIDs);
-                if ~isscalar(uniqueOutputDeviceIDs) ,
-                    error('ws:MoreThanOneDeviceID', ...
+                outputDeviceNames = mdfStructure.outputDeviceNames;
+                uniqueOutputDeviceNames=unique(outputDeviceNames);
+                if ~isscalar(uniqueOutputDeviceNames) ,
+                    error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceIDs=outputDeviceIDs;
+                self.DeviceNames=outputDeviceNames;
                 self.ChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
                 self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
 %                 self.TheFiniteAnalogOutputTask_ = ...
-%                     ws.ni.FiniteAnalogOutputTask(mdfStructure.outputDeviceIDs, ...
+%                     ws.ni.FiniteAnalogOutputTask(mdfStructure.outputDeviceNames, ...
 %                                                          mdfStructure.outputAnalogChannelIDs, ...
 %                                                          'Wavesurfer Analog Stimulation Task', ...
 %                                                          mdfStructure.outputAnalogChannelNames);
@@ -349,7 +349,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteAnalogOutputTask(self.DeviceIDs{1}, ...
+                    ws.ni.FiniteAnalogOutputTask(self.DeviceNames{1}, ...
                                                  self.ChannelIDs, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
                                                  self.ChannelNames);

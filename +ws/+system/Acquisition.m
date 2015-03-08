@@ -27,7 +27,7 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     properties (SetAccess=protected)
-        DeviceIDs  % the device ID of the NI board for each channel, a cell array of strings
+        DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
     end
 
     properties (Dependent=true)
@@ -417,17 +417,17 @@ classdef Acquisition < ws.system.Subsystem
        
         function initializeFromMDFStructure(self, mdfStructure)
             if ~isempty(mdfStructure.inputChannelIDs) ,
-                inputDeviceIDs = mdfStructure.inputDeviceIDs;
-                uniqueInputDeviceIDs=unique(inputDeviceIDs);
-                if ~isscalar(uniqueInputDeviceIDs) ,
-                    error('ws:MoreThanOneDeviceID', ...
+                inputDeviceNames = mdfStructure.inputDeviceNames;
+                uniqueInputDeviceNames=unique(inputDeviceNames);
+                if ~isscalar(uniqueInputDeviceNames) ,
+                    error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceIDs = inputDeviceIDs;
+                self.DeviceNames = inputDeviceNames;
                 self.ChannelIDs_ = mdfStructure.inputChannelIDs;
                 self.ChannelNames_ = mdfStructure.inputChannelNames;
 %                 self.AnalogInputTask_ = ...
-%                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceIDs, ...
+%                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
 %                                                 mdfStructure.inputChannelIDs, ...
 %                                                 'Wavesurfer Analog Acquisition Task', ...
 %                                                 mdfStructure.inputChannelNames);
@@ -452,7 +452,7 @@ classdef Acquisition < ws.system.Subsystem
         function acquireHardwareResources(self)
             if isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_ = ...
-                    ws.ni.AnalogInputTask(self.DeviceIDs{1}, ...
+                    ws.ni.AnalogInputTask(self.DeviceNames{1}, ...
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);

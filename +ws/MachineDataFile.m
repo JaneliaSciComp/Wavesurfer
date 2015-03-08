@@ -26,11 +26,11 @@ classdef MachineDataFile < ws.most.MachineDataFile
         function out = get.MDFData(self)
             out = self.mdfData;
             
-            self.verifyProperty('inputDeviceIDs', {'Classes', {'cell'}}, []);
+            self.verifyProperty('inputDeviceNames', {'Classes', {'cell'}}, []);
             self.verifyProperty('inputChanIDs', {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true}, []);
             self.verifyProperty('inputChanNames', {'Classes', {'cell'}}, []);
             
-            self.verifyProperty('outputDeviceIDs', {'Classes', {'cell'}}, []);
+            self.verifyProperty('outputDeviceNames', {'Classes', {'cell'}}, []);
             self.verifyProperty('outputAnalogChanIDs', {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true}, []);
             self.verifyProperty('outputAnalogChanNames', {'Classes', {'cell'}}, []);
             
@@ -45,7 +45,7 @@ classdef MachineDataFile < ws.most.MachineDataFile
                 end
                 
                 self.verifyProperty([triggerId 'Type'], {'Classes', {'char'}}, []);
-                self.verifyProperty([triggerId 'DeviceID'], {'Classes', {'char'}}, []);
+                self.verifyProperty([triggerId 'DeviceName'], {'Classes', {'char'}}, []);
                 self.verifyProperty([triggerId 'CounterID'], {'Classes', {'numeric'}, 'Attributes', {'scalar', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true}, []);
                 self.verifyProperty([triggerId 'Source'], {'Classes', {'numeric'}, 'Attributes', {'scalar', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true}, []);
                 self.verifyProperty([triggerId 'Edge'], {'Classes', {'char'}}, []);

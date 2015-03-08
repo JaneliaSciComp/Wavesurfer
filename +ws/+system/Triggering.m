@@ -100,7 +100,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             % the device ID.
 %             builtinTriggerSource = ws.TriggerSource();
 %             builtinTriggerSource.Name='Built-in Trial Trigger Scheme';
-%             builtinTriggerSource.DeviceID=mdfStructure.inputDeviceID;
+%             builtinTriggerSource.DeviceName=mdfStructure.inputDeviceName;
 %             builtinTriggerSource.CounterID=0;
 %             builtinTriggerSource.RepeatCount=1;
 %             builtinTriggerSource.Interval=1;  % s
@@ -120,7 +120,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 % Create the trigger source, set params
                 source = ws.TriggerSource();                
                 source.Name=thisTriggerSourceSpec.Name;
-                source.DeviceID=thisTriggerSourceSpec.DeviceID;
+                source.DeviceName=thisTriggerSourceSpec.DeviceName;
                 source.CounterID=thisTriggerSourceSpec.CounterID;                
                 source.RepeatCount = 1;
                 source.Interval = 1;  % s
@@ -147,7 +147,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 % Create the trigger destination, set params
                 destination = ws.TriggerDestination();
                 destination.Name = thisTriggerDestinationSpec.Name;
-                destination.DeviceID = thisTriggerDestinationSpec.DeviceID;
+                destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
                 destination.PFIID = thisTriggerDestinationSpec.PFIID;
                 destination.Edge = ws.ni.TriggerEdge.(thisTriggerDestinationSpec.Edge);
                 
