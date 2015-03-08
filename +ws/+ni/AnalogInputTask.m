@@ -56,7 +56,9 @@ classdef AnalogInputTask < handle
         AcquisitionDuration  % Seconds
         DurationPerDataAvailableCallback  % Seconds
         ClockTiming 
-        TriggerDelegate  % empty or a trigger Destination or a trigger Source
+        %TriggerDelegate  % empty or a trigger Destination or a trigger Source
+        TriggerPFIID
+        TriggerEdge
     end
     
     properties (Access = protected)
@@ -66,7 +68,9 @@ classdef AnalogInputTask < handle
         AcquisitionDuration_ = 1     % Seconds
         DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
-        TriggerDelegate_ = []  % empty or a trigger Destination or a trigger Source
+        %TriggerDelegate_ = []  % empty or a trigger Destination or a trigger Source
+        TriggerPFIID_
+        TriggerEdge_
     end
     
     events
@@ -372,16 +376,46 @@ classdef AnalogInputTask < handle
             value = self.AcquisitionDuration_ ;
         end  % function
         
-        function set.TriggerDelegate(self, value)
-            if ~( isequal(value,[]) || (isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value)) )  ,
+%         function set.TriggerDelegate(self, value)
+%             if ~( isequal(value,[]) || (isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value)) )  ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'TriggerDelegate must be empty or a scalar ws.ni.HasPFIIDAndEdge');       
+%             end            
+%             self.TriggerDelegate_ = value;
+%         end  % function
+%         
+%         function value = get.TriggerDelegate(self)
+%             value = self.TriggerDelegate_ ;
+%         end  % function                
+        
+        function set.TriggerPFIID(self, newValue)
+            if isempty(newValue) ,
+                self.TriggerPFIID_ = [];
+            elseif isnumeric(newValue) && isscalar(newValue) && (newValue==round(newValue)) && (newValue>=0) ,
+                self.TriggerPFIID_ = double(newValue);
+            else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerDelegate must be empty or a scalar ws.ni.HasPFIIDAndEdge');       
+                      'TriggerPFIID must be empty or a scalar natural number');       
             end            
-            self.TriggerDelegate_ = value;
         end  % function
         
-        function value = get.TriggerDelegate(self)
-            value = self.TriggerDelegate_ ;
+        function value = get.TriggerPFIID(self)
+            value = self.TriggerPFIID_ ;
+        end  % function                
+
+        function set.TriggerEdge(self, newValue)
+            if isempty(newValue) ,
+                self.TriggerEdge_ = [];
+            elseif isa(newValue,'ws.ni.TriggerEdge') && isscalar(newValue) ,
+                self.TriggerEdge_ = newValue;
+            else
+                error('most:Model:invalidPropVal', ...
+                      'TriggerEdge must be empty or a scalar ws.ni.TriggerEdge');       
+            end            
+        end  % function
+        
+        function value = get.TriggerEdge(self)
+            value = self.TriggerEdge_ ;
         end  % function                
         
         function set.ClockTiming(self,value)
@@ -413,8 +447,8 @@ classdef AnalogInputTask < handle
                     assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
             end
 
-            if ~isempty(self.TriggerDelegate)
-                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerDelegate.PFIID), self.TriggerDelegate.Edge.daqmxName());
+            if ~isempty(self.TriggerPFIID)
+                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
             else
                 self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
             end                

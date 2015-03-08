@@ -478,24 +478,23 @@ classdef Acquisition < ws.system.Subsystem
 %                 return;
 %             end
             
-            if isempty(self.TriggerScheme)
+            if isempty(self.TriggerScheme) ,
                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
                       'The acquisition trigger scheme can not be empty when the system is enabled.');
             end
             
-            if isempty(self.TriggerScheme.Target)
+            if isempty(self.TriggerScheme.Target) ,
                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
                       'The acquisition trigger scheme target can not be empty when the system is enabled.');
             end
             
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources();
-            
-            %if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing ,
-            %    self.AnalogInputTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
-            %else
-            self.AnalogInputTask_.TriggerDelegate = self.TriggerScheme.Target;
-            %end
+
+            % Set up the task triggering
+            %self.AnalogInputTask_.TriggerDelegate = self.TriggerScheme.Target;
+            self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
 %             if experimentMode == ws.ApplicationState.TestPulsing
 %                 self.AnalogInputTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
