@@ -1,25 +1,20 @@
 classdef (Abstract) TriggerSourceTask < handle
-    
-    properties (SetAccess = protected)
-        isRepeatable = false
-    end
-    
-    properties (SetAccess = protected, Dependent = true)
-        isValid
+
+    properties (Dependent = true, SetAccess=immutable)
+        IsValid
+        IsRepeatable
     end
     
     properties (Dependent = true)
-        repeatCount
-    end
-    
-    properties (Dependent=true)
-        repeatFrequency
+        RepeatCount
+        RepeatFrequency
     end
     
     properties (Access = protected)
-        prtDaqTask = []
-        prtRepeatCount = 1
-        prtRepeatFrequency=1
+        DabsDaqTask_ = []
+        IsRepeatable_ = false
+        RepeatCount_ = 1
+        RepeatFrequency_=1
     end
     
     methods (Abstract)
@@ -31,20 +26,20 @@ classdef (Abstract) TriggerSourceTask < handle
             try
                 self.stop();
             
-                if ~isempty(self.prtDaqTask)
-                    delete(self.prtDaqTask);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
-                    self.prtDaqTask = [];
+                if ~isempty(self.DabsDaqTask_)
+                    delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+                    self.DabsDaqTask_ = [];
                 end
             catch me %#ok<NASGU>
             end
         end
         
         function stop(self)
-            if ~isempty(self.prtDaqTask)
-                if self.prtDaqTask.isTaskDone()
-                    self.prtDaqTask.stop();
+            if ~isempty(self.DabsDaqTask_)
+                if self.DabsDaqTask_.isTaskDone()
+                    self.DabsDaqTask_.stop();
                 else
-                    self.prtDaqTask.abort();
+                    self.DabsDaqTask_.abort();
                 end
             end
         end
@@ -53,39 +48,44 @@ classdef (Abstract) TriggerSourceTask < handle
             assert(false, 'Export signal is only supported for counter output channels.');
         end
         
-        function val = get.isValid(self)
-            val = ~isempty(self.prtDaqTask);
+        function val = get.IsValid(self)
+            val = ~isempty(self.DabsDaqTask_);
+        end
+
+        function val = get.IsRepeatable(self)
+            val = self.IsRepeatable_ ;
         end
         
-        function val = get.repeatCount(self)
-            val = self.prtRepeatCount;
+        function val = get.RepeatCount(self)
+            val = self.RepeatCount_;
         end
         
-        function set.repeatCount(self, val)
-            if val ~= 1 && ~self.isRepeatable
-                ws.most.mimics.warning('wavesurfer:triggersource:repeatcountunsupported', 'A repeat count other 1 is not support by this form of trigger source.\n');
+        function set.RepeatCount(self, val)
+            if val ~= 1 && ~self.IsRepeatable ,
+                ws.most.mimics.warning('wavesurfer:triggersource:repeatcountunsupported', ...
+                                       'A repeat count other 1 is not support by this form of trigger source.\n');
                 return;
             end
             self.setRepeatCount_(val);
-            %self.prtRepeatCount = val;
+            %self.RepeatCount_ = val;
         end
         
-        function val = get.repeatFrequency(self)
-            val = self.prtRepeatFrequency;
+        function val = get.RepeatFrequency(self)
+            val = self.RepeatFrequency_;
         end
         
-        function set.repeatFrequency(self, val)
+        function set.RepeatFrequency(self, val)
             self.setRepeatFrequency_(val);
         end        
     end
     
     methods (Access=protected)
         function setRepeatCount_(self, newValue)
-            self.prtRepeatCount=newValue;
+            self.RepeatCount_=newValue;
         end
         
         function setRepeatFrequency_(self, newValue)
-            self.prtRepeatFrequency=newValue;
+            self.RepeatFrequency_=newValue;
         end
     end
 end

@@ -294,8 +294,8 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
                                                ['Wavesurfer Counter Self Trigger Task' num2str(self.CounterID)], ...
                                                @self.doneCallback_);
             
-            self.CounterTask_.repeatFrequency = 1/interval;
-            self.CounterTask_.repeatCount = repeatCount;
+            self.CounterTask_.RepeatFrequency = 1/interval;
+            self.CounterTask_.RepeatCount = repeatCount;
             
             if self.PFIID ~= self.CounterID + 12;
                 self.CounterTask_.exportsignal(sprintf('PFI%d', self.PFIID));

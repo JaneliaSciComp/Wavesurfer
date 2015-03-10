@@ -28,7 +28,7 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
     methods
         function self = CounterTriggerSourceTask(device, counter, taskName, doneCallback)
             self = self@ws.ni.TriggerSourceTask();
-            self.isRepeatable = true;
+            self.IsRepeatable_ = true;
             
             if nargin > 0
                 self.DeviceName_ = device;
@@ -52,15 +52,15 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
 %             self.setPropertyAttributeFeatures('taskName', 'Classes', {'char'}, 'Attributes', {'vector'});
 
             % self.ziniPrepareTriggerDAQ();
-            self.prtDaqTask = [];
+            self.DabsDaqTask_ = [];
             if ~isempty(self.DeviceName_) && ~isempty(self.CounterID_)
-                self.prtDaqTask = ws.dabs.ni.daqmx.Task(self.TaskName_);
-                self.prtDaqTask.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
-                self.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.repeatCount);
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_);
+                self.DabsDaqTask_.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.RepeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
+                self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.RepeatCount);
             end
             
-            %self.prvListeners(1) = self.addlistener('repeatCount', 'PostSet', @(src, evt)evt.AffectedObject.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', evt.AffectedObject.repeatCount));
-            %self.prvListeners(2) = self.addlistener('repeatFrequency', 'PostSet', @(src, evt)evt.AffectedObject.prtDaqTask.channels(1).set('pulseFreq', evt.AffectedObject.repeatFrequency));
+            %self.prvListeners(1) = self.addlistener('RepeatCount', 'PostSet', @(src, evt)evt.AffectedObject.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', evt.AffectedObject.RepeatCount));
+            %self.prvListeners(2) = self.addlistener('RepeatFrequency', 'PostSet', @(src, evt)evt.AffectedObject.DabsDaqTask_.channels(1).set('pulseFreq', evt.AffectedObject.RepeatFrequency));
         end
         
         function delete(self) 
@@ -73,17 +73,17 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
         
         function start(self)
             %fprintf('CounterTriggerSourceTask::start(), CTR %d\n',self.CounterID_);
-            if ~isempty(self.prtDaqTask)
-                self.prtDaqTask.doneEventCallbacks = {@self.zcbkTriggerDone};
-                self.prtDaqTask.start();
+            if ~isempty(self.DabsDaqTask_)
+                self.DabsDaqTask_.doneEventCallbacks = {@self.zcbkTriggerDone};
+                self.DabsDaqTask_.start();
             end
         end
         
 %         function startWhenDone(self,maxWaitTime)
 %             fprintf('CounterTriggerSourceTask::startWhenDone(), CTR %d\n',self.CounterID_);
-%             if ~isempty(self.prtDaqTask)
-%                 self.prtDaqTask.doneEventCallbacks = {@self.zcbkTriggerDone};
-%                 self.prtDaqTask.start();
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.doneEventCallbacks = {@self.zcbkTriggerDone};
+%                 self.DabsDaqTask_.start();
 %             end
 %         end
         
@@ -91,7 +91,7 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
             %fprintf('CounterTriggerSourceTask::stop(), CTR %d\n', self.CounterID_);
             %dbstack
             stop@ws.ni.TriggerSourceTask(self);
-            self.prtDaqTask.doneEventCallbacks = {};
+            self.DabsDaqTask_.doneEventCallbacks = {};
         end
         
 %         function set.CounterID_(self, value)
@@ -103,12 +103,12 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
 %         end
         
         function exportsignal(self, terminalList)
-            self.prtDaqTask.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)
+            self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)
         end
         
         function configureStartTrigger(self, pfiId, edge)
             %fprintf('CounterTriggerSourceTask::configureStartTrigger()\n');
-            self.prtDaqTask.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), edge.daqmxName());
+            self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), edge.daqmxName());
         end
         
 %         function set.DeviceName_(self, value)
@@ -134,30 +134,30 @@ classdef CounterTriggerSourceTask < ws.ni.TriggerSourceTask    % & ws.mixin.Attr
     
     methods (Access=protected)
         function setRepeatCount_(self, newValue)
-            self.prtRepeatCount=newValue;
-            self.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', newValue);
+            self.RepeatCount_ = newValue;
+            self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', newValue);
         end
         
         function setRepeatFrequency_(self, newValue)
-            self.prtRepeatFrequency=newValue;
-            self.prtDaqTask.channels(1).set('pulseFreq', newValue);
+            self.RepeatFrequency_ = newValue;
+            self.DabsDaqTask_.channels(1).set('pulseFreq', newValue);
         end
     end
     
     methods (Access = protected)
 %         function ziniPrepareTriggerDAQ(self)
-%             self.prtDaqTask = [];
+%             self.DabsDaqTask_ = [];
 %             if ~isempty(self.DeviceName_) && ~isempty(self.CounterID_)
-%                 self.prtDaqTask = ws.dabs.ni.daqmx.Task(self.taskName);
-%                 self.prtDaqTask.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
-%                 self.prtDaqTask.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.repeatCount);
+%                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.taskName);
+%                 self.DabsDaqTask_.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
+%                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.RepeatCount);
 %             end
 %         end
         
         function zcbkTriggerDone(self, ~, ~)
             %fprintf('CounterTriggerSourceTask::zcbkTriggerDone()\n');
             self.stop();
-            self.prtDaqTask.doneEventCallbacks = {};
+            self.DabsDaqTask_.doneEventCallbacks = {};
             if ~isempty(self.DoneCallback_) ,
                 feval(self.DoneCallback_,self);
             end
