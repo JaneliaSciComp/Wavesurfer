@@ -8,6 +8,8 @@ To bump version
 
 1.  Change +ws/versionString.m to return the new version.
 
+2.  Add a paragraph to the README about the new release.
+
 
 
 To run automated tests
