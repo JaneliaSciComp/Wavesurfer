@@ -187,10 +187,10 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
         end
         
-        function self=didSetChannelUnitsOrScales(self)
+        function self=didSetAnalogChannelUnitsOrScales(self)
             scopes=self.Scopes;
             for i=1:length(scopes) ,
-                scopes(i).didSetChannelUnitsOrScales();
+                scopes(i).didSetAnalogChannelUnitsOrScales();
             end
         end       
         

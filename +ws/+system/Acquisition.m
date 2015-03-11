@@ -265,7 +265,7 @@ classdef Acquisition < ws.system.Subsystem
             import ws.utility.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelUnits_=fif(isChangeable,newValue,self.ChannelUnits_);
-            self.Parent.didSetChannelUnitsOrScales();
+            self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
@@ -273,7 +273,7 @@ classdef Acquisition < ws.system.Subsystem
             import ws.utility.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelScales_=fif(isChangeable,newValue,self.ChannelScales_);
-            self.Parent.didSetChannelUnitsOrScales();
+            self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
@@ -282,7 +282,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelUnits_=fif(isChangeable,newUnits,self.ChannelUnits_);
             self.ChannelScales_=fif(isChangeable,newScales,self.ChannelScales_);
-            self.Parent.didSetChannelUnitsOrScales();
+            self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
@@ -291,7 +291,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             self.ChannelUnits_(i)=fif(isChangeable,newValue,self.ChannelUnits_(i));
-            self.Parent.didSetChannelUnitsOrScales();
+            self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
@@ -300,7 +300,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             self.ChannelScales_(i)=fif(isChangeable,newValue,self.ChannelScales_(i));
-            self.Parent.didSetChannelUnitsOrScales();
+            self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
@@ -633,7 +633,7 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
 
         function electrodesRemoved(self)
-            self.Parent.didSetChannelUnitsOrScales();            
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
 
@@ -647,7 +647,7 @@ classdef Acquisition < ws.system.Subsystem
             if any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
                 return
             end
-            self.Parent.didSetChannelUnitsOrScales();            
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         

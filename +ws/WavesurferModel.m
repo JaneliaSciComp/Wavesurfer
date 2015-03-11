@@ -368,16 +368,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
 
-        function self=didSetChannelUnitsOrScales(self)
-            %fprintf('WavesurferModel.didSetChannelUnitsOrScales():\n')
+        function self=didSetAnalogChannelUnitsOrScales(self)
+            %fprintf('WavesurferModel.didSetAnalogChannelUnitsOrScales():\n')
             %dbstack
             display=self.Display;
             if ~isempty(display)
-                display.didSetChannelUnitsOrScales();
+                display.didSetAnalogChannelUnitsOrScales();
             end            
             ephys=self.Ephys;
             if ~isempty(ephys)
-                ephys.didSetChannelUnitsOrScales();
+                ephys.didSetAnalogChannelUnitsOrScales();
             end            
         end
         

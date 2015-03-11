@@ -16,9 +16,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         NAnalogChannels
+        DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
         AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
         IsWithinExperiment
+        AnalogChannelNames
         ChannelNames
     end
     
@@ -31,16 +33,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
 
     properties (Access = protected)
-        DeviceNames_  % the device names of the NI board for each channel, a cell array of strings
+        DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
+        AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+        AnalogChannelNames_ = cell(1,0)
+
         StimulusLibrary_ 
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         SampleRate_ = 20000  % Hz
         EpisodesPerExperiment_
         EpisodesCompleted_
-        AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
-        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
-        ChannelNames_ = cell(1,0)
     end
     
     events 
@@ -56,7 +59,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
             end
             self.Parent=parent;
-%             nChannels=length(self.ChannelNames);
+%             nChannels=length(self.AnalogChannelNames);
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
 %             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
@@ -134,41 +137,35 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             result = self.IsArmedOrStimulating_ ;
         end
     
+        function result = get.AnalogChannelNames(self)
+            result = self.AnalogChannelNames_ ;
+        end
+    
         function result = get.ChannelNames(self)
-            result = self.ChannelNames_ ;
+            % Will add digital channel names to this at some point
+            result = self.AnalogChannelNames_ ;
         end
     
         function result = get.AnalogChannelIDs(self)
             result = self.AnalogChannelIDs_ ;
         end
         
-%         function result = get.AnalogChannelIDs(self)
-%             if ~isempty(self.TheFiniteAnalogOutputTask_)
-%                 result = self.TheFiniteAnalogOutputTask_.AvailableChannels;
-%             else
-%                 result = zeros(1,0);
-%             end
-%         end
-%         
-%         function out = get.ChannelNames(self)
-%             if ~isempty(self.TheFiniteAnalogOutputTask_)
-%                 out = self.TheFiniteAnalogOutputTask_.ChannelNames;
-%             else
-%                 out = {};
-%             end
-%         end
+        function result = get.DeviceNamePerAnalogChannel(self)
+            result = self.DeviceNamePerAnalogChannel_ ;
+        end
+        
         
         function value = get.NAnalogChannels(self)
             value = length(self.AnalogChannelIDs_);
 %             if isempty(self.TheFiniteAnalogOutputTask_) ,
 %                 value=0;
 %             else
-%                 value=length(self.TheFiniteAnalogOutputTask_.ChannelNames);
+%                 value=length(self.TheFiniteAnalogOutputTask_.AnalogChannelNames);
 %             end
         end
         
-        function value=isChannelName(self,name)
-            value=any(strcmp(name,self.ChannelNames));
+        function value=isAnalogChannelName(self,name)
+            value=any(strcmp(name,self.AnalogChannelNames));
         end
         
 %         function out = get.TrialDurations(self)
@@ -279,9 +276,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceNames_=outputDeviceNames;
+                self.DeviceNamePerAnalogChannel_=outputDeviceNames;
                 self.AnalogChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
-                self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
+                self.AnalogChannelNames_ = mdfStructure.outputAnalogChannelNames;                
 %                 self.TheFiniteAnalogOutputTask_ = ...
 %                     ws.ni.FiniteAnalogOutputTask(mdfStructure.outputDeviceNames, ...
 %                                                          mdfStructure.outputAnalogChannelIDs, ...
@@ -296,7 +293,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                                                   
 %                 self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
            
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
+                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.AnalogChannelNames);
                 
                 self.CanEnable = true;
             end
@@ -305,10 +302,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteAnalogOutputTask(self.DeviceNames_{1}, ...
+                    ws.ni.FiniteAnalogOutputTask(self.DeviceNamePerAnalogChannel_{1}, ...
                                                  self.AnalogChannelIDs, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
-                                                 self.ChannelNames);
+                                                 self.AnalogChannelNames);
                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
                 self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
             end
@@ -549,7 +546,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
 
         function iChannel=iChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.ChannelNames));
+            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
             if isempty(iChannels) ,
                 iChannel=nan;
             else
@@ -586,7 +583,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isempty(electrodeManager) ,
                 channelUnits=self.AnalogChannelUnits_;
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandUnitsByName(channelNames);
@@ -610,7 +607,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isempty(electrodeManager) ,
                 analogChannelScales=self.AnalogChannelScales_;
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 [analogChannelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandScalingsByName(channelNames);
@@ -686,7 +683,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isempty(electrodeManager) ,
                 result=zeros(1,self.NAnalogChannels);
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 result = ...
                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
             end
@@ -777,11 +774,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 else
                     stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
                 end
-                aoData = stimulusMap.calculateSignals(self.SampleRate, self.ChannelNames, episodeIndexWithinExperiment);
+                aoData = stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, episodeIndexWithinExperiment);
             else
-                aoData=zeros(0,length(self.ChannelNames));
+                aoData=zeros(0,length(self.AnalogChannelNames));
             end
-            %if isempty(aoData) && ~isempty(self.ChannelNames)
+            %if isempty(aoData) && ~isempty(self.AnalogChannelNames)
             %    ws.most.mimics.warning('wavesurfer:stimulus:emptystimulusoutput', ...
             %                        'The StimulusMap for the current StimulusSequence entry does not have any Bindings for any of the Stimulation output channels.');
             %end

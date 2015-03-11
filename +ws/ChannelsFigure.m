@@ -463,7 +463,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % update the AOs
-            deviceNames=model.Stimulation.DeviceNames;  % cell array of strings
+            deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
             channelIDs=model.Stimulation.ChannelIDs;  % zero-based NI channel index
             channelNames=model.Stimulation.ChannelNames;
             channelScales=model.Stimulation.ChannelScales;

@@ -212,7 +212,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %             end
 %         end
         
-        function self=didSetChannelUnitsOrScales(self)
+        function self=didSetAnalogChannelUnitsOrScales(self)
             self.clearExistingSweepIfPresent();
             self.broadcast('Update');            
         end
@@ -516,7 +516,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         
         function value=get.CommandChannelNames(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.ChannelNames;
+            value=wavesurferModel.Stimulation.AnalogChannelNames;
         end
 
         function value=get.MonitorChannelNames(self)
@@ -763,7 +763,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         
         function value=get.OutputDeviceNames(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.DeviceNames;
+            value=wavesurferModel.Stimulation.DeviceNamePerAnalogChannel;
         end
         
         function result=get.CommandChannelIDPerElectrode(self)
@@ -1021,7 +1021,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             for i=1:nElectrodes
                 self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorChannelIDs(i));  % defaults to differential
             end
-            clockString=sprintf('/%s/ao/SampleClock',self.OutputDeviceNames{1});  % Output device ID is something like 'Dev3'
+            clockString=sprintf('/%s/ao/SampleClock',self.OutputDeviceNames{1});  % Output device name is something like 'Dev3'
             self.InputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',[],clockString);
               % set the sampling rate, and use the AO sample clock to keep
               % acquisiton synced with analog output
