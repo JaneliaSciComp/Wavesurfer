@@ -447,7 +447,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             channelNames=model.Acquisition.ChannelNames;
             channelScales=model.Acquisition.ChannelScales;
             channelUnits=model.Acquisition.ChannelUnits;
-            nElectrodesClaimingChannel=model.Acquisition.NumberOfElectrodesClaimingChannel;
+            nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAIs ,
@@ -468,7 +468,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             channelNames=model.Stimulation.ChannelNames;
             channelScales=model.Stimulation.ChannelScales;
             channelUnits=model.Stimulation.ChannelUnits;
-            nElectrodesClaimingChannel=model.Stimulation.NumberOfElectrodesClaimingChannel;
+            nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAOs ,

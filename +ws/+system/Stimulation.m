@@ -3,98 +3,44 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     properties (Dependent = true)
         SampleRate  % Hz
-    end
-    
-    properties (Dependent = true)
         DoRepeatSequence 
-    end
-        
-    properties (Access=protected)
-        DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
-    end
-    
-    properties (Transient=true)        
-        IsArmedOrStimulating = false  % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
-        IsWithinExperiment = false                       
-    end
-    
-    % The StimulusLibrary properties should come before the SelectedOutputable,
-    % SelectedOutputableUUID properties to ensure that the lib gets loaded before the
-    % SelectedOutputable when loading a protocol (.cfg) file.
-    properties (Dependent=true)
         StimulusLibrary
-    end
-    
-    properties (Access=protected)
-        StimulusLibrary_ 
-    end    
-    
-    properties (SetAccess = protected, Dependent = true)
-        %TrialDurations  % s
-        ChannelNames
-    end
-    
-    properties (SetAccess = immutable, Dependent = true)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        NChannels
-    end
-    
-    properties (Dependent=true)
         ChannelScales
           % A row vector of scale factors to convert each channel from native units to volts on the coax.
           % This is implicitly in units of ChannelUnits per volt (see below)
         ChannelUnits
           % An SIUnit row vector that describes the real-world units 
           % for each stimulus channel.
+        TriggerScheme
     end
-
-    properties (Dependent=true, SetAccess=immutable)
+    
+    properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
+        NChannels
         ChannelIDs  % the zero-based channel IDs of all the available AOs 
+        IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
+        IsWithinExperiment
+        ChannelNames
     end
-    
-    properties (SetAccess = protected)
-        DeviceNames  % the device IDs of the NI board for each channel, a cell array of strings
-    end
-    
-    properties (Transient=true)
-        TriggerScheme = ws.TriggerScheme.empty()
-        %ContinuousModeTriggerScheme = ws.TriggerScheme.empty()
-    end
-    
-%     properties (Access = protected, Dependent = true)
-% %         LibraryStore_  % The name of the stimulus library file.  -- ALT, 2014-07-16
-%         SelectedOutputableUUID_  % this exists so that when we pickle, we can store a unique
-%                     % 
-%     end
     
     properties (Access = protected, Transient=true)
-        TheFiniteAnalogOutputTask_
+        TheFiniteAnalogOutputTask_ = []
+        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformExperiment(), set to [] in didPerformExperiment())
+        IsArmedOrStimulating_ = false
+        IsWithinExperiment_ = false                       
+        TriggerScheme_ = ws.TriggerScheme.empty()
     end
 
     properties (Access = protected)
+        DeviceNames  % the device names of the NI board for each channel, a cell array of strings
+        StimulusLibrary_ 
+        DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         SampleRate_ = 20000  % Hz
-        StimulusOutputable_ = {}
-        %DelegateDoneFcn_
-        %TriggerListener_
         EpisodesPerExperiment_
         EpisodesCompleted_
-        
-        %CycleInLibrary_ = ws.stimulus.StimulusSequence.empty()
-        
-        %InternalCycle_ = ws.stimulus.StimulusSequence.empty()
-        RepeatsStimulusSequenceStack_ = false(0, 1)
-        
-        %LibraryStoreState_ = ''
-        %SelectedOutputableUUID_ = []
-                
         ChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         ChannelScales_ = zeros(1,0)  % Store for the current ChannelScales values, but values may be "masked" by ElectrodeManager
         ChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current ChannelUnits values, but values may be "masked" by ElectrodeManager
         ChannelNames_ = cell(1,0)
-        %IsChannelActive_ = true(1,0)
-    end
-    
-    properties (Dependent=true, SetAccess=immutable, Hidden=true)  % Don't want to see when disp() is called
-        NumberOfElectrodesClaimingChannel
     end
     
     events 
@@ -182,6 +128,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetDoRepeatSequence');
         end
         
+        function result = get.IsWithinExperiment(self)
+            result = self.IsWithinExperiment_ ;
+        end
+        
+        function result = get.IsArmedOrStimulating(self)
+            result = self.IsArmedOrStimulating_ ;
+        end
+    
         function result = get.ChannelNames(self)
             result = self.ChannelNames_ ;
         end
@@ -237,7 +191,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function set.TriggerScheme(self, value)
             if isa(value,'ws.most.util.Nonvalue'), return, end            
             self.validatePropArg('TriggerScheme', value);
-            self.TriggerScheme = value;
+            self.TriggerScheme_ = value;
+        end
+
+        function value=get.TriggerScheme(self)
+            value=self.TriggerScheme_;
         end
         
 %         function out = get.LibraryStore_(self)
@@ -344,7 +302,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 
                 self.CanEnable = true;
             end
-        end
+        end  % function
 
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
@@ -459,13 +417,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Set up the stimulus outputable
             stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
-            self.StimulusOutputable_=stimulusOutputable;
+            self.SelectedOutputableCache_=stimulusOutputable;
             
 %             % register the output task callbacks
 %             self.TheFiniteAnalogOutputTask_.registerCallbacks();
             
             % Set the state
-            self.IsWithinExperiment=true;
+            self.IsWithinExperiment_=true;
         end  % willPerformExperiment() function
         
         function didPerformExperiment(self, ~)
@@ -474,8 +432,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.TheFiniteAnalogOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
-            self.StimulusOutputable_ = {};
-            self.IsWithinExperiment=false;  % might already be guaranteed to be false here...
+            self.SelectedOutputableCache_ = [];
+            self.IsWithinExperiment_=false;  % might already be guaranteed to be false here...
         end  % function
         
         function didAbortExperiment(self, ~)
@@ -486,8 +444,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             
             %delete(self.StimulusSequenceIterator_);
-            self.StimulusOutputable_ = {};
-            self.IsWithinExperiment=false;
+            self.SelectedOutputableCache_ = [];
+            self.IsWithinExperiment_=false;
         end  % function
         
         function willPerformTrial(self, wavesurferObj) %#ok<INUSD>
@@ -529,7 +487,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
 %                         self.armForEpisode();
 %                     else
-%                         self.IsWithinExperiment = false;
+%                         self.IsWithinExperiment_ = false;
 %                         self.Parent.stimulationTrialComplete();
 %                     end
                     % if first trial, arm.  Otherwise, we handle
@@ -547,7 +505,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
-            self.IsArmedOrStimulating = true;                        
+            self.IsArmedOrStimulating_ = true;                        
             sampleCount = self.setAnalogChannelData_();
 
             if sampleCount > 0 ,
@@ -565,7 +523,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.TheFiniteAnalogOutputTask_.start();                
             else
                 % This was triggered, it just has a map/stimulus that has zero samples.
-                self.IsArmedOrStimulating = false;
+                self.IsArmedOrStimulating_ = false;
                 self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             end
             %T=toc(thisTic);
@@ -574,7 +532,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function didAbortTrial(self, ~)
             self.TheFiniteAnalogOutputTask_.abort();
-            self.IsArmedOrStimulating = false;
+            self.IsArmedOrStimulating_ = false;
         end  % function
         
         function didSelectStimulusSequence(self, cycle)
@@ -665,7 +623,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function set.ChannelUnits(self,newValue)
             import ws.utility.*
             oldValue=self.ChannelUnits_;
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
             self.ChannelUnits_=editedNewValue;
             self.Parent.didSetChannelUnitsOrScales();            
@@ -675,7 +633,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function set.ChannelScales(self,newValue)
             import ws.utility.*
             oldValue=self.ChannelScales_;
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
             self.ChannelScales_=editedNewValue;
             self.Parent.didSetChannelUnitsOrScales();            
@@ -684,7 +642,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function setChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             oldUnits=self.ChannelUnits_;
             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
             oldScales=self.ChannelScales_;
@@ -696,7 +654,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function setSingleChannelUnits(self,i,newValue)
-            isChangeableFull=(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
                 self.ChannelUnits_(i)=newValue;
@@ -706,7 +664,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function setSingleChannelScale(self,i,newValue)
-            isChangeableFull=(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
                 self.ChannelScales_(i)=newValue;
@@ -715,7 +673,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetChannelUnitsOrScales');
         end  % function
         
-        function result=get.NumberOfElectrodesClaimingChannel(self)
+        function result=getNumberOfElectrodesClaimingChannel(self)
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -752,7 +710,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('ChannelUnits_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('ChannelScales_', 'IncludeInFileTypes', {'cfg'});            
-%             self.setPropertyTags('IsArmedOrStimulating', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('IsArmedOrStimulating_', 'ExcludeFromFileTypes', {'*'});
 %             %self.setPropertyTags('SelectedOutputable',  'IncludeInFileTypes', {'header'}, 'ExcludeFromFileTypes', {'usr', 'cfg'});
 %             %self.setPropertyTags('SelectedOutputable',  'ExcludeFromFileTypes', {'*'});
 %             self.setPropertyTags('TriggerScheme', 'ExcludeFromFileTypes', {'*'});
@@ -790,14 +748,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Calculate the episode index
             episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
             
-            % Determine the stimulus map, given self.StimulusOutputable_ and other
+            % Determine the stimulus map, given self.SelectedOutputableCache_ and other
             % things
-            if isa(self.StimulusOutputable_,'ws.stimulus.StimulusMap')
+            if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
                 isThereAMap=true;
                 indexOfMapIfSequence=[];
             else
                 % outputable must be a sequence                
-                nMapsInSequence=length(self.StimulusOutputable_.Maps);
+                nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
                 if episodeIndexWithinExperiment <= nMapsInSequence ,
                     isThereAMap=true;
                     indexOfMapIfSequence=episodeIndexWithinExperiment;
@@ -817,9 +775,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isThereAMap ,
                 if isempty(indexOfMapIfSequence) ,
                     % this means the outputable is a "naked" map
-                    stimulusMap=self.StimulusOutputable_;
+                    stimulusMap=self.SelectedOutputableCache_;
                 else
-                    stimulusMap=self.StimulusOutputable_.Maps{indexOfMapIfSequence};
+                    stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
                 end
                 aoData = stimulusMap.calculateSignals(self.SampleRate, self.ChannelNames, episodeIndexWithinExperiment);
             else
@@ -856,7 +814,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function episodeCompleted_(self)
             % Called from "below" when a single episode of stimulation is
             % completed.  
-            self.IsArmedOrStimulating = false;
+            self.IsArmedOrStimulating_ = false;
             self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             
             if self.TriggerScheme.IsExternal ,
@@ -890,7 +848,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                         if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
                             self.armForEpisode();
                         else
-                            self.IsWithinExperiment = false;
+                            self.IsWithinExperiment_ = false;
                             self.Parent.stimulationTrialComplete();
                         end
                     end
@@ -900,7 +858,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
                         self.armForEpisode();
                     else
-                        self.IsWithinExperiment = false;
+                        self.IsWithinExperiment_ = false;
                         self.Parent.stimulationTrialComplete();
                     end
                 end

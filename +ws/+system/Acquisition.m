@@ -79,10 +79,6 @@ classdef Acquisition < ws.system.Subsystem
         SampleRate_ = 20000  % Hz
     end
     
-    properties (Dependent=true, SetAccess=immutable, Hidden=true)  % Don't want to see when disp() is called
-        NumberOfElectrodesClaimingChannel
-    end
-    
     properties (Access = protected, Transient=true)
         LatestData_ = [] ;
         LatestRawData_ = [] ;
@@ -197,7 +193,7 @@ classdef Acquisition < ws.system.Subsystem
             out = self.ChannelUnits(self.IsChannelActive);
         end
         
-        function value = get.NumberOfElectrodesClaimingChannel(self)
+        function value = getNumberOfElectrodesClaimingChannel(self)
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -267,7 +263,7 @@ classdef Acquisition < ws.system.Subsystem
         
         function set.ChannelUnits(self,newValue)
             import ws.utility.*
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelUnits_=fif(isChangeable,newValue,self.ChannelUnits_);
             self.Parent.didSetChannelUnitsOrScales();
             self.broadcast('DidSetChannelUnitsOrScales');
@@ -275,7 +271,7 @@ classdef Acquisition < ws.system.Subsystem
         
         function set.ChannelScales(self,newValue)
             import ws.utility.*
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelScales_=fif(isChangeable,newValue,self.ChannelScales_);
             self.Parent.didSetChannelUnitsOrScales();
             self.broadcast('DidSetChannelUnitsOrScales');
@@ -283,7 +279,7 @@ classdef Acquisition < ws.system.Subsystem
         
         function setChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*            
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelUnits_=fif(isChangeable,newUnits,self.ChannelUnits_);
             self.ChannelScales_=fif(isChangeable,newScales,self.ChannelScales_);
             self.Parent.didSetChannelUnitsOrScales();
@@ -292,7 +288,7 @@ classdef Acquisition < ws.system.Subsystem
         
         function setSingleChannelUnits(self,i,newValue)
             import ws.utility.*
-            isChangeableFull=(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             self.ChannelUnits_(i)=fif(isChangeable,newValue,self.ChannelUnits_(i));
             self.Parent.didSetChannelUnitsOrScales();
@@ -301,7 +297,7 @@ classdef Acquisition < ws.system.Subsystem
         
         function setSingleChannelScale(self,i,newValue)
             import ws.utility.*
-            isChangeableFull=(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             self.ChannelScales_(i)=fif(isChangeable,newValue,self.ChannelScales_(i));
             self.Parent.didSetChannelUnitsOrScales();
