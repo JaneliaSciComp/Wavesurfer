@@ -72,7 +72,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
 
         function self=createFixedControls(self)
             nAIs=self.Model.Acquisition.NChannels;
-            nAOs=self.Model.Stimulation.NChannels;
+            nAOs=self.Model.Stimulation.NAnalogChannels;
             
             %
             % Make the AIs panel
@@ -464,10 +464,10 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % update the AOs
             deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
-            channelIDs=model.Stimulation.ChannelIDs;  % zero-based NI channel index
-            channelNames=model.Stimulation.ChannelNames;
-            channelScales=model.Stimulation.ChannelScales;
-            channelUnits=model.Stimulation.ChannelUnits;
+            channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
+            channelNames=model.Stimulation.AnalogChannelNames;
+            channelScales=model.Stimulation.AnalogChannelScales;
+            channelUnits=model.Stimulation.AnalogChannelUnits;
             nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
