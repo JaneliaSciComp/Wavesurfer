@@ -57,12 +57,12 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
                 model.subscribeMe(self,'DidSetState','','updateControlProperties');            
                 acquisition=model.Acquisition;
                 if ~isempty(acquisition) ,
-                    acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales','','updateControlProperties');
+                    acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');
                     acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
                 end
                 stimulation=model.Stimulation;
                 if ~isempty(stimulation) ,
-                    stimulation.subscribeMe(self,'DidSetChannelUnitsOrScales','','updateControlProperties');                    
+                    stimulation.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');                    
                 end
             end
             

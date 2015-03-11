@@ -195,10 +195,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %                     stimulus=wavesurferModel.Stimulation;
 %                 end
 %                 if ~isempty(acquisition)
-%                     acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales');
+%                     acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
 %                 end
 %                 if ~isempty(stimulus)
-%                     stimulus.subscribeMe(self,'DidSetChannelUnitsOrScales');
+%                     stimulus.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
 %                 end
 %             end
         end
@@ -206,7 +206,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %         % This is designed to be called by an EventBroadcaster if a
 %         % subscribed-to event happens
 %         function eventHappened(self,broadcaster,eventName,propertyName,source,event)   %#ok<INUSD,INUSL>
-%             if isequal(eventName,'DidSetChannelUnitsOrScales')
+%             if isequal(eventName,'DidSetAnalogChannelUnitsOrScales')
 %                 self.clearExistingSweepIfPresent();
 %                 self.broadcast('Update');
 %             end

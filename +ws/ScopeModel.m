@@ -168,12 +168,12 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     methods
         function set.Parent(self, newValue)
 %             if ~isempty(self.WavesurferModel) && isvalid(self.WavesurferModel) ,
-%                 self.WavesurferModel.Acquisition.unsubscribeMe(self,'DidSetChannelUnitsOrScales','','didSetChannelUnitsOrScales');
+%                 self.WavesurferModel.Acquisition.unsubscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','didSetChannelUnitsOrScales');
 %             end
             self.Parent=newValue;
             % Sometimes we want to set WavesurferModel to []
 %             if ~isempty(newValue)
-%                 self.WavesurferModel.Acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales','','didSetChannelUnitsOrScales');
+%                 self.WavesurferModel.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','didSetChannelUnitsOrScales');
 %             end
         end
         
@@ -482,7 +482,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         end
         
 %         function eventHappened(self,publisher,eventName,propertyName,source,event)  %#ok
-%             if isequal(eventName,'DidSetChannelUnitsOrScales')
+%             if isequal(eventName,'DidSetAnalogChannelUnitsOrScales')
 %                 self.didSetChannelUnitsOrScales();
 %             end
 %         end

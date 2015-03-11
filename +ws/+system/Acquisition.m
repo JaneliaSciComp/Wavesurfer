@@ -90,7 +90,7 @@ classdef Acquisition < ws.system.Subsystem
     end    
     
     events 
-        DidSetChannelUnitsOrScales
+        DidSetAnalogChannelUnitsOrScales
         DidSetIsChannelActive
         DidSetSampleRate
     end
@@ -266,7 +266,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelUnits_=fif(isChangeable,newValue,self.ChannelUnits_);
             self.Parent.didSetChannelUnitsOrScales();
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function set.ChannelScales(self,newValue)
@@ -274,7 +274,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             self.ChannelScales_=fif(isChangeable,newValue,self.ChannelScales_);
             self.Parent.didSetChannelUnitsOrScales();
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setChannelUnitsAndScales(self,newUnits,newScales)
@@ -283,7 +283,7 @@ classdef Acquisition < ws.system.Subsystem
             self.ChannelUnits_=fif(isChangeable,newUnits,self.ChannelUnits_);
             self.ChannelScales_=fif(isChangeable,newScales,self.ChannelScales_);
             self.Parent.didSetChannelUnitsOrScales();
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleChannelUnits(self,i,newValue)
@@ -292,7 +292,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeable= ~isChangeableFull(i);
             self.ChannelUnits_(i)=fif(isChangeable,newValue,self.ChannelUnits_(i));
             self.Parent.didSetChannelUnitsOrScales();
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleChannelScale(self,i,newValue)
@@ -301,7 +301,7 @@ classdef Acquisition < ws.system.Subsystem
             isChangeable= ~isChangeableFull(i);
             self.ChannelScales_(i)=fif(isChangeable,newValue,self.ChannelScales_(i));
             self.Parent.didSetChannelUnitsOrScales();
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
 %         function set.ActiveChannelNames(self, value)
@@ -634,7 +634,7 @@ classdef Acquisition < ws.system.Subsystem
 
         function electrodesRemoved(self)
             self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
 
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
@@ -648,7 +648,7 @@ classdef Acquisition < ws.system.Subsystem
                 return
             end
             self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)

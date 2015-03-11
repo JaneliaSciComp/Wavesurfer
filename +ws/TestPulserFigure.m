@@ -77,8 +77,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Subscribe to model events
             %if ~isempty(self.Host)
-            %    self.Host.Acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales');
-            %    self.Host.Stimulus.subscribeMe(self,'DidSetChannelUnitsOrScales');
+            %    self.Host.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
+            %    self.Host.Stimulus.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
             %end
             if ~isempty(self.Model) ,
                 self.Model.subscribeMe(self,'Update','','update');

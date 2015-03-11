@@ -5,18 +5,18 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         SampleRate  % Hz
         DoRepeatSequence 
         StimulusLibrary
-        ChannelScales
+        AnalogChannelScales
           % A row vector of scale factors to convert each channel from native units to volts on the coax.
           % This is implicitly in units of ChannelUnits per volt (see below)
-        ChannelUnits
+        AnalogChannelUnits
           % An SIUnit row vector that describes the real-world units 
           % for each stimulus channel.
         TriggerScheme
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        NChannels
-        ChannelIDs  % the zero-based channel IDs of all the available AOs 
+        NAnalogChannels
+        AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
         IsWithinExperiment
         ChannelNames
@@ -37,14 +37,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         SampleRate_ = 20000  % Hz
         EpisodesPerExperiment_
         EpisodesCompleted_
-        ChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
-        ChannelScales_ = zeros(1,0)  % Store for the current ChannelScales values, but values may be "masked" by ElectrodeManager
-        ChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current ChannelUnits values, but values may be "masked" by ElectrodeManager
+        AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         ChannelNames_ = cell(1,0)
     end
     
     events 
-        DidSetChannelUnitsOrScales
+        DidSetAnalogChannelUnitsOrScales
         DidSetStimulusLibrary
         DidSetSampleRate
         DidSetDoRepeatSequence
@@ -57,9 +57,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             self.Parent=parent;
 %             nChannels=length(self.ChannelNames);
-%             self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+%             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
-%             self.ChannelUnits_=repmat(V,[1 nChannels]);
+%             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
@@ -138,11 +138,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             result = self.ChannelNames_ ;
         end
     
-        function result = get.ChannelIDs(self)
-            result = self.ChannelIDs_ ;
+        function result = get.AnalogChannelIDs(self)
+            result = self.AnalogChannelIDs_ ;
         end
         
-%         function result = get.ChannelIDs(self)
+%         function result = get.AnalogChannelIDs(self)
 %             if ~isempty(self.TheFiniteAnalogOutputTask_)
 %                 result = self.TheFiniteAnalogOutputTask_.AvailableChannels;
 %             else
@@ -158,8 +158,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             end
 %         end
         
-        function value = get.NChannels(self)
-            value = length(self.ChannelIDs_);
+        function value = get.NAnalogChannels(self)
+            value = length(self.AnalogChannelIDs_);
 %             if isempty(self.TheFiniteAnalogOutputTask_) ,
 %                 value=0;
 %             else
@@ -240,13 +240,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
                 return
             end
-            self.Parent.didSetChannelUnitsOrScales();                        
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();                        
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
         function electrodesRemoved(self)
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
@@ -280,7 +280,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
                 self.DeviceNames_=outputDeviceNames;
-                self.ChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
+                self.AnalogChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
                 self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
 %                 self.TheFiniteAnalogOutputTask_ = ...
 %                     ws.ni.FiniteAnalogOutputTask(mdfStructure.outputDeviceNames, ...
@@ -290,9 +290,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
                 
                 nChannels=length(mdfStructure.outputAnalogChannelIDs);
-                self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+                self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.ChannelUnits_=repmat(V,[1 nChannels]);
+                self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
                                                   
 %                 self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
            
@@ -306,7 +306,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteAnalogOutputTask(self.DeviceNames_{1}, ...
-                                                 self.ChannelIDs, ...
+                                                 self.AnalogChannelIDs, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
                                                  self.ChannelNames);
                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
@@ -541,11 +541,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is A02,
             % it returns 2.
-            channelID=self.ChannelIDs(self.iChannelFromName(channelName));
+            channelID=self.AnalogChannelIDs(self.iChannelFromName(channelName));
         end  % function
 
         function value=channelScaleFromName(self,channelName)
-            value=self.ChannelScales(self.iChannelFromName(channelName));
+            value=self.AnalogChannelScales(self.iChannelFromName(channelName));
         end  % function
 
         function iChannel=iChannelFromName(self,channelName)
@@ -565,12 +565,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
-                    result=self.ChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits(iChannel);
                 end
             end
         end
         
-        function channelUnits=get.ChannelUnits(self)
+        function channelUnits=get.AnalogChannelUnits(self)
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -584,17 +584,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                channelUnits=self.ChannelUnits_;
+                channelUnits=self.AnalogChannelUnits_;
             else
                 channelNames=self.ChannelNames;            
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandUnitsByName(channelNames);
-                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.ChannelUnits_);
+                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end  % function
         
-        function channelScales=get.ChannelScales(self)
+        function analogChannelScales=get.AnalogChannelScales(self)
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -608,67 +608,67 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                channelScales=self.ChannelScales_;
+                analogChannelScales=self.AnalogChannelScales_;
             else
                 channelNames=self.ChannelNames;            
-                [channelScalesFromElectrodes, ...
+                [analogChannelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandScalingsByName(channelNames);
-                channelScales=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.ChannelScales_);
+                analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
             end
         end  % function
         
-        function set.ChannelUnits(self,newValue)
+        function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
-            oldValue=self.ChannelUnits_;
+            oldValue=self.AnalogChannelUnits_;
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.ChannelUnits_=editedNewValue;
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.AnalogChannelUnits_=editedNewValue;
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function set.ChannelScales(self,newValue)
+        function set.AnalogChannelScales(self,newValue)
             import ws.utility.*
-            oldValue=self.ChannelScales_;
+            oldValue=self.AnalogChannelScales_;
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.ChannelScales_=editedNewValue;
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.AnalogChannelScales_=editedNewValue;
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setChannelUnitsAndScales(self,newUnits,newScales)
+        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            oldUnits=self.ChannelUnits_;
+            oldUnits=self.AnalogChannelUnits_;
             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
-            oldScales=self.ChannelScales_;
+            oldScales=self.AnalogChannelScales_;
             editedNewScales=fif(isChangeable,newScales,oldScales);
-            self.ChannelUnits_=editedNewUnits;
-            self.ChannelScales_=editedNewScales;
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.AnalogChannelUnits_=editedNewUnits;
+            self.AnalogChannelScales_=editedNewScales;
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelUnits(self,i,newValue)
+        function setSingleAnalogChannelUnits(self,i,newValue)
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
-                self.ChannelUnits_(i)=newValue;
+                self.AnalogChannelUnits_(i)=newValue;
             end
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleChannelScale(self,i,newValue)
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
-                self.ChannelScales_(i)=newValue;
+                self.AnalogChannelScales_(i)=newValue;
             end
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function result=getNumberOfElectrodesClaimingChannel(self)
@@ -684,7 +684,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                result=zeros(1,self.NChannels);
+                result=zeros(1,self.NAnalogChannels);
             else
                 channelNames=self.ChannelNames;            
                 result = ...
@@ -706,8 +706,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %         function defineDefaultPropertyTags(self)
 %             defineDefaultPropertyTags@ws.system.Subsystem(self);
 %             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('ChannelUnits_', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('ChannelScales_', 'IncludeInFileTypes', {'cfg'});            
+%             self.setPropertyTags('AnalogChannelUnits_', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('AnalogChannelScales_', 'IncludeInFileTypes', {'cfg'});            
 %             self.setPropertyTags('IsArmedOrStimulating_', 'ExcludeFromFileTypes', {'*'});
 %             %self.setPropertyTags('SelectedOutputable',  'IncludeInFileTypes', {'header'}, 'ExcludeFromFileTypes', {'usr', 'cfg'});
 %             %self.setPropertyTags('SelectedOutputable',  'ExcludeFromFileTypes', {'*'});
@@ -790,15 +790,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             sampleCount= size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            channelScales=self.ChannelScales;
-            inverseChannelScales=1./channelScales;
-            sanitizedInverseChannelScales=fif(isfinite(inverseChannelScales), inverseChannelScales, zeros(size(inverseChannelScales)));            
+            analogChannelScales=self.AnalogChannelScales;
+            inverseAnalogChannelScales=1./analogChannelScales;
+            sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
             
             % scale the data by the channel scales
             if isempty(aoData) ,
                 aoDataScaled=aoData;
             else
-                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseChannelScales);
+                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
             end
             
             % limit the data to [-10 V, +10 V]
