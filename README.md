@@ -106,7 +106,7 @@ Authors
 -------
 
 Wavesurfer started out as version 3 of Ephus, another
-electrophysiology package, largely authored by Vijay Iyer, with
+electrophysiology package largely authored by Vijay Iyer, with
 contributions by Tim O'Connor and others.  Vijay is also the primary
 author of the DABS library, from which the code in +ws/+dabs/+ni was
 taken, and of the MOST library, in +ws/+most.
@@ -135,3 +135,6 @@ Version History
       int16 instead of double-precision floating point.  Improved
       ScanImage integration.
 
+0.75: (March 9, 2015) Fixed bug with scope x-span.
+
+0.76: (March 11, 2015) Fixed bug with README(!).
