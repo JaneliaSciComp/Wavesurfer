@@ -31,7 +31,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
 
     properties (Access = protected)
-        DeviceNames  % the device names of the NI board for each channel, a cell array of strings
+        DeviceNames_  % the device names of the NI board for each channel, a cell array of strings
         StimulusLibrary_ 
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         SampleRate_ = 20000  % Hz
@@ -44,10 +44,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
     
     events 
-        % WillSetChannelUnitsOrScales
         DidSetChannelUnitsOrScales
         DidSetStimulusLibrary
-        DidSetSelectedOutputable
         DidSetSampleRate
         DidSetDoRepeatSequence
     end
@@ -281,7 +279,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceNames=outputDeviceNames;
+                self.DeviceNames_=outputDeviceNames;
                 self.ChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
                 self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
 %                 self.TheFiniteAnalogOutputTask_ = ...
@@ -307,7 +305,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteAnalogOutputTask(self.DeviceNames{1}, ...
+                    ws.ni.FiniteAnalogOutputTask(self.DeviceNames_{1}, ...
                                                  self.ChannelIDs, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
                                                  self.ChannelNames);
