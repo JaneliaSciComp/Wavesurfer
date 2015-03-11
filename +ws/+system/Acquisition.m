@@ -412,15 +412,16 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
        
         function initializeFromMDFStructure(self, mdfStructure)
-            if ~isempty(mdfStructure.inputChannelIDs) ,
-                inputDeviceNames = mdfStructure.inputDeviceNames;
+            if ~isempty(mdfStructure.physicalInputChannelNames) ,
+                physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
+                inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
                 uniqueInputDeviceNames=unique(inputDeviceNames);
                 if ~isscalar(uniqueInputDeviceNames) ,
                     error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
                 self.DeviceNames = inputDeviceNames;
-                self.ChannelIDs_ = mdfStructure.inputChannelIDs;
+                self.ChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(physicalInputChannelNames) ;
                 self.ChannelNames_ = mdfStructure.inputChannelNames;
 %                 self.AnalogInputTask_ = ...
 %                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
@@ -432,7 +433,7 @@ classdef Acquisition < ws.system.Subsystem
                 
 %                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
                 
-                nChannels=length(mdfStructure.inputChannelIDs);
+                nChannels=length(physicalInputChannelNames);
                 self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
                 %self.ChannelScales(2)=0.1  % to test
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                

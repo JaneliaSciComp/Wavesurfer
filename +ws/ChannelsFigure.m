@@ -463,8 +463,9 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % update the AOs
-            deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
-            channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
+            physicalChannelNames = model.Stimulation.PhysicalAnalogChannelNames ;
+            %deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
+            %channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
             channelNames=model.Stimulation.AnalogChannelNames;
             channelScales=model.Stimulation.AnalogChannelScales;
             channelUnits=model.Stimulation.AnalogChannelUnits;
@@ -472,7 +473,8 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAOs ,
-                set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
+                %set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
+                set(self.AOLabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));

@@ -17,7 +17,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         NAnalogChannels
         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
-        AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
+        %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
+        PhysicalAnalogChannelNames
         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
         IsWithinExperiment
         AnalogChannelNames
@@ -146,14 +147,23 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             result = self.AnalogChannelNames_ ;
         end
     
-        function result = get.AnalogChannelIDs(self)
-            result = self.AnalogChannelIDs_ ;
-        end
+%         function result = get.AnalogChannelIDs(self)
+%             result = self.AnalogChannelIDs_ ;
+%         end
         
         function result = get.DeviceNamePerAnalogChannel(self)
             result = self.DeviceNamePerAnalogChannel_ ;
         end
         
+        function result = get.PhysicalAnalogChannelNames(self)
+            deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
+            analogChannelIDs = self.AnalogChannelIDs_ ;            
+            nChannels=length(analogChannelIDs);
+            result=cell(1,nChannels);
+            for i=1:nChannels ,
+                result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
+            end
+        end
         
         function value = get.NAnalogChannels(self)
             value = length(self.AnalogChannelIDs_);
@@ -269,30 +279,23 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods
         function initializeFromMDFStructure(self, mdfStructure)            
-            if ~isempty(mdfStructure.outputAnalogChannelIDs) ,
-                outputDeviceNames = mdfStructure.outputDeviceNames;
-                uniqueOutputDeviceNames=unique(outputDeviceNames);
+            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
+                physicalOutputChannelNames = mdfStructure.physicalOutputChannelNames ;
+                outputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalOutputChannelNames);
+                uniqueOutputDeviceNames = unique(outputDeviceNames);
                 if ~isscalar(uniqueOutputDeviceNames) ,
                     error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceNamePerAnalogChannel_=outputDeviceNames;
-                self.AnalogChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
-                self.AnalogChannelNames_ = mdfStructure.outputAnalogChannelNames;                
-%                 self.TheFiniteAnalogOutputTask_ = ...
-%                     ws.ni.FiniteAnalogOutputTask(mdfStructure.outputDeviceNames, ...
-%                                                          mdfStructure.outputAnalogChannelIDs, ...
-%                                                          'Wavesurfer Analog Stimulation Task', ...
-%                                                          mdfStructure.outputAnalogChannelNames);
-%                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
+                self.DeviceNamePerAnalogChannel_ = outputDeviceNames;
+                self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(physicalOutputChannelNames);
+                self.AnalogChannelNames_ = mdfStructure.outputChannelNames;                
                 
-                nChannels=length(mdfStructure.outputAnalogChannelIDs);
-                self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+                nChannels = length(physicalOutputChannelNames);
+                self.AnalogChannelScales_ = ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
+                self.AnalogChannelUnits_ = repmat(V,[1 nChannels]);
                                                   
-%                 self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
-           
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.AnalogChannelNames);
                 
                 self.CanEnable = true;
@@ -303,7 +306,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteAnalogOutputTask(self.DeviceNamePerAnalogChannel_{1}, ...
-                                                 self.AnalogChannelIDs, ...
+                                                 self.AnalogChannelIDs_, ...
                                                  'Wavesurfer Analog Stimulation Task', ...
                                                  self.AnalogChannelNames);
                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     

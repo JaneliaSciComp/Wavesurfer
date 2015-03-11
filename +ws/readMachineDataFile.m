@@ -15,14 +15,15 @@ function mdfStructure=readMachineDataFile(fileName)
     % Do verfication of fields.  verifyProperty() throws an
     % wavesurfer:InvalidMDFVariableValue exception if it finds something it
     % dislikes
-    verifyProperty(mdfStructure, [], 'inputDeviceNames', {'Classes', {'cell'}});
-    verifyProperty(mdfStructure, [], 'inputChannelIDs', {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
+    verifyProperty(mdfStructure, [], 'physicalInputChannelNames', {'Classes', {'cell'}});
+    %verifyProperty(mdfStructure, [], 'inputChannelIDs', {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
     verifyProperty(mdfStructure, [], 'inputChannelNames', {'Classes', {'cell'}});
     
-    verifyProperty(mdfStructure, [], 'outputDeviceNames', {'Classes', {'cell'}});
-    verifyProperty(mdfStructure, [], 'outputAnalogChannelIDs', ...
-                   {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
-    verifyProperty(mdfStructure, [], 'outputAnalogChannelNames', {'Classes', {'cell'}});
+    verifyProperty(mdfStructure, [], 'physicalOutputChannelNames', {'Classes', {'cell'}});
+%     verifyProperty(mdfStructure, [], 'outputDeviceNames', {'Classes', {'cell'}});
+%     verifyProperty(mdfStructure, [], 'outputAnalogChannelIDs', ...
+%                    {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
+    verifyProperty(mdfStructure, [], 'outputChannelNames', {'Classes', {'cell'}});
     
 %     verifyProperty(mdfStructure, [], 'outputDigitalChannelIDs', ...
 %                    {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
@@ -50,10 +51,8 @@ function  mdfStructure=mdfStructureFromFileContents(fileContentsAsString)
     eval(fileContentsAsString);  % this will introduce variables into the current scope
     
     % Stuff all the values into the structure to be returned
-    requiredFieldNames={'inputDeviceNames' ...
-                        'inputChannelIDs' 'inputChannelNames' ...
-                        'outputDeviceNames' ...
-                        'outputAnalogChannelIDs' 'outputAnalogChannelNames' };  % 'outputDigitalChannelIDs' 'outputDigitalChannelNames'};
+    requiredFieldNames={'physicalInputChannelNames' 'inputChannelNames' ...
+                        'physicalOutputChannelNames' 'outputChannelNames' };
     for i=1:length(requiredFieldNames) ,
         fieldName=requiredFieldNames{i};
         try

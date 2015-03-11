@@ -1030,7 +1030,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % fprintf('About to create the output task...\n');
             self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
             commandChannelIDs=self.CommandChannelIDPerElectrode;
-            for i=1:nElectrodes
+            for i=1:nElectrodes ,
                 self.OutputTask_.createAOVoltageChan(self.OutputDeviceNames{i},commandChannelIDs(i));
             end
             self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
