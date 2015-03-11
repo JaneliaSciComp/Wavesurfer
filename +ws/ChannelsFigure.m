@@ -463,7 +463,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % update the AOs
-            physicalChannelNames = model.Stimulation.PhysicalAnalogChannelNames ;
+            physicalChannelNames = model.Stimulation.AnalogPhysicalChannelNames ;
             %deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
             %channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
             channelNames=model.Stimulation.AnalogChannelNames;

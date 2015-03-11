@@ -12,8 +12,8 @@ inputChannelNames = {'V1' 'V2' 'I1' 'I2'}; % String cell array of channel identi
 %outputAnalogChannelNames = {'Cmd1' 'Cmd2'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
 %outputDigitalChannelIDs = []; % Array of DO channel numbers, e.g. 0:1.
 %outputDigitalChannelNames = {}; %String cell array of channel identifiers. If left empty, default NI channel names will be used.
-physicalOutputChannelNames = {'Dev1/ao0' 'Dev1/ao1'} ;  % Cell array of strings, each string an NI physical channel name
-outputChannelNames = {'Cmd1' 'Cmd2'};  % String cell array of channel identifiers. If left empty, default NI channel names will be used.
+physicalOutputChannelNames = {'Dev1/ao0' 'Dev1/ao1' 'Dev1/line0'} ;  % Cell array of strings, each string an NI physical channel name
+outputChannelNames = {'Cmd1' 'Cmd2' 'D0'};  % String cell array of channel identifiers. If left empty, default NI channel names will be used.
 
 
 

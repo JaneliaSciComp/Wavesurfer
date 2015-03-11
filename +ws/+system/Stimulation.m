@@ -18,10 +18,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         NAnalogChannels
         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
-        PhysicalAnalogChannelNames
+        AnalogPhysicalChannelNames
         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
         IsWithinExperiment
         AnalogChannelNames
+        DigitalChannelNames
         ChannelNames
     end
     
@@ -34,11 +35,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
 
     properties (Access = protected)
-        DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
-        AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
+        DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+        AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
+        DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
+        %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
+        %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
         AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
-        AnalogChannelNames_ = cell(1,0)
+        %AnalogChannelNames_ = cell(1,0)
 
         StimulusLibrary_ 
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
@@ -142,9 +147,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             result = self.AnalogChannelNames_ ;
         end
     
+        function result = get.DigitalChannelNames(self)
+            result = self.DigitalChannelNames_ ;
+        end
+    
         function result = get.ChannelNames(self)
-            % Will add digital channel names to this at some point
-            result = self.AnalogChannelNames_ ;
+            result = [self.AnalogChannelNames self.DigitalChannelNames] ;
         end
     
 %         function result = get.AnalogChannelIDs(self)
@@ -155,7 +163,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             result = self.DeviceNamePerAnalogChannel_ ;
         end
         
-        function result = get.PhysicalAnalogChannelNames(self)
+        function result = get.AnalogPhysicalChannelNames(self)
             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
             analogChannelIDs = self.AnalogChannelIDs_ ;            
             nChannels=length(analogChannelIDs);
@@ -167,11 +175,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function value = get.NAnalogChannels(self)
             value = length(self.AnalogChannelIDs_);
-%             if isempty(self.TheFiniteAnalogOutputTask_) ,
-%                 value=0;
-%             else
-%                 value=length(self.TheFiniteAnalogOutputTask_.AnalogChannelNames);
-%             end
         end
         
         function value=isAnalogChannelName(self,name)
@@ -280,23 +283,36 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     methods
         function initializeFromMDFStructure(self, mdfStructure)            
             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
-                physicalOutputChannelNames = mdfStructure.physicalOutputChannelNames ;
-                outputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalOutputChannelNames);
-                uniqueOutputDeviceNames = unique(outputDeviceNames);
-                if ~isscalar(uniqueOutputDeviceNames) ,
+                % Get the list of physical channel names
+                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+                channelNames = mdfStructure.outputChannelNames ;                                
+                
+                % Check that they're all on the same device (for now)
+                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+                uniqueDeviceNames = unique(deviceNames);
+                if ~isscalar(uniqueDeviceNames) ,
                     error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceNamePerAnalogChannel_ = outputDeviceNames;
-                self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(physicalOutputChannelNames);
-                self.AnalogChannelNames_ = mdfStructure.outputChannelNames;                
                 
-                nChannels = length(physicalOutputChannelNames);
-                self.AnalogChannelScales_ = ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+                isAnalog = strcmp(channelTypes,'ao');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names
+                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
+                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
+                self.AnalogChannelNames_ = channelNames(isAnalog) ;
+                self.DigitalChannelNames_ = channelNames(isDigital) ;
+                
+                % Set the analog channel scales, units
+                nAnalogChannels = sum(isAnalog) ;
+                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat(V,[1 nChannels]);
+                self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
                                                   
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.AnalogChannelNames);
+                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
                 self.CanEnable = true;
             end
@@ -318,60 +334,19 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.TheFiniteAnalogOutputTask_ = [];            
         end
         
-%         function pushStimulusCycle(self, stimCycle, varargin)
-%             validateattributes(stimCycle, {'ws.stimulus.StimulusSequence'}, {'scalar'});
-%             
-%             assert(isempty(self.InternalCycle_), 'wavesurfer:stimulus:stackdepthexceeded', 'Only one stimulus can be pushed on the stack');
-%             
-%             self.InternalCycle_ = stimCycle;
-%             self.RepeatsStimulusSequenceStack_(end + 1) = self.DoRepeatSequence;
-%             
-%             if nargin > 2
-%                 self.DoRepeatSequence = varargin{1};
-%             end
-%         end
-%         
-%         function out = popStimulusCycle(self)
-%             assert(~isempty(self.InternalCycle_), ...
-%                    'wavesurfer:acquisition:unbalancedstackcalls', ...
-%                    'Calls to pop the stimulus stack must be balanced with calls to push.');
-%             
-%             out = self.InternalCycle_;
-%             self.InternalCycle_ = ws.stimulus.StimulusSequence.empty();
-%             self.DoRepeatSequence = self.RepeatsStimulusSequenceStack_(end);
-%             self.RepeatsStimulusSequenceStack_ = [];
-%         end
-        
         function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
             %fprintf('Stimulation::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
             
-            %
             % Do a bunch of checks to make sure all is well for running an
             % experiment
-            %
-%             stimDur = self.TrialDurations;
-%             
-%             if numel(stimDur) < wavesurferObj.ExperimentTrialCount
-%                 stimDur((numel(stimDur)+1):wavesurferObj.ExperimentTrialCount) = 0;
-%             elseif numel(stimDur) > wavesurferObj.ExperimentTrialCount
-%                 stimDur((wavesurferObj.ExperimentTrialCount + 1):end) = [];
-%             end
-%             
-%             if all(~isnan(wavesurferObj.TrialDurations)) && any(wavesurferObj.TrialDurations(1:numel(stimDur)) < stimDur)
-%                 errors = MException('wavesurfer:stimulussystem:invalidtrialduration', 'The specified trial duration is less than the stimulus duration.');
-%                 return;
-%             end
-            
             if isempty(self.TriggerScheme)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-            end
-            
+            end            
             if isempty(self.TriggerScheme.Target)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-            end
-            
+            end            
             if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
                 error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
             end
@@ -380,7 +355,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.acquireHardwareResources();
             
             % Set up the task triggering
-            %self.TheFiniteAnalogOutputTask_.TriggerDelegate = self.TriggerScheme.Target;
             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
             self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
@@ -413,12 +387,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Initialize the episode counter
             self.EpisodesCompleted_ = 0;
             
-            % Set up the stimulus outputable
+            % Set up the selected outputable cache
             stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
             self.SelectedOutputableCache_=stimulusOutputable;
-            
-%             % register the output task callbacks
-%             self.TheFiniteAnalogOutputTask_.registerCallbacks();
             
             % Set the state
             self.IsWithinExperiment_=true;
@@ -781,10 +752,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             else
                 aoData=zeros(0,length(self.AnalogChannelNames));
             end
-            %if isempty(aoData) && ~isempty(self.AnalogChannelNames)
-            %    ws.most.mimics.warning('wavesurfer:stimulus:emptystimulusoutput', ...
-            %                        'The StimulusMap for the current StimulusSequence entry does not have any Bindings for any of the Stimulation output channels.');
-            %end
             
             % Want to return the number of scans in the stimulus data
             sampleCount= size(aoData,1);
