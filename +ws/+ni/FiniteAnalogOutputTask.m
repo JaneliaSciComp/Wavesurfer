@@ -28,8 +28,6 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
                     channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
                     self.DabsDaqTask_.createAOVoltageChan(deviceName, channelID, channelName);
                 end                
-%                 % Set the timing mode
-%                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
             end
 
             % Init the channel data
@@ -58,31 +56,32 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
         
         function value = get.OutputDuration(self)
             value = size(self.ChannelData_,1) * self.SampleRate;
-        end
+        end  % function
     end  % public methods
     
     methods (Access = protected)
         function copyChannelDataToOutputBuffer_(self)
-            nChannels = length(self.ChannelNames) ;
-            if size(self.ChannelData,1) < 2 ,
-                return
-                %channelData=zeros(2,nChannels);  % need at least two scans
-            else
-                channelData=self.ChannelData;
-            end
+            nChannels = length(self.ChannelNames) ; %#ok<NASGU>
+            channelData=self.ChannelData;
             nScansInData = size(channelData,1) ;
-                        
+            if nScansInData<2 ,
+                nScansDesiredInBuffer=0;  % Can't do 1 scan in the buffer
+            else
+                nScansDesiredInBuffer=nScansInData;
+            end            
             nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
             
-            if nScansInBuffer ~= nScansInData ,
-                self.DabsDaqTask_.cfgOutputBuffer(nScansInData);
+            if nScansInBuffer ~= nScansDesiredInBuffer ,
+                self.DabsDaqTask_.cfgOutputBuffer(nScansDesiredInBuffer);
             end
             
-            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInData);
+            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansDesiredInBuffer);
             
-            self.DabsDaqTask_.reset('writeRelativeTo');
-            self.DabsDaqTask_.reset('writeOffset');
-            self.DabsDaqTask_.writeAnalogData(channelData);
+            if nScansDesiredInBuffer > 0 ,
+                self.DabsDaqTask_.reset('writeRelativeTo');
+                self.DabsDaqTask_.reset('writeOffset');
+                self.DabsDaqTask_.writeAnalogData(channelData);
+            end
         end  % function
     end  % protected methods
 end  % classdef

@@ -28,8 +28,6 @@ classdef FiniteDigitalOutputTask < ws.ni.FiniteOutputTask
                     channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
                     self.DabsDaqTask_.createDOChan(deviceName, channelID, channelName);
                 end                
-%                 % Set the timing mode
-%                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
             end
 
             % Init the channel data
@@ -63,30 +61,31 @@ classdef FiniteDigitalOutputTask < ws.ni.FiniteOutputTask
     
     methods (Access = protected)
         function copyChannelDataToOutputBuffer_(self)
-            nChannels = length(self.ChannelNames) ;
-            if size(self.ChannelData,1) < 2 ,
-                channelData=zeros(2,nChannels);  % need at least two scans
-            else
-                channelData=self.ChannelData;
-            end
+            nChannels = length(self.ChannelNames) ; %#ok<NASGU>
+            channelData=self.ChannelData;
             nScansInData = size(channelData,1) ;
-                        
+            if nScansInData<2 ,
+                nScansDesiredInBuffer=0;  % Can't do 1 scan in the buffer
+            else
+                nScansDesiredInBuffer=nScansInData;
+            end            
             nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
             
-            if nScansInBuffer ~= nScansInData ,
-                self.DabsDaqTask_.cfgOutputBuffer(nScansInData);
+            if nScansInBuffer ~= nScansDesiredInBuffer ,
+                self.DabsDaqTask_.cfgOutputBuffer(nScansDesiredInBuffer);
             end
             
-            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInData);
-            
-            packedChannelData = ws.ni.FiniteDigitalOutputTask.packChannelData(channelData);
-            
-            self.DabsDaqTask_.reset('writeRelativeTo');
-            self.DabsDaqTask_.reset('writeOffset');
-            self.DabsDaqTask_.writeDigitalData(packedChannelData);
+            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansDesiredInBuffer);
+                        
+            if nScansDesiredInBuffer > 0 ,
+                packedChannelData = ws.ni.FiniteDigitalOutputTask.packChannelData(channelData);
+                self.DabsDaqTask_.reset('writeRelativeTo');
+                self.DabsDaqTask_.reset('writeOffset');
+                self.DabsDaqTask_.writeDigitalData(packedChannelData);
+            end
         end  % function
     end  % protected methods
-    
+
     methods (Static)
         function packedChannelData = packChannelData(channelData)
             [nScans,nChannels] = size(channelData);
