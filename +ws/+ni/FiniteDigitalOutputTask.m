@@ -1,4 +1,4 @@
-classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
+classdef FiniteDigitalOutputTask < ws.ni.FiniteOutputTask
     properties (Dependent = true, SetAccess = immutable)
         OutputDuration
     end
@@ -13,7 +13,7 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
     end
     
     methods
-        function self = FiniteAnalogOutputTask(taskName, physicalChannelNames, channelNames)
+        function self = FiniteDigitalOutputTask(taskName, physicalChannelNames, channelNames)
             % Call the superclass constructor
             self = self@ws.ni.FiniteOutputTask(taskName, physicalChannelNames, channelNames);
                                     
@@ -26,7 +26,7 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
                     channelName = channelNames{i} ;
                     deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                     channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-                    self.DabsDaqTask_.createAOVoltageChan(deviceName, channelID, channelName);
+                    self.DabsDaqTask_.createDOChan(deviceName, channelID, channelName);
                 end                
 %                 % Set the timing mode
 %                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
@@ -38,7 +38,7 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
         
         function clearChannelData(self)
             nChannels=length(self.ChannelNames);
-            self.ChannelData = zeros(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
+            self.ChannelData = false(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
         end  % function
         
         function value = get.ChannelData(self)
@@ -47,7 +47,7 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
         
         function set.ChannelData(self, value)
             nChannels=length(self.ChannelNames);
-            if isa(value,'double') && ismatrix(value) && (size(value,2)==nChannels) ,
+            if isa(value,'logical') && ismatrix(value) && (size(value,2)==nChannels) ,
                 self.ChannelData_ = value;
                 self.copyChannelDataToOutputBuffer_();
             else
@@ -65,8 +65,7 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
         function copyChannelDataToOutputBuffer_(self)
             nChannels = length(self.ChannelNames) ;
             if size(self.ChannelData,1) < 2 ,
-                return
-                %channelData=zeros(2,nChannels);  % need at least two scans
+                channelData=zeros(2,nChannels);  % need at least two scans
             else
                 channelData=self.ChannelData;
             end
@@ -80,9 +79,25 @@ classdef FiniteAnalogOutputTask < ws.ni.FiniteOutputTask
             
             self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInData);
             
+            packedChannelData = ws.ni.FiniteDigitalOutputTask.packChannelData(channelData);
+            
             self.DabsDaqTask_.reset('writeRelativeTo');
             self.DabsDaqTask_.reset('writeOffset');
-            self.DabsDaqTask_.writeAnalogData(channelData);
+            self.DabsDaqTask_.writeDigitalData(packedChannelData);
         end  % function
     end  % protected methods
+    
+    methods (Static)
+        function packedChannelData = packChannelData(channelData)
+            [nScans,nChannels] = size(channelData);
+            packedChannelData = zeros(nScans,1,'uint32');
+            channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
+            for j=1:nChannels ,
+                channelID = channelIDs(j);
+                thisChannelData = uint32(channelData(:,j));
+                thisChannelDataShifted = bitshift(thisChannelData,channelID) ;
+                packedChannelData = bitor(packedChannelData,thisChannelDataShifted);
+            end
+        end  % function
+    end  % Static methods
 end  % classdef
