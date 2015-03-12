@@ -776,10 +776,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                                         'UniformOutput',false);
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
-            stimulus=wavesurferModel.Stimulation;
+            stimulationSubsystem=wavesurferModel.Stimulation;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=stimulus.channelIDFromName(commandChannelNames{i});
+                result(i)=stimulationSubsystem.analogChannelIDFromName(commandChannelNames{i});
             end
         end
         

@@ -1,3 +1,3 @@
 function channelTypes = channelTypesFromPhysicalChannelNames(physicalChannelNames)
-    channelTypes = cellfun(@ws.utility.channelTypesFromPhysicalChannelName,physicalChannelNames,'UniformOutput',false);
+    channelTypes = cellfun(@ws.utility.channelTypeFromPhysicalChannelName,physicalChannelNames,'UniformOutput',false);
 end

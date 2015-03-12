@@ -15,15 +15,19 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        NAnalogChannels
-        DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
-        %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
-        AnalogPhysicalChannelNames
-        IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
-        IsWithinExperiment
+        AnalogPhysicalChannelNames % the physical channel name for each analog channel
+        DigitalPhysicalChannelNames  % the physical channel name for each digital channel
+        PhysicalChannelNames
         AnalogChannelNames
         DigitalChannelNames
         ChannelNames
+        NAnalogChannels
+        NDigitalChannels
+        NChannels
+        DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
+        %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
+        IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
+        IsWithinExperiment
     end
     
     properties (Access = protected, Transient=true)
@@ -143,6 +147,18 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             result = self.IsArmedOrStimulating_ ;
         end
     
+        function result = get.AnalogPhysicalChannelNames(self)
+            result = self.AnalogPhysicalChannelNames_ ;
+        end
+    
+        function result = get.DigitalPhysicalChannelNames(self)
+            result = self.DigitalPhysicalChannelNames_ ;
+        end
+
+        function result = get.PhysicalChannelNames(self)
+            result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
+        end
+        
         function result = get.AnalogChannelNames(self)
             result = self.AnalogChannelNames_ ;
         end
@@ -160,21 +176,29 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %         end
         
         function result = get.DeviceNamePerAnalogChannel(self)
-            result = self.DeviceNamePerAnalogChannel_ ;
+            result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
         end
         
-        function result = get.AnalogPhysicalChannelNames(self)
-            deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
-            analogChannelIDs = self.AnalogChannelIDs_ ;            
-            nChannels=length(analogChannelIDs);
-            result=cell(1,nChannels);
-            for i=1:nChannels ,
-                result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
-            end
-        end
+%         function result = get.AnalogPhysicalChannelNames(self)
+%             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
+%             analogChannelIDs = self.AnalogChannelIDs_ ;            
+%             nChannels=length(analogChannelIDs);
+%             result=cell(1,nChannels);
+%             for i=1:nChannels ,
+%                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
+%             end
+%         end
         
         function value = get.NAnalogChannels(self)
-            value = length(self.AnalogChannelIDs_);
+            value = length(self.AnalogChannelNames_);
+        end
+        
+        function value = get.NDigitalChannels(self)
+            value = length(self.DigitalChannelNames_);
+        end
+
+        function value = get.NChannels(self)
+            value = self.NAnalogChannels + self.NDigitalChannels ;
         end
         
         function value=isAnalogChannelName(self,name)
@@ -320,12 +344,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_ = ...
+%                     ws.ni.FiniteAnalogOutputTask(self.DeviceNamePerAnalogChannel{1}, ...
+%                                                  self.AnalogChannelIDs, ...
+%                                                  'Wavesurfer Analog Stimulation Task', ...
+%                                                  self.AnalogChannelNames);
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteAnalogOutputTask(self.DeviceNamePerAnalogChannel_{1}, ...
-                                                 self.AnalogChannelIDs_, ...
-                                                 'Wavesurfer Analog Stimulation Task', ...
-                                                 self.AnalogChannelNames);
-                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;                                     
+                    ws.ni.FiniteAnalogOutputTask('Wavesurfer Analog Output Task', ...
+                                                 self.AnalogPhysicalChannelNames, ...
+                                                 self.AnalogChannelNames) ;
+                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
                 self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
             end
         end
@@ -508,38 +536,44 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.StimulusLibrary.SelectedOutputable = cycle;
         end  % function
         
-        function channelID=channelIDFromName(self,channelName)
+        function channelID=analogChannelIDFromName(self,channelName)
             % Get the channel ID, given the name.
-            % This returns a channel ID, e.g. if the channel is A02,
+            % This returns a channel ID, e.g. if the channel is ao2,
             % it returns 2.
-            channelID=self.AnalogChannelIDs(self.iChannelFromName(channelName));
+            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+            if isnan(iChannel) ,
+                channelID = nan ;
+            else
+                physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
+                channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+            end
         end  % function
 
         function value=channelScaleFromName(self,channelName)
-            value=self.AnalogChannelScales(self.iChannelFromName(channelName));
+            value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
         end  % function
 
-        function iChannel=iChannelFromName(self,channelName)
+        function iChannel=indexOfAnalogChannelFromName(self,channelName)
             iChannels=find(strcmp(channelName,self.AnalogChannelNames));
             if isempty(iChannels) ,
                 iChannel=nan;
             else
                 iChannel=iChannels(1);
             end
-        end
+        end  % function
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
                 result=ws.utility.SIUnit.empty();
             else
-                iChannel=self.iChannelFromName(channelName);
+                iChannel=self.indexOfAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
                     result=self.AnalogChannelUnits(iChannel);
                 end
             end
-        end
+        end  % function
         
         function channelUnits=get.AnalogChannelUnits(self)
             import ws.utility.*

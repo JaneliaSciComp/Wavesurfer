@@ -1,28 +1,14 @@
 classdef FiniteAnalogOutputTask < handle
-    %FINITEANALOGOUTPUT Finite analog output class for dabs MATLAB DAQmx interface.
-    
-%     properties (Transient = true, Dependent = true, SetAccess = immutable)
-%         AreCallbacksRegistered
-%     end
-    
-    properties (Transient = true, Access = protected)
-        DabsDaqTask_ = [];
-    end
-    
-%     properties (Access = protected)
-%         RegistrationCount_ = 0;  
-%             % Roughly, the number of times registerCallbacks() has been
-%             % called, minus the number of times unregisterCallbacks() has
-%             % been called Used to make sure the callbacks are only
-%             % registered once even if registerCallbacks() is called
-%             % multiple times in succession.
-%     end
-    
     properties (Dependent = true, SetAccess = immutable)
-        DeviceName
         TaskName
+        %DeviceName
+        PhysicalChannelNames
         ChannelNames
         IsArmed  % generally shouldn't set props, etc when armed (but setting ChannelData is actually OK)
+        OutputDuration
+        %AvailableChannels   % The indices of the AO channels available (zero-based)
+        %  % Invariants: size(AvailableChannels,1) == 1
+        %  %             size(AvailableChannels,2) == size(ChannelData,2)          
     end
     
     properties (Dependent = true)
@@ -33,29 +19,19 @@ classdef FiniteAnalogOutputTask < handle
         TriggerEdge
     end
     
-%     properties
-%         TriggerDelegate = []  % empty, or a scalar ws.ni.HasPFIIDAndEdge
-%     end
-    
-    properties (Dependent = true, SetAccess = immutable)
-        OutputDuration
-        %OutputSampleCount
+    properties (Access = protected, Transient = true)
+        DabsDaqTask_ = [];
     end
-    
-    % Read-only properties.
-    properties (Dependent=true, SetAccess = immutable)
-        AvailableChannels   % The indices of the AO channels available (zero-based)
-          % Invariants: size(AvailableChannels,1) == 1
-          %             size(AvailableChannels,2) == size(ChannelData,2)          
-    end
-    
+        
     properties (Access = protected)
         SampleRate_ = 20000
         ChannelData_ = zeros(0,0)
-        AvailableChannels_ = zeros(1,0)  % The indices of the AO channels available (zero-based)
-        TriggerPFIID_
-        TriggerEdge_
+        %AvailableChannels_ = zeros(1,0)  % The indices of the AO channels available (zero-based)
+        TriggerPFIID_ = []
+        TriggerEdge_ = []
         IsArmed_ = false
+        PhysicalChannelNames_ = cell(1,0)
+        ChannelNames_ = cell(1,0)
     end
     
     events
@@ -63,6 +39,33 @@ classdef FiniteAnalogOutputTask < handle
     end    
 
     methods
+        function self = FiniteAnalogOutputTask(taskName, physicalChannelNames, channelNames)
+            nChannels=length(physicalChannelNames);
+                                    
+            % Create the task, channels
+            if nChannels==0 ,
+                self.DabsDaqTask_ = [];
+            else
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+
+                % create the channels
+                for i=1:nChannels ,
+                    physicalChannelName = physicalChannelNames{i} ;
+                    channelName = channelNames{i} ;
+                    deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
+                    channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+                    self.DabsDaqTask_.createAOVoltageChan(deviceName, channelID, channelName);
+                end
+                
+                % Set the timing mode
+                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
+            end            
+            
+            % Store this stuff
+            self.PhysicalChannelNames_ = physicalChannelNames ;
+            self.ChannelNames_ = channelNames ;
+        end  % function
+        
         function delete(self)
             %self.unregisterCallbacks();
             if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
@@ -70,10 +73,6 @@ classdef FiniteAnalogOutputTask < handle
             end
             self.DabsDaqTask_=[];
         end
-        
-%         function out = get.AreCallbacksRegistered(self)
-%             out = self.RegistrationCount_ > 0;
-%         end
         
         function start(self)
 %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
@@ -117,166 +116,45 @@ classdef FiniteAnalogOutputTask < handle
             value = self.IsArmed_;
         end  % function
         
-%         function registerCallbacks(self)
-% %             if isa(self,'ws.ni.AnalogInputTask') ,
-% %                 fprintf('Task::registerCallbacks()\n');
-% %             end
-%             % Public method that causes the every-n-samples callbacks (and
-%             % others) to be set appropriately for the
-%             % acquisition/stimulation task.  This calls a subclass-specific
-%             % implementation method.  Typically called just before starting
-%             % the task. Also includes logic to make sure the implementation
-%             % method only gets called once, even if this method is called
-%             % multiple times in succession.
-%             if self.RegistrationCount_ == 0
-%                 self.registerCallbacksImplementation();
-%             end
-%             self.RegistrationCount_ = self.RegistrationCount_ + 1;
-%         end
-%         
-%         function unregisterCallbacks(self)
-%             % Public method that causes the every-n-samples callbacks (and
-%             % others) to be cleared.  This calls a subclass-specific
-%             % implementation method.  Typically called just after the task
-%             % ends.  Also includes logic to make sure the implementation
-%             % method only gets called once, even if this method is called
-%             % multiple times in succession.
-%             %
-%             % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
-%             % variables with references to this object, the object may become invalid after
-%             % these sets.  Call this method last in any method where it is used.
-% 
-% %             if isa(self,'ws.ni.AnalogInputTask') ,
-% %                 fprintf('Task::unregisterCallbacks()\n');
-% %             end
-% 
-%             %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
-%             
-%             if (self.RegistrationCount_>0) ,            
-%                 self.RegistrationCount_ = self.RegistrationCount_ - 1;            
-%                 if self.RegistrationCount_ == 0
-%                     self.unregisterCallbacksImplementation();
-%                 end
-%             end
-%         end
-        
         function debug(self) %#ok<MANU>
             keyboard
         end        
     end  % methods
-        
-    methods
-        function self = FiniteAnalogOutputTask(deviceName, channelIndices, taskName, channelNames)
-            % aoChannelIndices should be zero-based
-            
-            nChannels=length(channelIndices);
-            self.AvailableChannels = channelIndices;
-            
-            % Check that deviceNames is kosher
-            if ischar(deviceName) && (isempty(deviceName) || isrow(deviceName)) ,
-                % do nothing
-            else
-                error('FiniteAnalogOutputTask:deviceNameBad' , ...
-                      'deviceName is wrong type or wrong shape.');
-            end
-            
-            % Use default channel names, if needed
-            if exist('channelNames','var') ,
-                % Check that channelNames is kosher
-                if  iscellstr(channelNames) && length(channelNames)==nChannels ,
-                    % do nothing
-                else
-                    error('FiniteAnalogOutputTask:channelNamesBad' , ...
-                          'channelNames is wrong type or wrong length.');
-                end                
-            else
-                % Use default channelNames
-                channelNames = cell(1,nChannels) ;
-                for i=1:nChannels ,
-                    channelNames{i} = sprintf('%s/ao%s',deviceName,channelIndices(i));
-                end
-            end
-            
-            % Create the task, channels
-            if nChannels==0 ,
-                self.DabsDaqTask_ = [];
-            else
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
-
-                % create the channels
-                self.DabsDaqTask_.createAOVoltageChan(deviceName, channelIndices, channelNames);
-                
-                % Set the timing mode
-                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
-            end
-            
-            %self.TriggerDelegate = [];
-        end
- 
-%         function debug(self) %#ok<MANU>
-%             keyboard
-%         end
-    end
     
     methods        
-        function set.AvailableChannels(self, value)
-            if isa(value,'double') && isrow(value) && all(value==round(value)) && all(value>=0) ,
-                self.AvailableChannels_ = value;
-                nScansInData=size(self.ChannelData,1);
-                nChannels=length(value);
-                self.ChannelData = zeros(nScansInData,nChannels);  % just clear pre-existing data --- consumer will have to set it again
-            else
-                error('most:Model:invalidPropVal', ...
-                      'AvailableChannels must be a double row vector of nonnegative integers (yeah, you read that right).');                       
-            end
-        end
+%         function set.AvailableChannels(self, value)
+%             if isa(value,'double') && isrow(value) && all(value==round(value)) && all(value>=0) ,
+%                 self.AvailableChannels_ = value;
+%                 nScansInData=size(self.ChannelData,1);
+%                 nChannels=length(value);
+%                 self.ChannelData = zeros(nScansInData,nChannels);  % just clear pre-existing data --- consumer will have to set it again
+%             else
+%                 error('most:Model:invalidPropVal', ...
+%                       'AvailableChannels must be a double row vector of nonnegative integers (yeah, you read that right).');                       
+%             end
+%         end
 
         function clearChannelData(self)
-            nChannels=length(self.AvailableChannels);
+            nChannels=length(self.ChannelNames);
             self.ChannelData = zeros(0,nChannels);    
         end
-        
-        function out = get.AvailableChannels(self)
-            out = self.AvailableChannels_ ;
-        end
-        
+                
         function value = get.ChannelData(self)
             value = self.ChannelData_;
-%             if isempty(self.ChannelData_)
-%                 value = zeros(0, length(self.AvailableChannels));
-% %             elseif size(self.ChannelData_, 2) < numel(self.AvailableChannels)
-% %                 channelDiff = numel(self.AvailableChannels) - size(self.ChannelData_, 2);
-% %                 value = [self.ChannelData_, zeros(size(self.ChannelData_,1), channelDiff)];
-%             else
-%                 value = self.ChannelData_;
-%             end
         end
         
         function out = get.ChannelNames(self)
-            if ~isempty(self.DabsDaqTask_)
-                c = self.DabsDaqTask_.channels;
-                out = {c.chanName};
-            else
-                out = {};
-            end
+            out = self.ChannelNames_ ;
         end
         
         function set.ChannelData(self, value)
-            nChannels=length(self.AvailableChannels);
+            nChannels=length(self.ChannelNames);
             if isa(value,'double') && ismatrix(value) && (size(value,2)==nChannels) ,
                 self.ChannelData_ = value;
                 self.copyChannelDataToOutputBuffer_();
             else
                 error('most:Model:invalidPropVal', ...
                       'ChannelData must be an NxR double matrix, R the number of available channels.');                       
-            end
-        end
-        
-        function out = get.DeviceName(self)
-            if ~isempty(self.DabsDaqTask_)
-                out = self.DabsDaqTask_.deviceNames{1};
-            else
-                out = '';
             end
         end
         
@@ -327,15 +205,6 @@ classdef FiniteAnalogOutputTask < handle
             end
         end  % function
         
-%         function set.TriggerDelegate(self, value)
-%             if  isequal(value,[]) || ( isa(value,'ws.ni.HasPFIIDAndEdge') && isscalar(value) )  ,
-%                 self.TriggerDelegate = value;
-%             else
-%                 error('most:Model:invalidPropVal', ...
-%                       'TriggerDelegate must be empty or a scalar ws.ni.HasPFIIDAndEdge');       
-%             end            
-%         end
-%         
         function set.TriggerPFIID(self, newValue)
             if isempty(newValue) ,
                 self.TriggerPFIID_ = [];
@@ -365,14 +234,7 @@ classdef FiniteAnalogOutputTask < handle
         function value = get.TriggerEdge(self)
             value = self.TriggerEdge_ ;
         end  % function                
-        
-%         function unreserve(self)
-%             % Unreserves NI-DAQmx resources currently reserved by the task
-%             if ~isempty(self.DabsDaqTask_) ,
-%                 self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
-%             end
-%         end
-        
+                
         function arm(self)
             % called before the first call to start()            
 %             %fprintf('FiniteAnalogOutputTask::setup()\n');
@@ -405,31 +267,9 @@ classdef FiniteAnalogOutputTask < handle
                 % Note that we are now disarmed
                 self.IsArmed_ = false;
             end
-        end
-        
-%         function reset(self)
-% %             % called before the second and subsequent calls to start()
-% %             %fprintf('FiniteAnalogOutputTask::reset()\n');
-% %             nScans = size(self.ChannelData_,1) ;
-% %             if nScans < 2 ,
-% %                 % Cannot setup a finite analog output task with less than 2 samples per channel
-% %                 return
-% %             end
-% %             
-% %             assert(nScans > 1, 'Can not reset a finite analog output task with less than 2 samples per channel.');
-% %             
-% %             bufSize = self.DabsDaqTask_.get('bufOutputBufSize');
-% %             
-% %             if bufSize ~= nScans ,
-% %                 self.DabsDaqTask_.cfgOutputBuffer(nScans);
-% %             end
-% %             
-% %             self.DabsDaqTask_.reset('writeRelativeTo');
-% %             self.DabsDaqTask_.reset('writeOffset');
-% %             self.DabsDaqTask_.writeAnalogData(self.ChannelData);
-%         end
-        
-    end
+        end  % function
+                
+    end  % public methods
     
     methods (Access = protected)        
         function copyChannelDataToOutputBuffer_(self)
@@ -453,24 +293,7 @@ classdef FiniteAnalogOutputTask < handle
             self.DabsDaqTask_.reset('writeRelativeTo');
             self.DabsDaqTask_.reset('writeOffset');
             self.DabsDaqTask_.writeAnalogData(channelData);
-        end
-        
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.ni.AnalogTask(self);
-%             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
-%             
-%             self.setPropertyAttributeFeatures('TriggerDelegate', 'Classes', 'ws.ni.HasPFIIDAndEdge', 'Attributes', 'scalar', 'AllowEmpty', true);
-%             
-%             self.setPropertyAttributeFeatures('AvailableChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
-%         end
-        
-%         function registerCallbacksImplementation(self)
-%             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-%         end
-%         
-%         function unregisterCallbacksImplementation(self)
-%             self.DabsDaqTask_.doneEventCallbacks = {};
-%         end        
+        end        
     end
 
     methods (Access = protected)
@@ -484,39 +307,6 @@ classdef FiniteAnalogOutputTask < handle
             % script the DAQmx callbacks may be the only references preventing the object
             % from deleting before the events are sent/complete.
             self.notify('OutputComplete');
-        end
-        
-%         function ziniPrepareDAQ(self, deviceNames, aoChannelIndices, taskName, channelNames)            
-%             % aoChannelIndices should be zero-based
-%             
-%             nChannels=length(aoChannelIndices);
-%             if nargin < 5 ,
-%                 channelNames=cell(1,nChannels);
-%                 for i=1:nChannels ,
-%                     channelNames{i}=sprintf('%s/%s',deviceNames{i},aoChannelIndices{i});
-%                 end
-%             end
-%             
-%             if ~isempty(deviceNames) && ~isempty(aoChannelIndices)
-%                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
-%                 self.DabsDaqTask_.createAOVoltageChan(deviceNames, aoChannelIndices, channelNames);
-%                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
-%                 
-% %                 % Probe the board to see if it supports hardware
-% %                 % retriggering, and set self.isRetriggerable to reflect
-% %                 % this. (A start trigger must be defined in order to query
-% %                 % the value without error.)
-% %                 % But the results of this probing never seem to get used.
-% %                 % --ALT, 2014-08-24
-% %                 self.DabsDaqTask_.cfgDigEdgeStartTrig('PFI1', ws.ni.TriggerEdge.Rising.daqmxName());
-% %                 self.isRetriggerable = ~isempty(get(self.DabsDaqTask_, 'startTrigRetriggerable'));
-% %                 self.DabsDaqTask_.disableStartTrig();
-% 
-%                   % Record the channels
-%                   self.AvailableChannels = aoChannelIndices;
-%             else
-%                 self.DabsDaqTask_ = [];
-%             end            
-%         end  % function
+        end  % function
     end  % protected methods block
 end  % classdef
