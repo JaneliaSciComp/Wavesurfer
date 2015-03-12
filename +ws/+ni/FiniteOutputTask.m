@@ -29,11 +29,6 @@ classdef FiniteOutputTask < handle
         PhysicalChannelNames_ = cell(1,0)
         ChannelNames_ = cell(1,0)
         ChannelData_
-        IsOutputBufferSyncedToChannelData_ = false  
-          % If the channel data is empty, for instance, can't actually
-          % write that to the output buffer, so want to note this
-          % condition, and not actually start the daq task if this is the
-          % case when consumer calls .start().
     end
     
     events
@@ -100,7 +95,7 @@ classdef FiniteOutputTask < handle
 %                 %self
 %                 %dbstack
 %             end               
-            if self.IsArmed_ && self.IsOutputBufferSyncedToChannelData_ ,
+            if self.IsArmed_ ,
                 if ~isempty(self.DabsDaqTask_) ,
                     self.DabsDaqTask_.start();
                 end
@@ -306,51 +301,59 @@ classdef FiniteOutputTask < handle
     
     methods (Access = protected)
         function syncOuputBufferToChannelData_(self)
-            nChannels = length(self.ChannelNames) ; %#ok<NASGU>
+            % Get the channel data into a local
             channelData=self.ChannelData;
-            nScansInData = size(channelData,1) ;            
-            if nScansInData<2 ,
-                self.IsOutputBufferSyncedToChannelData_ = false ;  % Can't have a buffer this short, so note that output buffer is not sync'ed
-                return
+            
+            % The outputData is the channelData, unless the channelData is
+            % very short, in which case the outputData is just long
+            % enough, and all zeros
+            nScansInChannelData = size(channelData,1) ;            
+            if nScansInChannelData<2 ,
+                nChannels = length(self.ChannelNames) ;
+                if self.IsAnalog ,
+                    outputData=zeros(2,nChannels);
+                else
+                    outputData=logical(2,nChannels);
+                end
+            else
+                outputData = self.ChannelData ;
             end
             
-            nScansDesiredInBuffer = nScansInData;
+            % Resize the output buffer to the number of scans in outputData
+            nScansInOutputData=size(outputData,1);
             nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
-
-            if nScansInBuffer ~= nScansDesiredInBuffer ,
-                self.DabsDaqTask_.cfgOutputBuffer(nScansDesiredInBuffer);
+            if nScansInBuffer ~= nScansInOutputData ,
+                self.DabsDaqTask_.cfgOutputBuffer(nScansInOutputData);
             end
 
-            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansDesiredInBuffer);
+            % Configure the the number of scans in the finite-duration output
+            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData);
 
+            % Write the data to the output buffer
             if self.IsAnalog ,
-                outputData=channelData;
                 outputData(end,:)=0;  % don't want to end on nonzero value
                 self.DabsDaqTask_.reset('writeRelativeTo');
                 self.DabsDaqTask_.reset('writeOffset');
                 self.DabsDaqTask_.writeAnalogData(outputData);
             else
-                packedChannelData = self.packChannelData_();
-                packedChannelData(end,:)=0;  % don't want to end on nonzero value
+                packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
+                packedOutputData(end)=0;  % don't want to end on nonzero value
                 self.DabsDaqTask_.reset('writeRelativeTo');
                 self.DabsDaqTask_.reset('writeOffset');
-                self.DabsDaqTask_.writeDigitalData(packedChannelData);
+                self.DabsDaqTask_.writeDigitalData(packedOutputData);
             end
-            
-            self.IsOutputBufferSyncedToChannelData_ = true ;  % Note that output buffer is synced to channel data
         end  % function
 
-        function packedChannelData = packChannelData_(self)
+        function packedOutputData = packDigitalData_(self,outputData)
             % Only used for digital data.
-            channelData=self.ChannelData;
-            [nScans,nChannels] = size(channelData);
-            packedChannelData = zeros(nScans,1,'uint32');
+            [nScans,nChannels] = size(outputData);
+            packedOutputData = zeros(nScans,1,'uint32');
             channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
             for j=1:nChannels ,
                 channelID = channelIDs(j);
-                thisChannelData = uint32(channelData(:,j));
+                thisChannelData = uint32(outputData(:,j));
                 thisChannelDataShifted = bitshift(thisChannelData,channelID) ;
-                packedChannelData = bitor(packedChannelData,thisChannelDataShifted);
+                packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
             end
         end  % function
     end  % Static methods
