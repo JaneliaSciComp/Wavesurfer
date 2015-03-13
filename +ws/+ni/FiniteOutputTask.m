@@ -313,7 +313,7 @@ classdef FiniteOutputTask < handle
                 if self.IsAnalog ,
                     outputData=zeros(2,nChannels);
                 else
-                    outputData=logical(2,nChannels);
+                    outputData=false(2,nChannels);
                 end
             else
                 outputData = self.ChannelData ;

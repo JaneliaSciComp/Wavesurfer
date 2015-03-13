@@ -32,10 +32,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     properties (Access = protected, Transient=true)
         TheFiniteAnalogOutputTask_ = []
+        TheFiniteDigitalOutputTask_ = []
         SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformExperiment(), set to [] in didPerformExperiment())
         IsArmedOrStimulating_ = false
         IsWithinExperiment_ = false                       
         TriggerScheme_ = ws.TriggerScheme.empty()
+        DidAnalogEpisodeComplete_
+        DidDigitalEpisodeComplete_
     end
 
     properties (Access = protected)
@@ -82,8 +85,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
                 delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
             end
-            self.TheFiniteAnalogOutputTask_=[];
-            self.Parent=[];
+            self.TheFiniteAnalogOutputTask_ = [] ;
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
+                delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+            end
+            self.TheFiniteDigitalOutputTask_ = [] ;
+            self.Parent = [] ;
         end
         
 %         function unstring(self)
@@ -124,6 +131,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.SampleRate_ = value;
             if ~isempty(self.TheFiniteAnalogOutputTask_)
                 self.TheFiniteAnalogOutputTask_.SampleRate = value;
+                self.TheFiniteDigitalOutputTask_.SampleRate = value;
             end
             self.broadcast('DidSetSampleRate');
         end
@@ -344,23 +352,28 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
-%                 self.TheFiniteAnalogOutputTask_ = ...
-%                     ws.ni.FiniteAnalogOutputTask(self.DeviceNamePerAnalogChannel{1}, ...
-%                                                  self.AnalogChannelIDs, ...
-%                                                  'Wavesurfer Analog Stimulation Task', ...
-%                                                  self.AnalogChannelNames);
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask('analog', ...
                                            'Wavesurfer Analog Output Task', ...
                                            self.AnalogPhysicalChannelNames, ...
                                            self.AnalogChannelNames) ;
                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
-                self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
+                self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
+            end
+            if isempty(self.TheFiniteDigitalOutputTask_) ,
+                self.TheFiniteDigitalOutputTask_ = ...
+                    ws.ni.FiniteOutputTask('digital', ...
+                                           'Wavesurfer Digital Output Task', ...
+                                           self.DigitalPhysicalChannelNames, ...
+                                           self.DigitalChannelNames) ;
+                self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
+                self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
         end
         
         function releaseHardwareResources(self)
             self.TheFiniteAnalogOutputTask_ = [];            
+            self.TheFiniteDigitalOutputTask_ = [];            
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
@@ -386,9 +399,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Set up the task triggering
             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
             self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
             % Clear out any pre-existing output waveforms
             self.TheFiniteAnalogOutputTask_.clearChannelData();
+            self.TheFiniteDigitalOutputTask_.clearChannelData();
             
             % Determine how many episodes there will be, if possible
             if self.TriggerScheme.IsExternal ,
@@ -428,6 +444,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
 %             self.TheFiniteAnalogOutputTask_.unreserve();
             self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
@@ -439,6 +456,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
 %                 self.TheFiniteAnalogOutputTask_.unreserve();
                 self.TheFiniteAnalogOutputTask_.disarm();
+                self.TheFiniteDigitalOutputTask_.disarm();
             end
             
             %delete(self.StimulusSequenceIterator_);
@@ -503,33 +521,51 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
-            self.IsArmedOrStimulating_ = true;                        
-            sampleCount = self.setAnalogChannelData_();
+            self.DidAnalogEpisodeComplete_ = false ;
+            self.DidDigitalEpisodeComplete_ = false ;
+            self.IsArmedOrStimulating_ = true;
+            
+            % Get the current stimulus map
+            stimulusMap = self.getCurrentStimulusMap_();
 
-            if sampleCount > 0 ,
-%                 if self.EpisodesCompleted_ == 0
-%                     self.TheFiniteAnalogOutputTask_.start();
-%                 else
-%                     self.TheFiniteAnalogOutputTask_.retrigger();
-%                 end
+            % Set the channel data in the tasks
+            nAnalogScans = self.setAnalogChannelData_(stimulusMap);
+            nDigitalScans = self.setDigitalChannelData_(stimulusMap);
+
+            % Deal with special case of no analog scans
+            if nAnalogScans > 0 ,
                 if self.EpisodesCompleted_ == 0 ,
-                    %self.TheFiniteAnalogOutputTask_.setup();
                     self.TheFiniteAnalogOutputTask_.arm();
-                else
-                    %self.TheFiniteAnalogOutputTask_.reset();
                 end
                 self.TheFiniteAnalogOutputTask_.start();                
             else
+                self.DidAnalogEpisodeComplete_ = true ;                
+            end
+            
+            % Deal with special case of no digital scans
+            if nDigitalScans > 0 ,
+                if self.EpisodesCompleted_ == 0 ,
+                    self.TheFiniteDigitalOutputTask_.arm();
+                end
+                self.TheFiniteDigitalOutputTask_.start(); 
+            else
+                self.DidDigitalEpisodeComplete_ = true ;
+            end
+            
+            % If no scans at all, we just declare the episode done
+            if nAnalogScans==0 && nDigitalScans==0 ,
                 % This was triggered, it just has a map/stimulus that has zero samples.
                 self.IsArmedOrStimulating_ = false;
                 self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             end
+            
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
         end  % function
         
         function didAbortTrial(self, ~)
             self.TheFiniteAnalogOutputTask_.abort();
+            self.TheFiniteDigitalOutputTask_.abort();
             self.IsArmedOrStimulating_ = false;
         end  % function
         
@@ -746,9 +782,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % protected methods block
     
     methods (Access = protected)
-        function sampleCount = setAnalogChannelData_(self)
-            import ws.utility.*
-            
+        function stimulusMap = getCurrentStimulusMap_(self)
             % Calculate the episode index
             episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
             
@@ -772,10 +806,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                         indexOfMapIfSequence=1;
                     end
                 end
-            end
-            
-            % Fill aoData with the stimulus data, or set it to empty if
-            % we're done stimulating
+            end            
             if isThereAMap ,
                 if isempty(indexOfMapIfSequence) ,
                     % this means the outputable is a "naked" map
@@ -783,13 +814,26 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 else
                     stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
                 end
-                aoData = stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, episodeIndexWithinExperiment);
             else
+                stimulusMap = [] ;
+            end
+        end  % function
+        
+        function nScans = setAnalogChannelData_(self, stimulusMap)
+            import ws.utility.*
+            
+            % Calculate the episode index
+            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            
+            % Calculate the signals
+            if isempty(stimulusMap) ,
                 aoData=zeros(0,length(self.AnalogChannelNames));
+            else
+                aoData = stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, episodeIndexWithinExperiment);
             end
             
             % Want to return the number of scans in the stimulus data
-            sampleCount= size(aoData,1);
+            nScans= size(aoData,1);
             
             % If any channel scales are problematic, deal with this
             analogChannelScales=self.AnalogChannelScales;
@@ -810,8 +854,46 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % of the output task
             self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
         end  % function
+
+        function nScans = setDigitalChannelData_(self, stimulusMap)
+            import ws.utility.*
+            
+            % Calculate the episode index
+            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            
+            % Calculate the signals
+            if isempty(stimulusMap) ,
+                doData=zeros(0,length(self.DigitalChannelNames));
+            else
+                doData = stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames, episodeIndexWithinExperiment);
+            end
+            
+            % Want to return the number of scans in the stimulus data
+            nScans= size(doData,1);
+                        
+            % limit the data to [-10 V, +10 V]
+            doDataLimited=(doData>=0.5);  % also eliminates nan, sets to false
+            
+            % Finally, assign the stimulation data to the the relevant part
+            % of the output task
+            self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+        end  % function
+
+        function analogEpisodeCompleted_(self)
+            self.DidAnalogEpisodeComplete_ = true ;
+            if self.DidDigitalEpisodeComplete_ ,
+                self.analogAndDigitalEpisodesCompleted_();
+            end
+        end
         
-        function episodeCompleted_(self)
+        function digitalEpisodeCompleted_(self)
+            self.DidDigitalEpisodeComplete_ = true ;
+            if self.DidAnalogEpisodeComplete_ ,
+                self.analogAndDigitalEpisodesCompleted_();
+            end            
+        end       
+        
+        function analogAndDigitalEpisodesCompleted_(self)
             % Called from "below" when a single episode of stimulation is
             % completed.  
             self.IsArmedOrStimulating_ = false;
