@@ -521,8 +521,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
-            self.DidAnalogEpisodeComplete_ = false ;
-            self.DidDigitalEpisodeComplete_ = false ;
+            %self.DidAnalogEpisodeComplete_ = false ;
+            %self.DidDigitalEpisodeComplete_ = false ;
+            self.DidAnalogEpisodeComplete_ = (self.NAnalogChannels==0) ;  % usually false at this point, unless there are no analog channels
+            self.DidDigitalEpisodeComplete_ = (self.NDigitalChannels==0) ;  % usually false at this point, unless there are no digital channels
             self.IsArmedOrStimulating_ = true;
             
             % Get the current stimulus map

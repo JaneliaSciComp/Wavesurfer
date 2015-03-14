@@ -414,12 +414,6 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function data = calculateSignals(self, sampleRate, channelNames, trialIndexWithinSet)
-            if ~exist('sampleRate','var') || isempty(sampleRate) ,
-                sampleRate = 20000;  % Hz
-            end
-            if ~exist('channelNames','var') || isempty(channelNames) ,
-                channelNames=self.ChannelNames;
-            end
             if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
                 trialIndexWithinSet=1;
             end

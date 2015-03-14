@@ -61,7 +61,6 @@ classdef FiniteOutputTask < handle
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
-            nChannels=length(physicalChannelNames);
             if nChannels>0 ,
                 for i=1:nChannels ,
                     physicalChannelName = physicalChannelNames{i} ;
@@ -195,20 +194,24 @@ classdef FiniteOutputTask < handle
                       'SampleRate must be a positive integer');       
             end            
                         
-            nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
-            if nScansInBuffer > 0 ,                
-                originalSampleRate = self.DabsDaqTask_.sampClkRate;
-                self.DabsDaqTask_.sampClkRate = newValue;
+            if isempty(self.DabsDaqTask_) ,
                 self.SampleRate_ = newValue;
-                try
-                    self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-                catch me
-                    self.DabsDaqTask_.sampClkRate = originalSampleRate;
-                    self.SampleRate_ = originalSampleRate;
-                    error('Invalid sample rate value');
+            else                
+                nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
+                if nScansInBuffer > 0 ,                
+                    originalSampleRate = self.DabsDaqTask_.sampClkRate;
+                    self.DabsDaqTask_.sampClkRate = newValue;
+                    self.SampleRate_ = newValue;
+                    try
+                        self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+                    catch me
+                        self.DabsDaqTask_.sampClkRate = originalSampleRate;
+                        self.SampleRate_ = originalSampleRate;
+                        error('Invalid sample rate value');
+                    end
+                else
+                    self.SampleRate_ = newValue;
                 end
-            else
-                self.SampleRate_ = newValue;
             end
         end  % function
         
@@ -257,14 +260,19 @@ classdef FiniteOutputTask < handle
                 return
             end
             
-            % Set up callbacks
-            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
-            
-            % Set up triggering
-            if ~isempty(self.TriggerPFIID)
-                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+            % Configure self.DabsDaqTask_ 
+            if isempty(self.DabsDaqTask_) ,
+                % do nothing
             else
-                self.DabsDaqTask_.disableStartTrig();
+                % Set up callbacks
+                self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
+
+                % Set up triggering
+                if ~isempty(self.TriggerPFIID)
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+                else
+                    self.DabsDaqTask_.disableStartTrig();
+                end
             end
             
             % Note that we are now armed
@@ -273,11 +281,15 @@ classdef FiniteOutputTask < handle
 
         function disarm(self)
             if self.IsArmed_ ,            
-                % Unregister callbacks
-                self.DabsDaqTask_.doneEventCallbacks = {};
+                if isempty(self.DabsDaqTask_) ,
+                    % do nothing
+                else
+                    % Unregister callbacks
+                    self.DabsDaqTask_.doneEventCallbacks = {};
 
-                % Unreserve resources
-                self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
+                    % Unreserve resources
+                    self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
+                end
                 
                 % Note that we are now disarmed
                 self.IsArmed_ = false;
@@ -319,28 +331,33 @@ classdef FiniteOutputTask < handle
                 outputData = self.ChannelData ;
             end
             
-            % Resize the output buffer to the number of scans in outputData
-            nScansInOutputData=size(outputData,1);
-            nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
-            if nScansInBuffer ~= nScansInOutputData ,
-                self.DabsDaqTask_.cfgOutputBuffer(nScansInOutputData);
-            end
+            % Actually set up the task, if present
+            if isempty(self.DabsDaqTask_) ,
+                % do nothing
+            else            
+                % Resize the output buffer to the number of scans in outputData
+                nScansInOutputData=size(outputData,1);
+                nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
+                if nScansInBuffer ~= nScansInOutputData ,
+                    self.DabsDaqTask_.cfgOutputBuffer(nScansInOutputData);
+                end
 
-            % Configure the the number of scans in the finite-duration output
-            self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData);
+                % Configure the the number of scans in the finite-duration output
+                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData);
 
-            % Write the data to the output buffer
-            if self.IsAnalog ,
-                outputData(end,:)=0;  % don't want to end on nonzero value
-                self.DabsDaqTask_.reset('writeRelativeTo');
-                self.DabsDaqTask_.reset('writeOffset');
-                self.DabsDaqTask_.writeAnalogData(outputData);
-            else
-                packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
-                packedOutputData(end)=0;  % don't want to end on nonzero value
-                self.DabsDaqTask_.reset('writeRelativeTo');
-                self.DabsDaqTask_.reset('writeOffset');
-                self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                % Write the data to the output buffer
+                if self.IsAnalog ,
+                    outputData(end,:)=0;  % don't want to end on nonzero value
+                    self.DabsDaqTask_.reset('writeRelativeTo');
+                    self.DabsDaqTask_.reset('writeOffset');
+                    self.DabsDaqTask_.writeAnalogData(outputData);
+                else
+                    packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
+                    packedOutputData(end)=0;  % don't want to end on nonzero value
+                    self.DabsDaqTask_.reset('writeRelativeTo');
+                    self.DabsDaqTask_.reset('writeOffset');
+                    self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                end
             end
         end  % function
 
