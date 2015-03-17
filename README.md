@@ -113,7 +113,7 @@ taken, and of the MOST library, in +ws/+most.
 
 The original developer of Wavesurfer was Patrick Edson.  
 
-Wavesurfer is currently developed by Adam L. Taylor.
+Wavesurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
 
 
 Maintainers
@@ -138,3 +138,6 @@ Version History
 0.75: (March 9, 2015) Fixed bug with scope x-span.
 
 0.76: (March 11, 2015) Fixed bug with README(!).
+
+0.77: (March 17, 2015) Now supports timed digital outputs.
+
