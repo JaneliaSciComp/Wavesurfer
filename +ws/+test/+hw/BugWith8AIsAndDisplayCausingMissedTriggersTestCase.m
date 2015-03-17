@@ -57,7 +57,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             end                   
 
             % Delete the data file
-            delete(dataDirNameAbsolute);
+            delete(dataFilePatternAbsolute);
             
             self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
             

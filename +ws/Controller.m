@@ -302,7 +302,7 @@ classdef Controller < ws.most.Controller
                 %controlName
                 type=get(source,'Type');
                 if isequal(type,'uitable') ,
-                    if isfield(event,'EditData') ,
+                    if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
                         methodName=[controlName 'CellEdited'];
                     else
                         methodName=[controlName 'CellSelected'];
