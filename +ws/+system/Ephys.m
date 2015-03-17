@@ -142,10 +142,10 @@ classdef Ephys < ws.system.Subsystem
         end
 
         %% 
-        function self=didSetChannelUnitsOrScales(self)
+        function self=didSetAnalogChannelUnitsOrScales(self)
             testPulser=self.TestPulser;
             if ~isempty(testPulser) ,
-                testPulser.didSetChannelUnitsOrScales();
+                testPulser.didSetAnalogChannelUnitsOrScales();
             end            
         end       
         

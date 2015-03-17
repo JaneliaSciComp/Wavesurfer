@@ -143,7 +143,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
                model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'DidSetIsXSpanSlavedToAcquistionDuration','','update');
-               model.Display.subscribeMe(self,'DidSetXSpan','','updateControlProperties');
+               model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
                model.Logging.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');
                model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
@@ -152,7 +152,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
                
                model.subscribeMe(self,'TrialDidComplete','','updateControlProperties');
-               model.subscribeMe(self,'DataWasAcquired','','dataWasAcquired');
+               model.subscribeMe(self,'DataAvailable','','dataWasAcquired');
                
                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
                  % no longer publicly settable
@@ -414,7 +414,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.FilenameText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
-                          'String','Filename:');
+                          'String','Base Name:');
             self.FilenameEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','left', ...
@@ -545,7 +545,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %
             % Layout the "toolbar"
             %
-            vcrButtonsXOffset=7;
+            vcrButtonsXOffset=11;
             vcrButtonWidth=26;
             vcrButtonHeight=26;
             spaceBetweenVCRButtons=5;
@@ -588,8 +588,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % The "top row" containing the acq, stim, and display panels
             %
             panelInset=2;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
-            topRowAreaXOffset=0;
-            topRowPanelAreaWidth=figureWidth/3;
+            topRowAreaXOffset=4;
+            topRowPanelAreaWidth=(figureWidth-topRowAreaXOffset)/3;
             topRowAreaYOffset=statusBarAreaHeight+loggingAreaHeight;
             
             % The Acquisition panel
@@ -626,8 +626,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %
             % The Logging panel
             %            
-            loggingPanelXOffset=panelInset;
-            loggingPanelWidth=figureWidth-panelInset-panelInset;
+            bottomRowAreaXOffset=4;
+            loggingPanelXOffset=bottomRowAreaXOffset+panelInset;
+            loggingPanelWidth=figureWidth-bottomRowAreaXOffset-panelInset-panelInset;
             loggingPanelYOffset=statusBarAreaHeight+panelInset;
             loggingPanelHeight=loggingAreaHeight-panelInset-panelInset;
             set(self.LoggingPanel,'Position',[loggingPanelXOffset loggingPanelYOffset loggingPanelWidth loggingPanelHeight]);            

@@ -57,12 +57,12 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
                 model.subscribeMe(self,'DidSetState','','updateControlProperties');            
                 acquisition=model.Acquisition;
                 if ~isempty(acquisition) ,
-                    acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales','','updateControlProperties');
+                    acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');
                     acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
                 end
                 stimulation=model.Stimulation;
                 if ~isempty(stimulation) ,
-                    stimulation.subscribeMe(self,'DidSetChannelUnitsOrScales','','updateControlProperties');                    
+                    stimulation.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');                    
                 end
             end
             
@@ -72,7 +72,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
 
         function self=createFixedControls(self)
             nAIs=self.Model.Acquisition.NChannels;
-            nAOs=self.Model.Stimulation.NChannels;
+            nAOs=self.Model.Stimulation.NAnalogChannels;
             
             %
             % Make the AIs panel
@@ -442,16 +442,16 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             % update the AIs
             normalBackgroundColor=[1 1 1];
             warningBackgroundColor=[1 0.8 0.8];
-            deviceIDs=model.Acquisition.DeviceIDs;  % cell array of strings
+            deviceNames=model.Acquisition.DeviceNames;  % cell array of strings
             channelIDs=model.Acquisition.ChannelIDs;  % zero-based NI channel index
             channelNames=model.Acquisition.ChannelNames;
             channelScales=model.Acquisition.ChannelScales;
             channelUnits=model.Acquisition.ChannelUnits;
-            nElectrodesClaimingChannel=model.Acquisition.NumberOfElectrodesClaimingChannel;
+            nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAIs ,
-                set(self.AILabelTexts(i),'String',sprintf('%s/ai%d (%s):',deviceIDs{i},channelIDs(i),channelNames{i}));                
+                set(self.AILabelTexts(i),'String',sprintf('%s/ai%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
@@ -463,16 +463,18 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % update the AOs
-            deviceIDs=model.Stimulation.DeviceIDs;  % cell array of strings
-            channelIDs=model.Stimulation.ChannelIDs;  % zero-based NI channel index
-            channelNames=model.Stimulation.ChannelNames;
-            channelScales=model.Stimulation.ChannelScales;
-            channelUnits=model.Stimulation.ChannelUnits;
-            nElectrodesClaimingChannel=model.Stimulation.NumberOfElectrodesClaimingChannel;
+            physicalChannelNames = model.Stimulation.AnalogPhysicalChannelNames ;
+            %deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
+            %channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
+            channelNames=model.Stimulation.AnalogChannelNames;
+            channelScales=model.Stimulation.AnalogChannelScales;
+            channelUnits=model.Stimulation.AnalogChannelUnits;
+            nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAOs ,
-                set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceIDs{i},channelIDs(i),channelNames{i}));                
+                %set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
+                set(self.AOLabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));

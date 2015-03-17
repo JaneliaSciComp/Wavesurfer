@@ -7,6 +7,7 @@ classdef UserFunctions < ws.system.Subsystem
         ExperimentWillStart = '';
         ExperimentDidComplete = '';
         ExperimentDidAbort = '';
+        DataAvailable = '';
         AbortCallsComplete = true; % If true and the equivalent abort function is empty, complete will be called when abort happens.
     end
     
@@ -15,94 +16,93 @@ classdef UserFunctions < ws.system.Subsystem
             self.CanEnable=true;
             self.Enabled=true;            
             self.Parent=parent;
-        end
+        end  % function
         
         function set.TrialWillStart(self, value)
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('TrialWillStart', value);
                 self.TrialWillStart = value;
             end
             self.broadcast('Update');
-        end
+        end  % function
         
         function set.TrialDidComplete(self, value)
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('TrialDidComplete', value);
                 self.TrialDidComplete = value;
             end
             self.broadcast('Update');
-        end
+        end  % function
         
         function set.TrialDidAbort(self, value)
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('TrialDidAbort', value);
                 self.TrialDidAbort = value;
             end
             self.broadcast('Update');
-        end
+        end  % function
         
         function set.ExperimentWillStart(self, value)
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('ExperimentWillStart', value);
                 self.ExperimentWillStart = value;
             end
             self.broadcast('Update');
-        end
+        end  % function
         
         function set.ExperimentDidComplete(self, value)
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('ExperimentDidComplete', value);
                 self.ExperimentDidComplete = value;
             end
             self.broadcast('Update');
-        end
+        end  % function
         
         function set.ExperimentDidAbort(self, value)
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('ExperimentDidAbort', value);
                 self.ExperimentDidAbort = value;
             end
             self.broadcast('Update');
-        end
+        end  % function
         
-        function invoke(self, eventObj, eventName)
+        function set.DataAvailable(self, value)
+            if ws.utility.isASettableValue(value) ,
+                self.validatePropArg('DataAvailable', value);
+                self.DataAvailable = value;
+            end
+            self.broadcast('Update');
+        end  % function
+        
+        function invoke(self, wavesurferModel, eventName)
             % Only using ispop assumes the caller won't do something malicious like call
             % invoke with 'AbortCallsComplete' or similar.  Trying to keep the overhead as
             % low as possible to allow as much execution time for the user code itself.
-            if isprop(self, eventName)
+            if isprop(self, eventName) ,
                 % Prevent interruption due to errors in user provided code.
                 try
-                    if~isempty(self.(eventName))
-                        feval(self.(eventName), eventObj, eventName);
+                    if ~isempty(self.(eventName)) ,
+                        feval(self.(eventName), wavesurferModel, eventName);
                     end
                     
-                    if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && isempty(self.TrialDidAbort) && ~isempty(self.TrialDidComplete)
-                        feval(self.TrialDidComplete, eventObj, eventName); % Calls complete, but still passes TrialDidAbort
+                    if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && isempty(self.TrialDidAbort) && ~isempty(self.TrialDidComplete) ,
+                        feval(self.TrialDidComplete, wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
                     end
                     
-                    if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && isempty(self.ExperimentDidAbort) && ~isempty(self.ExperimentDidComplete)
-                        feval(self.ExperimentDidComplete, eventObj, eventName); % Calls complete, but still passes TrialDidAbort
+                    if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ...
+                                                                                     isempty(self.ExperimentDidAbort) && ~isempty(self.ExperimentDidComplete) ,
+                        feval(self.ExperimentDidComplete, wavesurferModel, eventName); 
+                          % Calls trial set completion user function, but still passes TrialDidAbort
                     end
                 catch me
-                    warning('wavesurfer:userfunction:codeerror', me.message);
+                    warning('wavesurfer:userfunction:codeerror', me.message);  % downgrade error to a warning
                 end
             else
                 warning('wavesurfer:userfunction:unknownuserfunctionevent', '%s is not a supported user function event.', eventName);
             end
-        end
-    end
+        end  % function
+        
+    end  % methods
     
 %     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
@@ -149,21 +149,25 @@ classdef UserFunctions < ws.system.Subsystem
     end % methods
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.UserFunctions.propertyAttributes();
-        
+        mdlPropAttributes = ws.system.UserFunctions.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
+        function result = isValidUserFunctionName(string)
+            result = ischar(string) && (isempty(string) || isrow(string)) ;            
+        end  % function
+        
         function s = propertyAttributes()
             s = ws.system.Subsystem.propertyAttributes();
 
-            s.TrialWillStart = struct( 'Classes', {'char'}, 'AllowEmpty', true);
-            s.TrialDidComplete = struct( 'Classes', {'char'}, 'AllowEmpty', true);
-            s.TrialDidAbort = struct( 'Classes', {'char'}, 'AllowEmpty', true);
-            s.ExperimentWillStart = struct( 'Classes', {'char'}, 'AllowEmpty', true);
-            s.ExperimentDidComplete = struct( 'Classes', {'char'}, 'AllowEmpty', true);
-            s.ExperimentDidAbort = struct( 'Classes', {'char'}, 'AllowEmpty', true);
+            s.TrialWillStart = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.TrialDidComplete = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.TrialDidAbort = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.ExperimentWillStart = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.ExperimentDidComplete = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.ExperimentDidAbort = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.DataAvailable = struct( 'Classes', {'string'}, 'AllowEmpty', true);
             s.AbortCallsComplete = struct( 'Classes', {'logical'}, 'Attributes', {{'scalar'}});
             
         end  % function

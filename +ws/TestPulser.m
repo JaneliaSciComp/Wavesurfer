@@ -92,9 +92,9 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         %Command
         %CommandInVolts
         NSweepsCompletedThisRun
-        OutputDeviceIDs
+        OutputDeviceNames
         CommandChannelID
-        InputDeviceIDs
+        InputDeviceNames
         MonitorChannelID
         MonitorChannelScale
         CommandChannelScale
@@ -195,10 +195,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %                     stimulus=wavesurferModel.Stimulation;
 %                 end
 %                 if ~isempty(acquisition)
-%                     acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales');
+%                     acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
 %                 end
 %                 if ~isempty(stimulus)
-%                     stimulus.subscribeMe(self,'DidSetChannelUnitsOrScales');
+%                     stimulus.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
 %                 end
 %             end
         end
@@ -206,13 +206,13 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %         % This is designed to be called by an EventBroadcaster if a
 %         % subscribed-to event happens
 %         function eventHappened(self,broadcaster,eventName,propertyName,source,event)   %#ok<INUSD,INUSL>
-%             if isequal(eventName,'DidSetChannelUnitsOrScales')
+%             if isequal(eventName,'DidSetAnalogChannelUnitsOrScales')
 %                 self.clearExistingSweepIfPresent();
 %                 self.broadcast('Update');
 %             end
 %         end
         
-        function self=didSetChannelUnitsOrScales(self)
+        function self=didSetAnalogChannelUnitsOrScales(self)
             self.clearExistingSweepIfPresent();
             self.broadcast('Update');            
         end
@@ -516,7 +516,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         
         function value=get.CommandChannelNames(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.ChannelNames;
+            value=wavesurferModel.Stimulation.AnalogChannelNames;
         end
 
         function value=get.MonitorChannelNames(self)
@@ -756,14 +756,14 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             end
         end
         
-        function value=get.InputDeviceIDs(self)
+        function value=get.InputDeviceNames(self)
             wavesurferModel=self.Parent_.Parent;            
-            value=wavesurferModel.Acquisition.DeviceIDs;
+            value=wavesurferModel.Acquisition.DeviceNames;
         end
         
-        function value=get.OutputDeviceIDs(self)
+        function value=get.OutputDeviceNames(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.DeviceIDs;
+            value=wavesurferModel.Stimulation.DeviceNamePerAnalogChannel;
         end
         
         function result=get.CommandChannelIDPerElectrode(self)
@@ -776,10 +776,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                                         'UniformOutput',false);
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
-            stimulus=wavesurferModel.Stimulation;
+            stimulationSubsystem=wavesurferModel.Stimulation;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=stimulus.channelIDFromName(commandChannelNames{i});
+                result(i)=stimulationSubsystem.analogChannelIDFromName(commandChannelNames{i});
             end
         end
         
@@ -1019,9 +1019,9 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
             monitorChannelIDs=self.MonitorChannelIDPerElectrode;
             for i=1:nElectrodes
-                self.InputTask_.createAIVoltageChan(self.InputDeviceIDs{i},monitorChannelIDs(i));  % defaults to differential
+                self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorChannelIDs(i));  % defaults to differential
             end
-            clockString=sprintf('/%s/ao/SampleClock',self.OutputDeviceIDs{1});  % Output device ID is something like 'Dev3'
+            clockString=sprintf('/%s/ao/SampleClock',self.OutputDeviceNames{1});  % Output device name is something like 'Dev3'
             self.InputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',[],clockString);
               % set the sampling rate, and use the AO sample clock to keep
               % acquisiton synced with analog output
@@ -1030,8 +1030,8 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % fprintf('About to create the output task...\n');
             self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
             commandChannelIDs=self.CommandChannelIDPerElectrode;
-            for i=1:nElectrodes
-                self.OutputTask_.createAOVoltageChan(self.OutputDeviceIDs{i},commandChannelIDs(i));
+            for i=1:nElectrodes ,
+                self.OutputTask_.createAOVoltageChan(self.OutputDeviceNames{i},commandChannelIDs(i));
             end
             self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
             

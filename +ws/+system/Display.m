@@ -77,7 +77,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         DidSetScopeIsVisibleWhenDisplayEnabled
         DidSetIsXSpanSlavedToAcquistionDuration
         DidSetUpdateRate
-        DidSetXSpan
+        UpdateXSpan
     end
 
     methods
@@ -146,7 +146,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                     self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                 end
             end    
-            self.broadcast('DidSetXSpan');            
+            self.broadcast('UpdateXSpan');            
         end  % function
                 
         function value = get.XOffset(self)
@@ -178,15 +178,19 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             if ws.utility.isASettableValue(newValue) ,
                 self.validatePropArg('IsXSpanSlavedToAcquistionDuration',newValue);
                 self.IsXSpanSlavedToAcquistionDuration_=newValue;
-                self.XSpan=ws.most.util.Nonvalue.The;  % fake a set to XSpan to generate the appropriate events
+                %self.XSpan=ws.most.util.Nonvalue.The;  % fake a set to XSpan to generate the appropriate events
+                for idx = 1:numel(self.Scopes) ,
+                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                end
+                self.broadcast('UpdateXSpan');                
             end
             self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
         end
-           
-        function self=didSetChannelUnitsOrScales(self)
+        
+        function self=didSetAnalogChannelUnitsOrScales(self)
             scopes=self.Scopes;
             for i=1:length(scopes) ,
-                scopes(i).didSetChannelUnitsOrScales();
+                scopes(i).didSetAnalogChannelUnitsOrScales();
             end
         end       
         
@@ -257,13 +261,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode)
-            if experimentMode == ws.ApplicationState.TestPulsing ,
-                self.prvCachedDisplayXSpan = self.XSpan;
-                self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
-            else
-                self.XOffset = 0;
-                self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            end
+%             if experimentMode == ws.ApplicationState.TestPulsing ,
+%                 self.prvCachedDisplayXSpan = self.XSpan;
+%                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
+%             else
+            self.XOffset = 0;
+            self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
+%             end
             self.XAutoScroll= (experimentMode == ws.ApplicationState.AcquiringContinuously);
         end  % function
         
@@ -290,7 +294,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function self=didAcquireData(self, t, scaledData, rawData) %#ok<INUSD>
+        function self=dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSD>
             %T=zeros(4,1);
             %ticId=tic();            
             if self.prvClearOnNextData
@@ -341,15 +345,15 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                     self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);
-            %fprintf('    In Display.didAcquireData() loop: %10.3f %10.3f\n',TInner);
+            %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);
             end
-            %fprintf('In Display didAcquireData(): %20g %20g %20g\n',T);
+            %fprintf('In Display dataAvailable(): %20g %20g %20g\n',T);
             %T(3)=toc(ticId);
             
             %T(4)=toc(ticId);
-            %fprintf('In Display.didAcquireData(): %10.3f %10.3f %10.3f %10.3f\n',T);
+            %fprintf('In Display.dataAvailable(): %10.3f %10.3f %10.3f %10.3f\n',T);
             %T=toc(ticId);
-            %fprintf('Time in Display.didAcquireData(): %7.3f s\n',T);
+            %fprintf('Time in Display.dataAvailable(): %7.3f s\n',T);
         end
         
         function didSetAcquisitionDuration(self)
@@ -357,7 +361,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             % duration
             
             % Want any listeners on XSpan set to get called
-            self.XSpan = nan;
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                for idx = 1:numel(self.Scopes) ,
+                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                end
+                self.broadcast('UpdateXSpan');
+            end    
+            %self.XSpan = nan;
         end
         
         function out = get.NScopes(self)

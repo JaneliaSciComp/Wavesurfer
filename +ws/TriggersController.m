@@ -180,9 +180,9 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
         end
         
-        function ContinuousSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
-            acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
-        end
+%         function ContinuousSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+%             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
+%         end
         
         function TriggerSourcesTableActuated(self,source,event)  %#ok<INUSL>
             % Called when a cell of TriggerSourcesTable is edited

@@ -97,7 +97,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        DataWasAcquired
+        DataAvailable
         TrialWillStart
         TrialDidComplete
         TrialDidAbort
@@ -116,6 +116,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
+        DidSetIsTrialBasedContinuous
     end
     
     methods
@@ -149,8 +150,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Configure subystem trigger relationships.
             self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
             self.Stimulation.TriggerScheme = self.Triggering.StimulationTriggerScheme;
-            self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
-            self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
+            %self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
+            %self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -322,6 +323,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.stimulusMapDurationPrecursorMayHaveChanged();
                 self.Triggering.didSetIsTrialBased();
             end
+            self.broadcast('DidSetIsTrialBasedContinuous');            
             self.broadcast('Update');
         end
         
@@ -366,16 +368,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
 
-        function self=didSetChannelUnitsOrScales(self)
-            %fprintf('WavesurferModel.didSetChannelUnitsOrScales():\n')
+        function self=didSetAnalogChannelUnitsOrScales(self)
+            %fprintf('WavesurferModel.didSetAnalogChannelUnitsOrScales():\n')
             %dbstack
             display=self.Display;
             if ~isempty(display)
-                display.didSetChannelUnitsOrScales();
+                display.didSetAnalogChannelUnitsOrScales();
             end            
             ephys=self.Ephys;
             if ~isempty(ephys)
-                ephys.didSetChannelUnitsOrScales();
+                ephys.didSetAnalogChannelUnitsOrScales();
             end            
         end
         
@@ -524,7 +526,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.didAcquireData(rawData);
+            self.dataAvailable(rawData);
             %profile off
         end
         
@@ -804,7 +806,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
         end  % function
         
-        function didAcquireData(self, rawData)
+        function dataAvailable(self, rawData)
             nScans=size(rawData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
@@ -823,16 +825,19 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if isempty(rawData) ,
                 scaledData=zeros(size(rawData));
             else
-                data = 3.0517578125e-4 * double(rawData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledData=bsxfun(@times,data,inverseChannelScales);
+                data = double(rawData);
+                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                scaledData=bsxfun(@times,data,combinedScaleFactors); 
             end
             
             % Notify each subsystem that data has just been acquired
             %T=zeros(1,7);
-            for idx = 1: numel(self.Subsystems_)
+            state = self.State_ ;
+            t = self.t_;
+            for idx = 1: numel(self.Subsystems_) ,
                 %tic
-                if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didAcquireData(self.t_, scaledData, rawData);
+                if self.Subsystems_{idx}.Enabled ,
+                    self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
                 end
                 %T(idx)=toc;
             end
@@ -840,8 +845,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + size(data, 1);
             
-            %self.broadcast('DataWasAcquired',ws.DataWasAcquiredEventData(scaledData));
-            self.broadcast('DataWasAcquired');
+            %self.broadcast('DataAvailable');
+            self.callUserFunctionsAndBroadcastEvent('DataAvailable');
         end  % function
         
     end % protected methods block

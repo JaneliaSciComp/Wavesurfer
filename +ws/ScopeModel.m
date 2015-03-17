@@ -168,12 +168,12 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     methods
         function set.Parent(self, newValue)
 %             if ~isempty(self.WavesurferModel) && isvalid(self.WavesurferModel) ,
-%                 self.WavesurferModel.Acquisition.unsubscribeMe(self,'DidSetChannelUnitsOrScales','','didSetChannelUnitsOrScales');
+%                 self.WavesurferModel.Acquisition.unsubscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','didSetAnalogChannelUnitsOrScales');
 %             end
             self.Parent=newValue;
             % Sometimes we want to set WavesurferModel to []
 %             if ~isempty(newValue)
-%                 self.WavesurferModel.Acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales','','didSetChannelUnitsOrScales');
+%                 self.WavesurferModel.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','didSetAnalogChannelUnitsOrScales');
 %             end
         end
         
@@ -233,7 +233,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         
         function value=get.XSpan(self)
             value = self.XSpan_ ;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
         
         function value=get.XLim(self)
@@ -378,7 +378,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
             % appropriate change in YLim
             if (nChannelsOriginally==0)
                 %self.YLimAtADCBeforeChange=self.YLim;
-                self.didSetChannelUnitsOrScales();
+                self.didSetAnalogChannelUnitsOrScales();
             end
             
             %self.updateYAxisLabel()
@@ -443,7 +443,9 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
                 self.YData{iChannel}=yData;
             end
             
-            self.XOffset=newXOffset;
+            if newXOffset~=self.XOffset , 
+                self.XOffset=newXOffset;
+            end
             %T(4)=toc(ticId);
             %self.updateYLim();
             %T(5)=toc(ticId);
@@ -480,13 +482,13 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         end
         
 %         function eventHappened(self,publisher,eventName,propertyName,source,event)  %#ok
-%             if isequal(eventName,'DidSetChannelUnitsOrScales')
-%                 self.didSetChannelUnitsOrScales();
+%             if isequal(eventName,'DidSetAnalogChannelUnitsOrScales')
+%                 self.didSetAnalogChannelUnitsOrScales();
 %             end
 %         end
         
-        function didSetChannelUnitsOrScales(self,varargin)
-            %fprintf('ScopeModel.didSetChannelUnitsOrScales():\n');
+        function didSetAnalogChannelUnitsOrScales(self,varargin)
+            %fprintf('ScopeModel.didSetAnalogChannelUnitsOrScales():\n');
             display=self.Parent;
             wavesurferModel=display.Parent;
             acquisition=wavesurferModel.Acquisition;            
