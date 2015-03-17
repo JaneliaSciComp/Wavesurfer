@@ -281,12 +281,12 @@ classdef Logging < ws.system.Subsystem
     end
        
     methods
-        function self = didAcquireData(self, t, scaledData, rawData) %#ok<INUSL>
+        function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
             %ticId=tic();
             
-            if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
-                return
-            end
+%             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
+%                 return
+%             end
             
             %dataSingle=single(scaledData);
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
@@ -319,7 +319,7 @@ classdef Logging < ws.system.Subsystem
                 self.WriteToTrialId_ = self.WriteToTrialId_ + 1;
             end
             %T=toc(ticId);
-            %fprintf('Time in Logging.didAcquireData(): %0.3f s\n',T);
+            %fprintf('Time in Logging.dataAvailable(): %0.3f s\n',T);
         end
     end
     

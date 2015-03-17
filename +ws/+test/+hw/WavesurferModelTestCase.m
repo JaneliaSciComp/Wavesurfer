@@ -18,7 +18,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     end
 
     methods (Test)
-        function testTooLargeStimulus(self) %#ok<MANU>
+        function testTooLargeStimulus(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
             model=ws.WavesurferModel();
@@ -39,7 +39,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % to stim library
             map=model.Stimulation.StimulusLibrary.addNewMap();
             map.Name='Pulse out first channel';
-            firstAoChannelName=model.Stimulation.ChannelNames{1};
+            firstAoChannelName=model.Stimulation.AnalogChannelNames{1};
             map.addBinding(firstAoChannelName,pulse);
 
             % make the new map the current sequence/map
@@ -52,6 +52,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             pause(3);
             
             % this is successful if no exceptions are thrown            
+            self.verifyTrue(true);                        
         end  % function
         
         function testSavingAndLoadingStimulusLibraryWithinWavesurferModel(self)

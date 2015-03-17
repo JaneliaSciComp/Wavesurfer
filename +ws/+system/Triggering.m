@@ -7,7 +7,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end
     
     properties (SetAccess = immutable, Transient=true)  % Transient b/c the indices get saved
-        ContinuousModeTriggerScheme
+        %ContinuousModeTriggerScheme
         AcquisitionTriggerScheme
         StimulationTriggerScheme
     end
@@ -29,8 +29,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         prvAcquisitionTriggerSchemeDestinationIndex
         prvStimulationTriggerSchemeSourceIndex
         prvStimulationTriggerSchemeDestinationIndex
-        prvContinuousModeTriggerSchemeSourceIndex
-        prvContinuousModeTriggerSchemeDestinationIndex        
+        %prvContinuousModeTriggerSchemeSourceIndex
+        %prvContinuousModeTriggerSchemeDestinationIndex        
         prvSourceIntervals
         prvSourceRepeatCounts
     end
@@ -62,9 +62,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.Sources_ = ws.TriggerSource.empty();
             self.Destinations_ = ws.TriggerDestination.empty();
             
-            %self.TrialTrigger = ws.TriggerScheme('Name', 'Trial');
-            self.ContinuousModeTriggerScheme = ws.TriggerScheme('Name', 'ContinuousAcquisition', ...
-                                                                   'IsExternalAllowed', false);
+%             self.ContinuousModeTriggerScheme = ws.TriggerScheme('Name', 'ContinuousAcquisition', ...
+%                                                                 'IsExternalAllowed', false);
             self.AcquisitionTriggerScheme = ws.TriggerScheme('Name', 'Acquisition');
             self.StimulationTriggerScheme = ws.TriggerScheme('Name', 'Stimulus');
             
@@ -91,17 +90,17 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             self.ContinuousModeTriggerScheme.addlistener('Target', 'PostSet', @(src,evt)self.didSetContinuousModeTriggerSchemeTarget_());            
             self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
             self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
-            self.ContinuousModeTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetContinuousModeTriggerSchemeTarget' );
-            self.ContinuousModeTriggerScheme.subscribeMe(self, 'DidSetTarget' , '', 'didSetContinuousModeTriggerSchemeTarget'  );
+%             self.ContinuousModeTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetContinuousModeTriggerSchemeTarget' );
+%             self.ContinuousModeTriggerScheme.subscribeMe(self, 'DidSetTarget' , '', 'didSetContinuousModeTriggerSchemeTarget'  );
         end  % function
         
         function initializeFromMDFStructure(self,mdfStructure)
 %             % Add a built-in internal trigger for use when running
 %             % trial-based.  Can't do this in the constructor b/c we need
-%             % the devide ID.
+%             % the device ID.
 %             builtinTriggerSource = ws.TriggerSource();
 %             builtinTriggerSource.Name='Built-in Trial Trigger Scheme';
-%             builtinTriggerSource.DeviceID=mdfStructure.inputDeviceID;
+%             builtinTriggerSource.DeviceName=mdfStructure.inputDeviceName;
 %             builtinTriggerSource.CounterID=0;
 %             builtinTriggerSource.RepeatCount=1;
 %             builtinTriggerSource.Interval=1;  % s
@@ -121,7 +120,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 % Create the trigger source, set params
                 source = ws.TriggerSource();                
                 source.Name=thisTriggerSourceSpec.Name;
-                source.DeviceID=thisTriggerSourceSpec.DeviceID;
+                source.DeviceName=thisTriggerSourceSpec.DeviceName;
                 source.CounterID=thisTriggerSourceSpec.CounterID;                
                 source.RepeatCount = 1;
                 source.Interval = 1;  % s
@@ -135,7 +134,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 if idx==1 ,
                     self.AcquisitionTriggerScheme.Target = source;
                     self.StimulationUsesAcquisitionTriggerScheme = true;
-                    self.ContinuousModeTriggerScheme.Target = source;
+                    %self.ContinuousModeTriggerScheme.Target = source;
                 end                    
             end  % for loop
             
@@ -148,7 +147,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 % Create the trigger destination, set params
                 destination = ws.TriggerDestination();
                 destination.Name = thisTriggerDestinationSpec.Name;
-                destination.DeviceID = thisTriggerDestinationSpec.DeviceID;
+                destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
                 destination.PFIID = thisTriggerDestinationSpec.PFIID;
                 destination.Edge = ws.ni.TriggerEdge.(thisTriggerDestinationSpec.Edge);
                 
@@ -218,25 +217,25 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function out = get.prvContinuousModeTriggerSchemeSourceIndex(self)
-            out = self.indexOfTriggerSource(self.ContinuousModeTriggerScheme);
-        end  % function
+%         function out = get.prvContinuousModeTriggerSchemeSourceIndex(self)
+%             out = self.indexOfTriggerSource(self.ContinuousModeTriggerScheme);
+%         end  % function
+%         
+%         function set.prvContinuousModeTriggerSchemeSourceIndex(self, value)
+%             if ~isempty(value) ,
+%                 self.ContinuousModeTriggerScheme.Target = self.Sources_(value);
+%             end
+%         end  % function
         
-        function set.prvContinuousModeTriggerSchemeSourceIndex(self, value)
-            if ~isempty(value) ,
-                self.ContinuousModeTriggerScheme.Target = self.Sources_(value);
-            end
-        end  % function
-        
-        function out = get.prvContinuousModeTriggerSchemeDestinationIndex(self)
-            out = self.indexOfTriggerDestination(self.ContinuousModeTriggerScheme);
-        end  % function
-        
-        function set.prvContinuousModeTriggerSchemeDestinationIndex(self, value)
-            if ~isempty(value)
-                self.ContinuousModeTriggerScheme.Target = self.Destinations_(value);
-            end
-        end  % function
+%         function out = get.prvContinuousModeTriggerSchemeDestinationIndex(self)
+%             out = self.indexOfTriggerDestination(self.ContinuousModeTriggerScheme);
+%         end  % function
+%         
+%         function set.prvContinuousModeTriggerSchemeDestinationIndex(self, value)
+%             if ~isempty(value)
+%                 self.ContinuousModeTriggerScheme.Target = self.Destinations_(value);
+%             end
+%         end  % function
         
         function out = get.prvSourceIntervals(self)
             out = [self.Sources_(2:end).Interval];
@@ -337,12 +336,12 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
             % whether we start the triggers for each trial, or only for the
             % first trial.
-            if experimentMode == ws.ApplicationState.AcquiringContinuously ,
-                % Only start if this is the first trial in the set.
-                if nTrialsCompletedInSet==0 ,
-                    self.ContinuousModeTriggerScheme.start();
-                end
-            else
+%             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
+%                 % Only start if this is the first trial in the set.
+%                 if nTrialsCompletedInSet==0 ,
+%                     self.ContinuousModeTriggerScheme.start();
+%                 end
+%             else
                 % Trial-based acquisition
                 % if ASAP triggering, start for each trial.  If not, only
                 % start the acq
@@ -359,7 +358,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                         self.startAllDistinctTrialBasedTriggers();
                     end
                 end
-            end
+%             end
         end  % function
 
         function startAllDistinctTrialBasedTriggers(self)
@@ -411,34 +410,37 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSL>
             self.acquireHardwareResources();            
-            if experimentMode == ws.ApplicationState.AcquiringTrialBased ,
+%             if experimentMode == ws.ApplicationState.AcquiringTrialBased ,
                 if self.AcquisitionUsesASAPTriggering ,
                     % do nothing --- will arm for each trial
                 else
                     self.setupInternalTrialBasedTriggers();
                 end
-            else
-                % Continuous acq
-                assert(~isempty(self.ContinuousModeTriggerScheme.Target), ...
-                       'Continuous acquisition mode requires a properly configured trigger scheme.');
-                self.ContinuousModeTriggerScheme.setup();
-            end
+%             else
+%                 % Continuous acq
+%                 assert(~isempty(self.ContinuousModeTriggerScheme.Target), ...
+%                        'Continuous acquisition mode requires a properly configured trigger scheme.');
+%                 self.ContinuousModeTriggerScheme.setup();
+%             end
         end  % function
         
         function willPerformTrial(self, wavesurferModel)
-            if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+            if self.AcquisitionUsesASAPTriggering ,
+            %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
                 self.setupInternalTrialBasedTriggers();
             end
         end  % function
 
         function didPerformTrial(self, wavesurferModel)
-            if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+            %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+            if self.AcquisitionUsesASAPTriggering ,
                 self.cleanup();
             end
         end  % function
         
         function didAbortTrial(self, wavesurferModel)
-            if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+            %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+            if self.AcquisitionUsesASAPTriggering ,
                 self.cleanup();
             end
         end  % function
@@ -492,12 +494,15 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function set.AcquisitionUsesASAPTriggering(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 % Can only change this if the trigger scheme is internal
-                if self.AcquisitionTriggerScheme.IsInternal ,
-                    self.validatePropArg(newValue,'AcquisitionUsesASAPTriggering');
-                    self.AcquisitionUsesASAPTriggering_ = newValue;
-                    self.syncTriggerSourcesFromTriggeringState_();
-                    self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-                    self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+                if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsTrialBased) ,
+                    if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
+                        self.AcquisitionUsesASAPTriggering_ = logical(newValue);
+                        self.syncTriggerSourcesFromTriggeringState_();
+                        self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+                        self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+                    else
+                        error('most:Model:invalidPropVal','Invalid value for AcquisitionUsesASAPTriggering.');
+                    end
                 end
             end
             self.broadcast('Update');
@@ -505,9 +510,17 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 
         function value=get.AcquisitionUsesASAPTriggering(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
-                value=self.AcquisitionUsesASAPTriggering_ ;
+                if isempty(self.Parent) ,
+                    value = self.AcquisitionUsesASAPTriggering_ ;
+                else
+                    if self.Parent.IsTrialBased ,
+                        value = self.AcquisitionUsesASAPTriggering_ ;
+                    else
+                        value = false;
+                    end
+                end
             else
-                value=false;
+                value = false;
             end
         end  % function
 
@@ -580,8 +593,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.setPropertyTags('prvAcquisitionTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
             self.setPropertyTags('prvStimulationTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
             self.setPropertyTags('prvStimulationTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
-            self.setPropertyTags('prvContinuousModeTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
-            self.setPropertyTags('prvContinuousModeTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
+            %self.setPropertyTags('prvContinuousModeTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
+            %self.setPropertyTags('prvContinuousModeTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
             
             % These are also dependent, but are also saved to the protocol
             % file so that they get restored on load.  (But why don't 
@@ -634,9 +647,9 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
         
         function cleanup(self)
-            if self.ContinuousModeTriggerScheme.IsInternal ,
-                self.ContinuousModeTriggerScheme.clear();
-            end
+%             if self.ContinuousModeTriggerScheme.IsInternal ,
+%                 self.ContinuousModeTriggerScheme.clear();
+%             end
             
             triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes)
@@ -656,14 +669,14 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
         end  % function
         
-        function willSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-
-        function didSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.syncTriggerSourcesFromTriggeringState_();
-        end  % function
+%         function willSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             % Have to release the relvant parts of the trigger scheme
+%             self.releaseCurrentTriggerSources_();
+%         end  % function
+% 
+%         function didSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.syncTriggerSourcesFromTriggeringState_();
+%         end  % function
     end
        
     methods (Access=protected)
@@ -674,7 +687,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
             
         function releaseCurrentTriggerSources_(self)
-            if self.Parent.IsTrialBased ,
+%             if self.Parent.IsTrialBased ,
                 if self.AcquisitionTriggerScheme.IsInternal ,
                     if self.AcquisitionUsesASAPTriggering ,
                         self.AcquisitionTriggerScheme.Target.releaseInterval();
@@ -684,16 +697,16 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                         self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
                     end
                 end
-            elseif self.Parent.IsContinuous ,
-                if self.ContinuousModeTriggerScheme.IsInternal ,
-                    self.ContinuousModeTriggerScheme.Target.releaseInterval();
-                    self.ContinuousModeTriggerScheme.Target.releaseRepeatCount();
-                end
-            end            
+%             elseif self.Parent.IsContinuous ,
+%                 if self.ContinuousModeTriggerScheme.IsInternal ,
+%                     self.ContinuousModeTriggerScheme.Target.releaseInterval();
+%                     self.ContinuousModeTriggerScheme.Target.releaseRepeatCount();
+%                 end
+%             end            
         end  % function
         
         function syncTriggerSourcesFromTriggeringState_(self)
-            if self.Parent.IsTrialBased ,
+%            if self.Parent.IsTrialBased ,
                 if self.AcquisitionTriggerScheme.IsInternal ,
                     if self.AcquisitionUsesASAPTriggering ,
                         self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
@@ -706,13 +719,13 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                         self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.ExperimentTrialCount);
                     end
                 end
-            elseif self.Parent.IsContinuous ,
-                if self.ContinuousModeTriggerScheme.IsInternal ,
-                    self.ContinuousModeTriggerScheme.Target.releaseLowerLimitOnInterval();
-                    self.ContinuousModeTriggerScheme.Target.overrideInterval(0.01);
-                    self.ContinuousModeTriggerScheme.Target.overrideRepeatCount(1);
-                end
-            end
+%             elseif self.Parent.IsContinuous ,
+%                 if self.ContinuousModeTriggerScheme.IsInternal ,
+%                     self.ContinuousModeTriggerScheme.Target.releaseLowerLimitOnInterval();
+%                     self.ContinuousModeTriggerScheme.Target.overrideInterval(0.01);
+%                     self.ContinuousModeTriggerScheme.Target.overrideRepeatCount(1);
+%                 end
+%             end
         end  % function
         
 %         function syncIntervalAndRepeatCountListeners_(self)

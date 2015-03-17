@@ -187,10 +187,10 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
         end
         
-        function self=didSetChannelUnitsOrScales(self)
+        function self=didSetAnalogChannelUnitsOrScales(self)
             scopes=self.Scopes;
             for i=1:length(scopes) ,
-                scopes(i).didSetChannelUnitsOrScales();
+                scopes(i).didSetAnalogChannelUnitsOrScales();
             end
         end       
         
@@ -261,13 +261,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode)
-            if experimentMode == ws.ApplicationState.TestPulsing ,
-                self.prvCachedDisplayXSpan = self.XSpan;
-                self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
-            else
-                self.XOffset = 0;
-                self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            end
+%             if experimentMode == ws.ApplicationState.TestPulsing ,
+%                 self.prvCachedDisplayXSpan = self.XSpan;
+%                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
+%             else
+            self.XOffset = 0;
+            self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
+%             end
             self.XAutoScroll= (experimentMode == ws.ApplicationState.AcquiringContinuously);
         end  % function
         
@@ -294,7 +294,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function self=didAcquireData(self, t, scaledData, rawData) %#ok<INUSD>
+        function self=dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSD>
             %T=zeros(4,1);
             %ticId=tic();            
             if self.prvClearOnNextData
@@ -345,15 +345,15 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                     self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);
-            %fprintf('    In Display.didAcquireData() loop: %10.3f %10.3f\n',TInner);
+            %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);
             end
-            %fprintf('In Display didAcquireData(): %20g %20g %20g\n',T);
+            %fprintf('In Display dataAvailable(): %20g %20g %20g\n',T);
             %T(3)=toc(ticId);
             
             %T(4)=toc(ticId);
-            %fprintf('In Display.didAcquireData(): %10.3f %10.3f %10.3f %10.3f\n',T);
+            %fprintf('In Display.dataAvailable(): %10.3f %10.3f %10.3f %10.3f\n',T);
             %T=toc(ticId);
-            %fprintf('Time in Display.didAcquireData(): %7.3f s\n',T);
+            %fprintf('Time in Display.dataAvailable(): %7.3f s\n',T);
         end
         
         function didSetAcquisitionDuration(self)

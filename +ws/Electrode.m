@@ -420,7 +420,7 @@ classdef Electrode < ws.Mimic
             % the other objects we depend upon for this method
             
             acquisitionChannelNames=acquisition.ActiveChannelNames;
-            stimulusChannelNames=stimulus.ChannelNames;
+            stimulusChannelNames=stimulus.AnalogChannelNames;
 
             % Finally, compute the result!
             result=any(strcmp(commandChannelName,stimulusChannelNames)) && ...

@@ -124,7 +124,7 @@ classdef ElectrodeManagerController < ws.Controller
             electrodeManager=self.Model;
             ephys=electrodeManager.Parent;
             wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Stimulation.ChannelNames;
+            validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.VoltageCommandPopups);
@@ -150,7 +150,7 @@ classdef ElectrodeManagerController < ws.Controller
             electrodeManager=self.Model;
             ephys=electrodeManager.Parent;
             wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Stimulation.ChannelNames;
+            validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CurrentCommandPopups);

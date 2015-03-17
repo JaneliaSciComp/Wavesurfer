@@ -86,6 +86,11 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
             self.Model.ExperimentDidAbort=newString;
         end
 
+        function DataAvailableEditActuated(self,source,event) %#ok<INUSD>
+            newString=get(source,'String');
+            self.Model.DataAvailable=newString;
+        end
+
         function AbortCallsCompleteCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
             self.Model.AbortCallsComplete=newValue;

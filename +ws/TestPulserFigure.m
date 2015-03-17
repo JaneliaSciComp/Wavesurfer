@@ -30,7 +30,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
     end  % properties
     
     properties (Access=protected)
-        IsMinimumSizeSet_ = false
+        %IsMinimumSizeSet_ = false
         YLimits_  % the current y limits        
     end
 
@@ -77,8 +77,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Subscribe to model events
             %if ~isempty(self.Host)
-            %    self.Host.Acquisition.subscribeMe(self,'DidSetChannelUnitsOrScales');
-            %    self.Host.Stimulus.subscribeMe(self,'DidSetChannelUnitsOrScales');
+            %    self.Host.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
+            %    self.Host.Stimulus.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
             %end
             if ~isempty(self.Model) ,
                 self.Model.subscribeMe(self,'Update','','update');
@@ -120,17 +120,17 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             self.update();
         end  % function
         
-        % Override the superclass set method so that we can catch it if
-        % Visible is set to 'off', and set to false IsMinimumSizeSet_, since
-        % empirically it seems to get unset if the figure is hidden and
-        % then made visible again
-        function set(self,propName,value)
-            set@ws.MCOSFigure(self,propName,value);
-            if strcmpi(propName,'Visible') && strcmpi(value,'off') ,
-                %fprintf('Setting IsMinimumSizeSet_ to false...\n');
-                self.IsMinimumSizeSet_=false;
-            end
-        end  % function
+%         % Override the superclass set method so that we can catch it if
+%         % Visible is set to 'off', and set to false IsMinimumSizeSet_, since
+%         % empirically it seems to get unset if the figure is hidden and
+%         % then made visible again
+%         function set(self,propName,value)
+%             set@ws.MCOSFigure(self,propName,value);
+%             if strcmpi(propName,'Visible') && strcmpi(value,'off') ,
+%                 %fprintf('Setting IsMinimumSizeSet_ to false...\n');
+%                 self.IsMinimumSizeSet_=false;
+%             end
+%         end  % function
 
         function set.YLimits(self,newValue)
             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2),
@@ -575,8 +575,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Get the sizes of various things
             figurePosition=get(self.FigureGH,'Position');
-            figureWidth=figurePosition(3);
-            figureHeight=figurePosition(4);
+            figureWidth=max(figurePosition(3),minimumFigureWidth);
+            figureHeight=max(figurePosition(4),minimumFigureHeight);
             
             % Dependent layout parameters
             
@@ -790,17 +790,24 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % Do some hacking to set the minimum figure size
             % Is seems to work OK to only set this after the figure is made
             % visible...
-            if ~self.IsMinimumSizeSet_ && isequal(get(self.FigureGH,'Visible'),'on') ,
-                %fprintf('Setting the minimum size...\n');
-                fpj=get(handle(self.FigureGH),'JavaFrame');
-                jw=fpj.fHG1Client.getWindow();
-                if ~isempty(jw)
-                    jw.setMinimumSize(java.awt.Dimension(minimumFigureWidth, ...
-                                                         minimumFigureHeight));  % Note that this setting does not stick if you set Visible to 'off'
-                                                                                 % and then on again.  Which kinda sucks...
-                    self.IsMinimumSizeSet_=true;                                 
-                end
-            end
+%             if ~self.IsMinimumSizeSet_ && isequal(get(self.FigureGH,'Visible'),'on') ,
+%                 %fprintf('Setting the minimum size...\n');
+%                 originalWarningState=ws.utility.warningState('MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+%                 warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+%                 fpj=get(handle(self.FigureGH),'JavaFrame');
+%                 warning(originalWarningState,'MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');                
+%                 if verLessThan('matlab', '8.4') ,
+%                     jw=fpj.fHG1Client.getWindow();
+%                 else
+%                     jw=fpj.fHG2Client.getWindow();
+%                 end
+%                 if ~isempty(jw)
+%                     jw.setMinimumSize(java.awt.Dimension(minimumFigureWidth, ...
+%                                                          minimumFigureHeight));  % Note that this setting does not stick if you set Visible to 'off'
+%                                                                                  % and then on again.  Which kinda sucks...
+%                     self.IsMinimumSizeSet_=true;                                 
+%                 end
+%             end
         end
 
         function updateControlsInExistance(self)

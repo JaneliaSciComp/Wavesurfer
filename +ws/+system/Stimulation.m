@@ -3,105 +3,65 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     properties (Dependent = true)
         SampleRate  % Hz
-    end
-    
-    properties (Dependent = true)
         DoRepeatSequence 
-    end
-        
-    properties (Access=protected)
-        DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
-    end
-    
-    properties (Transient=true)        
-        IsArmedOrStimulating = false  % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
-        IsWithinExperiment = false                       
-    end
-    
-    % The StimulusLibrary properties should come before the SelectedOutputable,
-    % SelectedOutputableUUID properties to ensure that the lib gets loaded before the
-    % SelectedOutputable when loading a protocol (.cfg) file.
-    properties (Dependent=true)
         StimulusLibrary
-    end
-    
-    properties (Access=protected)
-        StimulusLibrary_ 
-    end    
-    
-    properties (SetAccess = protected, Dependent = true)
-        %TrialDurations  % s
-        ChannelNames
-    end
-    
-    properties (SetAccess = immutable, Dependent = true)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        NChannels
-    end
-    
-    properties (Dependent=true)
-        ChannelScales
+        AnalogChannelScales
           % A row vector of scale factors to convert each channel from native units to volts on the coax.
           % This is implicitly in units of ChannelUnits per volt (see below)
-        ChannelUnits
+        AnalogChannelUnits
           % An SIUnit row vector that describes the real-world units 
           % for each stimulus channel.
-    end
-
-    properties (Dependent=true, SetAccess=immutable)
-        ChannelIDs  % the zero-based channel IDs of all the available AOs 
+        TriggerScheme
     end
     
-    properties (SetAccess = protected)
-        DeviceIDs  % the device IDs of the NI board for each channel, a cell array of strings
+    properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
+        AnalogPhysicalChannelNames % the physical channel name for each analog channel
+        DigitalPhysicalChannelNames  % the physical channel name for each digital channel
+        PhysicalChannelNames
+        AnalogChannelNames
+        DigitalChannelNames
+        ChannelNames
+        NAnalogChannels
+        NDigitalChannels
+        NChannels
+        DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
+        %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
+        IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
+        IsWithinExperiment
     end
-    
-    properties (Transient=true)
-        TriggerScheme = ws.TriggerScheme.empty()
-        ContinuousModeTriggerScheme = ws.TriggerScheme.empty()
-    end
-    
-%     properties (Access = protected, Dependent = true)
-% %         LibraryStore_  % The name of the stimulus library file.  -- ALT, 2014-07-16
-%         SelectedOutputableUUID_  % this exists so that when we pickle, we can store a unique
-%                     % 
-%     end
     
     properties (Access = protected, Transient=true)
-        TheFiniteOutputAnalogTask_
+        TheFiniteAnalogOutputTask_ = []
+        TheFiniteDigitalOutputTask_ = []
+        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformExperiment(), set to [] in didPerformExperiment())
+        IsArmedOrStimulating_ = false
+        IsWithinExperiment_ = false                       
+        TriggerScheme_ = ws.TriggerScheme.empty()
+        DidAnalogEpisodeComplete_
+        DidDigitalEpisodeComplete_
     end
 
     properties (Access = protected)
+        AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
+        DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+        AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
+        DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
+        %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
+        %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+        %AnalogChannelNames_ = cell(1,0)
+
+        StimulusLibrary_ 
+        DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         SampleRate_ = 20000  % Hz
-        StimulusOutputable_ = {}
-        %DelegateDoneFcn_
-        %TriggerListener_
         EpisodesPerExperiment_
         EpisodesCompleted_
-        
-        %CycleInLibrary_ = ws.stimulus.StimulusSequence.empty()
-        
-        %InternalCycle_ = ws.stimulus.StimulusSequence.empty()
-        RepeatsStimulusSequenceStack_ = false(0, 1)
-        
-        %LibraryStoreState_ = ''
-        %SelectedOutputableUUID_ = []
-                
-        ChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
-        ChannelScales_ = zeros(1,0)  % Store for the current ChannelScales values, but values may be "masked" by ElectrodeManager
-        ChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current ChannelUnits values, but values may be "masked" by ElectrodeManager
-        ChannelNames_ = cell(1,0)
-        %IsChannelActive_ = true(1,0)
-    end
-    
-    properties (Dependent=true, SetAccess=immutable, Hidden=true)  % Don't want to see when disp() is called
-        NumberOfElectrodesClaimingChannel
     end
     
     events 
-        % WillSetChannelUnitsOrScales
-        DidSetChannelUnitsOrScales
+        DidSetAnalogChannelUnitsOrScales
         DidSetStimulusLibrary
-        DidSetSelectedOutputable
         DidSetSampleRate
         DidSetDoRepeatSequence
     end
@@ -112,21 +72,25 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
             end
             self.Parent=parent;
-%             nChannels=length(self.ChannelNames);
-%             self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+%             nChannels=length(self.AnalogChannelNames);
+%             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
-%             self.ChannelUnits_=repmat(V,[1 nChannels]);
+%             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
         function delete(self)
             %fprintf('Stimulation::delete()\n');            
             %delete(self.TriggerListener_);
-            if ~isempty(self.TheFiniteOutputAnalogTask_) && isvalid(self.TheFiniteOutputAnalogTask_) ,
-                delete(self.TheFiniteOutputAnalogTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
+                delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
             end
-            self.TheFiniteOutputAnalogTask_=[];
-            self.Parent=[];
+            self.TheFiniteAnalogOutputTask_ = [] ;
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
+                delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+            end
+            self.TheFiniteDigitalOutputTask_ = [] ;
+            self.Parent = [] ;
         end
         
 %         function unstring(self)
@@ -165,8 +129,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function set.SampleRate(self, value)
             self.SampleRate_ = value;
-            if ~isempty(self.TheFiniteOutputAnalogTask_)
-                self.TheFiniteOutputAnalogTask_.SampleRate = value;
+            if ~isempty(self.TheFiniteAnalogOutputTask_)
+                self.TheFiniteAnalogOutputTask_.SampleRate = value;
+                self.TheFiniteDigitalOutputTask_.SampleRate = value;
             end
             self.broadcast('DidSetSampleRate');
         end
@@ -182,41 +147,70 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetDoRepeatSequence');
         end
         
-        function result = get.ChannelNames(self)
-            result = self.ChannelNames_ ;
+        function result = get.IsWithinExperiment(self)
+            result = self.IsWithinExperiment_ ;
+        end
+        
+        function result = get.IsArmedOrStimulating(self)
+            result = self.IsArmedOrStimulating_ ;
         end
     
-        function result = get.ChannelIDs(self)
-            result = self.ChannelIDs_ ;
+        function result = get.AnalogPhysicalChannelNames(self)
+            result = self.AnalogPhysicalChannelNames_ ;
+        end
+    
+        function result = get.DigitalPhysicalChannelNames(self)
+            result = self.DigitalPhysicalChannelNames_ ;
+        end
+
+        function result = get.PhysicalChannelNames(self)
+            result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
         end
         
-%         function result = get.ChannelIDs(self)
-%             if ~isempty(self.TheFiniteOutputAnalogTask_)
-%                 result = self.TheFiniteOutputAnalogTask_.AvailableChannels;
-%             else
-%                 result = zeros(1,0);
-%             end
+        function result = get.AnalogChannelNames(self)
+            result = self.AnalogChannelNames_ ;
+        end
+    
+        function result = get.DigitalChannelNames(self)
+            result = self.DigitalChannelNames_ ;
+        end
+    
+        function result = get.ChannelNames(self)
+            result = [self.AnalogChannelNames self.DigitalChannelNames] ;
+        end
+    
+%         function result = get.AnalogChannelIDs(self)
+%             result = self.AnalogChannelIDs_ ;
 %         end
-%         
-%         function out = get.ChannelNames(self)
-%             if ~isempty(self.TheFiniteOutputAnalogTask_)
-%                 out = self.TheFiniteOutputAnalogTask_.ChannelNames;
-%             else
-%                 out = {};
+        
+        function result = get.DeviceNamePerAnalogChannel(self)
+            result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
+        end
+        
+%         function result = get.AnalogPhysicalChannelNames(self)
+%             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
+%             analogChannelIDs = self.AnalogChannelIDs_ ;            
+%             nChannels=length(analogChannelIDs);
+%             result=cell(1,nChannels);
+%             for i=1:nChannels ,
+%                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
 %             end
 %         end
         
+        function value = get.NAnalogChannels(self)
+            value = length(self.AnalogChannelNames_);
+        end
+        
+        function value = get.NDigitalChannels(self)
+            value = length(self.DigitalChannelNames_);
+        end
+
         function value = get.NChannels(self)
-            value = length(self.ChannelIDs_);
-%             if isempty(self.TheFiniteOutputAnalogTask_) ,
-%                 value=0;
-%             else
-%                 value=length(self.TheFiniteOutputAnalogTask_.ChannelNames);
-%             end
+            value = self.NAnalogChannels + self.NDigitalChannels ;
         end
         
-        function value=isChannelName(self,name)
-            value=any(strcmp(name,self.ChannelNames));
+        function value=isAnalogChannelName(self,name)
+            value=any(strcmp(name,self.AnalogChannelNames));
         end
         
 %         function out = get.TrialDurations(self)
@@ -237,7 +231,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function set.TriggerScheme(self, value)
             if isa(value,'ws.most.util.Nonvalue'), return, end            
             self.validatePropArg('TriggerScheme', value);
-            self.TriggerScheme = value;
+            self.TriggerScheme_ = value;
+        end
+
+        function value=get.TriggerScheme(self)
+            value=self.TriggerScheme_;
         end
         
 %         function out = get.LibraryStore_(self)
@@ -284,13 +282,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
                 return
             end
-            self.Parent.didSetChannelUnitsOrScales();                        
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();                        
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
         function electrodesRemoved(self)
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
@@ -316,100 +314,81 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods
         function initializeFromMDFStructure(self, mdfStructure)            
-            if ~isempty(mdfStructure.outputAnalogChannelIDs) ,
-                self.DeviceIDs=mdfStructure.outputDeviceIDs;
-                self.ChannelIDs_ = mdfStructure.outputAnalogChannelIDs;
-                self.ChannelNames_ = mdfStructure.outputAnalogChannelNames;                
-%                 self.TheFiniteOutputAnalogTask_ = ...
-%                     ws.ni.FiniteOutputAnalogTask(mdfStructure.outputDeviceIDs, ...
-%                                                          mdfStructure.outputAnalogChannelIDs, ...
-%                                                          'Wavesurfer Analog Stimulation Task', ...
-%                                                          mdfStructure.outputAnalogChannelNames);
-%                 self.TheFiniteOutputAnalogTask_.SampleRate=self.SampleRate;                                     
+            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
+                % Get the list of physical channel names
+                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+                channelNames = mdfStructure.outputChannelNames ;                                
                 
-                nChannels=length(mdfStructure.outputAnalogChannelIDs);
-                self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+                % Check that they're all on the same device (for now)
+                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+                uniqueDeviceNames = unique(deviceNames);
+                if ~isscalar(uniqueDeviceNames) ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'Wavesurfer only supports a single NI card at present.');                      
+                end
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+                isAnalog = strcmp(channelTypes,'ao');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names
+                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
+                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
+                self.AnalogChannelNames_ = channelNames(isAnalog) ;
+                self.DigitalChannelNames_ = channelNames(isDigital) ;
+                
+                % Set the analog channel scales, units
+                nAnalogChannels = sum(isAnalog) ;
+                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.ChannelUnits_=repmat(V,[1 nChannels]);
+                self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
                                                   
-%                 self.TheFiniteOutputAnalogTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
-           
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
                 self.CanEnable = true;
             end
-        end
+        end  % function
 
         function acquireHardwareResources(self)            
-            if isempty(self.TheFiniteOutputAnalogTask_) ,
-                self.TheFiniteOutputAnalogTask_ = ...
-                    ws.ni.FiniteOutputAnalogTask(self.DeviceIDs, ...
-                                                 self.ChannelIDs, ...
-                                                 'Wavesurfer Analog Stimulation Task', ...
-                                                 self.ChannelNames);
-                self.TheFiniteOutputAnalogTask_.SampleRate=self.SampleRate;                                     
-                self.TheFiniteOutputAnalogTask_.addlistener('OutputComplete', @(~,~)self.episodeCompleted_() );
+            if isempty(self.TheFiniteAnalogOutputTask_) ,
+                self.TheFiniteAnalogOutputTask_ = ...
+                    ws.ni.FiniteOutputTask('analog', ...
+                                           'Wavesurfer Analog Output Task', ...
+                                           self.AnalogPhysicalChannelNames, ...
+                                           self.AnalogChannelNames) ;
+                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
+                self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
+            end
+            if isempty(self.TheFiniteDigitalOutputTask_) ,
+                self.TheFiniteDigitalOutputTask_ = ...
+                    ws.ni.FiniteOutputTask('digital', ...
+                                           'Wavesurfer Digital Output Task', ...
+                                           self.DigitalPhysicalChannelNames, ...
+                                           self.DigitalChannelNames) ;
+                self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
+                self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
         end
         
         function releaseHardwareResources(self)
-            self.TheFiniteOutputAnalogTask_ = [];            
+            self.TheFiniteAnalogOutputTask_ = [];            
+            self.TheFiniteDigitalOutputTask_ = [];            
         end
         
-%         function pushStimulusCycle(self, stimCycle, varargin)
-%             validateattributes(stimCycle, {'ws.stimulus.StimulusSequence'}, {'scalar'});
-%             
-%             assert(isempty(self.InternalCycle_), 'wavesurfer:stimulus:stackdepthexceeded', 'Only one stimulus can be pushed on the stack');
-%             
-%             self.InternalCycle_ = stimCycle;
-%             self.RepeatsStimulusSequenceStack_(end + 1) = self.DoRepeatSequence;
-%             
-%             if nargin > 2
-%                 self.DoRepeatSequence = varargin{1};
-%             end
-%         end
-%         
-%         function out = popStimulusCycle(self)
-%             assert(~isempty(self.InternalCycle_), ...
-%                    'wavesurfer:acquisition:unbalancedstackcalls', ...
-%                    'Calls to pop the stimulus stack must be balanced with calls to push.');
-%             
-%             out = self.InternalCycle_;
-%             self.InternalCycle_ = ws.stimulus.StimulusSequence.empty();
-%             self.DoRepeatSequence = self.RepeatsStimulusSequenceStack_(end);
-%             self.RepeatsStimulusSequenceStack_ = [];
-%         end
-        
-        function willPerformExperiment(self, wavesurferObj, experimentMode)
+        function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
             %fprintf('Stimulation::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
             
-            %
             % Do a bunch of checks to make sure all is well for running an
             % experiment
-            %
-%             stimDur = self.TrialDurations;
-%             
-%             if numel(stimDur) < wavesurferObj.ExperimentTrialCount
-%                 stimDur((numel(stimDur)+1):wavesurferObj.ExperimentTrialCount) = 0;
-%             elseif numel(stimDur) > wavesurferObj.ExperimentTrialCount
-%                 stimDur((wavesurferObj.ExperimentTrialCount + 1):end) = [];
-%             end
-%             
-%             if all(~isnan(wavesurferObj.TrialDurations)) && any(wavesurferObj.TrialDurations(1:numel(stimDur)) < stimDur)
-%                 errors = MException('wavesurfer:stimulussystem:invalidtrialduration', 'The specified trial duration is less than the stimulus duration.');
-%                 return;
-%             end
-            
             if isempty(self.TriggerScheme)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-            end
-            
+            end            
             if isempty(self.TriggerScheme.Target)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-            end
-                        
+            end            
             if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
                 error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
             end
@@ -417,29 +396,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources();
             
-            if experimentMode == ws.ApplicationState.AcquiringContinuously || experimentMode == ws.ApplicationState.TestPulsing
-                self.TheFiniteOutputAnalogTask_.TriggerDelegate = self.ContinuousModeTriggerScheme.Target;
-            else
-                self.TheFiniteOutputAnalogTask_.TriggerDelegate = self.TriggerScheme.Target;
-            end
+            % Set up the task triggering
+            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
-            %self.TheFiniteOutputAnalogTask_.ChannelData = zeros(0, 0);
-            self.TheFiniteOutputAnalogTask_.clearChannelData;
+            % Clear out any pre-existing output waveforms
+            self.TheFiniteAnalogOutputTask_.clearChannelData();
+            self.TheFiniteDigitalOutputTask_.clearChannelData();
             
-            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
-            
-%             if isa(stimulusOutputable, 'ws.stimulus.StimulusMap')
-%                 wrapperCycle = ws.stimulus.StimulusSequence;
-%                 wrapperCycle.addMap(stimulusOutputable);
-%                 stimulusOutputable = wrapperCycle;
-%             end
-            
-%             if stimCycle.CycleCount == 0
-%                 ws.most.mimics.warning('wavesurfer:stimulus:emptystimulusoutput', ...
-%                                     ['The Stimulation system is enabled however the selected StimulusSequence does contain any entries.  ' ...
-%                                      'There will be no stimulus output.']);
-%             end
-
             % Determine how many episodes there will be, if possible
             if self.TriggerScheme.IsExternal ,
                 self.EpisodesPerExperiment_ = [];
@@ -466,39 +432,36 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Initialize the episode counter
             self.EpisodesCompleted_ = 0;
             
-            % Set up the stim cycle iterator
-            self.StimulusOutputable_=stimulusOutputable;
-%             self.StimulusSequenceIterator_ = ws.stimulus.StimulusSequenceIterator(stimulusSequence);
-%             self.StimulusSequenceIterator_.Repeats = self.DoRepeatSequence;
-%             self.StimulusSequenceIterator_.beginIteration();
-            
-            % register the output task callbacks
-            self.TheFiniteOutputAnalogTask_.registerCallbacks();
+            % Set up the selected outputable cache
+            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
+            self.SelectedOutputableCache_=stimulusOutputable;
             
             % Set the state
-            self.IsWithinExperiment=true;
+            self.IsWithinExperiment_=true;
         end  % willPerformExperiment() function
         
         function didPerformExperiment(self, ~)
-            self.TheFiniteOutputAnalogTask_.unregisterCallbacks();
-            self.TheFiniteOutputAnalogTask_.unreserve();
+%             self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
+%             self.TheFiniteAnalogOutputTask_.unreserve();
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
-            self.StimulusOutputable_ = {};
-            self.IsWithinExperiment=false;  % might already be guaranteed to be false here...
+            self.SelectedOutputableCache_ = [];
+            self.IsWithinExperiment_=false;  % might already be guaranteed to be false here...
         end  % function
         
         function didAbortExperiment(self, ~)
-            if ~isempty(self.TheFiniteOutputAnalogTask_) ,
-                if self.TheFiniteOutputAnalogTask_.AreCallbacksRegistered ,
-                    self.TheFiniteOutputAnalogTask_.unregisterCallbacks();
-                end
-                self.TheFiniteOutputAnalogTask_.unreserve();
+            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
+%                 self.TheFiniteAnalogOutputTask_.unreserve();
+                self.TheFiniteAnalogOutputTask_.disarm();
+                self.TheFiniteDigitalOutputTask_.disarm();
             end
             
             %delete(self.StimulusSequenceIterator_);
-            self.StimulusOutputable_ = {};
-            self.IsWithinExperiment=false;
+            self.SelectedOutputableCache_ = [];
+            self.IsWithinExperiment_=false;
         end  % function
         
         function willPerformTrial(self, wavesurferObj) %#ok<INUSD>
@@ -540,7 +503,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
 %                         self.armForEpisode();
 %                     else
-%                         self.IsWithinExperiment = false;
+%                         self.IsWithinExperiment_ = false;
 %                         self.Parent.stimulationTrialComplete();
 %                     end
                     % if first trial, arm.  Otherwise, we handle
@@ -558,73 +521,100 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
-            self.IsArmedOrStimulating = true;                        
-            sampleCount = self.setAnalogChannelData_();
+            %self.DidAnalogEpisodeComplete_ = false ;
+            %self.DidDigitalEpisodeComplete_ = false ;
+            self.DidAnalogEpisodeComplete_ = (self.NAnalogChannels==0) ;  % usually false at this point, unless there are no analog channels
+            self.DidDigitalEpisodeComplete_ = (self.NDigitalChannels==0) ;  % usually false at this point, unless there are no digital channels
+            self.IsArmedOrStimulating_ = true;
+            
+            % Get the current stimulus map
+            stimulusMap = self.getCurrentStimulusMap_();
 
-            if sampleCount > 0 ,
-%                 if self.EpisodesCompleted_ == 0
-%                     self.TheFiniteOutputAnalogTask_.start();
-%                 else
-%                     self.TheFiniteOutputAnalogTask_.retrigger();
-%                 end
+            % Set the channel data in the tasks
+            nAnalogScans = self.setAnalogChannelData_(stimulusMap);
+            nDigitalScans = self.setDigitalChannelData_(stimulusMap);
+
+            % Deal with special case of no analog scans
+            if nAnalogScans > 0 ,
                 if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteOutputAnalogTask_.setup();
-                else
-                    self.TheFiniteOutputAnalogTask_.reset();
+                    self.TheFiniteAnalogOutputTask_.arm();
                 end
-                self.TheFiniteOutputAnalogTask_.start();                
+                self.TheFiniteAnalogOutputTask_.start();                
             else
+                self.DidAnalogEpisodeComplete_ = true ;                
+            end
+            
+            % Deal with special case of no digital scans
+            if nDigitalScans > 0 ,
+                if self.EpisodesCompleted_ == 0 ,
+                    self.TheFiniteDigitalOutputTask_.arm();
+                end
+                self.TheFiniteDigitalOutputTask_.start(); 
+            else
+                self.DidDigitalEpisodeComplete_ = true ;
+            end
+            
+            % If no scans at all, we just declare the episode done
+            if nAnalogScans==0 && nDigitalScans==0 ,
                 % This was triggered, it just has a map/stimulus that has zero samples.
-                self.IsArmedOrStimulating = false;
+                self.IsArmedOrStimulating_ = false;
                 self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             end
+            
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
         end  % function
         
         function didAbortTrial(self, ~)
-            self.TheFiniteOutputAnalogTask_.abort();
-            self.IsArmedOrStimulating = false;
+            self.TheFiniteAnalogOutputTask_.abort();
+            self.TheFiniteDigitalOutputTask_.abort();
+            self.IsArmedOrStimulating_ = false;
         end  % function
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
         end  % function
         
-        function channelID=channelIDFromName(self,channelName)
+        function channelID=analogChannelIDFromName(self,channelName)
             % Get the channel ID, given the name.
-            % This returns a channel ID, e.g. if the channel is A02,
+            % This returns a channel ID, e.g. if the channel is ao2,
             % it returns 2.
-            channelID=self.ChannelIDs(self.iChannelFromName(channelName));
+            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+            if isnan(iChannel) ,
+                channelID = nan ;
+            else
+                physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
+                channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+            end
         end  % function
 
         function value=channelScaleFromName(self,channelName)
-            value=self.ChannelScales(self.iChannelFromName(channelName));
+            value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
         end  % function
 
-        function iChannel=iChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.ChannelNames));
+        function iChannel=indexOfAnalogChannelFromName(self,channelName)
+            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
             if isempty(iChannels) ,
                 iChannel=nan;
             else
                 iChannel=iChannels(1);
             end
-        end
+        end  % function
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
                 result=ws.utility.SIUnit.empty();
             else
-                iChannel=self.iChannelFromName(channelName);
+                iChannel=self.indexOfAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
-                    result=self.ChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits(iChannel);
                 end
             end
-        end
+        end  % function
         
-        function channelUnits=get.ChannelUnits(self)
+        function channelUnits=get.AnalogChannelUnits(self)
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -638,17 +628,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                channelUnits=self.ChannelUnits_;
+                channelUnits=self.AnalogChannelUnits_;
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandUnitsByName(channelNames);
-                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.ChannelUnits_);
+                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end  % function
         
-        function channelScales=get.ChannelScales(self)
+        function analogChannelScales=get.AnalogChannelScales(self)
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -662,70 +652,70 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                channelScales=self.ChannelScales_;
+                analogChannelScales=self.AnalogChannelScales_;
             else
-                channelNames=self.ChannelNames;            
-                [channelScalesFromElectrodes, ...
+                channelNames=self.AnalogChannelNames;            
+                [analogChannelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandScalingsByName(channelNames);
-                channelScales=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.ChannelScales_);
+                analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
             end
         end  % function
         
-        function set.ChannelUnits(self,newValue)
+        function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
-            oldValue=self.ChannelUnits_;
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            oldValue=self.AnalogChannelUnits_;
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.ChannelUnits_=editedNewValue;
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.AnalogChannelUnits_=editedNewValue;
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function set.ChannelScales(self,newValue)
+        function set.AnalogChannelScales(self,newValue)
             import ws.utility.*
-            oldValue=self.ChannelScales_;
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
+            oldValue=self.AnalogChannelScales_;
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.ChannelScales_=editedNewValue;
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.AnalogChannelScales_=editedNewValue;
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setChannelUnitsAndScales(self,newUnits,newScales)
+        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*
-            isChangeable= ~(self.NumberOfElectrodesClaimingChannel==1);
-            oldUnits=self.ChannelUnits_;
+            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
+            oldUnits=self.AnalogChannelUnits_;
             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
-            oldScales=self.ChannelScales_;
+            oldScales=self.AnalogChannelScales_;
             editedNewScales=fif(isChangeable,newScales,oldScales);
-            self.ChannelUnits_=editedNewUnits;
-            self.ChannelScales_=editedNewScales;
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.AnalogChannelUnits_=editedNewUnits;
+            self.AnalogChannelScales_=editedNewScales;
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelUnits(self,i,newValue)
-            isChangeableFull=(self.NumberOfElectrodesClaimingChannel==1);
+        function setSingleAnalogChannelUnits(self,i,newValue)
+            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
-                self.ChannelUnits_(i)=newValue;
+                self.AnalogChannelUnits_(i)=newValue;
             end
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleChannelScale(self,i,newValue)
-            isChangeableFull=(self.NumberOfElectrodesClaimingChannel==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
-                self.ChannelScales_(i)=newValue;
+                self.AnalogChannelScales_(i)=newValue;
             end
-            self.Parent.didSetChannelUnitsOrScales();            
-            self.broadcast('DidSetChannelUnitsOrScales');
+            self.Parent.didSetAnalogChannelUnitsOrScales();            
+            self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function result=get.NumberOfElectrodesClaimingChannel(self)
+        function result=getNumberOfElectrodesClaimingChannel(self)
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -738,9 +728,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                result=zeros(1,self.NChannels);
+                result=zeros(1,self.NAnalogChannels);
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 result = ...
                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
             end
@@ -760,9 +750,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %         function defineDefaultPropertyTags(self)
 %             defineDefaultPropertyTags@ws.system.Subsystem(self);
 %             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('ChannelUnits_', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('ChannelScales_', 'IncludeInFileTypes', {'cfg'});            
-%             self.setPropertyTags('IsArmedOrStimulating', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('AnalogChannelUnits_', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('AnalogChannelScales_', 'IncludeInFileTypes', {'cfg'});            
+%             self.setPropertyTags('IsArmedOrStimulating_', 'ExcludeFromFileTypes', {'*'});
 %             %self.setPropertyTags('SelectedOutputable',  'IncludeInFileTypes', {'header'}, 'ExcludeFromFileTypes', {'usr', 'cfg'});
 %             %self.setPropertyTags('SelectedOutputable',  'ExcludeFromFileTypes', {'*'});
 %             self.setPropertyTags('TriggerScheme', 'ExcludeFromFileTypes', {'*'});
@@ -794,20 +784,18 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % protected methods block
     
     methods (Access = protected)
-        function sampleCount = setAnalogChannelData_(self)
-            import ws.utility.*
-            
+        function stimulusMap = getCurrentStimulusMap_(self)
             % Calculate the episode index
             episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
             
-            % Determine the stimulus map, given self.StimulusOutputable_ and other
+            % Determine the stimulus map, given self.SelectedOutputableCache_ and other
             % things
-            if isa(self.StimulusOutputable_,'ws.stimulus.StimulusMap')
+            if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
                 isThereAMap=true;
                 indexOfMapIfSequence=[];
             else
                 % outputable must be a sequence                
-                nMapsInSequence=length(self.StimulusOutputable_.Maps);
+                nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
                 if episodeIndexWithinExperiment <= nMapsInSequence ,
                     isThereAMap=true;
                     indexOfMapIfSequence=episodeIndexWithinExperiment;
@@ -820,39 +808,45 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                         indexOfMapIfSequence=1;
                     end
                 end
-            end
-            
-            % Fill aoData with the stimulus data, or set it to empty if
-            % we're done stimulating
+            end            
             if isThereAMap ,
                 if isempty(indexOfMapIfSequence) ,
                     % this means the outputable is a "naked" map
-                    stimulusMap=self.StimulusOutputable_;
+                    stimulusMap=self.SelectedOutputableCache_;
                 else
-                    stimulusMap=self.StimulusOutputable_.Maps{indexOfMapIfSequence};
+                    stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
                 end
-                aoData = stimulusMap.calculateSignals(self.SampleRate, self.ChannelNames, episodeIndexWithinExperiment);
             else
-                aoData=zeros(0,length(self.ChannelNames));
+                stimulusMap = [] ;
             end
-            %if isempty(aoData) && ~isempty(self.ChannelNames)
-            %    ws.most.mimics.warning('wavesurfer:stimulus:emptystimulusoutput', ...
-            %                        'The StimulusMap for the current StimulusSequence entry does not have any Bindings for any of the Stimulation output channels.');
-            %end
+        end  % function
+        
+        function nScans = setAnalogChannelData_(self, stimulusMap)
+            import ws.utility.*
+            
+            % Calculate the episode index
+            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            
+            % Calculate the signals
+            if isempty(stimulusMap) ,
+                aoData=zeros(0,length(self.AnalogChannelNames));
+            else
+                aoData = stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, episodeIndexWithinExperiment);
+            end
             
             % Want to return the number of scans in the stimulus data
-            sampleCount= size(aoData,1);
+            nScans= size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            channelScales=self.ChannelScales;
-            inverseChannelScales=1./channelScales;
-            sanitizedInverseChannelScales=fif(isfinite(inverseChannelScales), inverseChannelScales, zeros(size(inverseChannelScales)));            
+            analogChannelScales=self.AnalogChannelScales;
+            inverseAnalogChannelScales=1./analogChannelScales;
+            sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
             
             % scale the data by the channel scales
             if isempty(aoData) ,
                 aoDataScaled=aoData;
             else
-                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseChannelScales);
+                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
             end
             
             % limit the data to [-10 V, +10 V]
@@ -860,13 +854,51 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Finally, assign the stimulation data to the the relevant part
             % of the output task
-            self.TheFiniteOutputAnalogTask_.ChannelData = aoDataScaledAndLimited;
+            self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
         end  % function
+
+        function nScans = setDigitalChannelData_(self, stimulusMap)
+            import ws.utility.*
+            
+            % Calculate the episode index
+            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            
+            % Calculate the signals
+            if isempty(stimulusMap) ,
+                doData=zeros(0,length(self.DigitalChannelNames));
+            else
+                doData = stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames, episodeIndexWithinExperiment);
+            end
+            
+            % Want to return the number of scans in the stimulus data
+            nScans= size(doData,1);
+                        
+            % limit the data to [-10 V, +10 V]
+            doDataLimited=(doData>=0.5);  % also eliminates nan, sets to false
+            
+            % Finally, assign the stimulation data to the the relevant part
+            % of the output task
+            self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+        end  % function
+
+        function analogEpisodeCompleted_(self)
+            self.DidAnalogEpisodeComplete_ = true ;
+            if self.DidDigitalEpisodeComplete_ ,
+                self.analogAndDigitalEpisodesCompleted_();
+            end
+        end
         
-        function episodeCompleted_(self)
+        function digitalEpisodeCompleted_(self)
+            self.DidDigitalEpisodeComplete_ = true ;
+            if self.DidAnalogEpisodeComplete_ ,
+                self.analogAndDigitalEpisodesCompleted_();
+            end            
+        end       
+        
+        function analogAndDigitalEpisodesCompleted_(self)
             % Called from "below" when a single episode of stimulation is
             % completed.  
-            self.IsArmedOrStimulating = false;
+            self.IsArmedOrStimulating_ = false;
             self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             
             if self.TriggerScheme.IsExternal ,
@@ -900,7 +932,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                         if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
                             self.armForEpisode();
                         else
-                            self.IsWithinExperiment = false;
+                            self.IsWithinExperiment_ = false;
                             self.Parent.stimulationTrialComplete();
                         end
                     end
@@ -910,7 +942,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
                         self.armForEpisode();
                     else
-                        self.IsWithinExperiment = false;
+                        self.IsWithinExperiment_ = false;
                         self.Parent.stimulationTrialComplete();
                     end
                 end

@@ -7,7 +7,7 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
     
     properties (Dependent=true)
         Name
-        DeviceID  % the NI device ID string, e.g. 'Dev1'
+        DeviceName  % the NI device ID string, e.g. 'Dev1'
         PFIID  
             % If the destination is user-defined, this indicates the PFI
             % line to be used as an input. If the destination is automatic,
@@ -19,7 +19,7 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
     
     properties (Access=protected)
         Name_
-        DeviceID_
+        DeviceName_
         PFIID_
         Edge_
     end
@@ -27,7 +27,7 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
     methods
         function self=TriggerDestination()
             self.Name_ = 'Destination';
-            self.DeviceID_ = 'Dev1';
+            self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
             self.Edge_ = ws.ni.TriggerEdge.Rising;            
         end
@@ -36,8 +36,8 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
             value=self.Name_;
         end
         
-        function value=get.DeviceID(self)
-            value=self.DeviceID_;
+        function value=get.DeviceName(self)
+            value=self.DeviceName_;
         end
                 
         function value=get.PFIID(self)
@@ -54,10 +54,10 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
             self.Name_ = value;
         end
         
-        function set.DeviceID(self, value)
+        function set.DeviceName(self, value)
             if isnan(value), return, end
-            self.validatePropArg('DeviceID', value);
-            self.DeviceID_ = value;
+            self.validatePropArg('DeviceName', value);
+            self.DeviceName_ = value;
         end
         
         function set.PFIID(self, value)
@@ -96,7 +96,7 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
             s.Name=struct('Classes', 'char', ...
                           'Attributes', {{'vector'}}, ...
                           'AllowEmpty', false);
-            s.DeviceID=struct('Classes', 'char', ...
+            s.DeviceName=struct('Classes', 'char', ...
                             'Attributes', {{'vector'}}, ...
                             'AllowEmpty', true);
             s.PFIID=struct('Classes', 'numeric', ...

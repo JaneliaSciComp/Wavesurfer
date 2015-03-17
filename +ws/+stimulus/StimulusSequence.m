@@ -38,12 +38,8 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     end      
     
     properties (Access = protected)
-        Maps_ = {};
-    end
-    
-    properties (SetAccess = protected)        
-        %MapUUIDs_ = []
         Name_ = ''
+        Maps_ = {};
     end
     
     methods

@@ -125,7 +125,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
             leftPadWidth=10;
             rightPadWidth=10;
             tableWidth=400;
-            tableHeight=124;
+            tableHeight=132;
             heightFromButtonRowToTable=6;
             buttonHeight=26;
             buttonWidth=80;

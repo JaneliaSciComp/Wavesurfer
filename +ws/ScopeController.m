@@ -142,12 +142,28 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
         
         function didSetXLimInView(self,varargin)
             %fprintf('ScopeController::didSetXLimInView()\n');
-            self.Model.XLim=self.Figure.XLim;  % These have AbortSet==true, so no infinite loop should result
+            xlimInFigure=self.Figure.XLim;
+            xLowInFigure=xlimInFigure(1);
+            xHighInFigure=xlimInFigure(2);
+            xlimInModel=self.Model.XLim;
+            xLowInModel=xlimInModel(1);
+            xHighInModel=xlimInModel(2);
+            if xLowInFigure~=xLowInModel || xHighInFigure~=xHighInModel ,
+                self.Model.XLim=xlimInFigure;
+            end
         end
         
         function didSetYLimInView(self,varargin)
             %fprintf('ScopeController::didSetYLimInView()\n');
-            self.Model.YLim=self.Figure.YLim;  % These have AbortSet==true, so no infinite loop should result
+            ylimInFigure=self.Figure.YLim;
+            yLowInFigure=ylimInFigure(1);
+            yHighInFigure=ylimInFigure(2);
+            ylimInModel=self.Model.YLim;
+            yLowInModel=ylimInModel(1);
+            yHighInModel=ylimInModel(2);
+            if yLowInFigure~=yLowInModel || yHighInFigure~=yHighInModel ,
+                self.Model.XLim=ylimInFigure;
+            end
         end
         
         function controlActuated(self,controlName,source,event) %#ok<INUSL,INUSD>
