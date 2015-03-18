@@ -143,3 +143,7 @@ Version History
 
 0.771: (March 18, 2015) Updated README to reflect true NI DAQmx driver
        requirements.
+
+0.772: (March 18, 2015) Can now change scope y limits during ongoing 
+       acquisition.
+
