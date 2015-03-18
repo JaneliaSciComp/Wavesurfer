@@ -410,22 +410,22 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 return
             end
             
-            % Need to figure out the wavesurferModel State            
-            display=[];
-            if ~isempty(model) && isvalid(model),
-                display=model.Parent;
-            end
-            wavesurferModel=[];
-            if ~isempty(display) && isvalid(display),
-                wavesurferModel=display.Parent;
-            end
-            isWavesurferIdle=[];
-            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
-            end
-            if isempty(isWavesurferIdle)
-                isWavesurferIdle=true;  % things are probably fucked anyway...
-            end            
+%             % Need to figure out the wavesurferModel State            
+%             display=[];
+%             if ~isempty(model) && isvalid(model),
+%                 display=model.Parent;
+%             end
+%             wavesurferModel=[];
+%             if ~isempty(display) && isvalid(display),
+%                 wavesurferModel=display.Parent;
+%             end
+%             isWavesurferIdle=[];
+%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                 isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+%             end
+%             if isempty(isWavesurferIdle)
+%                 isWavesurferIdle=true;  % things are probably fucked anyway...
+%             end            
 
             % Update the axis limits
             self.updateXAxisLimits();
@@ -436,9 +436,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.updateLineXDataAndYData();
             
             % Update the enablement of controls
-            import ws.utility.onIff
-            set(self.SetYLimTightToDataButtonGH,'Enable',onIff(isWavesurferIdle));
-            set(self.YLimitsMenuItemGH,'Enable',onIff(isWavesurferIdle));            
+            %import ws.utility.onIff
+            %set(self.SetYLimTightToDataButtonGH,'Enable',onIff(isWavesurferIdle));
+            %set(self.YLimitsMenuItemGH,'Enable',onIff(isWavesurferIdle));            
+            %set(self.SetYLimTightToDataButtonGH,'Enable',onIff(true));
+            %set(self.YLimitsMenuItemGH,'Enable',onIff(true));            
         end                
     end
     
