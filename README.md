@@ -20,7 +20,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver 9.8 or later
+National Instruments DAQmx driver 9.8.x (more recent ones will not work)
 
 Matlab R2013b or later (64-bit)
 
