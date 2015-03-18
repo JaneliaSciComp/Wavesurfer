@@ -130,14 +130,16 @@ Maintainers
 Version History
 ---------------
 
-0.74: (February 26, 2015) Added Axon Multiclamp support.  Now store
-      stimulus metadata in the data file header.  Now save data as
-      int16 instead of double-precision floating point.  Improved
-      ScanImage integration.
+0.74:  (February 26, 2015) Added Axon Multiclamp support.  Now store
+       stimulus metadata in the data file header.  Now save data as
+       int16 instead of double-precision floating point.  Improved
+       ScanImage integration.
 
-0.75: (March 9, 2015) Fixed bug with scope x-span.
+0.75:  (March 9, 2015) Fixed bug with scope x-span.
 
-0.76: (March 11, 2015) Fixed bug with README(!).
+0.76:  (March 11, 2015) Fixed bug with README(!).
 
-0.77: (March 17, 2015) Now supports timed digital outputs.
+0.77:  (March 17, 2015) Now supports timed digital outputs.
 
+0.771: (March 18, 2015) Updated README to reflect true NI DAQmx driver
+       requirements.
