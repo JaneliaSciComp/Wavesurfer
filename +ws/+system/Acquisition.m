@@ -709,14 +709,20 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function data = getLatestData(self)
+            % Get the data from the most-recent data available callback, as
+            % doubles.
             data = self.LatestData_ ;
         end  % function
 
         function data = getLatestRawData(self)
+            % Get the data from the most-recent data available callback, as
+            % int16s.
             data = self.LatestRawData_ ;
         end  % function
 
         function scaledData = getDataFromCache(self)
+            % Get the data from the main-memory cache, as double-precision floats.  This
+            % call unwraps the circular buffer for you.
             rawData = self.getRawDataFromCache();
             channelScales=self.ActiveChannelScales;
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
@@ -731,6 +737,8 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
 
         function scaledData = getSinglePrecisionDataFromCache(self)
+            % Get the data from the main-memory cache, as single-precision floats.  This
+            % call unwraps the circular buffer for you.
             rawData = self.getRawDataFromCache();
             channelScales=self.ActiveChannelScales;
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
@@ -745,6 +753,8 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function data = getRawDataFromCache(self)
+            % Get the data from the main-memory cache, as int16's.  This
+            % call unwraps the circular buffer for you.
             if self.IsAllDataInCacheValid_ ,
                 if self.IndexOfLastScanInCache_ == 0 ,
                     data = self.RawDataCache_ ;
