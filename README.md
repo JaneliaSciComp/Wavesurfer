@@ -20,7 +20,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver 9.8 or later
+National Instruments DAQmx driver 9.8.x (more recent ones will not work)
 
 Matlab R2013b or later (64-bit)
 
@@ -130,14 +130,20 @@ Maintainers
 Version History
 ---------------
 
-0.74: (February 26, 2015) Added Axon Multiclamp support.  Now store
-      stimulus metadata in the data file header.  Now save data as
-      int16 instead of double-precision floating point.  Improved
-      ScanImage integration.
+0.74:  (February 26, 2015) Added Axon Multiclamp support.  Now store
+       stimulus metadata in the data file header.  Now save data as
+       int16 instead of double-precision floating point.  Improved
+       ScanImage integration.
 
-0.75: (March 9, 2015) Fixed bug with scope x-span.
+0.75:  (March 9, 2015) Fixed bug with scope x-span.
 
-0.76: (March 11, 2015) Fixed bug with README(!).
+0.76:  (March 11, 2015) Fixed bug with README(!).
 
-0.77: (March 17, 2015) Now supports timed digital outputs.
+0.77:  (March 17, 2015) Now supports timed digital outputs.
+
+0.771: (March 18, 2015) Updated README to reflect true NI DAQmx driver
+       requirements.
+
+0.772: (March 18, 2015) Can now change scope y limits during ongoing 
+       acquisition.
 
