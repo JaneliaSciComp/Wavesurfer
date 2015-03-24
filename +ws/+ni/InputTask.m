@@ -1,9 +1,10 @@
-classdef AnalogInputTask < handle
+classdef InputTask < handle
     properties (Dependent = true, SetAccess = immutable)
         % These are all set in the constructor, and not changed
-        DeviceName
-        AvailableChannels  % Zero-based AI channel IDs, all of them
+        IsAnalog
+        IsDigital
         TaskName
+        PhysicalChannelNames        
         ChannelNames
         IsArmed
         % These are not directly settable
@@ -12,7 +13,7 @@ classdef AnalogInputTask < handle
     end
     
     properties (Dependent = true)
-        ActiveChannels  % Zero-based AI channel Ids, all of them
+        IsChannelActive  % boolean
         SampleRate      % Hz
         AcquisitionDuration  % Seconds
         DurationPerDataAvailableCallback  % Seconds
@@ -22,13 +23,15 @@ classdef AnalogInputTask < handle
     end
     
     properties (Transient = true, Access = protected)
-        DabsDaqTask_ = [];
+        DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
     end
     
     properties (Access = protected)
+        IsAnalog_
+        PhysicalChannelNames_ = cell(1,0)
+        ChannelNames_ = cell(1,0)
+        IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
-        AvailableChannels_ = zeros(1,0)  % Zero-based AI channel IDs, all of them
-        ActiveChannels_ = zeros(1,0)
         AcquisitionDuration_ = 1     % Seconds
         DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
@@ -43,156 +46,77 @@ classdef AnalogInputTask < handle
     end
     
     methods
-        function self = AnalogInputTask(deviceName, channelIndices, taskName, channelNames)
-            nChannels=length(channelIndices);
-            
-            %self.AvailableChannels = channelIndices;
-            if isnumeric(channelIndices) && isrow(channelIndices) && all(channelIndices==round(channelIndices)) && all(channelIndices>=0) ,
-                self.AvailableChannels_ = channelIndices;
+        function self = InputTask(taskType, taskName, physicalChannelNames, channelNames)
+            nChannels=length(physicalChannelNames);
+                                    
+            % Determine the task type, digital or analog
+            if isequal(taskType,'analog') ,
+                self.IsAnalog_ = true ;
+            elseif isequal(taskType,'digital') ,
+                self.IsAnalog_ = false ;
             else
-                error('most:Model:invalidPropVal', ...
-                      'AvailableChannels must be empty or a vector of nonnegative integers.');       
-            end
-
-%             % Convert deviceNames from string to cell array of strings if
-%             % needed
-%             if ischar(deviceName) ,
-%                 deviceName=repmat({deviceName},[1 nChannels]);
-%             end
-            
-            % Check that deviceName is kosher
-            if ischar(deviceName) && (isempty(deviceName) || isrow(deviceName)) ,
-                % do nothing
-            else
-                error('AnalogInputTask:deviceNameBad' , ...
-                      'deviceName is wrong type or not a row vector.');
-            end
-            
-            % Use default channel names, if needed
-            if exist('channelNames','var') ,
-                % Check that channelNames is kosher
-                if  iscellstr(channelNames) && length(channelNames)==nChannels ,
-                    % do nothing
-                else
-                    error('AnalogInputTask:channelNamesBad' , ...
-                          'channelNames is wrong type or wrong length.');
-                end                
-            else
-                % Use default channelNames
-                channelNames = cell(1,nChannels) ;
-                for i=1:nChannels ,
-                    channelNames{i} = sprintf('%s/ai%s',deviceName,channelIndices(i));
-                end
-            end
+                error('Illegal output task type');
+            end                
             
             % Create the task, channels
             if nChannels==0 ,
                 self.DabsDaqTask_ = [];
             else
                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
-                
-                % create the channels
-                self.DabsDaqTask_.createAIVoltageChan(deviceName, channelIndices, channelNames);
-                
-                % Set the timing mode
-                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');  % do we need this?  This stuff is set in setup()...
-            end
+            end            
             
-            self.ActiveChannels = self.AvailableChannels;            
+            % Store this stuff
+            self.PhysicalChannelNames_ = physicalChannelNames ;
+            self.ChannelNames_ = channelNames ;
+            self.IsChannelActive_ = true(1,nChannels);
+            
+            % Create the channels, set the timing mode (has to be done
+            % after adding channels)
+            if nChannels>0 ,
+                for i=1:nChannels ,
+                    physicalChannelName = physicalChannelNames{i} ;
+                    if self.IsAnalog ,
+                        channelName = channelNames{i} ;
+                        deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
+                        channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+                        self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID, channelName);
+                    else
+                        physicalChannelName = physicalChannelNames{i} ;
+                        deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
+                        restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
+                        self.DabsDaqTask_.createDIChan(deviceName, restOfName);
+                    end
+                end                
+                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
+            end
         end  % function
         
         function delete(self)
-            %self.unregisterCallbacks();
             if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
         end
         
-%         function out = get.AreCallbacksRegistered(self)
-%             out = self.RegistrationCount_ > 0;
-%         end
-                
         function start(self)
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 %fprintf('About to start FiniteAnalogOutputTask.\n');
-%                 %self
-%                 %dbstack
-%             end               
             if self.IsArmed ,
                 if ~isempty(self.DabsDaqTask_) ,
-                    %self.getReadyGetSet();
                     self.DabsDaqTask_.start();
                 end
             end
         end
                 
         function abort(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::abort()\n');
-%             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::abort()\n');
-%             end
             if ~isempty(self.DabsDaqTask_)
                 self.DabsDaqTask_.abort();
             end
         end
         
         function stop(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::stop()\n');
-%             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::stop()\n');
-%             end
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
         end
-        
-%         function registerCallbacks(self)
-% %             if isa(self,'ws.ni.AnalogInputTask') ,
-% %                 fprintf('Task::registerCallbacks()\n');
-% %             end
-%             % Public method that causes the every-n-samples callbacks (and
-%             % others) to be set appropriately for the
-%             % acquisition/stimulation task.  This calls a subclass-specific
-%             % implementation method.  Typically called just before starting
-%             % the task. Also includes logic to make sure the implementation
-%             % method only gets called once, even if this method is called
-%             % multiple times in succession.
-%             if self.RegistrationCount_ == 0
-%                 self.registerCallbacksImplementation();
-%             end
-%             self.RegistrationCount_ = self.RegistrationCount_ + 1;
-%         end
-        
-%         function unregisterCallbacks(self)
-%             % Public method that causes the every-n-samples callbacks (and
-%             % others) to be cleared.  This calls a subclass-specific
-%             % implementation method.  Typically called just after the task
-%             % ends.  Also includes logic to make sure the implementation
-%             % method only gets called once, even if this method is called
-%             % multiple times in succession.
-%             %
-%             % Be cautious with this method.  If the DAQmx callbacks are the last MATLAB
-%             % variables with references to this object, the object may become invalid after
-%             % these sets.  Call this method last in any method where it is used.
-% 
-% %             if isa(self,'ws.ni.AnalogInputTask') ,
-% %                 fprintf('Task::unregisterCallbacks()\n');
-% %             end
-% 
-%             %assert(self.RegistrationCount_ > 0, 'Unbalanced registration calls.  Object is in an unknown state.');
-%             
-%             if (self.RegistrationCount_>0) ,            
-%                 self.RegistrationCount_ = self.RegistrationCount_ - 1;            
-%                 if self.RegistrationCount_ == 0
-%                     self.unregisterCallbacksImplementation();
-%                 end
-%             end
-%         end
         
         function debug(self) %#ok<MANU>
             keyboard
@@ -239,19 +163,6 @@ classdef AnalogInputTask < handle
             
             self.ActiveChannels_ = availableActive;
         end  % function
-        
-%         function value = get.ActualAcquisitionDuration(self)
-%             value = (self.ExpectedScanCount)/self.SampleRate_;
-%         end  % function
-        
-%         function set.AvailableChannels(self, value)
-%             if isnumeric(value) && isrow(value) && all(value==round(value)) ,
-%                 self.AvailableChannels = value;
-%             else
-%                 error('most:Model:invalidPropVal', ...
-%                       'AvailableChannels must be empty or a vector of integers.');       
-%             end
-%         end  % function
         
         function out = get.ChannelNames(self)
             if ~isempty(self.DabsDaqTask_)

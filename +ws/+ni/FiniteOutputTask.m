@@ -17,7 +17,7 @@ classdef FiniteOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        DabsDaqTask_ = [];
+        DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
     end
     
     properties (Access = protected)
@@ -175,7 +175,7 @@ classdef FiniteOutputTask < handle
         end  % function        
     end  % methods
     
-    methods                
+    methods
         function out = get.PhysicalChannelNames(self)
             out = self.PhysicalChannelNames_ ;
         end  % function
@@ -183,7 +183,7 @@ classdef FiniteOutputTask < handle
         function out = get.ChannelNames(self)
             out = self.ChannelNames_ ;
         end  % function
-                    
+        
         function value = get.SampleRate(self)
             value = self.SampleRate_;
         end  % function
