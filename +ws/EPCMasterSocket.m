@@ -1241,7 +1241,7 @@ classdef EPCMasterSocket < handle
             % there is a problem during parsing
             responseStringTokens=strsplit(responseString);
             if length(responseStringTokens)>=2 && any(strcmp(responseStringTokens(2),{'VC' 'CC'})) ,
-                mode=ws.ElectrodeMode.fromChar(responseStringTokens{2});
+                mode=ws.ElectrodeMode.fromTitleString(responseStringTokens{2});
                 err=[];
             else
                 mode=[];

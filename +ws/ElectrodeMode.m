@@ -6,7 +6,7 @@ classdef ElectrodeMode
     end
     
     methods
-        function string=char(mode)
+        function string=toTitleString(mode)
             switch (mode) ,
                 case ws.ElectrodeMode.VC ,
                     string='VC';
@@ -16,10 +16,21 @@ classdef ElectrodeMode
                     string='I=0';
             end            
         end  % function
+        
+        function out = toCodeString(mode)
+            switch mode
+                case ws.ElectrodeMode.VC
+                    out = 'VC';
+                case ws.ElectrodeMode.CC
+                    out = 'CC';
+                case ws.ElectrodeMode.IEqualsZero
+                    out = 'IEqualsZero';
+            end
+        end        
     end  % methods
     
     methods (Static)
-        function mode=fromChar(string)
+        function mode=fromTitleString(string)
             switch (string) ,
                 case 'VC' ,
                     mode=ws.ElectrodeMode.VC;

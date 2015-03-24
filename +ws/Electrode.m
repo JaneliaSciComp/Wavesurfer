@@ -1,4 +1,4 @@
-classdef Electrode < ws.Mimic 
+classdef Electrode < ws.Model & ws.Mimic 
     
     properties (Access=protected)
         Parent_   % the parent ElectrodeManager object, or empty
@@ -21,7 +21,7 @@ classdef Electrode < ws.Mimic
         IsCommandEnabled_
     end
 
-    properties (Dependent=true, Hidden=true)  % Hidden so not calc'ed on call to disp()
+    properties (Dependent=true)  % Hidden so not calc'ed on call to disp()
         Parent
         Name
         VoltageMonitorChannelName
@@ -47,7 +47,7 @@ classdef Electrode < ws.Mimic
         IsCommandEnabled
     end
     
-    properties (Dependent=true, SetAccess=immutable, Hidden=true)  % Hidden so not calc'ed on call to disp()
+    properties (Dependent=true, SetAccess=immutable)  % Hidden so not calc'ed on call to disp()
         CommandUnits
         MonitorUnits
     end
@@ -796,20 +796,19 @@ classdef Electrode < ws.Mimic
                         mode=desiredMode;
                     end
             end
+        end        
+    end  % static methods
+
+    methods (Access=protected)        
+        function defineDefaultPropertyTags(self)
+            defineDefaultPropertyTags@ws.Model(self);
+            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
         end
-        
     end
     
-%     methods (Sealed = true)
-%         % See method dispatching rules and heterogenous class arrays for why these
-%         % functions must be redefined as sealed.  Class is marked as heterogeneous so
-%         % that instances from different vendors can be concatenated into a single array
-%         % of electrodes if desired.
-%         function out = ne(self, obj1)
-%             out = ne@handle(self, obj1);
-%         end
-%         function out = eq(self, obj1)
-%             out = eq@handle(self, obj1);
-%         end
-%     end
+    properties (Hidden, SetAccess=protected)
+        mdlPropAttributes = struct();        
+        mdlHeaderExcludeProps = {};
+    end
+    
 end  % classdef
