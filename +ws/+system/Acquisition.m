@@ -453,6 +453,10 @@ classdef Acquisition < ws.system.Subsystem
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);
+                % Have to make sure the active channels gets set in the Task object
+                activeChannelIDs=self.ChannelIDs(self.IsChannelActive);
+                self.AnalogInputTask_.ActiveChannels=activeChannelIDs;
+                % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
