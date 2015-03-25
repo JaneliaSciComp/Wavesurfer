@@ -753,6 +753,11 @@ classdef Coding < handle
                 else
                     encoding=thing;
                 end
+            elseif isa(thing,'ws.utility.DoubleString') && isequal(fileType,'header') ,
+                % In the value is of an SIUnit, and we're
+                % encoding for a header, save in native representation,
+                % either a double or a string.
+                encoding=thing.getRepresentation();
             elseif isa(thing, 'ws.mixin.Coding') ,
                 encoding = thing.encodeForFileType(fileType);
             elseif iscell(thing) ,

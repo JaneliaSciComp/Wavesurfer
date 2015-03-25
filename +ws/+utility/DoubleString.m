@@ -5,7 +5,7 @@ classdef DoubleString
     % user, and you want to preserve the exact string representation of the
     % number.
     properties  (Access=protected)
-        Value  % the value, either a double or a string
+        Value_  % the value, either a double or a string
     end  % properties
     
     %----------------------------------------------------------------------
@@ -16,24 +16,24 @@ classdef DoubleString
             %   1 arg: Stores the arg as the value, assuming it's
             %          permissible.
             if nargin==0 ,
-                doubleString.Value='0';
+                doubleString.Value_='0';
             elseif nargin==1 ,
                 argument=varargin{1};
                 if ischar(argument) ,
                     newDouble=str2double(argument);
                     if isempty(argument) || ~isnan(newDouble) ,
-                        doubleString.Value=strtrim(argument);
+                        doubleString.Value_=strtrim(argument);
                     else
                         error('DoubleString:badConstructorArgs','Invalid string value.');  
                     end
                 elseif isnumeric(argument) ,
                     if isscalar(argument) ,
-                        doubleString.Value=double(argument);
+                        doubleString.Value_=double(argument);
                     else
                         error('DoubleString:badConstructorArgs','Invalid double value.');  
                     end
                 elseif isa(argument,'ws.utility.DoubleString') && isscalar(argument),
-                    doubleString.Value=argument.getRepresentation();
+                    doubleString.Value_=argument.getRepresentation();
                 else
                     error('DoubleString:badConstructorArgs','Invalid argument.');
                 end
@@ -57,7 +57,7 @@ classdef DoubleString
         
         %------------------------------------------------------------------
         function result=toDouble(doubleString)
-            value=doubleString.Value;
+            value=doubleString.Value_;
             if ischar(value) ,
                 result=str2double(value);
             else
@@ -77,7 +77,7 @@ classdef DoubleString
                 formatString='%.7g';  % Will preserve 7 significant figures, I think
             end
             
-            value=doubleString.Value;
+            value=doubleString.Value_;
             if ischar(value) ,
                 result=value;
             else 
@@ -93,12 +93,12 @@ classdef DoubleString
         
         %------------------------------------------------------------------
         function result=getRepresentation(doubleString)
-            result=doubleString.Value;
+            result=doubleString.Value_;
         end  % function
         
         %------------------------------------------------------------------
         function disp(doubleString)
-            value=doubleString.Value;
+            value=doubleString.Value_;
             if ischar(value) ,
                 fprintf('    String: ''%s''\n',value);
             else 
@@ -110,7 +110,7 @@ classdef DoubleString
         %------------------------------------------------------------------
         function result=saveobj(doubleString)
             % Returns a struct that encodes all the internal state of doubleString.            
-            result=struct('Value',{doubleString.Value});
+            result=struct('Value',{doubleString.Value_});
         end  % function
     end  % methods
     

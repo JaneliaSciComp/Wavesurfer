@@ -232,10 +232,10 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
 
                 % Update the mode popup
                 listOfModes=thisElectrode.getAllowedModes();
-                listOfModesAsStrings=cellfun(@(mode)(char(mode)),listOfModes,'UniformOutput',false);
+                listOfModesAsStrings=cellfun(@(mode)(toTitleString(mode)),listOfModes,'UniformOutput',false);
                 setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
                                                   listOfModesAsStrings, ...
-                                                  char(thisElectrode.Mode));
+                                                  toTitleString(thisElectrode.Mode));
                 %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
                 set(self.ModePopups(i),'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
@@ -460,7 +460,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
 
                 % Update the mode popup
                 %listOfModes=thisElectrode.getAllowedModes();
-                %listOfModesAsStrings=cellfun(@(mode)(char(mode)),listOfModes,'UniformOutput',false);
+                %listOfModesAsStrings=cellfun(@(mode)(toTitleString(mode)),listOfModes,'UniformOutput',false);
                 isModePopupEnabled=isWavesurferIdle && ...
                                    (isThisElectrodeManual || ...
                                     (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka)) ;
