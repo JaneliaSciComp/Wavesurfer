@@ -152,4 +152,7 @@ Version History
 
 0.774: (March 25, 2015) Fixed a few more bugs.
 
+0.775: (March 25, 2015) Fixed bug that prevented acquisition
+       if some AI channels specified in MDF were marked as 
+       inactive.
 
