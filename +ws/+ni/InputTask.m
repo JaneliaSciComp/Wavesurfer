@@ -128,41 +128,51 @@ classdef InputTask < handle
             value = self.IsArmed_;
         end  % function
         
-        function value = get.AvailableChannels(self)
-            value = self.AvailableChannels_;
-        end  % function
-        
-        function value = get.ActiveChannels(self)
-            value = self.ActiveChannels_;
-        end  % function
-        
-        function set.ActiveChannels(self, value)
-            if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
-                error('most:Model:invalidPropVal', ...
-                      'ActiveChannels must be empty or a vector of integers.');       
-            end
-            
-            availableActive = intersect(self.AvailableChannels, value);
-            
-            if numel(value) ~= numel(availableActive)
-                ws.most.mimics.warning('Wavesurfer:Aqcuisition:invalidChannels', 'Not all requested channels are available.\n');
-            end
-            
-            if ~isempty(self.DabsDaqTask_)
-                channelsToRead = '';
+        function set.IsChannelActive(self, newIsChannelActive)
+            if (islogical(newIsChannelActive) || isnumeric(newIsChannelActive)) && isequal(size(newIsChannelActive),size(self.IsChannelActive_)) ,
+                newIsChannelActive=logical(newIsChannelActive);
+
+                newActiveChannel
+                newActiveChannelNames = self.PhysicalChannelNames(newIsChannelActive) ;
                 
-                for cdx = availableActive
-                    idx = find(self.AvailableChannels == cdx, 1);
-                    channelsToRead = sprintf('%s%s, ', channelsToRead, self.ChannelNames{idx});
+                if isempty(self.DabsDaqTask_) ,
+                    % do nothing
+                else
+                    newChannelsToRead = ws.utility.commaSeparatedList(newActiveChannelNames);
+                    set(self.DabsDaqTask_, 'readChannelsToRead', newChannelsToRead);                    
                 end
-                
-                channelsToRead = channelsToRead(1:end-2);
-                
-                set(self.DabsDaqTask_, 'readChannelsToRead', channelsToRead);
+
+                self.IsChannelActive_ = newIsChannelActive;
             end
-            
-            self.ActiveChannels_ = availableActive;
         end  % function
+        
+%         function set.ActiveChannels(self, value)
+%             if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'ActiveChannels must be empty or a vector of integers.');       
+%             end
+%             
+%             availableActive = intersect(self.AvailableChannels, value);
+%             
+%             if numel(value) ~= numel(availableActive)
+%                 ws.most.mimics.warning('Wavesurfer:Aqcuisition:invalidChannels', 'Not all requested channels are available.\n');
+%             end
+%             
+%             if ~isempty(self.DabsDaqTask_)
+%                 channelsToRead = '';
+%                 
+%                 for cdx = availableActive
+%                     idx = find(self.AvailableChannels == cdx, 1);
+%                     channelsToRead = sprintf('%s%s, ', channelsToRead, self.ChannelNames{idx});
+%                 end
+%                 
+%                 channelsToRead = channelsToRead(1:end-2);
+%                 
+%                 set(self.DabsDaqTask_, 'readChannelsToRead', channelsToRead);
+%             end
+%             
+%             self.ActiveChannels_ = availableActive;
+%         end  % function
         
         function out = get.ChannelNames(self)
             if ~isempty(self.DabsDaqTask_)
@@ -173,13 +183,13 @@ classdef InputTask < handle
             end
         end  % function
         
-        function out = get.DeviceName(self)
-            if ~isempty(self.DabsDaqTask_)
-                out = self.DabsDaqTask_.deviceNames{1};
-            else
-                out = '';
-            end
-        end  % function
+%         function out = get.DeviceName(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 out = self.DabsDaqTask_.deviceNames{1};
+%             else
+%                 out = '';
+%             end
+%         end  % function
         
         function value = get.ExpectedScanCount(self)
             value = round(self.AcquisitionDuration * self.SampleRate_);
@@ -388,7 +398,13 @@ classdef InputTask < handle
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-            rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+            % Read the data
+            if self.IsAnalog_ ,
+                rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
+            else
+                rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
+            end
+            % Generate an event to tell all and sundy about the new data
             eventData = ws.ni.SamplesAvailableEventData(rawData) ;
             self.notify('SamplesAvailable', eventData);
         end  % function
@@ -430,6 +446,19 @@ classdef InputTask < handle
 %             
 %             self.ActiveChannels = self.AvailableChannels;
 %         end
+
+        function unpackedData = unpackDigitalData_(self,packedData)
+            % Only used for digital data.
+            nScans = size(packedData,1);
+            nChannels = length(self.PhysicalChannelNames);
+            channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
+            unpackedData = zeros(nScans,nChannels,'uint8');
+            for j=1:nChannels ,
+                channelID = channelIDs(j);
+                thisChannelData = bitget(packeData,channelID+1);  % +1 to convert to one-based indexing
+                unpackedData(:,j) = thisChannelData ;
+            end
+        end  % function
     end  % protected methods block
 end
 
