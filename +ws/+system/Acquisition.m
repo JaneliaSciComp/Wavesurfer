@@ -460,7 +460,7 @@ classdef Acquisition < ws.system.Subsystem
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
-                self.AnalogInputTask_.addlistener('SamplesAvailable', @self.analogSamplesAcquired_);
+                self.AnalogInputTask_.addlistener('SamplesAvailable', @self.analogSamplesAvailable_);
             end
         end  % function
 
@@ -824,31 +824,23 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function analogSamplesAcquired_(self, source, eventData)  %#ok<INUSL>
+        function analogSamplesAvailable_(self, source, eventData)  %#ok<INUSD>
             % This is registered as a listener callback on the
             % AnalogInputTask's SamplesAvailable event
             %fprintf('Acquisition::analogSamplesAcquired_()\n');
             %profile resume
+
+            % read both the analog and digital data, they should be in
+            % lock-step
+            rawAnalogData = self.AnalogInputTask_.readData() ;  % int16
+            rawDigitalData = self.DigitalInputTask_.readData() ;  % uint32
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                rawData = eventData.RawData;  % int16                
-                parent.samplesAcquired(rawData);
+                parent.samplesAcquired(rawAnalogData,rawDigitalData);
             end
             %profile off
         end  % function
 
-        function digitalSamplesAcquired_(self, source, eventData)  %#ok<INUSL>
-            % This is registered as a listener callback on the
-            % AnalogInputTask's SamplesAvailable event
-            %fprintf('Acquisition::analogSamplesAcquired_()\n');
-            %profile resume
-            parent=self.Parent;
-            if ~isempty(parent) && isvalid(parent) ,
-                rawData = eventData.RawData;  % uint32                
-                parent.samplesAcquired(rawData);
-            end
-            %profile off
-        end  % function
     end  % protected methods block
     
     methods (Static=true)

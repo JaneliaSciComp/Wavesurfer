@@ -374,6 +374,14 @@ classdef InputTask < handle
 %             %fprintf('AnalogInputTask::reset()\n');                        
 %             % Don't have to do anything to reset a finite input analog task
 %         end  % function
+
+        function rawData = readRawData(self)
+            if self.IsAnalog_ ,
+                rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
+            else
+                rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
+            end            
+        end
     end
     
 %     methods (Access = protected)
@@ -398,23 +406,23 @@ classdef InputTask < handle
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-            % Read the data
-            if self.IsAnalog_ ,
-                rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
-            else
-                rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
-            end
-            % Generate an event to tell all and sundy about the new data
-            eventData = ws.ni.SamplesAvailableEventData(rawData) ;
-            self.notify('SamplesAvailable', eventData);
+%             % Read the data
+%             if self.IsAnalog_ ,
+%                 rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
+%             else
+%                 rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
+%             end
+%             % Generate an event to tell all and sundy about the new data
+%             eventData = ws.ni.SamplesAvailableEventData(rawData) ;
+%             self.notify('SamplesAvailable', eventData);
+            self.notify('SamplesAvailable');
         end  % function
         
         function taskDone_(self, source, event) %#ok<INUSD>
             %fprintf('AnalogInputTask::taskDone_()\n');
-            % For a successful capture, this class is responsible for stopping the task when
-            % it is done.  For external clients to interrupt a running task, use the abort()
-            % method on the Acquisition object.
-            self.DabsDaqTask_.abort();
+
+            % Stop the DABS task.
+            self.DabsDaqTask_.stop();
             
             % Fire the event before unregistering the callback functions.  At the end of a
             % script the DAQmx callbacks may be the only references preventing the object

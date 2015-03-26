@@ -302,9 +302,7 @@ classdef FiniteOutputTask < handle
     
     methods (Access = protected)        
         function taskDone_(self, ~, ~)
-            % For a successful capture, this class is responsible for stopping the task when
-            % it is done.  For external clients to interrupt a running task, use the abort()
-            % method on the Output object.
+            % Stop the DABS task.
             self.DabsDaqTask_.stop();
             
             % Fire the event before unregistering the callback functions.  At the end of a
