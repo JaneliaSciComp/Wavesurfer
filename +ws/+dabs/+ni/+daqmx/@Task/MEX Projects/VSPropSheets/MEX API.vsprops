@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="MEX API"
+	OutputDirectory="$(SolutionDir)\.."
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		ForcedIncludeFiles="mex.h"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalOptions="/EXPORT:mexFunction"
+		AdditionalDependencies="libmx.lib libmex.lib libmat.lib"
+		OutputFile="$(OutDir)\$(ProjectName).mexw32"
+	/>
+	<Tool
+		Name="VCPostBuildEventTool"
+		CommandLine="del &quot;$(TargetDir)$(TargetName).exp&quot;&#x0D;&#x0A;del &quot;$(TargetDir)$(TargetName).lib&quot;"
+	/>
+</VisualStudioPropertySheet>

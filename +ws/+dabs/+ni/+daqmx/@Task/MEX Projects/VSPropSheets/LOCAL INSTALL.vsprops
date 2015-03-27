@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="LOCAL INSTALL"
+	>
+	<Tool
+		Name="VCLinkerTool"
+		ShowProgress="0"
+		OutputFile=""
+	/>
+	<UserMacro
+		Name="DEV3P"
+		Value="$(DEVTOOLSPATH)\ThirdParties"
+	/>
+	<UserMacro
+		Name="DEVTOOLSPATH"
+		Value="C:\Program Files\ScanImage\DEVTOOLS"
+	/>
+	<UserMacro
+		Name="MATLABVER"
+		Value="R2011b"
+	/>
+	<UserMacro
+		Name="NIDAQVERFOLDER"
+		Value="NIDAQmx_$(NIDAQVER)"
+	/>
+	<UserMacro
+		Name="NIDAQVER"
+		Value="9_3_x"
+	/>
+	<UserMacro
+		Name="THORAPIVER"
+		Value="1_4"
+	/>
+</VisualStudioPropertySheet>

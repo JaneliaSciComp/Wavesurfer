@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="PLATFORM WIN64"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		PreprocessorDefinitions="_WIN64"
+	/>
+	<UserMacro
+		Name="PLATFORM_DEFAULT_DIR"
+		Value="x64"
+	/>
+	<UserMacro
+		Name="PLATFORM_MATLAB_MEX_EXT"
+		Value="mexw64"
+	/>
+	<UserMacro
+		Name="PLATFORM_MATLAB_LIB_DIR"
+		Value="win64"
+	/>
+	<UserMacro
+		Name="PLATFORM_NIDAQ_LIB_DIR"
+		Value="lib64"
+	/>
+</VisualStudioPropertySheet>

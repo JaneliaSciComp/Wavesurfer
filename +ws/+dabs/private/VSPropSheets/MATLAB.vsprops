@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="MATLAB"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(DEV3P)\Matlab\$(MATLABVER)\$(PLATFORM_DEFAULT_DIR)\extern\include&quot;"
+		ForcedIncludeFiles=""
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalOptions="/EXPORT:mexFunction"
+		AdditionalDependencies="libmex.lib libmx.lib libmat.lib"
+		AdditionalLibraryDirectories="&quot;$(DEV3P)\Matlab\$(MATLABVER)\$(PLATFORM_DEFAULT_DIR)\extern\lib\microsoft&quot;"
+	/>
+	<Tool
+		Name="VCPostBuildEventTool"
+		CommandLine=""
+	/>
+</VisualStudioPropertySheet>
