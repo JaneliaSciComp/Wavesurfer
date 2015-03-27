@@ -1,23 +1,23 @@
 classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     properties (Constant)
         TypeString='File'
-        AdditionalParameterNames={'Filename'}
-        AdditionalParameterDisplayNames={'Filename'}
-        AdditionalParameterDisplayUnitses={'path'}
+        AdditionalParameterNames={'FileName'}
+        AdditionalParameterDisplayNames={'Audio File Name'}
+        AdditionalParameterDisplayUnitses={''}
     end
     
     properties (Dependent=true)
-        Filename
+        FileName
     end
     
     properties (Access=protected)
-        Filename_ = ''  % path
+        FileName_ = ''  % path, possibly containing %d, which is replaced by the trial number
     end
     
     methods
         function self = FileStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Filename'}, {});
+            pvArgs = ws.most.util.filterPVArgs(varargin, {'FileName'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -26,29 +26,47 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         %e.g. sprintf('C:\\Users\\arthurb\\Documents\\MATLAB\\Wavesurfer\\data\\electrode%d.wav',i)
-        function set.Filename(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1);
-            if ischar(test) ,
-                % if we get here without error, safe to set
-                self.Filename_ = value;
-            end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
+        function set.FileName(self, value)
+            if ischar(value) && (isempty(value) || isrow(value)) ,
+                % Get rid of backslashes, b/c they mess up sprintf()
+                valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
+                test = ws.stimulus.Stimulus.evaluateStringTrialTemplate(valueWithoutBackslashes,1);
+                if ischar(test) ,
+                    % if we get here without error, safe to set
+                    self.FileName_ = valueWithoutBackslashes;
+                end
+                if ~isempty(self.Parent) ,
+                    self.Parent.childMayHaveChanged();
+                end
             end
         end  % function
 
-        function out = get.Filename(self)
-            out=self.Filename_;
+        function out = get.FileName(self)
+            out=self.FileName_;
         end
     end
     
     methods
-        % digital signals should be saved as floats and are thresholded at 0.5
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)
-            eval(['i=trialIndexWithinSet; tmp=' self.Filename ';']);
-            [y,fs] = audioread(tmp);
-            y = interp1((0:length(y)-1)./fs, y, t, 'linear', 0);
-        end
+        % digital signals should be returned as doubles and are thresholded at 0.5
+        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)  %#ok<INUSL>
+            %eval(['i=trialIndexWithinSet; fileNameAfterEvaluation=' self.FileName ';']);
+            fileNameAfterEvaluation = ws.stimulus.Stimulus.evaluateStringTrialTemplate(self.FileName,trialIndexWithinSet);
+            if isempty(fileNameAfterEvaluation) ,
+                y=zeros(size(t));
+            else
+                try
+                    [yInFile,fs] = audioread(fileNameAfterEvaluation);
+                    tInFile = (0:length(yInFile)-1)./fs ;
+                    y = interp1(tInFile, yInFile, t, 'linear', 0);
+                catch me
+                    if isequal(me.identifier,'MATLAB:audiovideo:audioread:fileNotFound') ,
+                        y=zeros(size(t));
+                    else
+                        rethrow(me);
+                    end
+                end                
+            end
+        end  % function
         
     end
 
@@ -73,7 +91,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods (Access=protected)
        function value=isequalElement(self,other)
-            propertyNamesToCompare={'InitialFrequency' 'FinalFrequency'};
+            propertyNamesToCompare={'FileName'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end
