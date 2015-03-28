@@ -15,11 +15,11 @@
 	/>
 	<UserMacro
 		Name="DEVTOOLSPATH"
-		Value="C:\Program Files\ScanImage\DEVTOOLS"
+		Value="..\..\..\..\..\private"
 	/>
 	<UserMacro
 		Name="MATLABVER"
-		Value="R2011b"
+		Value="R2013b"
 	/>
 	<UserMacro
 		Name="NIDAQVERFOLDER"
@@ -27,10 +27,14 @@
 	/>
 	<UserMacro
 		Name="NIDAQVER"
-		Value="9_3_x"
+		Value="9_8_x"
 	/>
 	<UserMacro
 		Name="THORAPIVER"
 		Value="1_4"
+	/>
+	<UserMacro
+		Name="NIDAQDEVTOOLSPATH"
+		Value="..\..\..\..\..\+ni\+daqmx\private"
 	/>
 </VisualStudioPropertySheet>

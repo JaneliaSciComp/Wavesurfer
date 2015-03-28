@@ -1,0 +1,4 @@
+[capigen]
+HideRootWindow=True
+RTTarget.ApplicationPath=C:\Users\labadmin\Documents\LabVIEW Data\Remote Development\startup.rtexe
+RTTarget.VIPath=C:\Users\labadmin\Documents\LabVIEW Data\Remote Development

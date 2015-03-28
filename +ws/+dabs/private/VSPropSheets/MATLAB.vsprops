@@ -13,7 +13,7 @@
 		Name="VCLinkerTool"
 		AdditionalOptions="/EXPORT:mexFunction"
 		AdditionalDependencies="libmex.lib libmx.lib libmat.lib"
-		AdditionalLibraryDirectories="&quot;$(DEV3P)\Matlab\$(MATLABVER)\$(PLATFORM_DEFAULT_DIR)\extern\lib\microsoft&quot;"
+		AdditionalLibraryDirectories="&quot;$(DEV3P)\Matlab\$(MATLABVER)\$(PLATFORM_DEFAULT_DIR)\extern\lib\$(PLATFORM_MATLAB_LIB_DIR)\microsoft&quot;"
 	/>
 	<Tool
 		Name="VCPostBuildEventTool"

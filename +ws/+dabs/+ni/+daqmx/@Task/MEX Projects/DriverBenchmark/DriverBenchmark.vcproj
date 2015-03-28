@@ -95,7 +95,9 @@
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
+			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\private\VSPropSheets\MEX STANDARD.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops"
+			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -223,6 +225,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\private\VSPropSheets\MEX STANDARD.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops"
 			CharacterSet="1"

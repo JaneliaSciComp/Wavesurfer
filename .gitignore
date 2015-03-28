@@ -28,3 +28,24 @@ BuildLog.htm
 +dabs/+axon/MultiClampTelegraph.Build.CppClean.log
 +dabs/+axon/MultiClampTelegraph.exp
 +dabs/+axon/MultiClampTelegraph.lib
+*.exp
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/DriverBenchmark/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/DriverTest1/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/ReadAnalogData/dllmain.dll
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/ReadAnalogData/dllmain.lib
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/ReadAnalogData/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/ReadAnalogData/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/readDigitalData/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/readDigitalData/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/ReadRawFlex/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/RegisiterDoneCallback/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/RegisiterDoneCallback/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/RegisiterEveryNEvent/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/RegisiterEveryNEvent/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/RegisiterSignalCallback/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/RegisiterSignalCallback/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/WriteAnalogData/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/WriteAnalogData/x64
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/WriteDigitalData/Release
++ws/+dabs/+ni/+daqmx/@Task/MEX Projects/WriteDigitalData/x64
