@@ -96,7 +96,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\private\VSPropSheets\MEX STANDARD.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops"
+			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -116,6 +116,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -128,6 +129,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				GenerateDebugInformation="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -355,14 +357,6 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
-		<File
-			RelativePath=".\ReadMe.txt"
-			>
-		</File>
-		<File
-			RelativePath="..\WriteAnalogData\ReadMe.txt"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

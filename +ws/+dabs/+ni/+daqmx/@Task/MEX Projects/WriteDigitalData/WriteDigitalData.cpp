@@ -1,7 +1,7 @@
 // WriteDigitalDataData.cpp : Defines the exported functions for the DLL application.
 //
 
-#include "stdafx.h"
+//#include "stdafx.h"
 #include "mex.h"
 #include "NIDAQmx.h"
 
@@ -81,7 +81,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	float64 timeout;
 	bool writeDigitalLines;
 	uInt32 bytesPerChan;
-	int numSampsPerChan;
+	int32 numSampsPerChan;
 	bool32 autoStart;
 	int32 status;
 	TaskHandle taskID, *taskIDPtr;
@@ -116,9 +116,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if ((nrhs < 4) || mxIsEmpty(prhs[3]))
 	{
 		if (writeDigitalLines)
-			autoStart = true;
+			autoStart = true;   // Why would you want the auto-start behavior to depend on this?
 		else
-			autoStart = false;
+		autoStart = false;
 	}
 	else
 		autoStart = (bool32) mxGetScalar(prhs[3]);
@@ -133,7 +133,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		else 
 			numSampsPerChan = numRows;
 	else
-		numSampsPerChan = (int) mxGetScalar(prhs[4]);
+		numSampsPerChan = (int32) mxGetScalar(prhs[4]);
 
 
 	//Verify correct input length
@@ -195,6 +195,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		if (nlhs > 0) {
 			plhs[0] = mxCreateDoubleScalar(0);	
 			double * sampsPerChanWritten = mxGetPr(plhs[0]);
+            *sampsPerChanWritten = sampsWritten ; 
 		}
 
 		//mexPrintf("Successfully wrote %d samples of data\n", sampsWritten);		
