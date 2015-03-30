@@ -453,6 +453,10 @@ classdef Acquisition < ws.system.Subsystem
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);
+                % Have to make sure the active channels gets set in the Task object
+                activeChannelIDs=self.ChannelIDs(self.IsChannelActive);
+                self.AnalogInputTask_.ActiveChannels=activeChannelIDs;
+                % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
@@ -489,13 +493,18 @@ classdef Acquisition < ws.system.Subsystem
             self.acquireHardwareResources();
 
             % Set up the task triggering
-            %self.AnalogInputTask_.TriggerDelegate = self.TriggerScheme.Target;
             self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
             self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
-%             if experimentMode == ws.ApplicationState.TestPulsing
-%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = wavesurferObj.Ephys.MinTestPeriod;
-%             else
+            % Set for finite vs. continous sampling
+            if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) ,
+                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
+            else
+                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+                self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
+            end
+            
+            % Set the duration between data available callbacks
             displayDuration = 1/wavesurferObj.Display.UpdateRate;
             if self.Duration < displayDuration ,
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
@@ -505,13 +514,6 @@ classdef Acquisition < ws.system.Subsystem
                        self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
                     'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
-            end
-%             end
-            
-            if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) , %|| experimentMode == ws.ApplicationState.TestPulsing
-                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
-            else
-                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
             end
             
             % Dimension the cache that will hold acquired data in main
