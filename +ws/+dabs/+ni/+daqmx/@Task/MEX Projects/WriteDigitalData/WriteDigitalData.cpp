@@ -21,7 +21,7 @@
 //%
 //%   timeout: <OPTIONAL - Default: inf) Time, in seconds, to wait for function to complete read. If 'inf' or < 0, then function will wait indefinitely. A value of 0 indicates to try once to write the submitted samples. If this function successfully writes all submitted samples, it does not return an error. Otherwise, the function returns a timeout error and returns the number of samples actually written.
 //%   autoStart: <OPTIONAL - Logical> Logical value specifies whether or not this function automatically starts the task if you do not start it. 
-//%              If empty/omitted, true is assumed when writeData is logical/double and false is assumed when writeData is uint8/16/32.
+//%              If empty/omitted, true is assumed when writeData has one or fewer rows, and false is assumed otherwise.
 //%   numSampsPerChan: <OPTIONAL> Specifies number of samples per channel to write. If omitted/empty, the number of samples is inferred from number of rows in writeData array. 
 //%
 //%   sampsPerChanWritten: The actual number of samples per channel successfully written to the buffer.
@@ -79,9 +79,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	//Read input arguments
 	float64 timeout;
-	bool writeDigitalLines;
-	uInt32 bytesPerChan;
-	int32 numSampsPerChan;
+	//bool dataIsLogicalOrDouble;  
+	    // For unsigned int data (8, 16, or 32-bit) we call DAQmxWriteDigitalU<whatever>() to 
+	    // write the data to the buffer.  For logical or double data, we call DAQmxWriteDigitalLines().
+	    // For the first, the several channel settings have to be "packed" into a single unsigned int.
+	    // For the second, each channel is set individually.
+        // Note that a "channel" in this context is a thing you set up with a single call to the 
+	    // DAQmxCreateDOChan() function.
+	    // That is, a channel can consist of more than one TTL line.  
+	    // This var is set to true iff the data is logical or double.
+	uInt32 maxLinesPerChannel;
+	int32 numSampsPerChan;  // The number of time points to output, aka the number of "scans"
 	bool32 autoStart;
 	int32 status;
 	TaskHandle taskID, *taskIDPtr;
@@ -90,20 +98,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	taskIDPtr = (TaskHandle*)mxGetData(mxGetProperty(prhs[0],0, "taskID"));
 	taskID = *taskIDPtr;
 
+	// Get type and dimensions of data array
 	mxClassID writeDataClassID = mxGetClassID(prhs[1]);
+    bool dataIsLogicalOrDouble = ((writeDataClassID == mxLOGICAL_CLASS) || (writeDataClassID == mxDOUBLE_CLASS)) ;
+	mwSize numRows = mxGetM(prhs[1]);
+	mwSize numCols = mxGetN(prhs[1]);
 
-	if ((writeDataClassID == mxLOGICAL_CLASS) || (writeDataClassID == mxDOUBLE_CLASS))
-		writeDigitalLines = true;
-	else
-		writeDigitalLines = false;
-
-	if (writeDigitalLines)
-	{
-		status = DAQmxGetWriteDigitalLinesBytesPerChan(taskID,&bytesPerChan); //This actually returns the number of bytes required to represent one sample of Channel data
-		if (status)
-			handleDAQmxError(status,"DAQmxGetWriteDigitalLinesBytesPerChan");
-	}
-	
+	// Determine the timeout
 	if ((nrhs < 3) || mxIsEmpty(prhs[2]))
 		timeout = DAQmx_Val_WaitInfinitely;
 	else
@@ -113,75 +114,113 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			timeout = DAQmx_Val_WaitInfinitely;
 	}		
 
+	// Determine whether to start automatically or not
 	if ((nrhs < 4) || mxIsEmpty(prhs[3]))
 	{
-		if (writeDigitalLines)
-			autoStart = true;   // Why would you want the auto-start behavior to depend on this?
+		int32 sampleTimingType;
+		status = DAQmxGetSampTimingType(taskID, &sampleTimingType) ;
+		if (status)
+			handleDAQmxError(status,"DAQmxSetSampTimingType");
+		if ( sampleTimingType == DAQmx_Val_OnDemand )
+		{
+			// The task is using on-demand timing, so we want the 
+			// new values to be immediately output.  (And trying to call 
+			// DAQmxWriteDigitalLines() for an on-demand task, with autoStart set to false, 
+			// will error anyway.
+			autoStart = (bool32) true;
+		}
 		else
-		autoStart = false;
+		{
+			autoStart = (bool32) false;
+		}
 	}
 	else
+	{
 		autoStart = (bool32) mxGetScalar(prhs[3]);
+	}
 
-
-	mwSize numRows = mxGetM(prhs[1]);
+	// Determine the number of scans (time points) to write out
 	if ((nrhs < 5) || mxIsEmpty(prhs[4]))
-		if (writeDigitalLines)
+	{
+		if (dataIsLogicalOrDouble)
 		{
-			numSampsPerChan = numRows / bytesPerChan;
+			status = DAQmxGetWriteDigitalLinesBytesPerChan(taskID,&maxLinesPerChannel); 
+				// maxLinesPerChannel is maximum number of lines per channel.
+				// Each DO "channel" can consist of multiple DO lines.  (A channel is the thing created with 
+				// a call to DAQmxCreateDOChan().)  So this returns the maximum number of lines per channel, 
+				// across all the channels in the task.  When you call DAQmxWriteDigitalLines(), the data must consist
+				// of (number of scans) x (number of channels) x maxLinesPerChannel uint8 elements.  If a particular channel has fewer lines
+				// than the max number, the extra ones are ignored.
+			if (status)
+				handleDAQmxError(status,"DAQmxGetWriteDigitalLinesBytesPerChan");
+			numSampsPerChan = (int32) (numRows/maxLinesPerChannel);  // this will do an implicit floor
 		}
-		else 
-			numSampsPerChan = numRows;
+		else
+			numSampsPerChan = (int32) numRows;
+	}
 	else
+	{
 		numSampsPerChan = (int32) mxGetScalar(prhs[4]);
+	}
 
+	// Verify that the data contains the right number of columns
+	uInt32 numberOfChannels;
+	status = DAQmxGetTaskNumChans(taskID, &numberOfChannels) ;
+	if (status)
+		handleDAQmxError(status,"DAQmxGetTaskNumChans");
+	if (numCols != numberOfChannels )
+	{
+		mexErrMsgTxt("Supplied writeData argument must have as many columns as there are channels in the task.");
+	}
 
-	//Verify correct input length
+	// Verify that the data contains enough rows that we won't read off the end of it.
+	// Note that for logical or double data, the different lines for each channel must be stored in the *rows*.
+	// So for each time point, there's a maxLinesPerChannel x nChannels submatrix for that time point.
+	int numberOfRowsNeededPerScan = (dataIsLogicalOrDouble ? maxLinesPerChannel : 1) ;
+	int minNumberOfRowsNeeded = numberOfRowsNeededPerScan * numSampsPerChan ;
+	if (numRows < minNumberOfRowsNeeded )
+	{
+		mexErrMsgTxt("Supplied writeData argument does not have enough rows.");
+	}
 
 	//Write data
-	int32 sampsWritten;
-
+	int32 scansWritten;
 
 	switch (writeDataClassID)
 	{	
 		case mxUINT32_CLASS:
-			status = DAQmxWriteDigitalU32(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt32*) mxGetData(prhs[1]), &sampsWritten, NULL);
+			status = DAQmxWriteDigitalU32(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt32*) mxGetData(prhs[1]), &scansWritten, NULL);
 		break;
 
 		case mxUINT16_CLASS:
-			status = DAQmxWriteDigitalU16(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt16*) mxGetData(prhs[1]), &sampsWritten, NULL);
+			status = DAQmxWriteDigitalU16(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt16*) mxGetData(prhs[1]), &scansWritten, NULL);
 		break;
 
 		case mxUINT8_CLASS:
-			status = DAQmxWriteDigitalU8(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt8*) mxGetData(prhs[1]), &sampsWritten, NULL);
+			status = DAQmxWriteDigitalU8(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt8*) mxGetData(prhs[1]), &scansWritten, NULL);
+		break;
+
+		case mxLOGICAL_CLASS:
+			status = DAQmxWriteDigitalLines(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt8*) mxGetData(prhs[1]), &scansWritten, NULL);
 		break;
 
 		case mxDOUBLE_CLASS:
-		case mxLOGICAL_CLASS:
 			{
-				if (numRows < (numSampsPerChan * bytesPerChan))
-					mexErrMsgTxt("Supplied writeData argument must have at least (numSampsPerChan x numBytesPerChannel) rows.");
-				else if (writeDataClassID == mxLOGICAL_CLASS)
-					status = DAQmxWriteDigitalLines(taskID, numSampsPerChan, autoStart, timeout, dataLayout, (uInt8*) mxGetData(prhs[1]), &sampsWritten, NULL);
-				else //mxDOUBLE_CLASS
+				//Convert DOUBLE data to LOGICAL values
+				double *writeDataRaw = mxGetPr(prhs[1]);
+				mwSize numElements = mxGetNumberOfElements(prhs[1]);
+
+				uInt8 *writeData = (uInt8 *)mxCalloc(numElements,sizeof(uInt8));					
+
+				for (unsigned int i=0;i<numElements;i++)
 				{
-					//Convert DOUBLE data to LOGICAL values
-					double *writeDataRaw = mxGetPr(prhs[1]);
-					mwSize numElements = mxGetNumberOfElements(prhs[1]);
-
-					uInt8 *writeData = (uInt8 *)mxCalloc(numElements,sizeof(uInt8));					
-
-					for (unsigned int i=0;i<numElements;i++)
-					{
-						if (writeDataRaw[i] != 0)
-							writeData[i] = 1;
-					}
-					status = DAQmxWriteDigitalLines(taskID, numSampsPerChan, autoStart, timeout, dataLayout, writeData, &sampsWritten, NULL);
-
-					mxFree(writeData);
+					if (writeDataRaw[i] != 0)
+						writeData[i] = 1;
 				}
-			}
+				status = DAQmxWriteDigitalLines(taskID, numSampsPerChan, autoStart, timeout, dataLayout, writeData, &scansWritten, NULL);
 
+				mxFree(writeData);
+			}
 		break;
 
 		default:
@@ -189,21 +228,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			mexErrMsgTxt(errMsg);
 	}
 
-	//Handle output arguments and errors
-	if (!status)
-	{
-		if (nlhs > 0) {
-			plhs[0] = mxCreateDoubleScalar(0);	
-			double * sampsPerChanWritten = mxGetPr(plhs[0]);
-            *sampsPerChanWritten = sampsWritten ; 
-		}
-
-		//mexPrintf("Successfully wrote %d samples of data\n", sampsWritten);		
-	}
-	else //Write failed
+	// If an error occured at some point during writing, deal with that
+	if (status)
 		handleDAQmxError(status, mexFunctionName());
+
+	// Handle output arguments, if needed
+	if (nlhs > 0) 
+	{
+		plhs[0] = mxCreateDoubleScalar(0);	
+		double * sampsPerChanWritten = mxGetPr(plhs[0]);
+		*sampsPerChanWritten = (double)scansWritten ; 
+	}
 }
-
-
-
 

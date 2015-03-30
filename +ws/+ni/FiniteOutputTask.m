@@ -362,11 +362,13 @@ classdef FiniteOutputTask < handle
                     self.DabsDaqTask_.reset('writeOffset');
                     self.DabsDaqTask_.writeAnalogData(outputData);
                 else
-                    packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
-                    packedOutputData(end)=0;  % don't want to end on nonzero value
+                    %packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
+                    %packedOutputData(end)=0;  % don't want to end on nonzero value
+                    outputData(end,:)=0;  % don't want to end on nonzero value
                     self.DabsDaqTask_.reset('writeRelativeTo');
                     self.DabsDaqTask_.reset('writeOffset');
-                    self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    %self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    self.DabsDaqTask_.writeDigitalData(outputData);
                 end
             end
             

@@ -32,7 +32,7 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
 
             nTrials=1;
             wsModel.ExperimentTrialCount=1;
-            wsModel.TrialDuration=61;  % s
+            wsModel.TrialDuration=20;  % s, this actually seems to be long enough to cause crash
 
             wsModel.start();
 
@@ -50,4 +50,4 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
         end  % function
     end  % test methods
 
- end  % classdef
+end  % classdef
