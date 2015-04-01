@@ -287,13 +287,6 @@ classdef FiniteOutputTask < handle
                 if isempty(self.DabsDaqTask_) ,
                     % do nothing
                 else
-                    % If task is still running, abort, then stop.
-                    if ~self.DabsDaqTask_.isTaskDoneQuiet() ,
-                        % the dabs task is still running, so abort it
-                        self.abort();
-                        self.stop();
-                    end
-                    
                     % Unregister callbacks
                     self.DabsDaqTask_.doneEventCallbacks = {};
 
@@ -365,12 +358,8 @@ classdef FiniteOutputTask < handle
                 % Write the data to the output buffer
                 if self.IsAnalog ,
                     outputData(end,:)=0;  % don't want to end on nonzero value
-                    writeRelativeToBefore = self.DabsDaqTask_.get('writeRelativeTo')
-                    writeOffsetBefore = self.DabsDaqTask_.get('writeOffset')
                     self.DabsDaqTask_.reset('writeRelativeTo');
                     self.DabsDaqTask_.reset('writeOffset');
-                    writeRelativeToAfter = self.DabsDaqTask_.get('writeRelativeTo')
-                    writeOffsetAfter = self.DabsDaqTask_.get('writeOffset')
                     self.DabsDaqTask_.writeAnalogData(outputData);
                 else
                     %packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
