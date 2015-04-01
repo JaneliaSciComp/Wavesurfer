@@ -377,7 +377,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
-            fprintf('Stimulation::willPerformExperiment()\n');
+            %fprintf('Stimulation::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
             
@@ -441,7 +441,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % willPerformExperiment() function
         
         function didPerformExperiment(self, ~)
-            fprintf('Stimulation::didPerformExperiment()\n');
 %             self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
 %             self.TheFiniteAnalogOutputTask_.unreserve();
             self.TheFiniteAnalogOutputTask_.disarm();
@@ -471,7 +470,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % settings.
             
             %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
-            fprintf('Stimulation::willPerformTrial()\n');
+            %fprintf('Stimulation::willPerformTrial()\n');
             
             if self.TriggerScheme.IsExternal ,
                 % If external triggering, we set up for a trigger only if
@@ -516,16 +515,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     end                    
                 end
             end
-        end  % function
-        
-        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            fprintf('Stimulation::didPerformTrial()\n');            
-        end
-        
-        function didAbortTrial(self, ~)
-            self.TheFiniteAnalogOutputTask_.abort();
-            self.TheFiniteDigitalOutputTask_.abort();
-            self.IsArmedOrStimulating_ = false;
         end  % function
         
         function armForEpisode(self)
@@ -582,6 +571,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
         end  % function
         
+        function didAbortTrial(self, ~)
+            self.TheFiniteAnalogOutputTask_.abort();
+            self.TheFiniteDigitalOutputTask_.abort();
+            self.IsArmedOrStimulating_ = false;
+        end  % function
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
