@@ -559,7 +559,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % all API members.
         
         function willPerformExperiment(self, desiredApplicationState)
-            %fprintf('WavesurferModel::willPerformExperiment()\n');                        
+            fprintf('WavesurferModel::willPerformExperiment()\n');                        
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
             if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration)
@@ -614,7 +614,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function willPerformTrial(self)
-            %fprintf('WavesurferModel::willPerformTrial()\n');            
+            fprintf('WavesurferModel::willPerformTrial()\n');            
             % time between subsequent calls to this
             t=toc(self.FromExperimentStartTicId_);
             %if ~isempty(self.TimeOfLastWillPerformTrial_) ,
@@ -659,7 +659,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function didPerformTrial(self)
-            %fprintf('WavesurferModel::didPerformTrial()\n');
+            fprintf('WavesurferModel::didPerformTrial()\n');
             %dbstack
             
             % Notify all the subsystems that the trial is done
@@ -777,6 +777,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function didPerformExperiment(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of experiment event.
+            fprintf('WavesurferModel::didPerformExperiment()\n');                                    
             assert(self.State ~= ws.ApplicationState.Idle);
             
             self.State = ws.ApplicationState.Idle;
