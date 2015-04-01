@@ -413,9 +413,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
         end  % function
         
-        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, trialIndexWithinSet)
-            % nBoundChannels is the number of channels *in channelNames* for which
-            % a non-empty binding was found.
+        function data = calculateSignals(self, sampleRate, channelNames, trialIndexWithinSet)
             if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
                 trialIndexWithinSet=1;
             end
@@ -437,7 +435,6 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             
             % For each named channel, overwrite a col of data
             boundChannelNames=self.ChannelNames;
-            nChannelsWithStimulus = 0 ;
             for iChannel = 1:nChannels ,
                 thisChannelName=channelNames{iChannel};
                 stimIndex = find(strcmp(thisChannelName, boundChannelNames), 1);
@@ -451,7 +448,6 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                     else        
                         % Calc the signal, scale it, overwrite the appropriate col of
                         % data
-                        nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
                         rawSignal = thisStimulus.calculateSignal(t, trialIndexWithinSet);
                         multiplier=self.Multipliers(stimIndex);
                         data(:, iChannel) = multiplier*rawSignal;
