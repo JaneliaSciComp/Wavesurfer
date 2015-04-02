@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="MEX Class Directory Conventions"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;$(ProjectDir)"
+	/>
+	<Tool
+		Name="VCCustomBuildTool"
+		CommandLine="copy &quot;$(OutDir)\$(ProjectName).$(PLATFORM_MATLAB_MEX_EXT)&quot; &quot;$(SolutionDir)\..&quot;"
+		Outputs="dummy_name_so_event_always_fires"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		OutputFile="$(OutDir)\$(ProjectName).$(PLATFORM_MATLAB_MEX_EXT)"
+		AdditionalLibraryDirectories=""
+	/>
+</VisualStudioPropertySheet>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="PLATFORM WIN32"
+	>
+	<UserMacro
+		Name="PLATFORM_DEFAULT_DIR"
+		Value="win32"
+	/>
+	<UserMacro
+		Name="PLATFORM_MATLAB_MEX_EXT"
+		Value="mexw32"
+	/>
+	<UserMacro
+		Name="PLATFORM_MATLAB_LIB_DIR"
+		Value="win32"
+	/>
+	<UserMacro
+		Name="PLATFORM_NIDAQ_LIB_DIR"
+		Value="lib32"
+	/>
+</VisualStudioPropertySheet>

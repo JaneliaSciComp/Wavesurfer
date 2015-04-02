@@ -29,6 +29,7 @@ classdef FiniteOutputTask < handle
         PhysicalChannelNames_ = cell(1,0)
         ChannelNames_ = cell(1,0)
         ChannelData_
+        IsOutputBufferSyncedToChannelData_ = false
     end
     
     events
@@ -94,7 +95,7 @@ classdef FiniteOutputTask < handle
 %                 %self
 %                 %dbstack
 %             end               
-            if self.IsArmed_ ,
+            if self.IsArmed_ ,                
                 if ~isempty(self.DabsDaqTask_) ,
                     self.DabsDaqTask_.start();
                 end
@@ -120,6 +121,8 @@ classdef FiniteOutputTask < handle
 %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 fprintf('FiniteAnalogOutputTask::stop()\n');
 %             end
+            %fprintf('FiniteOutputTask::stop()\n');
+            %dbstack
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
@@ -140,10 +143,11 @@ classdef FiniteOutputTask < handle
         function clearChannelData(self)
             nChannels=length(self.ChannelNames);
             if self.IsAnalog ,
-                self.ChannelData = zeros(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
+                self.ChannelData_ = zeros(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
             else
-                self.ChannelData = false(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
+                self.ChannelData_ = false(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
             end                
+            self.IsOutputBufferSyncedToChannelData_ = false ;  % we don't sync up the output buffer to no data
         end  % function
         
         function value = get.ChannelData(self)
@@ -159,7 +163,8 @@ classdef FiniteOutputTask < handle
             end
             if isa(value,requiredType) && ismatrix(value) && (size(value,2)==nChannels) ,
                 self.ChannelData_ = value;
-                self.syncOuputBufferToChannelData_();
+                self.IsOutputBufferSyncedToChannelData_ = false ;
+                self.syncOutputBufferToChannelData_();
             else
                 error('most:Model:invalidPropVal', ...
                       'ChannelData must be an NxR matrix, R the number of channels, of the appropriate type.');
@@ -302,6 +307,7 @@ classdef FiniteOutputTask < handle
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Output object.
+            %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
             self.DabsDaqTask_.stop();
             
             % Fire the event before unregistering the callback functions.  At the end of a
@@ -312,7 +318,12 @@ classdef FiniteOutputTask < handle
     end  % protected methods block
     
     methods (Access = protected)
-        function syncOuputBufferToChannelData_(self)
+        function syncOutputBufferToChannelData_(self)
+            % If already up-to-date, do nothing
+            if self.IsOutputBufferSyncedToChannelData_ ,
+                return
+            end
+            
             % Get the channel data into a local
             channelData=self.ChannelData;
             
@@ -336,6 +347,8 @@ classdef FiniteOutputTask < handle
                 % do nothing
             else            
                 % Resize the output buffer to the number of scans in outputData
+                %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');  
+                % this is needed b/c we might have filled the buffer before bur never outputed that data
                 nScansInOutputData=size(outputData,1);
                 nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
                 if nScansInBuffer ~= nScansInOutputData ,
@@ -352,13 +365,18 @@ classdef FiniteOutputTask < handle
                     self.DabsDaqTask_.reset('writeOffset');
                     self.DabsDaqTask_.writeAnalogData(outputData);
                 else
-                    packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
-                    packedOutputData(end)=0;  % don't want to end on nonzero value
+                    %packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
+                    %packedOutputData(end)=0;  % don't want to end on nonzero value
+                    outputData(end,:)=0;  % don't want to end on nonzero value
                     self.DabsDaqTask_.reset('writeRelativeTo');
                     self.DabsDaqTask_.reset('writeOffset');
-                    self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    %self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    self.DabsDaqTask_.writeDigitalData(outputData);
                 end
             end
+            
+            % Note that we are now synched
+            self.IsOutputBufferSyncedToChannelData_ = true ;
         end  % function
 
         function packedOutputData = packDigitalData_(self,outputData)
