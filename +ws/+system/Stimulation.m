@@ -850,24 +850,28 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Want to return the number of scans in the stimulus data
             nScans= size(aoData,1);
             
-            % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AnalogChannelScales;
-            inverseAnalogChannelScales=1./analogChannelScales;
-            sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
-            
-            % scale the data by the channel scales
-            if isempty(aoData) ,
-                aoDataScaled=aoData;
-            else
-                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
+            % If there are no scans, or no channels with a stimulus, we don't even write the data, because we're not
+            % going to even have a real task.
+            if nScans>0 && nChannelsWithStimulus>0 ,
+                % If any channel scales are problematic, deal with this
+                analogChannelScales=self.AnalogChannelScales;
+                inverseAnalogChannelScales=1./analogChannelScales;
+                sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+
+                % scale the data by the channel scales
+                if isempty(aoData) ,
+                    aoDataScaled=aoData;
+                else
+                    aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
+                end
+
+                % limit the data to [-10 V, +10 V]
+                aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
+
+                % Finally, assign the stimulation data to the the relevant part
+                % of the output task
+                self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
             end
-            
-            % limit the data to [-10 V, +10 V]
-            aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
-            
-            % Finally, assign the stimulation data to the the relevant part
-            % of the output task
-            self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
         end  % function
 
         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap)
@@ -886,13 +890,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Want to return the number of scans in the stimulus data
             nScans= size(doData,1);
-                        
-            % limit the data to [-10 V, +10 V]
-            doDataLimited=(doData>=0.5);  % also eliminates nan, sets to false
             
-            % Finally, assign the stimulation data to the the relevant part
-            % of the output task
-            self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+            % If there are no scans, or no channels with a stimulus, we don't even write the data, because we're not
+            % going to even have a real task.
+            if nScans>0 && nChannelsWithStimulus>0 ,            
+                % limit the data to [-10 V, +10 V]
+                doDataLimited=(doData>=0.5);  % also eliminates nan, sets to false
+
+                % Finally, assign the stimulation data to the the relevant part
+                % of the output task
+                self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+            end
         end  % function
 
         function analogEpisodeCompleted_(self)
