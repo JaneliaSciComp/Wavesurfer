@@ -50,6 +50,7 @@
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
+				SuppressStartupBanner="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -63,6 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				ShowProgress="1"
 				LinkIncremental="2"
 				ModuleDefinitionFile=""
 				GenerateDebugInformation="true"
@@ -95,7 +97,8 @@
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
+			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MEX STANDARD.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -114,6 +117,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				SuppressStartupBanner="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -126,6 +130,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				ShowProgress="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -154,7 +159,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\PLATFORM_WIN32.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\MEX STANDARD.vsprops;..\NIDAQmx.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\MATLAB.vsprops"
+			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN32.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\private\VSPropSheets\MEX STANDARD.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -181,6 +186,7 @@
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
+				SuppressStartupBanner="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -193,6 +199,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				ShowProgress="1"
 				LinkIncremental="1"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -226,7 +233,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\MEX STANDARD.vsprops;..\NIDAQmx.vsprops;..\..\..\..\..\..\..\DEVTOOLS\VSPropSheets\MATLAB.vsprops"
+			InheritedPropertySheets="..\..\..\..\..\private\VSPropSheets\PLATFORM_WIN64.vsprops;..\..\..\..\..\private\VSPropSheets\LOCAL INSTALL.vsprops;..\..\..\..\..\private\VSPropSheets\MEX Class Directory Conventions.vsprops;..\..\..\..\..\private\VSPropSheets\MEX STANDARD.vsprops;..\..\..\..\..\private\VSPropSheets\NIDAQmx.vsprops;..\..\..\..\..\private\VSPropSheets\MATLAB.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -253,6 +260,7 @@
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
+				SuppressStartupBanner="false"
 				Detect64BitPortabilityProblems="false"
 			/>
 			<Tool
@@ -266,6 +274,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				ShowProgress="2"
 				LinkIncremental="1"
 				SubSystem="2"
 				OptimizeReferences="2"
