@@ -377,7 +377,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
-            fprintf('Stimulation::willPerformExperiment()\n');
+            %fprintf('Stimulation::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
             
@@ -441,7 +441,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % willPerformExperiment() function
         
         function didPerformExperiment(self, ~)
-            fprintf('Stimulation::didPerformExperiment()\n');
+            %fprintf('Stimulation::didPerformExperiment()\n');
 %             self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
 %             self.TheFiniteAnalogOutputTask_.unreserve();
             self.TheFiniteAnalogOutputTask_.disarm();
@@ -471,7 +471,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % settings.
             
             %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
-            fprintf('Stimulation::willPerformTrial()\n');
+            %fprintf('Stimulation::willPerformTrial()\n');
 
             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
             if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
@@ -543,7 +543,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %         end  % function
         
         function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            fprintf('Stimulation::didPerformTrial()\n');            
+            %fprintf('Stimulation::didPerformTrial()\n');            
         end
         
         function didAbortTrial(self, ~)
@@ -555,7 +555,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function armForEpisode(self)
             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             %thisTic=tic();
-            fprintf('Stimulation::armForEpisode()\n');
+            %fprintf('Stimulation::armForEpisode()\n');
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
             self.DidAnalogEpisodeComplete_ = (self.NAnalogChannels==0) ;  % usually false at this point, unless there are no analog channels
@@ -928,7 +928,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
 
         function analogEpisodeCompleted_(self)
-            fprintf('Stimulation::analogEpisodeCompleted_()\n');
+            %fprintf('Stimulation::analogEpisodeCompleted_()\n');
             self.DidAnalogEpisodeComplete_ = true ;
             if self.DidDigitalEpisodeComplete_ ,
                 self.analogAndDigitalEpisodesCompleted_();
@@ -936,7 +936,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
         function digitalEpisodeCompleted_(self)
-            fprintf('Stimulation::digitalEpisodeCompleted_()\n');
+            %fprintf('Stimulation::digitalEpisodeCompleted_()\n');
             self.DidDigitalEpisodeComplete_ = true ;
             if self.DidAnalogEpisodeComplete_ ,
                 self.analogAndDigitalEpisodesCompleted_();
@@ -946,7 +946,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function analogAndDigitalEpisodesCompleted_(self)
             % Called from "below" when a single episode of stimulation is
             % completed.  
-            fprintf('Stimulation::analogAndDigitalEpisodesCompleted_()\n');
+            %fprintf('Stimulation::analogAndDigitalEpisodesCompleted_()\n');
             self.IsArmedOrStimulating_ = false;
             self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             

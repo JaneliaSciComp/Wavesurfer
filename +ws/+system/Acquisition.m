@@ -469,7 +469,7 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode)
-            fprintf('Acquisition::willPerformExperiment()\n');
+            %fprintf('Acquisition::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
 
@@ -532,7 +532,7 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function didPerformExperiment(self, wavesurferModel)
-            fprintf('Acquisition::didPerformExperiment()\n');
+            %fprintf('Acquisition::didPerformExperiment()\n');
             self.didPerformOrAbortExperiment_(wavesurferModel);
         end  % function
         
@@ -541,7 +541,7 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
 
         function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            fprintf('Acquisition::willPerformTrial()\n');
+            %fprintf('Acquisition::willPerformTrial()\n');
             self.IsArmedOrAcquiring = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
@@ -555,7 +555,7 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            fprintf('Acquisition::didPerformTrial()\n');
+            %fprintf('Acquisition::didPerformTrial()\n');
         end
         
         function didAbortTrial(self, ~)

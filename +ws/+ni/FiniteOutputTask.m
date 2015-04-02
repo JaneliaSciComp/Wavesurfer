@@ -121,8 +121,8 @@ classdef FiniteOutputTask < handle
 %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 fprintf('FiniteAnalogOutputTask::stop()\n');
 %             end
-            fprintf('FiniteOutputTask::stop()\n');
-            dbstack
+            %fprintf('FiniteOutputTask::stop()\n');
+            %dbstack
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
@@ -307,7 +307,7 @@ classdef FiniteOutputTask < handle
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Output object.
-            fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
+            %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
             self.DabsDaqTask_.stop();
             
             % Fire the event before unregistering the callback functions.  At the end of a
