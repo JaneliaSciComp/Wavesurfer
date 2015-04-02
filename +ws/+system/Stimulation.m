@@ -465,58 +465,82 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.IsWithinExperiment_=false;
         end  % function
         
-        function willPerformTrial(self, wavesurferObj) %#ok<INUSD>
+        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             % This gets called from above when an (acq) trial is about to
             % start.  What we do here depends a lot on the current triggering
             % settings.
             
             %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
             fprintf('Stimulation::willPerformTrial()\n');
-            
-            if self.TriggerScheme.IsExternal ,
-                % If external triggering, we set up for a trigger only if
-                % this is the first 
+
+            acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
+            if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+                % Stim and acq are using same trigger source, so should arm
+                % stim system now.
+                self.armForEpisode();
+            else
+                % Stim and acq are using distinct trigger
+                % sources.
+                % If first trial, arm.  Otherwise, we handle
+                % re-arming independently from the acq trials.
                 if self.Parent.ExperimentCompletedTrialCount == 0 ,
                     self.armForEpisode();
                 end
-            else
-                % stim trigger scheme is internal
-                acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-                if acquisitionTriggerScheme.IsInternal ,
-                    % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
-                        % stim and acq are using same trigger source
-                        self.armForEpisode();
-                    else
-                        % stim and acq are using distinct internal trigger
-                        % sources
-                        % if first trial, arm.  Otherwise, we handle
-                        % re-arming independently from the acq trials.
-                        if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
-                            self.armForEpisode();
-                        else
-                            % do nothing
-                        end
-                    end
-                else
-                    % acq trigger scheme is external, so must be different
-                    % from stim trigger scheme, which is internal
-%                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
-%                         self.armForEpisode();
-%                     else
-%                         self.IsWithinExperiment_ = false;
-%                         self.Parent.stimulationTrialComplete();
-%                     end
-                    % if first trial, arm.  Otherwise, we handle
-                    % re-arming independently from the acq trials.
-                    if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
-                        self.armForEpisode();
-                    else
-                        % do nothing
-                    end                    
-                end
             end
         end  % function
+
+%         function willPerformTrial(self, wavesurferObj) %#ok<INUSD>
+%             % This gets called from above when an (acq) trial is about to
+%             % start.  What we do here depends a lot on the current triggering
+%             % settings.
+%             
+%             %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
+%             fprintf('Stimulation::willPerformTrial()\n');
+%             
+%             if self.TriggerScheme.IsExternal ,
+%                 % If external triggering, we set up for a trigger only if
+%                 % this is the first 
+%                 if self.Parent.ExperimentCompletedTrialCount == 0 ,
+%                     self.armForEpisode();
+%                 end
+%             else
+%                 % stim trigger scheme is internal
+%                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
+%                 if acquisitionTriggerScheme.IsInternal ,
+%                     % acq trigger scheme is internal
+%                     if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+%                         % stim and acq are using same trigger source
+%                         self.armForEpisode();
+%                     else
+%                         % stim and acq are using distinct internal trigger
+%                         % sources
+%                         % if first trial, arm.  Otherwise, we handle
+%                         % re-arming independently from the acq trials.
+%                         if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
+%                             self.armForEpisode();
+%                         else
+%                             % do nothing
+%                         end
+%                     end
+%                 else
+%                     % acq trigger scheme is external, so must be different
+%                     % from stim trigger scheme, which is internal
+% %                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+% %                         self.armForEpisode();
+% %                     else
+% %                         self.IsWithinExperiment_ = false;
+% %                         self.Parent.stimulationTrialComplete();
+% %                     end
+%                     % if first trial, arm.  Otherwise, we handle
+%                     % re-arming independently from the acq trials.
+%                     if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
+%                         self.armForEpisode();
+%                     else
+%                         % do nothing
+%                     end                    
+%                 end
+%             end
+%         end  % function
         
         function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
             fprintf('Stimulation::didPerformTrial()\n');            

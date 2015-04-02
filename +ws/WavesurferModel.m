@@ -615,6 +615,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function willPerformTrial(self)
             fprintf('WavesurferModel::willPerformTrial()\n');            
+            dbstack
             % time between subsequent calls to this
             t=toc(self.FromExperimentStartTicId_);
             %if ~isempty(self.TimeOfLastWillPerformTrial_) ,
@@ -660,7 +661,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function didPerformTrial(self)
             fprintf('WavesurferModel::didPerformTrial()\n');
-            %dbstack
+            dbstack
             
             % Notify all the subsystems that the trial is done
             for idx = 1: numel(self.Subsystems_)
