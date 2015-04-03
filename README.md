@@ -161,3 +161,6 @@ Version History
        long-duration stimuli, and with stimuli not being generated
        properly after 1st stimulus episode when externally triggered.
 
+0.777: (April 3, 2015) Fixed issue that prevented acquisition if
+       Matlab was installed on a drive other than the C drive.
+
