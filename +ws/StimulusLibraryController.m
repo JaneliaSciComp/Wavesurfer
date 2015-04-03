@@ -157,7 +157,8 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             
             samplingRate=20000;  % Hz, just for previewing
             ax=[];  % let plot method make an axes
-            selectedItem.plot(self.PlotFigureGH_, ax, samplingRate);
+            isChannelAnalog = model.Stimulation.IsChannelAnalog ;
+            selectedItem.plot(self.PlotFigureGH_, ax, samplingRate, isChannelAnalog);
             set(self.PlotFigureGH_, 'Name', sprintf('Stimulus Preview: %s', selectedItem.Name));
         end  % function                
         
@@ -299,7 +300,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 if isequal(newString,'(Unspecified)') ,
                     newString='';
                 end
-                selectedMap.ChannelNames{rowIndex}=newString;                
+                selectedMap.ChannelNames{rowIndex}=newString;
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
                 if isequal(newString,'(Unspecified)') ,

@@ -413,7 +413,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
         end  % function
         
-        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, trialIndexWithinSet)
+        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, trialIndexWithinSet)
             % nBoundChannels is the number of channels *in channelNames* for which
             % a non-empty binding was found.
             if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
@@ -454,7 +454,11 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                         nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
                         rawSignal = thisStimulus.calculateSignal(t, trialIndexWithinSet);
                         multiplier=self.Multipliers(stimIndex);
-                        data(:, iChannel) = multiplier*rawSignal;
+                        if isChannelAnalog(iChannel) ,
+                            data(:, iChannel) = multiplier*rawSignal ;
+                        else
+                            data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
+                        end
                     end
                 end
             end

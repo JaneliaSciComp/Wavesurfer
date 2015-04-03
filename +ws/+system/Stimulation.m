@@ -28,6 +28,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
         IsWithinExperiment
+        IsChannelAnalog
     end
     
     properties (Access = protected, Transient=true)
@@ -211,6 +212,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function value=isAnalogChannelName(self,name)
             value=any(strcmp(name,self.AnalogChannelNames));
+        end
+        
+        function value = get.IsChannelAnalog(self)
+            % Boolean array indicating, for each channel, whether is is analog or not
+            value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
 %         function out = get.TrialDurations(self)
@@ -868,7 +874,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 aoData = zeros(0,length(self.AnalogChannelNames));
                 nChannelsWithStimulus = 0 ;
             else
-                [aoData,nChannelsWithStimulus] = stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, episodeIndexWithinExperiment);
+                isChannelAnalog = true(1,self.NAnalogChannels) ;
+                [aoData,nChannelsWithStimulus] = ...
+                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinExperiment);
             end
             
             % Want to return the number of scans in the stimulus data
@@ -909,7 +917,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 doData=zeros(0,length(self.DigitalChannelNames));
                 nChannelsWithStimulus = 0 ;
             else
-                [doData, nChannelsWithStimulus] = stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames, episodeIndexWithinExperiment);
+                isChannelAnalog = false(1,self.NDigitalChannels) ;
+                [doData, nChannelsWithStimulus] = ...
+                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames, isChannelAnalog, episodeIndexWithinExperiment);
             end
             
             % Want to return the number of scans in the stimulus data
@@ -918,8 +928,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % If there are no scans, or no channels with a stimulus, we don't even write the data, because we're not
             % going to even have a real task.
             if nScans>0 && nChannelsWithStimulus>0 ,            
-                % limit the data to [-10 V, +10 V]
-                doDataLimited=(doData>=0.5);  % also eliminates nan, sets to false
+                % limit the data to {false,true}
+                doDataLimited=logical(doData);
 
                 % Finally, assign the stimulation data to the the relevant part
                 % of the output task
