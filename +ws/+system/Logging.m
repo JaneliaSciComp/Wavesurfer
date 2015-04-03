@@ -121,25 +121,38 @@ classdef Logging < ws.system.Subsystem
 
         function value=get.NextTrialSetAbsoluteFileName(self)
             wavesurferModel=self.Parent;
-            if wavesurferModel.ExperimentTrialCount == 1 ,
-                fileName = sprintf('%s_%04d.h5', self.FileBaseName, self.NextTrialIndex);
+            if wavesurferModel.IsTrialBased ,
+                if wavesurferModel.ExperimentTrialCount == 1 ,
+                    fileName = sprintf('%s_%04d.h5', self.FileBaseName, self.NextTrialIndex);
+                else
+                    if isfinite(wavesurferModel.ExperimentTrialCount) ,
+                        fileName = sprintf('%s_%04d-%04d.h5', ...
+                                           self.FileBaseName, ...
+                                           self.NextTrialIndex, ...
+                                           self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
+                    else
+                        fileName = sprintf('%s_%04d-.h5', ...
+                                           self.FileBaseName, ...
+                                           self.NextTrialIndex);
+                    end
+                end            
+            elseif wavesurferModel.IsContinuous ,
+                dateAndTimeAffix = strrep(strrep(datestr(now()), ' ', '_'), ':', '-') ;
+                fileName = sprintf('%s-continuous_%s', self.FileBaseName, dateAndTimeAffix);                
             else
-                fileName = sprintf('%s_%04d-%04d.h5', ...
-                                   self.FileBaseName, ...
-                                   self.NextTrialIndex, ...
-                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
-            end            
+                error('wavesurfer:internalError' , ...
+                      'Unable to determine trial set file name');
+            end
             value = fullfile(self.FileLocation, fileName);
         end  % function
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode)
+        function willPerformExperiment(self, wavesurferModel, desiredApplicationState)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
             
-            % TODO_ALT: Replace the code below for calculating abs file
-            % name with a call to get.NextTrialAbsoluteFileName()
-            switch experimentMode ,
+            % Set the chunk size for writing data to disk
+            switch desiredApplicationState ,
                 case ws.ApplicationState.AcquiringTrialBased ,
                     self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount wavesurferModel.Acquisition.NActiveChannels];
                     if any(isinf(self.ExpectedTrialSize_))
@@ -147,29 +160,26 @@ classdef Logging < ws.system.Subsystem
                     else
                         self.ChunkSize_ = self.ExpectedTrialSize_;
                     end
-                    if wavesurferModel.ExperimentTrialCount == 1 ,
-                        trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextTrialIndex);
-                    else
-                        trueLogFileName = sprintf('%s_%04d-%04d', ...
-                                                  self.FileBaseName, ...
-                                                  self.NextTrialIndex, ...
-                                                  self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
-                    end
+%                     if wavesurferModel.ExperimentTrialCount == 1 ,
+%                         trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextTrialIndex);
+%                     else
+%                         trueLogFileName = sprintf('%s_%04d-%04d', ...
+%                                                   self.FileBaseName, ...
+%                                                   self.NextTrialIndex, ...
+%                                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
+%                     end
                 case ws.ApplicationState.AcquiringContinuously ,
                     self.ExpectedTrialSize_ = [Inf wavesurferModel.Acquisition.NActiveChannels];
                     self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
-                    trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
-                case ws.ApplicationState.TestPulsing ,
-                    self.CurrentDatasetOffset_ = -1;
-                    return
+%                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
                 otherwise
                     error('wavesurfer:saveddatasystem:invalidmode', ...
-                          sprintf('%s is not a supported mode for data logging.', char(experimentMode))); %#ok<SPERR>
+                          sprintf('%s is not a supported mode for data logging.', char(desiredApplicationState))); %#ok<SPERR>
             end
             
             % Determine the absolute file names
-            self.LogFileNameAbsolute_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            %sidecarFileNameAbsolute = fullfile(self.FileLocation, [trueLogFileName '.mat']);
+            %self.LogFileNameAbsolute_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
+            self.LogFileNameAbsolute_ = self.NextTrialSetAbsoluteFileName ;
             
             % If the target dir doesn't exist, create it
             if ~exist(self.FileLocation, 'dir')

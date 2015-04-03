@@ -272,11 +272,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if isfloat(value) && isscalar(value) && isnan(value) ,
                 % do nothing
             else            
-                value=self.validatePropArg('ExperimentTrialCount',value);
-                if self.IsTrialBased ,
-                    self.Triggering.willSetExperimentTrialCount();
-                    self.ExperimentTrialCount_ = value;
-                    self.Triggering.didSetExperimentTrialCount();
+                % s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+                %value=self.validatePropArg('ExperimentTrialCount',value);
+                if isnumeric(value) && isscalar(value) && value>=1 && (round(value)==value || isinf(value)) ,
+                    % If get here, value is a valid value for this prop
+                    if self.IsTrialBased ,
+                        self.Triggering.willSetExperimentTrialCount();
+                        self.ExperimentTrialCount_ = value;
+                        self.Triggering.didSetExperimentTrialCount();
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'ExperimentTrialCount must be a (scalar) positive integer, or inf');       
                 end
             end
             self.broadcast('Update');

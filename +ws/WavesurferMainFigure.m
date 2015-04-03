@@ -1322,16 +1322,39 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
             model=self.Model;
             state=model.State;
-            if state==ws.ApplicationState.AcquiringTrialBased ,                
-                nTrials=model.ExperimentTrialCount;
-                nTrialsCompleted=model.ExperimentCompletedTrialCount;
-                fractionCompleted=nTrialsCompleted/nTrials;
-                set(self.ProgressBarPatch, ...
-                    'XData',[0 fractionCompleted fractionCompleted 0 0], ...
-                    'YData',[0 0 1 1 0], ...
-                    'Visible','on');
-                set(self.ProgressBarAxes, ...                
-                    'Visible','on');
+            if state==ws.ApplicationState.AcquiringTrialBased ,
+                if isfinite(model.ExperimentTrialCount) ,
+                    nTrials=model.ExperimentTrialCount;
+                    nTrialsCompleted=model.ExperimentCompletedTrialCount;
+                    fractionCompleted=nTrialsCompleted/nTrials;
+                    set(self.ProgressBarPatch, ...
+                        'XData',[0 fractionCompleted fractionCompleted 0 0], ...
+                        'YData',[0 0 1 1 0], ...
+                        'Visible','on');
+                    set(self.ProgressBarAxes, ...                
+                        'Visible','on');
+                else
+                    % number of trials is infinite
+                    nTrialsPretend=20;
+                    nTrialsCompleted = model.ExperimentCompletedTrialCount ;
+                    nTrialsCompletedModded=mod(nTrialsCompleted,nTrialsPretend);
+                    if nTrialsCompletedModded==0 ,
+                        if nTrialsCompleted==0 ,
+                            nTrialsCompletedPretend = 0 ;
+                        else
+                            nTrialsCompletedPretend = nTrialsPretend ;                            
+                        end
+                    else
+                        nTrialsCompletedPretend = nTrialsCompletedModded ;
+                    end                    
+                    fractionCompletedPretend=nTrialsCompletedPretend/nTrialsPretend;
+                    set(self.ProgressBarPatch, ...
+                        'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
+                        'YData',[0 0 1 1 0], ...
+                        'Visible','on');
+                    set(self.ProgressBarAxes, ...                
+                        'Visible','on');
+                end
             elseif state==ws.ApplicationState.AcquiringContinuously ,
                 nTimesSamplesAcquiredCalledSinceExperimentStart=model.NTimesSamplesAcquiredCalledSinceExperimentStart;
                 nSegments=10;
