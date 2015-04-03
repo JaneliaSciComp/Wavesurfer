@@ -495,8 +495,25 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 sampleRate = 20000;  % Hz
             end
             
+            % Get the channel names
             channelNames=self.ChannelNames;
-            data = self.calculateSignals(sampleRate,channelNames);
+            
+            % Try to determine whether channels are analog or digital.  Fallback to analog, if needed.
+            nChannels = length(channelNames) ;
+            isChannelAnalog = true(1,nChannels) ;
+            stimulusLibrary = self.Parent ;
+            if ~isempty(stimulusLibrary) ,
+                stimulation = stimulusLibrary.Parent ;
+                if ~isempty(stimulation) ,                                    
+                    for i = 1:nChannels ,
+                        channelName = channelNames{i} ;
+                        isChannelAnalog(i) = stimulation.isAnalogChannelName(channelName) ;
+                    end
+                end
+            end
+            
+            % calculate the signals
+            data = self.calculateSignals(sampleRate,channelNames,isChannelAnalog);
             
             %[data, channelNames] = self.calculateSignals(sampleRate, varargin{:});
             n=size(data,1);

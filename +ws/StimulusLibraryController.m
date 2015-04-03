@@ -157,8 +157,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             
             samplingRate=20000;  % Hz, just for previewing
             ax=[];  % let plot method make an axes
-            isChannelAnalog = model.Stimulation.IsChannelAnalog ;
-            selectedItem.plot(self.PlotFigureGH_, ax, samplingRate, isChannelAnalog);
+            selectedItem.plot(self.PlotFigureGH_, ax, samplingRate);
             set(self.PlotFigureGH_, 'Name', sprintf('Stimulus Preview: %s', selectedItem.Name));
         end  % function                
         
