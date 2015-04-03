@@ -150,11 +150,11 @@ classdef TestPulserController < ws.Controller
 
             % If acquisition is happening, ignore the close window request
             testPulser=self.Model;
-            if ~isempty(testPulser) || isvalid(testPulser) ,
+            if ~isempty(testPulser) && isvalid(testPulser) ,
                 ephys=testPulser.Parent;            
-                if ~isempty(ephys) || isvalid(ephys) ,
+                if ~isempty(ephys) && isvalid(ephys) ,
                     wavesurferModel=ephys.Parent;
-                    if ~isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+                    if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                         isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
                         if ~isIdle ,
                             shouldStayPut=true;

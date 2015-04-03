@@ -465,7 +465,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 return
             end
             wavesurferModel=stimulationSubsystem.Parent;
-            if isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+            if isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                 out=false;
                 return
             end            
