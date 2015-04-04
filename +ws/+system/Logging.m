@@ -269,9 +269,9 @@ classdef Logging < ws.system.Subsystem
         end
         
         function didAbortExperiment(self, ~)
-            fprintf('Logging::didAbortExperiment()\n');
+            %fprintf('Logging::didAbortExperiment()\n');
         
-            dbstop if caught
+            %dbstop if caught
             %
             % Want to rename the data file to reflect the actual number of trials acquired
             %
@@ -307,7 +307,7 @@ classdef Logging < ws.system.Subsystem
             self.didPerformOrAbortExperiment_();
             
             % Now throw that exception, if there was one
-            dbclear all
+            %dbclear all
             if isempty(exception) ,                
                 % do nothing
             else
