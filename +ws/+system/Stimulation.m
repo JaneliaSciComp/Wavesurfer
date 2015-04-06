@@ -359,21 +359,23 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteOutputTask('analog', ...
+                    ws.ni.FiniteOutputTask(self, ...
+                                           'analog', ...
                                            'Wavesurfer Analog Output Task', ...
                                            self.AnalogPhysicalChannelNames, ...
                                            self.AnalogChannelNames) ;
                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
-                self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
+                %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
                 self.TheFiniteDigitalOutputTask_ = ...
-                    ws.ni.FiniteOutputTask('digital', ...
+                    ws.ni.FiniteOutputTask(self, ...
+                                           'digital', ...
                                            'Wavesurfer Digital Output Task', ...
                                            self.DigitalPhysicalChannelNames, ...
                                            self.DigitalChannelNames) ;
                 self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
-                self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
+                %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
         end
         
@@ -777,6 +779,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
             end
         end  % function        
+        
+        function analogEpisodeCompleted(self)
+            self.analogEpisodeCompleted_();
+        end
+        
+        function digitalEpisodeCompleted(self)
+            self.digitalEpisodeCompleted_();
+        end       
     end  % methods block
     
     methods (Access = protected)

@@ -24,7 +24,7 @@ classdef AnalogInputTask < handle
 %     end
     
     properties (Transient = true, Access = protected)
-        DabsDaqTask_ = [];
+        DabsDaqTask_ = [];  % Can be empty if there are zero channels
     end
     
 %     properties (Access = protected)
@@ -514,6 +514,7 @@ classdef AnalogInputTask < handle
     
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
+            % This is called "from below" when data is available.
             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
             rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
             eventData = ws.ni.SamplesAvailableEventData(rawData) ;
@@ -521,6 +522,7 @@ classdef AnalogInputTask < handle
         end  % function
         
         function taskDone_(self, source, event) %#ok<INUSD>
+            % This is called "from below" when the NI task is done.
             %fprintf('AnalogInputTask::taskDone_()\n');
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()

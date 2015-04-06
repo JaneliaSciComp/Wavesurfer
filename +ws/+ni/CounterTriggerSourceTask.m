@@ -260,6 +260,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
 %         end
         
         function triggerDone_(self, ~, ~)
+            % Called "from below" when the task completes
             %fprintf('CounterTriggerSourceTask::triggerDone_()\n');
             self.stop();
             self.DabsDaqTask_.doneEventCallbacks = {};
