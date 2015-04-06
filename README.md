@@ -156,3 +156,11 @@ Version History
        if some AI channels specified in MDF were marked as 
        inactive.
 
+0.776: (April 2, 2015) Added ability to playback arbitrary stimuli
+       from .wav file.  Fixed bugs with multiple DO lines and
+       long-duration stimuli, and with stimuli not being generated
+       properly after 1st stimulus episode when externally triggered.
+
+0.777: (April 3, 2015) Fixed issue that prevented acquisition if
+       Matlab was installed on a drive other than the C drive.
+

@@ -19,6 +19,7 @@ classdef UserFunctions < ws.system.Subsystem
         end  % function
         
         function set.TrialWillStart(self, value)
+            %fprintf('UserFunctions::set.TrialWillStart()\n');
             if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('TrialWillStart', value);
                 self.TrialWillStart = value;

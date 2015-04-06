@@ -77,16 +77,10 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
         end
         
         function delete(self)
-%             if ~isempty(self.IdleHeartbeatTimer_) && isa(self.IdleHeartbeatTimer_,'timer') && isvalid(self.IdleHeartbeatTimer_),
-%                 stop(self.IdleHeartbeatTimer_);
-%                 % Wait a bit, if necessary, for timer to stop
-%                 durationToWait=0.2;  % s
-%                 waitForTimerToStop(self.IdleHeartbeatTimer_,durationToWait);
-%                 % Now delete the timer
-%                 delete(self.IdleHeartbeatTimer_);
-%             end                        
-            self.IsInControlOfSoftpanelModeAndGains=false;
-            self.Parent=[];  % eliminate reference to parent object (do I need this?)
+            %self.IsInControlOfSoftpanelModeAndGains=false;
+            %self.AreSoftpanelsEnabled_ = true ;
+            %self.Parent = [];
+            self.Parent_ = [];  % eliminate reference to parent object (do I need this?)
         end
         
         function out = get.NElectrodes(self)

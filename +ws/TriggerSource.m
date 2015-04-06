@@ -101,27 +101,28 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             end
         end
         
-        function set.RepeatCount(self, value)
+        function set.RepeatCount(self, newValue)
             %fprintf('set.RepeatCount()\n');
             %dbstack
-            if isnan(value) , 
+            if isnumeric(newValue) && isscalar(newValue) && isnan(newValue) , 
                 % do nothing
             else
-                self.validatePropArg('RepeatCount', value);
+                ws.TriggerSource.validateRepeatCount(newValue);
                 if self.IsRepeatCountOverridden_ ,
                     % do nothing
                 else
-                    self.RepeatCount_ = value;
+                    self.RepeatCount_ = newValue;
                 end
             end
             self.broadcast('Update');
         end
         
         function overrideRepeatCount(self,newValue)
-            if isa(newValue,'ws.most.util.Nonvalue') , 
+            if isnumeric(newValue) && isscalar(newValue) && isnan(newValue) , 
                 return
             end
-            self.validatePropArg('RepeatCount', newValue);            
+            % self.validatePropArg('RepeatCount', newValue);            
+            ws.TriggerSource.validateRepeatCount(newValue);
             self.RepeatCountOverride_ = newValue;
             self.IsRepeatCountOverridden_=true;
             self.RepeatCount=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
@@ -332,6 +333,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
                 self.Parent.triggerSourceDone(self);
             end
         end
+        
     end
     
     methods (Access=protected)        
@@ -386,6 +388,15 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
                           'Attributes', 'scalar', ...
                           'AllowEmpty', false);
         end  % function
-    end  % class methods block
-    
+        
+        function validateRepeatCount(newValue)
+            % If returns, it's valid.  If throws, it's not.
+            if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
+                % all is well---do nothing
+            else
+                error('most:Model:invalidPropVal', ...
+                      'RepeatCount must be a (scalar) positive integer, or inf');       
+            end
+        end
+    end  % static methods
 end

@@ -121,6 +121,8 @@ classdef FiniteOutputTask < handle
 %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 fprintf('FiniteAnalogOutputTask::stop()\n');
 %             end
+            %fprintf('FiniteOutputTask::stop()\n');
+            %dbstack
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
@@ -305,6 +307,7 @@ classdef FiniteOutputTask < handle
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Output object.
+            %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
             self.DabsDaqTask_.stop();
             
             % Fire the event before unregistering the callback functions.  At the end of a
@@ -362,11 +365,13 @@ classdef FiniteOutputTask < handle
                     self.DabsDaqTask_.reset('writeOffset');
                     self.DabsDaqTask_.writeAnalogData(outputData);
                 else
-                    packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
-                    packedOutputData(end)=0;  % don't want to end on nonzero value
+                    %packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
+                    %packedOutputData(end)=0;  % don't want to end on nonzero value
+                    outputData(end,:)=0;  % don't want to end on nonzero value
                     self.DabsDaqTask_.reset('writeRelativeTo');
                     self.DabsDaqTask_.reset('writeOffset');
-                    self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    %self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    self.DabsDaqTask_.writeDigitalData(outputData);
                 end
             end
             

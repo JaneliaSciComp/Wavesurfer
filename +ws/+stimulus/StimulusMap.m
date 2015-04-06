@@ -413,7 +413,9 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
         end  % function
         
-        function data = calculateSignals(self, sampleRate, channelNames, trialIndexWithinSet)
+        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, trialIndexWithinSet)
+            % nBoundChannels is the number of channels *in channelNames* for which
+            % a non-empty binding was found.
             if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
                 trialIndexWithinSet=1;
             end
@@ -435,6 +437,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             
             % For each named channel, overwrite a col of data
             boundChannelNames=self.ChannelNames;
+            nChannelsWithStimulus = 0 ;
             for iChannel = 1:nChannels ,
                 thisChannelName=channelNames{iChannel};
                 stimIndex = find(strcmp(thisChannelName, boundChannelNames), 1);
@@ -448,9 +451,14 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                     else        
                         % Calc the signal, scale it, overwrite the appropriate col of
                         % data
+                        nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
                         rawSignal = thisStimulus.calculateSignal(t, trialIndexWithinSet);
                         multiplier=self.Multipliers(stimIndex);
-                        data(:, iChannel) = multiplier*rawSignal;
+                        if isChannelAnalog(iChannel) ,
+                            data(:, iChannel) = multiplier*rawSignal ;
+                        else
+                            data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
+                        end
                     end
                 end
             end
@@ -487,8 +495,25 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 sampleRate = 20000;  % Hz
             end
             
+            % Get the channel names
             channelNames=self.ChannelNames;
-            data = self.calculateSignals(sampleRate,channelNames);
+            
+            % Try to determine whether channels are analog or digital.  Fallback to analog, if needed.
+            nChannels = length(channelNames) ;
+            isChannelAnalog = true(1,nChannels) ;
+            stimulusLibrary = self.Parent ;
+            if ~isempty(stimulusLibrary) ,
+                stimulation = stimulusLibrary.Parent ;
+                if ~isempty(stimulation) ,                                    
+                    for i = 1:nChannels ,
+                        channelName = channelNames{i} ;
+                        isChannelAnalog(i) = stimulation.isAnalogChannelName(channelName) ;
+                    end
+                end
+            end
+            
+            % calculate the signals
+            data = self.calculateSignals(sampleRate,channelNames,isChannelAnalog);
             
             %[data, channelNames] = self.calculateSignals(sampleRate, varargin{:});
             n=size(data,1);
