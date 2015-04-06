@@ -103,6 +103,9 @@ classdef UserFunctions < ws.system.Subsystem
             end
         end  % function
         
+%         function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
+%             error('what what what');
+%         end
     end  % methods
     
 %     methods (Access = protected)

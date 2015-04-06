@@ -215,15 +215,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end
         
-        function abort(self)
-            % Call abort anytime to ensure operations are stopped.  It is a no-op if already
-            % idle.For runs that have completed successfully, there is no need to call a
-            % stop() or abort() method.
+        function stop(self)
+            % Called when you press the "Stop" button in the UI.
             if self.State == ws.ApplicationState.Idle
-                return;
+                return
             end
-            
-            % This may not technically be a failure.
+
+            % Actually stop the ongoing trial
             self.didAbortTrial();
         end
     end  % methods
@@ -1060,7 +1058,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             commandFileName='si_command.txt';
             absoluteCommandFileName=fullfile(dirName,commandFileName);
             if exist(absoluteCommandFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(absoluteCommandFileName);
+                ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
                 if exist(absoluteCommandFileName,'file') , 
                     isCommandFileGone=false;
                     errorMessage1='Unable to delete pre-existing ScanImage command file';
@@ -1077,7 +1075,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             responseFileName='si_response.txt';
             absoluteResponseFileName=fullfile(dirName,responseFileName);
             if exist(absoluteResponseFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(absoluteResponseFileName);
+                ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
                 if exist(absoluteResponseFileName,'file') , 
                     isResponseFileGone=false;
                     if isempty(errorMessage1) ,
@@ -1161,7 +1159,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         response=fscanf(fid,'%s',1);
                         fclose(fid);
                         if isequal(response,'OK') ,
-                            ephus.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
+                            ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
                             isScanImageReady=true;
                             errorMessage='';
                             return
@@ -1176,7 +1174,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % If get here, must have failed
             if exist(responseAbsoluteFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
+                ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
             end
             isScanImageReady=false;
             errorMessage='ScanImage did not respond within the alloted time';

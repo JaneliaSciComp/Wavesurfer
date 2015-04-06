@@ -190,7 +190,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function stopControlActuated(self, varargin)
             % Action method for the Stop button and Stop menu item
-            self.Model.abort();
+            self.Model.stop();
         end
         
 %         function willSetModelState(self,varargin)

@@ -35,6 +35,10 @@ classdef Logging < ws.system.Subsystem
         WriteToTrialId_  % During the acquisition of a trial set, the current trial index being written to
         ChunkSize_
         FirstTrialIndex_  % index of the first trial in the ongoing trial set
+        DidCreateCurrentDataFile_  % whether the data file for the current trial set has been created
+        LastTrialIndexForWhichDatasetCreated_  
+          % For the current file/trialset, the trial index of the most-recently dataset in the data file.
+          % Empty if the no dataset has yet been created for the current file.
     end
 
     events
@@ -141,6 +145,9 @@ classdef Logging < ws.system.Subsystem
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
             
+            % Note that we have not yet created the current data file
+            self.DidCreateCurrentDataFile_ = false ;
+            
             % Set the chunk size for writing data to disk
             switch desiredApplicationState ,
                 case ws.ApplicationState.AcquiringTrialBased ,
@@ -212,6 +219,7 @@ classdef Logging < ws.system.Subsystem
             doCreateFile=true;
             %ws.most.fileutil.h5savestr(self.LogFileNameAbsolute_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
             ws.most.fileutil.h5save(self.LogFileNameAbsolute_, '/header', headerStruct, doCreateFile);
+            self.DidCreateCurrentDataFile_ = true ;
             
 %             % Save the "header" information to a sidecar file instead.
 %             % This should be more flexible that embedding the "header" data
@@ -241,34 +249,45 @@ classdef Logging < ws.system.Subsystem
             % The next incoming scan will be written to this (one-based)
             % index in the dataset
             self.CurrentDatasetOffset_ = 1;
+            
+            % This should be empty until we create a dataset for a trial
+            self.LastTrialIndexForWhichDatasetCreated_ = [] ;
         end
         
-        function willPerformTrial(self, wavesurferModel)
+        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %profile resume
-            if ~isempty(wavesurferModel.Acquisition) ,
-                datasetName = sprintf('/trial_%04d',self.NextTrialIndex) ;
-                h5create(self.LogFileNameAbsolute_, ...
-                         datasetName, ...
-                         self.ExpectedTrialSize_, ...
-                         'ChunkSize', self.ChunkSize_, ...
-                         'DataType','int16');
-            end
+            thisTrialIndex = self.NextTrialIndex ;
+            datasetName = sprintf('/trial_%04d',thisTrialIndex) ;
+            h5create(self.LogFileNameAbsolute_, ...
+                     datasetName, ...
+                     self.ExpectedTrialSize_, ...
+                     'ChunkSize', self.ChunkSize_, ...
+                     'DataType','int16');
+            self.LastTrialIndexForWhichDatasetCreated_ =  thisTrialIndex;                     
             %profile off
         end
         
         function didPerformTrial(self, wavesurferModel)
-            self.didPerformOrAbortTrial_(wavesurferModel);
+            if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
+                self.NextTrialIndex = self.NextTrialIndex + 1;
+            end
         end
         
         function didAbortTrial(self, wavesurferModel)
-            self.didPerformOrAbortTrial_(wavesurferModel);
+            if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
+                if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
+                    self.NextTrialIndex = self.firstTrialIndex_ ;
+                else
+                    self.NextTrialIndex = self.LastTrialIndexForWhichDatasetCreated_ + 1;
+                end
+            end
         end
         
         function didPerformExperiment(self, ~)
             self.didPerformOrAbortExperiment_();
         end
         
-        function didAbortExperiment(self, ~)
+        function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
             %fprintf('Logging::didAbortExperiment()\n');
         
             %dbstop if caught
@@ -276,36 +295,57 @@ classdef Logging < ws.system.Subsystem
             % Want to rename the data file to reflect the actual number of trials acquired
             %
             exception = [] ;
-            originalAbsoluteLogFileName = self.LogFileNameAbsolute_ ;
-            firstTrialIndex = self.FirstTrialIndex_ ;
-            numberOfTrials = self.NextTrialIndex - firstTrialIndex ;  % self.NextTrialIndex has already been updated at this point
-            newLogFileName = self.getTrialSetFileNameForTrialBasedAcquisition_(firstTrialIndex,numberOfTrials) ;
-            newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
-            if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
-                % This might happen, e.g. if the number of trials is inf
-                % do nothing.
-            else
-                % Check for filename collisions, if that's what user wants
-                if exist(newAbsoluteLogFileName, 'file') == 2 ,
-                    if self.IsOKToOverwrite ,
-                        % don't need to check anything
-                        % But need to delete pre-existing files, otherwise h5create
-                        % will just add datasets to a pre-existing file.
-                        ws.utility.deleteFileWithoutWarning(newAbsoluteLogFileName);
+            if self.DidCreateCurrentDataFile_ ,
+                % A data file was created.  Might need to rename it, or delete it.
+                originalAbsoluteLogFileName = self.LogFileNameAbsolute_ ;
+                firstTrialIndex = self.FirstTrialIndex_ ;
+                if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
+                    % This means no trials were actually added to the log file.
+                    numberOfPartialTrialsLogged = 0 ;
+                else                    
+                    numberOfPartialTrialsLogged = self.LastTrialIndexForWhichDatasetCreated_ - firstTrialIndex + 1 ;  % includes complete and partial trials
+                end
+                if numberOfPartialTrialsLogged == 0 ,
+                    % If no trials logged, and we actually created the data file for the current trial set, delete the file
+                    if self.DidCreateCurrentDataFile_ ,
+                        ws.utility.deleteFileWithoutWarning(originalAbsoluteLogFileName);
                     else
-                        exception = MException('wavesurfer:unableToRenameLogFile', ...
-                                               'Unable to rename data file after abort, because file %s already exists', newLogFileName);
+                        % nothing to do
+                    end
+                else    
+                    % We logged some trials, but maybe not the number number requested.  Check for this, renaming the
+                    % data file if needed.
+                    newLogFileName = self.getTrialSetFileNameForTrialBasedAcquisition_(firstTrialIndex,numberOfPartialTrialsLogged) ;
+                    newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
+                    if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
+                        % This might happen, e.g. if the number of trials is inf
+                        % do nothing.
+                    else
+                        % Check for filename collisions, if that's what user wants
+                        if exist(newAbsoluteLogFileName, 'file') == 2 ,
+                            if self.IsOKToOverwrite ,
+                                % don't need to check anything
+                                % But need to delete pre-existing files, otherwise h5create
+                                % will just add datasets to a pre-existing file.
+                                ws.utility.deleteFileWithoutWarning(newAbsoluteLogFileName);
+                            else
+                                exception = MException('wavesurfer:unableToRenameLogFile', ...
+                                                       'Unable to rename data file after abort, because file %s already exists', newLogFileName);
+                            end
+                        end
+                        % If all is well here, rename the file
+                        if isempty(exception) ,
+                            movefile(originalAbsoluteLogFileName,newAbsoluteLogFileName);
+                        end                
                     end
                 end
-                % If all is well here, rename the file
-                if isempty(exception) ,
-                    movefile(originalAbsoluteLogFileName,newAbsoluteLogFileName);
-                end                
+            else
+                % No data file was created, so nothing to do.
             end
-            
+
             % Now do things common to performance and abortion
             self.didPerformOrAbortExperiment_();
-            
+
             % Now throw that exception, if there was one
             %dbclear all
             if isempty(exception) ,                
@@ -313,15 +353,16 @@ classdef Logging < ws.system.Subsystem
             else
                 throw(exception);
             end            
-        end
+         end  % function
+            
     end
     
     methods (Access=protected)
-        function didPerformOrAbortTrial_(self, wavesurferModel)
-            if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
-                self.NextTrialIndex = self.NextTrialIndex + 1;
-            end
-        end
+%         function didPerformOrAbortTrial_(self, wavesurferModel)
+%             if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
+%                 self.NextTrialIndex = self.NextTrialIndex + 1;
+%             end
+%         end
         
         function didPerformOrAbortExperiment_(self)
             % null-out all the transient things that are only used during
@@ -332,6 +373,8 @@ classdef Logging < ws.system.Subsystem
             self.ExpectedTrialSize_ = [];
             self.WriteToTrialId_ = [];
             self.ChunkSize_ = [];
+            self.DidCreateCurrentDataFile_ = [] ;
+            self.LastTrialIndexForWhichDatasetCreated_ = [] ;
         end
     end
        
@@ -352,7 +395,7 @@ classdef Logging < ws.system.Subsystem
                                 self.WriteToTrialId_), ...
                         rawData, ...
                         [self.CurrentDatasetOffset_ 1], ...
-                        size(rawData));                
+                        size(rawData));
 %                 for idx = 1:numel(inputChannelNames) ,
 %                     thisInputChannelName=inputChannelNames{idx};
 %                     %cdx = find(strcmp(thisInputChannelName,wavesurferObj.Acquisition.ActiveChannels), 1);
