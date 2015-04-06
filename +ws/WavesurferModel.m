@@ -272,11 +272,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if isfloat(value) && isscalar(value) && isnan(value) ,
                 % do nothing
             else            
-                value=self.validatePropArg('ExperimentTrialCount',value);
-                if self.IsTrialBased ,
-                    self.Triggering.willSetExperimentTrialCount();
-                    self.ExperimentTrialCount_ = value;
-                    self.Triggering.didSetExperimentTrialCount();
+                % s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+                %value=self.validatePropArg('ExperimentTrialCount',value);
+                if isnumeric(value) && isscalar(value) && value>=1 && (round(value)==value || isinf(value)) ,
+                    % If get here, value is a valid value for this prop
+                    if self.IsTrialBased ,
+                        self.Triggering.willSetExperimentTrialCount();
+                        self.ExperimentTrialCount_ = value;
+                        self.Triggering.didSetExperimentTrialCount();
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'ExperimentTrialCount must be a (scalar) positive integer, or inf');       
                 end
             end
             self.broadcast('Update');
@@ -453,51 +460,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % depending on the states of the Acquisition, Stimulation, and
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the trial before
-            % calling self.didPerformTrial().  But depending on the
-            % settings, in some cases some of the checks can be skipped.
-            % This function could be compressed, but I like that
-            % it's just a simple tree with simple tests at each if
-            % statement, because it makes it easier to reason about.
+            % calling self.didPerformTrial().
             if self.Stimulation.Enabled ,
-                if self.Triggering.StimulationTriggerScheme.IsExternal ,
-                    % In this case, the trial is done when the acquisition is
-                    % done (But: What if there's a stimulus being delivered
-                    % right now?  What happens to it?  Is this a bug?)
-                    if self.Acquisition.IsArmedOrAcquiring ,
+                if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+                    % acq and stim trig sources are identical
+                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
                     else
                         self.didPerformTrial();
                     end
                 else
-                    % Stim triggering is internal
-                    if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-                        if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-                            % acq and stim trig sources are internal and identical
-                            if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                                % do nothing
-                            else
-                                self.didPerformTrial();
-                            end
-                        else
-                            % acq and stim trig sources are internal, but distinct
-                            % this means the stim trigger basically runs on
-                            % its own until it's done
-                            if self.Acquisition.IsArmedOrAcquiring ,
-                                % do nothing
-                            else
-                                self.didPerformTrial();
-                            end
-                        end
+                    % acq and stim trig sources are distinct
+                    % this means the stim trigger basically runs on
+                    % its own until it's done
+                    if self.Acquisition.IsArmedOrAcquiring ,
+                        % do nothing
                     else
-                        % stim trig internal, acq trig external
-                        % therefore they're distinct
-                        % this means the stim trigger basically runs on
-                        % its own until it's done
-                        if self.Acquisition.IsArmedOrAcquiring ,
-                            % do nothing
-                        else
-                            self.didPerformTrial();
-                        end
+                        self.didPerformTrial();
                     end
                 end
             else
@@ -509,6 +488,68 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end                                    
             end            
         end  % function
+        
+%         function didPerformTrialMaybe(self)
+%             % Either calls self.didPerformTrial(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the trial before
+%             % calling self.didPerformTrial().  But depending on the
+%             % settings, in some cases some of the checks can be skipped.
+%             % This function could be compressed, but I like that
+%             % it's just a simple tree with simple tests at each if
+%             % statement, because it makes it easier to reason about.
+%             if self.Stimulation.Enabled ,
+%                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
+%                     % In this case, the trial is done when the acquisition is
+%                     % done (But: What if there's a stimulus being delivered
+%                     % right now?  What happens to it?  Is this a bug?)
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         self.didPerformTrial();
+%                     end
+%                 else
+%                     % Stim triggering is internal
+%                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
+%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                             % acq and stim trig sources are internal and identical
+%                             if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                                 % do nothing
+%                             else
+%                                 self.didPerformTrial();
+%                             end
+%                         else
+%                             % acq and stim trig sources are internal, but distinct
+%                             % this means the stim trigger basically runs on
+%                             % its own until it's done
+%                             if self.Acquisition.IsArmedOrAcquiring ,
+%                                 % do nothing
+%                             else
+%                                 self.didPerformTrial();
+%                             end
+%                         end
+%                     else
+%                         % stim trig internal, acq trig external
+%                         % therefore they're distinct
+%                         % this means the stim trigger basically runs on
+%                         % its own until it's done
+%                         if self.Acquisition.IsArmedOrAcquiring ,
+%                             % do nothing
+%                         else
+%                             self.didPerformTrial();
+%                         end
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     self.didPerformTrial();
+%                 end                                    
+%             end            
+%         end  % function
         
         function samplesAcquired(self, rawData)
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
@@ -615,6 +656,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function willPerformTrial(self)
             %fprintf('WavesurferModel::willPerformTrial()\n');            
+            %dbstack
             % time between subsequent calls to this
             t=toc(self.FromExperimentStartTicId_);
             %if ~isempty(self.TimeOfLastWillPerformTrial_) ,
@@ -777,6 +819,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function didPerformExperiment(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of experiment event.
+            %fprintf('WavesurferModel::didPerformExperiment()\n');                                    
             assert(self.State ~= ws.ApplicationState.Idle);
             
             self.State = ws.ApplicationState.Idle;

@@ -12,7 +12,7 @@
 #include <memory.h>
 #include <windows.h>
 
-#include "mex.h"
+//#include "mex.h"
 #include "NIDAQmx_mod.h"
 
 // TODO: reference additional headers your program requires here

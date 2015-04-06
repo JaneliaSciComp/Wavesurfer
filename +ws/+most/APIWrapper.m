@@ -134,7 +134,8 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
     end
     
     properties (Constant, Hidden)
-       apiDLLDefaultPath = fullfile(ws.most.idioms.startPath,'windows','system32'); %This is default location for both Win32 and x64 platforms
+       %apiDLLDefaultPath = fullfile(ws.most.idioms.startPath,'windows','system32'); %This is default location for both Win32 and x64 platforms
+       apiDLLDefaultPath = fullfile(getenv('WINDIR'),'system32'); %This is default location for both Win32 and x64 platforms
     end
     
     

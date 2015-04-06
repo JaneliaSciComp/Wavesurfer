@@ -1,8 +1,13 @@
-function positionEditLabelAndUnitsBang(labelGH,editGH,unitsGH,editXOffset,editYOffset,editWidth)
+function positionEditLabelAndUnitsBang(labelGH,editGH,unitsGH,editXOffset,editYOffset,editWidth,fixedLabelWidth)
     % Position the edit at the given position with the given width, and
     % position the label (a text uicontrol) and the units (ditto) on
     % either side.  We assume the units are already set to pixels.
-
+    
+    % Deal with optional args
+    if nargin<7 || isempty(fixedLabelWidth) ,
+        fixedLabelWidth = [] ;
+    end
+    
     % Constants
     widthFromLabelToEdit=4;
     widthFromEditToUnits=3;
@@ -39,7 +44,11 @@ function positionEditLabelAndUnitsBang(labelGH,editGH,unitsGH,editXOffset,editYO
     % Position the label to the left of the edit
     labelExtentFull=get(labelGH,'Extent');
     labelExtent=labelExtentFull(3:4);
-    labelWidth=labelExtent(1)+textPad;
+    if isempty(fixedLabelWidth) ,
+        labelWidth=labelExtent(1)+textPad;
+    else
+        labelWidth=fixedLabelWidth;
+    end
     labelYOffset=editYOffset+labelShimHeight;
     labelXOffset=editXOffset-labelWidth-widthFromLabelToEdit;    
     set(labelGH,'Position',[labelXOffset labelYOffset labelWidth labelHeight], ...

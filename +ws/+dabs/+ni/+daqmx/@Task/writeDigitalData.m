@@ -1,10 +1,14 @@
 % General method for writing digital data to a Task containing one or more digital output Channels
 %% function sampsPerChanWritten = writeDigitalData(task, writeData, timeout, autoStart, numSampsPerChan)
-%   writeData: Data to write to the Channel(s) of this Task. Supplied as matrix, whose columns represent Channels.
+%   writeData: Data to write to the Channel(s) of this Task. Supplied as matrix, whose columns represent Channels, or sets of Channels.
 %              Data should be of one of types: uint8,uint16,uint32,logical, or double.
-%              Data of logical/double type should be supplied as a separate value per line (bit), so that number of rows should equal (# samples) x (# lines/Channel). 
+%              In all cases, number of columns of writeData should equal the number of *channels* (not lines) in the task.
+%              (The number of channels, in this context, is equal to the number of times caller called .createDOChan() on the task.)
+%              Data of logical/double type should be such that:
+%                  Number of rows should equal (# lines/Channel) * (number of scans)
 %                  If multiple Channels are present, (# lines/Channel) value corresponds to Channel with largest # lines.
-%              Data of type uint8/16/32 is supplied to write only one value per sample (per Channel), with the value specifying each of the lines (bits) in a Channel.
+%              Data of type uint8/16/32 should be such that:
+%                  Number of rows in writeData should equal number of scans (a.k.a. number of samples per channel)
 %                  If Channel in Task is 'port-based', the data type used should contain as many bits as the largest port in the Task.
 %                  If Channel in Task is 'line-based', the data type used should contain as many bits as the largest port that any line in Task belongs to
 %                  If Task contains multiple Channels, then the largest data type required by any Channel must be used for all Channels.
@@ -14,7 +18,7 @@
 %
 %   timeout: <OPTIONAL - Default: inf) Time, in seconds, to wait for function to complete read. If 'inf' or < 0, then function will wait indefinitely. A value of 0 indicates to try once to write the submitted samples. If this function successfully writes all submitted samples, it does not return an error. Otherwise, the function returns a timeout error and returns the number of samples actually written.
 %   autoStart: <OPTIONAL - Logical> Logical value specifies whether or not this function automatically starts the task if you do not start it. 
-%              If empty/omitted, true is assumed when writeData is logical/double and false is assumed when writeData is uint8/16/32.
+%              If empty/omitted, true is assumed when the task is configured for on-demand timing, false is assumed otherwise.
 %   numSampsPerChan: <OPTIONAL> Specifies number of samples per channel to write. If omitted/empty, the number of samples is inferred from number of rows in writeData array. 
 %
 %   sampsPerChanWritten: The actual number of samples per channel successfully written to the buffer.
