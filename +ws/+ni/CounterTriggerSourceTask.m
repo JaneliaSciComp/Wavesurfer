@@ -46,17 +46,18 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             end
         end  % function
         
-        function delete(self) 
-            try
-                self.stop();
-            
-                if ~isempty(self.DabsDaqTask_)
-                    delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
-                    self.DabsDaqTask_ = [];
-                end
-            catch me %#ok<NASGU>
-            end
-            
+        function delete(self)
+%             try
+%                 self.stop();
+%             
+%                 if ~isempty(self.DabsDaqTask_)
+%                     delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+%                     self.DabsDaqTask_ = [];
+%                 end
+%             catch me %#ok<NASGU>
+%             end
+            ws.utility.deleteIfValidHandle(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to
+            self.DabsDaqTask_ = [];            
             self.DoneCallback_=[];
         end
         
