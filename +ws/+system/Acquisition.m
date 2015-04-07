@@ -59,7 +59,7 @@ classdef Acquisition < ws.system.Subsystem
     end
 
     properties (Access = protected, Transient=true)
-        AnalogInputTask_ = [];
+        AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
     end    
     
     properties (Access = protected) 

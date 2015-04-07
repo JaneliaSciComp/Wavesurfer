@@ -439,11 +439,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.didPerformTrialMaybe();            
         end  % function
         
-        function stimulationTrialComplete(self)
+        function stimulationEpisodeComplete(self)
             % Called by the stimulation subsystem when it is done outputting
             % the trial
             
-            %fprintf('WavesurferModel::stimulationTrialComplete()\n');
+            %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromExperimentStartTicId_));
             self.didPerformTrialMaybe();
         end  % function
@@ -483,7 +483,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     % do nothing
                 else
                     self.didPerformTrial();
-                end                                    
+                end
             end            
         end  % function
         
@@ -550,6 +550,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %         end  % function
         
         function samplesAcquired(self, rawData)
+            % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
             % time between subsequent calls to this
@@ -604,7 +605,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration)
                 assert(self.ExperimentTrialCount == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
             end
-                        
+            
             % If yoked to scanimage, write to the command file, wait for a
             % response
             if self.IsYokedToScanImage_ && desiredApplicationState==ws.ApplicationState.AcquiringTrialBased,
@@ -690,11 +691,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
+            %% Start the timer that will poll for data and task doneness
+            %self.PollingTimer_.start();
+                        
             % Any system waiting for an internal or external trigger was armed and waiting
             % in the subsystem willPerformTrial() above.
-            %doIncludeTrialStart=(self.ExperimentCompletedTrialCount == 0);
-%             doIncludeTrialStart=true;
-%             self.Triggering.start(self.State, doIncludeTrialStart);
             self.Triggering.startMeMaybe(self.State, self.ExperimentTrialCount, self.ExperimentCompletedTrialCount);            
         end  % function
         
@@ -848,6 +849,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function dataAvailable(self, rawData)
+            % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
+            % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
             nScans=size(rawData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));

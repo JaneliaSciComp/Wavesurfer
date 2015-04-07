@@ -357,20 +357,22 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 if self.AcquisitionUsesASAPTriggering ,
                     % In this case, start the acq & stim trigger tasks on
                     % each trial.
-                    self.startAllDistinctTrialBasedTriggersThenPulseMasterTrigger();
+                    self.startAllDistinctTrialBasedTriggers();
+                    self.pulseMasterTrigger();
                 else
                     % Using "ballistic" triggering
                     if nTrialsCompletedInSet==0 ,
                         % For the first trial in the set, need to start the
                         % acq task (if internal), and also the stim task,
                         % if it's internal but distinct.
-                        self.startAllDistinctTrialBasedTriggersThenPulseMasterTrigger();
+                        self.startAllDistinctTrialBasedTriggers();
+                        self.pulseMasterTrigger();
                     end
                 end
 %             end
         end  % function
 
-        function startAllDistinctTrialBasedTriggersThenPulseMasterTrigger(self)
+        function startAllDistinctTrialBasedTriggers(self)
             triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes) ,
                 thisTriggerScheme=triggerSchemes{idx};
@@ -380,11 +382,17 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 end                    
                 thisTriggerScheme.start();
             end        
-            % Now produce a pulse on the master trigger, which will truly start things
+%             % Now produce a pulse on the master trigger, which will truly start things
+%             self.MasterTriggerDABSTask_.writeDigitalData(true);
+%             self.MasterTriggerDABSTask_.writeDigitalData(false);            
+        end  % function
+
+        function pulseMasterTrigger(self)
+            % Produce a pulse on the master trigger, which will truly start things
             self.MasterTriggerDABSTask_.writeDigitalData(true);
             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
-
+        
 %         function startStimulationTrialBasedTriggerIfDistinct(self)
 %             % Starts the stim trial-based trigger if it's different from
 %             % the acq trial-based one.

@@ -538,7 +538,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 % %                         self.armForEpisode();
 % %                     else
 % %                         self.IsWithinExperiment_ = false;
-% %                         self.Parent.stimulationTrialComplete();
+% %                         self.Parent.stimulationEpisodeComplete();
 % %                     end
 %                     % if first trial, arm.  Otherwise, we handle
 %                     % re-arming independently from the acq trials.
@@ -977,7 +977,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     % both acq and stim are external
                     if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
                         % stim and acq are using same trigger
-                        self.Parent.stimulationTrialComplete();
+                        self.Parent.stimulationEpisodeComplete();
                     else
                         % stim and acq are using distinct external trigger
                         % sources
@@ -995,7 +995,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     % acq trigger scheme is internal
                     if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
                         % stim and acq are using same trigger source
-                        self.Parent.stimulationTrialComplete();
+                        self.Parent.stimulationEpisodeComplete();
                     else
                         % stim and acq are using distinct internal trigger
                         % sources
@@ -1003,7 +1003,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                             self.armForEpisode();
                         else
                             self.IsWithinExperiment_ = false;
-                            self.Parent.stimulationTrialComplete();
+                            self.Parent.stimulationEpisodeComplete();
                         end
                     end
                 else
@@ -1013,7 +1013,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                         self.armForEpisode();
                     else
                         self.IsWithinExperiment_ = false;
-                        self.Parent.stimulationTrialComplete();
+                        self.Parent.stimulationEpisodeComplete();
                     end
                 end
             end
