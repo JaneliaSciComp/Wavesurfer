@@ -83,13 +83,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function delete(self)
             %fprintf('Stimulation::delete()\n');            
             %delete(self.TriggerListener_);
-            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
-                delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-            end
+            % Don't need to explicitly delete tasks, b/c they are ws.ni.OutputTask's, *not* DABS Tasks !!
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
+%                 delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+%             end
             self.TheFiniteAnalogOutputTask_ = [] ;
-            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
-                delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-            end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
+%                 delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+%             end
             self.TheFiniteDigitalOutputTask_ = [] ;
             self.Parent = [] ;
         end
