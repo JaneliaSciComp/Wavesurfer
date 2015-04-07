@@ -70,4 +70,4 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
     
     end  % test methods
 
- end  % classdef
+end  % classdef
