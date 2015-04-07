@@ -311,7 +311,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             if ~isempty(self.CounterTask_) ,
                 self.CounterTask_.stop();
             end
-            delete(self.CounterTask_);  % do we need to explicitly delete?  self.CounterTask_ is not a DABS task...
+            %delete(self.CounterTask_);  % do we need to explicitly delete?  self.CounterTask_ is not a DABS task...
             self.CounterTask_ = [];
         end
         

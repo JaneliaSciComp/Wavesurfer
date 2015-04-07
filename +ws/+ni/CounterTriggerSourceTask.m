@@ -56,6 +56,10 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
 %                 end
 %             catch me %#ok<NASGU>
 %             end
+            try
+                self.stop();
+            catch me %#ok<NASGU>  % would be really nice to make this only catch the specific exceptions we expect to could normally be thrown
+            end                
             ws.utility.deleteIfValidHandle(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to
             self.DabsDaqTask_ = [];            
             self.DoneCallback_=[];
@@ -73,14 +77,14 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             %fprintf('CounterTriggerSourceTask::stop(), CTR %d\n', self.CounterID_);
             %dbstack            
             %stop@ws.ni.TriggerSourceTask(self);
-            if ~isempty(self.DabsDaqTask_)
-                if self.DabsDaqTask_.isTaskDone()
+            if ~isempty(self.DabsDaqTask_) && isvalid(self.DabsDaqTask_) ,
+                if self.DabsDaqTask_.isTaskDoneQuiet()
                     self.DabsDaqTask_.stop();
                 else
                     self.DabsDaqTask_.abort();
                 end
+                self.DabsDaqTask_.doneEventCallbacks = {};
             end
-            self.DabsDaqTask_.doneEventCallbacks = {};
         end
         
         function exportSignal(self, terminalList)
