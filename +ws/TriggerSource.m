@@ -290,10 +290,10 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             self.clear();
             
             self.CounterTask_ = ...
-                ws.ni.CounterTriggerSourceTask(self.DeviceName, ...
+                ws.ni.CounterTriggerSourceTask(self, ...
+                                               self.DeviceName, ...
                                                self.CounterID, ...
-                                               ['Wavesurfer Counter Self Trigger Task ' num2str(self.CounterID)], ...
-                                               @self.doneCallback_);
+                                               ['Wavesurfer Counter Self Trigger Task ' num2str(self.CounterID)]);
             
             self.CounterTask_.RepeatFrequency = 1/interval;
             self.CounterTask_.RepeatCount = repeatCount;
@@ -308,7 +308,10 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
         end
         
         function clear(self)
-            delete(self.CounterTask_);
+            if ~isempty(self.CounterTask_) ,
+                self.CounterTask_.stop();
+            end
+            %delete(self.CounterTask_);  % do we need to explicitly delete?  self.CounterTask_ is not a DABS task...
             self.CounterTask_ = [];
         end
         
@@ -323,10 +326,8 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
 %                 self.CounterTask_.startWhenDone(maxWaitTime);
 %             end
 %         end
-    end  % methods
-        
-    methods (Access=protected)
-        function doneCallback_(self,counterTriggerSourceTask) %#ok<INUSD>
+
+        function counterTriggerSourceTaskDone(self)
             %fprintf('TriggerSource::doneCallback_()\n');
             if ~isempty(self.Parent) ,
                 %feval(self.DoneCallback,self);

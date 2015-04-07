@@ -110,9 +110,8 @@ classdef Acquisition < ws.system.Subsystem
         function delete(self)
             %fprintf('Acquisition::delete()\n');
             %delete(self.TriggerListener_);
-            if ~isempty(self.AnalogInputTask_) && isvalid(self.AnalogInputTask_) ,
-                delete(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-            end
+            %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+              % Don't need this above, b/c self.AnalogInputTask_ is a ws.ni.AnalogInputTask, *not* a DABS Task !!
             self.AnalogInputTask_=[];
             %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);
             self.Parent=[];
@@ -449,7 +448,8 @@ classdef Acquisition < ws.system.Subsystem
         function acquireHardwareResources(self)
             if isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_ = ...
-                    ws.ni.AnalogInputTask(self.DeviceNames{1}, ...
+                    ws.ni.AnalogInputTask(self, ...
+                                          self.DeviceNames{1}, ...
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);
@@ -459,8 +459,8 @@ classdef Acquisition < ws.system.Subsystem
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
-                self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
-                self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
+                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
         end  % function
 
@@ -758,6 +758,13 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
+        function acquisitionTrialComplete(self)
+            self.acquisitionTrialComplete_();
+        end
+        
+        function samplesAcquired(self,rawData)
+            self.samplesAcquired_(rawData);
+        end
         
     end  % methods block
     
@@ -770,7 +777,7 @@ classdef Acquisition < ws.system.Subsystem
             self.IsArmedOrAcquiring = false;            
         end
         
-        function acquisitionTrialComplete_(self, source, event)  %#ok<INUSD>
+        function acquisitionTrialComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             self.IsArmedOrAcquiring = false;
             % TODO If there are multiple acquisition boards, notify only when all are complete.
@@ -783,14 +790,11 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, source, eventData)  %#ok<INUSL>
-            % This is registered as a listener callback on the
-            % AnalogInputTask's SamplesAvailable event
+        function samplesAcquired_(self, rawData)
             %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                rawData = eventData.RawData;  % int16                
                 parent.samplesAcquired(rawData);
             end
             %profile off
