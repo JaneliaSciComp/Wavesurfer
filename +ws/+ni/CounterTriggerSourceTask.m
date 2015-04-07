@@ -1,45 +1,36 @@
 classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributableProperties
         
+    properties (Dependent = true, SetAccess=immutable)
+        Parent
+    end
+
     properties (Dependent = true)
         RepeatCount
         RepeatFrequency
     end
     
     properties (Access = protected)
+        Parent_
+        DeviceName_ = '';  % NI device name to use
+        CounterID_ = 0;  % Index of NI counter (CTR) to use (zero-based)
+        TaskName_ = 'Counter Trigger Source Task';        
         DabsDaqTask_ = []
         RepeatCount_ = 1
         RepeatFrequency_ = 1  % Hz
     end
 
-    properties (Access = private)
-        DeviceName_ = '';  % NI device name to use
-        CounterID_ = 0;  % Index of NI counter (CTR) to use (zero-based)
-        TaskName_ = 'Counter Trigger Source Task';        
-    end
-    
-    properties (Access = protected)
-        DoneCallback_ = [];
-    end
+%     properties (Access = protected)
+%         DoneCallback_ = [];
+%     end
     
     methods
-        function self = CounterTriggerSourceTask(deviceName, counterID, taskName, doneCallback)
-            if nargin > 0
-                self.DeviceName_ = deviceName;
-            end
+        function self = CounterTriggerSourceTask(parent, deviceName, counterID, taskName)            
+            self.Parent_ = parent;
+            self.DeviceName_ = deviceName;
+            self.CounterID_ = counterID;
+            self.TaskName_ = taskName;
             
-            if nargin > 1
-                self.CounterID_ = counterID;
-            end
-            
-            if nargin > 2
-                self.TaskName_ = taskName;
-            end
-            
-            if nargin > 3
-                self.DoneCallback_ = doneCallback;
-            end
-            
-            if ~isempty(self.DeviceName_) && ~isempty(self.CounterID_)
+            if ~isempty(self.DeviceName_) && ~isempty(self.CounterID_) ,
                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_);
                 self.DabsDaqTask_.createCOPulseChanFreq(self.DeviceName_, self.CounterID_, '', self.RepeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', self.RepeatCount);
@@ -62,7 +53,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             end                
             ws.utility.deleteIfValidHandle(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to
             self.DabsDaqTask_ = [];            
-            self.DoneCallback_=[];
+            self.Parent_ = [];
         end
         
         function start(self)
@@ -78,7 +69,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             %dbstack            
             %stop@ws.ni.TriggerSourceTask(self);
             if ~isempty(self.DabsDaqTask_) && isvalid(self.DabsDaqTask_) ,
-                if self.DabsDaqTask_.isTaskDoneQuiet()
+                if self.DabsDaqTask_.isTaskDoneQuiet() ,
                     self.DabsDaqTask_.stop();
                 else
                     self.DabsDaqTask_.abort();
@@ -95,6 +86,10 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             %fprintf('CounterTriggerSourceTask::configureStartTrigger()\n');
             self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), edge.daqmxName());
         end        
+        
+        function value = get.Parent(self)
+            value = self.Parent_;
+        end  % function
         
         function val = get.RepeatCount(self)
             val = self.RepeatCount_;
@@ -131,8 +126,9 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             %fprintf('CounterTriggerSourceTask::triggerDone_()\n');
             self.stop();
             self.DabsDaqTask_.doneEventCallbacks = {};
-            if ~isempty(self.DoneCallback_) ,
-                feval(self.DoneCallback_,self);
+            if ~isempty(self.Parent) && isvalid(self.Parent) ,
+                %feval(self.DoneCallback_,self);
+                self.Parent.counterTriggerSourceTaskDone();
             end
         end
     end
