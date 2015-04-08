@@ -170,7 +170,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function delete(self)
-            %fprintf('WavesurferModel::delete()\n');
+            fprintf('WavesurferModel::delete()\n');
             if ~isempty(self) ,
                 import ws.utility.*
                 %deleteIfValidHandle(self.TrigListener_);
@@ -879,42 +879,45 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
                         
-            % update the current time
-            dt=1/self.Acquisition.SampleRate;
-            self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
-            
-            % Scale the data so that all the subsystems only get the scaled
-            % data
+            if (nScans>0)
+                % update the current time
+                dt=1/self.Acquisition.SampleRate;
+                self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
-            channelScales=self.Acquisition.ActiveChannelScales;
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-            
-            % scale the data by the channel scales
-            if isempty(rawData) ,
-                scaledData=zeros(size(rawData));
-            else
-                data = double(rawData);
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledData=bsxfun(@times,data,combinedScaleFactors); 
-            end
-            
-            % Notify each subsystem that data has just been acquired
-            %T=zeros(1,7);
-            state = self.State_ ;
-            t = self.t_;
-            for idx = 1: numel(self.Subsystems_) ,
-                %tic
-                if self.Subsystems_{idx}.Enabled ,
-                    self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
+                % Scale the data so that all the subsystems only get the scaled
+                % data
+
+                channelScales=self.Acquisition.ActiveChannelScales;
+                inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+
+                % scale the data by the channel scales
+                if isempty(rawData) ,
+                    scaledData=zeros(size(rawData));
+                else
+                    data = double(rawData);
+                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                    scaledData=bsxfun(@times,data,combinedScaleFactors); 
                 end
-                %T(idx)=toc;
+
+
+                % Notify each subsystem that data has just been acquired
+                %T=zeros(1,7);
+                state = self.State_ ;
+                t = self.t_;
+                for idx = 1: numel(self.Subsystems_) ,
+                    %tic
+                    if self.Subsystems_{idx}.Enabled ,
+                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
+                    end
+                    %T(idx)=toc;
+                end
+                %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
+
+                self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + nScans;
+
+                %self.broadcast('DataAvailable');
+                self.callUserFunctionsAndBroadcastEvent('DataAvailable');
             end
-            %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
-            
-            self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + size(data, 1);
-            
-            %self.broadcast('DataAvailable');
-            self.callUserFunctionsAndBroadcastEvent('DataAvailable');
         end  % function
         
     end % protected methods block
