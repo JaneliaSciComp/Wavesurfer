@@ -1469,9 +1469,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
 
     methods
-        function aboutToPulseMasterTrigger(self)
-            self.PollingTimer_.TimerFcn = @(timer,timerStruct)(self.pollingTimerFired_()) ;
-            self.PollingTimer_.ErrorFcn = @(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)) ;
+        function triggeringSubsystemIsAboutToStartFirstTrialInExperiment(self)
+            % This means we need to start the polling timer
+            self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
+            self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
             start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
         end
     end
@@ -1488,10 +1489,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
         end
         
-        function pollingTimerErrored_(self,timerStruct)
+        function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
             fprintf('WavesurferModel::pollTimerErrored()\n');
-            timerStruct
-            timerStruct.Data            
+            %eventData
+            %eventData.Data            
             self.didAbortTrial();  % Put an end to the trialset
             error('waversurfer:pollingTimerError',...
                   'The polling timer had a problem.  Acquisition aborted.');

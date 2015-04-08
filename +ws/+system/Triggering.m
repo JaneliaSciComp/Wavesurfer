@@ -345,33 +345,41 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
             % whether we start the triggers for each trial, or only for the
             % first trial.
-%             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
-%                 % Only start if this is the first trial in the set.
-%                 if nTrialsCompletedInSet==0 ,
-%                     self.ContinuousModeTriggerScheme.start();
-%                 end
-%             else
-                % Trial-based acquisition
-                % if ASAP triggering, start for each trial.  If not, only
-                % start the acq
-                if self.AcquisitionUsesASAPTriggering ,
-                    % In this case, start the acq & stim trigger tasks on
-                    % each trial.
+            
+            % Start the trigger tasks, if appropriate
+            if self.AcquisitionUsesASAPTriggering ,
+                % In this case, start the acq & stim trigger tasks on
+                % each trial.
+                self.startAllDistinctTrialBasedTriggers();
+            else
+                % Using "ballistic" triggering
+                if nTrialsCompletedInSet==0 ,
+                    % For the first trial in the set, need to start the
+                    % acq task (if internal), and also the stim task,
+                    % if it's internal but distinct.
                     self.startAllDistinctTrialBasedTriggers();
-                    self.Parent.aboutToPulseMasterTrigger();
-                    self.pulseMasterTrigger();
-                else
-                    % Using "ballistic" triggering
-                    if nTrialsCompletedInSet==0 ,
-                        % For the first trial in the set, need to start the
-                        % acq task (if internal), and also the stim task,
-                        % if it's internal but distinct.
-                        self.startAllDistinctTrialBasedTriggers();
-                        self.Parent.aboutToPulseMasterTrigger();
-                        self.pulseMasterTrigger();
-                    end
                 end
-%             end
+            end
+                
+            % Notify the WSM
+            if nTrialsCompletedInSet==0 ,
+                self.Parent.triggeringSubsystemIsAboutToStartFirstTrialInExperiment();
+            end
+            
+            % Pulse the master trigger, if appropriate
+            if self.AcquisitionUsesASAPTriggering ,
+                % In this case, start the acq & stim trigger tasks on
+                % each trial.
+                self.pulseMasterTrigger();
+            else
+                % Using "ballistic" triggering
+                if nTrialsCompletedInSet==0 ,
+                    % For the first trial in the set, need to start the
+                    % acq task (if internal), and also the stim task,
+                    % if it's internal but distinct.
+                    self.pulseMasterTrigger();
+                end
+            end
         end  % function
 
         function startAllDistinctTrialBasedTriggers(self)
