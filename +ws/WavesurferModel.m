@@ -156,13 +156,19 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
 
             % Create a timer object to poll during acquisition/stimulation
+            % We can't set the callbacks here, b/c timers don't seem to behave like other objects for the purposes of
+            % object destruction.  If the polling timer has callbacks that point at the WavesurferModel, and the WSM
+            % points at the polling timer (as it will), then that seems to function as a reference loop that Matlab
+            % can't figure out is reclaimable b/c it's not refered to anywhere.  So we set the callbacks just before we
+            % start the timer, and we clear them just after we stop the timer.  This seems to solve the problem, and the
+            % WSM gets deleted once there are no more references to it.
             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
                                        'ExecutionMode','fixedSpacing', ...
                                        'Period',0.050, ...
                                        'BusyMode','drop', ...
-                                       'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
-                                       'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
                                        'ObjectVisibility','off');
+            %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
+            %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -842,6 +848,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             assert(self.State ~= ws.ApplicationState.Idle);
             
             stop(self.PollingTimer_);
+            self.PollingTimer_.TimerFcn = [] ;
+            self.PollingTimer_.ErrorFcn = [] ;
 
             self.State = ws.ApplicationState.Idle;
             
@@ -860,6 +868,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
             
             stop(self.PollingTimer_);
+            self.PollingTimer_.TimerFcn = [] ;
+            self.PollingTimer_.ErrorFcn = [] ;
             
             self.State = ws.ApplicationState.Idle;
             
@@ -1460,6 +1470,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
     methods
         function aboutToPulseMasterTrigger(self)
+            self.PollingTimer_.TimerFcn = @(timer,timerStruct)(self.pollingTimerFired_()) ;
+            self.PollingTimer_.ErrorFcn = @(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)) ;
             start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
         end
     end
