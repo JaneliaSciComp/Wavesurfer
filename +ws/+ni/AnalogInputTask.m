@@ -464,12 +464,18 @@ classdef AnalogInputTask < handle
         function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
             nScansAvailable = self.getNScansAvailable();
             if (nScansAvailable >= self.NScansPerDataAvailableCallback) ,
-                rawData = self.DabsDaqTask_.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+                %rawData = self.DabsDaqTask_.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+                rawData = self.DabsDaqTask_.readAnalogData(nScansAvailable,'native') ;  % rawData is int16            
                 self.Parent.samplesAcquired(rawData);
             end
             % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
             % gets done?
             if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                % Get data one last time, to make sure we get it all
+                nScansAvailable = self.getNScansAvailable();
+                rawData = self.DabsDaqTask_.readAnalogData(nScansAvailable,'native') ;  % rawData is int16                           
+                self.Parent.samplesAcquired(rawData);                
+                % Stop task, notify parent
                 self.DabsDaqTask_.stop();
                 self.Parent.acquisitionTrialComplete();
             end                
