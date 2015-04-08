@@ -131,16 +131,16 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Access = protected)
-        function taskDone_(self, ~, ~)
-            % Called "from below" when the task completes
-            %fprintf('CounterTriggerSourceTask::triggerDone_()\n');
-            self.stop();
-            %self.DabsDaqTask_.doneEventCallbacks = {};
-            if ~isempty(self.Parent) && isvalid(self.Parent) ,
-                %feval(self.DoneCallback_,self);
-                self.Parent.counterTriggerSourceTaskDone();
-            end
-        end
-    end
+%     methods (Access = protected)
+%         function taskDone_(self, ~, ~)
+%             % Called "from below" when the task completes
+%             %fprintf('CounterTriggerSourceTask::triggerDone_()\n');
+%             self.stop();
+%             %self.DabsDaqTask_.doneEventCallbacks = {};
+%             if ~isempty(self.Parent) && isvalid(self.Parent) ,
+%                 %feval(self.DoneCallback_,self);
+%                 self.Parent.counterTriggerSourceTaskDone();
+%             end
+%         end
+%     end
 end

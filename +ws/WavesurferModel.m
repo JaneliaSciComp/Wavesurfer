@@ -724,7 +724,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function didPerformTrial(self)
-            %fprintf('WavesurferModel::didPerformTrial()\n');
+            fprintf('WavesurferModel::didPerformTrial()\n');
             %dbstack
             
             % Notify all the subsystems that the trial is done

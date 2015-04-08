@@ -840,7 +840,9 @@ classdef Acquisition < ws.system.Subsystem
             timeSinceLastPollingTimerFire = timeSinceTrialStart-self.TimeOfLastPollingTimerFire_; %#ok<NASGU>
 
             % Call the task to do the real work
-            self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart);
+            if self.IsArmedOrAcquiring ,
+                self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart);
+            end
             
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart;

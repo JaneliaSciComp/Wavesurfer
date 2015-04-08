@@ -453,8 +453,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function didPerformExperiment(self, ~)
             %fprintf('Stimulation::didPerformExperiment()\n');
-%             self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
-%             self.TheFiniteAnalogOutputTask_.unreserve();
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();
             
@@ -465,9 +463,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function didAbortExperiment(self, ~)
             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-%                 self.TheFiniteAnalogOutputTask_.unregisterCallbacks();
-%                 self.TheFiniteAnalogOutputTask_.unreserve();
                 self.TheFiniteAnalogOutputTask_.disarm();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) ,
                 self.TheFiniteDigitalOutputTask_.disarm();
             end
             
@@ -1036,11 +1034,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     methods
         function pollingTimerFired(self,timeSinceTrialStart)
             % Call the task to do the real work
-            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceTrialStart);
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-                self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceTrialStart);
+            if self.IsArmedOrStimulating_ ,
+                if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+                    self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceTrialStart);
+                end
+                if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
+                    self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceTrialStart);
+                end
             end
         end
     end

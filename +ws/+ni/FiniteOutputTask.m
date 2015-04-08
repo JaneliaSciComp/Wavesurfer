@@ -302,8 +302,11 @@ classdef FiniteOutputTask < handle
                     % Unregister callbacks
                     %self.DabsDaqTask_.doneEventCallbacks = {};
 
-                    % Unreserve resources
-                    self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
+                    % Abort the task
+                    self.DabsDaqTask_.abort();
+                    
+                    % Unreserve resources (abort should do this for us)
+                    %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
                 end
                 
                 % Note that we are now disarmed
@@ -331,30 +334,30 @@ classdef FiniteOutputTask < handle
         end  % function
     end  % public methods
     
-    methods (Access = protected)        
-        function taskDone_(self, ~, ~)
-            % Called "from below" when the task completes
-            
-            % For a successful capture, this class is responsible for stopping the task when
-            % it is done.  For external clients to interrupt a running task, use the abort()
-            % method on the Output object.
-            %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
-            self.DabsDaqTask_.stop();
-            
-            % Fire the event before unregistering the callback functions.  At the end of a
-            % script the DAQmx callbacks may be the only references preventing the object
-            % from deleting before the events are sent/complete.
-            parent = self.Parent ;
-            if ~isempty(parent) && isvalid(parent) ,                
-                if self.IsAnalog ,
-                    parent.analogEpisodeCompleted();
-                else
-                    parent.digitalEpisodeCompleted();
-                end
-            end
-            %self.notify('OutputComplete');
-        end  % function        
-    end  % protected methods block
+%     methods (Access = protected)        
+%         function taskDone_(self, ~, ~)
+%             % Called "from below" when the task completes
+%             
+%             % For a successful capture, this class is responsible for stopping the task when
+%             % it is done.  For external clients to interrupt a running task, use the abort()
+%             % method on the Output object.
+%             %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
+%             self.DabsDaqTask_.stop();
+%             
+%             % Fire the event before unregistering the callback functions.  At the end of a
+%             % script the DAQmx callbacks may be the only references preventing the object
+%             % from deleting before the events are sent/complete.
+%             parent = self.Parent ;
+%             if ~isempty(parent) && isvalid(parent) ,                
+%                 if self.IsAnalog ,
+%                     parent.analogEpisodeCompleted();
+%                 else
+%                     parent.digitalEpisodeCompleted();
+%                 end
+%             end
+%             %self.notify('OutputComplete');
+%         end  % function        
+%     end  % protected methods block
     
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)

@@ -490,27 +490,27 @@ classdef AnalogInputTask < handle
         end  % function
     end  % methods
     
-    methods (Access = protected)
-        function nSamplesAvailable_(self, source, event) %#ok<INUSD>
-            % This is called "from below" when data is available.
-            %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-            rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
-            %eventData = ws.ni.SamplesAvailableEventData(rawData) ;
-            %self.notify('SamplesAvailable', eventData);
-            self.Parent.samplesAcquired(rawData);
-        end  % function
-        
-        function taskDone_(self, source, event) %#ok<INUSD>
-            % This is called "from below" when the NI task is done.
-            %fprintf('AnalogInputTask::taskDone_()\n');
-
-            % Stop the task (have to do this, wven though it's done).
-            self.DabsDaqTask_.stop();
-
-            % Notify the parent
-            %self.notify('AcquisitionComplete');
-            self.Parent.acquisitionTrialComplete();
-        end  % function
-    end  % protected methods block
+%     methods (Access = protected)
+%         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
+%             % This is called "from below" when data is available.
+%             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
+%             rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+%             %eventData = ws.ni.SamplesAvailableEventData(rawData) ;
+%             %self.notify('SamplesAvailable', eventData);
+%             self.Parent.samplesAcquired(rawData);
+%         end  % function
+%         
+%         function taskDone_(self, source, event) %#ok<INUSD>
+%             % This is called "from below" when the NI task is done.
+%             %fprintf('AnalogInputTask::taskDone_()\n');
+% 
+%             % Stop the task (have to do this, wven though it's done).
+%             self.DabsDaqTask_.stop();
+% 
+%             % Notify the parent
+%             %self.notify('AcquisitionComplete');
+%             self.Parent.acquisitionTrialComplete();
+%         end  % function
+%     end  % protected methods block
 end
 
