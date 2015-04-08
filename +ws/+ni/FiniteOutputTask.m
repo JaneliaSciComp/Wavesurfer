@@ -280,7 +280,7 @@ classdef FiniteOutputTask < handle
                 % do nothing
             else
                 % Set up callbacks
-                self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
+                %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
@@ -300,7 +300,7 @@ classdef FiniteOutputTask < handle
                     % do nothing
                 else
                     % Unregister callbacks
-                    self.DabsDaqTask_.doneEventCallbacks = {};
+                    %self.DabsDaqTask_.doneEventCallbacks = {};
 
                     % Unreserve resources
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
@@ -309,7 +309,22 @@ classdef FiniteOutputTask < handle
                 % Note that we are now disarmed
                 self.IsArmed_ = false;
             end
-        end  % function                
+        end  % function   
+        
+        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+            fprintf('FiniteOutputTask::pollingTimerFired()\n');
+            if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                self.DabsDaqTask_.stop();
+                parent = self.Parent ;
+                if ~isempty(parent) && isvalid(parent) ,
+                    if self.IsAnalog ,
+                        parent.analogEpisodeCompleted();
+                    else
+                        parent.digitalEpisodeCompleted();
+                    end
+                end
+            end
+        end  % function
     end  % public methods
     
     methods (Access = protected)        

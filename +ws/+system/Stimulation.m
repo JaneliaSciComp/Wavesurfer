@@ -949,25 +949,25 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
 
         function analogEpisodeCompleted_(self)
-            %fprintf('Stimulation::analogEpisodeCompleted_()\n');
+            fprintf('Stimulation::analogEpisodeCompleted_()\n');
             self.DidAnalogEpisodeComplete_ = true ;
             if self.DidDigitalEpisodeComplete_ ,
                 self.analogAndDigitalEpisodesCompleted_();
             end
-        end
+        end  % function
         
         function digitalEpisodeCompleted_(self)
-            %fprintf('Stimulation::digitalEpisodeCompleted_()\n');
+            fprintf('Stimulation::digitalEpisodeCompleted_()\n');
             self.DidDigitalEpisodeComplete_ = true ;
             if self.DidAnalogEpisodeComplete_ ,
                 self.analogAndDigitalEpisodesCompleted_();
             end            
-        end       
+        end  % function       
         
         function analogAndDigitalEpisodesCompleted_(self)
             % Called from "below" when a single episode of stimulation is
             % completed.  
-            %fprintf('Stimulation::analogAndDigitalEpisodesCompleted_()\n');
+            fprintf('Stimulation::analogAndDigitalEpisodesCompleted_()\n');
             self.IsArmedOrStimulating_ = false;
             self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
             
@@ -1037,5 +1037,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 
         end  % function
     end  % class methods block
+    
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Call the task to do the real work
+            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+                self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceTrialStart);
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
+                self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceTrialStart);
+            end
+        end
+    end
     
 end  % classdef

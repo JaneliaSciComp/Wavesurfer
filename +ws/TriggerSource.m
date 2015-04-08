@@ -333,9 +333,15 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
                 %feval(self.DoneCallback,self);
                 self.Parent.triggerSourceDone(self);
             end
+        end        
+    end  % public methods
+    
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Call the task to do the real work            
+            self.CounterTask_.pollingTimerFired(timeSinceTrialStart);
         end
-        
-    end
+    end    
     
     methods (Access=protected)        
         function out = getPropertyValue(self, name)

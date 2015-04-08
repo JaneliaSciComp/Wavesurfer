@@ -87,6 +87,7 @@ classdef Acquisition < ws.system.Subsystem
         IndexOfLastScanInCache_ = [];
         NScansFromLatestCallback_
         IsAllDataInCacheValid_
+        TimeOfLastPollingTimerFire_
     end    
     
     events 
@@ -546,11 +547,7 @@ classdef Acquisition < ws.system.Subsystem
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
-%             if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
-%                 self.AnalogInputTask_.arm();
-%             else
-%                 %self.AnalogInputTask_.reset();  % this doesn't actually do anything for a FiniteAnalogInputTask...
-%             end                
+            self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
             self.AnalogInputTask_.start();
         end  % function
         
@@ -760,11 +757,11 @@ classdef Acquisition < ws.system.Subsystem
         
         function acquisitionTrialComplete(self)
             self.acquisitionTrialComplete_();
-        end
+        end  % function
         
         function samplesAcquired(self,rawData)
             self.samplesAcquired_(rawData);
-        end
+        end  % function
         
     end  % methods block
     
@@ -775,7 +772,7 @@ classdef Acquisition < ws.system.Subsystem
                 self.AnalogInputTask_.disarm();
             end            
             self.IsArmedOrAcquiring = false;            
-        end
+        end  % function
         
         function acquisitionTrialComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
@@ -809,8 +806,7 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();
-        
+        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
@@ -834,6 +830,19 @@ classdef Acquisition < ws.system.Subsystem
         function setPropertyValue(self, name, value)
             self.(name) = value;
         end  % function
+    end
+    
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Determine the time since the last undropped timer fire
+            timeSinceLastPollingTimerFire = timeSinceTrialStart-self.TimeOfLastPollingTimerFire_; %#ok<NASGU>
+
+            % Call the task to do the real work
+            self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart);
+            
+            % Prepare for next time            
+            self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart;
+        end
     end
     
 end  % classdef

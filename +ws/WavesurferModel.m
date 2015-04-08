@@ -88,9 +88,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         t_
         TrialAcqSampleCount_
         FromExperimentStartTicId_
+        FromTrialStartTicId_
         TimeOfLastWillPerformTrial_        
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceExperimentStart_ = 0
+        PollingTimer_
     end
     
     events
@@ -153,6 +155,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
             %self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
 
+            % Create a timer object to poll during acquisition/stimulation
+            self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
+                                       'ExecutionMode','fixedRate', ...
+                                       'Period',0.100, ...
+                                       'BusyMode','drop', ...
+                                       'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
+                                       'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
+                                       'ObjectVisibility','off');
+            
             % The object is now initialized, but not very useful until an
             % MDF is specified.
             self.State = ws.ApplicationState.NoMDF;
@@ -602,7 +613,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('WavesurferModel::willPerformExperiment()\n');                        
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
-            if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration)
+            if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration) 
                 assert(self.ExperimentTrialCount == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
             end
             
@@ -690,7 +701,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     me.rethrow();
                 end
             end
-            
+
+            % Set the trial timer
+            self.FromTrialStartTicId_=tic();
+
             %% Start the timer that will poll for data and task doneness
             %self.PollingTimer_.start();
                         
@@ -818,9 +832,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function didPerformExperiment(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of experiment event.
-            %fprintf('WavesurferModel::didPerformExperiment()\n');                                    
+            fprintf('WavesurferModel::didPerformExperiment()\n');                                    
+            dbstack
+            fprintf('\n\n');                                                
             assert(self.State ~= ws.ApplicationState.Idle);
             
+            stop(self.PollingTimer_);
+
             self.State = ws.ApplicationState.Idle;
             
             for idx = 1: numel(self.Subsystems_)
@@ -836,6 +854,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if nargin < 2 ,
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
+            
+            stop(self.PollingTimer_);
             
             self.State = ws.ApplicationState.Idle;
             
@@ -1429,6 +1449,32 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.AbsoluteUserSettingsFileName=newValue;
             self.broadcast('DidSetAbsoluteUserSettingsFileName');
         end
+    end
+
+    methods
+        function aboutToPulseMasterTrigger(self)
+            start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
+        end
+    end
+    
+    methods (Access=protected)        
+        function pollingTimerFired_(self)
+            fprintf('WavesurferModel::pollTimerFired()\n');
+            timeSinceTrialStart = toc(self.FromTrialStartTicId_);
+            self.Acquisition.pollingTimerFired(timeSinceTrialStart);
+            self.Stimulation.pollingTimerFired(timeSinceTrialStart);
+            self.Triggering.pollingTimerFired(timeSinceTrialStart);
+            %self.Display.pollingTimerFired(timeSinceTrialStart);
+            %self.Logging.pollingTimerFired(timeSinceTrialStart);
+            %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
+        end
+        
+        function pollingTimerErrored_(self,timerStruct)  %#ok<INUSD>
+            fprintf('WavesurferModel::pollTimerErrored()\n');
+            self.didAbortTrial();  % Put an end to the trialset
+            error('waversurfer:pollingTimerError',...
+                  'The polling timer had a problem.  Acquisition aborted.');
+        end        
     end
     
 end  % classdef

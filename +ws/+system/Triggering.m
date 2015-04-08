@@ -358,6 +358,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                     % In this case, start the acq & stim trigger tasks on
                     % each trial.
                     self.startAllDistinctTrialBasedTriggers();
+                    self.Parent.aboutToPulseMasterTrigger();
                     self.pulseMasterTrigger();
                 else
                     % Using "ballistic" triggering
@@ -366,6 +367,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                         % acq task (if internal), and also the stim task,
                         % if it's internal but distinct.
                         self.startAllDistinctTrialBasedTriggers();
+                        self.Parent.aboutToPulseMasterTrigger();
                         self.pulseMasterTrigger();
                     end
                 end
@@ -793,4 +795,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
     end  % class methods block
         
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Call the task to do the real work
+            self.AcquisitionTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+            self.StimulationTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+        end
+    end    
 end

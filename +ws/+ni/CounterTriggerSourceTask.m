@@ -59,7 +59,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         function start(self)
             %fprintf('CounterTriggerSourceTask::start(), CTR %d\n',self.CounterID_);
             if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.doneEventCallbacks = {@self.triggerDone_};
+                %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
                 self.DabsDaqTask_.start();
             end
         end
@@ -74,7 +74,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
                 else
                     self.DabsDaqTask_.abort();
                 end
-                self.DabsDaqTask_.doneEventCallbacks = {};
+                %self.DabsDaqTask_.doneEventCallbacks = {};
             end
         end
         
@@ -113,7 +113,18 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             self.RepeatFrequency_ = newValue;
             self.DabsDaqTask_.channels(1).set('pulseFreq', newValue);
         end        
-    end
+        
+        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+            if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                self.stop();  % probably better to do self.DabsDaqTask_.stop() here...
+                %self.DabsDaqTask_.doneEventCallbacks = {};
+                if ~isempty(self.Parent) && isvalid(self.Parent) ,
+                    %feval(self.DoneCallback_,self);
+                    self.Parent.counterTriggerSourceTaskDone();
+                end
+            end
+        end  % function
+    end  % public methods
 
     % Abstract property realizations (ws.most.Model)
     properties (Hidden, SetAccess = protected)
@@ -121,11 +132,11 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
     end
     
     methods (Access = protected)
-        function triggerDone_(self, ~, ~)
+        function taskDone_(self, ~, ~)
             % Called "from below" when the task completes
             %fprintf('CounterTriggerSourceTask::triggerDone_()\n');
             self.stop();
-            self.DabsDaqTask_.doneEventCallbacks = {};
+            %self.DabsDaqTask_.doneEventCallbacks = {};
             if ~isempty(self.Parent) && isvalid(self.Parent) ,
                 %feval(self.DoneCallback_,self);
                 self.Parent.counterTriggerSourceTaskDone();
