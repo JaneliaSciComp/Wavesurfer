@@ -157,8 +157,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
             % Create a timer object to poll during acquisition/stimulation
             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
-                                       'ExecutionMode','fixedRate', ...
-                                       'Period',0.100, ...
+                                       'ExecutionMode','fixedSpacing', ...
+                                       'Period',0.050, ...
                                        'BusyMode','drop', ...
                                        'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
                                        'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
@@ -174,6 +174,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if ~isempty(self) ,
                 import ws.utility.*
                 %deleteIfValidHandle(self.TrigListener_);
+                if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
+                    delete(self.PollingTimer_);
+                    self.PollingTimer_ = [] ;
+                end
                 deleteIfValidHandle(self.Acquisition);
                 deleteIfValidHandle(self.Stimulation);
                 deleteIfValidHandle(self.Display);
@@ -446,7 +450,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function acquisitionTrialComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % trial.
-            %fprintf('WavesurferModel::acquisitionTrialComplete()\n');
+            fprintf('WavesurferModel::acquisitionTrialComplete()\n');
             self.didPerformTrialMaybe();            
         end  % function
         
@@ -1459,7 +1463,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     methods (Access=protected)        
         function pollingTimerFired_(self)
-            fprintf('WavesurferModel::pollTimerFired()\n');
+            fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);
             self.Acquisition.pollingTimerFired(timeSinceTrialStart);
             self.Stimulation.pollingTimerFired(timeSinceTrialStart);
@@ -1469,8 +1473,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
         end
         
-        function pollingTimerErrored_(self,timerStruct)  %#ok<INUSD>
+        function pollingTimerErrored_(self,timerStruct)
             fprintf('WavesurferModel::pollTimerErrored()\n');
+            timerStruct
+            timerStruct.Data            
             self.didAbortTrial();  % Put an end to the trialset
             error('waversurfer:pollingTimerError',...
                   'The polling timer had a problem.  Acquisition aborted.');

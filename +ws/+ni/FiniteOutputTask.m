@@ -312,15 +312,19 @@ classdef FiniteOutputTask < handle
         end  % function   
         
         function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
-            fprintf('FiniteOutputTask::pollingTimerFired()\n');
-            if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                self.DabsDaqTask_.stop();
-                parent = self.Parent ;
-                if ~isempty(parent) && isvalid(parent) ,
-                    if self.IsAnalog ,
-                        parent.analogEpisodeCompleted();
-                    else
-                        parent.digitalEpisodeCompleted();
+            %fprintf('FiniteOutputTask::pollingTimerFired()\n');
+            if isempty(self.DabsDaqTask_)
+                % This means there are no channels, so nothing to do
+            else
+                if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                    self.DabsDaqTask_.stop();
+                    parent = self.Parent ;
+                    if ~isempty(parent) && isvalid(parent) ,
+                        if self.IsAnalog ,
+                            parent.analogEpisodeCompleted();
+                        else
+                            parent.digitalEpisodeCompleted();
+                        end
                     end
                 end
             end

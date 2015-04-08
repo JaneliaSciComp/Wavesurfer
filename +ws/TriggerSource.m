@@ -338,8 +338,10 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
     
     methods
         function pollingTimerFired(self,timeSinceTrialStart)
-            % Call the task to do the real work            
-            self.CounterTask_.pollingTimerFired(timeSinceTrialStart);
+            % Call the task to do the real work
+            if ~isempty(self.CounterTask_) ,
+                self.CounterTask_.pollingTimerFired(timeSinceTrialStart);
+            end
         end
     end    
     

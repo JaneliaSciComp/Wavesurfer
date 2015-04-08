@@ -295,6 +295,8 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
         
         function self=dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSD>
+            fprintf('Display::dataAvailable()\n');
+            dbstack
             %T=zeros(4,1);
             %ticId=tic();            
             if self.prvClearOnNextData
