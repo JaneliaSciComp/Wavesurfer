@@ -513,7 +513,7 @@ classdef Acquisition < ws.system.Subsystem
                 numIncrements = floor(self.Duration/displayDuration);
                 assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
                        self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
-                    'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
+                       'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
             end
             
@@ -656,6 +656,8 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
+            % Called "from above" when data is available.  When called, we update
+            % our main-memory data cache with the newly available data.
             self.LatestData_ = scaledData ;
             self.LatestRawData_ = rawData ;
             if state == ws.ApplicationState.AcquiringContinuously ,

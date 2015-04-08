@@ -1451,7 +1451,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
         end  % function
     end        
-        
+    
     methods
         function set.AbsoluteProtocolFileName(self,newValue)
             % SetAccess is protected, no need for checks here
