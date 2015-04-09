@@ -1507,7 +1507,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
-            fprintf('WavesurferModel::pollTimerErrored()\n');
+            %fprintf('WavesurferModel::pollTimerErrored()\n');
             %eventData
             %eventData.Data            
             self.didAbortTrial();  % Put an end to the trialset
