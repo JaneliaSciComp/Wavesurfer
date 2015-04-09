@@ -648,8 +648,14 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             % update the DOs
             digitalPhysicalChannelNames = model.Stimulation.DigitalPhysicalChannelNames ;
             channelNames=model.Stimulation.DigitalChannelNames;
+            isTimed=model.Stimulation.IsDigitalChannelTimed;
             for i=1:nDOs ,
                 set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',digitalPhysicalChannelNames{i},channelNames{i}));                
+                if isTimed(i)==1
+                  set(self.DOIsOnRadiobuttons(i),'enable','off');
+                else
+                  set(self.DOIsOnRadiobuttons(i),'enable','on');
+                end
             end
             
         end  % function        
