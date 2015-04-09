@@ -378,15 +378,21 @@ classdef Acquisition < ws.system.Subsystem
         function set.Duration(self, value)
             %fprintf('Acquisition::set.Duration()\n');
             %dbstack
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg(value,'Duration');
-            self.Parent.willSetAcquisitionDuration();
-            if ~isempty(self.AnalogInputTask_)
-                self.AnalogInputTask_.AcquisitionDuration = value;
-            end            
-            self.Duration_ = value;
-            self.stimulusMapDurationPrecursorMayHaveChanged();
-            self.Parent.didSetAcquisitionDuration();
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.Parent.willSetAcquisitionDuration();
+                    if ~isempty(self.AnalogInputTask_)
+                        self.AnalogInputTask_.AcquisitionDuration = valueToSet;
+                    end            
+                    self.Duration_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.Parent.didSetAcquisitionDuration();
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Duration must be a (scalar) positive finite value');
+                end
+            end
         end  % function
         
         function out = get.ExpectedScanCount(self)
@@ -817,7 +823,7 @@ classdef Acquisition < ws.system.Subsystem
             s = ws.system.Subsystem.propertyAttributes();
 
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.Duration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+            %s.Duration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
 
         end  % function

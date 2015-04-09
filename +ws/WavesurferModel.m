@@ -165,8 +165,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % start the timer, and we clear them just after we stop the timer.  This seems to solve the problem, and the
             % WSM gets deleted once there are no more references to it.
             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
-                                       'ExecutionMode','fixedSpacing', ...
-                                       'Period',0.010, ...
+                                       'ExecutionMode','fixedRate', ...
+                                       'Period',0.100, ...
                                        'BusyMode','drop', ...
                                        'ObjectVisibility','off');
             %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
@@ -178,7 +178,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function delete(self)
-            fprintf('WavesurferModel::delete()\n');
+            %fprintf('WavesurferModel::delete()\n');
             if ~isempty(self) ,
                 import ws.utility.*
                 %deleteIfValidHandle(self.TrigListener_);
@@ -327,11 +327,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 return
             end
             
-            % Throw if an invalid value
-            newValue=self.validatePropArg('TrialDuration',newValue);
+            % Check value and set if valid
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                % If get here, newValue is a valid value for this prop
+                self.Acquisition.Duration = newValue;
+            else
+                error('most:Model:invalidPropVal', ...
+                      'TrialDuration must be a (scalar) positive finite value');
+            end
             
-            % Set the underlying thing, if we get this far
-            self.Acquisition.Duration = newValue;
+%             % Throw if an invalid value
+%             newValue=self.validatePropArg('TrialDuration',newValue);
+%             
+%             % Set the underlying thing, if we get this far
+%             self.Acquisition.Duration = newValue;
         end  % function
         
         function value=get.IsTrialBased(self)
@@ -458,7 +467,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function acquisitionTrialComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % trial.
-            fprintf('WavesurferModel::acquisitionTrialComplete()\n');
+            %fprintf('WavesurferModel::acquisitionTrialComplete()\n');
             self.didPerformTrialMaybe();            
         end  % function
         
@@ -730,7 +739,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function didPerformTrial(self)
-            fprintf('WavesurferModel::didPerformTrial()\n');
+            %fprintf('WavesurferModel::didPerformTrial()\n');
             %dbstack
             
             % Notify all the subsystems that the trial is done
@@ -848,9 +857,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function didPerformExperiment(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of experiment event.
-            fprintf('WavesurferModel::didPerformExperiment()\n');                                    
-            dbstack
-            fprintf('\n\n');                                                
+            %fprintf('WavesurferModel::didPerformExperiment()\n');                                    
+            %dbstack
+            %fprintf('\n\n');                                                
             assert(self.State ~= ws.ApplicationState.Idle);
             
             stop(self.PollingTimer_);
@@ -1356,9 +1365,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     methods (Static)
         function s = propertyAttributes()
             s = struct();
-
-            s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-            s.TrialDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+            
+            %s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+            %s.TrialDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.IsTrialBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
         end  % function
@@ -1456,7 +1465,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
         end  % function
-    end        
+    end
     
     methods
         function set.AbsoluteProtocolFileName(self,newValue)
@@ -1477,6 +1486,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     methods
         function triggeringSubsystemIsAboutToStartFirstTrialInExperiment(self)
             % This means we need to start the polling timer
+            self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
             self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
             self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
             start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
@@ -1485,19 +1495,22 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     methods (Access=protected)        
         function pollingTimerFired_(self)
-            fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
+            %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);
-            timeSinceLastRealPoll = timeSinceTrialStart - self.TimeOfLastPollInTrial_ ;
-            if timeSinceLastRealPoll >= self.MinimumPollingDt_ ,
-                timeSinceLastRealPoll
+            %timeSinceLastRealPoll = timeSinceTrialStart - self.TimeOfLastPollInTrial_ ;
+            %if timeSinceLastRealPoll >= self.MinimumPollingDt_ ,
+                %timeSinceTrialStart
+                %thing=tic;
                 self.Acquisition.pollingTimerFired(timeSinceTrialStart);
                 self.Stimulation.pollingTimerFired(timeSinceTrialStart);
                 self.Triggering.pollingTimerFired(timeSinceTrialStart);
                 %self.Display.pollingTimerFired(timeSinceTrialStart);
                 %self.Logging.pollingTimerFired(timeSinceTrialStart);
                 %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
-                self.TimeOfLastPollInTrial_ = timeSinceTrialStart ;
-            end
+                drawnow();
+                %timeToUpdate = toc(thing)
+                %self.TimeOfLastPollInTrial_ = timeSinceTrialStart ;
+            %end
         end
         
         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>

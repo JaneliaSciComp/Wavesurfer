@@ -776,7 +776,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function        
         
         function analogEpisodeCompleted(self)
-            fprintf('Stimulation::analogEpisodeCompleted()\n');
+            %fprintf('Stimulation::analogEpisodeCompleted()\n');
             self.DidAnalogEpisodeComplete_ = true ;
             if self.HasDigitalChannels_ ,
                 if self.DidDigitalEpisodeComplete_ ,
@@ -789,7 +789,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function digitalEpisodeCompleted(self)
-            fprintf('Stimulation::digitalEpisodeCompleted()\n');
+            %fprintf('Stimulation::digitalEpisodeCompleted()\n');
             self.DidDigitalEpisodeComplete_ = true ;
             if self.HasAnalogChannels_ ,
                 if self.DidAnalogEpisodeComplete_ ,
@@ -955,7 +955,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function episodeCompleted_(self)
             % Called from "below" when a single episode of stimulation is
             % completed.  
-            fprintf('Stimulation::episodeCompleted_()\n');
+            %fprintf('Stimulation::episodeCompleted_()\n');
             % We only want this method to do anything once per episode, and the next three
             % lines make this the case.
             if ~self.IsArmedOrStimulating ,

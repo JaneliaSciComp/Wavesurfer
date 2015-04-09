@@ -369,6 +369,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         end
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+            %fprintf('ScopeFigure::modelDataCleared()\n');
             nChannels=self.Model.NChannels;
             self.XForPlotting=zeros(0,1);
             self.YForPlotting=zeros(0,nChannels);                        

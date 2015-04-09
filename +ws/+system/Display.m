@@ -300,11 +300,12 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
         
         function self=dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL,INUSD>
-            fprintf('Display::dataAvailable()\n');
-            dbstack
+            %fprintf('Display::dataAvailable()\n');
+            %dbstack
             %T=zeros(4,1);
-            %ticId=tic();            
+            %ticId=tic();                     
             if self.prvClearOnNextData
+                %fprintf('About to clear scopes...\n');
                 for sdx = 1:numel(self.Scopes)
                     self.Scopes(sdx).clearData();
                 end

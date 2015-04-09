@@ -361,11 +361,6 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 end
             end
                 
-            % Notify the WSM
-            if nTrialsCompletedInSet==0 ,
-                self.Parent.triggeringSubsystemIsAboutToStartFirstTrialInExperiment();
-            end
-            
             % Pulse the master trigger, if appropriate
             if self.AcquisitionUsesASAPTriggering ,
                 % In this case, start the acq & stim trigger tasks on
@@ -380,6 +375,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                     self.pulseMasterTrigger();
                 end
             end
+            
+            % Notify the WSM, which starts the polling timer
+            if nTrialsCompletedInSet==0 ,
+                self.Parent.triggeringSubsystemIsAboutToStartFirstTrialInExperiment();
+            end            
         end  % function
 
         function startAllDistinctTrialBasedTriggers(self)
