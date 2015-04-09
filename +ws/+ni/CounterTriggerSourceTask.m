@@ -67,7 +67,11 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
 %                 return;
 %             end
             self.RepeatCount_ = newValue;
-            self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', newValue);
+            if isinf(newValue) ,
+                self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_ContSamps');
+            else
+                self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', newValue);
+            end
         end
         
         function val = get.RepeatFrequency(self)

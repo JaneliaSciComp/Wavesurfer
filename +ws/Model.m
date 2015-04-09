@@ -4,8 +4,10 @@ classdef Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
     end
     
     methods
-        function self = Model(varargin)        
-            self = self@ws.most.Model(varargin{:});
+        function self = Model(varargin)
+            self@ws.most.Model(varargin{:});
+            %self@ws.mixin.Coding();
+            %self@ws.EventBroadcaster();
         end  % function
         
         function isValid=isPropertyArgumentValid(self, propertyName, newValue)
