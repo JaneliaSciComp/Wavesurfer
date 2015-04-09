@@ -651,11 +651,10 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             isTimed=model.Stimulation.IsDigitalChannelTimed;
             for i=1:nDOs ,
                 set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',digitalPhysicalChannelNames{i},channelNames{i}));                
-                if isTimed(i)==1
-                  set(self.DOIsOnRadiobuttons(i),'enable','off');
-                else
-                  set(self.DOIsOnRadiobuttons(i),'enable','on');
-                end
+                set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
+                                                'enable',onIff(isWavesurferIdle));
+                set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.UntimedDigitalOutputState(i),...
+                                               'enable',onIff(~isTimed(i)));
             end
             
         end  % function        

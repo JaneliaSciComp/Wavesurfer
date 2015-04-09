@@ -10,6 +10,7 @@ classdef UntimedDigitalOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
+        Parent_
         DabsDaqTask_ = [];
     end
     
@@ -24,8 +25,11 @@ classdef UntimedDigitalOutputTask < handle
     end
 
     methods
-        function self = UntimedDigitalOutputTask(taskName, physicalChannelNames, channelNames)
+        function self = UntimedDigitalOutputTask(parent, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
+                                    
+            % Store the parent
+            self.Parent_ = parent ;
                                     
             % Create the task, channels
             if nChannels==0 ,
@@ -60,33 +64,16 @@ classdef UntimedDigitalOutputTask < handle
         end  % function
         
         function start(self)
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 %fprintf('About to start FiniteAnalogOutputTask.\n');
-%                 %self
-%                 %dbstack
-%             end               
             self.DabsDaqTask_.start();
         end  % function
         
         function abort(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::abort()\n');
-%             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::abort()\n');
-%             end
             if ~isempty(self.DabsDaqTask_)
                 self.DabsDaqTask_.abort();
             end
         end  % function
         
         function stop(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::stop()\n');
-%             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::stop()\n');
-%             end
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
@@ -160,23 +147,7 @@ classdef UntimedDigitalOutputTask < handle
                 % do nothing
             else            
                 % Write the data to the output buffer
-                packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
-%                 self.DabsDaqTask_.reset('writeRelativeTo');
-%                 self.DabsDaqTask_.reset('writeOffset');
-                self.DabsDaqTask_.writeDigitalData(packedOutputData);
-            end
-        end  % function
-
-        function packedOutputData = packDigitalData_(self,outputData)
-            % Only used for digital data.
-            nChannels = length(outputData);
-            packedOutputData = uint32(0);
-            channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
-            for j=1:nChannels ,
-                channelID = channelIDs(j);
-                thisChannelData = uint32(outputData(j));
-                thisChannelDataShifted = bitshift(thisChannelData,channelID) ;
-                packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
+                self.DabsDaqTask_.writeDigitalData(outputData);
             end
         end  % function
     end  % Static methods
