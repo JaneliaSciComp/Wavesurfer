@@ -287,19 +287,17 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
         
-        function set.ExperimentTrialCount(self, value)
+        function set.ExperimentTrialCount(self, newValue)
             % Sometimes want to trigger the listeners without actually
             % setting, and without throwing an error
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else            
+            if ws.utility.isASettableValue(newValue) ,
                 % s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
                 %value=self.validatePropArg('ExperimentTrialCount',value);
-                if isnumeric(value) && isscalar(value) && value>=1 && (round(value)==value || isinf(value)) ,
+                if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
                     if self.IsTrialBased ,
                         self.Triggering.willSetExperimentTrialCount();
-                        self.ExperimentTrialCount_ = value;
+                        self.ExperimentTrialCount_ = newValue;
                         self.Triggering.didSetExperimentTrialCount();
                     end
                 else
@@ -320,27 +318,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function set.TrialDuration(self, newValue)
             % Fail quietly if a nonvalue
-            if isnan(newValue),  return,  end
-            
-            % Do nothing if in continuous mode
-            if self.IsContinuous ,
-                return
+            if ws.utility.isASettableValue(newValue),             
+                % Do nothing if in continuous mode
+                if self.IsTrialBased ,
+                    % Check value and set if valid
+                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                        % If get here, newValue is a valid value for this prop
+                        self.Acquisition.Duration = newValue;
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'TrialDuration must be a (scalar) positive finite value');
+                    end
+                end
             end
-            
-            % Check value and set if valid
-            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                % If get here, newValue is a valid value for this prop
-                self.Acquisition.Duration = newValue;
-            else
-                error('most:Model:invalidPropVal', ...
-                      'TrialDuration must be a (scalar) positive finite value');
-            end
-            
-%             % Throw if an invalid value
-%             newValue=self.validatePropArg('TrialDuration',newValue);
-%             
-%             % Set the underlying thing, if we get this far
-%             self.Acquisition.Duration = newValue;
+            self.broadcast('Update');
         end  % function
         
         function value=get.IsTrialBased(self)
@@ -607,7 +598,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function didSetAcquisitionDuration(self)
-            self.TrialDuration=ws.most.util.Nonvalue.The;
+            self.TrialDuration=ws.most.util.Nonvalue.The;  % this will cause the WavesurferMainFigure to update
             self.Triggering.didSetAcquisitionDuration();
             self.Display.didSetAcquisitionDuration();
         end        
