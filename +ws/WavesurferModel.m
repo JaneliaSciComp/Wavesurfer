@@ -1497,20 +1497,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function pollingTimerFired_(self)
             %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);
-            %timeSinceLastRealPoll = timeSinceTrialStart - self.TimeOfLastPollInTrial_ ;
-            %if timeSinceLastRealPoll >= self.MinimumPollingDt_ ,
-                %timeSinceTrialStart
-                %thing=tic;
-                self.Acquisition.pollingTimerFired(timeSinceTrialStart);
-                self.Stimulation.pollingTimerFired(timeSinceTrialStart);
-                self.Triggering.pollingTimerFired(timeSinceTrialStart);
-                %self.Display.pollingTimerFired(timeSinceTrialStart);
-                %self.Logging.pollingTimerFired(timeSinceTrialStart);
-                %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
-                drawnow();
-                %timeToUpdate = toc(thing)
-                %self.TimeOfLastPollInTrial_ = timeSinceTrialStart ;
-            %end
+            self.Acquisition.pollingTimerFired(timeSinceTrialStart);
+            self.Stimulation.pollingTimerFired(timeSinceTrialStart);
+            self.Triggering.pollingTimerFired(timeSinceTrialStart);
+            %self.Display.pollingTimerFired(timeSinceTrialStart);
+            %self.Logging.pollingTimerFired(timeSinceTrialStart);
+            %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
+            drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
         end
         
         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
