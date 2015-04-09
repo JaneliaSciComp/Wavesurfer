@@ -445,7 +445,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.NextTrialText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
-                          'String','Next Trial:');
+                          'String','Current Trial:');  % text is 'Next Trial:' most of the time, but this is for sizing
             self.NextTrialEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','right', ...
@@ -841,6 +841,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             changeLocationButtonWidth=90;
             widthBetweenLocationWidgets=6;
             nextTrialEditWidth=50;
+            nextTrialLabelFixedWidth=70;  % We fix this, because the label text changes
                         
             %
             % Location row
@@ -889,11 +890,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %
             
             % Next Trial edit and label
+            %fprintf('About to position NextTrialText\n');
+            %dbstack
             xOffset=editXOffset;
             yOffset=locationEditYOffset-heightBetweenEdits-editHeight;
             width=nextTrialEditWidth;
             positionEditLabelAndUnitsBang(self.NextTrialText,self.NextTrialEdit,[], ....
-                                          xOffset,yOffset,width);
+                                          xOffset,yOffset,width, ...
+                                          nextTrialLabelFixedWidth);
         end  % function
     end
     
@@ -957,7 +961,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             import ws.utility.onIff
+            import ws.utility.fif
             
+            isIdle = (model.State==ws.ApplicationState.Idle);
+
 %             s.IsTrialBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialBasedRadiobutton'}});
 %             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
 %             s.ExperimentTrialCount = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
@@ -1000,6 +1007,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % Logging panel
             set(self.FilenameEdit, 'String', model.Logging.FileBaseName);
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
+            set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
             set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
@@ -1324,16 +1332,39 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
             model=self.Model;
             state=model.State;
-            if state==ws.ApplicationState.AcquiringTrialBased ,                
-                nTrials=model.ExperimentTrialCount;
-                nTrialsCompleted=model.ExperimentCompletedTrialCount;
-                fractionCompleted=nTrialsCompleted/nTrials;
-                set(self.ProgressBarPatch, ...
-                    'XData',[0 fractionCompleted fractionCompleted 0 0], ...
-                    'YData',[0 0 1 1 0], ...
-                    'Visible','on');
-                set(self.ProgressBarAxes, ...                
-                    'Visible','on');
+            if state==ws.ApplicationState.AcquiringTrialBased ,
+                if isfinite(model.ExperimentTrialCount) ,
+                    nTrials=model.ExperimentTrialCount;
+                    nTrialsCompleted=model.ExperimentCompletedTrialCount;
+                    fractionCompleted=nTrialsCompleted/nTrials;
+                    set(self.ProgressBarPatch, ...
+                        'XData',[0 fractionCompleted fractionCompleted 0 0], ...
+                        'YData',[0 0 1 1 0], ...
+                        'Visible','on');
+                    set(self.ProgressBarAxes, ...                
+                        'Visible','on');
+                else
+                    % number of trials is infinite
+                    nTrialsPretend=20;
+                    nTrialsCompleted = model.ExperimentCompletedTrialCount ;
+                    nTrialsCompletedModded=mod(nTrialsCompleted,nTrialsPretend);
+                    if nTrialsCompletedModded==0 ,
+                        if nTrialsCompleted==0 ,
+                            nTrialsCompletedPretend = 0 ;
+                        else
+                            nTrialsCompletedPretend = nTrialsPretend ;                            
+                        end
+                    else
+                        nTrialsCompletedPretend = nTrialsCompletedModded ;
+                    end                    
+                    fractionCompletedPretend=nTrialsCompletedPretend/nTrialsPretend;
+                    set(self.ProgressBarPatch, ...
+                        'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
+                        'YData',[0 0 1 1 0], ...
+                        'Visible','on');
+                    set(self.ProgressBarAxes, ...                
+                        'Visible','on');
+                end
             elseif state==ws.ApplicationState.AcquiringContinuously ,
                 nTimesSamplesAcquiredCalledSinceExperimentStart=model.NTimesSamplesAcquiredCalledSinceExperimentStart;
                 nSegments=10;

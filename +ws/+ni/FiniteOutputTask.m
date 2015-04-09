@@ -1,5 +1,6 @@
 classdef FiniteOutputTask < handle
     properties (Dependent = true, SetAccess = immutable)
+        Parent
         IsAnalog
         IsDigital
         TaskName
@@ -17,7 +18,8 @@ classdef FiniteOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        DabsDaqTask_ = [];
+        Parent_
+        DabsDaqTask_ = [];  % Can be empty if there are zero channels
     end
     
     properties (Access = protected)
@@ -32,13 +34,16 @@ classdef FiniteOutputTask < handle
         IsOutputBufferSyncedToChannelData_ = false
     end
     
-    events
-        OutputComplete
-    end
+%     events
+%         OutputComplete
+%     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, physicalChannelNames, channelNames)
+        function self = FiniteOutputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
+            
+            % Store the parent
+            self.Parent_ = parent ;
                                     
             % Determine the task type, digital or analog
             if isequal(taskType,'analog') ,
@@ -87,6 +92,7 @@ classdef FiniteOutputTask < handle
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
+            self.Parent_ = [] ;  % prob not needed
         end  % function
         
         function start(self)
@@ -121,9 +127,15 @@ classdef FiniteOutputTask < handle
 %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
 %                 fprintf('FiniteAnalogOutputTask::stop()\n');
 %             end
+            %fprintf('FiniteOutputTask::stop()\n');
+            %dbstack
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
+        end  % function
+        
+        function value = get.Parent(self)
+            value = self.Parent_;
         end  % function
         
         function value = get.IsArmed(self)
@@ -302,15 +314,26 @@ classdef FiniteOutputTask < handle
     
     methods (Access = protected)        
         function taskDone_(self, ~, ~)
+            % Called "from below" when the task completes
+            
             % For a successful capture, this class is responsible for stopping the task when
             % it is done.  For external clients to interrupt a running task, use the abort()
             % method on the Output object.
+            %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
             self.DabsDaqTask_.stop();
             
             % Fire the event before unregistering the callback functions.  At the end of a
             % script the DAQmx callbacks may be the only references preventing the object
             % from deleting before the events are sent/complete.
-            self.notify('OutputComplete');
+            parent = self.Parent ;
+            if ~isempty(parent) && isvalid(parent) ,                
+                if self.IsAnalog ,
+                    parent.analogEpisodeCompleted();
+                else
+                    parent.digitalEpisodeCompleted();
+                end
+            end
+            %self.notify('OutputComplete');
         end  % function        
     end  % protected methods block
     
@@ -362,11 +385,13 @@ classdef FiniteOutputTask < handle
                     self.DabsDaqTask_.reset('writeOffset');
                     self.DabsDaqTask_.writeAnalogData(outputData);
                 else
-                    packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
-                    packedOutputData(end)=0;  % don't want to end on nonzero value
+                    %packedOutputData = self.packDigitalData_(outputData);  % uint32, nScansInOutputData x 1
+                    %packedOutputData(end)=0;  % don't want to end on nonzero value
+                    outputData(end,:)=0;  % don't want to end on nonzero value
                     self.DabsDaqTask_.reset('writeRelativeTo');
                     self.DabsDaqTask_.reset('writeOffset');
-                    self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    %self.DabsDaqTask_.writeDigitalData(packedOutputData);
+                    self.DabsDaqTask_.writeDigitalData(outputData);
                 end
             end
             

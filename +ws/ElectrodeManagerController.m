@@ -248,11 +248,11 @@ classdef ElectrodeManagerController < ws.Controller
             
             % If acquisition is happening, ignore the close window request
             model=self.Model;
-            if ~isempty(model) || isvalid(model) ,
+            if ~isempty(model) && isvalid(model) ,
                 ephys=model.Parent;
-                if ~isempty(ephys) || isvalid(ephys) ,                
+                if ~isempty(ephys) && isvalid(ephys) ,                
                     wavesurferModel=ephys.Parent;
-                    if ~isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+                    if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                         isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
                         if ~isIdle ,
                             shouldStayPut=true;

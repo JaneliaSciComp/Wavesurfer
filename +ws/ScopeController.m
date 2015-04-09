@@ -193,6 +193,28 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
     end  % public methods block
 
     methods (Access=protected)
+        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
+            % This method is inhierited from AbstractController, and is
+            % called after the user indicates she wants to close the
+            % window.  Returns true if the window should _not_ close, false
+            % if it should go ahead and close.
+            
+            % If acquisition is happening, ignore the close window request
+            wavesurferModel = ws.utility.getSubproperty(self,'Model','Parent','Parent') ;
+            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
+                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                if isIdle ,
+                    shouldStayPut=false;
+                else                 
+                    shouldStayPut=true;
+                end
+            else
+                shouldStayPut=false;                
+            end
+        end  % function
+    end % protected methods block
+    
+    methods (Access=protected)
         function layoutOfWindowsInClassButOnlyForThisWindow = encode_window_layout(self)
             window = self.Figure;
             layoutOfWindowsInClassButOnlyForThisWindow = struct();

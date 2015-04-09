@@ -110,9 +110,8 @@ classdef Acquisition < ws.system.Subsystem
         function delete(self)
             %fprintf('Acquisition::delete()\n');
             %delete(self.TriggerListener_);
-            if ~isempty(self.AnalogInputTask_) && isvalid(self.AnalogInputTask_) ,
-                delete(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-            end
+            %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+              % Don't need this above, b/c self.AnalogInputTask_ is a ws.ni.AnalogInputTask, *not* a DABS Task !!
             self.AnalogInputTask_=[];
             %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);
             self.Parent=[];
@@ -449,7 +448,8 @@ classdef Acquisition < ws.system.Subsystem
         function acquireHardwareResources(self)
             if isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_ = ...
-                    ws.ni.AnalogInputTask(self.DeviceNames{1}, ...
+                    ws.ni.AnalogInputTask(self, ...
+                                          self.DeviceNames{1}, ...
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);
@@ -459,8 +459,8 @@ classdef Acquisition < ws.system.Subsystem
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
-                self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
-                self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
+                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
         end  % function
 
@@ -532,25 +532,14 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function didPerformExperiment(self, wavesurferModel)
+            %fprintf('Acquisition::didPerformExperiment()\n');
             self.didPerformOrAbortExperiment_(wavesurferModel);
         end  % function
         
         function didAbortExperiment(self, wavesurferModel)
             self.didPerformOrAbortExperiment_(wavesurferModel);
         end  % function
-    end
-    
-    methods (Access = protected)
-        function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            if ~isempty(self.AnalogInputTask_) ,
-                %self.AnalogInputTask_.unregisterCallbacks();
-                self.AnalogInputTask_.disarm();
-            end            
-            self.IsArmedOrAcquiring = false;            
-        end
-    end
-    
-    methods
+
         function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %fprintf('Acquisition::willPerformTrial()\n');
             self.IsArmedOrAcquiring = true;
@@ -564,6 +553,10 @@ classdef Acquisition < ws.system.Subsystem
 %             end                
             self.AnalogInputTask_.start();
         end  % function
+        
+        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
+            %fprintf('Acquisition::didPerformTrial()\n');
+        end
         
         function didAbortTrial(self, ~)
             self.AnalogInputTask_.abort();
@@ -765,43 +758,26 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
+        function acquisitionTrialComplete(self)
+            self.acquisitionTrialComplete_();
+        end
+        
+        function samplesAcquired(self,rawData)
+            self.samplesAcquired_(rawData);
+        end
         
     end  % methods block
     
     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
-%             %self.setPropertyAttributeFeatures('ActiveChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
-%             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
-%             self.setPropertyAttributeFeatures('Duration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('TriggerScheme', 'Classes', 'ws.TriggerScheme', 'Attributes', {'scalar'}, 'AllowEmpty', false);
-%         end  % function
+        function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
+            if ~isempty(self.AnalogInputTask_) ,
+                %self.AnalogInputTask_.unregisterCallbacks();
+                self.AnalogInputTask_.disarm();
+            end            
+            self.IsArmedOrAcquiring = false;            
+        end
         
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
-%             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Duration', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('IsChannelActive', 'IncludeInFileTypes', {'*'});            
-%             self.setPropertyTags('ChannelUnits_', 'IncludeInFileTypes', {'cfg'}, ...
-%                                                   'ExcludeFromFileTypes', {'header'});            
-%             self.setPropertyTags('ChannelScales_', 'IncludeInFileTypes', {'cfg'}, ...
-%                                                    'ExcludeFromFileTypes', {'header'});            
-%             self.setPropertyTags('TriggerScheme', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ExpectedScanCount', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ContinuousModeTriggerScheme', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('IsArmedOrAcquiring', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('AnalogInputTask_', 'ExcludeFromFileTypes', {'*'});
-%             %self.setPropertyTags('DelegateSamplesFcn_', 'ExcludeFromFileTypes', {'*'});
-%             %self.setPropertyTags('DelegateDoneFcn_', 'ExcludeFromFileTypes', {'*'});
-%             %self.setPropertyTags('TriggerListener_', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('Duration_', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ChannelScales', 'ExcludeFromFileTypes', {'cfg'}, 'IncludeInFileTypes', {'header'} );
-%             self.setPropertyTags('ChannelUnits', 'ExcludeFromFileTypes', {'cfg'}, 'IncludeInFileTypes', {'header'} );
-%         end  % function
-    end  % protected methods block
-    
-    methods (Access = protected)
-        function acquisitionTrialComplete_(self, source, event)  %#ok<INUSD>
+        function acquisitionTrialComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             self.IsArmedOrAcquiring = false;
             % TODO If there are multiple acquisition boards, notify only when all are complete.
@@ -814,14 +790,11 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, source, eventData)  %#ok<INUSL>
-            % This is registered as a listener callback on the
-            % AnalogInputTask's SamplesAvailable event
+        function samplesAcquired_(self, rawData)
             %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                rawData = eventData.RawData;  % int16                
                 parent.samplesAcquired(rawData);
             end
             %profile off

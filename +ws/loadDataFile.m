@@ -1,7 +1,12 @@
-function dataFileAsStruct = loadDataFile(filename)
+function dataFileAsStruct = loadDataFile(filename,formatString)
     % Loads Wavesurfer data file.  The returned data is a structure array
     % with one element per trial in the data file.
 
+    % Deal with optional args
+    if ~exist('formatString','var') || isempty(formatString) ,
+        formatString = 'double';
+    end
+    
     % Check that file exists
     if ~exist(filename, 'file') , 
         error('The file %s does not exist.', filename)
@@ -15,6 +20,43 @@ function dataFileAsStruct = loadDataFile(filename)
 
     % Extract dataset at each group level, recursively.    
     dataFileAsStruct = crawl_h5_tree('/', filename);
+    
+    % Parse the format string
+    if strcmpi(formatString,'raw')
+        % User wants raw data, so nothing to do
+    else
+        try
+            channelScales=dataFileAsStruct.header.Acquisition.ActiveChannelScales ;
+        catch
+            error('Unable to read channel scale information from file.');
+        end
+        inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+        doesUserWantSingle = strcmpi(formatString,'single') ;
+        %doesUserWantDouble = ~doesUserWantSingle ;
+        fieldNames = fieldnames(dataFileAsStruct);
+        for i=1:length(fieldNames) ,
+            fieldName = fieldNames{i};
+            if length(fieldName)>=5 && isequal(fieldName(1:5),'trial') ,
+                rawData = dataFileAsStruct.(fieldName);
+                if isempty(rawData) ,
+                    if doesUserWantSingle ,
+                        scaledData=zeros(size(rawData),'single');
+                    else                        
+                        scaledData=zeros(size(rawData));
+                    end
+                else
+                    if doesUserWantSingle ,
+                        data = single(rawData) ;
+                    else
+                        data = double(rawData);
+                    end
+                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                    scaledData=bsxfun(@times,data,combinedScaleFactors);                    
+                end
+                dataFileAsStruct.(fieldName) = scaledData ;
+            end
+        end
+    end    
 end  % function
 
 
@@ -125,6 +167,10 @@ function fieldName = field_name_from_hdf_name(hdfName)
 end  % function
 
 
+
+% ------------------------------------------------------------------------------
+% local_hdf_name_from_path
+% ------------------------------------------------------------------------------
 function localName = local_hdf_name_from_path(rawPath)
     if isempty(rawPath) ,
         localName = '';
@@ -147,9 +193,3 @@ function localName = local_hdf_name_from_path(rawPath)
         end
     end
 end  % function
-
-
-% ------------------------------------------------------------------------------
-% force_valid_fieldname
-% ------------------------------------------------------------------------------
-

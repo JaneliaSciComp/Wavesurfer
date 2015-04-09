@@ -215,15 +215,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end
         
-        function abort(self)
-            % Call abort anytime to ensure operations are stopped.  It is a no-op if already
-            % idle.For runs that have completed successfully, there is no need to call a
-            % stop() or abort() method.
+        function stop(self)
+            % Called when you press the "Stop" button in the UI.
             if self.State == ws.ApplicationState.Idle
-                return;
+                return
             end
-            
-            % This may not technically be a failure.
+
+            % Actually stop the ongoing trial
             self.didAbortTrial();
         end
     end  % methods
@@ -272,11 +270,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if isfloat(value) && isscalar(value) && isnan(value) ,
                 % do nothing
             else            
-                value=self.validatePropArg('ExperimentTrialCount',value);
-                if self.IsTrialBased ,
-                    self.Triggering.willSetExperimentTrialCount();
-                    self.ExperimentTrialCount_ = value;
-                    self.Triggering.didSetExperimentTrialCount();
+                % s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+                %value=self.validatePropArg('ExperimentTrialCount',value);
+                if isnumeric(value) && isscalar(value) && value>=1 && (round(value)==value || isinf(value)) ,
+                    % If get here, value is a valid value for this prop
+                    if self.IsTrialBased ,
+                        self.Triggering.willSetExperimentTrialCount();
+                        self.ExperimentTrialCount_ = value;
+                        self.Triggering.didSetExperimentTrialCount();
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'ExperimentTrialCount must be a (scalar) positive integer, or inf');       
                 end
             end
             self.broadcast('Update');
@@ -453,51 +458,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % depending on the states of the Acquisition, Stimulation, and
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the trial before
-            % calling self.didPerformTrial().  But depending on the
-            % settings, in some cases some of the checks can be skipped.
-            % This function could be compressed, but I like that
-            % it's just a simple tree with simple tests at each if
-            % statement, because it makes it easier to reason about.
+            % calling self.didPerformTrial().
             if self.Stimulation.Enabled ,
-                if self.Triggering.StimulationTriggerScheme.IsExternal ,
-                    % In this case, the trial is done when the acquisition is
-                    % done (But: What if there's a stimulus being delivered
-                    % right now?  What happens to it?  Is this a bug?)
-                    if self.Acquisition.IsArmedOrAcquiring ,
+                if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+                    % acq and stim trig sources are identical
+                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
                     else
                         self.didPerformTrial();
                     end
                 else
-                    % Stim triggering is internal
-                    if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-                        if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-                            % acq and stim trig sources are internal and identical
-                            if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                                % do nothing
-                            else
-                                self.didPerformTrial();
-                            end
-                        else
-                            % acq and stim trig sources are internal, but distinct
-                            % this means the stim trigger basically runs on
-                            % its own until it's done
-                            if self.Acquisition.IsArmedOrAcquiring ,
-                                % do nothing
-                            else
-                                self.didPerformTrial();
-                            end
-                        end
+                    % acq and stim trig sources are distinct
+                    % this means the stim trigger basically runs on
+                    % its own until it's done
+                    if self.Acquisition.IsArmedOrAcquiring ,
+                        % do nothing
                     else
-                        % stim trig internal, acq trig external
-                        % therefore they're distinct
-                        % this means the stim trigger basically runs on
-                        % its own until it's done
-                        if self.Acquisition.IsArmedOrAcquiring ,
-                            % do nothing
-                        else
-                            self.didPerformTrial();
-                        end
+                        self.didPerformTrial();
                     end
                 end
             else
@@ -509,6 +486,68 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end                                    
             end            
         end  % function
+        
+%         function didPerformTrialMaybe(self)
+%             % Either calls self.didPerformTrial(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the trial before
+%             % calling self.didPerformTrial().  But depending on the
+%             % settings, in some cases some of the checks can be skipped.
+%             % This function could be compressed, but I like that
+%             % it's just a simple tree with simple tests at each if
+%             % statement, because it makes it easier to reason about.
+%             if self.Stimulation.Enabled ,
+%                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
+%                     % In this case, the trial is done when the acquisition is
+%                     % done (But: What if there's a stimulus being delivered
+%                     % right now?  What happens to it?  Is this a bug?)
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         self.didPerformTrial();
+%                     end
+%                 else
+%                     % Stim triggering is internal
+%                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
+%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                             % acq and stim trig sources are internal and identical
+%                             if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                                 % do nothing
+%                             else
+%                                 self.didPerformTrial();
+%                             end
+%                         else
+%                             % acq and stim trig sources are internal, but distinct
+%                             % this means the stim trigger basically runs on
+%                             % its own until it's done
+%                             if self.Acquisition.IsArmedOrAcquiring ,
+%                                 % do nothing
+%                             else
+%                                 self.didPerformTrial();
+%                             end
+%                         end
+%                     else
+%                         % stim trig internal, acq trig external
+%                         % therefore they're distinct
+%                         % this means the stim trigger basically runs on
+%                         % its own until it's done
+%                         if self.Acquisition.IsArmedOrAcquiring ,
+%                             % do nothing
+%                         else
+%                             self.didPerformTrial();
+%                         end
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     self.didPerformTrial();
+%                 end                                    
+%             end            
+%         end  % function
         
         function samplesAcquired(self, rawData)
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
@@ -615,6 +654,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function willPerformTrial(self)
             %fprintf('WavesurferModel::willPerformTrial()\n');            
+            %dbstack
             % time between subsequent calls to this
             t=toc(self.FromExperimentStartTicId_);
             %if ~isempty(self.TimeOfLastWillPerformTrial_) ,
@@ -777,6 +817,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function didPerformExperiment(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of experiment event.
+            %fprintf('WavesurferModel::didPerformExperiment()\n');                                    
             assert(self.State ~= ws.ApplicationState.Idle);
             
             self.State = ws.ApplicationState.Idle;
@@ -1017,7 +1058,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             commandFileName='si_command.txt';
             absoluteCommandFileName=fullfile(dirName,commandFileName);
             if exist(absoluteCommandFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(absoluteCommandFileName);
+                ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
                 if exist(absoluteCommandFileName,'file') , 
                     isCommandFileGone=false;
                     errorMessage1='Unable to delete pre-existing ScanImage command file';
@@ -1034,7 +1075,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             responseFileName='si_response.txt';
             absoluteResponseFileName=fullfile(dirName,responseFileName);
             if exist(absoluteResponseFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(absoluteResponseFileName);
+                ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
                 if exist(absoluteResponseFileName,'file') , 
                     isResponseFileGone=false;
                     if isempty(errorMessage1) ,
@@ -1118,7 +1159,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         response=fscanf(fid,'%s',1);
                         fclose(fid);
                         if isequal(response,'OK') ,
-                            ephus.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
+                            ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
                             isScanImageReady=true;
                             errorMessage='';
                             return
@@ -1133,7 +1174,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % If get here, must have failed
             if exist(responseAbsoluteFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
+                ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
             end
             isScanImageReady=false;
             errorMessage='ScanImage did not respond within the alloted time';

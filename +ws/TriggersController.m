@@ -18,7 +18,7 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
         function out = shouldWindowStayPutQ(self, varargin)
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model.Parent;
-            if ~isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                 isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
                 if ~isIdle ,
                     out=true;

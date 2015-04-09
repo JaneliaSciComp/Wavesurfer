@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0
+END
+capi.chm
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0/capi.chm
+END
+capigen.ini
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0/capigen.ini
+END
+NiFpga.c
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0/NiFpga.c
+END
+capigen.exe
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0/capigen.exe
+END
+NiFpga.h
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0/NiFpga.h
+END
+capi.chw
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svobodalab/software/distribution/!svn/ver/6324/projects/DevTools/ThirdParties/NI/FPGA_13_0/capi.chw
+END
