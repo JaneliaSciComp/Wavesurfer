@@ -345,32 +345,44 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
             % whether we start the triggers for each trial, or only for the
             % first trial.
-%             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
-%                 % Only start if this is the first trial in the set.
-%                 if nTrialsCompletedInSet==0 ,
-%                     self.ContinuousModeTriggerScheme.start();
-%                 end
-%             else
-                % Trial-based acquisition
-                % if ASAP triggering, start for each trial.  If not, only
-                % start the acq
-                if self.AcquisitionUsesASAPTriggering ,
-                    % In this case, start the acq & stim trigger tasks on
-                    % each trial.
-                    self.startAllDistinctTrialBasedTriggersThenPulseMasterTrigger();
-                else
-                    % Using "ballistic" triggering
-                    if nTrialsCompletedInSet==0 ,
-                        % For the first trial in the set, need to start the
-                        % acq task (if internal), and also the stim task,
-                        % if it's internal but distinct.
-                        self.startAllDistinctTrialBasedTriggersThenPulseMasterTrigger();
-                    end
+            
+            % Start the trigger tasks, if appropriate
+            if self.AcquisitionUsesASAPTriggering ,
+                % In this case, start the acq & stim trigger tasks on
+                % each trial.
+                self.startAllDistinctTrialBasedTriggers();
+            else
+                % Using "ballistic" triggering
+                if nTrialsCompletedInSet==0 ,
+                    % For the first trial in the set, need to start the
+                    % acq task (if internal), and also the stim task,
+                    % if it's internal but distinct.
+                    self.startAllDistinctTrialBasedTriggers();
                 end
-%             end
+            end
+                
+            % Pulse the master trigger, if appropriate
+            if self.AcquisitionUsesASAPTriggering ,
+                % In this case, start the acq & stim trigger tasks on
+                % each trial.
+                self.pulseMasterTrigger();
+            else
+                % Using "ballistic" triggering
+                if nTrialsCompletedInSet==0 ,
+                    % For the first trial in the set, need to start the
+                    % acq task (if internal), and also the stim task,
+                    % if it's internal but distinct.
+                    self.pulseMasterTrigger();
+                end
+            end
+            
+            % Notify the WSM, which starts the polling timer
+            if nTrialsCompletedInSet==0 ,
+                self.Parent.triggeringSubsystemIsAboutToStartFirstTrialInExperiment();
+            end            
         end  % function
 
-        function startAllDistinctTrialBasedTriggersThenPulseMasterTrigger(self)
+        function startAllDistinctTrialBasedTriggers(self)
             triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes) ,
                 thisTriggerScheme=triggerSchemes{idx};
@@ -380,11 +392,17 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 end                    
                 thisTriggerScheme.start();
             end        
-            % Now produce a pulse on the master trigger, which will truly start things
+%             % Now produce a pulse on the master trigger, which will truly start things
+%             self.MasterTriggerDABSTask_.writeDigitalData(true);
+%             self.MasterTriggerDABSTask_.writeDigitalData(false);            
+        end  % function
+
+        function pulseMasterTrigger(self)
+            % Produce a pulse on the master trigger, which will truly start things
             self.MasterTriggerDABSTask_.writeDigitalData(true);
             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
-
+        
 %         function startStimulationTrialBasedTriggerIfDistinct(self)
 %             % Starts the stim trial-based trigger if it's different from
 %             % the acq trial-based one.
@@ -785,4 +803,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
     end  % class methods block
         
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Call the task to do the real work
+            self.AcquisitionTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+            self.StimulationTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+        end
+    end    
 end

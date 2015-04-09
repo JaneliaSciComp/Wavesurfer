@@ -413,14 +413,14 @@ classdef AnalogInputTask < handle
                 return
             end
 
-            % Register callbacks
-            if self.DurationPerDataAvailableCallback > 0 ,
-                self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
-                  % This registers the callback function that is called
-                  % when self.NScansPerDataAvailableCallback samples are
-                  % available
-            end            
-            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
+%             % Register callbacks
+%             if self.DurationPerDataAvailableCallback > 0 ,
+%                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
+%                   % This registers the callback function that is called
+%                   % when self.NScansPerDataAvailableCallback samples are
+%                   % available
+%             end            
+%             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
 
             % Set up timing
             switch self.ClockTiming ,
@@ -451,84 +451,66 @@ classdef AnalogInputTask < handle
         function disarm(self)
             if self.IsArmed ,
                 % Unregister callbacks
-                self.DabsDaqTask_.registerEveryNSamplesEvent([]);
-                self.DabsDaqTask_.doneEventCallbacks = {};
+                %self.DabsDaqTask_.registerEveryNSamplesEvent([]);
+                %self.DabsDaqTask_.doneEventCallbacks = {};
                 self.IsArmed_ = false;            
             end
-        end
+        end  % function
         
-%         function reset(self) %#ok<MANU>
-%             % called before the second and subsequent calls to start()
-%             %fprintf('AnalogInputTask::reset()\n');                        
-%             % Don't have to do anything to reset a finite input analog task
-%         end  % function
-    end
+        function result = getNScansAvailable(self)
+            result = self.DabsDaqTask_.get('readAvailSampPerChan');
+        end  % function
+        
+        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+%             nScansAvailable = self.getNScansAvailable();
+%             if (nScansAvailable >= self.NScansPerDataAvailableCallback) ,
+%                 %rawData = self.DabsDaqTask_.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+%                 rawData = self.DabsDaqTask_.readAnalogData(nScansAvailable,'native') ;  % rawData is int16            
+%                 self.Parent.samplesAcquired(rawData);
+%             end
+            
+            % Read all the available scans, notify our parent 
+            rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
+            self.Parent.samplesAcquired(rawData);
+
+            % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
+            % gets done?
+            if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                % Get data one last time, to make sure we get it all
+%                 nScansAvailable = self.getNScansAvailable();
+%                 rawData = self.DabsDaqTask_.readAnalogData(nScansAvailable,'native') ;  % rawData is int16                           
+%                 self.Parent.samplesAcquired(rawData);                
+                rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
+                self.Parent.samplesAcquired(rawData);
+                
+                % Stop task, notify parent
+                self.DabsDaqTask_.stop();
+                self.Parent.acquisitionTrialComplete();
+            end                
+        end  % function
+    end  % methods
     
 %     methods (Access = protected)
-%         function registerCallbacksImplementation(self)
-%             if self.DurationPerDataAvailableCallback > 0 ,
-%                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
-%                   % This registers the callback function that is called
-%                   % when self.NScansPerDataAvailableCallback samples are
-%                   % available
-%             end
-%             
-%             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
+%         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
+%             % This is called "from below" when data is available.
+%             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
+%             rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
+%             %eventData = ws.ni.SamplesAvailableEventData(rawData) ;
+%             %self.notify('SamplesAvailable', eventData);
+%             self.Parent.samplesAcquired(rawData);
 %         end  % function
 %         
-%         function unregisterCallbacksImplementation(self)
-%             self.DabsDaqTask_.registerEveryNSamplesEvent([]);
-%             self.DabsDaqTask_.doneEventCallbacks = {};
+%         function taskDone_(self, source, event) %#ok<INUSD>
+%             % This is called "from below" when the NI task is done.
+%             %fprintf('AnalogInputTask::taskDone_()\n');
+% 
+%             % Stop the task (have to do this, wven though it's done).
+%             self.DabsDaqTask_.stop();
+% 
+%             % Notify the parent
+%             %self.notify('AcquisitionComplete');
+%             self.Parent.acquisitionTrialComplete();
 %         end  % function
-%         
 %     end  % protected methods block
-    
-    methods (Access = protected)
-        function nSamplesAvailable_(self, source, event) %#ok<INUSD>
-            % This is called "from below" when data is available.
-            %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-            rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
-            %eventData = ws.ni.SamplesAvailableEventData(rawData) ;
-            %self.notify('SamplesAvailable', eventData);
-            self.Parent.samplesAcquired(rawData);
-        end  % function
-        
-        function taskDone_(self, source, event) %#ok<INUSD>
-            % This is called "from below" when the NI task is done.
-            %fprintf('AnalogInputTask::taskDone_()\n');
-
-            % Stop the task (have to do this, wven though it's done).
-            self.DabsDaqTask_.stop();
-
-            % Notify the parent
-            %self.notify('AcquisitionComplete');
-            self.Parent.acquisitionTrialComplete();
-        end  % function
-        
-%         function ziniPrepareAcquisitionDAQ(self, device, availableChannels, taskName, channelNames)
-%             self.AvailableChannels = availableChannels;
-%             
-%             if nargin < 5
-%                 channelNames = {};
-%             end
-%             
-%             if ~isempty(device) && ~isempty(self.AvailableChannels)
-%                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
-%                 self.DabsDaqTask_.createAIVoltageChan(device, self.AvailableChannels, channelNames);
-%                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
-%                 
-%                 % Use hardware retriggering, if possible.  For boards that do support this
-%                 % property, a start trigger must be defined in order to query the value without
-%                 % error.
-%                 self.DabsDaqTask_.cfgDigEdgeStartTrig('PFI1', ws.ni.TriggerEdge.Rising.daqmxName());
-%                 self.isRetriggerable = ~isempty(get(self.DabsDaqTask_, 'startTrigRetriggerable'));
-%                 self.DabsDaqTask_.disableStartTrig();
-%             else
-%                 self.DabsDaqTask_ = [];
-%             end
-%             
-%             self.ActiveChannels = self.AvailableChannels;
-%         end
-    end  % protected methods block
 end
 
