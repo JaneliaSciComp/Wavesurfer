@@ -111,8 +111,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             if isfloat(newValue) && isscalar(newValue) && isnan(newValue) , % used by MOST to "fake" a set
                 % do nothing
             else
-                self.validatePropArg('UpdateRate', newValue);
-                self.UpdateRate_ = newValue;
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                    newValue = max(0.1,min(newValue,10)) ;
+                    self.UpdateRate_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'UpdateRate must be a scalar finite positive number') ;
+                end
             end
             self.broadcast('DidSetUpdateRate');
         end

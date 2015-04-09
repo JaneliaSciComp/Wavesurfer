@@ -93,6 +93,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceExperimentStart_ = 0
         PollingTimer_
+        MinimumPollingDt_
+        TimeOfLastPollInTrial_
     end
     
     events
@@ -164,7 +166,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % WSM gets deleted once there are no more references to it.
             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
                                        'ExecutionMode','fixedSpacing', ...
-                                       'Period',0.050, ...
+                                       'Period',0.010, ...
                                        'BusyMode','drop', ...
                                        'ObjectVisibility','off');
             %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
@@ -669,6 +671,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.TimeOfLastWillPerformTrial_=[];
             self.FromExperimentStartTicId_=tic();
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_=0;
+            self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.TrialDuration);  % s
             
             % Move on to performing the first (and perhaps only) trial
             self.willPerformTrial();
@@ -693,6 +696,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % update the current time
             self.t_=0;            
+            
+            % Pretend that we last polled at time 0
+            self.TimeOfLastPollInTrial_ = 0 ;  % s 
             
             % Notify listeners that the trial is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
@@ -1481,12 +1487,17 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function pollingTimerFired_(self)
             fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);
-            self.Acquisition.pollingTimerFired(timeSinceTrialStart);
-            self.Stimulation.pollingTimerFired(timeSinceTrialStart);
-            self.Triggering.pollingTimerFired(timeSinceTrialStart);
-            %self.Display.pollingTimerFired(timeSinceTrialStart);
-            %self.Logging.pollingTimerFired(timeSinceTrialStart);
-            %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
+            timeSinceLastRealPoll = timeSinceTrialStart - self.TimeOfLastPollInTrial_ ;
+            if timeSinceLastRealPoll >= self.MinimumPollingDt_ ,
+                timeSinceLastRealPoll
+                self.Acquisition.pollingTimerFired(timeSinceTrialStart);
+                self.Stimulation.pollingTimerFired(timeSinceTrialStart);
+                self.Triggering.pollingTimerFired(timeSinceTrialStart);
+                %self.Display.pollingTimerFired(timeSinceTrialStart);
+                %self.Logging.pollingTimerFired(timeSinceTrialStart);
+                %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
+                self.TimeOfLastPollInTrial_ = timeSinceTrialStart ;
+            end
         end
         
         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>

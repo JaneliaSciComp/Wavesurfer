@@ -469,7 +469,7 @@ classdef Acquisition < ws.system.Subsystem
             self.AnalogInputTask_=[];            
         end
         
-        function willPerformExperiment(self, wavesurferObj, experimentMode)
+        function willPerformExperiment(self, wavesurferModel, experimentMode)
             %fprintf('Acquisition::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
@@ -505,17 +505,17 @@ classdef Acquisition < ws.system.Subsystem
                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
             end
             
-            % Set the duration between data available callbacks
-            displayDuration = 1/wavesurferObj.Display.UpdateRate;
-            if self.Duration < displayDuration ,
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-            else
-                numIncrements = floor(self.Duration/displayDuration);
-                assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
-                       self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
-                       'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
-            end
+%             % Set the duration between data available callbacks
+%             displayDuration = 1/wavesurferModel.Display.UpdateRate;
+%             if self.Duration < displayDuration ,
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+%             else
+%                 numIncrements = floor(self.Duration/displayDuration);
+%                 assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
+%                        self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
+%                        'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
+%             end
             
             % Dimension the cache that will hold acquired data in main
             % memory
