@@ -109,7 +109,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
         end  % method       
         
         function setYLimTightToDataLockedButtonActuated(self)
-            self.Model.toggleYLimTightToDataLocked();
+            self.Model.toggleAreYLimitsLockedTightToData();
             % View update happens automatically
         end  % method       
         
@@ -169,7 +169,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             yHighInModel=ylimInModel(2);
             % Check if this is a real change to avoid infinite loops
             if yLowInFigure~=yLowInModel || yHighInFigure~=yHighInModel ,
-                self.Model.XLim=ylimInFigure;
+                self.Model.YLim=ylimInFigure;
             end
         end  % method
         
@@ -179,6 +179,8 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                 switch controlName ,
                     case 'SetYLimTightToDataButtonGH' ,
                         self.setYLimTightToDataButtonActuated();
+                    case 'SetYLimTightToDataLockedButtonGH' ,
+                        self.setYLimTightToDataLockedButtonActuated();
                     case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
                 end  % switch

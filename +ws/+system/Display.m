@@ -226,8 +226,8 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             
             % Create the scope model
             scopeModel = ws.ScopeModel('Parent', self, ...
-                                          'Tag', scopeTag, ...
-                                          'Title', scopeTitle);
+                                       'Tag', scopeTag, ...
+                                       'Title', scopeTitle);
             
             % add the channels to the scope model                          
             nChannels=length(channelNames);

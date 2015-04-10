@@ -178,6 +178,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Subscribe to some model events
             model.subscribeMe(self,'Update','','update');
             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+            model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
             model.subscribeMe(self,'DataAdded','','modelDataAdded');
             model.subscribeMe(self,'DataCleared','','modelDataCleared');
@@ -309,6 +310,10 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.updateYAxisLimits_();
         end
         
+        function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+            self.updateAreYLimitsLockedTightToData_();
+        end
+        
         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Redimension downsampled data, clearing the existing data in
             % the process
@@ -435,6 +440,9 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %                 isWavesurferIdle=true;  % things are probably fucked anyway...
 %             end            
 
+            % Update the togglebutton
+            self.updateAreYLimitsLockedTightToData_();
+
             % Update the axis limits
             self.updateXAxisLimits_();
             self.updateYAxisLimits_();
@@ -536,6 +544,16 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 set(self.AxesGH_,'YLim',ylimInModel);
             end
         end        
+
+        function updateAreYLimitsLockedTightToData_(self)
+            % Update the axes limits to match those in the model
+            if isempty(self.Model) || ~isvalid(self.Model) ,
+                return
+            end
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+            set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
+        end        
+        
         
 %         function updateAxisLimits(self)
 %             % Update the axes limits to match those in the model

@@ -1,4 +1,4 @@
-classdef ScopeModel < ws.Model % & ws.EventBroadcaster 
+classdef ScopeModel < ws.Model     % & ws.EventBroadcaster 
     properties (Constant=true)
         BackgroundColor = [0 0 0];
         ForegroundColor = [.15 .9 .15];
@@ -8,16 +8,19 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         Marker = 'none';
         GridOn = true;
     end
+
+    properties (Dependent=true, SetAccess=protected)
+        Parent  % the parent Display object
+          % this is SetAccess=protected for historical reasons
+          % would be nice to change it to immutable at some point
+    end
     
     properties (Dependent=true, SetAccess=immutable)
-        Parent  % the parent Display object
         Tag        % This should be a unique tag that identifies this ScopeModel.
                    % This is used as the Tag for any ScopeFigure that uses
                    % this ScopeModel as its model, and should be usable as
                    % a field name in a structure, for saving/loading
                    % purposes.
-        Title        % This is the window title used by any ScopeFigures that use this
-                     % ScopeModel as their Model.
         ChannelNames   % row vector, the channel names shown in this scope
         ChannelColorIndex  
         NChannels
@@ -26,6 +29,8 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     end
     
     properties (Dependent=true)  %(SetObservable = true)
+        Title        % This is the window title used by any ScopeFigures that use this
+                     % ScopeModel as their Model.
         XUnits
         YUnits
         YScale   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
@@ -89,6 +94,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         DidSetChannelUnits
         WindowVisibilityNeedsToBeUpdated
         UpdateYAxisLimits
+        UpdateAreYLimitsLockedTightToData
     end  % events
     
     methods
@@ -142,8 +148,8 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
             result = self.Parent_ ;
         end
         
-        function set.Title(self, newValue)
-            self.Title_ = newValue;
+        function set.Title(self, newValue)            
+            self.Title_ = newValue ;
         end
         
         function result = get.Title(self)
@@ -176,10 +182,10 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         
         function set.AreYLimitsLockedTightToData(self,newValue)
             if islogical(newValue) && isscalar(newValue) ,
-                self.AreYLimitsLockedTightToData=newValue;
+                self.AreYLimitsLockedTightToData_ = newValue ;
             end
+            self.broadcast('UpdateAreYLimitsLockedTightToData');  % Want a special update for this, since it will happen while data is ebing acquired
             self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
-            %self.broadcast('YAutoScaleWasSet');
         end
         
 %         function set.XAutoScroll(self,newValue)

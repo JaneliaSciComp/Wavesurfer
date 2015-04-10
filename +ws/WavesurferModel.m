@@ -179,21 +179,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function delete(self)
             %fprintf('WavesurferModel::delete()\n');
-            if ~isempty(self) ,
-                import ws.utility.*
-                %deleteIfValidHandle(self.TrigListener_);
-                if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
-                    delete(self.PollingTimer_);
-                    self.PollingTimer_ = [] ;
-                end
-                deleteIfValidHandle(self.Acquisition);
-                deleteIfValidHandle(self.Stimulation);
-                deleteIfValidHandle(self.Display);
-                deleteIfValidHandle(self.Triggering);
-                deleteIfValidHandle(self.Logging);
-                deleteIfValidHandle(self.UserFunctions);
-                deleteIfValidHandle(self.Ephys);
+            %if ~isempty(self) ,
+            %import ws.utility.*
+            if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
+                delete(self.PollingTimer_);
+                self.PollingTimer_ = [] ;
             end
+            %deleteIfValidHandle(self.Acquisition);
+            %deleteIfValidHandle(self.Stimulation);
+            %deleteIfValidHandle(self.Display);
+            %deleteIfValidHandle(self.Triggering);
+            %deleteIfValidHandle(self.Logging);
+            %deleteIfValidHandle(self.UserFunctions);
+            %deleteIfValidHandle(self.Ephys);
+            %end
         end
         
 %         function unstring(self)
