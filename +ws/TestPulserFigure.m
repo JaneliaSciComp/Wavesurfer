@@ -11,6 +11,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
         DurationEditUnitsText
         SubtractBaselineCheckbox
         AutoYCheckbox
+        AutoYRepeatCheckbox
         VCToggle
         CCToggle
         TraceAxes
@@ -340,6 +341,15 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                         'String','Auto Y', ...
                         'Callback',@(src,evt)(self.controlActuated('',src,evt)));
 
+            % Auto Y repeat checkbox
+            self.AutoYRepeatCheckbox= ...
+                uicontrol('Parent',self.FigureGH, ...
+                        'Style','checkbox', ...
+                        'Units','pixels', ...
+                        'FontSize',9, ...
+                        'String','Repeat', ...
+                        'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+                    
             % VC/CC toggle buttons
             self.VCToggle= ...
                 uicontrol('Parent',self.FigureGH, ...
@@ -513,7 +523,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             screenSize=screenPosition(3:4);
             
             % Position the figure in the middle of the screen
-            initialSize=[460 400];
+            initialSize=[570 500];
             figureOffset=(screenSize-initialSize)/2;
             figurePosition=[figureOffset initialSize];
             set(self.FigureGH,'Position',figurePosition);
@@ -527,35 +537,45 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             %fprintf('Inside layout()...\n');
 
             % Layout parameters
-            widthFromLeftToStartStopButton=20;
-            heightFromTopToStartStopButton=8;
+            widthFromFigureLeftToStartStopButton=22;
+            heightFromFigureTopToStartStopButton=20;
             startStopButtonWidth=96;
             startStopButtonHeight=28;
             %widthFromStartStopButtonRightToPopupsLeft=30;
             %electrodePopupMenuLabelTextX=134;
-            electrodePopupMenuLabelTextX=145;
+            
+            checkboxBankXOffset = 145 ;
+            checkboxBankWidth = 80 ;
+            widthFromCheckboxBankToElectrodeBank = 16 ;
+            
+            heightFromFigureTopToSubBaseCheckbox = 6 ; 
+            heightBetweenCheckboxes = -1 ;
+            widthOfAutoYRepeatIndent = 14 ;
+            
+            
+            electrodePopupMenuLabelTextX=checkboxBankXOffset + checkboxBankWidth + widthFromCheckboxBankToElectrodeBank ;
             %commandChannelPopupMenuLabelTextX=134;
             heightFromTopToPopup=10;
             heightBetweenPopups=26;
             popupWidth=100;
             widthFromPopupsRightToAmplitudeLeft=20;
             %heightBetweenAplitudeAndDuration=14;
-            heightFromButtonToBaseSubCheckbox=6;
+            %heightFromButtonToBaseSubCheckbox=6;
             editWidth=40;
             editHeight=20;
             widthFromFigureLeftToUpdateRateLeft=20;
             heightFromFigureBottomToUpdateRateBottom=2;
             widthFromFigureRightToGainRight=20;
             heightFromFigureBottomToGainBottom=2;
-            heightFromTopStuffToPlot=4;
+            heightFromTopStuffToPlot=1;
             heightFromBottomStuffToPlot=10;
             widthFromFigureLeftToPlot=0;
             widthFromFigureRightToPlot=0;            
             traceAxesLeftPad=5;
             traceAxesRightPad=5;
             tickLength=5;  % in pixels
-            minimumFigureWidth=460;
-            minimumFigureHeight=300;
+            minimumLayoutWidth=570;  % If the figure gets small, we lay it out as if it was bigger
+            minimumLayoutHeight=500;  
             updateRateTextWidth=30;
             gainTextWidth=60;
             textHeight=20;  % for 9 pt font
@@ -563,7 +583,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             gainUnitsTextWidth=40;  % approximately right for 'GOhm' in 9 pt text.  Don't want layout to change even if units change
             %gainLabelTextWidth=200;  % Approximate width if the string is 'Electrode 1 Resistance: ' [sic]
             gainLabelTextWidth=160;  % Approximate width if the string is 'Electrode 1 Resistance: ' [sic]
-            fromSubBaseToAutoYSpaceWidth=16;
+            %fromSubBaseToAutoYSpaceWidth=16;
             fromAxesToYRangeButtonsWidth=6;
             yRangeButtonSize=20;  % those buttons are square
             spaceBetweenScrollButtons=5;
@@ -575,22 +595,74 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Get the sizes of various things
             figurePosition=get(self.FigureGH,'Position');
-            figureWidth=max(figurePosition(3),minimumFigureWidth);
-            figureHeight=max(figurePosition(4),minimumFigureHeight);
+            figureWidth = figurePosition(3) ;
+            figureHeight = figurePosition(4) ;
+            % When the figure gets small, we layout the widgets as if it were
+            % bigger.  The size we're "pretending" the figure is we call the
+            % "layout" size
+            layoutWidth=max(figureWidth,minimumLayoutWidth) ;  
+            layoutHeight=max(figureHeight,minimumLayoutHeight) ;
+            figureTopYOffset=figureHeight ;  
+              % Use this so that when the figure gets short, the top of the
+              % figure stays put, while the bottom will be outside shown area
             
             % Dependent layout parameters
             
             %
+            %
             % Position thangs
+            %
+            %
+            
+            %
+            % The start/stop button "bank"
             %
             
             % The start/stop button
-            startStopButtonX=widthFromLeftToStartStopButton;
-            startStopButtonY=figureHeight-heightFromTopToStartStopButton-startStopButtonHeight;
+            startStopButtonX=widthFromFigureLeftToStartStopButton;
+            startStopButtonY=figureTopYOffset-heightFromFigureTopToStartStopButton-startStopButtonHeight;
             set(self.StartStopButton, ...
                 'Position',[startStopButtonX startStopButtonY ...
                             startStopButtonWidth startStopButtonHeight]);
-                                             
+                  
+            %
+            % The checkbox "bank"
+            %
+                        
+            % Baseline subtraction checkbox
+            [subtractBaselineCheckboxTextWidth,subtractBaselineCheckboxTextHeight]=ws.getExtent(self.SubtractBaselineCheckbox);
+            subtractBaselineCheckboxWidth=subtractBaselineCheckboxTextWidth+16;  % Add some width to accomodate the checkbox itself
+            subtractBaselineCheckboxHeight=subtractBaselineCheckboxTextHeight;
+            subtractBaselineCheckboxY = figureTopYOffset - heightFromFigureTopToSubBaseCheckbox - subtractBaselineCheckboxHeight ;
+            subtractBaselineCheckboxX = checkboxBankXOffset ;
+            set(self.SubtractBaselineCheckbox, ...
+                'Position',[subtractBaselineCheckboxX subtractBaselineCheckboxY ...
+                            subtractBaselineCheckboxWidth subtractBaselineCheckboxHeight]);
+            
+            % Auto Y checkbox
+            [autoYCheckboxTextWidth,autoYCheckboxTextHeight]=ws.getExtent(self.AutoYCheckbox);
+            autoYCheckboxWidth=autoYCheckboxTextWidth+16;  % Add some width to accomodate the checkbox itself
+            autoYCheckboxHeight=autoYCheckboxTextHeight;
+            autoYCheckboxY = subtractBaselineCheckboxY - heightBetweenCheckboxes - autoYCheckboxHeight ;
+            autoYCheckboxX = checkboxBankXOffset ;
+            set(self.AutoYCheckbox, ...
+                'Position',[autoYCheckboxX autoYCheckboxY ...
+                            autoYCheckboxWidth autoYCheckboxHeight]);
+                        
+            % Auto Y Locked checkbox
+            [autoYRepeatCheckboxTextWidth,autoYRepeatCheckboxTextHeight] = ws.getExtent(self.AutoYRepeatCheckbox) ;
+            autoYRepeatCheckboxWidth = autoYRepeatCheckboxTextWidth + 16 ;  % Add some width to accomodate the checkbox itself
+            autoYRepeatCheckboxHeight = autoYRepeatCheckboxTextHeight ;
+            autoYRepeatCheckboxY = autoYCheckboxY - heightBetweenCheckboxes - autoYRepeatCheckboxHeight ;
+            autoYRepeatCheckboxX = checkboxBankXOffset + widthOfAutoYRepeatIndent ;
+            set(self.AutoYRepeatCheckbox, ...
+                'Position',[autoYRepeatCheckboxX autoYRepeatCheckboxY ...
+                            autoYRepeatCheckboxWidth autoYRepeatCheckboxHeight]);
+
+            % 
+            %  The electrode bank
+            %
+            
             % The command channel popupmenu and its label                                           
             electrodePopupMenuLabelExtent=get(self.ElectrodePopupMenuLabelText,'Extent');
             electrodePopupMenuLabelWidth=electrodePopupMenuLabelExtent(3);
@@ -598,7 +670,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             electrodePopupMenuPosition=get(self.ElectrodePopupMenu,'Position');
             electrodePopupMenuHeight=electrodePopupMenuPosition(4);
             electrodePopupMenuY= ...
-                figureHeight-heightFromTopToPopup-electrodePopupMenuHeight;
+                figureTopYOffset-heightFromTopToPopup-electrodePopupMenuHeight;
             electrodePopupMenuLabelTextY=...
                 electrodePopupMenuY+electrodePopupMenuHeight/2-electrodePopupMenuLabelHeight/2-4;  % shim
             electrodePopupMenuX=electrodePopupMenuLabelTextX+electrodePopupMenuLabelWidth+1;
@@ -608,7 +680,38 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.ElectrodePopupMenu, ...
                 'Position',[electrodePopupMenuX electrodePopupMenuY ...
                             popupWidth electrodePopupMenuHeight]);
+                        
+            % VC, CC toggle buttons
+            clampToggleAreaHeight=clampToggleHeight;
+            clampToggleAreaWidth=clampToggleWidth+interClampToggleWidth+clampToggleWidth;
 
+            %clampToggleAreaCenterX=electrodePopupMenuX+popupWidth/2;
+            clampToggleAreaRightX=electrodePopupMenuX+popupWidth;
+            clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
+            
+            clampToggleAreaTopY=electrodePopupMenuY-electrodePopupToClampToggleAreaHeight;
+            clampToggleAreaX=clampToggleAreaCenterX-clampToggleAreaWidth/2;
+            clampToggleAreaY=clampToggleAreaTopY-clampToggleAreaHeight;
+            
+            % VC toggle button
+            vcToggleX=clampToggleAreaX;
+            vcToggleY=clampToggleAreaY;
+            set(self.VCToggle, ...
+                'Position',[vcToggleX vcToggleY ...
+                            clampToggleWidth clampToggleHeight]);
+                        
+            % CC toggle button
+            ccToggleX=vcToggleX+interClampToggleWidth+clampToggleWidth;
+            ccToggleY=clampToggleAreaY;
+            set(self.CCToggle, ...
+                'Position',[ccToggleX ccToggleY ...
+                            clampToggleWidth clampToggleHeight]);
+
+                        
+            % 
+            %  The amplitude and duration bank
+            %            
+                        
             % The amplitude edit and its label
             [amplitudeEditLabelTextWidth,amplitudeEditLabelTextHeight]=ws.getExtent(self.AmplitudeEditLabelText);
             amplitudeEditLabelTextX=electrodePopupMenuX+popupWidth+widthFromPopupsRightToAmplitudeLeft;
@@ -650,105 +753,20 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                 'Position',[durationEditUnitsTextX durationEditUnitsTextY ...
                             durationEditUnitsTextWidth durationEditUnitsTextHeight]);
             
-            % Baseline subtraction checkbox
-            [subtractBaselineCheckboxTextWidth,subtractBaselineCheckboxTextHeight]=ws.getExtent(self.SubtractBaselineCheckbox);
-            subtractBaselineCheckboxWidth=subtractBaselineCheckboxTextWidth+16;  % Add some width to accomodate the checkbox itself
-            subtractBaselineCheckboxHeight=subtractBaselineCheckboxTextHeight;
-            subtractBaselineCheckboxY=startStopButtonY-heightFromButtonToBaseSubCheckbox-subtractBaselineCheckboxHeight;
-            %subtractBaselineCheckboxX=startStopButtonX+startStopButtonWidth/2-subtractBaselineCheckboxWidth/2;
-            subtractBaselineCheckboxX=startStopButtonX;
-            set(self.SubtractBaselineCheckbox, ...
-                'Position',[subtractBaselineCheckboxX subtractBaselineCheckboxY ...
-                            subtractBaselineCheckboxWidth subtractBaselineCheckboxHeight]);
-            
-            % Auto Y checkbox
-            [autoYCheckboxTextWidth,autoYCheckboxTextHeight]=ws.getExtent(self.AutoYCheckbox);
-            autoYCheckboxWidth=autoYCheckboxTextWidth+16;  % Add some width to accomodate the checkbox itself
-            autoYCheckboxHeight=autoYCheckboxTextHeight;
-            autoYCheckboxY=subtractBaselineCheckboxY;
-            autoYCheckboxX=subtractBaselineCheckboxX+subtractBaselineCheckboxWidth+fromSubBaseToAutoYSpaceWidth;
-            set(self.AutoYCheckbox, ...
-                'Position',[autoYCheckboxX autoYCheckboxY ...
-                            autoYCheckboxWidth autoYCheckboxHeight]);
 
-            % VC, CC toggle buttons
-            clampToggleAreaHeight=clampToggleHeight;
-            clampToggleAreaWidth=clampToggleWidth+interClampToggleWidth+clampToggleWidth;
-
-            %clampToggleAreaCenterX=electrodePopupMenuX+popupWidth/2;
-            clampToggleAreaRightX=electrodePopupMenuX+popupWidth;
-            clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
-            
-            clampToggleAreaTopY=electrodePopupMenuY-electrodePopupToClampToggleAreaHeight;
-            clampToggleAreaX=clampToggleAreaCenterX-clampToggleAreaWidth/2;
-            clampToggleAreaY=clampToggleAreaTopY-clampToggleAreaHeight;
-            
-            % VC toggle button
-            vcToggleX=clampToggleAreaX;
-            vcToggleY=clampToggleAreaY;
-            set(self.VCToggle, ...
-                'Position',[vcToggleX vcToggleY ...
-                            clampToggleWidth clampToggleHeight]);
-            
-            % CC toggle button
-            ccToggleX=vcToggleX+interClampToggleWidth+clampToggleWidth;
-            ccToggleY=clampToggleAreaY;
-            set(self.CCToggle, ...
-                'Position',[ccToggleX ccToggleY ...
-                            clampToggleWidth clampToggleHeight]);
-                                    
-            % The update rate and its label
-            [updateRateTextLabelTextWidth,updateRateTextLabelTextHeight]=ws.getExtent(self.UpdateRateTextLabelText);
-            updateRateTextLabelTextX=widthFromFigureLeftToUpdateRateLeft;
-            updateRateTextLabelTextY=heightFromFigureBottomToUpdateRateBottom;
-            set(self.UpdateRateTextLabelText, ...
-                'Position',[updateRateTextLabelTextX updateRateTextLabelTextY ...
-                            updateRateTextLabelTextWidth updateRateTextLabelTextHeight]);
-            updateRateTextX=updateRateTextLabelTextX+updateRateTextLabelTextWidth+1;  % shim
-            updateRateTextY=heightFromFigureBottomToUpdateRateBottom;
-            set(self.UpdateRateText, ...
-                'Position',[updateRateTextX updateRateTextY ...
-                            updateRateTextWidth updateRateTextLabelTextHeight]);
-            [updateRateUnitsTextWidth,updateRateUnitsTextHeight]=ws.getExtent(self.UpdateRateTextUnitsText);
-            updateRateUnitsTextX=updateRateTextX+updateRateTextWidth+1;  % shim
-            updateRateUnitsTextY=heightFromFigureBottomToUpdateRateBottom;
-            set(self.UpdateRateTextUnitsText, ...
-                'Position',[updateRateUnitsTextX updateRateUnitsTextY ...
-                            updateRateUnitsTextWidth updateRateUnitsTextHeight]);
-            
-            % The gains and associated labels
-            nElectrodes=length(self.GainTexts);
-            for j=1:nElectrodes ,
-                nRowsBelow=nElectrodes-j;
-                thisRowY=heightFromFigureBottomToGainBottom+nRowsBelow*(textHeight+interGainSpaceHeight);
-                
-                gainUnitsTextX=figureWidth-widthFromFigureRightToGainRight-gainUnitsTextWidth;
-                gainUnitsTextY=thisRowY;
-                set(self.GainUnitsTexts(j), ...
-                    'Position',[gainUnitsTextX gainUnitsTextY ...
-                                gainUnitsTextWidth textHeight]);
-                gainTextX=gainUnitsTextX-gainTextWidth-1;  % shim
-                gainTextY=thisRowY;
-                set(self.GainTexts(j), ...
-                    'Position',[gainTextX gainTextY ...
-                                gainTextWidth textHeight]);
-                GainLabelTextX=gainTextX-gainLabelTextWidth-1;  % shim
-                GainLabelTextY=thisRowY;
-                set(self.GainLabelTexts(j), ...
-                    'Position',[GainLabelTextX GainLabelTextY ...
-                                gainLabelTextWidth textHeight]);
-            end
-            
+            %
             % The trace axes
-            topStuffMinimumY=min([subtractBaselineCheckboxY durationEditY]);
+            %
+            nElectrodes=length(self.GainTexts);            
+            topStuffHeight=figureTopYOffset-min([autoYRepeatCheckboxY vcToggleY durationEditY]);
             % topStuffMinimumY=min([subtractBaselineCheckboxY monitorChannelPopupMenuY durationEditY]);
             nBottomRows=max(nElectrodes,1);  % Even when no electrodes, there's still the update rate text
-            bottomStuffMaximumY=heightFromFigureBottomToGainBottom+nBottomRows*textHeight+(nBottomRows-1)*interGainSpaceHeight;
+            bottomStuffMaximumHeight=heightFromFigureBottomToGainBottom+nBottomRows*textHeight+(nBottomRows-1)*interGainSpaceHeight;
             traceAxesAreaX=widthFromFigureLeftToPlot;
-            traceAxesAreaY=bottomStuffMaximumY+heightFromBottomStuffToPlot;
             traceAxesAreaWidth= ...
-                figureWidth-widthFromFigureLeftToPlot-widthFromFigureRightToPlot-yRangeButtonSize-fromAxesToYRangeButtonsWidth;
-            traceAxesAreaHeight=topStuffMinimumY-traceAxesAreaY-heightFromTopStuffToPlot;
+                layoutWidth-widthFromFigureLeftToPlot-widthFromFigureRightToPlot-yRangeButtonSize-fromAxesToYRangeButtonsWidth;
+            traceAxesAreaHeight=layoutHeight-topStuffHeight-bottomStuffMaximumHeight-heightFromBottomStuffToPlot-heightFromTopStuffToPlot;
+            traceAxesAreaY = figureTopYOffset - topStuffHeight - heightFromTopStuffToPlot - traceAxesAreaHeight ;
             set(self.TraceAxes,'OuterPosition',[traceAxesAreaX traceAxesAreaY traceAxesAreaWidth traceAxesAreaHeight]);
             tightInset=get(self.TraceAxes,'TightInset');
             traceAxesX=traceAxesAreaX+tightInset(1)+traceAxesLeftPad;
@@ -786,6 +804,58 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.ScrollDownButton, ...
                 'Position',[scrollDownButtonX scrollDownButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
+                        
+            %
+            % The stuff at the bottom of the figure
+            %
+                                    
+            layoutBottomYOffset = traceAxesAreaY - bottomStuffMaximumHeight ;  
+              % This is the y coord of the bottom of the *layout*.  This is zero
+              % if the figure is tall enough, but can be negative if the figure
+              % is short.
+            updateRateBaselineYOffset = layoutBottomYOffset + heightFromFigureBottomToUpdateRateBottom ;
+            % The update rate and its label
+            [updateRateTextLabelTextWidth,updateRateTextLabelTextHeight]=ws.getExtent(self.UpdateRateTextLabelText);
+            updateRateTextLabelTextX=widthFromFigureLeftToUpdateRateLeft;
+            updateRateTextLabelTextY=updateRateBaselineYOffset;
+            set(self.UpdateRateTextLabelText, ...
+                'Position',[updateRateTextLabelTextX updateRateTextLabelTextY ...
+                            updateRateTextLabelTextWidth updateRateTextLabelTextHeight]);
+            updateRateTextX=updateRateTextLabelTextX+updateRateTextLabelTextWidth+1;  % shim
+            updateRateTextY=updateRateBaselineYOffset;
+            set(self.UpdateRateText, ...
+                'Position',[updateRateTextX updateRateTextY ...
+                            updateRateTextWidth updateRateTextLabelTextHeight]);
+            [updateRateUnitsTextWidth,updateRateUnitsTextHeight]=ws.getExtent(self.UpdateRateTextUnitsText);
+            updateRateUnitsTextX=updateRateTextX+updateRateTextWidth+1;  % shim
+            updateRateUnitsTextY=updateRateBaselineYOffset;
+            set(self.UpdateRateTextUnitsText, ...
+                'Position',[updateRateUnitsTextX updateRateUnitsTextY ...
+                            updateRateUnitsTextWidth updateRateUnitsTextHeight]);
+            
+            % The gains and associated labels
+            for j=1:nElectrodes ,
+                nRowsBelow=nElectrodes-j;
+                thisRowY=layoutBottomYOffset+heightFromFigureBottomToGainBottom+nRowsBelow*(textHeight+interGainSpaceHeight);
+                
+                gainUnitsTextX=layoutWidth-widthFromFigureRightToGainRight-gainUnitsTextWidth;
+                gainUnitsTextY=thisRowY;
+                set(self.GainUnitsTexts(j), ...
+                    'Position',[gainUnitsTextX gainUnitsTextY ...
+                                gainUnitsTextWidth textHeight]);
+                gainTextX=gainUnitsTextX-gainTextWidth-1;  % shim
+                gainTextY=thisRowY;
+                set(self.GainTexts(j), ...
+                    'Position',[gainTextX gainTextY ...
+                                gainTextWidth textHeight]);
+                GainLabelTextX=gainTextX-gainLabelTextWidth-1;  % shim
+                GainLabelTextY=thisRowY;
+                set(self.GainLabelTexts(j), ...
+                    'Position',[GainLabelTextX GainLabelTextY ...
+                                gainLabelTextWidth textHeight]);
+            end
+            
+                        
                         
             % Do some hacking to set the minimum figure size
             % Is seems to work OK to only set this after the figure is made

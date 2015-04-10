@@ -1,59 +1,5 @@
 classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
-    properties  (Access=protected)  % a lot of these props should have Transient=true
-        Parent_  % an Ephys object
-        ElectrodeName_  
-          % a local place to store the ElectrodeName, which gets persisted, unlike Electrode_
-          % Invariant: isempty(self.Electrode_) ||
-          %            isequal(self.Electrode_.Name,self.ElectrodeName_)
-        %CommandChannelName_
-        %MonitorChannelName_
-        %AmplitudeAsString_  % in units of the electrode command channel
-        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The trial duration is twice this.
-        DoSubtractBaseline_
-        SamplingRate_  % in Hz
-        IsRunning_
-        %Gain_  % in units given by GainUnits
-        %Resistance_  % in units given by ResistanceUnits
-        %Monitor_  % the monitor channel signal for the current trial
-        UpdateRate_
-        NSweepsCompletedThisRun_
-        InputTask_
-        OutputTask_
-        TimerValue_
-        LastToc_
-        YLimits_
-        IsAutoY_  % if true, the y limits are synced to the monitor signal currently in view
-        AreYLimitsForRunDetermined_  %  whether the proper y limits for the ongoing run have been determined
-        IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
-        IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
-        %MonitorChannelScaleCached_=nan
-        %CommandChannelScaleCached_=nan
-        AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during trials
-        IsCCPerElectrodeCached_  
-        IsVCPerElectrodeCached_  
-        MonitorChannelInverseScalePerElectrodeCached_
-        %CommandChannelScalePerElectrodeCached_
-        GainPerElectrode_
-        GainOrResistancePerElectrode_
-        MonitorPerElectrode_
-        ElectrodeIndexCached_
-        MonitorCached_  % a cache of the monitor signal for the current electrode
-        %SweepDurationCached_;  % s
-        NScansInSweepCached_;
-        NElectrodesCached_;
-        %DtCached_;  % s
-        I0BaseCached_;
-        IfBaseCached_;
-        I0PulseCached_;
-        IfPulseCached_;
-        %IsStopping_
-    end
-    
-    properties  (Access=protected, Transient=true)
-        Electrode_  % the current electrode, or empty if there isn't one        
-    end
-    
-    properties (Dependent=true, Hidden=true)
+    properties (Dependent=true)
         Parent
         Electrode
         ElectrodeName
@@ -63,9 +9,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         IsAutoY
         YLimits
         IsRunning
+        ElectrodeMode  % mode of the current electrode
     end
     
-    properties (Dependent = true, SetAccess = immutable, Hidden=true)
+    properties (Dependent = true, SetAccess = immutable)  % there should be many fewer of these
         CommandChannelName  % For the current electrode
         MonitorChannelName  % For the current electrode
         Dt  % s
@@ -99,7 +46,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         MonitorChannelScale
         CommandChannelScale
         AreYLimitsForRunDetermined
-        AutomaticYLimits
+        %AutomaticYLimits
         Electrodes
         NElectrodes
         AmplitudeAsDoublePerElectrode
@@ -120,9 +67,58 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         GainOrResistancePerElectrode
     end
     
-    properties (Dependent=true)
-        ElectrodeMode  % mode of the current electrode
+    properties  (Access=protected)  % need to see if some of these things should be transient
+        ElectrodeName_  
+          % a local place to store the ElectrodeName, which gets persisted, unlike Electrode_
+          % Invariant: isempty(self.Electrode_) ||
+          %            isequal(self.Electrode_.Name,self.ElectrodeName_)
+        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The trial duration is twice this.
+        DoSubtractBaseline_
+        SamplingRate_  % in Hz
+        YLimits_
+        IsAutoY_  % if true, the y limits are synced to the monitor signal currently in view
+        IsAutoYRepeating_
+            % If IsAutoY_ is true:
+            %     If IsAutoYRepeating_ is true , we sync the y limits to the monitor signal currently in
+            %     view every N test pulses.  if false, the syncing is only done once,
+            %     after one of the early test pulses
+            % If IsAutoY_ is false:
+            %     Has no effect.
+        DesiredRateOfAutoYing_  
+            % The desired rate of syncing the Y to the data            
     end
+        
+    properties  (Access=protected, Transient=true)
+        Parent_  % an Ephys object
+        Electrode_  % the current electrode, or empty if there isn't one.  We persist ElectrodeName_, not this.  
+        IsRunning_
+        UpdateRate_
+        NSweepsCompletedThisRun_
+        InputTask_
+        OutputTask_
+        TimerValue_
+        LastToc_
+        AreYLimitsForRunDetermined_  %  whether the proper y limits for the ongoing run have been determined
+        ElectrodeIndexCached_
+        IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
+        IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
+        AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during trials
+        IsCCPerElectrodeCached_  
+        IsVCPerElectrodeCached_  
+        MonitorChannelInverseScalePerElectrodeCached_
+        MonitorCached_  % a cache of the monitor signal for the current electrode
+        NScansInSweepCached_
+        NElectrodesCached_
+        I0BaseCached_
+        IfBaseCached_
+        I0PulseCached_
+        IfPulseCached_
+        GainPerElectrode_
+        GainOrResistancePerElectrode_
+        MonitorPerElectrode_
+        NTestPulsesPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many pulses
+        NTestPulsesSinceLastAutoY_
+    end    
     
     events
         %MayHaveChanged
@@ -171,6 +167,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             %self.AmplitudeAsDouble_=self.Amplitude.toDouble();  % keep around in this form for speed during trials
             self.DoSubtractBaseline_=true;
             self.IsAutoY_=true;
+            self.IsAutoYRepeating_=false;
             self.YLimits_=[-10 +10];
             self.SamplingRate_=20e3;  % Hz
             self.IsRunning_=false;
@@ -462,7 +459,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             if islogical(newValue) ,
                 self.IsAutoY_=newValue;
                 if self.IsAutoY_ ,                
-                    yLimits=self.AutomaticYLimits;
+                    yLimits=self.automaticYLimits();
                     if ~isempty(yLimits) ,                    
                         self.YLimits_=yLimits;
                     end
@@ -853,7 +850,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             value=self.AreYLimitsForRunDetermined_;
         end
 
-        function yLimits=get.AutomaticYLimits(self)
+        function yLimits=automaticYLimits(self)
             % Trys to determine the automatic y limits from the monitor
             % signal.  If succful, returns them.  If unsuccessful, returns empty.
             if self.IsRunning_ ,
@@ -1335,7 +1332,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % determined, try to determine them.  Sets
             % AreYLimitsForRunDetermined_ and AutomaticYLimits_ if successful.
             if self.IsRunning && ~self.AreYLimitsForRunDetermined_ ,
-                yLimits=self.AutomaticYLimits;
+                yLimits=self.automaticYLimits();
                 if ~isempty(yLimits) ,
                     self.AreYLimitsForRunDetermined_=true;
                     self.YLimits_=yLimits;
@@ -1347,7 +1344,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % Syncs the Y limits to the monitor signal, if self is in the
             % right mode and the monitor signal is well-behaved.
             if self.IsYAuto_ ,
-                automaticYLimits=self.AutomaticYLimits;
+                automaticYLimits=self.automaticYLimits();
                 if ~isempty(automaticYLimits) ,
                     self.YLimits_=automaticYLimits;
                 end
