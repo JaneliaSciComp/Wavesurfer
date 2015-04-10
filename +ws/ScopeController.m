@@ -92,7 +92,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 %             arrayfun(@(w)set(w, 'Visible', 'on'), validFigure);
             
             self.Figure.show();
-        end
+        end  % method
         
         function hideFigureForReals_(self)
             % Low-level method that actually makes the window invisible
@@ -101,12 +101,17 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 %             arrayfun(@(w)set(w, 'Visible', 'off'), validFigure);
 
             self.Figure.hide();
-        end
+        end  % method
         
         function setYLimTightToDataButtonActuated(self)
-            self.Model.setYLimTightToData();
+            self.Model.setYAxisLimitsTightToData();
             % View update happens automatically
-        end       
+        end  % method       
+        
+        function setYLimTightToDataLockedButtonActuated(self)
+            self.Model.toggleAreYLimitsLockedTightToData();
+            % View update happens automatically
+        end  % method       
         
         function displayEnablementMayHaveChanged(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Called to advise the controller that it may need to show/hide
@@ -114,7 +119,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             % Currently, calls self.updateWindowVisibility(), which queries the WavesurferModel.Display to see whether
             % the window should be visible, and adjusts accordingly.
             self.updateWindowVisibility();
-        end
+        end  % method
         
         function updateWindowVisibility(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Queries the WavesurferModel.Display and the scope model to see whether
@@ -138,7 +143,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                     self.hideFigureForReals_();
                 end
             end            
-        end
+        end  % method
         
         function didSetXLimInView(self,varargin)
             %fprintf('ScopeController::didSetXLimInView()\n');
@@ -148,10 +153,11 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             xlimInModel=self.Model.XLim;
             xLowInModel=xlimInModel(1);
             xHighInModel=xlimInModel(2);
+            % Check if this is a real change to avoid infinite loops
             if xLowInFigure~=xLowInModel || xHighInFigure~=xHighInModel ,
                 self.Model.XLim=xlimInFigure;
             end
-        end
+        end  % method
         
         function didSetYLimInView(self,varargin)
             %fprintf('ScopeController::didSetYLimInView()\n');
@@ -161,18 +167,21 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             ylimInModel=self.Model.YLim;
             yLowInModel=ylimInModel(1);
             yHighInModel=ylimInModel(2);
+            % Check if this is a real change to avoid infinite loops
             if yLowInFigure~=yLowInModel || yHighInFigure~=yHighInModel ,
-                self.Model.XLim=ylimInFigure;
+                self.Model.YLim=ylimInFigure;
             end
-        end
+        end  % method
         
-        function controlActuated(self,controlName,source,event) %#ok<INUSL,INUSD>
-            figureObject=self.Figure;
+        function controlActuated(self,controlName,source,event)  %#ok<INUSD>
+            %figureObject=self.Figure;
             try
-                switch source ,
-                    case figureObject.SetYLimTightToDataButtonGH ,
+                switch controlName ,
+                    case 'SetYLimTightToDataButtonGH' ,
                         self.setYLimTightToDataButtonActuated();
-                    case figureObject.YLimitsMenuItemGH ,
+                    case 'SetYLimTightToDataLockedButtonGH' ,
+                        self.setYLimTightToDataLockedButtonActuated();
+                    case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
                 end  % switch
             catch me
@@ -189,7 +198,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
             self.MyYLimDialogController=...
                 ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'));
-        end        
+        end  % method        
     end  % public methods block
 
     methods (Access=protected)
