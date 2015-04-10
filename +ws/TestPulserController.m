@@ -33,6 +33,8 @@ classdef TestPulserController < ws.Controller
                             self.subtractBaselineCheckboxTouched();
                         case fig.AutoYCheckbox ,
                             self.autoYCheckboxTouched();
+                        case fig.AutoYRepeatCheckbox ,
+                            self.autoYRepeatCheckboxTouched();
                         case fig.AmplitudeEdit ,
                             self.amplitudeEditTouched();
                         case fig.DurationEdit ,
@@ -94,6 +96,11 @@ classdef TestPulserController < ws.Controller
         function autoYCheckboxTouched(self)
             value=logical(get(self.Figure.AutoYCheckbox,'Value'));
             self.Model.IsAutoY=value;
+        end
+        
+        function autoYRepeatCheckboxTouched(self)
+            value=logical(get(self.Figure.AutoYRepeatCheckbox,'Value'));
+            self.Model.IsAutoYRepeating=value;
         end
         
         function amplitudeEditTouched(self)

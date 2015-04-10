@@ -1,5 +1,5 @@
 classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
-    properties (Dependent=true)
+    properties (Dependent=true)  % do we need *so* many public properties?
         Parent
         Electrode
         ElectrodeName
@@ -7,12 +7,13 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         PulseDurationInMsAsString  % the duration of the pulse, in ms.  The trial duration is twice this.
         DoSubtractBaseline
         IsAutoY
+        IsAutoYRepeating
         YLimits
         IsRunning
-        ElectrodeMode  % mode of the current electrode
+        ElectrodeMode  % mode of the current electrode (VC/CC)
     end
     
-    properties (Dependent = true, SetAccess = immutable)  % there should be many fewer of these
+    properties (Dependent = true, SetAccess = immutable)  % do we need *so* many public properties?
         CommandChannelName  % For the current electrode
         MonitorChannelName  % For the current electrode
         Dt  % s
@@ -45,7 +46,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         MonitorChannelID
         MonitorChannelScale
         CommandChannelScale
-        AreYLimitsForRunDetermined
+        %AreYLimitsForRunDetermined
         %AutomaticYLimits
         Electrodes
         NElectrodes
@@ -84,7 +85,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             %     after one of the early test pulses
             % If IsAutoY_ is false:
             %     Has no effect.
-        DesiredRateOfAutoYing_  
+        DesiredRateOfAutoYing_ = 10  % Hz, for now this never changes
             % The desired rate of syncing the Y to the data            
     end
         
@@ -98,7 +99,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         OutputTask_
         TimerValue_
         LastToc_
-        AreYLimitsForRunDetermined_  %  whether the proper y limits for the ongoing run have been determined
+        %AreYLimitsForRunDetermined_  %  whether the proper y limits for the ongoing run have been determined
         ElectrodeIndexCached_
         IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
         IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
@@ -116,8 +117,8 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         GainPerElectrode_
         GainOrResistancePerElectrode_
         MonitorPerElectrode_
-        NTestPulsesPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many pulses
-        NTestPulsesSinceLastAutoY_
+        NSweepsPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many sweeps (if we can)
+        NSweepsCompletedAsOfLastYLimitsUpdate_
     end    
     
     events
@@ -204,13 +205,13 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %         % subscribed-to event happens
 %         function eventHappened(self,broadcaster,eventName,propertyName,source,event)   %#ok<INUSD,INUSL>
 %             if isequal(eventName,'DidSetAnalogChannelUnitsOrScales')
-%                 self.clearExistingSweepIfPresent();
+%                 self.clearExistingSweepIfPresent_();
 %                 self.broadcast('Update');
 %             end
 %         end
         
         function self=didSetAnalogChannelUnitsOrScales(self)
-            self.clearExistingSweepIfPresent();
+            self.clearExistingSweepIfPresent_();
             self.broadcast('Update');            
         end
                 
@@ -308,7 +309,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %             newValueFiltered=channelNames(strcmp(newValue,channelNames));
 %             if ~isempty(newValueFiltered) ,
 %                 self.CommandChannelName_=newValueFiltered;
-%                 self.clearExistingSweepIfPresent();
+%                 self.clearExistingSweepIfPresent_();
 %             end
 %             self.broadcast('Update');
 %         end
@@ -327,7 +328,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 %             newValueFiltered=channelNames(strcmp(newValue,channelNames));
 %             if ~isempty(newValueFiltered) ,
 %                 self.MonitorChannelName_=newValueFiltered;
-%                 self.clearExistingSweepIfPresent();
+%                 self.clearExistingSweepIfPresent_();
 %             end
 %             self.broadcast('Update');
 %         end        
@@ -380,7 +381,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                 if isfinite(newValue) ,
                     self.Electrode_.TestPulseAmplitude=newString;
                     %self.AmplitudeAsDouble_=newValue;
-                    self.clearExistingSweepIfPresent();
+                    self.clearExistingSweepIfPresent_();
                 end
             end
             self.broadcast('Update');
@@ -398,7 +399,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             newValue=str2double(newString);
             if ~isnan(newValue) && 5<=newValue && newValue<=500,
                 self.PulseDurationInMsAsString_=strtrim(newString);
-                self.clearExistingSweepIfPresent();
+                self.clearExistingSweepIfPresent_();
             end
             self.broadcast('Update');
         end
@@ -446,7 +447,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         function set.DoSubtractBaseline(self,newValue)
             if islogical(newValue) ,
                 self.DoSubtractBaseline_=newValue;
-                self.clearExistingSweepIfPresent();
+                self.clearExistingSweepIfPresent_();
             end
             self.broadcast('Update');
         end
@@ -468,6 +469,17 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.broadcast('Update');
         end
         
+        function value=get.IsAutoYRepeating(self)
+            value=self.IsAutoYRepeating_;
+        end
+        
+        function set.IsAutoYRepeating(self,newValue)
+            if islogical(newValue) && isscalar(newValue) ,
+                self.IsAutoYRepeating_=newValue;
+            end
+            self.broadcast('Update');
+        end
+        
         function value=get.SamplingRate(self)
             value=self.SamplingRate_;
         end
@@ -475,7 +487,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         function set.SamplingRate(self,newValue)  % in Hz
             if isfinite(newValue) && newValue>0 ,
                 self.SamplingRate_=newValue;
-                self.clearExistingSweepIfPresent();                
+                self.clearExistingSweepIfPresent_();                
             end
             self.broadcast('Update');
         end
@@ -846,9 +858,9 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             end
         end
         
-        function value=get.AreYLimitsForRunDetermined(self)
-            value=self.AreYLimitsForRunDetermined_;
-        end
+%         function value=get.AreYLimitsForRunDetermined(self)
+%             value=self.AreYLimitsForRunDetermined_;
+%         end
 
         function yLimits=automaticYLimits(self)
             % Trys to determine the automatic y limits from the monitor
@@ -933,7 +945,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % Called by the parent Ephys when an electrode is added.
             
             % Redimension MonitorPerElectrode_ appropriately, etc.
-            self.clearExistingSweepIfPresent()
+            self.clearExistingSweepIfPresent_()
 
             % If there's no current electrode, set Electrode to point to
             % the newly-created one.            
@@ -947,10 +959,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % removed.
             
             % Redimension MonitorPerElectrode_ appropriately, etc.
-            self.clearExistingSweepIfPresent()
+            self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
-            self.changeElectrodeIfCurrentOneIsNotAvailable();
+            self.changeElectrodeIfCurrentOneIsNotAvailable_();
         end  % function
         
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSD>
@@ -963,10 +975,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         
         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
             % Redimension MonitorPerElectrode_ appropriately, etc.
-            self.clearExistingSweepIfPresent()
+            self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
-            self.changeElectrodeIfCurrentOneIsNotAvailable();
+            self.changeElectrodeIfCurrentOneIsNotAvailable_();
         end
         
         function start(self)
@@ -1066,8 +1078,26 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.I0PulseCached_ = floor(t0Pulse/dt)+1;
             self.IfPulseCached_ = floor(tfPulse/dt);            
 
+            % Set the where-the-rubber-meets-the-road auto-Y parameters, given the user-supplied parameters
+            if self.IsAutoY_ ,
+                if self.IsAutoYRepeating_ ,
+                    % repeating auto y
+                    self.NSweepsCompletedAsOfLastYLimitsUpdate_ = -inf ;
+                    self.NSweepsPerAutoY_ =  min(1,round(1/(self.SweepDuration * self.DesiredRateOfAutoYing_))) ;
+                else
+                    % Auto Y only at start
+                    self.NSweepsCompletedAsOfLastYLimitsUpdate_ = -inf ;
+                    self.NSweepsPerAutoY_ = inf ;
+                        % this ends up working b/c inf>=inf in IEEE
+                        % floating-point 
+                end
+            else
+                % No auto Y
+                self.NSweepsCompletedAsOfLastYLimitsUpdate_ = inf ;  % this will make it so that y limits are never updated
+                self.NSweepsPerAutoY_ = 1 ;  % this doesn't matter, b/c of the line above, so just set to unity
+            end
+            
             % Finish up the start
-            self.AreYLimitsForRunDetermined_=~self.IsAutoY_;  % if y is not auto, then the current y limits are kept
             self.NSweepsCompletedThisRun_=0;
             self.IsRunning_=true;
             %self.broadcast('Update');
@@ -1224,7 +1254,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             end
             self.MonitorCached_=self.MonitorPerElectrode_(:,self.ElectrodeIndexCached_);
             %end
-            self.tryToDetermineYLimitsForRun();
+            self.tryToSetYLimitsIfCalledFor_();
             self.NSweepsCompletedThisRun_=self.NSweepsCompletedThisRun_+1;
             
             % Update the UpdateRate_
@@ -1320,38 +1350,40 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
     end  % methods
         
     methods (Access=protected)
-        function clearExistingSweepIfPresent(self)
+        function clearExistingSweepIfPresent_(self)
             self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
             self.GainPerElectrode_=nan(1,self.NElectrodes);
             self.GainOrResistancePerElectrode_=nan(1,self.NElectrodes);
             self.UpdateRate_=nan;
         end
         
-        function tryToDetermineYLimitsForRun(self)
-            % If running and the y limits for the run haven't been
-            % determined, try to determine them.  Sets
-            % AreYLimitsForRunDetermined_ and AutomaticYLimits_ if successful.
-            if self.IsRunning && ~self.AreYLimitsForRunDetermined_ ,
-                yLimits=self.automaticYLimits();
-                if ~isempty(yLimits) ,
-                    self.AreYLimitsForRunDetermined_=true;
-                    self.YLimits_=yLimits;
+        function tryToSetYLimitsIfCalledFor_(self)
+            % If setting the y limits is appropriate right now, try to set them
+            % Sets AreYLimitsForRunDetermined_ and YLimits_ if successful.
+            if self.IsRunning ,
+                nSweepsSinceLastUpdate = self.NSweepsCompletedThisRun_ - self.NSweepsCompletedAsOfLastYLimitsUpdate_ ;
+                if nSweepsSinceLastUpdate >= self.NSweepsPerAutoY_ ,
+                    yLimits=self.automaticYLimits();
+                    if ~isempty(yLimits) ,
+                        self.NSweepsCompletedAsOfLastYLimitsUpdate_ = self.NSweepsCompletedThisRun_ ;
+                        self.YLimits_ = yLimits ;
+                    end
                 end
             end
         end  % function
         
-        function autosetYLimits(self)
-            % Syncs the Y limits to the monitor signal, if self is in the
-            % right mode and the monitor signal is well-behaved.
-            if self.IsYAuto_ ,
-                automaticYLimits=self.automaticYLimits();
-                if ~isempty(automaticYLimits) ,
-                    self.YLimits_=automaticYLimits;
-                end
-            end
-        end
+%         function autosetYLimits_(self)
+%             % Syncs the Y limits to the monitor signal, if self is in the
+%             % right mode and the monitor signal is well-behaved.
+%             if self.IsYAuto_ ,
+%                 automaticYLimits=self.automaticYLimits();
+%                 if ~isempty(automaticYLimits) ,
+%                     self.YLimits_=automaticYLimits;
+%                 end
+%             end
+%         end
 
-        function changeElectrodeIfCurrentOneIsNotAvailable(self)
+        function changeElectrodeIfCurrentOneIsNotAvailable_(self)
             % Checks that the Electrode_ is still a valid choice.  If not,
             % tries to find another one.  If that also fails, sets
             % Electrode_ to empty.  Also, if Electrode_ is empty but there
