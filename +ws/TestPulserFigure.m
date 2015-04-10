@@ -11,7 +11,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
         DurationEditUnitsText
         SubtractBaselineCheckbox
         AutoYCheckbox
-        AutoYRepeatCheckbox
+        AutoYRepeatingCheckbox
         VCToggle
         CCToggle
         TraceAxes
@@ -253,6 +253,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                                               'Enable',onIff(isWavesurferIdleOrTestPulsing));
             set(self.AutoYCheckbox,'Value',self.Model.IsAutoY, ...
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing));
+            set(self.AutoYRepeatingCheckbox,'Value',self.Model.IsAutoYRepeating, ...
+                                            'Enable',onIff(isWavesurferIdleOrTestPulsing)&&self.Model.IsAutoY);
                                     
             set(self.VCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
                                              ~isempty(electrode) && ...
@@ -342,12 +344,12 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                         'Callback',@(src,evt)(self.controlActuated('',src,evt)));
 
             % Auto Y repeat checkbox
-            self.AutoYRepeatCheckbox= ...
+            self.AutoYRepeatingCheckbox= ...
                 uicontrol('Parent',self.FigureGH, ...
                         'Style','checkbox', ...
                         'Units','pixels', ...
                         'FontSize',9, ...
-                        'String','Repeat', ...
+                        'String','Repeating', ...
                         'Callback',@(src,evt)(self.controlActuated('',src,evt)));
                     
             % VC/CC toggle buttons
@@ -550,7 +552,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             heightFromFigureTopToSubBaseCheckbox = 6 ; 
             heightBetweenCheckboxes = -1 ;
-            widthOfAutoYRepeatIndent = 14 ;
+            widthOfAutoYRepeatingIndent = 14 ;
             
             
             electrodePopupMenuLabelTextX=checkboxBankXOffset + checkboxBankWidth + widthFromCheckboxBankToElectrodeBank ;
@@ -650,14 +652,14 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                             autoYCheckboxWidth autoYCheckboxHeight]);
                         
             % Auto Y Locked checkbox
-            [autoYRepeatCheckboxTextWidth,autoYRepeatCheckboxTextHeight] = ws.getExtent(self.AutoYRepeatCheckbox) ;
-            autoYRepeatCheckboxWidth = autoYRepeatCheckboxTextWidth + 16 ;  % Add some width to accomodate the checkbox itself
-            autoYRepeatCheckboxHeight = autoYRepeatCheckboxTextHeight ;
-            autoYRepeatCheckboxY = autoYCheckboxY - heightBetweenCheckboxes - autoYRepeatCheckboxHeight ;
-            autoYRepeatCheckboxX = checkboxBankXOffset + widthOfAutoYRepeatIndent ;
-            set(self.AutoYRepeatCheckbox, ...
-                'Position',[autoYRepeatCheckboxX autoYRepeatCheckboxY ...
-                            autoYRepeatCheckboxWidth autoYRepeatCheckboxHeight]);
+            [autoYRepeatingCheckboxTextWidth,autoYRepeatingCheckboxTextHeight] = ws.getExtent(self.AutoYRepeatingCheckbox) ;
+            autoYRepeatingCheckboxWidth = autoYRepeatingCheckboxTextWidth + 16 ;  % Add some width to accomodate the checkbox itself
+            autoYRepeatingCheckboxHeight = autoYRepeatingCheckboxTextHeight ;
+            autoYRepeatingCheckboxY = autoYCheckboxY - heightBetweenCheckboxes - autoYRepeatingCheckboxHeight ;
+            autoYRepeatingCheckboxX = checkboxBankXOffset + widthOfAutoYRepeatingIndent ;
+            set(self.AutoYRepeatingCheckbox, ...
+                'Position',[autoYRepeatingCheckboxX autoYRepeatingCheckboxY ...
+                            autoYRepeatingCheckboxWidth autoYRepeatingCheckboxHeight]);
 
             % 
             %  The electrode bank
@@ -758,7 +760,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % The trace axes
             %
             nElectrodes=length(self.GainTexts);            
-            topStuffHeight=figureTopYOffset-min([autoYRepeatCheckboxY vcToggleY durationEditY]);
+            topStuffHeight=figureTopYOffset-min([autoYRepeatingCheckboxY vcToggleY durationEditY]);
             % topStuffMinimumY=min([subtractBaselineCheckboxY monitorChannelPopupMenuY durationEditY]);
             nBottomRows=max(nElectrodes,1);  % Even when no electrodes, there's still the update rate text
             bottomStuffMaximumHeight=heightFromFigureBottomToGainBottom+nBottomRows*textHeight+(nBottomRows-1)*interGainSpaceHeight;
