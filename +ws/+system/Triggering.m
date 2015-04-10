@@ -52,6 +52,16 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         AcquisitionUsesASAPTriggering_ = true
         StimulationUsesAcquisitionTriggerScheme_ = true
     end
+
+    properties (Access=protected, Transient=true)
+        MasterTriggerDABSTask_
+    end
+        
+    properties (Constant=true, Access=protected)
+        MasterTriggerPhysicalChannelName_ = 'pfi8'
+        MasterTriggerPFIID_ = 8
+        MasterTriggerEdge_ = ws.ni.TriggerEdge.Rising
+    end
     
     methods
         function self = Triggering(parent)
@@ -157,24 +167,23 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
         end  % function
         
-        function acquireHardwareResources(self) %#ok<MANU>
-            % Nothing to do here, because trigger tasks are only acquired
-            % just before use
-%             for i=1:length(self.TriggerSources) ,                
-%                 self.TriggerSource(i).acquireHardwareResources();
-%             end
+        function acquireHardwareResources(self) 
+            if isempty(self.MasterTriggerDABSTask_) ,
+                self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('Wavesurfer Master Trigger Task');
+                self.MasterTriggerDABSTask_.createDOChan(self.Sources(1).DeviceName, self.MasterTriggerPhysicalChannelName_);
+                self.MasterTriggerDABSTask_.writeDigitalData(false);
+            end
         end  % function
 
-        function releaseHardwareResources(self) %#ok<MANU>
-            % Nothing to do here, because trigger tasks are released
-            % just after use
-%             for i=1:length(self.TriggerSources) ,                
-%                 self.TriggerSource(i).releaseHardwareResources();
-%             end
+        function releaseHardwareResources(self) 
+            ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
+            self.MasterTriggerDABSTask_ = [] ;
         end
         
         function delete(self)
-            self.Parent=[];
+            ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
+            self.MasterTriggerDABSTask_ = [] ;
+            self.Parent = [] ;
         end  % function
         
         function out = get.prvAcquisitionTriggerSchemeSourceIndex(self)
@@ -336,29 +345,41 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
             % whether we start the triggers for each trial, or only for the
             % first trial.
-%             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
-%                 % Only start if this is the first trial in the set.
-%                 if nTrialsCompletedInSet==0 ,
-%                     self.ContinuousModeTriggerScheme.start();
-%                 end
-%             else
-                % Trial-based acquisition
-                % if ASAP triggering, start for each trial.  If not, only
-                % start the acq
-                if self.AcquisitionUsesASAPTriggering ,
-                    % In this case, start the acq & stim trigger tasks on
-                    % each trial.
+            
+            % Start the trigger tasks, if appropriate
+            if self.AcquisitionUsesASAPTriggering ,
+                % In this case, start the acq & stim trigger tasks on
+                % each trial.
+                self.startAllDistinctTrialBasedTriggers();
+            else
+                % Using "ballistic" triggering
+                if nTrialsCompletedInSet==0 ,
+                    % For the first trial in the set, need to start the
+                    % acq task (if internal), and also the stim task,
+                    % if it's internal but distinct.
                     self.startAllDistinctTrialBasedTriggers();
-                else
-                    % Using "ballistic" triggering
-                    if nTrialsCompletedInSet==0 ,
-                        % For the first trial in the set, need to start the
-                        % acq task (if internal), and also the stim task,
-                        % if it's internal but distinct.
-                        self.startAllDistinctTrialBasedTriggers();
-                    end
                 end
-%             end
+            end
+                
+            % Pulse the master trigger, if appropriate
+            if self.AcquisitionUsesASAPTriggering ,
+                % In this case, start the acq & stim trigger tasks on
+                % each trial.
+                self.pulseMasterTrigger();
+            else
+                % Using "ballistic" triggering
+                if nTrialsCompletedInSet==0 ,
+                    % For the first trial in the set, need to start the
+                    % acq task (if internal), and also the stim task,
+                    % if it's internal but distinct.
+                    self.pulseMasterTrigger();
+                end
+            end
+            
+            % Notify the WSM, which starts the polling timer
+            if nTrialsCompletedInSet==0 ,
+                self.Parent.triggeringSubsystemIsAboutToStartFirstTrialInExperiment();
+            end            
         end  % function
 
         function startAllDistinctTrialBasedTriggers(self)
@@ -370,9 +391,18 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                     self.IsStimulationCounterTriggerTaskRunning=true;
                 end                    
                 thisTriggerScheme.start();
-            end            
+            end        
+%             % Now produce a pulse on the master trigger, which will truly start things
+%             self.MasterTriggerDABSTask_.writeDigitalData(true);
+%             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
 
+        function pulseMasterTrigger(self)
+            % Produce a pulse on the master trigger, which will truly start things
+            self.MasterTriggerDABSTask_.writeDigitalData(true);
+            self.MasterTriggerDABSTask_.writeDigitalData(false);            
+        end  % function
+        
 %         function startStimulationTrialBasedTriggerIfDistinct(self)
 %             % Starts the stim trial-based trigger if it's different from
 %             % the acq trial-based one.
@@ -408,7 +438,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
 %         end  % function        
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSL>
+        function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSD>
             self.acquireHardwareResources();            
 %             if experimentMode == ws.ApplicationState.AcquiringTrialBased ,
                 if self.AcquisitionUsesASAPTriggering ,
@@ -424,21 +454,21 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
         end  % function
         
-        function willPerformTrial(self, wavesurferModel)
+        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             if self.AcquisitionUsesASAPTriggering ,
             %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
                 self.setupInternalTrialBasedTriggers();
             end
         end  % function
 
-        function didPerformTrial(self, wavesurferModel)
+        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
                 self.cleanup();
             end
         end  % function
         
-        function didAbortTrial(self, wavesurferModel)
+        function didAbortTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
                 self.cleanup();
@@ -458,14 +488,15 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             for idx = 1:numel(triggerSchemes) ,
                 thisTriggerScheme=triggerSchemes{idx};
                 thisTriggerScheme.setup();
-                % Each trigger output is generated by a nidaqmx counter
-                % task.  These tasks can themselves be configured to start
-                % when they receive a trigger.  Here, we set the non-acq
-                % trigger outputs to start when they receive a trigger edge on the
-                % same PFI line that triggers the acquisition task.
-                if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
-                    thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
-                end
+%                 % Each trigger output is generated by a nidaqmx counter
+%                 % task.  These tasks can themselves be configured to start
+%                 % when they receive a trigger.  Here, we set the non-acq
+%                 % trigger outputs to start when they receive a trigger edge on the
+%                 % same PFI line that triggers the acquisition task.
+%                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
+%                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+%                 end                
+                thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
             end  % function            
         end  % function
         
@@ -772,4 +803,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
     end  % class methods block
         
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Call the task to do the real work
+            self.AcquisitionTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+            self.StimulationTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+        end
+    end    
 end

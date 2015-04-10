@@ -124,7 +124,7 @@ classdef ChannelsController < ws.Controller
 
     methods (Access=protected)
         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This method is inhierited from AbstractController, and is
+            % This method is inherited from AbstractController, and is
             % called after the user indicates she wants to close the
             % window.  Returns true if the window should _not_ close, false
             % if it should go ahead and close.
@@ -132,7 +132,7 @@ classdef ChannelsController < ws.Controller
             
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
-            if ~isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                 isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
                 if ~isIdle ,
                     shouldStayPut=true;

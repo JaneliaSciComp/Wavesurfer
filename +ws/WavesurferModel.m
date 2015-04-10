@@ -88,9 +88,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         t_
         TrialAcqSampleCount_
         FromExperimentStartTicId_
+        FromTrialStartTicId_
         TimeOfLastWillPerformTrial_        
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceExperimentStart_ = 0
+        PollingTimer_
+        MinimumPollingDt_
+        TimeOfLastPollInTrial_
     end
     
     events
@@ -153,6 +157,21 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
             %self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
 
+            % Create a timer object to poll during acquisition/stimulation
+            % We can't set the callbacks here, b/c timers don't seem to behave like other objects for the purposes of
+            % object destruction.  If the polling timer has callbacks that point at the WavesurferModel, and the WSM
+            % points at the polling timer (as it will), then that seems to function as a reference loop that Matlab
+            % can't figure out is reclaimable b/c it's not refered to anywhere.  So we set the callbacks just before we
+            % start the timer, and we clear them just after we stop the timer.  This seems to solve the problem, and the
+            % WSM gets deleted once there are no more references to it.
+            self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
+                                       'ExecutionMode','fixedRate', ...
+                                       'Period',0.100, ...
+                                       'BusyMode','drop', ...
+                                       'ObjectVisibility','off');
+            %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
+            %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
+            
             % The object is now initialized, but not very useful until an
             % MDF is specified.
             self.State = ws.ApplicationState.NoMDF;
@@ -163,6 +182,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if ~isempty(self) ,
                 import ws.utility.*
                 %deleteIfValidHandle(self.TrigListener_);
+                if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
+                    delete(self.PollingTimer_);
+                    self.PollingTimer_ = [] ;
+                end
                 deleteIfValidHandle(self.Acquisition);
                 deleteIfValidHandle(self.Stimulation);
                 deleteIfValidHandle(self.Display);
@@ -215,15 +238,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end
         
-        function abort(self)
-            % Call abort anytime to ensure operations are stopped.  It is a no-op if already
-            % idle.For runs that have completed successfully, there is no need to call a
-            % stop() or abort() method.
+        function stop(self)
+            % Called when you press the "Stop" button in the UI.
             if self.State == ws.ApplicationState.Idle
-                return;
+                return
             end
-            
-            % This may not technically be a failure.
+
+            % Actually stop the ongoing trial
             self.didAbortTrial();
         end
     end  % methods
@@ -266,17 +287,22 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
         
-        function set.ExperimentTrialCount(self, value)
+        function set.ExperimentTrialCount(self, newValue)
             % Sometimes want to trigger the listeners without actually
             % setting, and without throwing an error
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else            
-                value=self.validatePropArg('ExperimentTrialCount',value);
-                if self.IsTrialBased ,
-                    self.Triggering.willSetExperimentTrialCount();
-                    self.ExperimentTrialCount_ = value;
-                    self.Triggering.didSetExperimentTrialCount();
+            if ws.utility.isASettableValue(newValue) ,
+                % s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+                %value=self.validatePropArg('ExperimentTrialCount',value);
+                if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
+                    % If get here, value is a valid value for this prop
+                    if self.IsTrialBased ,
+                        self.Triggering.willSetExperimentTrialCount();
+                        self.ExperimentTrialCount_ = newValue;
+                        self.Triggering.didSetExperimentTrialCount();
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'ExperimentTrialCount must be a (scalar) positive integer, or inf');       
                 end
             end
             self.broadcast('Update');
@@ -292,18 +318,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function set.TrialDuration(self, newValue)
             % Fail quietly if a nonvalue
-            if isnan(newValue),  return,  end
-            
-            % Do nothing if in continuous mode
-            if self.IsContinuous ,
-                return
+            if ws.utility.isASettableValue(newValue),             
+                % Do nothing if in continuous mode
+                if self.IsTrialBased ,
+                    % Check value and set if valid
+                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                        % If get here, newValue is a valid value for this prop
+                        self.Acquisition.Duration = newValue;
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'TrialDuration must be a (scalar) positive finite value');
+                    end
+                end
             end
-            
-            % Throw if an invalid value
-            newValue=self.validatePropArg('TrialDuration',newValue);
-            
-            % Set the underlying thing, if we get this far
-            self.Acquisition.Duration = newValue;
+            self.broadcast('Update');
         end  % function
         
         function value=get.IsTrialBased(self)
@@ -434,11 +462,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.didPerformTrialMaybe();            
         end  % function
         
-        function stimulationTrialComplete(self)
+        function stimulationEpisodeComplete(self)
             % Called by the stimulation subsystem when it is done outputting
             % the trial
             
-            %fprintf('WavesurferModel::stimulationTrialComplete()\n');
+            %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromExperimentStartTicId_));
             self.didPerformTrialMaybe();
         end  % function
@@ -453,51 +481,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % depending on the states of the Acquisition, Stimulation, and
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the trial before
-            % calling self.didPerformTrial().  But depending on the
-            % settings, in some cases some of the checks can be skipped.
-            % This function could be compressed, but I like that
-            % it's just a simple tree with simple tests at each if
-            % statement, because it makes it easier to reason about.
+            % calling self.didPerformTrial().
             if self.Stimulation.Enabled ,
-                if self.Triggering.StimulationTriggerScheme.IsExternal ,
-                    % In this case, the trial is done when the acquisition is
-                    % done (But: What if there's a stimulus being delivered
-                    % right now?  What happens to it?  Is this a bug?)
-                    if self.Acquisition.IsArmedOrAcquiring ,
+                if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+                    % acq and stim trig sources are identical
+                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
                     else
                         self.didPerformTrial();
                     end
                 else
-                    % Stim triggering is internal
-                    if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-                        if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-                            % acq and stim trig sources are internal and identical
-                            if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                                % do nothing
-                            else
-                                self.didPerformTrial();
-                            end
-                        else
-                            % acq and stim trig sources are internal, but distinct
-                            % this means the stim trigger basically runs on
-                            % its own until it's done
-                            if self.Acquisition.IsArmedOrAcquiring ,
-                                % do nothing
-                            else
-                                self.didPerformTrial();
-                            end
-                        end
+                    % acq and stim trig sources are distinct
+                    % this means the stim trigger basically runs on
+                    % its own until it's done
+                    if self.Acquisition.IsArmedOrAcquiring ,
+                        % do nothing
                     else
-                        % stim trig internal, acq trig external
-                        % therefore they're distinct
-                        % this means the stim trigger basically runs on
-                        % its own until it's done
-                        if self.Acquisition.IsArmedOrAcquiring ,
-                            % do nothing
-                        else
-                            self.didPerformTrial();
-                        end
+                        self.didPerformTrial();
                     end
                 end
             else
@@ -506,11 +506,74 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     % do nothing
                 else
                     self.didPerformTrial();
-                end                                    
+                end
             end            
         end  % function
         
+%         function didPerformTrialMaybe(self)
+%             % Either calls self.didPerformTrial(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the trial before
+%             % calling self.didPerformTrial().  But depending on the
+%             % settings, in some cases some of the checks can be skipped.
+%             % This function could be compressed, but I like that
+%             % it's just a simple tree with simple tests at each if
+%             % statement, because it makes it easier to reason about.
+%             if self.Stimulation.Enabled ,
+%                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
+%                     % In this case, the trial is done when the acquisition is
+%                     % done (But: What if there's a stimulus being delivered
+%                     % right now?  What happens to it?  Is this a bug?)
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         self.didPerformTrial();
+%                     end
+%                 else
+%                     % Stim triggering is internal
+%                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
+%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                             % acq and stim trig sources are internal and identical
+%                             if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                                 % do nothing
+%                             else
+%                                 self.didPerformTrial();
+%                             end
+%                         else
+%                             % acq and stim trig sources are internal, but distinct
+%                             % this means the stim trigger basically runs on
+%                             % its own until it's done
+%                             if self.Acquisition.IsArmedOrAcquiring ,
+%                                 % do nothing
+%                             else
+%                                 self.didPerformTrial();
+%                             end
+%                         end
+%                     else
+%                         % stim trig internal, acq trig external
+%                         % therefore they're distinct
+%                         % this means the stim trigger basically runs on
+%                         % its own until it's done
+%                         if self.Acquisition.IsArmedOrAcquiring ,
+%                             % do nothing
+%                         else
+%                             self.didPerformTrial();
+%                         end
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     self.didPerformTrial();
+%                 end                                    
+%             end            
+%         end  % function
+        
         function samplesAcquired(self, rawData)
+            % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
             % time between subsequent calls to this
@@ -535,7 +598,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function didSetAcquisitionDuration(self)
-            self.TrialDuration=ws.most.util.Nonvalue.The;
+            self.TrialDuration=ws.most.util.Nonvalue.The;  % this will cause the WavesurferMainFigure to update
             self.Triggering.didSetAcquisitionDuration();
             self.Display.didSetAcquisitionDuration();
         end        
@@ -562,10 +625,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('WavesurferModel::willPerformExperiment()\n');                        
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
-            if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration)
+            if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration) 
                 assert(self.ExperimentTrialCount == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
             end
-                        
+            
             % If yoked to scanimage, write to the command file, wait for a
             % response
             if self.IsYokedToScanImage_ && desiredApplicationState==ws.ApplicationState.AcquiringTrialBased,
@@ -608,6 +671,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.TimeOfLastWillPerformTrial_=[];
             self.FromExperimentStartTicId_=tic();
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_=0;
+            self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.TrialDuration);  % s
             
             % Move on to performing the first (and perhaps only) trial
             self.willPerformTrial();
@@ -615,6 +679,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function willPerformTrial(self)
             %fprintf('WavesurferModel::willPerformTrial()\n');            
+            %dbstack
             % time between subsequent calls to this
             t=toc(self.FromExperimentStartTicId_);
             %if ~isempty(self.TimeOfLastWillPerformTrial_) ,
@@ -631,6 +696,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % update the current time
             self.t_=0;            
+            
+            % Pretend that we last polled at time 0
+            self.TimeOfLastPollInTrial_ = 0 ;  % s 
             
             % Notify listeners that the trial is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
@@ -649,12 +717,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     me.rethrow();
                 end
             end
-            
+
+            % Set the trial timer
+            self.FromTrialStartTicId_=tic();
+
+            %% Start the timer that will poll for data and task doneness
+            %self.PollingTimer_.start();
+                        
             % Any system waiting for an internal or external trigger was armed and waiting
             % in the subsystem willPerformTrial() above.
-            %doIncludeTrialStart=(self.ExperimentCompletedTrialCount == 0);
-%             doIncludeTrialStart=true;
-%             self.Triggering.start(self.State, doIncludeTrialStart);
             self.Triggering.startMeMaybe(self.State, self.ExperimentTrialCount, self.ExperimentCompletedTrialCount);            
         end  % function
         
@@ -777,8 +848,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function didPerformExperiment(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of experiment event.
+            %fprintf('WavesurferModel::didPerformExperiment()\n');                                    
+            %dbstack
+            %fprintf('\n\n');                                                
             assert(self.State ~= ws.ApplicationState.Idle);
             
+            stop(self.PollingTimer_);
+            self.PollingTimer_.TimerFcn = [] ;
+            self.PollingTimer_.ErrorFcn = [] ;
+
             self.State = ws.ApplicationState.Idle;
             
             for idx = 1: numel(self.Subsystems_)
@@ -795,6 +873,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
             
+            stop(self.PollingTimer_);
+            self.PollingTimer_.TimerFcn = [] ;
+            self.PollingTimer_.ErrorFcn = [] ;
+            
             self.State = ws.ApplicationState.Idle;
             
             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1
@@ -807,46 +889,51 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function dataAvailable(self, rawData)
+            % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
+            % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
             nScans=size(rawData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
                         
-            % update the current time
-            dt=1/self.Acquisition.SampleRate;
-            self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
-            
-            % Scale the data so that all the subsystems only get the scaled
-            % data
+            if (nScans>0)
+                % update the current time
+                dt=1/self.Acquisition.SampleRate;
+                self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
-            channelScales=self.Acquisition.ActiveChannelScales;
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-            
-            % scale the data by the channel scales
-            if isempty(rawData) ,
-                scaledData=zeros(size(rawData));
-            else
-                data = double(rawData);
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledData=bsxfun(@times,data,combinedScaleFactors); 
-            end
-            
-            % Notify each subsystem that data has just been acquired
-            %T=zeros(1,7);
-            state = self.State_ ;
-            t = self.t_;
-            for idx = 1: numel(self.Subsystems_) ,
-                %tic
-                if self.Subsystems_{idx}.Enabled ,
-                    self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
+                % Scale the data so that all the subsystems only get the scaled
+                % data
+
+                channelScales=self.Acquisition.ActiveChannelScales;
+                inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+
+                % scale the data by the channel scales
+                if isempty(rawData) ,
+                    scaledData=zeros(size(rawData));
+                else
+                    data = double(rawData);
+                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                    scaledData=bsxfun(@times,data,combinedScaleFactors); 
                 end
-                %T(idx)=toc;
+
+
+                % Notify each subsystem that data has just been acquired
+                %T=zeros(1,7);
+                state = self.State_ ;
+                t = self.t_;
+                for idx = 1: numel(self.Subsystems_) ,
+                    %tic
+                    if self.Subsystems_{idx}.Enabled ,
+                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
+                    end
+                    %T(idx)=toc;
+                end
+                %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
+
+                self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + nScans;
+
+                %self.broadcast('DataAvailable');
+                self.callUserFunctionsAndBroadcastEvent('DataAvailable');
             end
-            %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
-            
-            self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + size(data, 1);
-            
-            %self.broadcast('DataAvailable');
-            self.callUserFunctionsAndBroadcastEvent('DataAvailable');
         end  % function
         
     end % protected methods block
@@ -1017,7 +1104,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             commandFileName='si_command.txt';
             absoluteCommandFileName=fullfile(dirName,commandFileName);
             if exist(absoluteCommandFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(absoluteCommandFileName);
+                ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
                 if exist(absoluteCommandFileName,'file') , 
                     isCommandFileGone=false;
                     errorMessage1='Unable to delete pre-existing ScanImage command file';
@@ -1034,7 +1121,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             responseFileName='si_response.txt';
             absoluteResponseFileName=fullfile(dirName,responseFileName);
             if exist(absoluteResponseFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(absoluteResponseFileName);
+                ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
                 if exist(absoluteResponseFileName,'file') , 
                     isResponseFileGone=false;
                     if isempty(errorMessage1) ,
@@ -1118,7 +1205,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         response=fscanf(fid,'%s',1);
                         fclose(fid);
                         if isequal(response,'OK') ,
-                            ephus.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
+                            ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
                             isScanImageReady=true;
                             errorMessage='';
                             return
@@ -1133,7 +1220,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % If get here, must have failed
             if exist(responseAbsoluteFileName,'file') ,
-                ephus.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
+                ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
             end
             isScanImageReady=false;
             errorMessage='ScanImage did not respond within the alloted time';
@@ -1269,9 +1356,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     methods (Static)
         function s = propertyAttributes()
             s = struct();
-
-            s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-            s.TrialDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+            
+            %s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+            %s.TrialDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.IsTrialBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
         end  % function
@@ -1369,8 +1456,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
         end  % function
-    end        
-        
+    end
+    
     methods
         function set.AbsoluteProtocolFileName(self,newValue)
             % SetAccess is protected, no need for checks here
@@ -1385,6 +1472,39 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.AbsoluteUserSettingsFileName=newValue;
             self.broadcast('DidSetAbsoluteUserSettingsFileName');
         end
+    end
+
+    methods
+        function triggeringSubsystemIsAboutToStartFirstTrialInExperiment(self)
+            % This means we need to start the polling timer
+            self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
+            self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
+            self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
+            start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
+        end
+    end
+    
+    methods (Access=protected)        
+        function pollingTimerFired_(self)
+            %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
+            timeSinceTrialStart = toc(self.FromTrialStartTicId_);
+            self.Acquisition.pollingTimerFired(timeSinceTrialStart);
+            self.Stimulation.pollingTimerFired(timeSinceTrialStart);
+            self.Triggering.pollingTimerFired(timeSinceTrialStart);
+            %self.Display.pollingTimerFired(timeSinceTrialStart);
+            %self.Logging.pollingTimerFired(timeSinceTrialStart);
+            %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
+            drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
+        end
+        
+        function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
+            %fprintf('WavesurferModel::pollTimerErrored()\n');
+            %eventData
+            %eventData.Data            
+            self.didAbortTrial();  % Put an end to the trialset
+            error('waversurfer:pollingTimerError',...
+                  'The polling timer had a problem.  Acquisition aborted.');
+        end        
     end
     
 end  % classdef

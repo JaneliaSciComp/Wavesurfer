@@ -5,8 +5,8 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     % independent object that isequal() to the original.
     
     properties (Constant)
-        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','Ramp','Sine','Chirp'}
-        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Ramp','Sine','Chirp'}
+        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','Ramp','Sine','Chirp','File'}
+        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Ramp','Sine','Chirp','File'}
     end
     
 %     properties (SetAccess = protected, Hidden = true)
@@ -360,6 +360,23 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
                 end
             else
                 output=[];
+            end
+        end
+        
+        function output = evaluateStringTrialTemplate(template,trialIndex)
+            % Evaluates sprintf(template,trialIndex), and returns
+            % the result.  If expression is not a string, or the expression
+            % doesn't evaluate, returns the empty string.
+            if ischar(template) && isrow(template) ,
+                % value should be a string, possibly containing a %d or %02d or whatever.
+                % the trialIndex is used for the %d value
+                try
+                    output=sprintf(template,trialIndex);
+                catch me %#ok<NASGU>
+                    output='';
+                end
+            else
+                output='';
             end
         end
     end

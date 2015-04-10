@@ -61,6 +61,10 @@ classdef (Abstract) MCOSFigure < handle
         function set.AreUpdatesEnabled(self,newValue)
             import ws.utility.*
 
+            %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
+            %fprintf('  class of self: %s\n',class(self));
+            %newValue
+            
             if ~( islogical(newValue) && isscalar(newValue) ) ,
                 return
             end

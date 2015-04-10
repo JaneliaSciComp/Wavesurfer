@@ -38,9 +38,9 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
             
             % If acquisition is happening, ignore the close window request
             model=self.Model;
-            if ~isempty(model) || isvalid(model) ,            
+            if ~isempty(model) && isvalid(model) ,            
                 wavesurferModel=model.Parent;
-                if ~isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+                if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                     isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
                     if ~isIdle ,
                         shouldStayPut=true;

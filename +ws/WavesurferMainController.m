@@ -190,7 +190,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function stopControlActuated(self, varargin)
             % Action method for the Stop button and Stop menu item
-            self.Model.abort();
+            self.Model.stop();
         end
         
 %         function willSetModelState(self,varargin)
@@ -1759,7 +1759,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
-            if ~isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                 isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
                 if ~isIdle ,
                     isOKToQuit=false;

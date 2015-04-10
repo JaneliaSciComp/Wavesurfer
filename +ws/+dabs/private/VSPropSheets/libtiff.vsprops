@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="GnuWin32 LibTiff"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;C:\Program Files\GnuWin32\include&quot;"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="libtiff.lib"
+		AdditionalLibraryDirectories="&quot;C:\Program Files\GnuWin32\lib&quot;"
+	/>
+</VisualStudioPropertySheet>

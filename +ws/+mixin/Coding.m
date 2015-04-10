@@ -231,7 +231,7 @@ classdef Coding < handle
 %         end
         
         function decodeProperties(self, encoding)
-            % Sets the properties in self to the values encoded in propSet.
+            % Sets the properties in self to the values encoded in encoding.
             assert(isstruct(encoding));
             
             % If a ws.Model, disable broadcasts while we muck around

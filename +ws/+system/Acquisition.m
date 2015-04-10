@@ -59,7 +59,7 @@ classdef Acquisition < ws.system.Subsystem
     end
 
     properties (Access = protected, Transient=true)
-        AnalogInputTask_ = [];
+        AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
     end    
     
     properties (Access = protected) 
@@ -87,6 +87,7 @@ classdef Acquisition < ws.system.Subsystem
         IndexOfLastScanInCache_ = [];
         NScansFromLatestCallback_
         IsAllDataInCacheValid_
+        TimeOfLastPollingTimerFire_
     end    
     
     events 
@@ -110,9 +111,8 @@ classdef Acquisition < ws.system.Subsystem
         function delete(self)
             %fprintf('Acquisition::delete()\n');
             %delete(self.TriggerListener_);
-            if ~isempty(self.AnalogInputTask_) && isvalid(self.AnalogInputTask_) ,
-                delete(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-            end
+            %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
+              % Don't need this above, b/c self.AnalogInputTask_ is a ws.ni.AnalogInputTask, *not* a DABS Task !!
             self.AnalogInputTask_=[];
             %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);
             self.Parent=[];
@@ -378,15 +378,21 @@ classdef Acquisition < ws.system.Subsystem
         function set.Duration(self, value)
             %fprintf('Acquisition::set.Duration()\n');
             %dbstack
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg(value,'Duration');
-            self.Parent.willSetAcquisitionDuration();
-            if ~isempty(self.AnalogInputTask_)
-                self.AnalogInputTask_.AcquisitionDuration = value;
-            end            
-            self.Duration_ = value;
-            self.stimulusMapDurationPrecursorMayHaveChanged();
-            self.Parent.didSetAcquisitionDuration();
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.Parent.willSetAcquisitionDuration();
+                    if ~isempty(self.AnalogInputTask_)
+                        self.AnalogInputTask_.AcquisitionDuration = valueToSet;
+                    end            
+                    self.Duration_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.Parent.didSetAcquisitionDuration();
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Duration must be a (scalar) positive finite value');
+                end
+            end
         end  % function
         
         function out = get.ExpectedScanCount(self)
@@ -449,7 +455,8 @@ classdef Acquisition < ws.system.Subsystem
         function acquireHardwareResources(self)
             if isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_ = ...
-                    ws.ni.AnalogInputTask(self.DeviceNames{1}, ...
+                    ws.ni.AnalogInputTask(self, ...
+                                          self.DeviceNames{1}, ...
                                           self.ChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
                                           self.ChannelNames);
@@ -459,8 +466,8 @@ classdef Acquisition < ws.system.Subsystem
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
-                self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
-                self.AnalogInputTask_.addlistener('SamplesAvailable', @self.analogSamplesAvailable_);
+                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
+                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
         end  % function
 
@@ -468,7 +475,7 @@ classdef Acquisition < ws.system.Subsystem
             self.AnalogInputTask_=[];            
         end
         
-        function willPerformExperiment(self, wavesurferObj, experimentMode)
+        function willPerformExperiment(self, wavesurferModel, experimentMode)
             %fprintf('Acquisition::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
@@ -504,17 +511,17 @@ classdef Acquisition < ws.system.Subsystem
                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
             end
             
-            % Set the duration between data available callbacks
-            displayDuration = 1/wavesurferObj.Display.UpdateRate;
-            if self.Duration < displayDuration ,
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-            else
-                numIncrements = floor(self.Duration/displayDuration);
-                assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
-                       self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
-                    'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
-            end
+%             % Set the duration between data available callbacks
+%             displayDuration = 1/wavesurferModel.Display.UpdateRate;
+%             if self.Duration < displayDuration ,
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+%             else
+%                 numIncrements = floor(self.Duration/displayDuration);
+%                 assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
+%                        self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
+%                        'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
+%             end
             
             % Dimension the cache that will hold acquired data in main
             % memory
@@ -532,38 +539,27 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function didPerformExperiment(self, wavesurferModel)
+            %fprintf('Acquisition::didPerformExperiment()\n');
             self.didPerformOrAbortExperiment_(wavesurferModel);
         end  % function
         
         function didAbortExperiment(self, wavesurferModel)
             self.didPerformOrAbortExperiment_(wavesurferModel);
         end  % function
-    end
-    
-    methods (Access = protected)
-        function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            if ~isempty(self.AnalogInputTask_) ,
-                %self.AnalogInputTask_.unregisterCallbacks();
-                self.AnalogInputTask_.disarm();
-            end            
-            self.IsArmedOrAcquiring = false;            
-        end
-    end
-    
-    methods
+
         function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %fprintf('Acquisition::willPerformTrial()\n');
             self.IsArmedOrAcquiring = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
-%             if wavesurferModel.ExperimentCompletedTrialCount == 0 ,
-%                 self.AnalogInputTask_.arm();
-%             else
-%                 %self.AnalogInputTask_.reset();  % this doesn't actually do anything for a FiniteAnalogInputTask...
-%             end                
+            self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
             self.AnalogInputTask_.start();
         end  % function
+        
+        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
+            %fprintf('Acquisition::didPerformTrial()\n');
+        end
         
         function didAbortTrial(self, ~)
             self.AnalogInputTask_.abort();
@@ -666,6 +662,8 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
+            % Called "from above" when data is available.  When called, we update
+            % our main-memory data cache with the newly available data.
             self.LatestData_ = scaledData ;
             self.LatestRawData_ = rawData ;
             if state == ws.ApplicationState.AcquiringContinuously ,
@@ -775,43 +773,26 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
+        function acquisitionTrialComplete(self)
+            self.acquisitionTrialComplete_();
+        end  % function
+        
+        function samplesAcquired(self,rawData)
+            self.samplesAcquired_(rawData);
+        end  % function
         
     end  % methods block
     
     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
-%             %self.setPropertyAttributeFeatures('ActiveChannels', 'Classes', 'numeric', 'Attributes', {'vector', 'integer'}, 'AllowEmpty', true);
-%             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
-%             self.setPropertyAttributeFeatures('Duration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('TriggerScheme', 'Classes', 'ws.TriggerScheme', 'Attributes', {'scalar'}, 'AllowEmpty', false);
-%         end  % function
+        function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
+            if ~isempty(self.AnalogInputTask_) ,
+                %self.AnalogInputTask_.unregisterCallbacks();
+                self.AnalogInputTask_.disarm();
+            end            
+            self.IsArmedOrAcquiring = false;            
+        end  % function
         
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
-%             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Duration', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('IsChannelActive', 'IncludeInFileTypes', {'*'});            
-%             self.setPropertyTags('ChannelUnits_', 'IncludeInFileTypes', {'cfg'}, ...
-%                                                   'ExcludeFromFileTypes', {'header'});            
-%             self.setPropertyTags('ChannelScales_', 'IncludeInFileTypes', {'cfg'}, ...
-%                                                    'ExcludeFromFileTypes', {'header'});            
-%             self.setPropertyTags('TriggerScheme', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ExpectedScanCount', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ContinuousModeTriggerScheme', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('IsArmedOrAcquiring', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('AnalogInputTask_', 'ExcludeFromFileTypes', {'*'});
-%             %self.setPropertyTags('DelegateSamplesFcn_', 'ExcludeFromFileTypes', {'*'});
-%             %self.setPropertyTags('DelegateDoneFcn_', 'ExcludeFromFileTypes', {'*'});
-%             %self.setPropertyTags('TriggerListener_', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('Duration_', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ChannelScales', 'ExcludeFromFileTypes', {'cfg'}, 'IncludeInFileTypes', {'header'} );
-%             self.setPropertyTags('ChannelUnits', 'ExcludeFromFileTypes', {'cfg'}, 'IncludeInFileTypes', {'header'} );
-%         end  % function
-    end  % protected methods block
-    
-    methods (Access = protected)
-        function acquisitionTrialComplete_(self, source, event)  %#ok<INUSD>
+        function acquisitionTrialComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
             self.IsArmedOrAcquiring = false;
             % TODO If there are multiple acquisition boards, notify only when all are complete.
@@ -824,10 +805,8 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function analogSamplesAvailable_(self, source, eventData)  %#ok<INUSD>
-            % This is registered as a listener callback on the
-            % AnalogInputTask's SamplesAvailable event
-            %fprintf('Acquisition::analogSamplesAcquired_()\n');
+        function samplesAcquired_(self, rawData)
+            %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
 
             % read both the analog and digital data, they should be in
@@ -836,7 +815,7 @@ classdef Acquisition < ws.system.Subsystem
             rawDigitalData = self.DigitalInputTask_.readData() ;  % uint32
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                parent.samplesAcquired(rawAnalogData,rawDigitalData);
+                parent.samplesAcquired(rawData);
             end
             %profile off
         end  % function
@@ -851,8 +830,7 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();
-        
+        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
@@ -861,7 +839,7 @@ classdef Acquisition < ws.system.Subsystem
             s = ws.system.Subsystem.propertyAttributes();
 
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.Duration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+            %s.Duration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
 
         end  % function
@@ -876,6 +854,21 @@ classdef Acquisition < ws.system.Subsystem
         function setPropertyValue(self, name, value)
             self.(name) = value;
         end  % function
+    end
+    
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Determine the time since the last undropped timer fire
+            timeSinceLastPollingTimerFire = timeSinceTrialStart-self.TimeOfLastPollingTimerFire_; %#ok<NASGU>
+
+            % Call the task to do the real work
+            if self.IsArmedOrAcquiring ,
+                self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart);
+            end
+            
+            % Prepare for next time            
+            self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart;
+        end
     end
     
 end  % classdef
