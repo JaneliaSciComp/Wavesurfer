@@ -1,4 +1,7 @@
-function untimedDO(self,evt)
-
-self.Stimulation.setUntimedDigitalOutputState(1, ...
-    mod(self.ExperimentCompletedTrialCount,2));
+function untimedDO(wsModel,event)  %#ok<INUSD>
+    % This is an example user function, intended to be a "Trial Start" user
+    % function.  It flips the first DO channel back and forth between high and low
+    % from trial to trial.
+    wsModel.Stimulation.setUntimedDigitalOutputState(1, ...
+        mod(wsModel.ExperimentCompletedTrialCount,2));
+end
