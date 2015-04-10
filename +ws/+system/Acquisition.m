@@ -9,7 +9,6 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     properties (SetAccess = protected, Dependent = true)
-        ChannelNames  % canonical names of the available channels, a row cell vector
         ExpectedScanCount
     end
     
@@ -21,8 +20,17 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     properties (SetAccess = immutable, Dependent = true)  % N.B.: it's not settable, but it can change over the lifetime of the object
+        AnalogPhysicalChannelNames % the physical channel name for each analog channel
+        DigitalPhysicalChannelNames  % the physical channel name for each digital channel
+        PhysicalChannelNames
+        AnalogChannelNames
+        DigitalChannelNames
+        ChannelNames
         NActiveChannels
         NChannels
+        NAnalogChannels
+        NDigitalChannels
+        IsChannelAnalog
         ChannelIDs  % zero-based AI channel IDs for all available channels
     end
     
@@ -60,9 +68,14 @@ classdef Acquisition < ws.system.Subsystem
 
     properties (Access = protected, Transient=true)
         AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
+        DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
     end    
     
     properties (Access = protected) 
+        AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
+        DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+        AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
+        DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
         %DelegateSamplesFcn_;
         %DelegateDoneFcn_;        
         %TriggerListener_;
@@ -71,7 +84,6 @@ classdef Acquisition < ws.system.Subsystem
         ChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         ChannelScales_ = zeros(1,0)  % Store for the current ChannelScales values, but values may be "masked" by ElectrodeManager
         ChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current ChannelUnits values, but values may be "masked" by ElectrodeManager
-        ChannelNames_ = cell(1,0)
         IsChannelActive_ = true(1,0)
     end
     
@@ -118,13 +130,28 @@ classdef Acquisition < ws.system.Subsystem
             self.Parent=[];
         end
         
+        function result = get.AnalogPhysicalChannelNames(self)
+            result = self.AnalogPhysicalChannelNames_ ;
+        end
+    
+        function result = get.DigitalPhysicalChannelNames(self)
+            result = self.DigitalPhysicalChannelNames_ ;
+        end
+
+        function result = get.PhysicalChannelNames(self)
+            result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
+        end
+        
+        function result = get.AnalogChannelNames(self)
+            result = self.AnalogChannelNames_ ;
+        end
+    
+        function result = get.DigitalChannelNames(self)
+            result = self.DigitalChannelNames_ ;
+        end
+    
         function result = get.ChannelNames(self)
-            result = self.ChannelNames_ ;
-%             if isempty(self.AnalogInputTask_) ,
-%                 result = cell(1,0);  % want row vector
-%             else
-%                 result=self.AnalogInputTask_.ChannelNames;
-%             end
+            result = [self.AnalogChannelNames self.DigitalChannelNames] ;
         end
     
         function result = get.ChannelIDs(self)
@@ -167,11 +194,11 @@ classdef Acquisition < ws.system.Subsystem
             % active.
             if islogical(newIsChannelActive) && isequal(size(newIsChannelActive),size(self.IsChannelActive)) ,
                 self.IsChannelActive_ = newIsChannelActive;
-                if isempty(self.AnalogInputTask_) || isempty(self.AnalogInputTask_.AvailableChannels) ,
+                if isempty(self.AnalogInputTask_) && isempty(self.DigitalInputTask_) ,
                     % nothing to set
                 else
-                    newActiveChannelIDs=self.ChannelIDs_(newIsChannelActive);
-                    self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;                    
+                    self.AnalogInputTask_.ActiveChannels=self.ChannelIDs_(newIsChannelActive & self.IsChannelAnalog_);                    
+                    self.DigitalInputTask_.ActiveChannels=self.ChannelIDs_(newIsChannelActive & ~self.IsChannelAnalog_);                    
                 end
             end
             self.broadcast('DidSetIsChannelActive');
@@ -181,11 +208,24 @@ classdef Acquisition < ws.system.Subsystem
             value=sum(double(self.IsChannelActive_));
         end
         
-        function value = get.NChannels(self)
-            value = length(self.IsChannelActive_);
+        function value = get.NAnalogChannels(self)
+            value = length(self.AnalogChannelNames_);
         end
         
-        function out = get.ActiveChannelScales(self)            
+        function value = get.NDigitalChannels(self)
+            value = length(self.DigitalChannelNames_);
+        end
+
+        function value = get.NChannels(self)
+            value = self.NAnalogChannels + self.NDigitalChannels ;
+        end
+        
+        function value = get.IsChannelAnalog(self)
+            % Boolean array indicating, for each channel, whether it is analog or not
+            value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
+        end
+        
+        function out = get.ActiveChannelScales(self)
             out = self.ChannelScales(self.IsChannelActive);
         end
         
@@ -428,7 +468,19 @@ classdef Acquisition < ws.system.Subsystem
                 end
                 self.DeviceNames = inputDeviceNames;
                 self.ChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(physicalInputChannelNames) ;
-                self.ChannelNames_ = mdfStructure.inputChannelNames;
+                channelNames = mdfStructure.inputChannelNames;
+
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
+                isAnalog = strcmp(channelTypes,'ai');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names
+                self.AnalogPhysicalChannelNames_ = physicalInputChannelNames(isAnalog) ;
+                self.DigitalPhysicalChannelNames_ = physicalInputChannelNames(isDigital) ;
+                self.AnalogChannelNames_ = channelNames(isAnalog) ;
+                self.DigitalChannelNames_ = channelNames(isDigital) ;
+                
 %                 self.AnalogInputTask_ = ...
 %                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
 %                                                 mdfStructure.inputChannelIDs, ...
@@ -453,19 +505,31 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
 
         function acquireHardwareResources(self)
-            if isempty(self.AnalogInputTask_) ,
+            if isempty(self.AnalogInputTask_)  && self.NAnalogChannels>0,
                 self.AnalogInputTask_ = ...
-                    ws.ni.AnalogInputTask(self, ...
-                                          self.DeviceNames{1}, ...
-                                          self.ChannelIDs, ...
+                    ws.ni.InputTask(self, 'analog', ...
                                           'Wavesurfer Analog Acquisition Task', ...
-                                          self.ChannelNames);
+                                          self.AnalogPhysicalChannelNames, ...
+                                          self.AnalogChannelNames);
                 % Have to make sure the active channels gets set in the Task object
-                activeChannelIDs=self.ChannelIDs(self.IsChannelActive);
-                self.AnalogInputTask_.ActiveChannels=activeChannelIDs;
+                self.AnalogInputTask_.IsChannelActive=self.IsChannelActive & self.IsChannelAnalog;
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
+                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
+                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+            end
+            if isempty(self.DigitalInputTask_) && self.NDigitalChannels>0,
+                self.DigitalInputTask_ = ...
+                    ws.ni.InputTask(self, 'digital', ...
+                                          'Wavesurfer Digital Acquisition Task', ...
+                                          self.DigitalPhysicalChannelNames, ...
+                                          self.DigitalChannelNames);
+                % Have to make sure the active channels gets set in the Task object
+                self.DigitalInputTask_.IsChannelActive=self.IsChannelActive & ~self.IsChannelAnalog;
+                % Set other things in the Task object
+                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.DigitalInputTask_.SampleRate = self.SampleRate;                
                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
@@ -566,29 +630,29 @@ classdef Acquisition < ws.system.Subsystem
             self.IsArmedOrAcquiring = false;
         end  % function
         
-        function ids = aisFromChannelNames(self, channelNames)
-            % Returns a row vector of the AI indices (zero-based) of the
-            % given channel names.
-            validateattributes(channelNames, {'cell'}, {});
-            
-            ids = NaN(1, numel(channelNames));
-            
-            for cdx = 1:numel(channelNames)
-                validateattributes(channelNames{cdx}, {'char'}, {});
-                
-                idx = self.AnalogInputTask_.AvailableChannels(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
-                
-                if isempty(idx)
-                    ws.most.mimics.warning('wavesurfer:acquisition:unknownchannelname', ...
-                                        'Channel ''%s'' is not a member of the acquisition system and will be ignored.', ...
-                                        channelNames{cdx});
-                else
-                    ids(cdx) = idx;
-                end
-            end
-            
-            ids(isnan(ids)) = [];
-        end  % function
+%         function ids = aisFromChannelNames(self, channelNames)
+%             % Returns a row vector of the AI indices (zero-based) of the
+%             % given channel names.
+%             validateattributes(channelNames, {'cell'}, {});
+%             
+%             ids = NaN(1, numel(channelNames));
+%             
+%             for cdx = 1:numel(channelNames)
+%                 validateattributes(channelNames{cdx}, {'char'}, {});
+%                 
+%                 idx = self.AnalogInputTask_.AvailableChannels(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
+%                 
+%                 if isempty(idx)
+%                     ws.most.mimics.warning('wavesurfer:acquisition:unknownchannelname', ...
+%                                         'Channel ''%s'' is not a member of the acquisition system and will be ignored.', ...
+%                                         channelNames{cdx});
+%                 else
+%                     ids(cdx) = idx;
+%                 end
+%             end
+%             
+%             ids(isnan(ids)) = [];
+%         end  % function
         
         function iChannel=iActiveChannelFromName(self,channelName)
             iChannels=find(strcmp(channelName,self.ActiveChannelNames));

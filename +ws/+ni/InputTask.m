@@ -1,6 +1,7 @@
 classdef InputTask < handle
     properties (Dependent = true, SetAccess = immutable)
         % These are all set in the constructor, and not changed
+        Parent
         IsAnalog
         IsDigital
         TaskName
@@ -23,6 +24,7 @@ classdef InputTask < handle
     end
     
     properties (Transient = true, Access = protected)
+        Parent_
         DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
     end
     
@@ -46,9 +48,12 @@ classdef InputTask < handle
     end
     
     methods
-        function self = InputTask(taskType, taskName, physicalChannelNames, channelNames)
+        function self = InputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
                                     
+            % Store the parent
+            self.Parent_ = parent ;
+            
             % Determine the task type, digital or analog
             if isequal(taskType,'analog') ,
                 self.IsAnalog_ = true ;
@@ -81,7 +86,6 @@ classdef InputTask < handle
                         channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
                         self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID, channelName);
                     else
-                        physicalChannelName = physicalChannelNames{i} ;
                         deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
                         self.DabsDaqTask_.createDIChan(deviceName, restOfName);
@@ -118,12 +122,42 @@ classdef InputTask < handle
             end
         end
         
+        function value = get.Parent(self)
+            value = self.Parent_;
+        end  % function
+        
+        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+            % Read all the available scans, notify our parent 
+            rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
+            self.Parent.samplesAcquired(rawData);
+
+            % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
+            % gets done?
+            if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                % Get data one last time, to make sure we get it all
+                rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
+                self.Parent.samplesAcquired(rawData);
+                
+                % Stop task, notify parent
+                self.DabsDaqTask_.stop();
+                self.Parent.acquisitionTrialComplete();
+            end                
+        end  % function
+    
         function debug(self) %#ok<MANU>
             keyboard
         end        
     end
     
     methods
+        function value = get.IsAnalog(self)
+            value = self.IsAnalog_;
+        end  % function
+        
+        function value = get.IsDigital(self)
+            value = ~self.IsAnalog_;
+        end  % function
+        
         function value = get.IsArmed(self)
             value = self.IsArmed_;
         end  % function
@@ -132,8 +166,7 @@ classdef InputTask < handle
             if (islogical(newIsChannelActive) || isnumeric(newIsChannelActive)) && isequal(size(newIsChannelActive),size(self.IsChannelActive_)) ,
                 newIsChannelActive=logical(newIsChannelActive);
 
-                newActiveChannel
-                newActiveChannelNames = self.PhysicalChannelNames(newIsChannelActive) ;
+                newActiveChannelNames = self.ChannelNames(newIsChannelActive) ;
                 
                 if isempty(self.DabsDaqTask_) ,
                     % do nothing
@@ -174,14 +207,22 @@ classdef InputTask < handle
 %             self.ActiveChannels_ = availableActive;
 %         end  % function
         
-        function out = get.ChannelNames(self)
-            if ~isempty(self.DabsDaqTask_)
-                c = self.DabsDaqTask_.channels;
-                out = {c.chanName};
-            else
-                out = {};
-            end
+        function out = get.PhysicalChannelNames(self)
+            out = self.PhysicalChannelNames_ ;
         end  % function
+
+        function out = get.ChannelNames(self)
+            out = self.ChannelNames_ ;
+        end  % function
+        
+%         function out = get.ChannelNames(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 c = self.DabsDaqTask_.channels;
+%                 out = {c.chanName};
+%             else
+%                 out = {};
+%             end
+%         end  % function
         
 %         function out = get.DeviceName(self)
 %             if ~isempty(self.DabsDaqTask_)
