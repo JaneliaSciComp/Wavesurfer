@@ -71,9 +71,9 @@ classdef TestPulserController < ws.Controller
         end  % function
         
         function startStopButtonPressed(self)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             self.Model.toggleIsRunning();
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end
         
         function electrodePopupMenuTouched(self)

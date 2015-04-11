@@ -83,6 +83,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             %end
             if ~isempty(self.Model) ,
                 self.Model.subscribeMe(self,'Update','','update');
+                self.Model.subscribeMe(self,'UpdateIsReady','','updateIsReady');
                 self.Model.subscribeMe(self,'UpdateTrace','','updateTrace');
                 ephys=self.Model.Parent;
                 if ~isempty(ephys) && isvalid(ephys) ,
@@ -194,6 +195,15 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.TraceLine,'YData',monitor);
         end  % method
         
+        function updateIsReady(self,varargin)            
+            if isempty(self.Model) || self.Model.IsReady ,
+                set(self.FigureGH,'pointer','arrow');
+            else
+                % Change cursor to hourglass
+                set(self.FigureGH,'pointer','watch');
+            end
+            drawnow('update');
+        end        
     end  % methods
     
     methods (Access=protected)
@@ -204,6 +214,13 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             self.updateControlsInExistance();
             self.updateControlPropertiesImplementation_();
             self.layout();
+            % update readiness, without the drawnow()
+            if isempty(self.Model) || self.Model.IsReady ,
+                set(self.FigureGH,'pointer','arrow');
+            else
+                % Change cursor to hourglass
+                set(self.FigureGH,'pointer','watch');
+            end
         end
         
         function updateControlPropertiesImplementation_(self,varargin)

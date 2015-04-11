@@ -66,6 +66,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         %ResistanceUnitsPerElectrode
         GainOrResistanceUnitsPerElectrode
         GainOrResistancePerElectrode
+        IsReady  % if true, the model is not busy
     end
     
     properties  (Access=protected)  % need to see if some of these things should be transient
@@ -88,7 +89,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         DesiredRateOfAutoYing_ = 10  % Hz, for now this never changes
             % The desired rate of syncing the Y to the data            
     end
-        
+    
     properties  (Access=protected, Transient=true)
         Parent_  % an Ephys object
         Electrode_  % the current electrode, or empty if there isn't one.  We persist ElectrodeName_, not this.  
@@ -119,11 +120,12 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         MonitorPerElectrode_
         NSweepsPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many sweeps (if we can)
         NSweepsCompletedAsOfLastYLimitsUpdate_
+        IsReady_
     end    
     
     events
-        %MayHaveChanged
         UpdateTrace
+        UpdateIsReady
     end
     
     methods
@@ -184,6 +186,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.IsCCCached_=nan;  % only matters in the midst of an experiment
             self.IsVCCached_=nan;  % only matters in the midst of an experiment            
             %self.IsStopping_=false;
+            self.IsReady_ = true ;
             
 %             % add listeners on host events
 %             if ~isempty(ephys) ,
@@ -227,6 +230,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
                 self.Parent_=newValue;
             end
+        end
+        
+        function value = get.IsReady(self)
+            value = self.IsReady_ ;
         end
         
         function value=get.Electrode(self)
@@ -988,6 +995,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                 return
             end
 
+            % Takes some time to start...
+            self.IsReady_ = false ;
+            self.broadcast('UpdateIsReady');
+           
             % Get some handles we'll need
             electrode=self.Electrode;
             ephys=self.Parent;
@@ -1113,19 +1124,40 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.TimerValue_=tic();
             self.LastToc_=toc(self.TimerValue_);
             
+            % OK, now we consider ourselves no longer busy
+            self.IsReady_ = true ;
+            self.broadcast('UpdateIsReady');
+            
             % actually start the data acq tasks
-            self.InputTask_.start();  % won't actually start until output starts b/c see above
-            self.OutputTask_.start();
+            try
+                self.InputTask_.start();  % won't actually start until output starts b/c see above
+            catch me
+                self.abort();
+                rethrow(me);
+            end
+            try        
+                self.OutputTask_.start();
+            catch me
+                self.abort();
+                rethrow(me);
+            end
             
             % fprintf('About to exit start()...\n');
         end
         
-        function stop(self)            
+        function stop(self)
+            % This is what gets called when the user presses the 'Stop' button,
+            % for instance.
             %fprintf('Just entered stop()...\n');            
             if ~self.IsRunning ,
                 %fprintf('About to exit stop() via short-circuit...\n');                            
                 return
             end
+            
+            % Takes some time to stop...
+            self.IsReady_ = false ;
+            self.broadcast('UpdateIsReady');
+
             %if self.IsStopping_ ,
             %    fprintf('Stopping while already stopping...\n');
             %    dbstack
@@ -1174,6 +1206,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             if ~isempty(wavesurferModel) ,
                 wavesurferModel.didPerformTestPulse();
             end
+
+            % Takes some time to stop...
+            self.IsReady_ = true ;
+            self.broadcast('Update');
             
             % Notify subscribers
             %fprintf('Maybe about to broadcast MayHaveChanged.  doBroadcast: %d\n',doBroadcast);
@@ -1183,6 +1219,66 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             %self.IsStopping_=false;
             % fprintf('About to exit stop()...\n');                        
         end
+        
+        function abort(self)
+            % This is called when a problem arises during test pulsing, and we
+            % want to try very hard to get back to a known, sane, state.
+
+            % And now we are once again ready to service method calls...
+            self.IsReady_ = false ;
+            self.broadcast('UpdateIsReady');            
+
+            % Try to gracefully wind down the output task
+            if isempty(self.OutputTask_) ,
+                % nothing to do here
+            else
+                if isvalid(self.OutputTask_) ,
+                    try
+                        self.OutputTask_.abort();
+                    catch me
+                        % Not clear what to do here...
+                        % For now, just ignore the error and forge ahead
+                    end
+                    delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
+                end
+                % At this point self.OutputTask_ is no longer valid
+                self.OutputTask_ = [] ;
+            end
+            
+            % Try to gracefully wind down the input task
+            if isempty(self.InputTask_) ,
+                % nothing to do here
+            else
+                if isvalid(self.InputTask_) ,
+                    try
+                        self.InputTask_.abort();
+                    catch me
+                        % Not clear what to do here...
+                        % For now, just ignore the error and forge ahead
+                    end
+                    delete(self.InputTask_);  % it's a DABS task, so have to manually delete
+                end
+                % At this point self.InputTask_ is no longer valid
+                self.InputTask_ = [] ;
+            end
+            
+            % Set the current run state
+            self.IsRunning_=false;
+
+            % Notify the rest of Wavesurfer
+            ephys=self.Parent;
+            wavesurferModel=[];
+            if ~isempty(ephys) ,
+                wavesurferModel=ephys.Parent;
+            end                
+            if ~isempty(wavesurferModel) ,
+                wavesurferModel.didAbortTestPulse();
+            end
+            
+            % And now we are once again ready to service method calls...
+            self.IsReady_ = true ;
+            self.broadcast('Update');            
+        end  % function
         
         function set.IsRunning(self,newValue)
             if islogical(newValue) && isscalar(newValue),

@@ -245,7 +245,10 @@ classdef (Abstract) MCOSFigure < handle
         end
         
         function layout_(self)
-            % This should work in most cases, but can be overridden by
+            % This method should make sure all the controls are sized and placed
+            % appropraitely given the current model state.
+            
+            % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.
             figureSize=self.layoutFixedControls_();
             figureSizeModified=self.layoutNonfixedControls_(figureSize);
@@ -253,7 +256,12 @@ classdef (Abstract) MCOSFigure < handle
         end
         
         function updateImplementation_(self)
-            % This should work in most cases, but can be overridden by
+            % This method should make sure the figure is fully synched with the
+            % model state after it is called.  This includes existance,
+            % placement, sizing, enablement, and properties of each control, and
+            % of the figure itself.
+
+            % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.
             self.updateControlsInExistance_();
             self.updateControlPropertiesImplementation_();

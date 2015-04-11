@@ -437,9 +437,6 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if self.State == ws.ApplicationState.Idle ,
                 self.State = ws.ApplicationState.TestPulsing;
             end
-            
-            % Once we get rid of the WPF stuff, we should also cause most
-            % controls to be disabled when we're not idle.
         end
         
         function didPerformTestPulse(self)
@@ -449,9 +446,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             if self.State == ws.ApplicationState.TestPulsing ,
                 self.State = ws.ApplicationState.Idle;
             end
+        end  % function
+        
+        function didAbortTestPulse(self)
+            % Called by the TestPulserModel when a problem arises during test
+            % pulsing, that (hopefully) the TestPulseModel has been able to
+            % gracefully recover from.
             
-            % Once we get rid of the WPF stuff, we should also cause most
-            % controls to be re-enabled once we're Idle
+            if self.State == ws.ApplicationState.TestPulsing ,
+                self.State = ws.ApplicationState.Idle;
+            end
         end  % function
         
         function acquisitionTrialComplete(self)
