@@ -1211,23 +1211,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             % compute delta in monitor
             % Specify the time windows for measuring the baseline and the pulse amplitude
             %fprintf('Inside TestPulser::didPerformTrial()\n');
-            try
-                rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
-            catch me
-                % If any error occurs while reading, just ignore it and return.
-                % Hopefully we can get caught up in this way.
-                % the dabs.ni.daqmx errors don't have identifiers associated
-                % with them, so it's hard to catch them specifically...
-                if isempty(me.identifier) ,
-                    % probably a daqmx error...
-                    % probably Attempted to read samples that are no longer
-                    % available.  We'll just return and hope we can get caught
-                    % up.
-                    return
-                else
-                    rethrow(me);
-                end
-            end
+            rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
                 % We now read exactly the number of scans we expect.  Not
                 % doing this seemed to work fine on ALT's machine, but caused
                 % nasty jitter issues on Minoru's rig machine.  In retrospect, kinda
