@@ -166,13 +166,14 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             if self.Model.IsRunning && self.Model.IsAutoY ,   %&& self.Model.AreYLimitsForRunDetermined ,
                 yLimitsInModel=self.Model.YLimits;
                 yLimits=self.YLimits_;
-                if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
+                %if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
+                if ~isequal(yLimits,yLimitsInModel) ,
                     self.YLimits_ = yLimitsInModel;  % causes axes ylim to be changed
                     set(self.TraceAxes,'YLim',yLimitsInModel);
-                    self.layout();  % Need to update the whole layout, b/c '^10^-3' might have appeared above the y axis
-                    self.updateControlProperties();  % Now do a near-full update, which will call updateTrace(), but this block will be
-                                                     % skipped b/c isequal(self.YLimits,yLimitsNominal)
-                    return  % no need to do anything else
+                    %self.layout();  % Need to update the whole layout, b/c '^10^-3' might have appeared above the y axis
+                    %self.updateControlProperties();  % Now do a near-full update, which will call updateTrace(), but this block will be
+                    %                                 % skipped b/c isequal(self.YLimits,yLimitsNominal)
+                    %return  % no need to do anything else
                 end
             end
             
