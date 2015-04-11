@@ -32,12 +32,12 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
     
     properties (Access=protected)
         %IsMinimumSizeSet_ = false
-        YLimits_  % the current y limits        
+        YLimits_ = [-10 +10]   % the current y limits        
     end
 
-    properties (Dependent=true, Hidden=true)
-        YLimits
-    end
+%     properties (Dependent=true, Hidden=true)
+%         YLimits
+%     end
     
     methods
         function self=TestPulserFigure(model,controller)
@@ -133,16 +133,16 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
 %             end
 %         end  % function
 
-        function set.YLimits(self,newValue)
-            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2),
-                self.YLimits_=newValue;
-                set(self.TraceAxes,'YLim',newValue);
-            end
-        end
-        
-        function result=get.YLimits(self)
-            result=self.YLimits_;
-        end
+%         function set.YLimits(self,newValue)
+%             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2),
+%                 self.YLimits_=newValue;
+%                 set(self.TraceAxes,'YLim',newValue);
+%             end
+%         end
+%         
+%         function result=get.YLimits(self)
+%             result=self.YLimits_;
+%         end
         
         function updateTrace(self,varargin)
             % If there are issues with either the host or the model, just return
@@ -163,11 +163,12 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % If y range hasn't been set yet, and Y Auto is engaged, set
             % the y range.
-            if self.Model.IsRunning && self.Model.IsAutoY && self.Model.AreYLimitsForRunDetermined ,
-                yLimitsNominal=self.Model.YLimits;
+            if self.Model.IsRunning && self.Model.IsAutoY ,   %&& self.Model.AreYLimitsForRunDetermined ,
+                yLimitsInModel=self.Model.YLimits;
                 yLimits=self.YLimits_;
-                if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsNominal) ,
-                    self.YLimits=yLimitsNominal;  % causes axes ylim to be changed
+                if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
+                    self.YLimits_ = yLimitsInModel;  % causes axes ylim to be changed
+                    set(self.TraceAxes,'YLim',yLimitsInModel);
                     self.layout();  % Need to update the whole layout, b/c '^10^-3' might have appeared above the y axis
                     self.updateControlProperties();  % Now do a near-full update, which will call updateTrace(), but this block will be
                                                      % skipped b/c isequal(self.YLimits,yLimitsNominal)
@@ -254,7 +255,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.AutoYCheckbox,'Value',self.Model.IsAutoY, ...
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing));
             set(self.AutoYRepeatingCheckbox,'Value',self.Model.IsAutoYRepeating, ...
-                                            'Enable',onIff(isWavesurferIdleOrTestPulsing)&&self.Model.IsAutoY);
+                                            'Enable',onIff(isWavesurferIdleOrTestPulsing&&self.Model.IsAutoY));
                                     
             set(self.VCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
                                              ~isempty(electrode) && ...
@@ -283,7 +284,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                 set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
             end
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
-            self.YLimits=self.Model.YLimits;  % causes axes ylim to be changed
+            self.YLimits_ = self.Model.YLimits;
+            set(self.TraceAxes,'YLim',self.YLimits_);
             set(self.YAxisLabel,'String',sprintf('Monitor (%s)',string(self.Model.MonitorUnits)));
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
@@ -417,7 +419,6 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                         'String','ms');
 
             % Trace axes        
-            self.YLimits_=[-10 +10];
             self.TraceAxes= ...
                 axes('Parent',self.FigureGH, ...
                      'Units','pixels', ...
