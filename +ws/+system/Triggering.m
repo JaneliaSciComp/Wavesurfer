@@ -378,7 +378,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
             % Notify the WSM, which starts the polling timer
             if nTrialsCompletedInSet==0 ,
-                self.Parent.triggeringSubsystemIsAboutToStartFirstTrialInExperiment();
+                self.Parent.triggeringSubsystemJustStartedFirstTrialInExperiment();
             end            
         end  % function
 
