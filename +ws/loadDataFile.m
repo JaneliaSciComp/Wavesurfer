@@ -37,7 +37,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         for i=1:length(fieldNames) ,
             fieldName = fieldNames{i};
             if length(fieldName)>=5 && isequal(fieldName(1:5),'trial') ,
-                rawData = dataFileAsStruct.(fieldName);
+                rawData = dataFileAsStruct.(fieldName).scans;
                 if isempty(rawData) ,
                     if doesUserWantSingle ,
                         scaledData=zeros(size(rawData),'single');
@@ -53,7 +53,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
                     scaledData=bsxfun(@times,data,combinedScaleFactors);                    
                 end
-                dataFileAsStruct.(fieldName) = scaledData ;
+                dataFileAsStruct.(fieldName).scans = scaledData ;
             end
         end
     end    
