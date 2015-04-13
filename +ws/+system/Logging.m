@@ -39,6 +39,7 @@ classdef Logging < ws.system.Subsystem
         LastTrialIndexForWhichDatasetCreated_  
           % For the current file/trialset, the trial index of the most-recently dataset in the data file.
           % Empty if the no dataset has yet been created for the current file.
+        DidWriteSomeDataForThisTrial_
     end
 
     events
@@ -252,18 +253,24 @@ classdef Logging < ws.system.Subsystem
             
             % This should be empty until we create a dataset for a trial
             self.LastTrialIndexForWhichDatasetCreated_ = [] ;
+            
+            % For tidyness
+            self.DidWriteSomeDataForThisTrial_ = [] ;
         end
         
         function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %profile resume
             thisTrialIndex = self.NextTrialIndex ;
-            datasetName = sprintf('/trial_%04d',thisTrialIndex) ;
+            timestampDatasetName = sprintf('/trial_%04d/timestamp',thisTrialIndex) ;
+            h5create(self.LogFileNameAbsolute_, timestampDatasetName, [1 1]);  % will consist of one double
+            scansDatasetName = sprintf('/trial_%04d/scans',thisTrialIndex) ;
             h5create(self.LogFileNameAbsolute_, ...
-                     datasetName, ...
+                     scansDatasetName, ...
                      self.ExpectedTrialSize_, ...
                      'ChunkSize', self.ChunkSize_, ...
                      'DataType','int16');
             self.LastTrialIndexForWhichDatasetCreated_ =  thisTrialIndex;                     
+            self.DidWriteSomeDataForThisTrial_ = false ;
             %profile off
         end
         
@@ -375,11 +382,12 @@ classdef Logging < ws.system.Subsystem
             self.ChunkSize_ = [];
             self.DidCreateCurrentDataFile_ = [] ;
             self.LastTrialIndexForWhichDatasetCreated_ = [] ;
+            self.DidWriteSomeDataForThisTrial_ = [] ;
         end
     end
-       
+
     methods
-        function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
+        function dataAvailable(self, state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
             %ticId=tic();
             
 %             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
@@ -389,9 +397,15 @@ classdef Logging < ws.system.Subsystem
             %dataSingle=single(scaledData);
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
+            if ~self.DidWriteSomeDataForThisTrial_ ,
+                timestampDatasetName = sprintf('/trial_%04d/timestamp',self.WriteToTrialId_) ;
+                h5write(self.LogFileNameAbsolute_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
+                self.DidWriteSomeDataForThisTrial_ = true ;  % will be true momentarily...
+            end
+            
             if ~isempty(self.FileBaseName) ,
                 h5write(self.LogFileNameAbsolute_, ...
-                        sprintf('/trial_%04d', ...
+                        sprintf('/trial_%04d/scans', ...
                                 self.WriteToTrialId_), ...
                         rawData, ...
                         [self.CurrentDatasetOffset_ 1], ...

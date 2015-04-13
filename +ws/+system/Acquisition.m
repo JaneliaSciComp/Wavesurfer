@@ -725,7 +725,7 @@ classdef Acquisition < ws.system.Subsystem
             keyboard
         end
         
-        function self = dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSL>
+        function dataAvailable(self, state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             self.LatestData_ = scaledData ;
@@ -841,8 +841,8 @@ classdef Acquisition < ws.system.Subsystem
             self.acquisitionTrialComplete_();
         end  % function
         
-        function samplesAcquired(self,rawData)
-            self.samplesAcquired_(rawData);
+        function samplesAcquired(self,rawData,timeSinceExperimentStartAtStartOfData)
+            self.samplesAcquired_(rawData,timeSinceExperimentStartAtStartOfData);
         end  % function
         
     end  % methods block
@@ -869,7 +869,7 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, rawData)
+        function samplesAcquired_(self, rawData, timeSinceExperimentStartAtStartOfData)
             %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
 
@@ -879,7 +879,7 @@ classdef Acquisition < ws.system.Subsystem
             rawDigitalData = self.DigitalInputTask_.readData() ;  % uint32
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                parent.samplesAcquired(rawData);
+                parent.samplesAcquired(rawData, timeSinceExperimentStartAtStartOfData);
             end
             %profile off
         end  % function
@@ -921,17 +921,17 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     methods
-        function pollingTimerFired(self,timeSinceTrialStart)
+        function pollingTimerFired(self, timeSinceTrialStart, fromExperimentStartTicId)
             % Determine the time since the last undropped timer fire
-            timeSinceLastPollingTimerFire = timeSinceTrialStart-self.TimeOfLastPollingTimerFire_; %#ok<NASGU>
+            timeSinceLastPollingTimerFire = timeSinceTrialStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
-                self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart);
+                self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart, fromExperimentStartTicId);
             end
             
             % Prepare for next time            
-            self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart;
+            self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart ;
         end
     end
     

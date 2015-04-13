@@ -458,7 +458,7 @@ classdef AnalogInputTask < handle
             result = self.DabsDaqTask_.get('readAvailSampPerChan');
         end  % function
         
-        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+        function pollingTimerFired(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
 %             nScansAvailable = self.getNScansAvailable();
 %             if (nScansAvailable >= self.NScansPerDataAvailableCallback) ,
 %                 %rawData = self.DabsDaqTask_.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16            
@@ -466,9 +466,12 @@ classdef AnalogInputTask < handle
 %                 self.Parent.samplesAcquired(rawData);
 %             end
             
-            % Read all the available scans, notify our parent 
+            % Read all the available scans, notify our parent
+            timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
             rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-            self.Parent.samplesAcquired(rawData);
+            nScans = size(rawData,1);
+            timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - nScans/self.SampleRate_ ;
+            self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
 
             % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
             % gets done?
@@ -478,7 +481,7 @@ classdef AnalogInputTask < handle
 %                 rawData = self.DabsDaqTask_.readAnalogData(nScansAvailable,'native') ;  % rawData is int16                           
 %                 self.Parent.samplesAcquired(rawData);                
                 rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-                self.Parent.samplesAcquired(rawData);
+                self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
                 
                 % Stop task, notify parent
                 self.DabsDaqTask_.stop();
