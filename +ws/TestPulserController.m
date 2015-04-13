@@ -33,6 +33,8 @@ classdef TestPulserController < ws.Controller
                             self.subtractBaselineCheckboxTouched();
                         case fig.AutoYCheckbox ,
                             self.autoYCheckboxTouched();
+                        case fig.AutoYRepeatingCheckbox ,
+                            self.autoYRepeatingCheckboxTouched();
                         case fig.AmplitudeEdit ,
                             self.amplitudeEditTouched();
                         case fig.DurationEdit ,
@@ -69,9 +71,9 @@ classdef TestPulserController < ws.Controller
         end  % function
         
         function startStopButtonPressed(self)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             self.Model.toggleIsRunning();
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end
         
         function electrodePopupMenuTouched(self)
@@ -94,6 +96,11 @@ classdef TestPulserController < ws.Controller
         function autoYCheckboxTouched(self)
             value=logical(get(self.Figure.AutoYCheckbox,'Value'));
             self.Model.IsAutoY=value;
+        end
+        
+        function autoYRepeatingCheckboxTouched(self)
+            value=logical(get(self.Figure.AutoYRepeatingCheckbox,'Value'));
+            self.Model.IsAutoYRepeating=value;
         end
         
         function amplitudeEditTouched(self)
