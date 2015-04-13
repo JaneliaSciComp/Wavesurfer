@@ -76,6 +76,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         NTimesSamplesAcquiredCalledSinceExperimentStart
     end
 
+    properties (Dependent=true, SetAccess=immutable)
+        ClockAtExperimentStart  
+          % We want this written to the data file header, but not persisted in
+          % the .cfg file.  Having this property publically-gettable, and having
+          % ClockAtExperimentStart_ transient, achieves this.
+    end
+    
     properties (Access = protected)
         IsYokedToScanImage_ = false
         IsTrialBased_ = true
@@ -95,6 +102,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         PollingTimer_
         MinimumPollingDt_
         TimeOfLastPollInTrial_
+        ClockAtExperimentStart_
     end
     
     events
@@ -657,6 +665,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 % lead to user function getting called --ALT, 2014-08-24
             
             % Tell all the subsystems to prepare for the trial set
+            self.ClockAtExperimentStart_ = clock() ;
+              % do this now so that the data file header has the right value
             try
                 for idx = 1: numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.Enabled ,
@@ -1379,6 +1389,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
     end
 
+    methods
+        function value = get.ClockAtExperimentStart(self)
+            value = self.ClockAtExperimentStart_ ;
+        end
+    end
+    
     methods
         function saveStruct=loadConfigFileForRealsSrsly(self, absoluteFileName)
             % Actually loads the named config file.  fileName should be an

@@ -322,6 +322,15 @@ classdef Coding < handle
 %                 keyboard
 %             end
             
+            % This right here defines the defaults for what gets stored in
+            % different file types.  .cfg and .usr files capture all the
+            % properties that have storage asscoiated with them, and are not
+            % markes as transient.  The header captures all the
+            % publicly-gettable properties, regardless of whether they're
+            % dependent, independent, or whatever.  (But note that, in actual
+            % use, things are special-cased such that the .usr file only
+            % captures a very small part of the WavesurferModel state.  Whereas
+            % the .cfg file captures most of the WavesurferModel state.)
             if isequal(fileType,'cfg') || isequal(fileType,'usr') ,
                 predicateFunction = @(x)(~x.Dependent && ~x.Transient && ~x.Constant) ;
             elseif isequal(fileType,'header') ,
