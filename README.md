@@ -163,4 +163,3 @@ Version History
 
 0.777: (April 3, 2015) Fixed issue that prevented acquisition if
        Matlab was installed on a drive other than the C drive.
-
