@@ -99,10 +99,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         TimeOfLastWillPerformTrial_        
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceExperimentStart_ = 0
-        PollingTimer_
+        %PollingTimer_
         MinimumPollingDt_
         TimeOfLastPollInTrial_
         ClockAtExperimentStart_
+        DoContinuePolling_
     end
     
     events
@@ -172,13 +173,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % can't figure out is reclaimable b/c it's not refered to anywhere.  So we set the callbacks just before we
             % start the timer, and we clear them just after we stop the timer.  This seems to solve the problem, and the
             % WSM gets deleted once there are no more references to it.
-            self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
-                                       'ExecutionMode','fixedRate', ...
-                                       'Period',0.100, ...
-                                       'BusyMode','drop', ...
-                                       'ObjectVisibility','off');
-            %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
-            %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
+%             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
+%                                        'ExecutionMode','fixedRate', ...
+%                                        'Period',0.100, ...
+%                                        'BusyMode','drop', ...
+%                                        'ObjectVisibility','off');
+%             %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
+%             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -189,10 +190,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('WavesurferModel::delete()\n');
             %if ~isempty(self) ,
             %import ws.utility.*
-            if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
-                delete(self.PollingTimer_);
-                self.PollingTimer_ = [] ;
-            end
+%             if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
+%                 delete(self.PollingTimer_);
+%                 self.PollingTimer_ = [] ;
+%             end
             %deleteIfValidHandle(self.Acquisition);
             %deleteIfValidHandle(self.Stimulation);
             %deleteIfValidHandle(self.Display);
@@ -246,7 +247,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function stop(self)
-            % Called when you press the "Stop" button in the UI.
+            % Called when you press the "Stop" button in the UI, for instance.
             if self.State == ws.ApplicationState.Idle
                 return
             end
@@ -866,9 +867,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('\n\n');                                                
             assert(self.State ~= ws.ApplicationState.Idle);
             
-            stop(self.PollingTimer_);
-            self.PollingTimer_.TimerFcn = [] ;
-            self.PollingTimer_.ErrorFcn = [] ;
+%             stop(self.PollingTimer_);
+%             self.PollingTimer_.TimerFcn = [] ;
+%             self.PollingTimer_.ErrorFcn = [] ;
+            self.DoContinuePolling_ = false ;  % this prevents the next iteration of the polling loop from running
 
             self.State = ws.ApplicationState.Idle;
             
@@ -886,9 +888,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
             
-            stop(self.PollingTimer_);
-            self.PollingTimer_.TimerFcn = [] ;
-            self.PollingTimer_.ErrorFcn = [] ;
+            %stop(self.PollingTimer_);
+            %self.PollingTimer_.TimerFcn = [] ;
+            %self.PollingTimer_.ErrorFcn = [] ;
+            self.DoContinuePolling_ = false ;  % this prevents the next iteration of the polling loop from running
             
             self.State = ws.ApplicationState.Idle;
             
@@ -1494,12 +1497,32 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
 
     methods
-        function triggeringSubsystemIsAboutToStartFirstTrialInExperiment(self)
+        function triggeringSubsystemJustStartedFirstTrialInExperiment(self)
             % This means we need to start the polling timer
-            self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
-            self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
-            self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
-            start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
+            %self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
+            %self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
+            %self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
+            %start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
+            
+            pollingTicId = tic() ;
+            pollingPeriod = 1/self.Display.UpdateRate ;
+            self.DoContinuePolling_ = true ;
+            timeOfLastPoll = toc(pollingTicId) ;
+            while self.DoContinuePolling_ ,
+                timeNow =  toc(pollingTicId) ;
+                timeSinceLastPoll = timeNow - timeOfLastPoll ;
+                if timeSinceLastPoll >= pollingPeriod ,
+                    timeOfLastPoll = timeNow ;
+                    tStart = toc(pollingTicId) ;
+                    self.pollingTimerFired_() ;
+                    tMiddle = toc(pollingTicId) ;
+                    drawnow() ;  % update, and also process any user actions
+                    tEnd = toc(pollingTicId) ;
+                    coreActionDuration = tMiddle-tStart ;
+                    actionDuration = tEnd-tStart ;
+                    fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
+                end
+            end            
         end
     end
     
@@ -1513,7 +1536,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.Display.pollingTimerFired(timeSinceTrialStart);
             %self.Logging.pollingTimerFired(timeSinceTrialStart);
             %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
-            drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
+            %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
         end
         
         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
