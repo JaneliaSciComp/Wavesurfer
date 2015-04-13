@@ -583,24 +583,24 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end            
 %         end  % function
         
-        function samplesAcquired(self, rawData)
+        function samplesAcquired(self, rawData, timeSinceExperimentStartAtStartOfData)
             % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
             % time between subsequent calls to this
-            t=toc(self.FromExperimentStartTicId_);
+%            t=toc(self.FromExperimentStartTicId_);
 %             if isempty(self.TimeOfLastSamplesAcquired_) ,
 %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
 %             else
 %                 %dt=t-self.TimeOfLastSamplesAcquired_;
 %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
 %             end
-            self.TimeOfLastSamplesAcquired_=t;
+            self.TimeOfLastSamplesAcquired_=timeSinceExperimentStartAtStartOfData;
            
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.dataAvailable(rawData);
+            self.dataAvailable(rawData, timeSinceExperimentStartAtStartOfData);
             %profile off
         end
         
@@ -901,7 +901,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
         end  % function
         
-        function dataAvailable(self, rawData)
+        function dataAvailable(self, rawData, timeSinceExperimentStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
             nScans=size(rawData,1);
@@ -936,7 +936,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData);
+                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;
                 end
@@ -1507,7 +1507,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function pollingTimerFired_(self)
             %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);
-            self.Acquisition.pollingTimerFired(timeSinceTrialStart);
+            self.Acquisition.pollingTimerFired(timeSinceTrialStart,self.FromExperimentStartTicId_);
             self.Stimulation.pollingTimerFired(timeSinceTrialStart);
             self.Triggering.pollingTimerFired(timeSinceTrialStart);
             %self.Display.pollingTimerFired(timeSinceTrialStart);
