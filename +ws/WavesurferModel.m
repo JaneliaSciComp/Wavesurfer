@@ -186,7 +186,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.State = ws.ApplicationState.NoMDF;
         end
         
-        function delete(self)
+        function delete(self) %#ok<INUSD>
             %fprintf('WavesurferModel::delete()\n');
             %if ~isempty(self) ,
             %import ws.utility.*
@@ -1520,7 +1520,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     tEnd = toc(pollingTicId) ;
                     coreActionDuration = tMiddle-tStart ;
                     actionDuration = tEnd-tStart ;
-                    fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
+                    %fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
+                else
+                    pause(0.010);  % don't want this loop to completely peg the CPU
                 end
             end            
         end
