@@ -619,7 +619,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
             self.Triggering.releaseHardwareResources();
-            self.Ephys.releaseHardwareResources();            
+            self.Ephys.releaseHardwareResources();
         end
         
         function result=get.FastProtocols(self)

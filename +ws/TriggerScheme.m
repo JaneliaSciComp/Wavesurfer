@@ -308,12 +308,12 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
 %             end                
 %         end  % function
         
-        function clear(self)
+        function teardown(self)
             % For an internal trigger, clear it.  For an external, do
             % nothing.  Clearing an internal trigger releases the NI
             % resources devoted to it.
             if self.IsInternal ,
-                self.Target.clear();
+                self.Target.teardown();
             end                
         end  % function
         
