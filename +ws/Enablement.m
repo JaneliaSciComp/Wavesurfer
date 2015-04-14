@@ -10,34 +10,51 @@ classdef Enablement < handle
             % times without being enabled.  But it is always <= 1.
     end
     
-    properties (Dependent=true)  
+    properties (Dependent=true, SetAccess=immutable)  
         IsEnabled   % logical scalar, read-only
     end
-        
+
+%     properties (Access=protected, Transient=true)
+%         Parent_ 
+%     end
+    
     methods
         function self=Enablement()
+            %self.Parent_ = parent ;
         end
+       
+%         function delete(self) %#ok<INUSD>
+%             %self.Parent_ = [] ;
+%         end
         
-        function didChangeToEnabled=enableMaybe(self)
-            wasEnabled=self.IsEnabled;
-            newDegreeOfEnablementRaw=self.DegreeOfEnablement_+1;
-            self.DegreeOfEnablement_ = ...
-                    ws.utility.fif(newDegreeOfEnablementRaw<=1, ...
-                                      newDegreeOfEnablementRaw, ...
-                                      1);
-            didChangeToEnabled=self.IsEnabled && ~wasEnabled;            
+        function enableMaybe(self)
+            %fprintf('ws.Enablement::enableMaybe()\n');
+            %dbstack            
+%             className = class(self.Parent_) ;
+%             if isequal(className,'ws.system.UserFunctions') ,
+%                 fprintf('About to increment (maybe) UserFunctions degree of enablement.\n');
+%             end
+            newDegreeOfEnablementRaw = self.DegreeOfEnablement_ + 1 ;
+            self.DegreeOfEnablement_ = min(1,newDegreeOfEnablementRaw) ;
         end
         
         function disable(self)
-            newDegreeOfEnablementRaw=self.DegreeOfEnablement_-1;
-            self.DegreeOfEnablement_ = ...
-                ws.utility.fif(newDegreeOfEnablementRaw<=1, ...
-                                  newDegreeOfEnablementRaw, ...
-                                  1);
+            %fprintf('ws.Enablement::disable()\n');
+            %dbstack
+%             className = class(self.Parent_) ;
+%             if isequal(className,'ws.system.UserFunctions') ,
+%                 fprintf('About to decrement UserFunctions degree of enablement.\n');
+%             end
+            self.DegreeOfEnablement_ = self.DegreeOfEnablement_ - 1 ;
         end
         
         function value=get.IsEnabled(self)
-            value=(self.DegreeOfEnablement_>0);
+            value = (self.DegreeOfEnablement_>0);
+        end
+        
+        function value = peekAtDegreeOfEnablement(self)
+            % This is meant to be used only for debugging, not for routine access            
+            value = self.DegreeOfEnablement_ ;
         end
     end
     

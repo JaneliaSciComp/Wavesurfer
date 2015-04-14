@@ -1,4 +1,4 @@
-classdef ScopeModel < ws.Model % & ws.EventBroadcaster 
+classdef ScopeModel < ws.Model     % & ws.EventBroadcaster 
     properties (Constant=true)
         BackgroundColor = [0 0 0];
         ForegroundColor = [.15 .9 .15];
@@ -8,70 +8,40 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         Marker = 'none';
         GridOn = true;
     end
-    
-    properties (SetAccess=protected, Transient=true)
-        Parent  % the parent Display object
-    end
-    
-    properties (Dependent=true)  %(SetObservable = true)
-        XUnits
-        YUnits
-        YScale   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
-        %YAutoScale
-    end
 
-    properties (Access = protected)
-        XUnits_ = ws.utility.SIUnit('s')
-        YUnits_ = ws.utility.SIUnit('V')
-        YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
-        %YAutoScale_ = false
+    properties (Dependent=true, SetAccess=protected)
+        Parent  % the parent Display object
+          % this is SetAccess=protected for historical reasons
+          % would be nice to change it to immutable at some point
     end
     
-    properties (SetAccess = protected)  % SetObservable = true)
-        Tag = '';  % This should be a unique tag that identifies this ScopeModel.
+    properties (Dependent=true, SetAccess=immutable)
+        Tag        % This should be a unique tag that identifies this ScopeModel.
                    % This is used as the Tag for any ScopeFigure that uses
                    % this ScopeModel as its model, and should be usable as
                    % a field name in a structure, for saving/loading
                    % purposes.
-        Title = '';  % This is the window title used by any ScopeFigures that use this
-                     % ScopeModel as their Model.
+        ChannelNames   % row vector, the channel names shown in this scope
+        ChannelColorIndex  
+        NChannels
+        XData
+        YData
     end
     
-    properties (Dependent=true) %, AbortSet=true, SetObservable=true)
+    properties (Dependent=true)  %(SetObservable = true)
+        Title        % This is the window title used by any ScopeFigures that use this
+                     % ScopeModel as their Model.
+        XUnits
+        YUnits
+        YScale   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
+        AreYLimitsLockedTightToData
         XOffset  % the x coord shown at the leftmost edge of the plot
         XSpan  % the difference between the xcoord shown at the rightmost edge of the plot and XOffset
         XLim
         YLim
     end
 
-%     properties %(AbortSet=true, SetObservable=true)
-%         YLim = [-10 +10]
-%     end
-    
-    properties (Access=protected)
-        XOffset_ = 0
-        XSpan_ = 1
-        YLim_ = [-10 +10]
-    end
-    
-    properties (SetAccess = protected)
-        ChannelNames = cell(1,0);  % row vector, the AI indices shown in this Scope
-        ChannelColorIndex=zeros(1,0);
-        %Lines = zeros(1,0);  % row vector, the line graphics handles for each channel
-        
-        %displayOptions;
-        %HeldLines;
-        
-        %Figure;  % HG handle to figure
-        %Axes;  % HG handle to axes
-        %chanLines = struct('ChannelName', {}, 'LineHandle', {}, 'XDataLim', {}); % Structure of line handle objects.
-        
-        %HorizontalCenterLine;  % HG handle to line
-        %VerticalCenterLine;  % HG handle to line
-        %GroundLine;  % HG handle to line
-    end
-    
-    properties (Transient=true, Dependent=true)
+    properties (Dependent=true, Transient=true)  % not sure this needs to be transient, since it's dependent...
         IsVisibleWhenDisplayEnabled
           % Indicates whether scope is visible when the Display subsystem
           % is enabled.  If display subsystem is disabled, the scopes are
@@ -87,40 +57,44 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     end
     
     properties (Access = protected, Transient=true)
-        BufferFactor = 1;
-        RunningMin = zeros(1,0);  % length == self.NChannels
-        RunningMax = zeros(1,0);
-        RunningMean = zeros(1,0);
-        %XDataLims = zeros(2,0);  % each col the min and max x value for that line
-        %  % Invariant: size(XDataLims,2)==self.NChannels
-        %  % The x limits for channel i are in XDataLims(:,i)
-        %YLimAtADCBeforeChange;  
-          % this is a cache, used to keep the y range constant in volts at
-          % the ADC when the scale changes.
+        Parent_
+        XData_  % a double array, holding x data for each channel
+        YData_ = cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
+          % Invariant: For all i,j length(YData{i})==length(YData{j})        
+        BufferFactor_ = 1
+        RunningMin_ = zeros(1,0)  % length == self.NChannels
+        RunningMax_ = zeros(1,0)
+        RunningMean_ = zeros(1,0)
         IsVisibleWhenDisplayEnabled_
     end
     
-    properties (SetAccess = protected, Transient=true)
-        XData  % a double array, holding x data for each channel
-        YData=cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
-          % Invariant: For all i,j length(YData{i})==length(YData{j})
-    end
-    
-    properties (SetAccess=immutable, Dependent=true)
-        NChannels
+    properties (Access = protected)
+        Tag_ = ''  % This should be a unique tag that identifies this ScopeModel.
+                   % This is used as the Tag for any ScopeFigure that uses
+                   % this ScopeModel as its model, and should be usable as
+                   % a field name in a structure, for saving/loading
+                   % purposes.
+        Title_ = ''  % This is the window title used by any ScopeFigures that use this
+                     % ScopeModel as their Model.        
+        XUnits_ = ws.utility.SIUnit('s')
+        YUnits_ = ws.utility.SIUnit('V')
+        YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
+        AreYLimitsLockedTightToData_ = false
+        XOffset_ = 0
+        XSpan_ = 1
+        YLim_ = [-10 +10]
+        ChannelNames_ = cell(1,0)  % row vector
+        ChannelColorIndex_ = zeros(1,0)
     end
     
     events
-        %AxisLimitSet
-        %YAutoScaleWasSet
-        %XAutoScrollWasSet
         ChannelAdded
         DataAdded
         DataCleared
         DidSetChannelUnits
         WindowVisibilityNeedsToBeUpdated
-        %WavesurferScopeMenuNeedsToBeUpdated
-        %Update
+        UpdateYAxisLimits
+        UpdateAreYLimitsLockedTightToData
     end  % events
     
     methods
@@ -167,23 +141,52 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     
     methods
         function set.Parent(self, newValue)
-%             if ~isempty(self.WavesurferModel) && isvalid(self.WavesurferModel) ,
-%                 self.WavesurferModel.Acquisition.unsubscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','didSetAnalogChannelUnitsOrScales');
-%             end
-            self.Parent=newValue;
-            % Sometimes we want to set WavesurferModel to []
-%             if ~isempty(newValue)
-%                 self.WavesurferModel.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','didSetAnalogChannelUnitsOrScales');
-%             end
+            self.Parent_ = newValue;
         end
         
-%         function set.YAutoScale(self,newValue)
-%             if islogical(newValue) && isscalar(newValue) ,
-%                 self.YAutoScale=newValue;
-%             end
-%             self.updateYLim();
-%             self.broadcast('YAutoScaleWasSet');
-%         end
+        function result = get.Parent(self)
+            result = self.Parent_ ;
+        end
+        
+        function set.Title(self, newValue)            
+            self.Title_ = newValue ;
+        end
+        
+        function result = get.Title(self)
+            result = self.Title_ ;
+        end
+
+        function result = get.Tag(self)
+            result = self.Tag_ ;
+        end
+
+        function result = get.ChannelNames(self)
+            result = self.ChannelNames_ ;
+        end
+
+        function result = get.ChannelColorIndex(self)
+            result = self.ChannelColorIndex_ ;
+        end
+
+        function result = get.XData(self)
+            result = self.XData_ ;
+        end
+        
+        function result = get.YData(self)
+            result = self.YData_ ;
+        end
+        
+        function result = get.AreYLimitsLockedTightToData(self)
+            result = self.AreYLimitsLockedTightToData_ ;
+        end
+        
+        function set.AreYLimitsLockedTightToData(self,newValue)
+            if islogical(newValue) && isscalar(newValue) ,
+                self.AreYLimitsLockedTightToData_ = newValue ;
+            end
+            self.broadcast('UpdateAreYLimitsLockedTightToData');  % Want a special update for this, since it will happen while data is ebing acquired
+            self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
+        end
         
 %         function set.XAutoScroll(self,newValue)
 %             if islogical(newValue) && isscalar(newValue) ,
@@ -245,13 +248,14 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
                 self.XOffset=newValue(1);
                 self.XSpan=newValue(2)-newValue(1);
             end
+            % XOffset and XSpan setters take care of broadcasting an update
         end
         
         function set.YLim(self,newValue)
             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
                 self.YLim_ = newValue;
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateYAxisLimits');
         end
         
         function value=get.YLim(self)
@@ -293,7 +297,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
                     end
                 end
                 if isValidFieldName ,
-                    self.Tag=newValue;
+                    self.Tag_ = newValue;
                 end
             end
         end
@@ -345,11 +349,11 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
                
             nChannelsOriginally=self.NChannels;
             iNewChannel=nChannelsOriginally+1;   
-            self.ChannelNames{iNewChannel} = newChannelName;
+            self.ChannelNames_{iNewChannel} = newChannelName;
             %self.yUnits(end+1) = units;
             
             colorOrderIndex = iNewChannel;
-            self.ChannelColorIndex(iNewChannel)=colorOrderIndex;  % store value to colors don't change
+            self.ChannelColorIndex_(iNewChannel)=colorOrderIndex;  % store value to colors don't change
             
             %colorOrder = get(self.Axes ,'ColorOrder');
             %color = colorOrder(colorOrderIndex, :);
@@ -357,7 +361,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
             %self.ChannelNames(end + 1).ChannelName = newChannelID;
             %self.XDataLims(:,iNewChannel) = [0 0]';
             %self.XData{iNewChannel}=zeros(0,1);  % col vector
-            self.YData{iNewChannel}=zeros(0,1);  % col vector            
+            self.YData_{iNewChannel}=zeros(0,1);  % col vector            
 %             self.Lines(iNewChannel) = ...
 %                 line('Parent', self.Axes,...
 %                      'XData', [],...
@@ -369,9 +373,9 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
 %                      'LineWidth', 2,...
 %                      'Tag', sprintf('%s::%s', self.Name, newChannelName));
             
-            self.RunningMin(iNewChannel) = 0;
-            self.RunningMax(iNewChannel) = 0;
-            self.RunningMean(iNewChannel) = 0;
+            self.RunningMin_(iNewChannel) = 0;
+            self.RunningMax_(iNewChannel) = 0;
+            self.RunningMean_(iNewChannel) = 0;
             
             % If this is the first channel added, pretend the channel units
             % were just set from 1 V/V to something else, to trigger an
@@ -411,12 +415,12 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
             end
             % If number of samples is too large to display, trim off
             % the old ones 
-            nDisplayableSamples = ceil(self.XSpan * sampleRate * self.BufferFactor);
+            nDisplayableSamples = ceil(self.XSpan * sampleRate * self.BufferFactor_);
             if length(xData) > nDisplayableSamples
                 xData=xData(end-nDisplayableSamples+1:end);
             end
             % Commit the data
-            self.XData=xData;
+            self.XData_=xData;
             %T(3)=toc(ticId);
             
             % Deal with YData
@@ -440,14 +444,14 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
                 end
                 
                 % Commit the data
-                self.YData{iChannel}=yData;
+                self.YData_{iChannel}=yData;
             end
             
             if newXOffset~=self.XOffset , 
                 self.XOffset=newXOffset;
             end
             %T(4)=toc(ticId);
-            %self.updateYLim();
+            self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
             %T(5)=toc(ticId);
             
             % Update the plot limits to accomodate the new data, if
@@ -463,15 +467,15 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
         
         function clearData(self)
             for idx = 1:numel(self.ChannelNames)
-                self.XData=zeros(0,1);
-                self.YData{idx}=zeros(0,1);
+                self.XData_=zeros(0,1);
+                self.YData_{idx}=zeros(0,1);
                 
                 %set(self.Lines(idx), {'XData' 'YData'}, {[] []});
                 %self.XDataLims(:,idx) = [0; 0];
                 
-                self.RunningMin(idx) = 0;
-                self.RunningMax(idx) = 0;
-                self.RunningMean(idx) = 0;
+                self.RunningMin_(idx) = 0;
+                self.RunningMax_(idx) = 0;
+                self.RunningMean_(idx) = 0;
             end
             
             %delete(self.HeldLines);
@@ -541,7 +545,7 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
 %             end
 %         end
         
-        function setYLimTightToData(self)
+        function setYAxisLimitsTightToData(self)
             yMinAndMax=self.dataYMinAndMax();
             if any(~isfinite(yMinAndMax)) ,
                 return
@@ -550,7 +554,6 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
             yRadius=0.5*diff(yMinAndMax);
             self.YLim=yCenter+1.05*yRadius*[-1 +1];
         end  % function
-
     end  % methods
     
     methods (Access = protected)        
@@ -567,17 +570,11 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     end  % methods (Access = protected)
     
     methods (Access = protected)
-%         function updateYLim(self)
-%             if self.YAutoScale,
-%                 yMinAndMax=self.dataYMinAndMax();
-%                 if any(~isfinite(yMinAndMax)) ,
-%                     return
-%                 end
-%                 yCenter=mean(yMinAndMax);
-%                 yRadius=0.5*diff(yMinAndMax);
-%                 self.YLim=yCenter+1.05*yRadius*[-1 +1];
-%             end
-%         end  % function
+        function setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
+            if self.AreYLimitsLockedTightToData,
+                self.setYAxisLimitsTightToData();
+            end
+        end  % function
 
 %         function updateXLim(self)
 %             if self.XAutoScroll,
@@ -592,14 +589,12 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
 %             end
 %         end  % function
     end  % protected methods
-        
     
-%     methods (Access = protected)
-%         function toggleYAutoScale(self, varargin)
-%             self.YAutoScale = ~self.YAutoScale;
-%             self.YAutoScale
-%         end  % methods (Access = protected)
-%     end
+    methods
+        function toggleAreYLimitsLockedTightToData(self)
+            self.AreYLimitsLockedTightToData = ~self.AreYLimitsLockedTightToData;
+        end
+    end
 
     methods (Access=protected)        
         function out = getPropertyValue(self, name)
@@ -630,7 +625,6 @@ classdef ScopeModel < ws.Model % & ws.EventBroadcaster
     methods (Static)
         function s = propertyAttributes()
             s = struct();
-            
             s.Parent = struct('Classes', 'ws.system.Display', 'AllowEmpty', true);
         end  % function
     end  % class methods block

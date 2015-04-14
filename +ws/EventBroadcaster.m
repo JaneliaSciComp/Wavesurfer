@@ -18,14 +18,21 @@ classdef (Abstract=true) EventBroadcaster < handle
     % from the name.
     properties (Access=protected, Transient=true)
         OutgoingSubscriptions_=struct('subscriber',cell(1,0), ...
-                                     'eventName',cell(1,0), ...
-                                     'propertyName',cell(1,0), ...
-                                     'methodName',cell(1,0));
-        Listeners_=event.listener.empty();
-        BroadcastEnablement_=ws.Enablement();
+                                      'eventName',cell(1,0), ...
+                                      'propertyName',cell(1,0), ...
+                                      'methodName',cell(1,0))
+        Listeners_=event.listener.empty()
+        BroadcastEnablement_
     end  % properties
     
     methods
+        function self = EventBroadcaster()
+            self.BroadcastEnablement_ = ws.Enablement();  
+                % Have to initialize in the constructor, not in the property declaration, b/c
+                % if do in the property declaration, all instances of the class are using a single 
+                % ws.Enablement object!!!
+        end
+        
         function delete(self)
             delete(self.Listeners_);
             for i=1:length(self.OutgoingSubscriptions_) ,
@@ -101,11 +108,30 @@ classdef (Abstract=true) EventBroadcaster < handle
         end
         
         function disableBroadcasts(self)
+            %fprintf('EventBroadcaster::disableBroadcasts()\n');
+%             className = class(self);
+%             if isequal(className,'ws.system.UserFunctions') ,
+%                 fprintf('UserFunctions::disableBroadcasts()\n');
+%                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
+%             end
             self.BroadcastEnablement_.disable();
+%             if isequal(class(self),'ws.system.UserFunctions') ,
+%                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
+%             end
         end
         
-        function areBroadcastsEnabled=enableBroadcastsMaybe(self)
-            areBroadcastsEnabled=self.BroadcastEnablement_.enableMaybe();
+        function enableBroadcastsMaybe(self)
+            %fprintf('EventBroadcaster::enableBroadcasts()\n');
+%             className = class(self);
+%             if isequal(className,'ws.system.UserFunctions') ,
+%                 fprintf('UserFunctions::enableBroadcastsMaybe()\n');
+%                 %dbstack
+%                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
+%             end
+            self.BroadcastEnablement_.enableMaybe();
+%             if isequal(class(self),'ws.system.UserFunctions') ,
+%                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
+%             end
         end
         
         function broadcast(self,eventName,varargin)
@@ -115,6 +141,11 @@ classdef (Abstract=true) EventBroadcaster < handle
             if self.BroadcastEnablement_.IsEnabled ,
                 self.notify(eventName,varargin{:});
             end
+        end
+        
+        function result = peekAtBroadcastEnablement(self)
+            % This is meant to be used only for debugging, not for routine access
+            result = self.BroadcastEnablement_ ;
         end
     end  % methods
 end  % classdef

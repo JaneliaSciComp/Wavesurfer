@@ -326,6 +326,14 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
             end                            
         end  % function
         
+        function pollingTimerFired(self,timeSinceTrialStart)
+            if self.IsInternal_ ,
+                self.Source_.pollingTimerFired(timeSinceTrialStart);
+            else
+                % Nothing to do for external triggers
+            end
+        end
+        
         function syncIsInternal_(self)  % protected by convention
             self.IsInternal = ~isempty(self.Source_);  % set the public property so that the change gets broadcast
             self.IsExternal = isempty(self.Source_) && ~isempty(self.Destination_);  % set the public property so that the change gets broadcast
