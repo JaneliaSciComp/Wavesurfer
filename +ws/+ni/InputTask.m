@@ -126,17 +126,20 @@ classdef InputTask < handle
             value = self.Parent_;
         end  % function
         
-        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
-            % Read all the available scans, notify our parent 
+        function pollingTimerFired(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
+            % Read all the available scans, notify our parent
+            timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
             rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-            self.Parent.samplesAcquired(rawData);
+            nScans = size(rawData,1);
+            timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - nScans/self.SampleRate_ ;
+            self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
 
             % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
             % gets done?
             if self.DabsDaqTask_.isTaskDoneQuiet() ,
                 % Get data one last time, to make sure we get it all
                 rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-                self.Parent.samplesAcquired(rawData);
+                self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
                 
                 % Stop task, notify parent
                 self.DabsDaqTask_.stop();

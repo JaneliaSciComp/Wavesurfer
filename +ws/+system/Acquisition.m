@@ -875,8 +875,8 @@ classdef Acquisition < ws.system.Subsystem
 
             % read both the analog and digital data, they should be in
             % lock-step
-            rawAnalogData = self.AnalogInputTask_.readData() ;  % int16
-            rawDigitalData = self.DigitalInputTask_.readData() ;  % uint32
+%             rawAnalogData = self.AnalogInputTask_.readData() ;  % int16
+%             rawDigitalData = self.DigitalInputTask_.readData() ;  % uint32
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
                 parent.samplesAcquired(rawData, timeSinceExperimentStartAtStartOfData);
@@ -928,6 +928,7 @@ classdef Acquisition < ws.system.Subsystem
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
                 self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart, fromExperimentStartTicId);
+                self.DigitalInputTask_.pollingTimerFired(timeSinceTrialStart, fromExperimentStartTicId);
             end
             
             % Prepare for next time            
