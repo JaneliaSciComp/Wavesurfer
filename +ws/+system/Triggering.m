@@ -464,23 +464,23 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
-                self.cleanup();
+                self.teardownInternalTrialBasedTriggers();
             end
         end  % function
         
         function didAbortTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
-                self.cleanup();
+                self.teardownInternalTrialBasedTriggers();
             end
         end  % function
         
         function didPerformExperiment(self, ~)
-            self.cleanup();
+            self.teardownInternalTrialBasedTriggers();
         end  % function
         
         function didAbortExperiment(self, ~)
-            self.cleanup();
+            self.teardownInternalTrialBasedTriggers();
         end  % function
         
         function setupInternalTrialBasedTriggers(self)        
@@ -677,14 +677,14 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function cleanup(self)
+        function teardownInternalTrialBasedTriggers(self)
 %             if self.ContinuousModeTriggerScheme.IsInternal ,
 %                 self.ContinuousModeTriggerScheme.clear();
 %             end
             
             triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes)
-                triggerSchemes{idx}.clear();
+                triggerSchemes{idx}.teardown();
             end
         end  % function
     end
