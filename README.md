@@ -164,10 +164,14 @@ Version History
 0.777: (April 3, 2015) Fixed issue that prevented acquisition if
        Matlab was installed on a drive other than the C drive.
 
-0.778: (April 14, 2015) Now have toggle-able autoscaling of y-axis 
-       limits for both scope windows and the test pulse window.  Added 
-       per-trialset and per-trial (approximate) timestamps to data file.  
-       No longer rely upon DABS callbacks during data acquisition, but 
-       poll instead.  All internally-generated triggers are now themselves 
-       triggered off a common "master" trigger on PFI8.
+0.778: (April 14, 2015) Now have toggle-able autoscaling of y-axis
+       limits for both scope windows and the test pulse window.  Added
+       per-trialset and per-trial (approximate) timestamps to data
+       file.  No longer rely upon DABS callbacks during data
+       acquisition, but poll instead.  All internally-generated
+       triggers are now themselves triggered off a common "master"
+       trigger on PFI8.
+
+0.779: (April 14, 2015) Fixed bug where couldn't test pulse after
+       acquiring data.
 
