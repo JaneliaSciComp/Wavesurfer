@@ -180,10 +180,10 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.MasterTriggerDABSTask_ = [] ;
         end
 
-        function acquireHardwareResources(self)
-            self.setupMasterTriggerTask();
-            self.setupInternalTrialBasedTriggers();
-        end
+%         function acquireHardwareResources(self)
+%             self.setupMasterTriggerTask();
+%             self.setupInternalTrialBasedTriggers();
+%         end
         
         function releaseHardwareResources(self)
             self.teardownInternalTrialBasedTriggers();
@@ -454,7 +454,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %         end  % function        
         
         function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSD>
-            self.acquireHardwareResources();            
+            self.setupMasterTriggerTask();            
 %             if experimentMode == ws.ApplicationState.AcquiringTrialBased ,
                 if self.AcquisitionUsesASAPTriggering ,
                     % do nothing --- will arm for each trial

@@ -452,7 +452,7 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
 
-        function acquireHardwareResources(self)
+        function acquireHardwareResources_(self)
             if isempty(self.AnalogInputTask_) ,
                 self.AnalogInputTask_ = ...
                     ws.ni.AnalogInputTask(self, ...
@@ -497,7 +497,7 @@ classdef Acquisition < ws.system.Subsystem
             end
             
             % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources();
+            self.acquireHardwareResources_();
 
             % Set up the task triggering
             self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
