@@ -167,7 +167,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
         end  % function
         
-        function acquireHardwareResources(self) 
+        function setupMasterTriggerTask(self) 
             if isempty(self.MasterTriggerDABSTask_) ,
                 self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('Wavesurfer Master Trigger Task');
                 self.MasterTriggerDABSTask_.createDOChan(self.Sources(1).DeviceName, self.MasterTriggerPhysicalChannelName_);
@@ -175,14 +175,29 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
 
-        function releaseHardwareResources(self) 
+        function teardownMasterTriggerTask(self) 
             ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
             self.MasterTriggerDABSTask_ = [] ;
         end
+
+        function acquireHardwareResources(self)
+            self.setupMasterTriggerTask();
+            self.setupInternalTrialBasedTriggers();
+        end
+        
+        function releaseHardwareResources(self)
+            self.teardownInternalTrialBasedTriggers();
+            self.teardownMasterTriggerTask();
+        end
         
         function delete(self)
-            ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
-            self.MasterTriggerDABSTask_ = [] ;
+            try
+                self.releaseHardwareResources();
+            catch me %#ok<NASGU>
+                % Can't throw in the delete() function
+            end                
+            %ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
+            %self.MasterTriggerDABSTask_ = [] ;
             self.Parent = [] ;
         end  % function
         
