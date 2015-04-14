@@ -155,13 +155,15 @@ classdef InputTask < handle
 %             end                
 %         end  % function
         
-        function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
-            % BEN: This still needs to be generalized for a digital InputTask            
+        function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
             % Read all the available scans, notify our parent
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
-            rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-            nScans = size(rawData,1);
-            timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - nScans/self.SampleRate_ ;
+            if self.IsAnalog
+                rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+            else % IsDigital
+                rawData = self.DabsDaqTask_.readDigitalData(nScansToRead) ;
+            end
+            timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - size(rawData,1)/self.SampleRate_ ;
         end  % function
     
 %         function [isDone,rawData,timeSinceExperimentStartAtStartOfData] = checkForDoneness(self, timeSinceTrialStart, fromExperimentStartTicId)

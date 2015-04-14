@@ -739,19 +739,19 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % update the DIs
-            digitalPhysicalChannelNames = model.Stimulation.DigitalPhysicalChannelNames ;
-            channelNames=model.Stimulation.DigitalChannelNames;
+            physicalChannelNames = model.Acquisition.DigitalPhysicalChannelNames ;
+            channelNames=model.Acquisition.DigitalChannelNames;
             for i=1:nDIs ,
-                set(self.DILabelTexts(i),'String',sprintf('%s (%s):',digitalPhysicalChannelNames{i},channelNames{i}));                
+                set(self.DILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
                 set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsChannelActive(i), ...
                                                  'Enable',onIff(isWavesurferIdle));                                     
             end
             
             % update the DOs
-            digitalPhysicalChannelNames = model.Stimulation.DigitalPhysicalChannelNames ;
+            physicalChannelNames = model.Stimulation.DigitalPhysicalChannelNames ;
             channelNames=model.Stimulation.DigitalChannelNames;
             for i=1:nDOs ,
-                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',digitalPhysicalChannelNames{i},channelNames{i}));                
+                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
             end
             
         end  % function        
