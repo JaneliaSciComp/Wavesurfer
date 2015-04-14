@@ -21,7 +21,8 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
         end
         
         function testGetData(self)
-            data = self.DefaultMap.calculateSignals(100,{'ch1' 'ch2'});
+            isChannelAnalog = [true true] ;
+            data = self.DefaultMap.calculateSignals(100,{'ch1' 'ch2'},isChannelAnalog);
             self.verifyTrue(all(size(data) == [100 2]), 'Incorrect data size.');
         end
     end

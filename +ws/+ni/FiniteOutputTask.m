@@ -1,5 +1,6 @@
 classdef FiniteOutputTask < handle
     properties (Dependent = true, SetAccess = immutable)
+        Parent
         IsAnalog
         IsDigital
         TaskName
@@ -17,7 +18,8 @@ classdef FiniteOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        DabsDaqTask_ = [];
+        Parent_
+        DabsDaqTask_ = [];  % Can be empty if there are zero channels
     end
     
     properties (Access = protected)
@@ -32,13 +34,16 @@ classdef FiniteOutputTask < handle
         IsOutputBufferSyncedToChannelData_ = false
     end
     
-    events
-        OutputComplete
-    end
+%     events
+%         OutputComplete
+%     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, physicalChannelNames, channelNames)
+        function self = FiniteOutputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
+            
+            % Store the parent
+            self.Parent_ = parent ;
                                     
             % Determine the task type, digital or analog
             if isequal(taskType,'analog') ,
@@ -87,6 +92,7 @@ classdef FiniteOutputTask < handle
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
+            self.Parent_ = [] ;  % prob not needed
         end  % function
         
         function start(self)
@@ -126,6 +132,10 @@ classdef FiniteOutputTask < handle
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
                 self.DabsDaqTask_.stop();
             end
+        end  % function
+        
+        function value = get.Parent(self)
+            value = self.Parent_;
         end  % function
         
         function value = get.IsArmed(self)
@@ -270,7 +280,7 @@ classdef FiniteOutputTask < handle
                 % do nothing
             else
                 % Set up callbacks
-                self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
+                %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
@@ -290,32 +300,64 @@ classdef FiniteOutputTask < handle
                     % do nothing
                 else
                     % Unregister callbacks
-                    self.DabsDaqTask_.doneEventCallbacks = {};
+                    %self.DabsDaqTask_.doneEventCallbacks = {};
 
-                    % Unreserve resources
-                    self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
+                    % Abort the task
+                    self.DabsDaqTask_.abort();
+                    
+                    % Unreserve resources (abort should do this for us)
+                    %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
                 end
                 
                 % Note that we are now disarmed
                 self.IsArmed_ = false;
             end
-        end  % function                
+        end  % function   
+        
+        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+            %fprintf('FiniteOutputTask::pollingTimerFired()\n');
+            if isempty(self.DabsDaqTask_)
+                % This means there are no channels, so nothing to do
+            else
+                if self.DabsDaqTask_.isTaskDoneQuiet() ,
+                    self.DabsDaqTask_.stop();
+                    parent = self.Parent ;
+                    if ~isempty(parent) && isvalid(parent) ,
+                        if self.IsAnalog ,
+                            parent.analogEpisodeCompleted();
+                        else
+                            parent.digitalEpisodeCompleted();
+                        end
+                    end
+                end
+            end
+        end  % function
     end  % public methods
     
-    methods (Access = protected)        
-        function taskDone_(self, ~, ~)
-            % For a successful capture, this class is responsible for stopping the task when
-            % it is done.  For external clients to interrupt a running task, use the abort()
-            % method on the Output object.
-            %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
-            self.DabsDaqTask_.stop();
-            
-            % Fire the event before unregistering the callback functions.  At the end of a
-            % script the DAQmx callbacks may be the only references preventing the object
-            % from deleting before the events are sent/complete.
-            self.notify('OutputComplete');
-        end  % function        
-    end  % protected methods block
+%     methods (Access = protected)        
+%         function taskDone_(self, ~, ~)
+%             % Called "from below" when the task completes
+%             
+%             % For a successful capture, this class is responsible for stopping the task when
+%             % it is done.  For external clients to interrupt a running task, use the abort()
+%             % method on the Output object.
+%             %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
+%             self.DabsDaqTask_.stop();
+%             
+%             % Fire the event before unregistering the callback functions.  At the end of a
+%             % script the DAQmx callbacks may be the only references preventing the object
+%             % from deleting before the events are sent/complete.
+%             parent = self.Parent ;
+%             if ~isempty(parent) && isvalid(parent) ,                
+%                 if self.IsAnalog ,
+%                     parent.analogEpisodeCompleted();
+%                 else
+%                     parent.digitalEpisodeCompleted();
+%                 end
+%             end
+%             %self.notify('OutputComplete');
+%         end  % function        
+%     end  % protected methods block
     
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)

@@ -299,7 +299,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 if isequal(newString,'(Unspecified)') ,
                     newString='';
                 end
-                selectedMap.ChannelNames{rowIndex}=newString;                
+                selectedMap.ChannelNames{rowIndex}=newString;
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
                 if isequal(newString,'(Unspecified)') ,
@@ -465,7 +465,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 return
             end
             wavesurferModel=stimulationSubsystem.Parent;
-            if isempty(wavesurferModel) || isvalid(wavesurferModel) ,
+            if isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                 out=false;
                 return
             end            

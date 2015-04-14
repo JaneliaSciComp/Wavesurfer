@@ -101,27 +101,28 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             end
         end
         
-        function set.RepeatCount(self, value)
+        function set.RepeatCount(self, newValue)
             %fprintf('set.RepeatCount()\n');
             %dbstack
-            if isnan(value) , 
+            if isnumeric(newValue) && isscalar(newValue) && isnan(newValue) , 
                 % do nothing
             else
-                self.validatePropArg('RepeatCount', value);
+                ws.TriggerSource.validateRepeatCount(newValue);
                 if self.IsRepeatCountOverridden_ ,
                     % do nothing
                 else
-                    self.RepeatCount_ = value;
+                    self.RepeatCount_ = newValue;
                 end
             end
             self.broadcast('Update');
         end
         
         function overrideRepeatCount(self,newValue)
-            if isa(newValue,'ws.most.util.Nonvalue') , 
+            if isnumeric(newValue) && isscalar(newValue) && isnan(newValue) , 
                 return
             end
-            self.validatePropArg('RepeatCount', newValue);            
+            % self.validatePropArg('RepeatCount', newValue);            
+            ws.TriggerSource.validateRepeatCount(newValue);
             self.RepeatCountOverride_ = newValue;
             self.IsRepeatCountOverridden_=true;
             self.RepeatCount=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
@@ -289,10 +290,10 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             self.clear();
             
             self.CounterTask_ = ...
-                ws.ni.CounterTriggerSourceTask(self.DeviceName, ...
+                ws.ni.CounterTriggerSourceTask(self, ...
+                                               self.DeviceName, ...
                                                self.CounterID, ...
-                                               ['Wavesurfer Counter Self Trigger Task ' num2str(self.CounterID)], ...
-                                               @self.doneCallback_);
+                                               ['Wavesurfer Counter Self Trigger Task ' num2str(self.CounterID)]);
             
             self.CounterTask_.RepeatFrequency = 1/interval;
             self.CounterTask_.RepeatCount = repeatCount;
@@ -307,7 +308,10 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
         end
         
         function clear(self)
-            delete(self.CounterTask_);
+            if ~isempty(self.CounterTask_) ,
+                self.CounterTask_.stop();
+            end
+            %delete(self.CounterTask_);  % do we need to explicitly delete?  self.CounterTask_ is not a DABS task...
             self.CounterTask_ = [];
         end
         
@@ -322,17 +326,24 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
 %                 self.CounterTask_.startWhenDone(maxWaitTime);
 %             end
 %         end
-    end  % methods
-        
-    methods (Access=protected)
-        function doneCallback_(self,counterTriggerSourceTask) %#ok<INUSD>
+
+        function counterTriggerSourceTaskDone(self)
             %fprintf('TriggerSource::doneCallback_()\n');
             if ~isempty(self.Parent) ,
                 %feval(self.DoneCallback,self);
                 self.Parent.triggerSourceDone(self);
             end
+        end        
+    end  % public methods
+    
+    methods
+        function pollingTimerFired(self,timeSinceTrialStart)
+            % Call the task to do the real work
+            if ~isempty(self.CounterTask_) ,
+                self.CounterTask_.pollingTimerFired(timeSinceTrialStart);
+            end
         end
-    end
+    end    
     
     methods (Access=protected)        
         function out = getPropertyValue(self, name)
@@ -386,6 +397,15 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
                           'Attributes', 'scalar', ...
                           'AllowEmpty', false);
         end  % function
-    end  % class methods block
-    
+        
+        function validateRepeatCount(newValue)
+            % If returns, it's valid.  If throws, it's not.
+            if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
+                % all is well---do nothing
+            else
+                error('most:Model:invalidPropVal', ...
+                      'RepeatCount must be a (scalar) positive integer, or inf');       
+            end
+        end
+    end  % static methods
 end

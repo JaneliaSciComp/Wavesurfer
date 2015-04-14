@@ -111,8 +111,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             if isfloat(newValue) && isscalar(newValue) && isnan(newValue) , % used by MOST to "fake" a set
                 % do nothing
             else
-                self.validatePropArg('UpdateRate', newValue);
-                self.UpdateRate_ = newValue;
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                    newValue = max(0.1,min(newValue,10)) ;
+                    self.UpdateRate_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'UpdateRate must be a scalar finite positive number') ;
+                end
             end
             self.broadcast('DidSetUpdateRate');
         end
@@ -221,8 +226,8 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             
             % Create the scope model
             scopeModel = ws.ScopeModel('Parent', self, ...
-                                          'Tag', scopeTag, ...
-                                          'Title', scopeTitle);
+                                       'Tag', scopeTag, ...
+                                       'Title', scopeTitle);
             
             % add the channels to the scope model                          
             nChannels=length(channelNames);
@@ -260,7 +265,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             end
         end
         
-        function willPerformExperiment(self, wavesurferObj, experimentMode)
+        function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSL>
 %             if experimentMode == ws.ApplicationState.TestPulsing ,
 %                 self.prvCachedDisplayXSpan = self.XSpan;
 %                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
@@ -281,7 +286,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
     end
     
     methods (Access=protected)
-        function didPerformOrAbortExperiment_(self, wavesurferModel)
+        function didPerformOrAbortExperiment_(self, wavesurferModel) %#ok<INUSD>
             if ~isempty(self.prvCachedDisplayXSpan)
                 self.XSpan = self.prvCachedDisplayXSpan;
             end
@@ -294,10 +299,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function self=dataAvailable(self, state, t, scaledData, rawData) %#ok<INUSD>
+        function dataAvailable(self, state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL,INUSD>
+            %fprintf('Display::dataAvailable()\n');
+            %dbstack
             %T=zeros(4,1);
-            %ticId=tic();            
+            %ticId=tic();                     
             if self.prvClearOnNextData
+                %fprintf('About to clear scopes...\n');
                 for sdx = 1:numel(self.Scopes)
                     self.Scopes(sdx).clearData();
                 end
@@ -404,43 +412,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
     end  % pulic methods block
     
-    methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
-%             self.setPropertyAttributeFeatures('UpdateRate', 'Classes', 'numeric', 'Attributes', {'scalar', 'positive', 'finite'});
-%             self.setPropertyAttributeFeatures('XOffset', 'Attributes', {'scalar', 'finite'});
-%             self.setPropertyAttributeFeatures('XSpan', 'Attributes', {'scalar', 'positive', 'finite'});
-%             %self.setPropertyAttributeFeatures('IsAutoRate', 'Classes', {'logical'}, 'Attributes', {'scalar'});
-%             self.setPropertyAttributeFeatures('IsXSpanSlavedToAcquistionDuration', 'Classes', {'logical'}, 'Attributes', {'scalar'});
-%             self.setPropertyAttributeFeatures('XAutoScroll', 'Classes', {'logical'}, 'Attributes', {'scalar'});
-%         end
-        
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
-%             %self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('UpdateRate_', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Scopes', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('XAutoScroll', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('XSpan_', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('IsXSpanSlavedToAcquistionDuration_', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});
-%         end
-        
-%         function skip_set_update_rate(self, varargin)
-%             % Need to trigger a property set, but don't want to change the actual protected
-%             % value.
-%             original = self.UpdateRate;
-%             self.UpdateRate = 1;
-%             self.UpdateRate = original;
-%         end
-        
-%         function setEnabledImplementation_(self, value)
-%             % This is called when Enabled is set in Subsystem, and we
-%             % override it here to provide Display-specific behavior.
-%             self.setEnabledImplementation_@ws.system.Subsystem(value);  % call superclass method
-%             
-%             self.notify('EnablementMayHaveChanged');
-%         end  % function
-        
+    methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue(self, name)            
             out = self.(name);
@@ -462,62 +434,6 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end  % function
         
     end  % protected methods
-    
-    methods
-%         function set.IsScopeVisibleWhenDisplayEnabled(self,newValue)
-%             self.IsScopeVisibleWhenDisplayEnabled=newValue;
-%             %self.notify('ScopeVisibilitySet');
-%         end
-        
-%         function scopeVisibleDidChange(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % If the user toggles the scope visibility via the menu or other mechanism when
-%             % the display subsystem is disabled, update the cached visibility information so
-%             % that when the display subsystem is re-enabled it is not setting visibility
-%             % based on stale information.
-%             if ~self.Enabled && ~self.IsChangingScopeVisibility ,
-%                 self.IsScopeVisibleWhenDisplayEnabled(self.Scopes == broadcaster) = broadcaster.Visible;
-%             end
-%             self.notify('ScopeVisibilitySet');
-%         end
-        
-%         function enabledWasSet(self, ~, ~)
-%             % This is a "receiver" method, intended to be called by a
-%             % listener when an event happens.  In this case, when a PostSet
-%             % event happens on the Enabled property.
-%             
-%             if self.Enabled
-%                 if ~isempty(self.Scopes) && numel(self.Scopes) == numel(self.IsScopeVisibleWhenDisplayEnabled)
-%                     for idx = 1:numel(self.Scopes)
-%                         self.Scopes(idx).Visible = self.IsScopeVisibleWhenDisplayEnabled(idx);
-%                     end
-%                 end                
-%             else
-%                 self.IsScopeVisibleWhenDisplayEnabled = false(0, 1);
-%                 self.IsChangingScopeVisibility = true;
-%                 for idx = 1:numel(self.Scopes)
-%                     self.IsScopeVisibleWhenDisplayEnabled(idx) = self.Scopes(idx).Visible;
-%                     self.Scopes(idx).Visible = false;
-%                 end
-%                 self.IsChangingScopeVisibility = false;
-%             end
-%         end
-    end
-    
-    methods (Access=public)
-%         function resetProtocol(self)  % has to be public so WavesurferModel can call it
-%             % Clears all aspects of the current protocol (i.e. the stuff
-%             % that gets saved/loaded to/from the config file.  Idea here is
-%             % to return the protocol properties stored in the model to a
-%             % blank slate, so that we're sure no aspects of the old
-%             % protocol get carried over when loading a new .cfg file.
-%             
-%             self.Enabled=true;
-%             self.IsAutoRate=1;
-%             self.IsXSpanSlavedToAcquistionDuration=1;
-%             self.Scopes=ws.ScopeModel.empty();  
-%             self.UpdateRate=10;  % Hz
-%         end  % function
-    end % methods
     
     methods (Static=true)
         function tag=tagFromString(str)
