@@ -117,39 +117,67 @@ classdef InputTask < handle
         end
         
         function stop(self)
-            if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
-                self.DabsDaqTask_.stop();
+            if ~isempty(self.DabsDaqTask_) ,   %&& ~self.DabsDaqTask_.isTaskDoneQuiet()
+                self.DabsDaqTask_.stop();  % this will generate a warning if the task is finite and has not generated all the samples
             end
+        end
+        
+        function result = isTaskDone(self)
+            if isempty(self.DabsDaqTask_) ,
+                result = true ;  % Well, the task is certainly not running...
+            else
+                result = self.DabsDaqTask_.isTaskDoneQuiet() ;
+            end            
         end
         
         function value = get.Parent(self)
             value = self.Parent_;
         end  % function
         
-        function pollingTimerFired(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
+%         function pollingTimerFired(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
+%             % Read all the available scans, notify our parent
+%             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
+%             rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
+%             nScans = size(rawData,1);
+%             timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - nScans/self.SampleRate_ ;
+%             self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
+% 
+%             % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
+%             % gets done?
+%             if self.DabsDaqTask_.isTaskDoneQuiet() ,
+%                 % Get data one last time, to make sure we get it all
+%                 rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
+%                 self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
+%                 
+%                 % Stop task, notify parent
+%                 self.DabsDaqTask_.stop();
+%                 self.Parent.acquisitionTrialComplete();
+%             end                
+%         end  % function
+        
+        function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
+            % BEN: This still needs to be generalized for a digital InputTask            
             % Read all the available scans, notify our parent
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
             rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
             nScans = size(rawData,1);
             timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - nScans/self.SampleRate_ ;
-            self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
-
-            % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
-            % gets done?
-            if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                % Get data one last time, to make sure we get it all
-                rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-                self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
-                
-                % Stop task, notify parent
-                self.DabsDaqTask_.stop();
-                self.Parent.acquisitionTrialComplete();
-            end                
         end  % function
     
+%         function [isDone,rawData,timeSinceExperimentStartAtStartOfData] = checkForDoneness(self, timeSinceTrialStart, fromExperimentStartTicId)
+%             isDone = self.DabsDaqTask_.isTaskDoneQuiet() ;
+%             if isDone ,
+%                 % Get data one last time, to make sure we get it all
+%                 [rawData,timeSinceExperimentStartAtStartOfData] = self.readData(self, timeSinceTrialStart, fromExperimentStartTicId) ;
+%             else
+%                 rawData = [] ;
+%                 timeSinceExperimentStartAtStartOfData = [] ;
+%             end
+%         end  % function
+        
         function debug(self) %#ok<MANU>
             keyboard
-        end        
+        end  % function        
     end
     
     methods

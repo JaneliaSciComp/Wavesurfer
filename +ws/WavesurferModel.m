@@ -584,7 +584,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end            
 %         end  % function
         
-        function samplesAcquired(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
@@ -601,7 +601,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.dataAvailable(rawData, timeSinceExperimentStartAtStartOfData);
+            self.dataAvailable(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
             %profile off
         end
         
@@ -904,7 +904,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
         end  % function
         
-        function dataAvailable(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function dataAvailable(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
             nScans=size(rawData,1);
@@ -931,7 +931,6 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     scaledData=bsxfun(@times,data,combinedScaleFactors); 
                 end
 
-
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
                 state = self.State_ ;
@@ -939,6 +938,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
+                        % BEN: Not clear to me whether it makes more sense to
+                        % keep analog, digital data separate when we hand it off
+                        % to the subsystems, or have them separate.  Maybe have
+                        % all the data together in scaledData, but separate
+                        % rawAnalogData and rawDigitalData?  Not really clear to
+                        % me...  Maybe you can try to figure out what makes
+                        % sense, consulting with me as needed?
                         self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;

@@ -837,13 +837,13 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function acquisitionTrialComplete(self)
-            self.acquisitionTrialComplete_();
-        end  % function
+%         function acquisitionTrialComplete(self)
+%             self.acquisitionTrialComplete_();
+%         end  % function
         
-        function samplesAcquired(self,rawData,timeSinceExperimentStartAtStartOfData)
-            self.samplesAcquired_(rawData,timeSinceExperimentStartAtStartOfData);
-        end  % function
+%         function samplesAcquired(self,rawData,timeSinceExperimentStartAtStartOfData)
+%             self.samplesAcquired_(rawData,timeSinceExperimentStartAtStartOfData);
+%         end  % function
         
     end  % methods block
     
@@ -869,7 +869,7 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
 
@@ -879,7 +879,7 @@ classdef Acquisition < ws.system.Subsystem
 %             rawDigitalData = self.DigitalInputTask_.readData() ;  % uint32
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                parent.samplesAcquired(rawData, timeSinceExperimentStartAtStartOfData);
+                parent.samplesAcquired(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
             end
             %profile off
         end  % function
@@ -927,13 +927,39 @@ classdef Acquisition < ws.system.Subsystem
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
-                self.AnalogInputTask_.pollingTimerFired(timeSinceTrialStart, fromExperimentStartTicId);
-                self.DigitalInputTask_.pollingTimerFired(timeSinceTrialStart, fromExperimentStartTicId);
+                [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
+                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId) ;
+                % Notify the whole system that samples were acquired
+                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
             end
+
+            % Check for task doneness, and get the last samples if done
+            if self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone(),
+                % Get data one last time, to make sure we get it all
+                [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
+                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId) ;
+                % Notify the whole system that samples were acquired
+                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
+                
+                % Stop tasks, notify rest of system
+                self.AnalogInputTask_.stop();
+                self.AnalogOutputTask_.stop();
+                self.acquisitionTrialComplete_();
+            end                
             
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart ;
         end
+    end
+    
+    methods (Access=protected)
+        function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = readDataFromTasks_(self, timeSinceTrialStart, fromExperimentStartTicId)
+            % Read the latest analog data
+            [rawAnalogData,timeSinceExperimentStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceTrialStart, fromExperimentStartTicId);
+            % Read the same number of digital scans
+            nScans = size(rawAnalogData,1) ;
+            rawDigitalData = self.DigitalInputTask_.readData(nScans, timeSinceTrialStart, fromExperimentStartTicId);
+        end        
     end
     
 end  % classdef
