@@ -26,7 +26,7 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
         end
         
         function set.ProtocolFileName(self, value)
-            if ~isnan(value) ,
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('ProtocolFileName', value);
                 self.ProtocolFileName_ = value;
             end
@@ -38,7 +38,7 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
         end
         
         function set.AutoStartType(self, value)
-            if ~isnan(value) ,
+            if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('AutoStartType', value);
                 self.AutoStartType_ = value;
             end
