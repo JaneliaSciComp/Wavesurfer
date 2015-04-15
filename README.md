@@ -175,3 +175,8 @@ Version History
 0.779: (April 14, 2015) Fixed bug where couldn't test pulse after
        acquiring data.
 
+0.780: (April 15, 2015) Data files for continuous recordings now use
+       the same file naming scheme as trial-based recordings.  Fixed
+       bug with fast protocols not getting cleared when you click that
+       button.  Added a very simple example user function .m file.
+
