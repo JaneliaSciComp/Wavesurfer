@@ -118,7 +118,12 @@ classdef InputTask < handle
         
         function stop(self)
             if ~isempty(self.DabsDaqTask_) ,   %&& ~self.DabsDaqTask_.isTaskDoneQuiet()
-                self.DabsDaqTask_.stop();  % this will generate a warning if the task is finite and has not generated all the samples
+%                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
+%                     fprintf('About to stop an InputTask that is done.\n');
+%                 else
+%                     fprintf('About to stop an InputTask that is *not* done.\n');
+%                 end
+                self.DabsDaqTask_.stop();
             end
         end
         
@@ -158,10 +163,20 @@ classdef InputTask < handle
         function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
             % Read all the available scans, notify our parent
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
-            if self.IsAnalog
-                rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+            if self.IsAnalog ,
+                if isempty(self.DabsDaqTask_) ,
+                    rawData = zeros(0,0,'int16');
+                else
+                    rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+                    %[rawData, nScansReallyRead] = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+                    %fprintf('nScansReallyRead: %d\n',nScansReallyRead) ;
+                end
             else % IsDigital
-                rawData = self.DabsDaqTask_.readDigitalData(nScansToRead) ;
+                if isempty(self.DabsDaqTask_) ,
+                    rawData = zeros(0,0,'uint16');  % is this right??
+                else
+                    rawData = self.DabsDaqTask_.readDigitalData(nScansToRead) ;
+                end
             end
             timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - size(rawData,1)/self.SampleRate_ ;
         end  % function
@@ -399,36 +414,40 @@ classdef InputTask < handle
                 return
             end
 
-            % Register callbacks
-            if self.DurationPerDataAvailableCallback > 0 ,
-                self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
-                  % This registers the callback function that is called
-                  % when self.NScansPerDataAvailableCallback samples are
-                  % available
-            end            
-            self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-
-            % Set up timing
-            switch self.ClockTiming ,
-                case ws.ni.SampleClockTiming.FiniteSamples
-                    self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
-                case ws.ni.SampleClockTiming.ContinuousSamples
-                    if isinf(self.ExpectedScanCount)
-                        bufferSize = self.SampleRate_; % Default to 1 second of data as the buffer.
-                    else
-                        bufferSize = self.ExpectedScanCount;
-                    end
-                    self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
-                otherwise
-                    assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
-            end
-            
-            % Set up triggering
-            if ~isempty(self.TriggerPFIID)
-                self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+            if isempty(self.DabsDaqTask_) ,
+                % do nothing
             else
-                self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
-            end        
+    %             % Register callbacks
+    %             if self.DurationPerDataAvailableCallback > 0 ,
+    %                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
+    %                   % This registers the callback function that is called
+    %                   % when self.NScansPerDataAvailableCallback samples are
+    %                   % available
+    %             end            
+    %             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
+
+                % Set up timing
+                switch self.ClockTiming ,
+                    case ws.ni.SampleClockTiming.FiniteSamples
+                        self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
+                    case ws.ni.SampleClockTiming.ContinuousSamples
+                        if isinf(self.ExpectedScanCount)
+                            bufferSize = self.SampleRate_; % Default to 1 second of data as the buffer.
+                        else
+                            bufferSize = self.ExpectedScanCount;
+                        end
+                        self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+                    otherwise
+                        assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
+                end
+
+                % Set up triggering
+                if ~isempty(self.TriggerPFIID)
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+                else
+                    self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
+                end        
+            end
             
             % Note that we are now armed
             self.IsArmed_ = true;
@@ -437,8 +456,8 @@ classdef InputTask < handle
         function disarm(self)
             if self.IsArmed ,
                 % Unregister callbacks
-                self.DabsDaqTask_.registerEveryNSamplesEvent([]);
-                self.DabsDaqTask_.doneEventCallbacks = {};
+                %self.DabsDaqTask_.registerEveryNSamplesEvent([]);
+                %self.DabsDaqTask_.doneEventCallbacks = {};
                 self.IsArmed_ = false;            
             end
         end
@@ -449,13 +468,13 @@ classdef InputTask < handle
 %             % Don't have to do anything to reset a finite input analog task
 %         end  % function
 
-        function rawData = readRawData(self)
-            if self.IsAnalog_ ,
-                rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
-            else
-                rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
-            end            
-        end
+%         function rawData = readRawData(self)
+%             if self.IsAnalog_ ,
+%                 rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
+%             else
+%                 rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
+%             end            
+%         end
     end
     
 %     methods (Access = protected)

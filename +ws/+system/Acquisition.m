@@ -102,6 +102,7 @@ classdef Acquisition < ws.system.Subsystem
         NScansFromLatestCallback_
         IsAllDataInCacheValid_
         TimeOfLastPollingTimerFire_
+        NScansReadThisTrial_
     end    
     
     events 
@@ -514,7 +515,11 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
 
         function acquireHardwareResources_(self)
-            if isempty(self.AnalogInputTask_)  && self.NAnalogChannels>0,
+            % We create and analog InputTask and a digital InputTask, regardless
+            % of whether there are any channels of each type.  Within InputTask,
+            % it will create a DABS Task only if the number of channels is
+            % greater than zero.  But InputTask hides that detail from us.
+            if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
                 self.AnalogInputTask_ = ...
                     ws.ni.InputTask(self, 'analog', ...
                                           'Wavesurfer Analog Acquisition Task', ...
@@ -528,7 +533,7 @@ classdef Acquisition < ws.system.Subsystem
                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
-            if isempty(self.DigitalInputTask_) && self.NDigitalChannels>0,
+            if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
                 self.DigitalInputTask_ = ...
                     ws.ni.InputTask(self, 'digital', ...
                                           'Wavesurfer Digital Acquisition Task', ...
@@ -549,7 +554,7 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_=[];            
         end
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode)
+        function willPerformExperiment(self, wavesurferModel, experimentMode)  %#ok<INUSL>
             %fprintf('Acquisition::willPerformExperiment()\n');
             %errors = [];
             %abort = false;
@@ -574,32 +579,20 @@ classdef Acquisition < ws.system.Subsystem
             self.acquireHardwareResources_();
 
             % Set up the task triggering
-            if ~isempty(self.AnalogInputTask_)
-                self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-                self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            end
-            if ~isempty(self.DigitalInputTask_)
-                self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-                self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            end
+            self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+            self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+            self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
             % Set for finite vs. continous sampling
             if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) ,
-                if ~isempty(self.AnalogInputTask_)
-                    self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
-                end
-                if ~isempty(self.DigitalInputTask_)
-                    self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
-                end
+                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
+                self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
-                if ~isempty(self.AnalogInputTask_)
-                    self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
-                    self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
-                end
-                if ~isempty(self.DigitalInputTask_)
-                    self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
-                    self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
-                end
+                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+                self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
+                self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+                self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
             end
             
 %             % Set the duration between data available callbacks
@@ -638,12 +631,8 @@ classdef Acquisition < ws.system.Subsystem
             end
             
             % Arm the AI task
-            if ~isempty(self.AnalogInputTask_)
-                self.AnalogInputTask_.arm();
-            end
-            if ~isempty(self.DigitalInputTask_)
-                self.DigitalInputTask_.arm();
-            end
+            self.AnalogInputTask_.arm();
+            self.DigitalInputTask_.arm();
         end  % function
         
         function didPerformExperiment(self, wavesurferModel)
@@ -662,12 +651,9 @@ classdef Acquisition < ws.system.Subsystem
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
-            if ~isempty(self.AnalogInputTask_)
-              self.AnalogInputTask_.start();
-            end
-            if ~isempty(self.DigitalInputTask_)
-              self.DigitalInputTask_.start();
-            end
+            self.NScansReadThisTrial_ = 0 ;
+            self.AnalogInputTask_.start();
+            self.DigitalInputTask_.start();
         end  % function
         
         function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
@@ -675,12 +661,8 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function didAbortTrial(self, ~)
-            if ~isempty(self.AnalogInputTask_)
-                self.AnalogInputTask_.abort();
-            end
-            if ~isempty(self.DigitalInputTask_)
-                self.DigitalInputTask_.abort();
-            end
+            self.AnalogInputTask_.abort();
+            self.DigitalInputTask_.abort();
             self.IsArmedOrAcquiring = false;
         end  % function
         
@@ -779,7 +761,7 @@ classdef Acquisition < ws.system.Subsystem
             keyboard
         end
         
-        function dataAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
+        function dataAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             self.LatestAnalogData_ = scaledAnalogData ;
@@ -927,14 +909,8 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access = protected)
         function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            if ~isempty(self.AnalogInputTask_) ,
-                %self.AnalogInputTask_.unregisterCallbacks();
-                self.AnalogInputTask_.disarm();
-            end            
-            if ~isempty(self.DigitalInputTask_) ,
-                %self.AnalogInputTask_.unregisterCallbacks();
-                self.DigitalInputTask_.disarm();
-            end            
+            self.AnalogInputTask_.disarm();
+            self.DigitalInputTask_.disarm();
             self.IsArmedOrAcquiring = false;            
         end  % function
         
@@ -1007,30 +983,31 @@ classdef Acquisition < ws.system.Subsystem
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
+                % Check for task doneness, and get the last samples if done
+                tasksAreDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
+%                 if tasksAreDone ,
+%                     fprintf('Acquisition tasks are done.\n')
+%                 end
+                    
+                % Get data
                 [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
                     self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId) ;
-                % Notify the whole system that samples were acquired
-                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
-            end
+                %nScans = size(rawAnalogData,1) ;
+                %fprintf('Read acq data. nScans: %d\n',nScans)
 
-            % Check for task doneness, and get the last samples if done
-            if (isempty(self.AnalogInputTask_) || self.AnalogInputTask_.isTaskDone()) && ...
-                    (isempty(self.DigitalInputTask_) || self.DigitalInputTask_.isTaskDone()) ,
-                % Get data one last time, to make sure we get it all
-                [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
-                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId) ;
                 % Notify the whole system that samples were acquired
                 self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
+
+                % If we're done, act accordingly
+                if tasksAreDone ,
+                    %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisTrial_);
                 
-                % Stop tasks, notify rest of system
-                if ~isempty(self.AnalogInputTask_)
+                    % Stop tasks, notify rest of system
                     self.AnalogInputTask_.stop();
-                end
-                if ~isempty(self.DigitalInputTask_)
                     self.DigitalInputTask_.stop();
-                end
-                self.acquisitionTrialComplete_();
-            end                
+                    self.acquisitionTrialComplete_();
+                end                
+            end
             
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart ;
@@ -1039,19 +1016,13 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access=protected)
         function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = readDataFromTasks_(self, timeSinceTrialStart, fromExperimentStartTicId)
-            nScans = [];
-            rawAnalogData = [];
-            rawDigitalData = [];
-            % Read the latest analog data
-            if ~isempty(self.AnalogInputTask_)
-                [rawAnalogData,timeSinceExperimentStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceTrialStart, fromExperimentStartTicId);
-                nScans = size(rawAnalogData,1) ;
-            end
-            % Read the same number of digital scans
-            if ~isempty(self.DigitalInputTask_)
-                [rawDigitalData,timeSinceExperimentStartAtStartOfData] = self.DigitalInputTask_.readData(nScans, timeSinceTrialStart, fromExperimentStartTicId);
-            end
-        end        
+            % both analog and digital tasks are for-real
+            [rawAnalogData,timeSinceExperimentStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceTrialStart, fromExperimentStartTicId);
+            nScans = size(rawAnalogData,1) ;
+            rawDigitalData = ...
+                self.DigitalInputTask_.readData(nScans, timeSinceTrialStart, fromExperimentStartTicId);
+            self.NScansReadThisTrial_ = self.NScansReadThisTrial_ + nScans ;
+        end  % function
     end
     
 end  % classdef

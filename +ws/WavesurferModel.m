@@ -242,6 +242,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 self.willPerformExperiment(modeRequested);
             catch me
+                self.didAbortTrial();
                 me.rethrow();
             end
         end
