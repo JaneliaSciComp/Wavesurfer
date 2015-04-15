@@ -619,7 +619,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
             self.Triggering.releaseHardwareResources();
-            self.Ephys.releaseHardwareResources();            
+            self.Ephys.releaseHardwareResources();
         end
         
         function result=get.FastProtocols(self)
@@ -934,13 +934,6 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        % BEN: Not clear to me whether it makes more sense to
-                        % keep analog, digital data separate when we hand it off
-                        % to the subsystems, or have them separate.  Maybe have
-                        % all the data together in scaledData, but separate
-                        % rawAnalogData and rawDigitalData?  Not really clear to
-                        % me...  Maybe you can try to figure out what makes
-                        % sense, consulting with me as needed?
                         self.Subsystems_{idx}.dataAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;

@@ -513,7 +513,7 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
 
-        function acquireHardwareResources(self)
+        function acquireHardwareResources_(self)
             if isempty(self.AnalogInputTask_)  && self.NAnalogChannels>0,
                 self.AnalogInputTask_ = ...
                     ws.ni.InputTask(self, 'analog', ...
@@ -571,7 +571,7 @@ classdef Acquisition < ws.system.Subsystem
             end
             
             % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources();
+            self.acquireHardwareResources_();
 
             % Set up the task triggering
             if ~isempty(self.AnalogInputTask_)
@@ -922,14 +922,6 @@ classdef Acquisition < ws.system.Subsystem
                 data = self.RawDigitalDataCache_(1:jf,:);
             end
         end  % function
-        
-%         function acquisitionTrialComplete(self)
-%             self.acquisitionTrialComplete_();
-%         end  % function
-        
-%         function samplesAcquired(self,rawData,timeSinceExperimentStartAtStartOfData)
-%             self.samplesAcquired_(rawData,timeSinceExperimentStartAtStartOfData);
-%         end  % function
         
     end  % methods block
     

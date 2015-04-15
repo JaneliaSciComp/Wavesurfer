@@ -97,10 +97,10 @@ classdef Ephys < ws.system.Subsystem
 %             self.TestPulser_=ws.TestPulser('Parent',self);
 %         end
         
-        function acquireHardwareResources(self) %#ok<MANU>
-            % Nothing to do here, maybe
-        end  % function
-
+%         function acquireHardwareResources(self) %#ok<MANU>
+%             % Nothing to do here, maybe
+%         end  % function
+% 
         function releaseHardwareResources(self) %#ok<MANU>
             % Nothing to do here, maybe
         end
