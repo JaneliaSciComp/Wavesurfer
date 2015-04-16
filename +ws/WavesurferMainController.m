@@ -347,7 +347,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Display,'IsXSpanSlavedToAcquistionDuration',newValue);
         end
         
-        function FilenameEditActuated(self,source,event) %#ok<INUSD>
+        function BaseNameEditActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'String');
             ws.Controller.setWithBenefits(self.Model.Logging,'FileBaseName',newValue);
         end
@@ -2074,7 +2074,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'FilenameEdit'}});
+%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
 %             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});

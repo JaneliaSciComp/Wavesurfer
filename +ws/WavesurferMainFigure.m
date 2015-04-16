@@ -69,8 +69,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         AutoSpanCheckbox
         
         LoggingPanel
-        FilenameText
-        FilenameEdit
+        BaseNameText
+        BaseNameEdit
         OverwriteCheckbox
         LocationText
         LocationEdit
@@ -78,6 +78,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         ChangeLocationButton
         NextTrialText
         NextTrialEdit
+        FileNameText
+        FileNameEdit
         
         StatusText
         ProgressBarAxes
@@ -411,11 +413,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels',...
                         'Title','Logging');
-            self.FilenameText = ...
+            self.BaseNameText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
                           'String','Base Name:');
-            self.FilenameEdit = ...
+            self.BaseNameEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','left', ...
                           'Style','edit');
@@ -447,6 +449,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.NextTrialEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','right', ...
+                          'Style','edit');
+            self.FileNameText = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','text', ...
+                          'String','File Name:');
+            self.FileNameEdit = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'HorizontalAlignment','left', ...
+                          'Enable','off', ...
                           'Style','edit');
                       
             % Stuff at the bottom of the window
@@ -537,7 +548,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             toolbarAreaHeight=36;
             topRowAreaHeight=136;
-            loggingAreaHeight=112;
+            loggingAreaHeight=112+26;
             statusBarAreaHeight=30;
             
             figureHeight=toolbarAreaHeight+topRowAreaHeight+loggingAreaHeight+statusBarAreaHeight;
@@ -825,77 +836,82 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             import ws.utility.positionPopupmenuAndLabelBang
             
             %
-            % Contents of display panel
+            % Contents of logging panel
             %
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightFromTopToTopRow=10;
             heightBetweenEdits=6;
-            editXOffset=80;
+            xOffsetOfEdits=80;
             editHeight=20;
             rightMarginWidth=10;
-            locationRowWidth=loggingPanelWidth-editXOffset-rightMarginWidth;
-            widthLeftOfFilenameEdit=6;            
+            widthOfStuffToRightOfEditTexts=loggingPanelWidth-xOffsetOfEdits-rightMarginWidth;
+            widthLeftOfBaseNameEdit=6;            
             showButtonWidth=70;
             changeLocationButtonWidth=90;
             widthBetweenLocationWidgets=6;
             nextTrialEditWidth=50;
             nextTrialLabelFixedWidth=70;  % We fix this, because the label text changes
-                        
+            fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
+            
+            
+            
+            %
+            % Base name row
+            %
+            
+            % BaseName Edit and label
+            baseNameEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
+            widthOfBaseNameAndLocationEdits = ...
+                widthOfStuffToRightOfEditTexts-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
+            positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
+                                          xOffsetOfEdits,baseNameEditYOffset,widthOfBaseNameAndLocationEdits)
+
+            % Checkbox
+            overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
+            overwriteCheckboxWidth=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
+            overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
+            overwriteCheckboxHeight=overwriteCheckboxPosition(4);            
+            overwriteCheckboxXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthLeftOfBaseNameEdit;
+            overwriteCheckboxYOffset=baseNameEditYOffset+(editHeight-overwriteCheckboxHeight)/2;
+            set(self.OverwriteCheckbox,'Position',[overwriteCheckboxXOffset overwriteCheckboxYOffset overwriteCheckboxWidth overwriteCheckboxHeight]);
+            
+                                      
             %
             % Location row
             %
             
             % Location edit and label
-            filenameEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
-            locationEditWidth=locationRowWidth-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
-            locationEditYOffset=filenameEditYOffset-heightBetweenEdits-editHeight;
+            locationEditYOffset=baseNameEditYOffset-heightBetweenEdits-editHeight;
             positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
-                                          editXOffset,locationEditYOffset,locationEditWidth);
+                                          xOffsetOfEdits,locationEditYOffset,widthOfBaseNameAndLocationEdits);
 
             % Show button
-            xOffset=editXOffset+locationEditWidth+widthBetweenLocationWidgets;
-            width=showButtonWidth;
-            height=editHeight;
-            set(self.ShowLocationButton,'Position',[xOffset locationEditYOffset width height]);
+            showButtonXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthBetweenLocationWidgets;
+            set(self.ShowLocationButton,'Position',[showButtonXOffset locationEditYOffset showButtonWidth editHeight]);
             
             % Change location button
-            xOffset=xOffset+width+widthBetweenLocationWidgets;
-            width=changeLocationButtonWidth;
-            set(self.ChangeLocationButton,'Position',[xOffset locationEditYOffset width height]);
+            changeLocationButtonXOffset=showButtonXOffset+showButtonWidth+widthBetweenLocationWidgets;
+            set(self.ChangeLocationButton,'Position',[changeLocationButtonXOffset locationEditYOffset changeLocationButtonWidth editHeight]);
 
-            %
-            % Filename row
-            %
-            
-            % Filename Edit and label
-            yOffset=filenameEditYOffset;
-            width=locationEditWidth;
-            positionEditLabelAndUnitsBang(self.FilenameText,self.FilenameEdit,[], ....
-                                          editXOffset,yOffset,width)
-
-            % Checkbox
-            overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
-            width=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
-            overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
-            height=overwriteCheckboxPosition(4);            
-            xOffset=editXOffset+locationEditWidth+widthLeftOfFilenameEdit;
-            yOffset=filenameEditYOffset+(editHeight-height)/2;
-            set(self.OverwriteCheckbox,'Position',[xOffset yOffset width height]);
-            
-                                      
             %
             % Next Trial Row
             %
             
             % Next Trial edit and label
-            %fprintf('About to position NextTrialText\n');
-            %dbstack
-            xOffset=editXOffset;
-            yOffset=locationEditYOffset-heightBetweenEdits-editHeight;
-            width=nextTrialEditWidth;
+            nextTrialEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
             positionEditLabelAndUnitsBang(self.NextTrialText,self.NextTrialEdit,[], ....
-                                          xOffset,yOffset,width, ...
+                                          xOffsetOfEdits,nextTrialEditYOffset,nextTrialEditWidth, ...
                                           nextTrialLabelFixedWidth);
+                                      
+
+            %
+            % File Name Row
+            %
+            fileNameEditWidth = widthOfStuffToRightOfEditTexts ;
+            fileNameEditYOffset = nextTrialEditYOffset - heightBetweenEdits - editHeight ;
+            positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
+                                          xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
+                                          fileNameLabelFixedWidth) ;
         end  % function
     end
     
@@ -979,7 +995,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'FilenameEdit'}});
+%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
 %             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
@@ -1003,11 +1019,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
-            set(self.FilenameEdit, 'String', model.Logging.FileBaseName);
+            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
             set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
             set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
+            set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
             
             % Status text
             set(self.StatusText,'String',model.State.num2str());
@@ -1290,7 +1307,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',onIff(isIdle));
 
-            set(self.FilenameEdit,'Enable',onIff(isIdle && isLoggingEnabled));
+            set(self.BaseNameEdit,'Enable',onIff(isIdle && isLoggingEnabled));
             set(self.OverwriteCheckbox,'Enable',onIff(isIdle && isLoggingEnabled));
             %set(self.LocationEdit,'Enable',onIff(isIdle && isLoggingEnabled));
             set(self.ShowLocationButton,'Enable',onIff(isIdle && isLoggingEnabled));
