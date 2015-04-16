@@ -150,11 +150,12 @@ classdef Logging < ws.system.Subsystem
             self.DidCreateCurrentDataFile_ = false ;
             
             % Set the chunk size for writing data to disk
+            active = sum(wavesurferModel.Acquisition.IsChannelActive & wavesurferModel.Acquisition.IsChannelAnalog);
             switch desiredApplicationState ,
                 case ws.ApplicationState.AcquiringTrialBased ,
-                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount wavesurferModel.Acquisition.NActiveChannels];
+                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount active];
                     if any(isinf(self.ExpectedTrialSize_))
-                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
+                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate active];
                     else
                         self.ChunkSize_ = self.ExpectedTrialSize_;
                     end
@@ -167,8 +168,8 @@ classdef Logging < ws.system.Subsystem
 %                                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
 %                     end
                 case ws.ApplicationState.AcquiringContinuously ,
-                    self.ExpectedTrialSize_ = [Inf wavesurferModel.Acquisition.NActiveChannels];
-                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
+                    self.ExpectedTrialSize_ = [Inf active];
+                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate active];
 %                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
                 otherwise
                     error('wavesurfer:saveddatasystem:invalidmode', ...
@@ -270,17 +271,17 @@ classdef Logging < ws.system.Subsystem
                      'ChunkSize', self.ChunkSize_, ...
                      'DataType','int16');
             scansDatasetName = sprintf('/trial_%04d/digitalScans',thisTrialIndex) ;
-            if self.Acquisition.NDigitalChannels<=8
+            if self.Parent.Acquisition.NDigitalChannels<=8
                 dataType = 'uint8';
-            elseif self.Acquisition.NDigitalChannels<=16
+            elseif self.Parent.Acquisition.NDigitalChannels<=16
                 dataType = 'uint16';
-            else %self.Acquisition.NDigitalChannels<=32
+            else %self.Parent.Acquisition.NDigitalChannels<=32
                 dataType = 'uint32';
             end
             h5create(self.LogFileNameAbsolute_, ...
                      scansDatasetName, ...
-                     self.ExpectedTrialSize_, ...
-                     'ChunkSize', self.ChunkSize_, ...
+                     [self.ExpectedTrialSize_(1) 1], ...
+                     'ChunkSize', [self.ChunkSize_(1) 1], ...
                      'DataType',dataType);
             self.LastTrialIndexForWhichDatasetCreated_ =  thisTrialIndex;                     
             self.DidWriteSomeDataForThisTrial_ = false ;

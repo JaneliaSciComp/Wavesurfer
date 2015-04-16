@@ -150,9 +150,23 @@ classdef InputTask < handle
                 end
             else % IsDigital
                 if isempty(self.DabsDaqTask_) ,
-                    rawData = zeros(0,0,'uint16');  % is this right??
-                else
-                    rawData = self.DabsDaqTask_.readDigitalData(nScansToRead) ;
+                    rawData = zeros(0,0,'uint32');
+                else       
+                    readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
+                    shiftBy = cellfun(@(x) ws.utility.channelIDFromPhysicalChannelName(x), self.PhysicalChannelNames_);
+                    shiftedData = bsxfun(@bitshift,readData,[0:length(shiftBy)-1]-shiftBy);
+                    packedData = zeros(size(readData,1),1,'uint32');
+                    for column = 1:size(readData,2)
+                        packedData = bitor(packedData,shiftedData(:,column));
+                    end
+                end
+                nActiveChannels = sum(self.IsChannelActive_);
+                if nActiveChannels<=8
+                    rawData = uint8(packedData);
+                elseif nActiveChannels<=16
+                    rawData = uint16(packedData);
+                else %nActiveChannels<=32
+                    rawData = packedData;
                 end
             end
             timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - size(rawData,1)/self.SampleRate_ ;

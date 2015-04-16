@@ -360,7 +360,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                     self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 if ~isempty(jInDigitalData) ,
-                    dataForThisScope=rawDigitalData(:, jInDigitalData);
+                    dataForThisScope=bitget(rawDigitalData, jInDigitalData);
                     self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);

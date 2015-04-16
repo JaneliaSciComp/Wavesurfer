@@ -26,7 +26,8 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % User wants raw data, so nothing to do
     else
         try
-            channelScales=dataFileAsStruct.header.Acquisition.ActiveChannelScales ;
+            channelScales=dataFileAsStruct.header.Acquisition.ChannelScales(...
+                    dataFileAsStruct.header.Acquisition.IsChannelAnalog & dataFileAsStruct.header.Acquisition.IsChannelActive) ;
         catch
             error('Unable to read channel scale information from file.');
         end
@@ -37,23 +38,23 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         for i=1:length(fieldNames) ,
             fieldName = fieldNames{i};
             if length(fieldName)>=5 && isequal(fieldName(1:5),'trial') ,
-                rawData = dataFileAsStruct.(fieldName).scans;
-                if isempty(rawData) ,
+                rawAnalogData = dataFileAsStruct.(fieldName).analogScans;
+                if isempty(rawAnalogData) ,
                     if doesUserWantSingle ,
-                        scaledData=zeros(size(rawData),'single');
+                        scaledData=zeros(size(rawAnalogData),'single');
                     else                        
-                        scaledData=zeros(size(rawData));
+                        scaledData=zeros(size(rawAnalogData));
                     end
                 else
                     if doesUserWantSingle ,
-                        data = single(rawData) ;
+                        data = single(rawAnalogData) ;
                     else
-                        data = double(rawData);
+                        data = double(rawAnalogData);
                     end
                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
                     scaledData=bsxfun(@times,data,combinedScaleFactors);                    
                 end
-                dataFileAsStruct.(fieldName).scans = scaledData ;
+                dataFileAsStruct.(fieldName).analogScans = scaledData ;
             end
         end
     end    
