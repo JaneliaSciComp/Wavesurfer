@@ -12,6 +12,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
           % An SIUnit row vector that describes the real-world units 
           % for each stimulus channel.
         TriggerScheme
+        IsDigitalChannelTimed
+        UntimedDigitalOutputState
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -23,6 +25,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         ChannelNames
         NAnalogChannels
         NDigitalChannels
+        NTimedDigitalChannels        
         NChannels
         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
@@ -34,12 +37,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     properties (Access = protected, Transient=true)
         TheFiniteAnalogOutputTask_ = []
         TheFiniteDigitalOutputTask_ = []
+        TheUntimedDigitalOutputTask_ = []
         SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformExperiment(), set to [] in didPerformExperiment())
         IsArmedOrStimulating_ = false
         IsWithinExperiment_ = false                       
         TriggerScheme_ = ws.TriggerScheme.empty()
         HasAnalogChannels_
-        HasDigitalChannels_
+        HasTimedDigitalChannels_
         DidAnalogEpisodeComplete_
         DidDigitalEpisodeComplete_
     end
@@ -60,6 +64,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         SampleRate_ = 20000  % Hz
         EpisodesPerExperiment_
         EpisodesCompleted_
+        IsDigitalChannelTimed_ = false(1,0)
+        UntimedDigitalOutputState_ = false(1,0)
     end
     
     events 
@@ -67,6 +73,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         DidSetStimulusLibrary
         DidSetSampleRate
         DidSetDoRepeatSequence
+        DidSetIsDigitalChannelTimed
+        DidSetUntimedDigitalOutputState
     end
     
     methods
@@ -94,6 +102,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
 %             end
             self.TheFiniteDigitalOutputTask_ = [] ;
+            sekf.TheUntimedDigitalOutputTask_ = [];
             self.Parent = [] ;
         end
         
@@ -138,6 +147,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.TheFiniteDigitalOutputTask_.SampleRate = value;
             end
             self.broadcast('DidSetSampleRate');
+        end
+        
+        function out = get.IsDigitalChannelTimed(self)
+            out= self.IsDigitalChannelTimed_ ;
+        end
+        
+        function out = get.UntimedDigitalOutputState(self)
+            out= self.UntimedDigitalOutputState_ ;
         end
         
         function out = get.DoRepeatSequence(self)
@@ -207,6 +224,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function value = get.NDigitalChannels(self)
             value = length(self.DigitalChannelNames_);
+        end
+
+        function value = get.NTimedDigitalChannels(self)
+            value = sum(self.IsDigitalChannelTimed);
         end
 
         function value = get.NChannels(self)
@@ -322,6 +343,25 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % methods block
     
     methods
+        function setIsDigitalChannelTimed(self,i,newValue)
+            self.IsDigitalChannelTimed_(i)=newValue;
+            if ~isempty(self.TheUntimedDigitalOutputTask_)
+                self.TheUntimedDigitalOutputTask_=[];
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_);
+                self.TheFiniteDigitalOutputTask_=[];
+            end
+            self.broadcast('DidSetIsDigitalChannelTimed');
+        end  % function
+        
+        function setUntimedDigitalOutputState(self,i,newValue)
+            self.UntimedDigitalOutputState_(i)=newValue;
+            if ~isempty(self.TheUntimedDigitalOutputTask_)
+              self.TheUntimedDigitalOutputTask_.ChannelData=self.UntimedDigitalOutputState_(~self.IsDigitalChannelTimed_);   
+            end
+            self.broadcast('DidSetUntimedDigitalOutputState');
+        end  % function
+        
         function initializeFromMDFStructure(self, mdfStructure)            
             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
                 % Get the list of physical channel names
@@ -352,7 +392,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
                 self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
-                                                  
+                
+                % Set defaults for digital channels
+                self.IsDigitalChannelTimed_ = false(1,sum(isDigital));
+                self.UntimedDigitalOutputState_ = false(1,sum(isDigital));
+
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
                 self.CanEnable = true;
@@ -364,7 +408,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask(self, ...
                                            'analog', ...
-                                           'Wavesurfer Analog Output Task', ...
+                                           'Wavesurfer Finite Analog Output Task', ...
                                            self.AnalogPhysicalChannelNames, ...
                                            self.AnalogChannelNames) ;
                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
@@ -374,17 +418,28 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.ni.FiniteOutputTask(self, ...
                                            'digital', ...
-                                           'Wavesurfer Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames, ...
-                                           self.DigitalChannelNames) ;
+                                           'Wavesurfer Finite Digital Output Task', ...
+                                           self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
+                                           self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
                 self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
+            if isempty(self.TheUntimedDigitalOutputTask_) ,
+                 self.TheUntimedDigitalOutputTask_ = ...
+                    ws.ni.UntimedDigitalOutputTask(self, ...
+                                           'Wavesurfer Untimed Digital Output Task', ...
+                                           self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
+                                           self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
+                 if ~all(self.IsDigitalChannelTimed)
+                     self.TheUntimedDigitalOutputTask_.ChannelData=self.UntimedDigitalOutputState(~self.IsDigitalChannelTimed);
+                 end
+           end
         end
         
         function releaseHardwareResources(self)
             self.TheFiniteAnalogOutputTask_ = [];            
             self.TheFiniteDigitalOutputTask_ = [];            
+            self.TheUntimedDigitalOutputTask_ = [];            
         end
         
         function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
@@ -558,6 +613,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function didAbortTrial(self, ~)
             self.TheFiniteAnalogOutputTask_.abort();
             self.TheFiniteDigitalOutputTask_.abort();
+            self.TheUntimedDigitalOutputTask_.abort();
             self.IsArmedOrStimulating_ = false;
         end  % function
         
@@ -568,7 +624,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
-            self.HasDigitalChannels_ = (self.NDigitalChannels>0) ;  % cache this info for quick access
+            self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
             self.DidAnalogEpisodeComplete_ = false ;  
             self.DidDigitalEpisodeComplete_ = false ;
             self.IsArmedOrStimulating_ = true;
@@ -589,7 +645,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             
             % Arm and start the digital task
-            if self.HasDigitalChannels_ ,
+            if self.HasTimedDigitalChannels_ ,
                 if self.EpisodesCompleted_ == 0 ,
                     self.TheFiniteDigitalOutputTask_.arm();
                 end
@@ -597,7 +653,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             
             % If no samples at all, we just declare the episode done
-            if self.HasAnalogChannels_ || self.HasDigitalChannels_ ,
+            if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
                 % do nothing
             else
                 % This was triggered, it just has a map/stimulus that has zero samples.
@@ -778,7 +834,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function analogEpisodeCompleted(self)
             %fprintf('Stimulation::analogEpisodeCompleted()\n');
             self.DidAnalogEpisodeComplete_ = true ;
-            if self.HasDigitalChannels_ ,
+            if self.HasTimedDigitalChannels_ ,
                 if self.DidDigitalEpisodeComplete_ ,
                     self.episodeCompleted_();
                 end
@@ -933,12 +989,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Calculate the signals
             if isempty(stimulusMap) ,
-                doData=zeros(0,length(self.DigitalChannelNames));
+                doData=zeros(0,length(self.IsDigitalChannelTimed));
                 nChannelsWithStimulus = 0 ;
             else
-                isChannelAnalog = false(1,self.NDigitalChannels) ;
+                isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
                 [doData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames, isChannelAnalog, episodeIndexWithinExperiment);
+                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinExperiment);
             end
             
             % Want to return the number of scans in the stimulus data

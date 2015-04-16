@@ -127,17 +127,17 @@ classdef Logging < ws.system.Subsystem
 
         function value=get.NextTrialSetAbsoluteFileName(self)
             wavesurferModel=self.Parent;
-            if wavesurferModel.IsTrialBased ,
-                firstTrialIndex = self.NextTrialIndex ;
-                numberOfTrials = wavesurferModel.ExperimentTrialCount ;
-                fileName = self.getTrialSetFileNameForTrialBasedAcquisition_(firstTrialIndex,numberOfTrials);
-            elseif wavesurferModel.IsContinuous ,
-                dateAndTimeAffix = strrep(strrep(datestr(now()), ' ', '_'), ':', '-') ;
-                fileName = sprintf('%s-continuous_%s', self.FileBaseName, dateAndTimeAffix);                
-            else
-                error('wavesurfer:internalError' , ...
-                      'Unable to determine trial set file name');
-            end
+            %if wavesurferModel.IsTrialBased ,
+            firstTrialIndex = self.NextTrialIndex ;
+            numberOfTrials = wavesurferModel.ExperimentTrialCount ;
+            fileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfTrials);
+%             elseif wavesurferModel.IsContinuous ,
+%                 dateAndTimeAffix = strrep(strrep(datestr(now()), ' ', '_'), ':', '-') ;
+%                 fileName = sprintf('%s-continuous_%s', self.FileBaseName, dateAndTimeAffix);                
+%             else
+%                 error('wavesurfer:internalError' , ...
+%                       'Unable to determine trial set file name');
+%             end
             value = fullfile(self.FileLocation, fileName);
         end  % function
         
@@ -288,19 +288,19 @@ classdef Logging < ws.system.Subsystem
         end
         
         function didPerformTrial(self, wavesurferModel)
-            if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
+            %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
                 self.NextTrialIndex = self.NextTrialIndex + 1;
-            end
+            %end
         end
         
         function didAbortTrial(self, wavesurferModel)
-            if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
+            %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
                 if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
                     self.NextTrialIndex = self.firstTrialIndex_ ;
                 else
                     self.NextTrialIndex = self.LastTrialIndexForWhichDatasetCreated_ + 1;
                 end
-            end
+            %end
         end
         
         function didPerformExperiment(self, ~)
@@ -335,7 +335,7 @@ classdef Logging < ws.system.Subsystem
                 else    
                     % We logged some trials, but maybe not the number number requested.  Check for this, renaming the
                     % data file if needed.
-                    newLogFileName = self.getTrialSetFileNameForTrialBasedAcquisition_(firstTrialIndex,numberOfPartialTrialsLogged) ;
+                    newLogFileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfPartialTrialsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
                     if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
                         % This might happen, e.g. if the number of trials is inf
@@ -455,7 +455,7 @@ classdef Logging < ws.system.Subsystem
     end
     
     methods (Access = protected)
-        function fileName = getTrialSetFileNameForTrialBasedAcquisition_(self,firstTrialIndex,numberOfTrials)
+        function fileName = trialSetFileNameFromNumbers_(self,firstTrialIndex,numberOfTrials)
             % This is a "leaf" file name, not an absolute one
             if numberOfTrials == 1 ,
                 fileName = sprintf('%s_%04d.h5', self.FileBaseName, firstTrialIndex);

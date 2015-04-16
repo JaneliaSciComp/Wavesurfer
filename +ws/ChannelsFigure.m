@@ -758,38 +758,6 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
         
     end
     
-    methods (Access=protected)
-%         function initializeGuidata(self)
-%             % Set up the figure guidata the way it would be if this were a
-%             % GUIDE UI, or close enough to fool a ws.most.Controller.
-%             childControls=get(self.FigureGH,'Children');
-%             nChildren=length(childControls);
-%             handles=struct();
-%             for i=1:nChildren
-%                 childControl=childControls(i);
-%                 tag=get(childControl,'Tag');
-%                 handles.(tag)=childControl;
-%             end
-%             % Add the figure itself
-%             fig=self.FigureGH;  % the figure GH
-%             tag=get(fig,'Tag');
-%             handles.(tag)=fig;
-%             % commit to the guidata
-%             guidata(self.FigureGH,handles);
-%         end
-        
-%         function controlActuated(self,source,event) %#ok<INUSD>
-%             % This makes it so that we don't have all these implicit
-%             % references to the controller in the closures attached to HG
-%             % object callbacks.  It also means we can just do nothing if
-%             % the Controller is invalid, instead of erroring.
-%             if isempty(self.Controller) || ~isvalid(self.Controller) ,
-%                 return
-%             end
-%             self.Controller.controlActuated(source);
-%         end  % function
-    end  % methods
-
     methods (Access = protected)
         function updateHGObjectTags_(self)
             % For each object property, if it's an HG object, set the tag

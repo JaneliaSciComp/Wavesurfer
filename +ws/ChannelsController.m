@@ -87,6 +87,21 @@ classdef ChannelsController < ws.Controller
             end
         end
         
+        function doTimedCheckboxActuated(self,source)
+            isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
+            i=find(isTheChannel);            
+            newState = get(self.Figure.DOIsTimedCheckboxes(i),'value');
+            self.Model.Stimulation.setIsDigitalChannelTimed(i,newState);
+            self.Figure.update();
+        end
+        
+        function doOnRadiobuttonActuated(self,source)
+            isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
+            i=find(isTheChannel);            
+            newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
+            self.Model.Stimulation.setUntimedDigitalOutputState(i,newState);
+        end
+        
 %         function aoMultiplierEditActuated(self,source)
 %             isTheChannel=(source==self.Figure.AOMultiplierEdits);
 %             i=find(isTheChannel);
@@ -118,6 +133,10 @@ classdef ChannelsController < ws.Controller
                     self.aoScaleEditActuated(source);
                 elseif any(source==figureObject.AOUnitsEdits)
                     self.aoUnitsEditActuated(source);
+                elseif any(source==figureObject.DOIsTimedCheckboxes)
+                    self.doTimedCheckboxActuated(source);
+                elseif any(source==figureObject.DOIsOnRadiobuttons)
+                    self.doOnRadiobuttonActuated(source);
 %                 elseif any(source==figureObject.AOMultiplierEdits)
 %                     self.aoMultiplierEditActuated(source);
                 end
