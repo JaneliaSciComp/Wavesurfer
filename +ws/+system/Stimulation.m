@@ -25,6 +25,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         ChannelNames
         NAnalogChannels
         NDigitalChannels
+        NTimedDigitalChannels        
         NChannels
         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
@@ -42,7 +43,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         IsWithinExperiment_ = false                       
         TriggerScheme_ = ws.TriggerScheme.empty()
         HasAnalogChannels_
-        HasDigitalChannels_
+        HasTimedDigitalChannels_
         DidAnalogEpisodeComplete_
         DidDigitalEpisodeComplete_
     end
@@ -223,6 +224,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function value = get.NDigitalChannels(self)
             value = length(self.DigitalChannelNames_);
+        end
+
+        function value = get.NTimedDigitalChannels(self)
+            value = sum(self.IsDigitalChannelTimed);
         end
 
         function value = get.NChannels(self)
@@ -619,7 +624,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
-            self.HasDigitalChannels_ = (self.NDigitalChannels>0) ;  % cache this info for quick access
+            self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
             self.DidAnalogEpisodeComplete_ = false ;  
             self.DidDigitalEpisodeComplete_ = false ;
             self.IsArmedOrStimulating_ = true;
@@ -640,7 +645,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             
             % Arm and start the digital task
-            if self.HasDigitalChannels_ ,
+            if self.HasTimedDigitalChannels_ ,
                 if self.EpisodesCompleted_ == 0 ,
                     self.TheFiniteDigitalOutputTask_.arm();
                 end
@@ -648,7 +653,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             
             % If no samples at all, we just declare the episode done
-            if self.HasAnalogChannels_ || self.HasDigitalChannels_ ,
+            if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
                 % do nothing
             else
                 % This was triggered, it just has a map/stimulus that has zero samples.
@@ -829,7 +834,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         function analogEpisodeCompleted(self)
             %fprintf('Stimulation::analogEpisodeCompleted()\n');
             self.DidAnalogEpisodeComplete_ = true ;
-            if self.HasDigitalChannels_ ,
+            if self.HasTimedDigitalChannels_ ,
                 if self.DidDigitalEpisodeComplete_ ,
                     self.episodeCompleted_();
                 end
