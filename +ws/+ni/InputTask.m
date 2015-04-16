@@ -80,15 +80,15 @@ classdef InputTask < handle
             if nChannels>0 ,
                 for i=1:nChannels ,
                     physicalChannelName = physicalChannelNames{i} ;
+                    channelName = channelNames{i} ;
                     if self.IsAnalog ,
-                        channelName = channelNames{i} ;
                         deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
                         self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID, channelName);
                     else
                         deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createDIChan(deviceName, restOfName);
+                        self.DabsDaqTask_.createDIChan(deviceName, restOfName, channelName);
                     end
                 end                
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
@@ -139,27 +139,6 @@ classdef InputTask < handle
             value = self.Parent_;
         end  % function
         
-%         function pollingTimerFired(self, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
-%             % Read all the available scans, notify our parent
-%             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
-%             rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-%             nScans = size(rawData,1);
-%             timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - nScans/self.SampleRate_ ;
-%             self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
-% 
-%             % Couldn't we miss samples if there are less than NScansPerDataAvailableCallback available when the task
-%             % gets done?
-%             if self.DabsDaqTask_.isTaskDoneQuiet() ,
-%                 % Get data one last time, to make sure we get it all
-%                 rawData = self.DabsDaqTask_.readAnalogData([],'native') ;  % rawData is int16
-%                 self.Parent.samplesAcquired(rawData,timeSinceExperimentStartAtStartOfData);
-%                 
-%                 % Stop task, notify parent
-%                 self.DabsDaqTask_.stop();
-%                 self.Parent.acquisitionTrialComplete();
-%             end                
-%         end  % function
-        
         function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
             % Read all the available scans, notify our parent
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
@@ -168,8 +147,6 @@ classdef InputTask < handle
                     rawData = zeros(0,0,'int16');
                 else
                     rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
-                    %[rawData, nScansReallyRead] = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
-                    %fprintf('nScansReallyRead: %d\n',nScansReallyRead) ;
                 end
             else % IsDigital
                 if isempty(self.DabsDaqTask_) ,
@@ -181,17 +158,6 @@ classdef InputTask < handle
             timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - size(rawData,1)/self.SampleRate_ ;
         end  % function
     
-%         function [isDone,rawData,timeSinceExperimentStartAtStartOfData] = checkForDoneness(self, timeSinceTrialStart, fromExperimentStartTicId)
-%             isDone = self.DabsDaqTask_.isTaskDoneQuiet() ;
-%             if isDone ,
-%                 % Get data one last time, to make sure we get it all
-%                 [rawData,timeSinceExperimentStartAtStartOfData] = self.readData(self, timeSinceTrialStart, fromExperimentStartTicId) ;
-%             else
-%                 rawData = [] ;
-%                 timeSinceExperimentStartAtStartOfData = [] ;
-%             end
-%         end  % function
-        
         function debug(self) %#ok<MANU>
             keyboard
         end  % function        

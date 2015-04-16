@@ -199,10 +199,14 @@ classdef Acquisition < ws.system.Subsystem
             if islogical(newIsChannelActive) && isequal(size(newIsChannelActive),size(self.IsChannelActive)) ,
                 self.IsChannelActive_ = newIsChannelActive;
                 if ~isempty(self.AnalogInputTask_) ,
-                    self.AnalogInputTask_.ActiveChannels=self.ChannelIDs_(newIsChannelActive & self.IsChannelAnalog);
+                    active = self.IsChannelActive & self.IsChannelAnalog;
+                    active = active(1:self.NAnalogChannels);
+                    self.AnalogInputTask_.IsChannelActive=active;
                 end
                 if ~isempty(self.DigitalInputTask_) ,
-                    self.DigitalInputTask_.ActiveChannels=self.ChannelIDs_(newIsChannelActive & ~self.IsChannelAnalog);
+                    active = self.IsChannelActive & ~self.IsChannelAnalog;
+                    active = active(self.NAnalogChannels+1 : end);
+                    self.DigitalInputTask_.IsChannelActive=active;
                 end
             end
             self.broadcast('DidSetIsChannelActive');
@@ -526,7 +530,9 @@ classdef Acquisition < ws.system.Subsystem
                                           self.AnalogPhysicalChannelNames, ...
                                           self.AnalogChannelNames);
                 % Have to make sure the active channels gets set in the Task object
-                self.AnalogInputTask_.IsChannelActive=self.IsChannelActive & self.IsChannelAnalog;
+                active = self.IsChannelActive & self.IsChannelAnalog;
+                active = active(1:self.NAnalogChannels);
+                self.AnalogInputTask_.IsChannelActive=active;
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
@@ -540,7 +546,9 @@ classdef Acquisition < ws.system.Subsystem
                                           self.DigitalPhysicalChannelNames, ...
                                           self.DigitalChannelNames);
                 % Have to make sure the active channels gets set in the Task object
-                self.DigitalInputTask_.IsChannelActive=self.IsChannelActive & ~self.IsChannelAnalog;
+                active = self.IsChannelActive & ~self.IsChannelAnalog;
+                active = active(self.NAnalogChannels+1 : end);
+                self.DigitalInputTask_.IsChannelActive=active;
                 % Set other things in the Task object
                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                

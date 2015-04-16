@@ -743,7 +743,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             channelNames=model.Acquisition.DigitalChannelNames;
             for i=1:nDIs ,
                 set(self.DILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
-                set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsChannelActive(i), ...
+                set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsChannelActive(self.Model.Acquisition.NAnalogChannels + i), ...
                                                  'Enable',onIff(isWavesurferIdle));                                     
             end
             
