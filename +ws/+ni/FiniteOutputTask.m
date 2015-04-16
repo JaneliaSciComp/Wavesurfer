@@ -153,9 +153,9 @@ classdef FiniteOutputTask < handle
         function clearChannelData(self)
             nChannels=length(self.ChannelNames);
             if self.IsAnalog ,
-                self.ChannelData_ = zeros(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
+                self.ChannelData_ = zeros(0,nChannels);  
             else
-                self.ChannelData_ = false(0,nChannels);  % N.B.: Want to use pubic setter, so output buffer gets sync'ed
+                self.ChannelData_ = false(0,nChannels); 
             end                
             self.IsOutputBufferSyncedToChannelData_ = false ;  % we don't sync up the output buffer to no data
         end  % function

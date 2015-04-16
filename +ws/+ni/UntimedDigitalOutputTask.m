@@ -55,7 +55,12 @@ classdef UntimedDigitalOutputTask < handle
         end  % function
         
         function delete(self)
-            if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
+            if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,                
+                try
+                    self.clearChannelData();  % set all channels off before deleting
+                catch me %#ok<NASGU>
+                    % just ignore, since can't throw during a delete method
+                end
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
@@ -79,7 +84,7 @@ classdef UntimedDigitalOutputTask < handle
         
         function clearChannelData(self)
             nChannels=length(self.ChannelNames);
-            self.ChannelData_ = false(0,nChannels);  % N.B.: Want to use public setter, so output buffer gets sync'ed
+            self.ChannelData = false(1,nChannels);  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function
         
         function value = get.ChannelData(self)

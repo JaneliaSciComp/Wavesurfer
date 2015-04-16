@@ -90,7 +90,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
-            self.Model.Stimulation.setUntimedDigitalOutputState(i,newState);
+            self.Model.Stimulation.setDigitalOutputStateIfUntimed(i,newState);
         end
         
 %         function aoMultiplierEditActuated(self,source)
