@@ -102,7 +102,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
 %             end
             self.TheFiniteDigitalOutputTask_ = [] ;
-            sekf.TheUntimedDigitalOutputTask_ = [];
+            self.TheUntimedDigitalOutputTask_ = [];
             self.Parent = [] ;
         end
         
@@ -394,7 +394,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
                 
                 % Set defaults for digital channels
-                self.IsDigitalChannelTimed_ = false(1,sum(isDigital));
+                self.IsDigitalChannelTimed_ = true(1,sum(isDigital));
                 self.UntimedDigitalOutputState_ = false(1,sum(isDigital));
 
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
