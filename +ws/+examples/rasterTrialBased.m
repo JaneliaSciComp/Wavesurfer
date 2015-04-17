@@ -6,8 +6,9 @@ function rasterTrialBased(self,evt)
 
 persistent rasterFig rasterAxes rasterLines histAxes histLines b a
 
-thresh = -20;
 nBins = 100;
+channels = [1];
+thresh = [-20];
 
 nTrials = self.ExperimentTrialCount;
 currTrial = self.ExperimentCompletedTrialCount;
@@ -16,7 +17,7 @@ sampleRate = self.Acquisition.SampleRate;
 step = duration / nBins;
 histBinCenters = step/2 : step : duration;
 
-data = self.Acquisition.getDataFromCache();
+data = self.Acquisition.getRawAnalogDataFromCache();
 
 if isempty(rasterFig) || ~ishandle(rasterFig)
     rasterFig = figure();
@@ -28,8 +29,8 @@ if currTrial==1
     rasterLines=[];
     histAxes=[];
     histLines=[];
-    for channel=1:size(data,2)
-        histAxes(channel) = subplot(size(data,2),1,channel,'parent',rasterFig);
+    for channel=1:length(channels)
+        histAxes(channel) = subplot(length(channels),1,channel,'parent',rasterFig);
         histLines(channel) = bar(histAxes(channel),histBinCenters,zeros(1,nBins),1);
         set(histLines(channel),'EdgeColor','none','facecolor',[1 0 0]);
         axis(histAxes(channel),'off');
@@ -37,7 +38,7 @@ if currTrial==1
     end
     drawnow;
         
-    for channel=1:size(data,2)
+    for channel=1:length(channels)
         rasterAxes(channel) = axes('position',get(histAxes(channel),'position'));
         axis(rasterAxes(channel), [0 duration 0 nTrials]);
         hold(rasterAxes(channel), 'on');
@@ -51,7 +52,7 @@ if currTrial==1
     ylabel(rasterAxes(channel), 'trial #');
 end
 
-for channel=1:size(data,2)
+for channel=1:length(channels)
     ticks = find(diff(data(:,channel)>thresh(channel)));
     len = length(ticks);
     set(rasterLines(channel,currTrial),...
