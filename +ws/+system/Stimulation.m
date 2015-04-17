@@ -13,7 +13,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
           % for each stimulus channel.
         TriggerScheme
         IsDigitalChannelTimed
-        UntimedDigitalOutputState
+        DigitalOutputStateIfUntimed
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -65,7 +65,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         EpisodesPerExperiment_
         EpisodesCompleted_
         IsDigitalChannelTimed_ = false(1,0)
-        UntimedDigitalOutputState_ = false(1,0)
+        DigitalOutputStateIfUntimed_ = false(1,0)
     end
     
     events 
@@ -74,7 +74,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         DidSetSampleRate
         DidSetDoRepeatSequence
         DidSetIsDigitalChannelTimed
-        DidSetUntimedDigitalOutputState
+        DidSetDigitalOutputStateIfUntimed
     end
     
     methods
@@ -102,7 +102,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
 %             end
             self.TheFiniteDigitalOutputTask_ = [] ;
-            sekf.TheUntimedDigitalOutputTask_ = [];
+            self.TheUntimedDigitalOutputTask_ = [];
             self.Parent = [] ;
         end
         
@@ -153,8 +153,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             out= self.IsDigitalChannelTimed_ ;
         end
         
-        function out = get.UntimedDigitalOutputState(self)
-            out= self.UntimedDigitalOutputState_ ;
+        function out = get.DigitalOutputStateIfUntimed(self)
+            out= self.DigitalOutputStateIfUntimed_ ;
         end
         
         function out = get.DoRepeatSequence(self)
@@ -344,22 +344,21 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods
         function setIsDigitalChannelTimed(self,i,newValue)
-            self.IsDigitalChannelTimed_(i)=newValue;
-            if ~isempty(self.TheUntimedDigitalOutputTask_)
-                self.TheUntimedDigitalOutputTask_=[];
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_);
-                self.TheFiniteDigitalOutputTask_=[];
+            if self.IsDigitalChannelTimed_(i) ~= newValue ,
+                self.IsDigitalChannelTimed_(i)=newValue;            
+                self.syncTasksToChannelMembership_();
             end
             self.broadcast('DidSetIsDigitalChannelTimed');
         end  % function
         
-        function setUntimedDigitalOutputState(self,i,newValue)
-            self.UntimedDigitalOutputState_(i)=newValue;
-            if ~isempty(self.TheUntimedDigitalOutputTask_)
-              self.TheUntimedDigitalOutputTask_.ChannelData=self.UntimedDigitalOutputState_(~self.IsDigitalChannelTimed_);   
+        function setDigitalOutputStateIfUntimed(self,i,newValue)
+            self.DigitalOutputStateIfUntimed_(i) = newValue ;
+            if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+                isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+                untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
+                self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
             end
-            self.broadcast('DidSetUntimedDigitalOutputState');
+            self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
         
         function initializeFromMDFStructure(self, mdfStructure)            
@@ -394,11 +393,17 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
                 
                 % Set defaults for digital channels
-                self.IsDigitalChannelTimed_ = false(1,sum(isDigital));
-                self.UntimedDigitalOutputState_ = false(1,sum(isDigital));
+                nDigitalChannels = sum(isDigital) ;
+                self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
+                self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
 
+                % Intialized the stimulus library
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
+                % Set up the untimed channels
+                self.syncTasksToChannelMembership_();
+                
+                % Finally, mark outselves as enable-able
                 self.CanEnable = true;
             end
         end  % function
@@ -431,7 +436,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                                            self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
                  if ~all(self.IsDigitalChannelTimed)
-                     self.TheUntimedDigitalOutputTask_.ChannelData=self.UntimedDigitalOutputState(~self.IsDigitalChannelTimed);
+                     self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
                  end
            end
         end
@@ -905,6 +910,28 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % protected methods block
     
     methods (Access = protected)
+        function syncTasksToChannelMembership_(self)
+            % Set the untimed output task appropriately
+            self.TheUntimedDigitalOutputTask_ = [] ;
+            isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+            untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+            untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+            self.TheUntimedDigitalOutputTask_ = ...
+                ws.ni.UntimedDigitalOutputTask(self, ...
+                                               'Wavesurfer Untimed Digital Output Task', ...
+                                               untimedDigitalPhysicalChannelNames, ...
+                                               untimedDigitalChannelNames) ;
+            % Set the outputs to the proper values, now that we have a task                               
+            if any(isDigitalChannelUntimed) ,
+                untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
+                self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+            end
+            
+            % Clear the timed digital output task, will be recreated when acq is
+            % started
+            self.TheFiniteDigitalOutputTask_ = [] ;
+        end  % function
+        
         function stimulusMap = getCurrentStimulusMap_(self)
             % Calculate the episode index
             episodeIndexWithinExperiment=self.EpisodesCompleted_+1;

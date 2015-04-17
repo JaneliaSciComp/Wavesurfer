@@ -138,7 +138,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
                model.Stimulation.subscribeMe(self,'DidSetIsDigitalChannelTimed','','updateControlProperties');               
-               model.Stimulation.subscribeMe(self,'DidSetUntimedDigitalOutputState','','updateControlProperties');               
+               model.Stimulation.subscribeMe(self,'DidSetDigitalOutputStateIfUntimed','','updateControlProperties');               
                
                model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.Display.subscribeMe(self,'DidSetEnabled','','update');

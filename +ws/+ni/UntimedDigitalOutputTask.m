@@ -20,9 +20,9 @@ classdef UntimedDigitalOutputTask < handle
         ChannelData_
     end
     
-    events
-        OutputComplete
-    end
+%     events
+%         OutputComplete
+%     end
 
     methods
         function self = UntimedDigitalOutputTask(parent, taskName, physicalChannelNames, channelNames)
@@ -47,17 +47,20 @@ classdef UntimedDigitalOutputTask < handle
             if nChannels>0 ,
                 for i=1:nChannels ,
                     physicalChannelName = physicalChannelNames{i};
-                    physicalChannelName = physicalChannelNames{i};
                     deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                     restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
                     self.DabsDaqTask_.createDOChan(deviceName, restOfName);
                 end                
-            end
-            
+            end            
         end  % function
         
         function delete(self)
-            if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
+            if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,                
+                try
+                    self.clearChannelData();  % set all channels off before deleting
+                catch me %#ok<NASGU>
+                    % just ignore, since can't throw during a delete method
+                end
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
@@ -81,7 +84,7 @@ classdef UntimedDigitalOutputTask < handle
         
         function clearChannelData(self)
             nChannels=length(self.ChannelNames);
-            self.ChannelData_ = false(0,nChannels);  % N.B.: Want to use public setter, so output buffer gets sync'ed
+            self.ChannelData = false(1,nChannels);  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function
         
         function value = get.ChannelData(self)
@@ -123,19 +126,19 @@ classdef UntimedDigitalOutputTask < handle
         end  % function
     end  % public methods
     
-    methods (Access = protected)        
-        function taskDone_(self, ~, ~)
-            % For a successful capture, this class is responsible for stopping the task when
-            % it is done.  For external clients to interrupt a running task, use the abort()
-            % method on the Output object.
-            self.DabsDaqTask_.stop();
-            
-            % Fire the event before unregistering the callback functions.  At the end of a
-            % script the DAQmx callbacks may be the only references preventing the object
-            % from deleting before the events are sent/complete.
-            self.notify('OutputComplete');
-        end  % function        
-    end  % protected methods block
+%     methods (Access = protected)        
+%         function taskDone_(self, ~, ~)
+%             % For a successful capture, this class is responsible for stopping the task when
+%             % it is done.  For external clients to interrupt a running task, use the abort()
+%             % method on the Output object.
+%             self.DabsDaqTask_.stop();
+%             
+%             % Fire the event before unregistering the callback functions.  At the end of a
+%             % script the DAQmx callbacks may be the only references preventing the object
+%             % from deleting before the events are sent/complete.
+%             self.notify('OutputComplete');
+%         end  % function        
+%     end  % protected methods block
     
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)
