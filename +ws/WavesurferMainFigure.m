@@ -76,6 +76,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         LocationEdit
         ShowLocationButton
         ChangeLocationButton
+        IncludeDateCheckbox
+        SessionIndexCheckbox        
+        SessionIndexText
+        SessionIndexEdit
+        IncrementSessionIndexButton
         NextTrialText
         NextTrialEdit
         FileNameText
@@ -442,6 +447,26 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','pushbutton', ...
                           'String','Change...');
+            self.IncludeDateCheckbox = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','checkbox', ...
+                          'String','Include date');
+            self.SessionIndexCheckbox = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','checkbox', ...
+                          'String','');
+            self.SessionIndexText = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','text', ...
+                          'String','Session:');
+            self.SessionIndexEdit = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'HorizontalAlignment','right', ...
+                          'Style','edit');
+            self.IncrementSessionIndexButton = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','pushbutton', ...
+                          'String','+');
             self.NextTrialText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
@@ -845,14 +870,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             editHeight=20;
             rightMarginWidth=10;
             widthOfStuffToRightOfEditTexts=loggingPanelWidth-xOffsetOfEdits-rightMarginWidth;
-            widthLeftOfBaseNameEdit=6;            
+            widthLeftOfBaseNameEdit=6;
             showButtonWidth=70;
             changeLocationButtonWidth=90;
             widthBetweenLocationWidgets=6;
             nextTrialEditWidth=50;
             nextTrialLabelFixedWidth=70;  % We fix this, because the label text changes
             fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
-            
+            widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
             
             
             %
@@ -894,15 +919,56 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.ChangeLocationButton,'Position',[changeLocationButtonXOffset locationEditYOffset changeLocationButtonWidth editHeight]);
 
             %
-            % Next Trial Row
+            % Next Trial (and friends) Row
             %
             
-            % Next Trial edit and label
-            nextTrialEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.NextTrialText,self.NextTrialEdit,[], ....
-                                          xOffsetOfEdits,nextTrialEditYOffset,nextTrialEditWidth, ...
-                                          nextTrialLabelFixedWidth);
+            nextTrialAndFriendsRowYOffset = locationEditYOffset - heightBetweenEdits - editHeight ;
+            
+            % Include date checkbox
+            includeDateCheckboxExtent=get(self.IncludeDateCheckbox,'Extent');
+            includeDateCheckboxWidth=includeDateCheckboxExtent(3)+16;  % size of the checkbox itself
+            includeDateCheckboxPosition=get(self.IncludeDateCheckbox,'Position');
+            includeDateCheckboxHeight=includeDateCheckboxPosition(4);            
+            includeDateCheckboxXOffset=xOffsetOfEdits;
+            includeDateCheckboxYOffset=nextTrialAndFriendsRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
+            set(self.IncludeDateCheckbox,'Position',[includeDateCheckboxXOffset includeDateCheckboxYOffset ...
+                                                     includeDateCheckboxWidth includeDateCheckboxHeight]);
+            
+            % Session index checkbox
+            sessionIndexCheckboxExtent=get(self.SessionIndexCheckbox,'Extent');
+            sessionIndexCheckboxWidth=sessionIndexCheckboxExtent(3)+16;  % size of the checkbox itself
+            sessionIndexCheckboxPosition=get(self.SessionIndexCheckbox,'Position');
+            sessionIndexCheckboxHeight=sessionIndexCheckboxPosition(4);            
+            sessionIndexCheckboxXOffset = includeDateCheckboxXOffset + includeDateCheckboxWidth + widthFromIncludeDateCheckboxToSessionIndexCheckbox;
+            sessionIndexCheckboxYOffset=nextTrialAndFriendsRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
+            set(self.SessionIndexCheckbox,'Position',[sessionIndexCheckboxXOffset sessionIndexCheckboxYOffset ...
+                                                      sessionIndexCheckboxWidth sessionIndexCheckboxHeight]);
+            
+            % Session index edit and label
+            xOffsetOfSessionIndexEditFromCheckbox = 66 ;  % this is brittle, have to change if change session index label text, or font, etc.
+            sessionIndexEditWidth = 50 ;
+            sessionIndexEditXOffset =  ...
+                sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
+            sessionIndexEditYOffset = nextTrialAndFriendsRowYOffset ;
+            positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
+                                          sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
                                       
+            % Increment session index button
+            incrementSessionIndexButtonWidth = 20 ;
+            incrementSessionIndexButtonHeight = 20 ;            
+            widthFromIncrementSessionIndexToButton = 5 ;
+            incrementSessionIndexButtonXOffset = sessionIndexEditXOffset + sessionIndexEditWidth + widthFromIncrementSessionIndexToButton ;
+            incrementSessionIndexButtonYOffset = nextTrialAndFriendsRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
+            set(self.IncrementSessionIndexButton,'Position',[incrementSessionIndexButtonXOffset incrementSessionIndexButtonYOffset ...
+                                                             incrementSessionIndexButtonWidth incrementSessionIndexButtonHeight]);            
+                                      
+            % Next Trial edit and label
+            nextTrialEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextTrialEditWidth ;
+            nextTrialEditYOffset = nextTrialAndFriendsRowYOffset ;
+            positionEditLabelAndUnitsBang(self.NextTrialText,self.NextTrialEdit,[], ....
+                                          nextTrialEditXOffset,nextTrialEditYOffset,nextTrialEditWidth, ...
+                                          nextTrialLabelFixedWidth);
+            
 
             %
             % File Name Row
