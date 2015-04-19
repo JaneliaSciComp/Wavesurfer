@@ -153,10 +153,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
                model.Logging.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');
-               model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
-               model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
-               model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
+               model.Logging.subscribeMe(self,'Update','','updateControlProperties');
                
                model.subscribeMe(self,'TrialDidComplete','','updateControlProperties');
                model.subscribeMe(self,'DataAvailable','','dataWasAcquired');

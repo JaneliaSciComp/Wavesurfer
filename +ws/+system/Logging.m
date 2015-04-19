@@ -4,8 +4,11 @@ classdef Logging < ws.system.Subsystem
     properties (Dependent=true)
         FileLocation  % absolute path of data file directory
         FileBaseName  % prefix for data file name to which trial index will be appended
-        IsOKToOverwrite  % logical, whether it's OK to overwrite data files without warning
+        DoIncludeDate
+        DoIncludeSessionIndex
+        SessionIndex
         NextTrialIndex  % the index of the next trial (one-based).  (This gets reset if you change the FileBaseName.)
+        IsOKToOverwrite  % logical, whether it's OK to overwrite data files without warning
     end
     
     properties (Dependent=true, SetAccess=immutable)
@@ -15,8 +18,11 @@ classdef Logging < ws.system.Subsystem
     properties (Access = protected)
         FileLocation_
         FileBaseName_
-        IsOKToOverwrite_
+        DoIncludeDate_
+        DoIncludeSessionIndex_
+        SessionIndex_
         NextTrialIndex_
+        IsOKToOverwrite_
     end
     
     % These are all properties that are only used when acquisition is
@@ -42,12 +48,12 @@ classdef Logging < ws.system.Subsystem
         DidWriteSomeDataForThisTrial_
     end
 
-    events
-        DidSetFileLocation
-        DidSetFileBaseName
-        DidSetIsOKToOverwrite
-        DidSetNextTrialIndex
-    end
+%     events
+%         DidSetFileLocation
+%         DidSetFileBaseName
+%         DidSetIsOKToOverwrite
+%         DidSetNextTrialIndex
+%     end
     
     methods
         function self = Logging(parent)
@@ -55,8 +61,11 @@ classdef Logging < ws.system.Subsystem
             self.Parent=parent;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
-            self.IsOKToOverwrite = false;
-            self.NextTrialIndex_ = 1; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            self.DoIncludeDate_ = false ;
+            self.DoIncludeSessionIndex_ = false ;
+            self.SessionIndex_ = 1 ;
+            self.NextTrialIndex_ = 1 ; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            self.IsOKToOverwrite_ = false ;
         end
         
         function delete(self)
@@ -64,20 +73,21 @@ classdef Logging < ws.system.Subsystem
         end
         
         function set.FileLocation(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('FileLocation', newValue);
-            if ~exist(newValue,'dir') ,
-                return
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('FileLocation', newValue);
+                if exist(newValue,'dir') ,
+                    originalValue=self.FileLocation_;
+                    self.FileLocation_ = newValue;
+                    % If file name has changed, reset the trial index
+                    originalFullName=fullfile(originalValue,self.FileBaseName);
+                    newFullName=fullfile(newValue,self.FileBaseName);
+                    if ~isequal(originalFullName,newFullName) ,
+                        self.NextTrialIndex = 1;
+                    end
+                end
             end
-            originalValue=self.FileLocation_;
-            self.FileLocation_ = newValue;
-            % If file name has changed, reset the trial index
-            originalFullName=fullfile(originalValue,self.FileBaseName);
-            newFullName=fullfile(newValue,self.FileBaseName);
-            if ~isequal(originalFullName,newFullName) ,
-                self.NextTrialIndex = 1;
-            end
-            self.broadcast('DidSetFileLocation');
+            %self.broadcast('DidSetFileLocation');
+            self.broadcast('Update');            
         end
         
         function result=get.FileLocation(self)
@@ -86,58 +96,105 @@ classdef Logging < ws.system.Subsystem
         
         function set.FileBaseName(self, newValue)
             %fprintf('Entered set.FileBaseName()\n');            
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('FileBaseName', newValue);
-            originalValue=self.FileBaseName_;
-            self.FileBaseName_ = newValue;
-            % If file name has changed, reset the trial index
-            originalFullName=fullfile(self.FileLocation,originalValue);
-            newFullName=fullfile(self.FileLocation,newValue);
-            if ~isequal(originalFullName,newFullName) ,
-                %fprintf('About to reset NextTrialIndex...\n');
-                self.NextTrialIndex = 1;
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('FileBaseName', newValue);
+                originalValue=self.FileBaseName_;
+                self.FileBaseName_ = newValue;
+                % If file name has changed, reset the trial index
+                originalFullName=fullfile(self.FileLocation,originalValue);
+                newFullName=fullfile(self.FileLocation,newValue);
+                if ~isequal(originalFullName,newFullName) ,
+                    %fprintf('About to reset NextTrialIndex...\n');
+                    self.NextTrialIndex = 1;
+                end
             end
-            self.broadcast('DidSetFileBaseName');            
+            %self.broadcast('DidSetFileBaseName');            
+            self.broadcast('Update');            
         end
         
         function result=get.FileBaseName(self)
             result=self.FileBaseName_;
         end
             
-        function set.IsOKToOverwrite(self, newValue)
-            if isnan(newValue), return, end            
-            self.validatePropArg('IsOKToOverwrite', newValue);
-            self.IsOKToOverwrite_ = newValue;
-            self.broadcast('DidSetIsOKToOverwrite');            
-        end
-        
-        function result=get.IsOKToOverwrite(self)
-            result=self.IsOKToOverwrite_;
-        end
         function set.NextTrialIndex(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('NextTrialIndex', newValue);
-            self.NextTrialIndex_ = newValue;
-            self.broadcast('DidSetNextTrialIndex');            
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('NextTrialIndex', newValue);
+                self.NextTrialIndex_ = newValue;
+            end
+            %self.broadcast('DidSetNextTrialIndex');            
+            self.broadcast('Update');            
         end
         
         function result=get.NextTrialIndex(self)
             result=self.NextTrialIndex_;
         end           
 
+        function set.IsOKToOverwrite(self, newValue)
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('IsOKToOverwrite', newValue);
+                self.IsOKToOverwrite_ = newValue;
+            end
+            %self.broadcast('DidSetIsOKToOverwrite');            
+            self.broadcast('Update');                        
+        end
+        
+        function result=get.IsOKToOverwrite(self)
+            result=self.IsOKToOverwrite_;
+        end
+        
+        function set.DoIncludeDate(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if islogical(newValue) && isscalar(newValue) ,
+                    self.IsOKToOverwrite_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DoIncludeDate must be a logical scalar');                  
+                end
+            end
+            self.broadcast('Update');            
+        end
+        
+        function result=get.DoIncludeDate(self)
+            result=self.DoIncludeDate_;
+        end
+
+        function set.DoIncludeSessionIndex(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if islogical(newValue) && isscalar(newValue) ,
+                    self.DoIncludeSessionIndex_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DoIncludeSessionIndex must be a logical scalar');                  
+                end
+            end
+            self.broadcast('Update');            
+        end
+        
+        function result=get.DoIncludeSessionIndex(self)
+            result=self.DoIncludeSessionIndex_;
+        end
+
+        function set.SessionIndex(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
+                    self.SessionIndex_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'SessionIndex must be an integer greater than or equal to one');                  
+                end
+            end
+            self.broadcast('Update');            
+        end
+        
+        function result=get.SessionIndex(self)
+            result=self.SessionIndex_;
+        end
+        
         function value=get.NextTrialSetAbsoluteFileName(self)
             wavesurferModel=self.Parent;
-            %if wavesurferModel.IsTrialBased ,
             firstTrialIndex = self.NextTrialIndex ;
             numberOfTrials = wavesurferModel.ExperimentTrialCount ;
             fileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfTrials);
-%             elseif wavesurferModel.IsContinuous ,
-%                 dateAndTimeAffix = strrep(strrep(datestr(now()), ' ', '_'), ':', '-') ;
-%                 fileName = sprintf('%s-continuous_%s', self.FileBaseName, dateAndTimeAffix);                
-%             else
-%                 error('wavesurfer:internalError' , ...
-%                       'Unable to determine trial set file name');
-%             end
             value = fullfile(self.FileLocation, fileName);
         end  % function
         
