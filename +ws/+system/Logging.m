@@ -12,6 +12,7 @@ classdef Logging < ws.system.Subsystem
     end
     
     properties (Dependent=true, SetAccess=immutable)
+        AugmentedBaseName
         NextTrialSetAbsoluteFileName
     end
 
@@ -129,7 +130,7 @@ classdef Logging < ws.system.Subsystem
         
         function result=get.NextTrialIndex(self)
             result=self.NextTrialIndex_;
-        end           
+        end
 
         function set.IsOKToOverwrite(self, newValue)
             if ws.utility.isASettableValue(newValue), 
@@ -137,10 +138,9 @@ classdef Logging < ws.system.Subsystem
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
                     error('most:Model:invalidPropVal', ...
-                          'DoIncludeDate must be a logical scalar, or convertable to one');                  
+                          'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
                 end
             end
-            %self.broadcast('DidSetIsOKToOverwrite');            
             self.broadcast('Update');                        
         end
         
@@ -214,6 +214,10 @@ classdef Logging < ws.system.Subsystem
         function incrementSessionIndex(self)
             self.SessionIndex = self.SessionIndex + 1 ;
         end
+        
+        function result = get.AugmentedBaseName(self)
+            result = self.augmentedBaseName_();
+        end  % function
         
         function value=get.NextTrialSetAbsoluteFileName(self)
             wavesurferModel=self.Parent;
@@ -518,7 +522,7 @@ classdef Logging < ws.system.Subsystem
     end
     
     methods (Access = protected)
-        function fileName = trialSetFileNameFromNumbers_(self,firstTrialIndex,numberOfTrials)
+        function result = augmentedBaseName_(self)
             baseName = self.FileBaseName ;
             % Add the date, if wanted
             if self.DoIncludeDate_ ,
@@ -528,23 +532,27 @@ classdef Logging < ws.system.Subsystem
             end
             % Add the session number, if wanted
             if self.DoIncludeSessionIndex_ ,
-                baseNameWithDateAndSession = sprintf('%s_%03d',baseNameWithDate,self.SessionIndex_);
+                result = sprintf('%s_%03d',baseNameWithDate,self.SessionIndex_);
             else
-                baseNameWithDateAndSession = baseNameWithDate ;
+                result = baseNameWithDate ;
             end
+        end  % function        
+        
+        function fileName = trialSetFileNameFromNumbers_(self,firstTrialIndex,numberOfTrials)
+            augmentedBaseName = self.augmentedBaseName_() ;
             % This is a "leaf" file name, not an absolute one
             if numberOfTrials == 1 ,
-                fileName = sprintf('%s_%04d.h5', baseNameWithDateAndSession, firstTrialIndex);
+                fileName = sprintf('%s_%04d.h5', augmentedBaseName, firstTrialIndex);
             else
                 if isfinite(numberOfTrials) ,
                     lastTrialIndex = firstTrialIndex + numberOfTrials - 1 ;
                     fileName = sprintf('%s_%04d-%04d.h5', ...
-                                       baseNameWithDateAndSession, ...
+                                       augmentedBaseName, ...
                                        firstTrialIndex, ...
                                        lastTrialIndex);
                 else
                     fileName = sprintf('%s_%04d-.h5', ...
-                                       baseNameWithDateAndSession, ...
+                                       augmentedBaseName, ...
                                        firstTrialIndex);
                 end
             end            
