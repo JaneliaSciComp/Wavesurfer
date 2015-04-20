@@ -1178,7 +1178,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                 % make sure the output is set to the non-pulsed state
                 % (Is there a better way to do this?)
                 %
-                commandsInVolts=zeros(self.NScansInSweep,self.NElectrodes);
+                nScans = 2 ;
+                self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
+                %commandsInVolts=zeros(self.NScansInSweep,self.NElectrodes);
+                commandsInVolts=zeros(nScans,self.NElectrodes);
                 self.OutputTask_.writeAnalogData(commandsInVolts);
                 self.OutputTask_.start();
                 % pause for 10 ms without relinquishing control
@@ -1186,7 +1189,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
     %             while (toc(timerVal)<0.010)
     %                 x=1+1; %#ok<NASGU>
     %             end            
-                ws.utility.sleep(0.010);  % pause for 10 ms
+                ws.utility.restlessSleep(0.010);  % pause for 10 ms
                 self.OutputTask_.stop();
                 % % Maybe try this: java.lang.Thread.sleep(10);
 
