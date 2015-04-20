@@ -158,7 +158,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
                model.Logging.subscribeMe(self,'Update','','updateControlProperties');
-               
+               model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
+
                model.subscribeMe(self,'TrialDidComplete','','updateControlProperties');
                model.subscribeMe(self,'DataAvailable','','dataWasAcquired');
                
@@ -1089,12 +1090,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
-            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
+            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
+            set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
+            set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
+            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));            
             set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
             set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
-            set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
             set(self.StatusText,'String',model.State.num2str());
@@ -1374,15 +1378,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             isIdle=(model.State == ws.ApplicationState.Idle);
 
             %isLoggingEnabled=model.Logging.Enabled;
-            isLoggingEnabled=true;            
+            %isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',onIff(isIdle));
+            doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
 
-            set(self.BaseNameEdit,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.OverwriteCheckbox,'Enable',onIff(isIdle && isLoggingEnabled));
+            set(self.BaseNameEdit,'Enable',onIff(isIdle));
+            set(self.OverwriteCheckbox,'Enable',onIff(isIdle));
             %set(self.LocationEdit,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.ShowLocationButton,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.ChangeLocationButton,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.NextTrialEdit,'Enable',onIff(isIdle && isLoggingEnabled));            
+            set(self.ShowLocationButton,'Enable',onIff(isIdle));
+            set(self.ChangeLocationButton,'Enable',onIff(isIdle));
+            set(self.IncludeDateCheckbox,'Enable',onIff(isIdle));
+            set(self.SessionIndexCheckbox,'Enable',onIff(isIdle));
+            set(self.SessionIndexEdit,'Enable',onIff(isIdle&&doIncludeSessionIndex));
+            set(self.IncrementSessionIndexButton,'Enable',onIff(isIdle&&doIncludeSessionIndex));            
+            set(self.NextTrialEdit,'Enable',onIff(isIdle));
+            
+            
         end  % function
     end        
     

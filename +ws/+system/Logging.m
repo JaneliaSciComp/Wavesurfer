@@ -14,6 +14,10 @@ classdef Logging < ws.system.Subsystem
     properties (Dependent=true, SetAccess=immutable)
         NextTrialSetAbsoluteFileName
     end
+
+    properties (Access = protected, Transient = true)
+        DateAsString_
+    end
     
     properties (Access = protected)
         FileLocation_
@@ -48,12 +52,9 @@ classdef Logging < ws.system.Subsystem
         DidWriteSomeDataForThisTrial_
     end
 
-%     events
-%         DidSetFileLocation
-%         DidSetFileBaseName
-%         DidSetIsOKToOverwrite
-%         DidSetNextTrialIndex
-%     end
+    events
+        UpdateDoIncludeSessionIndex
+    end
     
     methods
         function self = Logging(parent)
@@ -66,6 +67,7 @@ classdef Logging < ws.system.Subsystem
             self.SessionIndex_ = 1 ;
             self.NextTrialIndex_ = 1 ; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
             self.IsOKToOverwrite_ = false ;
+            self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-experiment
         end
         
         function delete(self)
@@ -131,8 +133,12 @@ classdef Logging < ws.system.Subsystem
 
         function set.IsOKToOverwrite(self, newValue)
             if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('IsOKToOverwrite', newValue);
-                self.IsOKToOverwrite_ = newValue;
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                    self.IsOKToOverwrite_ = logical(newValue);
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DoIncludeDate must be a logical scalar, or convertable to one');                  
+                end
             end
             %self.broadcast('DidSetIsOKToOverwrite');            
             self.broadcast('Update');                        
@@ -144,11 +150,11 @@ classdef Logging < ws.system.Subsystem
         
         function set.DoIncludeDate(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                if islogical(newValue) && isscalar(newValue) ,
-                    self.IsOKToOverwrite_ = newValue;
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                    self.DoIncludeDate_ = logical(newValue);
                 else
                     error('most:Model:invalidPropVal', ...
-                          'DoIncludeDate must be a logical scalar');                  
+                          'DoIncludeDate must be a logical scalar, or convertable to one');                  
                 end
             end
             self.broadcast('Update');            
@@ -160,14 +166,19 @@ classdef Logging < ws.system.Subsystem
 
         function set.DoIncludeSessionIndex(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                if islogical(newValue) && isscalar(newValue) ,
-                    self.DoIncludeSessionIndex_ = newValue;
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                    originalValue = self.DoIncludeSessionIndex_ ;
+                    newValueForReals = logical(newValue) ;
+                    self.DoIncludeSessionIndex_ = newValueForReals ;
+                    if newValueForReals && ~originalValue ,
+                        self.NextTrialIndex_ = 1 ;
+                    end
                 else
                     error('most:Model:invalidPropVal', ...
-                          'DoIncludeSessionIndex must be a logical scalar');                  
+                          'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
                 end
             end
-            self.broadcast('Update');            
+            self.broadcast('UpdateDoIncludeSessionIndex');            
         end
         
         function result=get.DoIncludeSessionIndex(self)
@@ -176,18 +187,32 @@ classdef Logging < ws.system.Subsystem
 
         function set.SessionIndex(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
-                    self.SessionIndex_ = newValue;
+                if self.DoIncludeSessionIndex ,
+                    if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
+                        originalValue = self.SessionIndex_ ;
+                        self.SessionIndex_ = newValue;
+                        if newValue ~= originalValue ,
+                            self.NextTrialIndex_ = 1 ;
+                        end
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'SessionIndex must be an integer greater than or equal to one');
+                    end
                 else
                     error('most:Model:invalidPropVal', ...
-                          'SessionIndex must be an integer greater than or equal to one');                  
+                          'Can''t set SessionIndex when DoIncludeSessionIndex is false');
+                    
                 end
             end
-            self.broadcast('Update');            
+            self.broadcast('Update');
         end
         
         function result=get.SessionIndex(self)
             result=self.SessionIndex_;
+        end
+        
+        function incrementSessionIndex(self)
+            self.SessionIndex = self.SessionIndex + 1 ;
         end
         
         function value=get.NextTrialSetAbsoluteFileName(self)
@@ -331,13 +356,13 @@ classdef Logging < ws.system.Subsystem
             %profile off
         end
         
-        function didPerformTrial(self, wavesurferModel)
+        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
                 self.NextTrialIndex = self.NextTrialIndex + 1;
             %end
         end
         
-        function didAbortTrial(self, wavesurferModel)
+        function didAbortTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
                 if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
                     self.NextTrialIndex = self.firstTrialIndex_ ;
@@ -494,19 +519,32 @@ classdef Logging < ws.system.Subsystem
     
     methods (Access = protected)
         function fileName = trialSetFileNameFromNumbers_(self,firstTrialIndex,numberOfTrials)
+            baseName = self.FileBaseName ;
+            % Add the date, if wanted
+            if self.DoIncludeDate_ ,
+                baseNameWithDate = sprintf('%s_%s',baseName,self.DateAsString_);
+            else
+                baseNameWithDate = baseName ;
+            end
+            % Add the session number, if wanted
+            if self.DoIncludeSessionIndex_ ,
+                baseNameWithDateAndSession = sprintf('%s_%03d',baseNameWithDate,self.SessionIndex_);
+            else
+                baseNameWithDateAndSession = baseNameWithDate ;
+            end
             % This is a "leaf" file name, not an absolute one
             if numberOfTrials == 1 ,
-                fileName = sprintf('%s_%04d.h5', self.FileBaseName, firstTrialIndex);
+                fileName = sprintf('%s_%04d.h5', baseNameWithDateAndSession, firstTrialIndex);
             else
                 if isfinite(numberOfTrials) ,
                     lastTrialIndex = firstTrialIndex + numberOfTrials - 1 ;
                     fileName = sprintf('%s_%04d-%04d.h5', ...
-                                       self.FileBaseName, ...
+                                       baseNameWithDateAndSession, ...
                                        firstTrialIndex, ...
                                        lastTrialIndex);
                 else
                     fileName = sprintf('%s_%04d-.h5', ...
-                                       self.FileBaseName, ...
+                                       baseNameWithDateAndSession, ...
                                        firstTrialIndex);
                 end
             end            
