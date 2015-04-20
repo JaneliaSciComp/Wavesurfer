@@ -1096,8 +1096,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));            
             set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
+            %set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
             set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
-            set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            %set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            if ~isIdle&&model.Logging.Enabled ,
+                set(self.FileNameEdit, 'String', model.Logging.CurrentTrialSetAbsoluteFileName);
+            else
+                set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
