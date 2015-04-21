@@ -82,7 +82,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsTimedCheckboxes(i),'value');
-            self.Model.Stimulation.setIsDigitalChannelTimed(i,newState);
+            self.Model.Stimulation.IsDigitalChannelTimed(i)=newState;
             self.Figure.update();
         end
         
@@ -90,7 +90,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
-            self.Model.Stimulation.setDigitalOutputStateIfUntimed(i,newState);
+            self.Model.Stimulation.DigitalOutputStateIfUntimed(i)=newState;
         end
         
 %         function aoMultiplierEditActuated(self,source)

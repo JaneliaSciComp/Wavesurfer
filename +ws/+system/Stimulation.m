@@ -343,20 +343,37 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % methods block
     
     methods
-        function setIsDigitalChannelTimed(self,i,newValue)
-            if self.IsDigitalChannelTimed_(i) ~= newValue ,
-                self.IsDigitalChannelTimed_(i)=newValue;            
-                self.syncTasksToChannelMembership_();
+        function set.IsDigitalChannelTimed(self,newValue)
+            if ws.utility.isASettableValue(newValue),
+                if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                    coercedNewValue = logical(newValue) ;
+                    if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
+                        self.IsDigitalChannelTimed_=coercedNewValue;
+                        self.syncTasksToChannelMembership_();
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
+                end
             end
             self.broadcast('DidSetIsDigitalChannelTimed');
         end  % function
         
-        function setDigitalOutputStateIfUntimed(self,i,newValue)
-            self.DigitalOutputStateIfUntimed_(i) = newValue ;
-            if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-                isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-                untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
-                self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+        function set.DigitalOutputStateIfUntimed(self,newValue)
+            if ws.utility.isASettableValue(newValue),
+                if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
+                        (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                    coercedNewValue = logical(newValue) ;
+                    self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
+                    if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+                        isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+                        untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
+                        self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
+                end
             end
             self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
