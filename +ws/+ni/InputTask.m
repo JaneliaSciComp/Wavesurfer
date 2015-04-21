@@ -144,17 +144,25 @@ classdef InputTask < handle
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
             if self.IsAnalog ,
                 if isempty(self.DabsDaqTask_) ,
-                    rawData = zeros(0,0,'int16');
+                    if isempty(nScansToRead) ,
+                        rawData = zeros(0,0,'int16');
+                    else
+                        rawData = zeros(nScansToRead,0,'int16');
+                    end
                 else
                     rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
                 end
             else % IsDigital
                 if isempty(self.DabsDaqTask_) ,
-                    rawData = zeros(0,0,'uint32');
+                    if isempty(nScansToRead) ,
+                        packedData = zeros(0,0,'uint32');
+                    else
+                        packedData = zeros(nScansToRead,0,'uint32');
+                    end                        
                 else       
                     readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
                     shiftBy = cellfun(@(x) ws.utility.channelIDFromPhysicalChannelName(x), self.PhysicalChannelNames_);
-                    shiftedData = bsxfun(@bitshift,readData,[0:length(shiftBy)-1]-shiftBy);
+                    shiftedData = bsxfun(@bitshift,readData,(0:(length(shiftBy)-1))-shiftBy);
                     packedData = zeros(size(readData,1),1,'uint32');
                     for column = 1:size(readData,2)
                         packedData = bitor(packedData,shiftedData(:,column));

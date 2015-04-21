@@ -629,10 +629,10 @@ classdef Acquisition < ws.system.Subsystem
             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(nScans,1,dataType);
+                self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
             elseif experimentMode == ws.ApplicationState.AcquiringTrialBased ,
                 self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,1,dataType);
+                self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else
                 self.RawAnalogDataCache_ = [];                
                 self.RawDigitalDataCache_ = [];                
@@ -784,12 +784,12 @@ classdef Acquisition < ws.system.Subsystem
                 if jf<=nScansInCache ,
                     % the usual case
                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                    self.RawDigitalDataCache_(j0:jf) = rawDigitalData;
+                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
                     self.IndexOfLastScanInCache_ = jf ;
                 elseif jf==nScansInCache ,
                     % the cache is just large enough to accommodate rawData
                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                    self.RawDigitalDataCache_(j0:jf) = rawDigitalData;
+                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
                     self.IndexOfLastScanInCache_ = 0 ;
                     self.IsAllDataInCacheValid_ = true ;
                 else
@@ -799,8 +799,8 @@ classdef Acquisition < ws.system.Subsystem
                     nScansAtEndOfCache = n - nScansAtStartOfCache ;
                     self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
                     self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
-                    self.RawDigitalDataCache_(j0:end) = rawDigitalData(1:nScansAtEndOfCache) ;
-                    self.RawDigitalDataCache_(1:nScansAtStartOfCache) = rawDigitalData(end-nScansAtStartOfCache+1:end) ;
+                    self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache) ;
+                    self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end) ;
                     self.IsAllDataInCacheValid_ = true ;
                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
                 end
@@ -811,7 +811,7 @@ classdef Acquisition < ws.system.Subsystem
                 n=size(rawAnalogData,1);
                 jf=j0+n-1;
                 self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                self.RawDigitalDataCache_(j0:jf) = rawDigitalData;
+                self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
                 self.IndexOfLastScanInCache_ = jf ;
                 self.NScansFromLatestCallback_ = n ;                
                 if jf == size(self.RawAnalogDataCache_,1) ,
@@ -903,13 +903,13 @@ classdef Acquisition < ws.system.Subsystem
                     nScansInCache = size(self.RawDigitalDataCache_,1) ;
                     indexOfLastScanInCache = self.IndexOfLastScanInCache_ ;
                     nEarlyScans = nScansInCache - indexOfLastScanInCache ;
-                    data=zeros(size(self.RawDigitalDataCache_),class(self.RawDigitalDataCache_));
-                    data(1:nEarlyScans) = self.RawDigitalDataCache_(indexOfLastScanInCache+1:end);
-                    data(nEarlyScans+1:end) = self.RawDigitalDataCache_(1:indexOfLastScanInCache);
+                    data=zeros(size(self.RawDigitalDataCache_),class(self.RawDigitalDataCache_)); %#ok<ZEROLIKE>
+                    data(1:nEarlyScans,:) = self.RawDigitalDataCache_(indexOfLastScanInCache+1:end,:);
+                    data(nEarlyScans+1:end,:) = self.RawDigitalDataCache_(1:indexOfLastScanInCache,:);
                 end
             else
                 jf = self.IndexOfLastScanInCache_ ;
-                data = self.RawDigitalDataCache_(1:jf);
+                data = self.RawDigitalDataCache_(1:jf,:);
             end
         end  % function
         
