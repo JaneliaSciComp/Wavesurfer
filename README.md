@@ -183,3 +183,6 @@ Version History
 0.781: (April 20, 2015) Added more options for data file naming.  
        Fixed several small bugs.
 
+0.782: (April 22, 2015) Added a two-pulse stimulus.
+
+
