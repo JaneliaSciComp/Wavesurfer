@@ -91,15 +91,15 @@ classdef UntimedDigitalOutputTask < handle
             value = self.ChannelData_;
         end  % function
         
-        function set.ChannelData(self, value)
-            nChannels=length(self.ChannelNames);
-            requiredType = 'logical' ;
-            if isa(value,requiredType) && isvector(value) && (length(value)==nChannels) ,
-                self.ChannelData_ = value;
-                self.syncOutputBufferToChannelData_();
-            else
-                error('most:Model:invalidPropVal', ...
-                      'ChannelData must be an NxR matrix, R the number of channels, of the appropriate type.');
+        function set.ChannelData(self, newValue)
+            if ws.utility.isASettableValue(newValue),
+                if islogical(newValue) && isrow(newValue) && length(newValue)==length(self.ChannelNames) ,
+                    self.ChannelData_ = newValue;
+                    self.syncOutputBufferToChannelData_();
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'ChannelData must be an 1xR matrix, R the number of channels, of the appropriate type.');
+                end
             end
         end  % function        
         
