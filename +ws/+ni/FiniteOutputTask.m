@@ -190,7 +190,7 @@ classdef FiniteOutputTask < handle
         end  % function        
     end  % methods
     
-    methods                
+    methods
         function out = get.PhysicalChannelNames(self)
             out = self.PhysicalChannelNames_ ;
         end  % function
@@ -198,7 +198,7 @@ classdef FiniteOutputTask < handle
         function out = get.ChannelNames(self)
             out = self.ChannelNames_ ;
         end  % function
-                    
+        
         function value = get.SampleRate(self)
             value = self.SampleRate_;
         end  % function
@@ -334,31 +334,6 @@ classdef FiniteOutputTask < handle
         end  % function
     end  % public methods
     
-%     methods (Access = protected)        
-%         function taskDone_(self, ~, ~)
-%             % Called "from below" when the task completes
-%             
-%             % For a successful capture, this class is responsible for stopping the task when
-%             % it is done.  For external clients to interrupt a running task, use the abort()
-%             % method on the Output object.
-%             %fprintf('About to stop the FiniteOutputTask %s in .taskDone_()\n',self.TaskName);
-%             self.DabsDaqTask_.stop();
-%             
-%             % Fire the event before unregistering the callback functions.  At the end of a
-%             % script the DAQmx callbacks may be the only references preventing the object
-%             % from deleting before the events are sent/complete.
-%             parent = self.Parent ;
-%             if ~isempty(parent) && isvalid(parent) ,                
-%                 if self.IsAnalog ,
-%                     parent.analogEpisodeCompleted();
-%                 else
-%                     parent.digitalEpisodeCompleted();
-%                 end
-%             end
-%             %self.notify('OutputComplete');
-%         end  % function        
-%     end  % protected methods block
-    
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)
             % If already up-to-date, do nothing
@@ -421,16 +396,22 @@ classdef FiniteOutputTask < handle
             self.IsOutputBufferSyncedToChannelData_ = true ;
         end  % function
 
-        function packedOutputData = packDigitalData_(self,outputData)
-            % Only used for digital data.
-            [nScans,nChannels] = size(outputData);
-            packedOutputData = zeros(nScans,1,'uint32');
+        function packedData = packDigitalData_(self,unpackedData)
+            % Only used for digital data.  outputData is an nScans x
+            % nSignals logical array.  packedOutputData is an nScans x 1
+            % uint32 array, with each outputData column stored in the right
+            % bit of packedOutputData, given the physical line ID for that
+            % channel.
+            [nScans,nChannels] = size(unpackedData);
+            packedData = zeros(nScans,1,'uint32');
             channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
             for j=1:nChannels ,
                 channelID = channelIDs(j);
-                thisChannelData = uint32(outputData(:,j));
-                thisChannelDataShifted = bitshift(thisChannelData,channelID) ;
-                packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
+                %thisChannelData = uint32(outputData(:,j));                
+                %thisChannelDataShifted = bitshift(thisChannelData,channelID) ;
+                %packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
+                thisChannelData = unpackedData(:,j);
+                packedData = bitset(packedData,channelID+1,thisChannelData);  % +1 to convert to 1-based indexing
             end
         end  % function
     end  % Static methods

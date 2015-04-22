@@ -242,6 +242,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 self.willPerformExperiment(modeRequested);
             catch me
+                self.didAbortTrial();
                 me.rethrow();
             end
         end
@@ -584,7 +585,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end            
 %         end  % function
         
-        function samplesAcquired(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
@@ -601,7 +602,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.dataAvailable(rawData, timeSinceExperimentStartAtStartOfData);
+            self.dataAvailable(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
             %profile off
         end
         
@@ -904,10 +905,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
         end  % function
         
-        function dataAvailable(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function dataAvailable(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
-            nScans=size(rawData,1);
+            nScans=size(rawAnalogData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
                         
@@ -916,21 +917,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 dt=1/self.Acquisition.SampleRate;
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
-                % Scale the data so that all the subsystems only get the scaled
-                % data
-
-                channelScales=self.Acquisition.ActiveChannelScales;
+                % Scale the analog data
+                channelScales=self.Acquisition.ChannelScales(self.Acquisition.IsChannelAnalog & self.Acquisition.IsChannelActive);
                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-
-                % scale the data by the channel scales
-                if isempty(rawData) ,
-                    scaledData=zeros(size(rawData));
+                if isempty(rawAnalogData) ,
+                    scaledAnalogData=zeros(size(rawAnalogData));
                 else
-                    data = double(rawData);
+                    data = double(rawAnalogData);
                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledData=bsxfun(@times,data,combinedScaleFactors); 
+                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
                 end
-
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
@@ -939,7 +935,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData);
+                        self.Subsystems_{idx}.dataAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;
                 end

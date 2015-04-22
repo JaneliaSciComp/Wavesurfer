@@ -21,6 +21,12 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
         AOScaleEdits
         AOUnitsTexts
 
+        DIsPanel
+        DIChannelColTitleText
+        DIIsActiveColTitleText        
+        DILabelTexts
+        DIIsActiveCheckboxes
+        
         DOsPanel
         DOIsTimedColTitleText        
         DOIsOnColTitleText        
@@ -76,7 +82,8 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
         end
 
         function self=createFixedControls(self)
-            nAIs=self.Model.Acquisition.NChannels;
+            nAIs=self.Model.Acquisition.NAnalogChannels;  % recursion here
+            nDIs=self.Model.Acquisition.NDigitalChannels;
             nAOs=self.Model.Stimulation.NAnalogChannels;
             nDOs=self.Model.Stimulation.NDigitalChannels;
             
@@ -254,7 +261,57 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
 %                               'HorizontalAlignment','right', ...
 %                               'Callback',@(src,evt)(self.controlActuated(src,evt)) );
             end
-
+            
+            %
+            % Make the DIs panel
+            %
+            self.DIsPanel= ...
+                uipanel('Parent',self.FigureGH, ...
+                        'Tag','DIsPanel', ...
+                        'Units','pixels', ...
+                        'FontName','Tahoma', ...
+                        'FontSize',8, ...
+                        'Title','DI Channels');
+            
+            % make the title row
+            self.DIChannelColTitleText= ...
+                uicontrol('Parent',self.DIsPanel, ...
+                          'Style','text', ...
+                          'Units','pixels', ...
+                          'FontName','Tahoma', ...
+                          'FontSize',8, ...
+                          'HorizontalAlignment','left', ...
+                          'String','');
+            self.DIIsActiveColTitleText= ...
+                uicontrol('Parent',self.DIsPanel, ...
+                          'Style','text', ...
+                          'Units','pixels', ...
+                          'FontName','Tahoma', ...
+                          'FontSize',8, ...
+                          'HorizontalAlignment','center', ...
+                          'String','Active?');
+                    
+            % Populate the DI channel rows        
+            for i=1:nDIs ,
+                self.DILabelTexts(i)=...
+                    uicontrol('Parent',self.DIsPanel, ...
+                              'Style','text', ...
+                              'Tag',sprintf('DILabelTexts%d',i), ...
+                              'Units','pixels', ...
+                              'FontName','Tahoma', ...
+                              'FontSize',8, ...
+                              'HorizontalAlignment','left');  % shim to make look nice
+                self.DIIsActiveCheckboxes(i)= ...
+                    uicontrol('Parent',self.DIsPanel, ...
+                              'Style','checkbox', ...
+                              'Units','pixels', ...
+                              'FontSize',8, ...
+                              'FontName','Tahoma', ...
+                              'Value',0, ...
+                              'String','', ...
+                              'Callback',@(src,evt)(self.controlActuated('DIIsActiveCheckboxes',src,evt)));                          
+            end
+           
             %
             % Make the DOs panel
             %
@@ -336,6 +393,16 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             end            
         end
         
+        function value=maximumDILabelTextWidth(self)
+            n=length(self.DILabelTexts);
+            value=-inf;
+            for i=1:n ,
+                thisExtent=get(self.DILabelTexts(i),'Extent');
+                thisWidth=thisExtent(3);
+                value=max(value,thisWidth);
+            end            
+        end
+        
         function value=maximumDOLabelTextWidth(self)
             n=length(self.DOLabelTexts);            
             value=-inf;
@@ -360,7 +427,10 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             interRowHeight=10;
             rowToRowHeight=rowHeight+interRowHeight;
             panelToLabelSpaceWidth=5;
-            aiLabelWidth=max(30,self.maximumAILabelTextWidth());
+            diLabelWidthWanted=max(30,self.maximumDILabelTextWidth());            
+            aiLabelWidthWanted=max(30,self.maximumAILabelTextWidth());
+            outputLabelWidth=max(diLabelWidthWanted,aiLabelWidthWanted);            
+            aiLabelWidth=outputLabelWidth;            
             editShimHeight=5;
             editHeight=rowHeight+editShimHeight;  % shim makes it look nicer
             gainEditWidth=42;
@@ -385,9 +455,10 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             % Derived layout parameters
             nAIs=length(self.AIScaleEdits);
             nAOs=length(self.AOScaleEdits);            
+            nDIs=length(self.DILabelTexts);            
             nDOs=length(self.DOLabelTexts);            
             nAnalogRows=max(nAIs,nAOs);
-            nDigitalRows=nDOs;
+            nDigitalRows=max(nDIs,nDOs);
             aoUnitsEditWidth=aiUnitsEditWidth;
             aoPanelRightPadWidth=8;
             aiPanelWidth = ...
@@ -506,6 +577,27 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
                 aoYRowBottom=aoYRowBottom-rowToRowHeight;
             end
             
+            % Position the DIs panel
+            set(self.DIsPanel,'Position',[panelBorderSize panelBorderSize aiPanelWidth digitalPanelsHeight]);
+            
+            %  Layout the row of column titles in DI panel
+            titleRowBottomY=digitalPanelsHeight-panelToTitleRowSpaceHeight-titleRowHeight;
+            channelLabelColLeftX = panelToLabelSpaceWidth;
+            ws.utility.alignTextInRectangleBang(self.DIChannelColTitleText,[channelLabelColLeftX titleRowBottomY gainEditWidth titleRowHeight],'cm');
+            isActiveColLeftX=channelLabelColLeftX+aiLabelWidth+spaceBeforeIsActiveColWidth;
+            ws.utility.alignTextInRectangleBang(self.DIIsActiveColTitleText,[isActiveColLeftX titleRowBottomY aiIsActiveColWidth titleRowHeight],'cm');
+            
+            % Position the stuff in the DI rows            
+            aiYRowBottom=titleRowBottomY-spaceBelowTitleRowHeight-rowHeight;   
+            for i=1:nDIs ,
+                xColLeft=panelToLabelSpaceWidth;
+                set(self.DILabelTexts(i), ...
+                    'Position',[xColLeft aiYRowBottom-4 aiLabelWidth labelHeight]);  % shim to make look nice
+                xColLeft=xColLeft+aiLabelWidth+spaceBeforeIsActiveColWidth;
+                centerCheckboxBang(self.DIIsActiveCheckboxes(i),[xColLeft+aiIsActiveColWidth/2 aiYRowBottom+rowHeight/2]);
+                aiYRowBottom=aiYRowBottom-rowToRowHeight;
+            end
+            
             % Layout the DO panel
             self.layoutDOPanel_(panelBorderSize, ...
                                 aiPanelWidth, ...
@@ -598,6 +690,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             
             nAIs=length(self.AIScaleEdits);
             nAOs=length(self.AOScaleEdits);
+            nDIs=length(self.DILabelTexts);
             nDOs=length(self.DOLabelTexts);
             isWavesurferIdle=(model.State==ws.ApplicationState.Idle);
             
@@ -645,12 +738,21 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
             end
             
+            % update the DIs
+            physicalChannelNames = model.Acquisition.DigitalPhysicalChannelNames ;
+            channelNames=model.Acquisition.DigitalChannelNames;
+            for i=1:nDIs ,
+                set(self.DILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
+                set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsChannelActive(self.Model.Acquisition.NAnalogChannels + i), ...
+                                                 'Enable',onIff(isWavesurferIdle));                                     
+            end
+            
             % update the DOs
-            digitalPhysicalChannelNames = model.Stimulation.DigitalPhysicalChannelNames ;
+            physicalChannelNames = model.Stimulation.DigitalPhysicalChannelNames ;
             channelNames=model.Stimulation.DigitalChannelNames;
             isTimed=model.Stimulation.IsDigitalChannelTimed;
             for i=1:nDOs ,
-                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',digitalPhysicalChannelNames{i},channelNames{i}));                
+                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
                                                 'enable',onIff(isWavesurferIdle));
                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
@@ -661,38 +763,6 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
         
     end
     
-    methods (Access=protected)
-%         function initializeGuidata(self)
-%             % Set up the figure guidata the way it would be if this were a
-%             % GUIDE UI, or close enough to fool a ws.most.Controller.
-%             childControls=get(self.FigureGH,'Children');
-%             nChildren=length(childControls);
-%             handles=struct();
-%             for i=1:nChildren
-%                 childControl=childControls(i);
-%                 tag=get(childControl,'Tag');
-%                 handles.(tag)=childControl;
-%             end
-%             % Add the figure itself
-%             fig=self.FigureGH;  % the figure GH
-%             tag=get(fig,'Tag');
-%             handles.(tag)=fig;
-%             % commit to the guidata
-%             guidata(self.FigureGH,handles);
-%         end
-        
-%         function controlActuated(self,source,event) %#ok<INUSD>
-%             % This makes it so that we don't have all these implicit
-%             % references to the controller in the closures attached to HG
-%             % object callbacks.  It also means we can just do nothing if
-%             % the Controller is invalid, instead of erroring.
-%             if isempty(self.Controller) || ~isvalid(self.Controller) ,
-%                 return
-%             end
-%             self.Controller.controlActuated(source);
-%         end  % function
-    end  % methods
-
     methods (Access = protected)
         function updateHGObjectTags_(self)
             % For each object property, if it's an HG object, set the tag

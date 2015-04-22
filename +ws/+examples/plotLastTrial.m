@@ -6,7 +6,7 @@ function plotLastTrial(wsModel,varargin)
     persistent fig ax theLine
 
     fs = wsModel.Acquisition.SampleRate ;  % Hz
-    data = wsModel.Acquisition.getDataFromCache() ;  % Data for all the input channels, one channel per column
+    data = wsModel.Acquisition.getAnalogDataFromCache() ;  % Data for all the input channels, one channel per column
     y = data(:,1) ;  % Extract the first analog input channel
     n = length(y) ;
     t = (1/fs) * (0:(n-1))' ;  % Make a time line

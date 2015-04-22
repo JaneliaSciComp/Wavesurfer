@@ -179,4 +179,3 @@ Version History
        the same file naming scheme as trial-based recordings.  Fixed
        bug with fast protocols not getting cleared when you click that
        button.  Added a very simple example user function .m file.
-

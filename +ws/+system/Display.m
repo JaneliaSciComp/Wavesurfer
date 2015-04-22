@@ -299,7 +299,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function dataAvailable(self, state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL,INUSD>
+        function dataAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL,INUSD>
             %fprintf('Display::dataAvailable()\n');
             %dbstack
             %T=zeros(4,1);
@@ -327,6 +327,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             % Feed the data to the scopes
             %T=zeros(3,1);
             inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
+            IsActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
             for sdx = 1:numel(self.Scopes)
                 % Figure out which channels go in this scope, and the
                 % corresponding channel names
@@ -336,20 +337,30 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 %TInner=zeros(1,2);
                 %ticId2=tic();
                 channelNamesForThisScope = cell(1,0);
-                jInData = [];                
+                jInAnalogData = [];                
+                jInDigitalData = [];                
+                NActiveAnalogChannels = sum(self.Parent.Acquisition.IsChannelActive & self.Parent.Acquisition.IsChannelAnalog);
                 for cdx = 1:length(inputChannelNames)
                     %channelName = sprintf('Acq_%d', inputChannelIDs(cdx));
                     channelName=inputChannelNames{cdx};
                     if any(strcmp(channelName, self.Scopes(sdx).ChannelNames)) ,
                         channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
-                        jInData(end + 1) = cdx; %#ok<AGROW>
+                        if IsActiveChannelAnalog(cdx)
+                            jInAnalogData(end + 1) = cdx; %#ok<AGROW>
+                        else
+                            jInDigitalData(end + 1) = cdx - NActiveAnalogChannels; %#ok<AGROW>
+                        end
                     end
                 end
                 %TInner(1)=toc(ticId2);
                 
                 % Add the data for the appropriate channels to this scope
-                if ~isempty(jInData) ,
-                    dataForThisScope=scaledData(:, jInData);
+                if ~isempty(jInAnalogData) ,
+                    dataForThisScope=scaledAnalogData(:, jInAnalogData);
+                    self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                end
+                if ~isempty(jInDigitalData) ,
+                    dataForThisScope=bitget(rawDigitalData, jInDigitalData);
                     self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);

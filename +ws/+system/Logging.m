@@ -150,11 +150,12 @@ classdef Logging < ws.system.Subsystem
             self.DidCreateCurrentDataFile_ = false ;
             
             % Set the chunk size for writing data to disk
+            active = sum(wavesurferModel.Acquisition.IsChannelActive & wavesurferModel.Acquisition.IsChannelAnalog);
             switch desiredApplicationState ,
                 case ws.ApplicationState.AcquiringTrialBased ,
-                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount wavesurferModel.Acquisition.NActiveChannels];
+                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount active];
                     if any(isinf(self.ExpectedTrialSize_))
-                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
+                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate active];
                     else
                         self.ChunkSize_ = self.ExpectedTrialSize_;
                     end
@@ -167,8 +168,8 @@ classdef Logging < ws.system.Subsystem
 %                                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
 %                     end
                 case ws.ApplicationState.AcquiringContinuously ,
-                    self.ExpectedTrialSize_ = [Inf wavesurferModel.Acquisition.NActiveChannels];
-                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate wavesurferModel.Acquisition.NActiveChannels];
+                    self.ExpectedTrialSize_ = [Inf active];
+                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate active];
 %                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
                 otherwise
                     error('wavesurfer:saveddatasystem:invalidmode', ...
@@ -263,27 +264,53 @@ classdef Logging < ws.system.Subsystem
             thisTrialIndex = self.NextTrialIndex ;
             timestampDatasetName = sprintf('/trial_%04d/timestamp',thisTrialIndex) ;
             h5create(self.LogFileNameAbsolute_, timestampDatasetName, [1 1]);  % will consist of one double
-            scansDatasetName = sprintf('/trial_%04d/scans',thisTrialIndex) ;
+            scansDatasetName = sprintf('/trial_%04d/analogScans',thisTrialIndex) ;
             h5create(self.LogFileNameAbsolute_, ...
                      scansDatasetName, ...
                      self.ExpectedTrialSize_, ...
                      'ChunkSize', self.ChunkSize_, ...
                      'DataType','int16');
+            scansDatasetName = sprintf('/trial_%04d/digitalScans',thisTrialIndex) ;
+            % TODO: Probably need to change to number of active digital channels
+            % below
+            NActiveDigitalChannels = sum(self.Parent.Acquisition.IsChannelActive & ~self.Parent.Acquisition.IsChannelAnalog);
+            if NActiveDigitalChannels<=8
+                dataType = 'uint8';
+            elseif NActiveDigitalChannels<=16
+                dataType = 'uint16';
+            else %NActiveDigitalChannels<=32
+                dataType = 'uint32';
+            end
+            if NActiveDigitalChannels>0 ,
+                h5create(self.LogFileNameAbsolute_, ...
+                         scansDatasetName, ...
+                         [self.ExpectedTrialSize_(1) 1], ...
+                         'ChunkSize', [self.ChunkSize_(1) 1], ...
+                         'DataType',dataType);
+            end
             self.LastTrialIndexForWhichDatasetCreated_ =  thisTrialIndex;                     
             self.DidWriteSomeDataForThisTrial_ = false ;
             %profile off
         end
         
-        function didPerformTrial(self, wavesurferModel)
+        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
                 self.NextTrialIndex = self.NextTrialIndex + 1;
             %end
         end
         
-        function didAbortTrial(self, wavesurferModel)
+        function didAbortTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
                 if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
-                    self.NextTrialIndex = self.firstTrialIndex_ ;
+                    if isempty(self.FirstTrialIndex_) ,
+                        % This probably means there was some sort of error
+                        % before the trial even started.  So just leave
+                        % NextTrialIndex alone.
+                    else
+                        % In this case, no datasets were created, so put the
+                        % trial index to the FirstTrialIndex for the set
+                        self.NextTrialIndex = self.FirstTrialIndex_ ;
+                    end
                 else
                     self.NextTrialIndex = self.LastTrialIndexForWhichDatasetCreated_ + 1;
                 end
@@ -387,7 +414,7 @@ classdef Logging < ws.system.Subsystem
     end
 
     methods
-        function dataAvailable(self, state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
+        function dataAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
             %ticId=tic();
             
 %             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
@@ -405,26 +432,22 @@ classdef Logging < ws.system.Subsystem
             
             if ~isempty(self.FileBaseName) ,
                 h5write(self.LogFileNameAbsolute_, ...
-                        sprintf('/trial_%04d/scans', ...
+                        sprintf('/trial_%04d/analogScans', ...
                                 self.WriteToTrialId_), ...
-                        rawData, ...
+                        rawAnalogData, ...
                         [self.CurrentDatasetOffset_ 1], ...
-                        size(rawData));
-%                 for idx = 1:numel(inputChannelNames) ,
-%                     thisInputChannelName=inputChannelNames{idx};
-%                     %cdx = find(strcmp(thisInputChannelName,wavesurferObj.Acquisition.ActiveChannels), 1);
-%                     %cdx=wavesurferObj.Acquisition.iActiveChannelFromName(thisInputChannelName);
-%                     h5write(self.LogFileNameAbsolute_, ...
-%                             sprintf('/trial_%04d/%s', ...
-%                                     self.WriteToTrialId_, ...
-%                                     thisInputChannelName), ...
-%                             dataSingle(:,idx), ...
-%                             [self.CurrentDatasetOffset_ 1], ...
-%                             size(data(:,idx)));
-%                 end
+                        size(rawAnalogData));
+                if ~isempty(rawDigitalData) ,
+                    h5write(self.LogFileNameAbsolute_, ...
+                            sprintf('/trial_%04d/digitalScans', ...
+                                    self.WriteToTrialId_), ...
+                            rawDigitalData, ...
+                            [self.CurrentDatasetOffset_ 1], ...
+                            size(rawDigitalData));
+                end
             end
             
-            self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledData, 1);
+            self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
             if self.CurrentDatasetOffset_ > self.ExpectedTrialSize_(1) ,
                 self.CurrentDatasetOffset_ = 1;

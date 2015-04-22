@@ -16,13 +16,14 @@ nBins = 20;
 treadmillLength = 185;  % cm
 electrodeChannel = 1;
 velocityChannel = 2;
-LEDChannel = 3;
+LEDChannel = 1;
 velocityScale = 10;  % cm/s/V;  from steve: 100 mm/sec per volt
 
 binWidth = treadmillLength / nBins;
 binCenters = binWidth/2 : binWidth : treadmillLength;
 sampleRate = self.Acquisition.SampleRate;
-data = self.Acquisition.getLatestData();
+analogData = self.Acquisition.getLatestAnalogData();
+digitalData = self.Acquisition.getLatestRawDigitalData();
 
 if isempty(rasterFig) || ~ishandle(rasterFig)
     rasterFig = figure();
@@ -30,7 +31,7 @@ if isempty(rasterFig) || ~ishandle(rasterFig)
     set(rasterFig,'position',position.*[1 0 1 2]);
 end
 
-if self.NTimesSamplesAcquiredCalledSinceExperimentStart==1
+if self.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     clf(rasterFig);
 
     rasterLine=[];
@@ -74,26 +75,26 @@ if self.NTimesSamplesAcquiredCalledSinceExperimentStart==1
     allBinSubthresholds=cell(1,nBins);
 end
 
-boundary = find(data(:,LEDChannel)<0.5,1);
+boundary = find(digitalData(:,LEDChannel)<0.5,1);
 if isempty(boundary)
-    boundary = size(data,1)+1;
+    boundary = size(digitalData,1)+1;
 end
 
-ticks = find(diff(data(:,electrodeChannel)>thresh)==1);
-integratedVelocity = cumsum(data(:,velocityChannel)*velocityScale/sampleRate);
+ticks = find(diff(analogData(:,electrodeChannel)>thresh)==1);
+integratedVelocity = cumsum(analogData(:,velocityChannel)*velocityScale/sampleRate);
 rasterLine = [rasterLine; ...
         initialPosition+integratedVelocity(find(ticks<boundary))];
 binDwellTimes = binDwellTimes + hist(initialPosition+integratedVelocity, binCenters)./sampleRate;
 for i=1:length(binCenters)
   binVelocities{i} = [binVelocities{i}; ...
-        data(abs(initialPosition+integratedVelocity-binCenters(i))<binWidth,velocityChannel)];
+        analogData(abs(initialPosition+integratedVelocity-binCenters(i))<binWidth,velocityChannel)];
 end
 for i=1:length(binCenters)
   binSubthresholds{i} = [binSubthresholds{i}; ...
-        data(abs(initialPosition+integratedVelocity-binCenters(i))<binWidth,electrodeChannel)];
+        analogData(abs(initialPosition+integratedVelocity-binCenters(i))<binWidth,electrodeChannel)];
 end
 
-if  boundary < size(data,1)+1
+if  boundary < size(analogData,1)+1
     len = length(rasterLine);
     plot(rasterAxes, ...
             reshape([repmat(rasterLine,1,2) nan(len,1)]',3*len,1), ...
