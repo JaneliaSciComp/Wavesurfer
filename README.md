@@ -185,4 +185,5 @@ Version History
 
 0.782: (April 22, 2015) Added a two-pulse stimulus.
 
+0.783: (April 22, 2015) Added a generic Matlab expression stimulus.
 
