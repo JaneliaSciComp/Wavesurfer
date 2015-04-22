@@ -69,15 +69,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         AutoSpanCheckbox
         
         LoggingPanel
-        FilenameText
-        FilenameEdit
+        BaseNameText
+        BaseNameEdit
         OverwriteCheckbox
         LocationText
         LocationEdit
         ShowLocationButton
         ChangeLocationButton
+        IncludeDateCheckbox
+        SessionIndexCheckbox        
+        SessionIndexText
+        SessionIndexEdit
+        IncrementSessionIndexButton
         NextTrialText
         NextTrialEdit
+        FileNameText
+        FileNameEdit
         
         StatusText
         ProgressBarAxes
@@ -148,11 +155,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
                model.Logging.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');
-               model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
-               model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
-               model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
-               
+               %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
+               model.Logging.subscribeMe(self,'Update','','updateControlProperties');
+               model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
+
                model.subscribeMe(self,'TrialDidComplete','','updateControlProperties');
                model.subscribeMe(self,'DataAvailable','','dataWasAcquired');
                
@@ -413,11 +422,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels',...
                         'Title','Logging');
-            self.FilenameText = ...
+            self.BaseNameText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
                           'String','Base Name:');
-            self.FilenameEdit = ...
+            self.BaseNameEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','left', ...
                           'Style','edit');
@@ -428,7 +437,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.LocationText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
-                          'String','Location:');
+                          'String','Folder:');
             self.LocationEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','left', ...
@@ -442,6 +451,26 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','pushbutton', ...
                           'String','Change...');
+            self.IncludeDateCheckbox = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','checkbox', ...
+                          'String','Include date');
+            self.SessionIndexCheckbox = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','checkbox', ...
+                          'String','');
+            self.SessionIndexText = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','text', ...
+                          'String','Session:');
+            self.SessionIndexEdit = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'HorizontalAlignment','right', ...
+                          'Style','edit');
+            self.IncrementSessionIndexButton = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','pushbutton', ...
+                          'String','+');
             self.NextTrialText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
@@ -449,6 +478,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.NextTrialEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','right', ...
+                          'Style','edit');
+            self.FileNameText = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'Style','text', ...
+                          'String','File Name:');
+            self.FileNameEdit = ...
+                uicontrol('Parent',self.LoggingPanel, ...
+                          'HorizontalAlignment','left', ...
+                          'Enable','off', ...
                           'Style','edit');
                       
             % Stuff at the bottom of the window
@@ -539,7 +577,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             toolbarAreaHeight=36;
             topRowAreaHeight=136;
-            loggingAreaHeight=112;
+            loggingAreaHeight=112+26;
             statusBarAreaHeight=30;
             
             figureHeight=toolbarAreaHeight+topRowAreaHeight+loggingAreaHeight+statusBarAreaHeight;
@@ -827,77 +865,126 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             import ws.utility.positionPopupmenuAndLabelBang
             
             %
-            % Contents of display panel
+            % Contents of logging panel
             %
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightFromTopToTopRow=10;
             heightBetweenEdits=6;
-            editXOffset=80;
+            xOffsetOfEdits=80;
             editHeight=20;
             rightMarginWidth=10;
-            locationRowWidth=loggingPanelWidth-editXOffset-rightMarginWidth;
-            widthLeftOfFilenameEdit=6;            
+            widthOfStuffToRightOfEditTexts=loggingPanelWidth-xOffsetOfEdits-rightMarginWidth;
+            widthLeftOfBaseNameEdit=6;
             showButtonWidth=70;
             changeLocationButtonWidth=90;
             widthBetweenLocationWidgets=6;
             nextTrialEditWidth=50;
             nextTrialLabelFixedWidth=70;  % We fix this, because the label text changes
-                        
+            fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
+            widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
+            
+            % Compute some things shared by several rows
+            widthOfBaseNameAndLocationEdits = ...
+                widthOfStuffToRightOfEditTexts-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
+
             %
             % Location row
             %
             
             % Location edit and label
-            filenameEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
-            locationEditWidth=locationRowWidth-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
-            locationEditYOffset=filenameEditYOffset-heightBetweenEdits-editHeight;
+            locationEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
             positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
-                                          editXOffset,locationEditYOffset,locationEditWidth);
+                                          xOffsetOfEdits,locationEditYOffset,widthOfBaseNameAndLocationEdits);
 
             % Show button
-            xOffset=editXOffset+locationEditWidth+widthBetweenLocationWidgets;
-            width=showButtonWidth;
-            height=editHeight;
-            set(self.ShowLocationButton,'Position',[xOffset locationEditYOffset width height]);
+            showButtonXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthBetweenLocationWidgets;
+            set(self.ShowLocationButton,'Position',[showButtonXOffset locationEditYOffset showButtonWidth editHeight]);
             
             % Change location button
-            xOffset=xOffset+width+widthBetweenLocationWidgets;
-            width=changeLocationButtonWidth;
-            set(self.ChangeLocationButton,'Position',[xOffset locationEditYOffset width height]);
+            changeLocationButtonXOffset=showButtonXOffset+showButtonWidth+widthBetweenLocationWidgets;
+            set(self.ChangeLocationButton,'Position',[changeLocationButtonXOffset locationEditYOffset changeLocationButtonWidth editHeight]);
 
             %
-            % Filename row
+            % Base name row
             %
             
-            % Filename Edit and label
-            yOffset=filenameEditYOffset;
-            width=locationEditWidth;
-            positionEditLabelAndUnitsBang(self.FilenameText,self.FilenameEdit,[], ....
-                                          editXOffset,yOffset,width)
+            % BaseName Edit and label
+            baseNameEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
+            positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
+                                          xOffsetOfEdits,baseNameEditYOffset,widthOfBaseNameAndLocationEdits)
 
-            % Checkbox
-            overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
-            width=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
-            overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
-            height=overwriteCheckboxPosition(4);            
-            xOffset=editXOffset+locationEditWidth+widthLeftOfFilenameEdit;
-            yOffset=filenameEditYOffset+(editHeight-height)/2;
-            set(self.OverwriteCheckbox,'Position',[xOffset yOffset width height]);
             
                                       
             %
-            % Next Trial Row
+            % Date, session, trial row
             %
             
+            dataSessionAndTrialRowYOffset = baseNameEditYOffset - heightBetweenEdits - editHeight ;
+            
+            % Include date checkbox
+            includeDateCheckboxExtent=get(self.IncludeDateCheckbox,'Extent');
+            includeDateCheckboxWidth=includeDateCheckboxExtent(3)+16;  % size of the checkbox itself
+            includeDateCheckboxPosition=get(self.IncludeDateCheckbox,'Position');
+            includeDateCheckboxHeight=includeDateCheckboxPosition(4);            
+            includeDateCheckboxXOffset=xOffsetOfEdits;
+            includeDateCheckboxYOffset=dataSessionAndTrialRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
+            set(self.IncludeDateCheckbox,'Position',[includeDateCheckboxXOffset includeDateCheckboxYOffset ...
+                                                     includeDateCheckboxWidth includeDateCheckboxHeight]);
+            
+            % Session index checkbox
+            sessionIndexCheckboxExtent=get(self.SessionIndexCheckbox,'Extent');
+            sessionIndexCheckboxWidth=sessionIndexCheckboxExtent(3)+16;  % size of the checkbox itself
+            sessionIndexCheckboxPosition=get(self.SessionIndexCheckbox,'Position');
+            sessionIndexCheckboxHeight=sessionIndexCheckboxPosition(4);            
+            sessionIndexCheckboxXOffset = includeDateCheckboxXOffset + includeDateCheckboxWidth + widthFromIncludeDateCheckboxToSessionIndexCheckbox;
+            sessionIndexCheckboxYOffset=dataSessionAndTrialRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
+            set(self.SessionIndexCheckbox,'Position',[sessionIndexCheckboxXOffset sessionIndexCheckboxYOffset ...
+                                                      sessionIndexCheckboxWidth sessionIndexCheckboxHeight]);
+            
+            % Session index edit and label
+            xOffsetOfSessionIndexEditFromCheckbox = 66 ;  % this is brittle, have to change if change session index label text, or font, etc.
+            sessionIndexEditWidth = 50 ;
+            sessionIndexEditXOffset =  ...
+                sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
+            sessionIndexEditYOffset = dataSessionAndTrialRowYOffset ;
+            positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
+                                          sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
+                                      
+            % Increment session index button
+            incrementSessionIndexButtonWidth = 20 ;
+            incrementSessionIndexButtonHeight = 20 ;            
+            widthFromIncrementSessionIndexToButton = 5 ;
+            incrementSessionIndexButtonXOffset = sessionIndexEditXOffset + sessionIndexEditWidth + widthFromIncrementSessionIndexToButton ;
+            incrementSessionIndexButtonYOffset = dataSessionAndTrialRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
+            set(self.IncrementSessionIndexButton,'Position',[incrementSessionIndexButtonXOffset incrementSessionIndexButtonYOffset ...
+                                                             incrementSessionIndexButtonWidth incrementSessionIndexButtonHeight]);            
+                                      
             % Next Trial edit and label
-            %fprintf('About to position NextTrialText\n');
-            %dbstack
-            xOffset=editXOffset;
-            yOffset=locationEditYOffset-heightBetweenEdits-editHeight;
-            width=nextTrialEditWidth;
+            nextTrialEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextTrialEditWidth ;
+            nextTrialEditYOffset = dataSessionAndTrialRowYOffset ;
             positionEditLabelAndUnitsBang(self.NextTrialText,self.NextTrialEdit,[], ....
-                                          xOffset,yOffset,width, ...
+                                          nextTrialEditXOffset,nextTrialEditYOffset,nextTrialEditWidth, ...
                                           nextTrialLabelFixedWidth);
+            
+
+            %
+            % File Name Row
+            %
+            fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
+            fileNameEditYOffset = nextTrialEditYOffset - heightBetweenEdits - editHeight ;
+            positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
+                                          xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
+                                          fileNameLabelFixedWidth) ;
+                                      
+            % Overwrite without asking checkbox
+            overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
+            overwriteCheckboxWidth=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
+            overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
+            overwriteCheckboxHeight=overwriteCheckboxPosition(4);            
+            overwriteCheckboxXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthLeftOfBaseNameEdit;
+            overwriteCheckboxYOffset=fileNameEditYOffset+(editHeight-overwriteCheckboxHeight)/2;
+            set(self.OverwriteCheckbox,'Position',[overwriteCheckboxXOffset overwriteCheckboxYOffset overwriteCheckboxWidth overwriteCheckboxHeight]);
+                                      
         end  % function
     end
     
@@ -981,7 +1068,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'FilenameEdit'}});
+%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
 %             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
@@ -1005,10 +1092,20 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
-            set(self.FilenameEdit, 'String', model.Logging.FileBaseName);
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
+            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
+            set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
+            set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
+            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));            
             set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
+            %set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
             set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
+            %set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            if ~isIdle&&model.Logging.Enabled ,
+                set(self.FileNameEdit, 'String', model.Logging.CurrentTrialSetAbsoluteFileName);
+            else
+                set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
@@ -1289,15 +1386,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             isIdle=(model.State == ws.ApplicationState.Idle);
 
             %isLoggingEnabled=model.Logging.Enabled;
-            isLoggingEnabled=true;            
+            %isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',onIff(isIdle));
+            doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
 
-            set(self.FilenameEdit,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.OverwriteCheckbox,'Enable',onIff(isIdle && isLoggingEnabled));
+            set(self.BaseNameEdit,'Enable',onIff(isIdle));
+            set(self.OverwriteCheckbox,'Enable',onIff(isIdle));
             %set(self.LocationEdit,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.ShowLocationButton,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.ChangeLocationButton,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.NextTrialEdit,'Enable',onIff(isIdle && isLoggingEnabled));            
+            set(self.ShowLocationButton,'Enable',onIff(isIdle));
+            set(self.ChangeLocationButton,'Enable',onIff(isIdle));
+            set(self.IncludeDateCheckbox,'Enable',onIff(isIdle));
+            set(self.SessionIndexCheckbox,'Enable',onIff(isIdle));
+            set(self.SessionIndexEdit,'Enable',onIff(isIdle&&doIncludeSessionIndex));
+            set(self.IncrementSessionIndexButton,'Enable',onIff(isIdle&&doIncludeSessionIndex));            
+            set(self.NextTrialEdit,'Enable',onIff(isIdle));
+            
+            
         end  % function
     end        
     

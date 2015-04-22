@@ -1189,7 +1189,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
             fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
             fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextTrialSetAbsoluteFileName);
-            fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.FileBaseName);
+            fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
             fclose(fid);
         end  % function
 

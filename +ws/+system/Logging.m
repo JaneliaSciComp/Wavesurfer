@@ -4,26 +4,39 @@ classdef Logging < ws.system.Subsystem
     properties (Dependent=true)
         FileLocation  % absolute path of data file directory
         FileBaseName  % prefix for data file name to which trial index will be appended
-        IsOKToOverwrite  % logical, whether it's OK to overwrite data files without warning
+        DoIncludeDate
+        DoIncludeSessionIndex
+        SessionIndex
         NextTrialIndex  % the index of the next trial (one-based).  (This gets reset if you change the FileBaseName.)
+        IsOKToOverwrite  % logical, whether it's OK to overwrite data files without warning
     end
     
     properties (Dependent=true, SetAccess=immutable)
+        AugmentedBaseName
         NextTrialSetAbsoluteFileName
+        CurrentTrialSetAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current trial set file name
+        %CurrentTrialIndex
+    end
+
+    properties (Access = protected, Transient = true)
+        DateAsString_
     end
     
     properties (Access = protected)
         FileLocation_
         FileBaseName_
-        IsOKToOverwrite_
+        DoIncludeDate_
+        DoIncludeSessionIndex_
+        SessionIndex_
         NextTrialIndex_
+        IsOKToOverwrite_
     end
     
     % These are all properties that are only used when acquisition is
     % ongoing.  They are set in willPerformExperiment(), and are nulled in
     % didPerformExperiment() and didAbortExperiment()
     properties (Access = protected, Transient=true)
-        LogFileNameAbsolute_
+        CurrentTrialSetAbsoluteFileName_
         CurrentDatasetOffset_
             % during acquisition, the index of the next "scan" to be written (one-based)
             % "scan" is an NI-ism meaning all the samples acquired for a
@@ -39,14 +52,12 @@ classdef Logging < ws.system.Subsystem
         LastTrialIndexForWhichDatasetCreated_  
           % For the current file/trialset, the trial index of the most-recently dataset in the data file.
           % Empty if the no dataset has yet been created for the current file.
-        DidWriteSomeDataForThisTrial_
+        DidWriteSomeDataForThisTrial_        
+        %CurrentTrialIndex_
     end
 
     events
-        DidSetFileLocation
-        DidSetFileBaseName
-        DidSetIsOKToOverwrite
-        DidSetNextTrialIndex
+        UpdateDoIncludeSessionIndex
     end
     
     methods
@@ -55,8 +66,13 @@ classdef Logging < ws.system.Subsystem
             self.Parent=parent;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
-            self.IsOKToOverwrite = false;
-            self.NextTrialIndex_ = 1; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            self.DoIncludeDate_ = false ;
+            self.DoIncludeSessionIndex_ = false ;
+            self.SessionIndex_ = 1 ;
+            self.NextTrialIndex_ = 1 ; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            %self.FirstTrialIndexInNextFile_ = 1 ; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            self.IsOKToOverwrite_ = false ;
+            self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-experiment
         end
         
         function delete(self)
@@ -64,20 +80,21 @@ classdef Logging < ws.system.Subsystem
         end
         
         function set.FileLocation(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('FileLocation', newValue);
-            if ~exist(newValue,'dir') ,
-                return
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('FileLocation', newValue);
+                if exist(newValue,'dir') ,
+                    originalValue=self.FileLocation_;
+                    self.FileLocation_ = newValue;
+                    % If file name has changed, reset the trial index
+                    originalFullName=fullfile(originalValue,self.FileBaseName);
+                    newFullName=fullfile(newValue,self.FileBaseName);
+                    if ~isequal(originalFullName,newFullName) ,
+                        self.NextTrialIndex = 1;
+                    end
+                end
             end
-            originalValue=self.FileLocation_;
-            self.FileLocation_ = newValue;
-            % If file name has changed, reset the trial index
-            originalFullName=fullfile(originalValue,self.FileBaseName);
-            newFullName=fullfile(newValue,self.FileBaseName);
-            if ~isequal(originalFullName,newFullName) ,
-                self.NextTrialIndex = 1;
-            end
-            self.broadcast('DidSetFileLocation');
+            %self.broadcast('DidSetFileLocation');
+            self.broadcast('Update');            
         end
         
         function result=get.FileLocation(self)
@@ -86,59 +103,145 @@ classdef Logging < ws.system.Subsystem
         
         function set.FileBaseName(self, newValue)
             %fprintf('Entered set.FileBaseName()\n');            
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('FileBaseName', newValue);
-            originalValue=self.FileBaseName_;
-            self.FileBaseName_ = newValue;
-            % If file name has changed, reset the trial index
-            originalFullName=fullfile(self.FileLocation,originalValue);
-            newFullName=fullfile(self.FileLocation,newValue);
-            if ~isequal(originalFullName,newFullName) ,
-                %fprintf('About to reset NextTrialIndex...\n');
-                self.NextTrialIndex = 1;
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('FileBaseName', newValue);
+                originalValue=self.FileBaseName_;
+                self.FileBaseName_ = newValue;
+                % If file name has changed, reset the trial index
+                originalFullName=fullfile(self.FileLocation,originalValue);
+                newFullName=fullfile(self.FileLocation,newValue);
+                if ~isequal(originalFullName,newFullName) ,
+                    %fprintf('About to reset NextTrialIndex...\n');
+                    self.NextTrialIndex = 1;
+                end
             end
-            self.broadcast('DidSetFileBaseName');            
+            %self.broadcast('DidSetFileBaseName');            
+            self.broadcast('Update');            
         end
         
         function result=get.FileBaseName(self)
             result=self.FileBaseName_;
         end
-            
+        
+        function set.NextTrialIndex(self, newValue)
+            %fprintf('set.NextTrialIndex\n');
+            %dbstack
+            if ws.utility.isASettableValue(newValue), 
+                self.validatePropArg('NextTrialIndex', newValue);
+                self.NextTrialIndex_ = newValue;
+                %self.FirstTrialIndexInNextFile_ = newValue_ ;
+            end
+            %self.broadcast('DidSetNextTrialIndex');            
+            self.broadcast('Update');            
+        end
+        
+        function result=get.NextTrialIndex(self)
+            result=self.NextTrialIndex_;
+        end
+
+%         function result=get.CurrentTrialIndex(self)
+%             result=self.CurrentTrialIndex_;
+%         end
+
         function set.IsOKToOverwrite(self, newValue)
-            if isnan(newValue), return, end            
-            self.validatePropArg('IsOKToOverwrite', newValue);
-            self.IsOKToOverwrite_ = newValue;
-            self.broadcast('DidSetIsOKToOverwrite');            
+            if ws.utility.isASettableValue(newValue), 
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                    self.IsOKToOverwrite_ = logical(newValue);
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
+                end
+            end
+            self.broadcast('Update');                        
         end
         
         function result=get.IsOKToOverwrite(self)
             result=self.IsOKToOverwrite_;
         end
-        function set.NextTrialIndex(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('NextTrialIndex', newValue);
-            self.NextTrialIndex_ = newValue;
-            self.broadcast('DidSetNextTrialIndex');            
+        
+        function set.DoIncludeDate(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                    self.DoIncludeDate_ = logical(newValue);
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DoIncludeDate must be a logical scalar, or convertable to one');                  
+                end
+            end
+            self.broadcast('Update');            
         end
         
-        function result=get.NextTrialIndex(self)
-            result=self.NextTrialIndex_;
-        end           
+        function result=get.DoIncludeDate(self)
+            result=self.DoIncludeDate_;
+        end
 
+        function set.DoIncludeSessionIndex(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                    originalValue = self.DoIncludeSessionIndex_ ;
+                    newValueForReals = logical(newValue) ;
+                    self.DoIncludeSessionIndex_ = newValueForReals ;
+                    if newValueForReals && ~originalValue ,
+                        self.NextTrialIndex_ = 1 ;
+                        %self.FirstTrialIndexInNextFile_ = 1 ;
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
+                end
+            end
+            self.broadcast('UpdateDoIncludeSessionIndex');            
+        end
+        
+        function result=get.DoIncludeSessionIndex(self)
+            result=self.DoIncludeSessionIndex_;
+        end
+
+        function set.SessionIndex(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if self.DoIncludeSessionIndex ,
+                    if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
+                        originalValue = self.SessionIndex_ ;
+                        self.SessionIndex_ = newValue;
+                        if newValue ~= originalValue ,
+                            self.NextTrialIndex_ = 1 ;
+                            %self.FirstTrialIndexInNextFile_ = 1 ;
+                        end
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'SessionIndex must be an integer greater than or equal to one');
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Can''t set SessionIndex when DoIncludeSessionIndex is false');
+                    
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result=get.SessionIndex(self)
+            result=self.SessionIndex_;
+        end
+        
+        function incrementSessionIndex(self)
+            self.SessionIndex = self.SessionIndex + 1 ;
+        end
+        
+        function result = get.AugmentedBaseName(self)
+            result = self.augmentedBaseName_();
+        end  % function
+        
         function value=get.NextTrialSetAbsoluteFileName(self)
             wavesurferModel=self.Parent;
-            %if wavesurferModel.IsTrialBased ,
             firstTrialIndex = self.NextTrialIndex ;
             numberOfTrials = wavesurferModel.ExperimentTrialCount ;
             fileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfTrials);
-%             elseif wavesurferModel.IsContinuous ,
-%                 dateAndTimeAffix = strrep(strrep(datestr(now()), ' ', '_'), ':', '-') ;
-%                 fileName = sprintf('%s-continuous_%s', self.FileBaseName, dateAndTimeAffix);                
-%             else
-%                 error('wavesurfer:internalError' , ...
-%                       'Unable to determine trial set file name');
-%             end
             value = fullfile(self.FileLocation, fileName);
+        end  % function
+        
+        function value=get.CurrentTrialSetAbsoluteFileName(self)
+            value = self.CurrentTrialSetAbsoluteFileName_ ;
         end  % function
         
         function willPerformExperiment(self, wavesurferModel, desiredApplicationState)
@@ -177,8 +280,9 @@ classdef Logging < ws.system.Subsystem
             end
             
             % Determine the absolute file names
-            %self.LogFileNameAbsolute_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            self.LogFileNameAbsolute_ = self.NextTrialSetAbsoluteFileName ;
+            %self.CurrentTrialSetAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
+            self.CurrentTrialSetAbsoluteFileName_ = self.NextTrialSetAbsoluteFileName ;
+            %self.CurrentTrialIndex_ = self.NextTrialIndex ;
             
             % Store the first trial index for the trial set 
             self.FirstTrialIndex_ = self.NextTrialIndex ;
@@ -193,21 +297,21 @@ classdef Logging < ws.system.Subsystem
                 % don't need to check anything
                 % But need to delete pre-existing files, otherwise h5create
                 % will just add datasets to a pre-existing file.
-                if exist(self.LogFileNameAbsolute_, 'file') == 2 ,
-                    ws.utility.deleteFileWithoutWarning(self.LogFileNameAbsolute_);
+                if exist(self.CurrentTrialSetAbsoluteFileName_, 'file') == 2 ,
+                    ws.utility.deleteFileWithoutWarning(self.CurrentTrialSetAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
 %                 end
             else
                 % Check if the log file already exists, and error if so
-                if exist(self.LogFileNameAbsolute_, 'file') == 2 ,
+                if exist(self.CurrentTrialSetAbsoluteFileName_, 'file') == 2 ,
                     error('wavesurfer:logFileAlreadyExists', ...
-                          'The data file %s already exists', self.LogFileNameAbsolute_);
+                          'The data file %s already exists', self.CurrentTrialSetAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     error('wavesurfer:sidecarFileAlreadyExists', ...
-%                           'The sidecar file %s already exists', self.LogFileNameAbsolute_);
+%                           'The sidecar file %s already exists', self.CurrentTrialSetAbsoluteFileName_);
 %                 end
             end
 
@@ -219,8 +323,8 @@ classdef Logging < ws.system.Subsystem
             %numericPrecision=4;
             %stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
             doCreateFile=true;
-            %ws.most.fileutil.h5savestr(self.LogFileNameAbsolute_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-            ws.most.fileutil.h5save(self.LogFileNameAbsolute_, '/header', headerStruct, doCreateFile);
+            %ws.most.fileutil.h5savestr(self.CurrentTrialSetAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.most.fileutil.h5save(self.CurrentTrialSetAbsoluteFileName_, '/header', headerStruct, doCreateFile);
             self.DidCreateCurrentDataFile_ = true ;
             
 %             % Save the "header" information to a sidecar file instead.
@@ -239,7 +343,7 @@ classdef Logging < ws.system.Subsystem
             % set start for Justin Little, possibly others.
 %             if ~isempty(wavesurferModel.Acquisition) ,
 %                 for indexOfTrialWithinSet = 1:wavesurferModel.ExperimentTrialCount ,
-%                     h5create(self.LogFileNameAbsolute_, ...
+%                     h5create(self.CurrentTrialSetAbsoluteFileName_, ...
 %                              sprintf('/trial_%04d', ...
 %                                      self.WriteToTrialId_ + (indexOfTrialWithinSet-1)), ...
 %                              self.ExpectedTrialSize_, ...
@@ -263,9 +367,9 @@ classdef Logging < ws.system.Subsystem
             %profile resume
             thisTrialIndex = self.NextTrialIndex ;
             timestampDatasetName = sprintf('/trial_%04d/timestamp',thisTrialIndex) ;
-            h5create(self.LogFileNameAbsolute_, timestampDatasetName, [1 1]);  % will consist of one double
+            h5create(self.CurrentTrialSetAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
             scansDatasetName = sprintf('/trial_%04d/analogScans',thisTrialIndex) ;
-            h5create(self.LogFileNameAbsolute_, ...
+            h5create(self.CurrentTrialSetAbsoluteFileName_, ...
                      scansDatasetName, ...
                      self.ExpectedTrialSize_, ...
                      'ChunkSize', self.ChunkSize_, ...
@@ -282,7 +386,7 @@ classdef Logging < ws.system.Subsystem
                 dataType = 'uint32';
             end
             if NActiveDigitalChannels>0 ,
-                h5create(self.LogFileNameAbsolute_, ...
+                h5create(self.CurrentTrialSetAbsoluteFileName_, ...
                          scansDatasetName, ...
                          [self.ExpectedTrialSize_(1) 1], ...
                          'ChunkSize', [self.ChunkSize_(1) 1], ...
@@ -295,6 +399,7 @@ classdef Logging < ws.system.Subsystem
         
         function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
             %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
+                %self.CurrentTrialIndex_ = self.CurrentTrialIndex_ + 1 ;
                 self.NextTrialIndex = self.NextTrialIndex + 1;
             %end
         end
@@ -331,7 +436,7 @@ classdef Logging < ws.system.Subsystem
             exception = [] ;
             if self.DidCreateCurrentDataFile_ ,
                 % A data file was created.  Might need to rename it, or delete it.
-                originalAbsoluteLogFileName = self.LogFileNameAbsolute_ ;
+                originalAbsoluteLogFileName = self.CurrentTrialSetAbsoluteFileName_ ;
                 firstTrialIndex = self.FirstTrialIndex_ ;
                 if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
                     % This means no trials were actually added to the log file.
@@ -401,7 +506,7 @@ classdef Logging < ws.system.Subsystem
         function didPerformOrAbortExperiment_(self)
             % null-out all the transient things that are only used during
             % the trial set
-            self.LogFileNameAbsolute_ = [];
+            self.CurrentTrialSetAbsoluteFileName_ = [];
             self.FirstTrialIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
             self.ExpectedTrialSize_ = [];
@@ -410,6 +515,7 @@ classdef Logging < ws.system.Subsystem
             self.DidCreateCurrentDataFile_ = [] ;
             self.LastTrialIndexForWhichDatasetCreated_ = [] ;
             self.DidWriteSomeDataForThisTrial_ = [] ;
+            %self.CurrentTrialIndex_ = [];
         end
     end
 
@@ -426,19 +532,19 @@ classdef Logging < ws.system.Subsystem
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~self.DidWriteSomeDataForThisTrial_ ,
                 timestampDatasetName = sprintf('/trial_%04d/timestamp',self.WriteToTrialId_) ;
-                h5write(self.LogFileNameAbsolute_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
+                h5write(self.CurrentTrialSetAbsoluteFileName_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
                 self.DidWriteSomeDataForThisTrial_ = true ;  % will be true momentarily...
             end
             
             if ~isempty(self.FileBaseName) ,
-                h5write(self.LogFileNameAbsolute_, ...
+                h5write(self.CurrentTrialSetAbsoluteFileName_, ...
                         sprintf('/trial_%04d/analogScans', ...
                                 self.WriteToTrialId_), ...
-                        rawAnalogData, ...
-                        [self.CurrentDatasetOffset_ 1], ...
-                        size(rawAnalogData));
+                                rawAnalogData, ...
+                                [self.CurrentDatasetOffset_ 1], ...
+                                size(rawAnalogData));
                 if ~isempty(rawDigitalData) ,
-                    h5write(self.LogFileNameAbsolute_, ...
+                    h5write(self.CurrentTrialSetAbsoluteFileName_, ...
                             sprintf('/trial_%04d/digitalScans', ...
                                     self.WriteToTrialId_), ...
                             rawDigitalData, ...
@@ -459,20 +565,37 @@ classdef Logging < ws.system.Subsystem
     end
     
     methods (Access = protected)
+        function result = augmentedBaseName_(self)
+            baseName = self.FileBaseName ;
+            % Add the date, if wanted
+            if self.DoIncludeDate_ ,
+                baseNameWithDate = sprintf('%s_%s',baseName,self.DateAsString_);
+            else
+                baseNameWithDate = baseName ;
+            end
+            % Add the session number, if wanted
+            if self.DoIncludeSessionIndex_ ,
+                result = sprintf('%s_%03d',baseNameWithDate,self.SessionIndex_);
+            else
+                result = baseNameWithDate ;
+            end
+        end  % function        
+        
         function fileName = trialSetFileNameFromNumbers_(self,firstTrialIndex,numberOfTrials)
+            augmentedBaseName = self.augmentedBaseName_() ;
             % This is a "leaf" file name, not an absolute one
             if numberOfTrials == 1 ,
-                fileName = sprintf('%s_%04d.h5', self.FileBaseName, firstTrialIndex);
+                fileName = sprintf('%s_%04d.h5', augmentedBaseName, firstTrialIndex);
             else
                 if isfinite(numberOfTrials) ,
                     lastTrialIndex = firstTrialIndex + numberOfTrials - 1 ;
                     fileName = sprintf('%s_%04d-%04d.h5', ...
-                                       self.FileBaseName, ...
+                                       augmentedBaseName, ...
                                        firstTrialIndex, ...
                                        lastTrialIndex);
                 else
                     fileName = sprintf('%s_%04d-.h5', ...
-                                       self.FileBaseName, ...
+                                       augmentedBaseName, ...
                                        firstTrialIndex);
                 end
             end            
