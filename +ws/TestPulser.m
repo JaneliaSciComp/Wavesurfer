@@ -1030,6 +1030,11 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
     %                 wavesurferModel.willPerformTestPulse();
     %             end
 
+                % Free up resources we will need for test pulsing
+                if ~isempty(wavesurferModel) ,
+                    wavesurferModel.releaseHardwareResources();
+                end
+                
                 % Get the stimulus
                 commandsInVolts=self.CommandInVoltsPerElectrode;
                 nScans=size(commandsInVolts,1);
