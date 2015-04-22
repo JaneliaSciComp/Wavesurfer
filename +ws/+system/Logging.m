@@ -273,14 +273,15 @@ classdef Logging < ws.system.Subsystem
             scansDatasetName = sprintf('/trial_%04d/digitalScans',thisTrialIndex) ;
             % TODO: Probably need to change to number of active digital channels
             % below
-            if self.Parent.Acquisition.NDigitalChannels<=8
+            NActiveDigitalChannels = sum(self.Parent.Acquisition.IsChannelActive & ~self.Parent.Acquisition.IsChannelAnalog);
+            if NActiveDigitalChannels<=8
                 dataType = 'uint8';
-            elseif self.Parent.Acquisition.NDigitalChannels<=16
+            elseif NActiveDigitalChannels<=16
                 dataType = 'uint16';
-            else %self.Parent.Acquisition.NDigitalChannels<=32
+            else %NActiveDigitalChannels<=32
                 dataType = 'uint32';
             end
-            if self.Parent.Acquisition.NDigitalChannels>0 ,
+            if NActiveDigitalChannels>0 ,
                 h5create(self.LogFileNameAbsolute_, ...
                          scansDatasetName, ...
                          [self.ExpectedTrialSize_(1) 1], ...
