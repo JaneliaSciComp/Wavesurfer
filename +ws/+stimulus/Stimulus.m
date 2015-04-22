@@ -5,8 +5,8 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     % independent object that isequal() to the original.
     
     properties (Constant)
-        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','Ramp','Sine','Chirp','File'}
-        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Ramp','Sine','Chirp','File'}
+        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','TwoSquarePulses','Ramp','Sine','Chirp','File','TwoSquarePulses'}
+        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Ramp','Sine','Chirp','File'}
     end
     
 %     properties (SetAccess = protected, Hidden = true)
