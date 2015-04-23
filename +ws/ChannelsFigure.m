@@ -74,6 +74,8 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
                 stimulation=model.Stimulation;
                 if ~isempty(stimulation) ,
                     stimulation.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');                    
+                    stimulation.subscribeMe(self,'DidSetIsDigitalChannelTimed','','update');               
+                    stimulation.subscribeMe(self,'DidSetDigitalOutputStateIfUntimed','','updateControlProperties');               
                 end
             end
             
