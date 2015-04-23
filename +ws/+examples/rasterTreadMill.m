@@ -11,6 +11,7 @@ persistent velocityAxes velocityAverageLine binVelocities allBinVelocities
 persistent spikeRateAxes spikeRateAverageLine binDwellTimes allBinDwellTimes
 persistent subthresholdAxes subthresholdAverageLine binSubthresholds allBinSubthresholds
 
+% user-defined parameters
 spikeThreshold = -15;  % mV
 laserOnThreshold = -50;  %mV
 nBins = 20;
@@ -21,24 +22,31 @@ LEDChannel = 1;
 laserChannel = 2;
 velocityScale = 10;  % cm/s/V;  from steve: 100 mm/sec per volt
 
+% user shouldn't need to change anything below here
+
 binWidth = treadmillLength / nBins;
 binCenters = binWidth/2 : binWidth : treadmillLength;
 sampleRate = self.Acquisition.SampleRate;
+
+% get data
 analogData = self.Acquisition.getLatestAnalogData();
 digitalData = self.Acquisition.getLatestRawDigitalData();
 
+% output TTL pulse
 if median(analogData(:,electrodeChannel))>laserOnThreshold
     self.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 1;
 else
     self.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 0;
 end
 
+% initialize figure
 if isempty(rasterFig) || ~ishandle(rasterFig)
     rasterFig = figure();
     position = get(rasterFig,'position');
     set(rasterFig,'position',position.*[1 0 1 2]);
 end
 
+% initialize plots
 if self.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     clf(rasterFig);
 
@@ -83,11 +91,13 @@ if self.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     allBinSubthresholds=cell(1,nBins);
 end
 
-boundary = find(digitalData(:,LEDChannel)<0.5,1);
+% has a lap been completed in current data?
+boundary = find(bitget(digitalData,LEDChannel)==0, 1);
 if isempty(boundary)
     boundary = size(digitalData,1)+1;
 end
 
+% analyze data
 ticks = find(diff(analogData(:,electrodeChannel)>spikeThreshold)==1);
 integratedVelocity = cumsum(analogData(:,velocityChannel)*velocityScale/sampleRate);
 rasterLine = [rasterLine; ...
@@ -102,6 +112,7 @@ for i=1:length(binCenters)
         analogData(abs(initialPosition+integratedVelocity-binCenters(i))<binWidth,electrodeChannel)];
 end
 
+% plot data
 if  boundary < size(analogData,1)+1
     len = length(rasterLine);
     plot(rasterAxes, ...
