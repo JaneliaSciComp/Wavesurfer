@@ -1,4 +1,4 @@
-function rasterContinuous(self,evt)
+function rasterTreadMill(self,evt)
 
 % usage:
 %   in UserFunctions dialog under Data Available put ws.examples.rasterContinuous
@@ -11,12 +11,14 @@ persistent velocityAxes velocityAverageLine binVelocities allBinVelocities
 persistent spikeRateAxes spikeRateAverageLine binDwellTimes allBinDwellTimes
 persistent subthresholdAxes subthresholdAverageLine binSubthresholds allBinSubthresholds
 
-thresh = -15;  % mV
+spikeThreshold = -15;  % mV
+laserOnThreshold = -50;  %mV
 nBins = 20;
 treadmillLength = 185;  % cm
 electrodeChannel = 1;
 velocityChannel = 2;
 LEDChannel = 1;
+laserChannel = 2;
 velocityScale = 10;  % cm/s/V;  from steve: 100 mm/sec per volt
 
 binWidth = treadmillLength / nBins;
@@ -24,6 +26,12 @@ binCenters = binWidth/2 : binWidth : treadmillLength;
 sampleRate = self.Acquisition.SampleRate;
 analogData = self.Acquisition.getLatestAnalogData();
 digitalData = self.Acquisition.getLatestRawDigitalData();
+
+if median(analogData(:,electrodeChannel))>laserOnThreshold
+    self.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 1;
+else
+    self.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 0;
+end
 
 if isempty(rasterFig) || ~ishandle(rasterFig)
     rasterFig = figure();
@@ -80,7 +88,7 @@ if isempty(boundary)
     boundary = size(digitalData,1)+1;
 end
 
-ticks = find(diff(analogData(:,electrodeChannel)>thresh)==1);
+ticks = find(diff(analogData(:,electrodeChannel)>spikeThreshold)==1);
 integratedVelocity = cumsum(analogData(:,velocityChannel)*velocityScale/sampleRate);
 rasterLine = [rasterLine; ...
         initialPosition+integratedVelocity(find(ticks<boundary))];
