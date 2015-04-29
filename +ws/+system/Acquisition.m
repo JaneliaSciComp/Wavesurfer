@@ -403,10 +403,17 @@ classdef Acquisition < ws.system.Subsystem
             out = self.SampleRate_ ;
         end  % function
         
-        function set.SampleRate(self, value)
-            self.SampleRate_ = value;
-            if ~isempty(self.AnalogInputTask_)
-                self.AnalogInputTask_.SampleRate = value;
+        function set.SampleRate(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                self.validatePropArg('SampleRate', newValue);  % will error if invalid
+                self.SampleRate_ = newValue;
+                if ~isempty(self.AnalogInputTask_) ,
+                    self.AnalogInputTask_.SampleRate = newValue;
+                end
+                wsModel = self.Parent ;
+                if ~isempty(wsModel) ,
+                    wsModel.didSetAcquisitionSampleRate(newValue);
+                end
             end
             self.broadcast('DidSetSampleRate');
         end  % function

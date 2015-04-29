@@ -625,6 +625,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function result=get.FastProtocols(self)
             result = self.FastProtocols_;
         end
+        
+        function didSetAcquisitionSampleRate(self,newValue)
+            ephys = self.Ephys ;
+            if ~isempty(ephys) ,
+                ephys.didSetAcquisitionSampleRate(newValue) ;
+            end
+        end
     end  % methods
     
     methods (Access = protected)

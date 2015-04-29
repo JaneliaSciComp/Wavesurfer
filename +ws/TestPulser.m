@@ -172,7 +172,14 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.IsAutoY_=true;
             self.IsAutoYRepeating_=false;
             self.YLimits_=[-10 +10];
-            self.SamplingRate_=20e3;  % Hz
+            
+            acquisition = ws.utility.getSubproperty(ephys,'Parent','Acquisition');
+            if isempty(acquisition) ,
+                self.SamplingRate_ = 20e3 ;  % Hz
+            else
+                self.SamplingRate_ = acquisition.SampleRate ;  % Hz
+            end
+            
             self.IsRunning_=false;
             %self.Gain_=nan;
             %self.Resistance_=nan;
@@ -489,14 +496,6 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         
         function value=get.SamplingRate(self)
             value=self.SamplingRate_;
-        end
-        
-        function set.SamplingRate(self,newValue)  % in Hz
-            if isfinite(newValue) && newValue>0 ,
-                self.SamplingRate_=newValue;
-                self.clearExistingSweepIfPresent_();                
-            end
-            self.broadcast('Update');
         end
         
         function value=get.Dt(self)  % s
@@ -1451,6 +1450,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.YLimits=newYLimits;
         end  % function
                 
+        function didSetAcquisitionSampleRate(self,newValue)
+            % newValue has already been validated
+            self.setSamplingRate_(newValue) ;  % This will fire Update, etc.
+        end                
     end  % methods
         
     methods (Access=protected)
@@ -1515,7 +1518,14 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                 end
             end 
         end  % function
-
+        
+        function setSamplingRate_(self,newValue)  % in Hz
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                self.SamplingRate_ = newValue ;
+                self.clearExistingSweepIfPresent_() ;                
+            end
+            self.broadcast('Update') ;
+        end
     end  % protected methods block
     
     properties (Hidden, SetAccess=protected)
