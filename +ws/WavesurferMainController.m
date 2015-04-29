@@ -1792,7 +1792,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function controller=showChildFigure(self, className, varargin)
-            controller = self.createChildControllerIfNonexistant(className,varargin{:});
+            [controller,didCreate] = self.createChildControllerIfNonexistant(className,varargin{:});
+            if didCreate ,
+                % no need to update
+            else
+                controller.updateFigure();  % figure might be out-of-date
+            end
             controller.showFigure();
         end
         
@@ -1832,43 +1837,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
         end  % function
 
-        function controller = createChildControllerIfNonexistant(self, controllerName, varargin)
-            switch controllerName
-                    
-%                 case 'StimulusLibraryEditorController'
-%                     if isempty(self.StimulusLibraryController)
-%                         controller = feval(controllerName, self.Model, self, self.LibraryViewModel);
-%                         self.ChildControllers{end+1}=controller;
-%                         self.StimulusLibraryController=controller;
-%                     else
-%                         controller = self.StimulusLibraryController;
-%                     end
-                                       
-%                 case 'FastProtocolsController'
-%                     if isempty(self.FastProtocolsController)
-%                         fullControllerClassName=['ws.' controllerName];
-%                         controller = feval(fullControllerClassName, self);  
-%                             % THIS ABOVE IS VERY WEIRD!!  The
-%                             % WavesurferController is being passed where a model
-%                             % is typically passed.  Even weirder, the
-%                             % FastProtocolsController class expects this...  --ALT,
-%                             % 2014-05-30.  (See the comments in that class
-%                             % --ALT, 2014-07-25)
-%                         self.ChildControllers{end+1}=controller;
-%                         self.FastProtocolsController=controller;
-%                     else
-%                         controller = self.FastProtocolsController;
-%                     end
-                    
-%                 case 'ws.ui.controller.UserFunctionEditor'
-%                     if isempty(self.UserFunctionEditorController)
-%                         controller = feval(controllerName, self.Model.UserFunctions);
-%                         self.ChildControllers{end+1}=controller;
-%                         self.UserFunctionEditorController=controller;
-%                     else
-%                         controller = self.UserFunctionEditorController;
-%                     end
-                                        
+        function [controller,didCreate] = createChildControllerIfNonexistant(self, controllerName, varargin)
+            switch controllerName ,                                        
                 case 'ScopeController' ,
                     scopeModel=varargin{1};
                     fullControllerClassName=['ws.' controllerName];
@@ -1876,16 +1846,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                        self, ...
                                        scopeModel);
                     self.ChildControllers{end+1}=controller;
-                    self.ScopeControllers{end+1}=controller;
-                    
-                otherwise
+                    self.ScopeControllers{end+1}=controller;                    
+                    didCreate = true ;
+                otherwise ,
                     if isempty(self.(controllerName)) ,
                         fullControllerClassName=['ws.' controllerName];
                         controller = feval(fullControllerClassName,self,self.Model);
                         self.ChildControllers{end+1}=controller;
                         self.(controllerName)=controller;
+                        didCreate = true ;
                     else
                         controller = self.(controllerName);
+                        didCreate = false ;
                     end
             end
         end  % function

@@ -171,6 +171,12 @@ classdef Ephys < ws.system.Subsystem
         function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
         end
         
+        function didSetAcquisitionSampleRate(self,newValue)
+            testPulser = self.TestPulser ;
+            if ~isempty(testPulser) ,
+                testPulser.didSetAcquisitionSampleRate(newValue) ;
+            end
+        end        
     end  % methods block
     
     
