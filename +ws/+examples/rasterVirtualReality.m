@@ -1,18 +1,8 @@
 function rasterVirtualReality(wsModel,evt)
 
 % usage:
-%   in UserFunctions dialog under Data Available put ws.examples.rasterContinuous
-%   adjust the thresh, nbins, etc. variables below to suite
-
-persistent rasterFig
-persistent positionTail positionHead
-persistent nSpikesAxes nSpikesSurf
-persistent subthresholdAxes subthresholdSurf
-persistent spikeRateAxes spikeRateSurf
-persistent allBinDwellTimes allBinVelocities allBinSubthresholds
-persistent serialPort serialSyncFound NISyncFound NISyncZero serialSyncPulses serialSyncZero
-persistent analogData digitalData serialXYV interpolatedSerialXYV nTrimmedTicks
-persistent out fid t
+%   in UserFunctions dialog under Data Available put ws.examples.rasterVirtualReality
+%   adjust the thresh, binsX, binsY, electrodeChannel, etc. variables below to suite
 
 % user-defined parameters
 thresh = 2;  % delta mV
@@ -26,6 +16,16 @@ updateInterval = 5;
 % shouldn't need to change anything below here
 
 sampleRate = wsModel.Acquisition.SampleRate;
+
+persistent rasterFig
+persistent positionTail positionHead
+persistent nSpikesAxes nSpikesSurf
+persistent subthresholdAxes subthresholdSurf
+persistent spikeRateAxes spikeRateSurf
+persistent allBinDwellTimes allBinVelocities allBinSubthresholds
+persistent serialPort serialSyncFound NISyncFound NISyncZero serialSyncPulses serialSyncZero
+persistent analogData digitalData serialXYV interpolatedSerialXYV nTrimmedTicks
+persistent out fid t
 
 % initialize figure
 if isempty(rasterFig) || ~ishandle(rasterFig)
