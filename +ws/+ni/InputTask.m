@@ -26,6 +26,8 @@ classdef InputTask < handle
     properties (Transient = true, Access = protected)
         Parent_
         DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
+        TicId_
+        TimeAtLastRead_
     end
     
     properties (Access = protected)
@@ -70,6 +72,9 @@ classdef InputTask < handle
                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
             end            
             
+            % Create a tic id
+            self.TicId_ = tic();
+            
             % Store this stuff
             self.PhysicalChannelNames_ = physicalChannelNames ;
             self.ChannelNames_ = channelNames ;
@@ -106,10 +111,11 @@ classdef InputTask < handle
             if self.IsArmed ,
                 if ~isempty(self.DabsDaqTask_) ,
                     self.DabsDaqTask_.start();
+                    self.TimeAtLastRead_ = toc(self.TicId_) ;
                 end
             end
         end
-                
+        
         function abort(self)
             if ~isempty(self.DabsDaqTask_)
                 self.DabsDaqTask_.abort();
@@ -140,7 +146,8 @@ classdef InputTask < handle
         end  % function
         
         function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
-            % Read all the available scans, notify our parent
+            % If nScansToRead is empty, read all the available scans.  If
+            % nScansToRead is nonempty, read that number of scans.
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
             if self.IsAnalog ,
                 if isempty(self.DabsDaqTask_) ,
@@ -150,7 +157,11 @@ classdef InputTask < handle
                         rawData = zeros(nScansToRead,0,'int16');
                     end
                 else
-                    rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+                    if isempty(nScansToRead) ,
+                        rawData = self.queryUntilEnoughThenRead_();
+                    else
+                        rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+                    end
                 end
             else % IsDigital
                 if isempty(self.DabsDaqTask_) ,
@@ -160,7 +171,11 @@ classdef InputTask < handle
                         packedData = zeros(nScansToRead,0,'uint32');
                     end                        
                 else       
-                    readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
+                    if isempty(nScansToRead) ,
+                        readData = self.queryUntilEnoughThenRead_();
+                    else
+                        readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
+                    end
                     shiftBy = cellfun(@(x) ws.utility.channelIDFromPhysicalChannelName(x), self.PhysicalChannelNames_);
                     shiftedData = bsxfun(@bitshift,readData,(0:(length(shiftBy)-1))-shiftBy);
                     packedData = zeros(size(readData,1),1,'uint32');
@@ -184,6 +199,30 @@ classdef InputTask < handle
             keyboard
         end  % function        
     end
+     
+    methods (Access=protected)
+        function data = queryUntilEnoughThenRead_(self)
+            % self.DabsDaqTask_ cannot be empty when this is called
+            timeNow = toc(self.TicId_) ;
+            nScansExpected = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;
+            nChecksMax = 10 ;
+            nScansPerCheck = nan(1,nChecksMax);
+            for iCheck = 1:nChecksMax ,
+                nScansAvailable = self.DabsDaqTask_.getReadAvailSampPerChan() ;
+                nScansPerCheck(iCheck) = nScansAvailable ;
+                if nScansAvailable>=nScansExpected ,
+                    break
+                end
+            end
+            nScansPerCheck
+            if self.IsAnalog_ ,
+                data = self.DabsDaqTask_.readAnalogData([],'native') ;
+            else
+                self.DabsDaqTask_.readDigitalData([],'uint32');
+            end
+            self.TimeAtLastRead_ = toc(self.TicId_) ;
+        end  % function
+    end  % protected methods block
     
     methods
         function value = get.IsAnalog(self)
