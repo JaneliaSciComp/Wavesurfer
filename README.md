@@ -187,3 +187,7 @@ Version History
 
 0.783: (April 22, 2015) Added a generic Matlab expression stimulus.
 
+0.784: (April 29, 2015) Test pulser now uses sampling rate of
+       acquisition system.
+
+
