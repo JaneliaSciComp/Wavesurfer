@@ -214,7 +214,7 @@ classdef InputTask < handle
                     break
                 end
             end
-            nScansPerCheck
+            %nScansPerCheck
             if self.IsAnalog_ ,
                 data = self.DabsDaqTask_.readAnalogData([],'native') ;
             else

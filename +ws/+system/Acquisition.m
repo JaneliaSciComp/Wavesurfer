@@ -1027,6 +1027,10 @@ classdef Acquisition < ws.system.Subsystem
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart ;
         end
+        
+        function result = getNScansReadThisTrial(self)
+            result  = self.NScansReadThisTrial_ ;
+        end        
     end
     
     methods (Access=protected)

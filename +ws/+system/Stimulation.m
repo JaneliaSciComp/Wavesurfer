@@ -368,7 +368,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     if ~isempty(self.TheUntimedDigitalOutputTask_) ,
                         isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
                         untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
-                        self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+                        if ~isempty(untimedDigitalChannelState) ,
+                            self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+                        end
                     end
                 else
                     error('most:Model:invalidPropVal', ...
