@@ -12,6 +12,7 @@ electrodeChannel = 1;
 syncChannel = 1;
 serialChannel = 'COM5';
 updateInterval = 5;
+test = true;
 
 % shouldn't need to change anything below here
 
@@ -22,10 +23,10 @@ persistent positionTail positionHead
 persistent nSpikesAxes nSpikesSurf
 persistent subthresholdAxes subthresholdSurf
 persistent spikeRateAxes spikeRateSurf
-persistent allBinDwellTimes allBinVelocities allBinSubthresholds
+persistent allBinDwellTimes allBinSubthresholds
 persistent serialPort serialSyncFound NISyncFound NISyncZero serialSyncPulses serialSyncZero
 persistent analogData digitalData serialXYV interpolatedSerialXYV nTrimmedTicks
-persistent out fid t
+persistent out fid
 
 % initialize figure
 if isempty(rasterFig) || ~ishandle(rasterFig)
@@ -68,7 +69,6 @@ if wsModel.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     axis(nSpikesAxes,[min(binsX) max(binsX) min(binsY) max(binsY)]);
 
     allBinDwellTimes=zeros(length(binsY),length(binsX));
-    allBinVelocities=cell(length(binsY),length(binsX));
     allBinSubthresholds=cell(length(binsY),length(binsX));
     
     serialSyncFound=false;
@@ -79,16 +79,7 @@ if wsModel.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     interpolatedSerialXYV=[];
     serialSyncPulses=[];
     nTrimmedTicks=0;
-    
-    % t=tic;
 end
-% tt=toc(t);
-% disp(tt);
-% if tt>1.1
-%     profile on;
-%     disp('profile on');
-% end
-% t=tic;
 
 % initialize serial port
 if isempty(serialPort)
@@ -103,35 +94,39 @@ if isempty(serialPort)
         'DataTerminalReady','off');
     fopen(serialPort);
 
-    % pre-load jeremy's test data
-    out=serial('COM4', ...
-        'baudrate',115200, ...
-        'flowcontrol','none', ...
-        'inputbuffersize',600000, ...
-        'outputbuffersize',600000, ...
-        'Terminator','CR/LF', ...
-        'DataBits',8, ...
-        'StopBits',2, ...
-        'DataTerminalReady','off');
-    fopen(out);
-    fid=fopen('data\jeremy\jc20131030d_rawData\mouseover_behav_data\jcvr120_15a_MouseoVeR_oval-track-28_11_jc20131030d.txt');
+    if test
+        % pre-load jeremy's test data
+        out=serial('COM4', ...
+            'baudrate',115200, ...
+            'flowcontrol','none', ...
+            'inputbuffersize',600000, ...
+            'outputbuffersize',600000, ...
+            'Terminator','CR/LF', ...
+            'DataBits',8, ...
+            'StopBits',2, ...
+            'DataTerminalReady','off');
+        fopen(out);
+        fid=fopen('data\jeremy\jc20131030d_rawData\mouseover_behav_data\jcvr120_15a_MouseoVeR_oval-track-28_11_jc20131030d.txt');
+    end
 end
 
 % get NI data
 analogData = [analogData; wsModel.Acquisition.getLatestAnalogData()];
 digitalData = [digitalData; wsModel.Acquisition.getLatestRawDigitalData()];
 
-% pre-load jeremy's test data
-if ~serialSyncFound || ~NISyncFound
-    for i=1:50
-        fprintf(out,fgetl(fid));
-    end
-else
-    while true
-        tmp=fgetl(fid);
-        fprintf(out,tmp);
-        if (sscanf(tmp,'%ld,%*s')-serialSyncZero)/1e6*sampleRate > nTrimmedTicks+size(digitalData,1)
-            break;
+if test
+    % pre-load jeremy's test data
+    if ~serialSyncFound || ~NISyncFound
+        for i=1:50
+            fprintf(out,fgetl(fid));
+        end
+    else
+        while true
+            tmp=fgetl(fid);
+            fprintf(out,tmp);
+            if (sscanf(tmp,'%ld,%*s')-serialSyncZero)/1e6*sampleRate > nTrimmedTicks+size(digitalData,1)
+                break;
+            end
         end
     end
 end
@@ -173,7 +168,6 @@ if nMore<=0 || size(serialXYV,1)==1
     disp('serial VR data is lagging behind');
     return;
 end
-% disp(['                                   ' num2str(nMore)]);
 interpolatedSerialXYV = nan(nMore,2);
 interpolatedSerialXYV(end-nMore+1:end,1) = interp1(serialXYV(:,1), serialXYV(:,2), ...  % y
        (nTrimmedTicks+(1:nMore))/sampleRate*1e6 + serialSyncZero, 'nearest');
@@ -244,5 +238,3 @@ find(serialXYV(:,1)>=nTrimmedTicks/sampleRate*1e6+serialSyncZero,1);
 serialXYV = serialXYV(ans:end,:);
 find(serialSyncPulses>=nTrimmedTicks/sampleRate*1e6+serialSyncZero,1);
 serialSyncPulses = serialSyncPulses(ans:end);
-
-% disp(['                                          analog=' num2str(size(analogData)) '; serial=' num2str(size(serialXYV))]);

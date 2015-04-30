@@ -4,8 +4,8 @@ function rasterVirtualRealityReceive(wsModel,evt)
 
 % user-defined parameters
 thresh = 2;  % delta mV
-binsX = linspace(2e4, 2.5e4, 10);
-binsY = linspace(1.5e4, 2.7e4, 10);
+binsX = linspace(2e4, 2.5e4, 20);
+binsY = linspace(1.5e4, 2.7e4, 20);
 electrodeChannel = 1;
 updateInterval = 5;
 
@@ -62,16 +62,6 @@ axis(nSpikesAxes,[min(binsX) max(binsX) min(binsY) max(binsY)]);
 allBinDwellTimes=zeros(length(binsY),length(binsX));
 allBinVelocities=cell(length(binsY),length(binsX));
 allBinSubthresholds=cell(length(binsY),length(binsX));
-
-% t=tic;
-
-% tt=toc(t);
-% disp(tt);
-% if tt>1.1
-%     profile on;
-%     disp('profile on');
-% end
-% t=tic;
 
 sampleRate=[];
 while isempty(sampleRate)
@@ -138,7 +128,6 @@ while true
         disp('serial VR data is lagging behind');
         continue;
     end
-    % disp(['                                   ' num2str(nMore)]);
     interpolatedSerialXYV = nan(nMore,2);
     interpolatedSerialXYV(end-nMore+1:end,1) = interp1(serialXYV(:,1), serialXYV(:,2), ...  % y
            (nTrimmedTicks+(1:nMore))/sampleRate*1e6 + serialSyncZero, 'nearest');
@@ -211,6 +200,5 @@ while true
     serialXYV = serialXYV(ans:end,:);
     find(serialSyncPulses>=nTrimmedTicks/sampleRate*1e6+serialSyncZero,1);
     serialSyncPulses = serialSyncPulses(ans:end);
-    % disp(['           analog=' num2str(size(analogData)) '; serial=' num2str(size(serialXYV))]);
 
 end
