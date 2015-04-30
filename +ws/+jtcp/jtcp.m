@@ -273,6 +273,8 @@ socketAddress = java.net.InetSocketAddress(host,port);
 % Establish unconnected socket. 
 socket = java.net.Socket();
 socket.setSoTimeout(timeout);
+socket.setSendBufferSize(2^20);
+socket.setReceiveBufferSize(2^20);
 
 % Connect socket to address.
 try 
