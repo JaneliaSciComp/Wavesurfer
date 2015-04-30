@@ -1,4 +1,4 @@
-function rasterTrialBased(self,evt)
+function rasterTrialBased(wsModel,evt)
 
 % usage:
 %   in UserFunctions dialog under Trial Complete put ws.examples.rasterTriasBased
@@ -10,14 +10,14 @@ nBins = 100;
 channels = [1];
 thresh = [-20];
 
-nTrials = self.ExperimentTrialCount;
-currTrial = self.ExperimentCompletedTrialCount;
-duration = self.TrialDuration;
-sampleRate = self.Acquisition.SampleRate;
+nTrials = wsModel.ExperimentTrialCount;
+currTrial = wsModel.ExperimentCompletedTrialCount;
+duration = wsModel.TrialDuration;
+sampleRate = wsModel.Acquisition.SampleRate;
 step = duration / nBins;
 histBinCenters = step/2 : step : duration;
 
-data = self.Acquisition.getRawAnalogDataFromCache();
+data = wsModel.Acquisition.getRawAnalogDataFromCache();
 
 if isempty(rasterFig) || ~ishandle(rasterFig)
     rasterFig = figure();
@@ -34,7 +34,7 @@ if currTrial==1
         histLines(channel) = bar(histAxes(channel),histBinCenters,zeros(1,nBins),1);
         set(histLines(channel),'EdgeColor','none','facecolor',[1 0 0]);
         axis(histAxes(channel),'off');
-        title(histAxes(channel), ['channel ' self.Acquisition.ChannelNames{channel}]);
+        title(histAxes(channel), ['channel ' wsModel.Acquisition.ChannelNames{channel}]);
     end
     drawnow;
         

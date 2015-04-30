@@ -96,7 +96,8 @@ classdef UserFunctions < ws.system.Subsystem
                           % Calls trial set completion user function, but still passes TrialDidAbort
                     end
                 catch me
-                    warning('wavesurfer:userfunction:codeerror', me.message);  % downgrade error to a warning
+                    message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
+                    warning('wavesurfer:userfunction:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
                 end
             else
                 warning('wavesurfer:userfunction:unknownuserfunctionevent', '%s is not a supported user function event.', eventName);

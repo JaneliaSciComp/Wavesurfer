@@ -1,4 +1,4 @@
-function rasterTreadMill(self,evt)
+function rasterTreadMill(wsModel,evt)
 
 % usage:
 %   in UserFunctions dialog under Data Available put ws.examples.rasterContinuous
@@ -26,17 +26,17 @@ velocityScale = 10;  % cm/s/V;  from steve: 100 mm/sec per volt
 
 binWidth = treadmillLength / nBins;
 binCenters = binWidth/2 : binWidth : treadmillLength;
-sampleRate = self.Acquisition.SampleRate;
+sampleRate = wsModel.Acquisition.SampleRate;
 
 % get data
-analogData = self.Acquisition.getLatestAnalogData();
-digitalData = self.Acquisition.getLatestRawDigitalData();
+analogData = wsModel.Acquisition.getLatestAnalogData();
+digitalData = wsModel.Acquisition.getLatestRawDigitalData();
 
 % output TTL pulse
 if median(analogData(:,electrodeChannel))>laserOnThreshold
-    self.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 1;
+    wsModel.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 1;
 else
-    self.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 0;
+    wsModel.Stimulation.DigitalOutputStateIfUntimed(laserChannel) = 0;
 end
 
 % initialize figure
@@ -47,15 +47,14 @@ if isempty(rasterFig) || ~ishandle(rasterFig)
 end
 
 % initialize plots
-if self.NTimesSamplesAcquiredCalledSinceExperimentStart==2
+if wsModel.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     clf(rasterFig);
 
-    rasterLine=[];
     rasterAxes = subplot(10,1,[1 2 3],'parent',rasterFig);
     hold(rasterAxes, 'on');
     axis(rasterAxes, 'ij');
     ylabel(rasterAxes, 'lap #');
-    title(rasterAxes, ['channel ' self.Acquisition.ChannelNames{electrodeChannel}]);
+    title(rasterAxes, ['channel ' wsModel.Acquisition.ChannelNames{electrodeChannel}]);
     
     nSpikesAxes = subplot(10,1,4,'parent',rasterFig);
     hold(nSpikesAxes, 'on');
@@ -83,6 +82,7 @@ if self.NTimesSamplesAcquiredCalledSinceExperimentStart==2
     
     lap=1;
     initialPosition=0;
+    rasterLine=[];
     binDwellTimes=zeros(1,nBins);
     allBinDwellTimes=zeros(1,nBins);
     binVelocities=cell(1,nBins);
