@@ -110,13 +110,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        DataAvailable
-        TrialWillStart
-        TrialDidComplete
-        TrialDidAbort
-        ExperimentWillStart
-        ExperimentDidComplete
-        ExperimentDidAbort
+        ClassName
         %NScopesMayHaveChanged
     end
     

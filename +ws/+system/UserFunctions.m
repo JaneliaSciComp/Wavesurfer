@@ -1,13 +1,7 @@
 classdef UserFunctions < ws.system.Subsystem
     
     properties
-        TrialWillStart = '';
-        TrialDidComplete = '';
-        TrialDidAbort = '';
-        ExperimentWillStart = '';
-        ExperimentDidComplete = '';
-        ExperimentDidAbort = '';
-        DataAvailable = '';
+        ClassName = '';
         AbortCallsComplete = true; % If true and the equivalent abort function is empty, complete will be called when abort happens.
     end
     
@@ -18,59 +12,10 @@ classdef UserFunctions < ws.system.Subsystem
             self.Parent=parent;
         end  % function
         
-        function set.TrialWillStart(self, value)
-            %fprintf('UserFunctions::set.TrialWillStart()\n');
+        function set.ClassName(self, value)
             if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('TrialWillStart', value);
-                self.TrialWillStart = value;
-            end
-            self.broadcast('Update');
-        end  % function
-        
-        function set.TrialDidComplete(self, value)
-            if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('TrialDidComplete', value);
-                self.TrialDidComplete = value;
-            end
-            self.broadcast('Update');
-        end  % function
-        
-        function set.TrialDidAbort(self, value)
-            if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('TrialDidAbort', value);
-                self.TrialDidAbort = value;
-            end
-            self.broadcast('Update');
-        end  % function
-        
-        function set.ExperimentWillStart(self, value)
-            if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('ExperimentWillStart', value);
-                self.ExperimentWillStart = value;
-            end
-            self.broadcast('Update');
-        end  % function
-        
-        function set.ExperimentDidComplete(self, value)
-            if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('ExperimentDidComplete', value);
-                self.ExperimentDidComplete = value;
-            end
-            self.broadcast('Update');
-        end  % function
-        
-        function set.ExperimentDidAbort(self, value)
-            if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('ExperimentDidAbort', value);
-                self.ExperimentDidAbort = value;
-            end
-            self.broadcast('Update');
-        end  % function
-        
-        function set.DataAvailable(self, value)
-            if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('DataAvailable', value);
-                self.DataAvailable = value;
+                self.validatePropArg('ClassName', value);
+                self.ClassName = value;
             end
             self.broadcast('Update');
         end  % function
@@ -83,7 +28,7 @@ classdef UserFunctions < ws.system.Subsystem
                 % Prevent interruption due to errors in user provided code.
                 try
                     if ~isempty(self.(eventName)) ,
-                        feval(self.(eventName), wavesurferModel, eventName);
+                        feval(self.(eventName), wavesurferModel, eventName);   XXX
                     end
                     
                     if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && isempty(self.TrialDidAbort) && ~isempty(self.TrialDidComplete) ,
@@ -165,13 +110,7 @@ classdef UserFunctions < ws.system.Subsystem
         function s = propertyAttributes()
             s = ws.system.Subsystem.propertyAttributes();
 
-            s.TrialWillStart = struct( 'Classes', {'string'}, 'AllowEmpty', true);
-            s.TrialDidComplete = struct( 'Classes', {'string'}, 'AllowEmpty', true);
-            s.TrialDidAbort = struct( 'Classes', {'string'}, 'AllowEmpty', true);
-            s.ExperimentWillStart = struct( 'Classes', {'string'}, 'AllowEmpty', true);
-            s.ExperimentDidComplete = struct( 'Classes', {'string'}, 'AllowEmpty', true);
-            s.ExperimentDidAbort = struct( 'Classes', {'string'}, 'AllowEmpty', true);
-            s.DataAvailable = struct( 'Classes', {'string'}, 'AllowEmpty', true);
+            s.ClassName = struct( 'Classes', {'string'}, 'AllowEmpty', true);
             s.AbortCallsComplete = struct( 'Classes', {'logical'}, 'Attributes', {{'scalar'}});
             
         end  % function
