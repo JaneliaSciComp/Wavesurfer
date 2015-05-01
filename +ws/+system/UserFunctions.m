@@ -1,12 +1,23 @@
 classdef UserFunctions < ws.system.Subsystem
     
     properties
-        TheObject =[];
         ClassName = '';
         AbortCallsComplete = true; % If true and the equivalent abort function is empty, complete will be called when abort happens.
     end
     
+    properties (Access = protected)
+        TheObject_ = [];
+    end
+    
+    properties (Dependent = true, SetAccess = immutable)
+        TheObject;
+    end
+    
     methods
+        function result = get.TheObject(self)
+            result = self.TheObject_;
+        end
+        
         function self = UserFunctions(parent)
             self.CanEnable=true;
             self.Enabled=true;            
@@ -17,6 +28,7 @@ classdef UserFunctions < ws.system.Subsystem
             if ws.utility.isASettableValue(value) ,
                 self.validatePropArg('ClassName', value);
                 self.ClassName = value;
+                self.syncTheObjectToClassName_();
             end
             self.broadcast('Update');
         end  % function
@@ -28,16 +40,16 @@ classdef UserFunctions < ws.system.Subsystem
 %             if isprop(self, eventName) ,
                 % Prevent interruption due to errors in user provided code.
                 try
-                    if ~isempty(self.TheObject) ,
-                        self.TheObject.(eventName)(wavesurferModel, eventName);
+                    if ~isempty(self.TheObject_) ,
+                        self.TheObject_.(eventName)(wavesurferModel, eventName);
                     end
                     
-                    if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && isempty(self.TheObject) ,
-                        self.TheObject.TrialDidComplete(wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
+                    if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && ~isempty(self.TheObject_) ,
+                        self.TheObject_.TrialDidComplete(wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
                     end
                     
-                    if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject) ,
-                        self.TheObject.ExperimentDidComplete(wavesurferModel, eventName); 
+                    if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject_) ,
+                        self.TheObject_.ExperimentDidComplete(wavesurferModel, eventName); 
                           % Calls trial set completion user function, but still passes TrialDidAbort
                     end
                 catch me
@@ -69,6 +81,10 @@ classdef UserFunctions < ws.system.Subsystem
 %     end  % protected methods block
     
     methods (Access=protected)
+        function syncTheObjectToClassName_(self)
+             self.TheObject_=feval(self.ClassName);           
+        end
+        
         function out = getPropertyValue(self, name)
             out = self.(name);
         end  % function

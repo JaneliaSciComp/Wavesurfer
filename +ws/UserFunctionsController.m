@@ -59,7 +59,6 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
         function ClassNameEditActuated(self,source,event) %#ok<INUSD>
             newString=get(source,'String');
             self.Model.ClassName=newString;
-            self.Model.TheObject=feval(newString);
         end
 
         function AbortCallsCompleteCheckboxActuated(self,source,event) %#ok<INUSD>

@@ -110,13 +110,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        DataAvailable
-        TrialWillStart
-        TrialDidComplete
-        TrialDidAbort
-        ExperimentWillStart
-        ExperimentDidComplete
-        ExperimentDidAbort        %NScopesMayHaveChanged
+        trialWillStart
+        trialDidComplete
+        trialDidAbort
+        experimentWillStart
+        experimentDidComplete
+        experimentDidAbort        %NScopesMayHaveChanged
+        dataIsAvailable
     end
     
     events
@@ -601,7 +601,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.dataAvailable(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
+            self.haveDataAvailable(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
             %profile off
         end
         
@@ -668,7 +668,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.ExperimentCompletedTrialCount = 0;
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentWillStart');  
+            self.callUserFunctionsAndBroadcastEvent('experimentWillStart');  
                 % no one listens for this, it seems, but it does directly
                 % lead to user function getting called --ALT, 2014-08-24
             
@@ -724,7 +724,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Notify listeners that the trial is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
             % event.  -- ALT, 2014-05-20
-            self.callUserFunctionsAndBroadcastEvent('TrialWillStart');            
+            self.callUserFunctionsAndBroadcastEvent('trialWillStart');            
             
             % Call willPerformTrial() on all the enabled subsystems
             for idx = 1:numel(self.Subsystems_)
@@ -765,7 +765,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.ExperimentCompletedTrialCount = self.ExperimentCompletedTrialCount + 1;
             
             % Call user functions and broadcast
-            self.callUserFunctionsAndBroadcastEvent('TrialDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('trialDidComplete');
             
             % Daisy-chain another trial, or wrap up the experiment,
             % depending
@@ -861,7 +861,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('TrialDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('trialDidAbort');
             
             self.didAbortExperiment();
         end  % function
@@ -887,7 +887,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('experimentDidComplete');
         end  % function
         
         function didAbortExperiment(self, highestIndexedSubsystemThatNeedsAbortion)
@@ -908,10 +908,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('experimentDidAbort');
         end  % function
         
-        function dataAvailable(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
+        function haveDataAvailable(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
             nScans=size(rawAnalogData,1);
@@ -941,7 +941,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.dataAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
+                        self.Subsystems_{idx}.dataIsAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;
                 end
@@ -950,7 +950,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + nScans;
 
                 %self.broadcast('DataAvailable');
-                self.callUserFunctionsAndBroadcastEvent('DataAvailable');
+                self.callUserFunctionsAndBroadcastEvent('dataIsAvailable');
             end
         end  % function
         
