@@ -1,6 +1,7 @@
 classdef UserFunctions < ws.system.Subsystem
     
     properties
+        TheObject =[];
         ClassName = '';
         AbortCallsComplete = true; % If true and the equivalent abort function is empty, complete will be called when abort happens.
     end
@@ -24,29 +25,28 @@ classdef UserFunctions < ws.system.Subsystem
             % Only using ispop assumes the caller won't do something malicious like call
             % invoke with 'AbortCallsComplete' or similar.  Trying to keep the overhead as
             % low as possible to allow as much execution time for the user code itself.
-            if isprop(self, eventName) ,
+%             if isprop(self, eventName) ,
                 % Prevent interruption due to errors in user provided code.
                 try
-                    if ~isempty(self.(eventName)) ,
-                        feval(self.(eventName), wavesurferModel, eventName);   XXX
+                    if ~isempty(self.TheObject) ,
+                        self.TheObject.(eventName)(wavesurferModel, eventName);
                     end
                     
-                    if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && isempty(self.TrialDidAbort) && ~isempty(self.TrialDidComplete) ,
-                        feval(self.TrialDidComplete, wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
+                    if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && isempty(self.TheObject) ,
+                        self.TheObject.TrialDidComplete(wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
                     end
                     
-                    if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ...
-                                                                                     isempty(self.ExperimentDidAbort) && ~isempty(self.ExperimentDidComplete) ,
-                        feval(self.ExperimentDidComplete, wavesurferModel, eventName); 
+                    if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject) ,
+                        self.TheObject.ExperimentDidComplete(wavesurferModel, eventName); 
                           % Calls trial set completion user function, but still passes TrialDidAbort
                     end
                 catch me
                     message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                     warning('wavesurfer:userfunction:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
                 end
-            else
-                warning('wavesurfer:userfunction:unknownuserfunctionevent', '%s is not a supported user function event.', eventName);
-            end
+%             else
+%                 warning('wavesurfer:userfunction:unknownuserfunctionevent', '%s is not a supported user function event.', eventName);
+%             end
         end  % function
         
 %         function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
