@@ -806,8 +806,8 @@ classdef Acquisition < ws.system.Subsystem
                     nScansAtEndOfCache = n - nScansAtStartOfCache ;
                     self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
                     self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
-                    self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache) ;
-                    self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end) ;
+                    self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
+                    self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
                     self.IsAllDataInCacheValid_ = true ;
                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
                 end
@@ -1027,6 +1027,10 @@ classdef Acquisition < ws.system.Subsystem
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceTrialStart ;
         end
+        
+        function result = getNScansReadThisTrial(self)
+            result  = self.NScansReadThisTrial_ ;
+        end        
     end
     
     methods (Access=protected)

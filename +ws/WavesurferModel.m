@@ -1495,12 +1495,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
     methods
         function triggeringSubsystemJustStartedFirstTrialInExperiment(self)
-            % This means we need to start the polling timer
-            %self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
-            %self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
-            %self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
-            %start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
-            
+            % This means we need to start the polling loop            
+            self.runPollingLoop_();
+        end
+    end
+    
+    methods (Access=protected)
+        function runPollingLoop_(self)
+            % Runs the main polling loop
             pollingTicId = tic() ;
             pollingPeriod = 1/self.Display.UpdateRate ;
             self.DoContinuePolling_ = true ;
@@ -1510,22 +1512,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
                     timeOfLastPoll = timeNow ;
-                    tStart = toc(pollingTicId) ;
+                    %tStart = toc(pollingTicId) ;
                     self.pollingTimerFired_() ;
-                    tMiddle = toc(pollingTicId) ;
+                    %tMiddle = toc(pollingTicId) ;
                     drawnow() ;  % update, and also process any user actions
-                    tEnd = toc(pollingTicId) ;
-                    coreActionDuration = tMiddle-tStart ;
-                    actionDuration = tEnd-tStart ;
+                    %tEnd = toc(pollingTicId) ;
+                    %coreActionDuration = tMiddle-tStart ;
+                    %actionDuration = tEnd-tStart ;
                     %fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
                 else
                     pause(0.010);  % don't want this loop to completely peg the CPU
                 end
-            end            
+            end                        
         end
-    end
-    
-    methods (Access=protected)        
+        
         function pollingTimerFired_(self)
             %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);
