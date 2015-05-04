@@ -11,6 +11,7 @@ function turnD0OnWhenAI0GoesTTLHigh(wsModel,varargin)
     persistent nOutputEdgesDetected
     persistent nCallsSinceCommand
     persistent meanOfLatenciesSoFar
+    persistent BigSSoFar
     
     if isempty(oldCommand) ,
         oldCommand=false;
@@ -106,10 +107,16 @@ function turnD0OnWhenAI0GoesTTLHigh(wsModel,varargin)
             set(ax,'ylim',[0 nOutputEdgesDetected+1]);
             if nOutputEdgesDetected==1 ,
                 legend(ax,[l1 l2 l3 l4],'Input edge','Input data read','Output edge','Output data read');
-                meanOfLatenciesSoFar = delayToOutputEdge
+                meanOfLatenciesSoFar = delayToOutputEdge ;
+                BigSSoFar = 0 ;                
+                sdOfLatenciesSoFar = nan ;
             else
-                meanOfLatenciesSoFar = (nOutputEdgesDetected-1)/nOutputEdgesDetected*meanOfLatenciesSoFar + delayToOutputEdge/nOutputEdgesDetected
+                deviation = (delayToOutputEdge-meanOfLatenciesSoFar) ;
+                meanOfLatenciesSoFar = meanOfLatenciesSoFar + deviation/nOutputEdgesDetected ;
+                BigSSoFar = BigSSoFar + deviation*(delayToOutputEdge-meanOfLatenciesSoFar) ;
+                sdOfLatenciesSoFar = sqrt(BigSSoFar/(nOutputEdgesDetected-1)) ;
             end
+            fprintf('Mean of latencies: %5.0f ms     SD: %5.0f ms\n', 1000*meanOfLatenciesSoFar, 1000*sdOfLatenciesSoFar);
         end
     end
     
