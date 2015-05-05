@@ -467,7 +467,7 @@ classdef Acquisition < ws.system.Subsystem
                 end
             end
             if ~isempty(self.DigitalInputTask_)
-                self.DigitalInputTask_.SampleRate = value;
+                self.DigitalInputTask_.SampleRate = newValue;
             end
             self.broadcast('DidSetSampleRate');
         end  % function
