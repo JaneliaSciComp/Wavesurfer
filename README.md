@@ -190,4 +190,7 @@ Version History
 0.784: (April 29, 2015) Test pulser now uses sampling rate of
        acquisition system.
 
+0.785: (May 11, 2015) Inactived AI channels are now really and 
+       truly inactivated.
+
 

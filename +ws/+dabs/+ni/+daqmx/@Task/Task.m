@@ -162,15 +162,23 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
         function delete(obj)
             if ~obj.cancelConstruct
                 %fprintf('Task::delete()\n');
-                if ~obj.isTaskDoneQuiet()
-                    obj.abort();
-                end        
+                try
+                    % abort if task is not done
+                    if ~obj.isTaskDoneQuiet()
+                        obj.abort();
+                    end        
+                catch me %#ok<NASGU>
+                    % If this fails for whatever reason, want to just proceed
+                    % In certain error states, isTaskDoneQuiet() can throw,
+                    % and we don't want to let that stop us from clearing
+                    % the DAQmx task.
+                end
                 
                 %Unregister any callbacks -- required to clear data record in the RegisterXXXCallback MEX functions
                 obj.registerDoneEvent();
                 obj.registerSignalEvent(); 
                 obj.registerEveryNSamplesEvent();
-                
+
                 if ~isempty(obj.channels)
                     deleteHidden(obj.channels);
                 end

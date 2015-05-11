@@ -6,7 +6,7 @@ classdef AnalogInputTask < handle
         % These are all set in the constructor, and not changed
         Parent
         DeviceName
-        AvailableChannels  % Zero-based AI channel IDs, all of them
+        ChannelIDs  % Zero-based AI channel IDs, all of them
         TaskName
         ChannelNames
         IsArmed
@@ -19,7 +19,7 @@ classdef AnalogInputTask < handle
     end
     
     properties (Dependent = true)
-        ActiveChannels  % Zero-based AI channel Ids, all of them
+        %ActiveChannels  % Zero-based AI channel Ids, all of them
         SampleRate      % Hz
         AcquisitionDuration  % Seconds
         DurationPerDataAvailableCallback  % Seconds
@@ -35,8 +35,8 @@ classdef AnalogInputTask < handle
     
     properties (Access = protected)
         SampleRate_ = 20000
-        AvailableChannels_ = zeros(1,0)  % Zero-based AI channel IDs, all of them
-        ActiveChannels_ = zeros(1,0)
+        ChannelIDs_ = zeros(1,0)  % Zero-based AI channel IDs, all of them
+        %ActiveChannels_ = zeros(1,0)
         AcquisitionDuration_ = 1     % Seconds
         DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
@@ -57,12 +57,12 @@ classdef AnalogInputTask < handle
             % Store the parent
             self.Parent_ = parent ;
             
-            %self.AvailableChannels = channelIndices;
+            %self.ChannelIDs = channelIndices;
             if isnumeric(channelIndices) && isrow(channelIndices) && all(channelIndices==round(channelIndices)) && all(channelIndices>=0) ,
-                self.AvailableChannels_ = channelIndices;
+                self.ChannelIDs_ = channelIndices;
             else
                 error('most:Model:invalidPropVal', ...
-                      'AvailableChannels must be empty or a vector of nonnegative integers.');       
+                      'ChannelIDs must be empty or a vector of nonnegative integers.');       
             end
 
             % Check that deviceName is kosher
@@ -81,7 +81,7 @@ classdef AnalogInputTask < handle
                 else
                     error('AnalogInputTask:channelNamesBad' , ...
                           'channelNames is wrong type or wrong length.');
-                end                
+                end
             else
                 % Use default channelNames
                 channelNames = cell(1,nChannels) ;
@@ -104,7 +104,7 @@ classdef AnalogInputTask < handle
             end
             
             % Initially, all channels are active
-            self.ActiveChannels = self.AvailableChannels;            
+            %self.ActiveChannels = self.ChannelIDs;            
         end  % function
         
         function delete(self)
@@ -213,52 +213,52 @@ classdef AnalogInputTask < handle
             value = self.IsArmed_;
         end  % function
         
-        function value = get.AvailableChannels(self)
-            value = self.AvailableChannels_;
+        function value = get.ChannelIDs(self)
+            value = self.ChannelIDs_;
         end  % function
         
-        function value = get.ActiveChannels(self)
-            value = self.ActiveChannels_;
-        end  % function
-        
-        function set.ActiveChannels(self, value)
-            if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
-                error('most:Model:invalidPropVal', ...
-                      'ActiveChannels must be empty or a vector of integers.');       
-            end
-            
-            availableActive = intersect(self.AvailableChannels, value);
-            
-            if numel(value) ~= numel(availableActive)
-                ws.most.mimics.warning('Wavesurfer:Aqcuisition:invalidChannels', 'Not all requested channels are available.\n');
-            end
-            
-            if ~isempty(self.DabsDaqTask_)
-                channelsToRead = '';
-                
-                for cdx = availableActive
-                    idx = find(self.AvailableChannels == cdx, 1);
-                    channelsToRead = sprintf('%s%s, ', channelsToRead, self.ChannelNames{idx});
-                end
-                
-                channelsToRead = channelsToRead(1:end-2);
-                
-                set(self.DabsDaqTask_, 'readChannelsToRead', channelsToRead);
-            end
-            
-            self.ActiveChannels_ = availableActive;
-        end  % function
+%         function value = get.ActiveChannels(self)
+%             value = self.ActiveChannels_;
+%         end  % function
+%         
+%         function set.ActiveChannels(self, value)
+%             if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'ActiveChannels must be empty or a vector of integers.');       
+%             end
+%             
+%             availableActive = intersect(self.ChannelIDs, value);
+%             
+%             if numel(value) ~= numel(availableActive)
+%                 ws.most.mimics.warning('Wavesurfer:Aqcuisition:invalidChannels', 'Not all requested channels are available.\n');
+%             end
+%             
+%             if ~isempty(self.DabsDaqTask_)
+%                 channelsToRead = '';
+%                 
+%                 for cdx = availableActive
+%                     idx = find(self.ChannelIDs == cdx, 1);
+%                     channelsToRead = sprintf('%s%s, ', channelsToRead, self.ChannelNames{idx});
+%                 end
+%                 
+%                 channelsToRead = channelsToRead(1:end-2);
+%                 
+%                 set(self.DabsDaqTask_, 'readChannelsToRead', channelsToRead);
+%             end
+%             
+%             self.ActiveChannels_ = availableActive;
+%         end  % function
         
 %         function value = get.ActualAcquisitionDuration(self)
 %             value = (self.ExpectedScanCount)/self.SampleRate_;
 %         end  % function
         
-%         function set.AvailableChannels(self, value)
+%         function set.ChannelIDs(self, value)
 %             if isnumeric(value) && isrow(value) && all(value==round(value)) ,
-%                 self.AvailableChannels = value;
+%                 self.ChannelIDs = value;
 %             else
 %                 error('most:Model:invalidPropVal', ...
-%                       'AvailableChannels must be empty or a vector of integers.');       
+%                       'ChannelIDs must be empty or a vector of integers.');       
 %             end
 %         end  % function
         
