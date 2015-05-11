@@ -198,6 +198,8 @@ classdef Acquisition < ws.system.Subsystem
             % active.
             if islogical(newIsChannelActive) && isequal(size(newIsChannelActive),size(self.IsChannelActive)) ,
                 self.IsChannelActive_ = newIsChannelActive;
+                % TODO: Need to change this to simply set the relevant task
+                % to empty, to fix issue #85.
                 if ~isempty(self.AnalogInputTask_) ,
                     active = self.IsChannelActive & self.IsChannelAnalog;
                     active = active(1:self.NAnalogChannels);

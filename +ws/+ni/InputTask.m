@@ -199,7 +199,7 @@ classdef InputTask < handle
             keyboard
         end  % function        
     end
-     
+    
     methods (Access=protected)
         function data = queryUntilEnoughThenRead_(self)
             % self.DabsDaqTask_ cannot be empty when this is called
@@ -238,6 +238,9 @@ classdef InputTask < handle
         end  % function
         
         function set.IsChannelActive(self, newIsChannelActive)
+            % TODO: Need to get rid of this property, since it's not really
+            % that useful: setting readChannelsToRead doesn't affect what
+            % channels are actually sampled.
             if (islogical(newIsChannelActive) || isnumeric(newIsChannelActive)) && isequal(size(newIsChannelActive),size(self.IsChannelActive_)) ,
                 newIsChannelActive=logical(newIsChannelActive);
 
