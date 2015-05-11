@@ -166,13 +166,8 @@ classdef Acquisition < ws.system.Subsystem
             % Boolean array indicating which of the available channels is
             % active.
             if islogical(newIsChannelActive) && isequal(size(newIsChannelActive),size(self.IsChannelActive)) ,
-                self.IsChannelActive_ = newIsChannelActive;
-                if isempty(self.AnalogInputTask_) || isempty(self.AnalogInputTask_.AvailableChannels) ,
-                    % nothing to set
-                else
-                    newActiveChannelIDs=self.ChannelIDs_(newIsChannelActive);
-                    self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;                    
-                end
+                self.IsChannelActive_ = newIsChannelActive ;
+                self.AnalogInputTask_ = [] ;  % need to clear, will re-create when needed 
             end
             self.broadcast('DidSetIsChannelActive');
         end
@@ -461,15 +456,17 @@ classdef Acquisition < ws.system.Subsystem
 
         function acquireHardwareResources_(self)
             if isempty(self.AnalogInputTask_) ,
+                % Only hand the active channels to the AnalogInputTask
+                isChannelActive = self.IsChannelActive ;
+                activeChannelIDs=self.ChannelIDs(isChannelActive);
+                activeChannelNames = self.ChannelNames(isChannelActive) ;                
+                % Create the analog input task
                 self.AnalogInputTask_ = ...
                     ws.ni.AnalogInputTask(self, ...
                                           self.DeviceNames{1}, ...
-                                          self.ChannelIDs, ...
+                                          activeChannelIDs, ...
                                           'Wavesurfer Analog Acquisition Task', ...
-                                          self.ChannelNames);
-                % Have to make sure the active channels gets set in the Task object
-                activeChannelIDs=self.ChannelIDs(self.IsChannelActive);
-                self.AnalogInputTask_.ActiveChannels=activeChannelIDs;
+                                          activeChannelNames);
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
@@ -569,7 +566,12 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function didAbortTrial(self, ~)
-            self.AnalogInputTask_.abort();
+            try
+                self.AnalogInputTask_.abort();
+            catch me %#ok<NASGU>
+                % didAbortTrial() cannot throw an error, so we ignore any
+                % errors that arise here.
+            end
             self.IsArmedOrAcquiring = false;
         end  % function
         
@@ -583,7 +585,7 @@ classdef Acquisition < ws.system.Subsystem
             for cdx = 1:numel(channelNames)
                 validateattributes(channelNames{cdx}, {'char'}, {});
                 
-                idx = self.AnalogInputTask_.AvailableChannels(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
+                idx = self.AnalogInputTask_.ChannelIDs(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
                 
                 if isempty(idx)
                     ws.most.mimics.warning('wavesurfer:acquisition:unknownchannelname', ...
