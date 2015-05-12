@@ -193,4 +193,6 @@ Version History
 0.785: (May 11, 2015) Inactived AI channels are now really and 
        truly inactivated.
 
+0.786: (May 12, 2015) Fixed bug with TestPulser model not getting 
+       persisted to disk properly.
 
