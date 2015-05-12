@@ -196,3 +196,5 @@ Version History
 0.786: (May 12, 2015) Fixed bug with TestPulser model not getting 
        persisted to disk properly.
 
+0.787: (May 12, 2015) Commented out debugging fprintf.  Doh!
+

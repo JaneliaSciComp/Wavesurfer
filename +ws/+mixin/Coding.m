@@ -618,7 +618,7 @@ classdef Coding < handle
                 % under the hood.
                 % This shouldn't break self-consistency if the stored
                 % settings are self-consistent.
-                fprintf('Decoding a non-Mimic, non-Coding object...\n');
+                %fprintf('Decoding a non-Mimic, non-Coding object...\n');
                 
                 if isa(subtarget,'ws.Model') ,
                     subtarget.disableBroadcasts();
