@@ -58,12 +58,12 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
     methods
         function ClassNameEditActuated(self,source,event) %#ok<INUSD>
             newString=get(source,'String');
-            self.Model.ClassName=newString;
+            ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
         end
 
         function AbortCallsCompleteCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.Model.AbortCallsComplete=newValue;
+            ws.Controller.setWithBenefits(self.Model,'AbortCallsComplete',newValue);
         end
     end
     

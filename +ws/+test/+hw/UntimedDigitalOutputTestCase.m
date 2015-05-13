@@ -29,7 +29,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
-            wsModel.UserFunctions.TrialWillStart='ws.examples.untimedDO';
+            wsModel.UserFunctions.ClassName='ws.examples.FlipDOFromTrialToTrial';
 
             nTrials=5;
             wsModel.ExperimentTrialCount=nTrials;
