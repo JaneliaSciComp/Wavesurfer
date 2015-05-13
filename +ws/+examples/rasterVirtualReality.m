@@ -1,240 +1,168 @@
-function rasterVirtualReality(wsModel,evt)
+classdef rasterVirtualReality < ws.Model
 
-% usage:
-%   in UserFunctions dialog under Data Available put ws.examples.rasterVirtualReality
-%   adjust the thresh, binsX, binsY, electrodeChannel, etc. variables below to suite
-
-% user-defined parameters
-thresh = 2;  % delta mV
-binsX = linspace(2e4, 2.5e4, 10);
-binsY = linspace(1.5e4, 2.7e4, 10);
-electrodeChannel = 1;
-syncChannel = 1;
-serialChannel = 'COM5';
-updateInterval = 5;
-test = true;
-
-% shouldn't need to change anything below here
-
-sampleRate = wsModel.Acquisition.SampleRate;
-
-persistent rasterFig
-persistent positionTail positionHead
-persistent nSpikesAxes nSpikesSurf
-persistent subthresholdAxes subthresholdSurf
-persistent spikeRateAxes spikeRateSurf
-persistent allBinDwellTimes allBinSubthresholds
-persistent serialPort serialSyncFound NISyncFound NISyncZero serialSyncPulses serialSyncZero
-persistent analogData digitalData serialXYV interpolatedSerialXYV nTrimmedTicks
-persistent out fid
-
-% initialize figure
-if isempty(rasterFig) || ~ishandle(rasterFig)
-    rasterFig = figure();
-    position = get(rasterFig,'position');
-    set(rasterFig,'position',position.*[1 0 3 1]);
-end
-
-if wsModel.NTimesSamplesAcquiredCalledSinceExperimentStart==2
-    clf(rasterFig);
-
-    nSpikesAxes = subplot(1,3,1,'parent',rasterFig);
-    hold(nSpikesAxes, 'on');
-    nSpikesSurf = pcolor(nSpikesAxes,binsX,binsY,zeros(length(binsY),length(binsX)));
-    view(nSpikesAxes,2);
-    set(nSpikesSurf,'EdgeColor','none');
-    positionTail = plot(nSpikesAxes,0,0,'w-');
-    positionHead = plot(nSpikesAxes,0,0,'wo');
-    axis(nSpikesAxes,'off');
-    title(nSpikesAxes, '# spikes');
-    colorbar('peer',nSpikesAxes);
-
-    spikeRateAxes = subplot(1,3,2,'parent',rasterFig);
-    spikeRateSurf = pcolor(spikeRateAxes,binsX,binsY,zeros(length(binsY),length(binsX)));
-    view(spikeRateAxes,2);
-    set(spikeRateSurf,'EdgeColor','none');
-    axis(spikeRateAxes,'off');
-    title(spikeRateAxes, 'spike rate (/s)');
-    colorbar('peer',spikeRateAxes);
-
-    subthresholdAxes = subplot(1,3,3,'parent',rasterFig);
-    subthresholdSurf = pcolor(subthresholdAxes,binsX,binsY,zeros(length(binsY),length(binsX)));
-    view(subthresholdAxes,2);
-    set(subthresholdSurf,'EdgeColor','none');
-    axis(subthresholdAxes,'off');
-    title(subthresholdAxes, 'subthreshold (mV)');
-    colorbar('peer',subthresholdAxes);
-
-    linkaxes([nSpikesAxes spikeRateAxes subthresholdAxes],'x');
-    axis(nSpikesAxes,[min(binsX) max(binsX) min(binsY) max(binsY)]);
-
-    allBinDwellTimes=zeros(length(binsY),length(binsX));
-    allBinSubthresholds=cell(length(binsY),length(binsX));
-    
-    serialSyncFound=false;
-    NISyncFound=false;
-    analogData=[];
-    digitalData=[];
-    serialXYV=[];
-    interpolatedSerialXYV=[];
-    serialSyncPulses=[];
-    nTrimmedTicks=0;
-end
-
-% initialize serial port
-if isempty(serialPort)
-    serialPort=serial(serialChannel, ...
-        'baudrate',115200, ...
-        'flowcontrol','none', ...
-        'inputbuffersize',600000, ...
-        'outputbuffersize',600000, ...
-        'Terminator','CR/LF', ...
-        'DataBits',8, ...
-        'StopBits',2, ...
-        'DataTerminalReady','off');
-    fopen(serialPort);
-
-    if test
-        % pre-load jeremy's test data
-        out=serial('COM4', ...
-            'baudrate',115200, ...
-            'flowcontrol','none', ...
-            'inputbuffersize',600000, ...
-            'outputbuffersize',600000, ...
-            'Terminator','CR/LF', ...
-            'DataBits',8, ...
-            'StopBits',2, ...
-            'DataTerminalReady','off');
-        fopen(out);
-        fid=fopen('data\jeremy\jc20131030d_rawData\mouseover_behav_data\jcvr120_15a_MouseoVeR_oval-track-28_11_jc20131030d.txt');
+    % public parameters
+    properties
+        SerialChannel = 'COM5';
+        SyncChannel = 1;
+        ElectrodeChannel = 1;  % duplicate in display thread
+        LaserOnThreshold = -57;  %mV
+        LaserChannel = 2;
+        Test = true;
     end
-end
 
-% get NI data
-analogData = [analogData; wsModel.Acquisition.getLatestAnalogData()];
-digitalData = [digitalData; wsModel.Acquisition.getLatestRawDigitalData()];
-
-if test
-    % pre-load jeremy's test data
-    if ~serialSyncFound || ~NISyncFound
-        for i=1:50
-            fprintf(out,fgetl(fid));
+    % local variables
+    properties (Access = protected, Transient = true)
+        TcpSend
+        TcpReceive
+        SampleRate
+        SerialPort
+        SerialSyncFound
+        NISyncFound
+        SerialSyncZero
+        NISyncZero
+        TotalDigitalRead
+        Out
+        Fid
+    end
+    
+    methods
+        
+        function self = rasterVirtualReality(parent)
         end
-    else
-        while true
-            tmp=fgetl(fid);
-            fprintf(out,tmp);
-            if (sscanf(tmp,'%ld,%*s')-serialSyncZero)/1e6*sampleRate > nTrimmedTicks+size(digitalData,1)
-                break;
+        
+        function trialWillStart(self,wsModel,evt)
+        end
+        
+        function trialDidComplete(self,wsModel,evt)
+        end
+        
+        function trialDidAbort(self,wsModel,evt)
+        end
+        
+        function experimentWillStart(self,wsModel,evt)
+
+            eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayThread &');            
+            self.TcpReceive = ws.jtcp.jtcp('ACCEPT',2000,'TIMEOUT',60000);
+            self.TcpSend = ws.jtcp.jtcp('REQUEST','127.0.0.1',2000,'TIMEOUT',60000);
+            
+            self.SampleRate = wsModel.Acquisition.SampleRate;
+            ws.jtcp.jtcp('WRITE',self.TcpSend,wsModel.Acquisition.SampleRate);
+
+            self.SerialSyncFound=false;
+            self.NISyncFound=false;
+            self.TotalDigitalRead=0;
+
+            % initialize serial port
+            if isempty(self.SerialPort)
+                self.SerialPort=serial(self.SerialChannel, ...
+                    'baudrate',115200, ...
+                    'flowcontrol','none', ...
+                    'inputbuffersize',600000, ...
+                    'outputbuffersize',600000, ...
+                    'Terminator','CR/LF', ...
+                    'DataBits',8, ...
+                    'StopBits',2, ...
+                    'DataTerminalReady','off');
+                fopen(self.SerialPort);
+
+                if self.Test
+                    % pre-load jeremy's test data
+                    self.Out=serial('COM4', ...
+                        'baudrate',115200, ...
+                        'flowcontrol','none', ...
+                        'inputbuffersize',600000, ...
+                        'outputbuffersize',600000, ...
+                        'Terminator','CR/LF', ...
+                        'DataBits',8, ...
+                        'StopBits',2, ...
+                        'DataTerminalReady','off');
+                    fopen(self.Out);
+                    self.Fid=fopen('data\jeremy\jc20131030d_rawData\mouseover_behav_data\jcvr120_15a_MouseoVeR_oval-track-28_11_jc20131030d.txt');
+                end
             end
         end
-    end
-end
-
-% get serial data
-if serialPort.BytesAvailable>0
-    fread(serialPort,serialPort.BytesAvailable);
-    cellstr(char(ans)');
-    tmp=strsplit(ans{1});
-    idx=cellfun(@(x) ~isempty(strfind(x,',VR')), tmp);
-    data=cellfun(@(x) sscanf(x,'%ld,VR,%*ld,%ld,%ld,%*ld,%*s'), tmp(idx), 'uniformoutput',false);
-    serialXYV = [ serialXYV; [data{:}]' ];  % time, y, z %, velocity
-    idx=cellfun(@(x) ~isempty(strfind(x,',PM')), tmp);
-    data=cellfun(@(x) sscanf(x,'%ld,PM,%*s'), tmp(idx), 'uniformoutput',false);
-    serialSyncPulses = [serialSyncPulses; [data{:}]'];
-end
-if ~serialSyncFound
-    if ~isempty(serialSyncPulses)
-        serialSyncFound = true;
-        serialSyncZero = serialSyncPulses(1);  % in microsec
-    end
-end
-if ~NISyncFound
-    if any(bitget(digitalData,syncChannel)==1)
-        NISyncFound = true;
-        NISyncZero = find(bitget(digitalData,syncChannel),1);  % in ticks
-        analogData = analogData(NISyncZero:end,:);
-        digitalData = digitalData(NISyncZero:end);
-    end
-end
-if ~serialSyncFound || ~NISyncFound
-    return
-end
-nMore = min(floor((serialXYV(end,1)-serialSyncZero)/1e6*sampleRate)-nTrimmedTicks, size(digitalData,1));
-if nMore/sampleRate < updateInterval
-    return;
-end
-if nMore<=0 || size(serialXYV,1)==1
-    disp('serial VR data is lagging behind');
-    return;
-end
-interpolatedSerialXYV = nan(nMore,2);
-interpolatedSerialXYV(end-nMore+1:end,1) = interp1(serialXYV(:,1), serialXYV(:,2), ...  % y
-       (nTrimmedTicks+(1:nMore))/sampleRate*1e6 + serialSyncZero, 'nearest');
-interpolatedSerialXYV(end-nMore+1:end,2) = interp1(serialXYV(:,1), serialXYV(:,3), ...  % z
-       (nTrimmedTicks+(1:nMore))/sampleRate*1e6 + serialSyncZero, 'nearest');
-
-% analyse data
-spikeTimes = diff(diff(squeeze(analogData(1:nMore,electrodeChannel)))>thresh)==1;
-spikePositions = interpolatedSerialXYV(spikeTimes,[2 1]);
-binDwellTimes = hist3(interpolatedSerialXYV(:,[2 1]), 'edges', {binsY binsX})./sampleRate;
-
-inX = nan(length(binsX)-1, size(interpolatedSerialXYV,1));
-for i=1:length(binsX)-1
-    inX(i,:) = interpolatedSerialXYV(:,1)>binsX(i) & interpolatedSerialXYV(:,1)<=binsX(i+1);
-end
-inY = nan(length(binsY)-1, size(interpolatedSerialXYV,1));
-for j=1:length(binsY)-1
-    inY(j,:) = interpolatedSerialXYV(:,2)>binsY(j) & interpolatedSerialXYV(:,2)<=binsY(j+1);
-end
-
-for i=1:length(binsX)-1
-    for j=1:length(binsY)-1
-        inXY = inX(i,:) & inY(j,:);
-        if sum(isnan(allBinSubthresholds{j,i})) < sum(inXY)
-            allBinSubthresholds{j,i} = [allBinSubthresholds{j,i}; nan(max(sum(inXY),100000),1)];
+        
+        function experimentDidComplete(self,wsModel,evt)
+            ws.jtcp.jtcp('WRITE',self.TcpSend,'quit');
+            self.TcpSend = JTCP('CLOSE',self.TcpSend);
+            self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
         end
-        putHere = find(isnan(allBinSubthresholds{j,i}));
-        allBinSubthresholds{j,i}(putHere(1:sum(inXY))) = analogData(inX(i,:) & inY(j,:),electrodeChannel);
+        
+        function experimentDidAbort(self,wsModel,evt)
+        end
+        
+        function dataIsAvailable(self,wsModel,evt)
+            % syncs found yet?
+            tmp=ws.jtcp.jtcp('READ',self.TcpReceive);
+            if ~isempty(tmp)
+                if strncmp(tmp,'NISyncFound',11)
+                    self.NISyncFound = true;
+                    self.NISyncZero = sscanf(tmp,'NISyncFound %ld');
+                elseif strncmp(tmp,'SerialSyncFound',15)
+                    self.SerialSyncFound = true;
+                    self.SerialSyncZero = sscanf(tmp,'SerialSyncFound %ld');
+                end
+            end
+
+            % get NI data
+            analogData = wsModel.Acquisition.getLatestAnalogData();
+            digitalData = wsModel.Acquisition.getLatestRawDigitalData();
+
+            % output TTL pulse
+            if median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold
+                wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 1;
+            else
+                wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 0;
+            end
+
+            if self.Test
+                % pre-load jeremy's test data
+                self.TotalDigitalRead = self.TotalDigitalRead + size(digitalData,1);
+                if ~self.SerialSyncFound || ~self.NISyncFound
+                    for i=1:50
+                        fprintf(self.Out,fgetl(self.Fid));
+                    end
+                else
+                    while true
+                        tmp=fgetl(self.Fid);
+                        fprintf(self.Out,tmp);
+                        if (sscanf(tmp,'%ld,%*s')-self.SerialSyncZero)/1e6*self.SampleRate > self.TotalDigitalRead-self.NISyncZero
+                            break;
+                        end
+                    end
+                end
+            end
+
+            % get serial data
+            if self.SerialPort.BytesAvailable>0
+                serialData=fread(self.SerialPort,self.SerialPort.BytesAvailable);
+            else
+                serialData='nothing';
+            end
+
+            % send data via TCP  to Receiver.m
+            ws.jtcp.jtcp('WRITE',self.TcpSend,analogData);
+            ws.jtcp.jtcp('WRITE',self.TcpSend,logical(bitget(digitalData,self.SyncChannel)));
+            ws.jtcp.jtcp('WRITE',self.TcpSend,serialData);
+        end
+        
     end
+
+    % needs to be here; don't ask why
+    properties (Hidden, SetAccess=protected)
+        mdlPropAttributes = struct();    
+        mdlHeaderExcludeProps = {};
+    end
+
+    % ditto
+    methods (Access=protected)
+        function out = getPropertyValue(self, name)
+            out = self.(name);
+        end  % function
+        
+        function setPropertyValue(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
+    
 end
-
-% plot data
-nSpikesData = hist3(spikePositions, 'edges', {binsY binsX});
-tmp = get(nSpikesSurf, 'cdata');  tmp(isnan(tmp)) = 0;
-allNSpikesData = tmp + nSpikesData;
-allNSpikesData(allNSpikesData==0) = nan;
-set(nSpikesSurf, 'cdata', allNSpikesData);
-if any(~isnan(allNSpikesData))
-    prctile(reshape(allNSpikesData,1,numel(allNSpikesData)),[1; 99]);
-    caxis(nSpikesAxes, ans);
-end
-
-idx=find((serialXYV(:,1) >= nTrimmedTicks/sampleRate*1e6+serialSyncZero) & ...
-         (serialXYV(:,1) <= (nTrimmedTicks+nMore)/sampleRate*1e6+serialSyncZero));
-set(positionTail,'xdata',serialXYV(idx,2),'ydata',serialXYV(idx,3));
-set(positionHead,'xdata',serialXYV(idx(end),2),'ydata',serialXYV(idx(end),3));
-
-allBinDwellTimes = allBinDwellTimes + binDwellTimes;
-set(spikeRateSurf, 'cdata', allNSpikesData./allBinDwellTimes);
-if any(~isnan(allNSpikesData))
-    prctile(reshape(allNSpikesData./allBinDwellTimes,1,numel(allNSpikesData)),[1; 99]);
-    caxis(spikeRateAxes, ans);
-end
-
-allMeanSubthresholds = cellfun(@(x) nanmedian(x),allBinSubthresholds);
-set(subthresholdSurf, 'cdata', allMeanSubthresholds);
-if any(~isnan(allMeanSubthresholds))
-    prctile(reshape(allMeanSubthresholds,1,numel(allMeanSubthresholds)),[1; 99]);
-    caxis(subthresholdAxes, ans);
-end
-
-%delete raw data just plotted
-nToTrim = size(interpolatedSerialXYV,1);
-nTrimmedTicks = nTrimmedTicks + nToTrim;
-analogData = analogData(nToTrim+1:end,:);
-digitalData = digitalData(nToTrim+1:end);
-find(serialXYV(:,1)>=nTrimmedTicks/sampleRate*1e6+serialSyncZero,1);
-serialXYV = serialXYV(ans:end,:);
-find(serialSyncPulses>=nTrimmedTicks/sampleRate*1e6+serialSyncZero,1);
-serialSyncPulses = serialSyncPulses(ans:end);
