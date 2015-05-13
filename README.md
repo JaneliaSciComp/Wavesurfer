@@ -1,3 +1,5 @@
+THIS IS A PRERELEASE copy of Wavesurfer!!!!!
+
 Wavesurfer
 ==========
 
@@ -190,4 +192,6 @@ Version History
 0.784: (April 29, 2015) Test pulser now uses sampling rate of
        acquisition system.
 
-
+0.784i-prerelease: 
+       (May 13, 2015) Prerelease snapshot for Xinyu to use for 
+       testing.
