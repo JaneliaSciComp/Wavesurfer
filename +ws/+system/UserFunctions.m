@@ -37,11 +37,18 @@ classdef UserFunctions < ws.system.Subsystem
         function set.ClassName(self, value)
             if ws.utility.isASettableValue(value) ,
                 if ischar(value) && (isempty(value) || isrow(value)) ,
-                    try
-                        newObject = feval(value) ;  % if this fails, self will still be self-consistent
-                    catch me
-                        error('most:Model:invalidPropVal', ...
-                              'Invalid value for property ''ClassName'' supplied: Unable to instantiate object.');
+                    if isempty(value) ,
+                        % this is ok, and in this case we just don't
+                        % instantiate an object
+                        newObject = [] ;
+                    else
+                        % value is non-empty
+                        try                       
+                            newObject = feval(value) ;  % if this fails, self will still be self-consistent
+                        catch me
+                            error('most:Model:invalidPropVal', ...
+                                  'Invalid value for property ''ClassName'' supplied: Unable to instantiate object.');
+                        end
                     end
                     self.ClassName_ = value;
                     self.TheObject_ = newObject;
