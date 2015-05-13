@@ -97,10 +97,10 @@ classdef Ephys < ws.system.Subsystem
 %             self.TestPulser_=ws.TestPulser('Parent',self);
 %         end
         
-        function acquireHardwareResources(self) %#ok<MANU>
-            % Nothing to do here, maybe
-        end  % function
-
+%         function acquireHardwareResources(self) %#ok<MANU>
+%             % Nothing to do here, maybe
+%         end  % function
+% 
         function releaseHardwareResources(self) %#ok<MANU>
             % Nothing to do here, maybe
         end
@@ -171,6 +171,12 @@ classdef Ephys < ws.system.Subsystem
         function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
         end
         
+        function didSetAcquisitionSampleRate(self,newValue)
+            testPulser = self.TestPulser ;
+            if ~isempty(testPulser) ,
+                testPulser.didSetAcquisitionSampleRate(newValue) ;
+            end
+        end        
     end  % methods block
     
     

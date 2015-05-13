@@ -359,7 +359,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
         end  % function
 
-        function acquireHardwareResources(self)            
+        function acquireHardwareResources_(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask(self, ...
@@ -405,7 +405,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
             
             % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources();
+            self.acquireHardwareResources_();
             
             % Set up the task triggering
             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;

@@ -248,7 +248,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function stop(self)
             % Called when you press the "Stop" button in the UI, for instance.
-            if self.State == ws.ApplicationState.Idle
+            if self.State == ws.ApplicationState.Idle, 
                 return
             end
 
@@ -619,11 +619,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
             self.Triggering.releaseHardwareResources();
-            self.Ephys.releaseHardwareResources();            
+            self.Ephys.releaseHardwareResources();
         end
         
         function result=get.FastProtocols(self)
             result = self.FastProtocols_;
+        end
+        
+        function didSetAcquisitionSampleRate(self,newValue)
+            ephys = self.Ephys ;
+            if ~isempty(ephys) ,
+                ephys.didSetAcquisitionSampleRate(newValue) ;
+            end
         end
     end  % methods
     
@@ -850,7 +857,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didAbortTrial(self);
+                    try 
+                        self.Subsystems_{idx}.didAbortTrial(self);
+                    catch me
+                        % In theory, Subsystem::didAbortTrail() never
+                        % throws an exception
+                        % But just in case, we catch it here and ignore it
+                        disp(me.getReport());
+                    end
                 end
             end
             
@@ -884,6 +898,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function didAbortExperiment(self, highestIndexedSubsystemThatNeedsAbortion)
+            % Deal with optional arguments
             if nargin < 2 ,
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
@@ -1193,7 +1208,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
             fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
             fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextTrialSetAbsoluteFileName);
-            fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.FileBaseName);
+            fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
             fclose(fid);
         end  % function
 
@@ -1498,6 +1513,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
     methods
         function triggeringSubsystemJustStartedFirstTrialInExperiment(self)
+            % Called by the triggering subsystem just after first trial
+            % started.
+            
+            % This means we need to run the main polling loop.
+            self.runPollingLoop_();
+        end  % function
+    end
+    
+    methods (Access=protected)        
+        function runPollingLoop_(self)
             % This means we need to start the polling timer
             %self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
             %self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
@@ -1514,7 +1539,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 if timeSinceLastPoll >= pollingPeriod ,
                     timeOfLastPoll = timeNow ;
                     tStart = toc(pollingTicId) ;
-                    self.pollingTimerFired_() ;
+                    try
+                        self.pollingTimerFired_() ;
+                    catch me
+                        self.didAbortTrial();
+                        rethrow(me);
+                    end
                     tMiddle = toc(pollingTicId) ;
                     drawnow() ;  % update, and also process any user actions
                     tEnd = toc(pollingTicId) ;
@@ -1525,10 +1555,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     pause(0.010);  % don't want this loop to completely peg the CPU
                 end
             end            
-        end
-    end
-    
-    methods (Access=protected)        
+        end  % function
+        
         function pollingTimerFired_(self)
             %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
             timeSinceTrialStart = toc(self.FromTrialStartTicId_);

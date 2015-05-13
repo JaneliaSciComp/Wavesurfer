@@ -657,7 +657,11 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 %uuidOfThisStimulusInSelf=self.StimulusUUIDs_{j};
                 thisStimulusInSelf=self.Stimuli_{j};
                 %indexOfThisStimulusInLibrary=find(uuidOfThisStimulusInSelf==uuids);
-                isMatch=cellfun(@(stimulus)(stimulus==thisStimulusInSelf),selfStimulusDictionary);
+                if isempty(thisStimulusInSelf) ,
+                    isMatch = false(size(selfStimulusDictionary));
+                else
+                    isMatch = cellfun(@(stimulus)(stimulus==thisStimulusInSelf),selfStimulusDictionary);
+                end
                 indexOfThisStimulusInDictionary=find(isMatch,1);
                 if isempty(indexOfThisStimulusInDictionary) ,
                     other.Stimuli_{j}=[];

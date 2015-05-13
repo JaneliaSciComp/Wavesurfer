@@ -5,8 +5,8 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     % independent object that isequal() to the original.
     
     properties (Constant)
-        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','Ramp','Sine','Chirp','File'}
-        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Ramp','Sine','Chirp','File'}
+        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','TwoSquarePulses','Ramp','Sine','Chirp','Expression','File'}
+        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Ramp','Sine','Chirp','Expression','File'}
     end
     
 %     properties (SetAccess = protected, Hidden = true)
@@ -342,7 +342,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     
     methods (Static)
         function output = evaluateTrialExpression(expression,trialIndex)
-            % Evaluates a putative trial expression for i==1, and returns
+            % Evaluates a putative trial expression for i==trialIndex, and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty matrix.
             if ischar(expression) && isrow(expression) ,
@@ -377,6 +377,28 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
                 end
             else
                 output='';
+            end
+        end
+
+        function output = evaluateTrialTimeExpression(expression,trialIndex,t)
+            % Evaluates a putative trial expression for i==trialIndex, t==t, and returns
+            % the result.  If expression is not a string, or the expression
+            % doesn't evaluate, returns the empty matrix.
+            if ischar(expression) && isrow(expression) ,
+                % value should be a string representing an
+                % expression involving 'i', which stands for the trial
+                % index, e.g. '-30+10*(i-1)'                
+                try
+                    % try to build a lambda and eval it, to see if it's
+                    % valid
+                    evalString=sprintf('@(i,t)(%s)',expression);
+                    expressionAsFunction=eval(evalString);
+                    output=expressionAsFunction(trialIndex,t);
+                catch me %#ok<NASGU>
+                    output=zeros(size(t));
+                end
+            else
+                output=zeros(size(t));
             end
         end
     end

@@ -287,7 +287,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             repeatCount=self.RepeatCount;
             
             % configure
-            self.clear();
+            self.teardown();
             
             self.CounterTask_ = ...
                 ws.ni.CounterTriggerSourceTask(self, ...
@@ -307,7 +307,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             self.CounterTask_.configureStartTrigger(pfiID, edge);
         end
         
-        function clear(self)
+        function teardown(self)
             if ~isempty(self.CounterTask_) ,
                 self.CounterTask_.stop();
             end

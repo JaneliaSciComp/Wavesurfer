@@ -232,6 +232,9 @@ classdef Coding < handle
         
         function decodeProperties(self, encoding)
             % Sets the properties in self to the values encoded in encoding.
+            % This is the main public method for setting a ws.mixin.Coding
+            % to an encoded representation, and it does so in-place.  self
+            % should be a scalar.
             assert(isstruct(encoding));
             
             % If a ws.Model, disable broadcasts while we muck around
@@ -532,9 +535,9 @@ classdef Coding < handle
 %         end
                 
         function decodePropertyValue_(self, target, encoding, propertyName)
-            % In the target object, set the single property named by pname to the
-            % value for pname given in the property settings structure
-            % propSet.
+            % In the target object, set the single property named by properyName to the
+            % value for propertyName given in the property settings structure
+            % encoding.
             
             % Define a couple of useful utility functions
             function value=getPropertyValueOfTarget(self,target,propertyName)
@@ -565,7 +568,7 @@ classdef Coding < handle
             % else
             %     property = target.(pname);
             % end
-            property=getPropertyValueOfTarget(self,target,propertyName);
+            subtarget=getPropertyValueOfTarget(self,target,propertyName);
             
             % At this point, property should be a handle to the object to
             % be set.
@@ -574,73 +577,90 @@ classdef Coding < handle
             %    keyboard
             %end                
             
-            encodingForPropertyName=encoding.(propertyName);
+            subencoding=encoding.(propertyName);
+            % Note that we don't use encoding below here.
             %if isstruct(propSetForName) && ismethod(property,'restoreSettings') ,
-            if ismethod(property,'restoreSettings') ,
+            if ismethod(subtarget,'restoreSettings') ,
                 % If there's a custom decoder, use that
-                property.restoreSettings(encodingForPropertyName);
+                subtarget.restoreSettings(subencoding);
 %             elseif ws.utility.isEnumeration(property) ,
 %                 value=property.fromCodeString(propSetForName);
 %                 setPropertyValueOfTarget(self,target,propertyName,value);
-            elseif isstruct(encodingForPropertyName) && isa(property, 'ws.mixin.Coding')
+            elseif isstruct(subencoding) && isa(subtarget, 'ws.mixin.Coding')
                 % If we get here, property is a handle object
                 % Make sure the property is large enough
-                if length(encodingForPropertyName)>length(property) ,
+                if length(subencoding)>length(subtarget) ,
                     % Need to make property bigger to accomodate the new
                     % setting
-                    wasPropertyEmpty=isempty(property);
-                    className = class(property);
-                    property(length(encodingForPropertyName))=feval(className);  % the class of property needs to have a zero-arg constructor
+                    wasPropertyEmpty=isempty(subtarget);
+                    className = class(subtarget);
+                    subtarget(length(subencoding))=feval(className);  % the class of property needs to have a zero-arg constructor
                     % If property was originally empty, then the line above is not
-                    % sufficient, b/c empty handle objects have different
-                    % semantics in matlab than non-empty ones.
+                    % sufficient
                     if wasPropertyEmpty ,
-                        setPropertyValueOfTarget(self,target,propertyName,property);
-                        property=getPropertyValueOfTarget(self,target,propertyName);
+                        setPropertyValueOfTarget(self,target,propertyName,subtarget);
+                        subtarget=getPropertyValueOfTarget(self,target,propertyName);
                     end
-                elseif length(encodingForPropertyName)<length(property) ,
+                elseif length(subencoding)<length(subtarget) ,
                     % Make property smaller, to match propSetForName
                     % In this case, property can't be empty, so things are
                     % easier.
-                    property=property(1:length(encodingForPropertyName));
+                    subtarget=subtarget(1:length(subencoding));
                 end
                 % Now that the lengths are the same, set the individual
                 % elements one at a time.
-                for idx = 1:numel(property)
+                for idx = 1:numel(subtarget)
                     %originalValue.(pname)(idx) = decodeProperties(property(idx), propSetForName(idx));
-                    property(idx).decodeProperties(encodingForPropertyName(idx));
+                    subtarget(idx).decodeProperties(subencoding(idx));
                 end
-            elseif isstruct(encodingForPropertyName) && isobject(property) ,
+            elseif isstruct(subencoding) && isobject(subtarget) ,
                 % If a ws.Model, disable broadcasts while we muck around
                 % under the hood.
                 % This shouldn't break self-consistency if the stored
                 % settings are self-consistent.
-                if isa(property,'ws.Model') ,
-                    property.disableBroadcasts();
+                %fprintf('Decoding a non-Mimic, non-Coding object...\n');
+                
+                if isa(subtarget,'ws.Model') ,
+                    subtarget.disableBroadcasts();
                 end                
                 
                 % Actually decode all the sub-properties
-                subPropertyNames = fieldnames(encodingForPropertyName);
+                subPropertyNames = fieldnames(subencoding);
                 for idx = 1:numel(subPropertyNames) ,
                     subPropertyName = subPropertyNames{idx};
-                    self.decodePropertyValue_(property, encodingForPropertyName, subPropertyName);
+                    self.decodePropertyValue_(subtarget, subencoding, subPropertyName);
+                    % Why can't we do the following instead?
+                    %   subtarget = property.(subPropertyName) ;
+                    %   subencoding = encodingForPropertyName.(subPropertyName) ;
+                    %   subtarget.decodeProperties(subencoding) ;
+                    % This would mean that we only ever call
+                    % decodePropertyValue_() with target==self, which would
+                    % eliminate the need for the local utility functions
+                    % defined above, and I suspect would clear the way for
+                    % folding all the functionality in
+                    % decodePropertyValue_() into decodeProperties itself.
+                    %
+                    % Answer: Can't do that b/c property is not a ws.mixin.Coding,
+                    % so doesn't necessarily implement decodeProperties().
+                    % So... does thie elseif clause ever get called in
+                    % practice?  
                 end
                 
                 % Broadcast an Update event if property is a ws.Model
-                if isa(property,'ws.Model') ,
-                    property.enableBroadcastsMaybe();
-                    property.broadcast('Update');
+                if isa(subtarget,'ws.Model') ,
+                    subtarget.enableBroadcastsMaybe();
+                    subtarget.broadcast('Update');
                 end                
             else
                 try
                     %originalValue = property;
                     % TODO Is this still necessary or are enumerations being saved directly as
                     % objects now in the MAT files?
-                    if ~isempty(enumeration(property))
-                        className = class(property);
-                        value = feval(className,  encodingForPropertyName);
+                    if ~isempty(enumeration(subtarget))
+                        className = class(subtarget);
+                        value = feval(className,  subencoding);
                     else
-                        value =  encodingForPropertyName;
+                        value =  subencoding;
                     end
                     % if self == target
                     %     self.setPropertyValue(pname, val);
@@ -745,6 +765,9 @@ classdef Coding < handle
     
     methods (Static = true)
         function encoding = encodeAnythingForFileType(thing, fileType)
+%             if isa(thing,'ws.TestPulser') ,           
+%                 keyboard
+%             end              
             if  ~isequal(fileType,'header') && isobject(thing) && ismethod(thing,'encodeSettings') ,
                 % If the value has a custom settings serialization
                 % method, use that, unless we're encoding a header                    

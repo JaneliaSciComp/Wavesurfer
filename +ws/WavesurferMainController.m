@@ -347,16 +347,32 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Display,'IsXSpanSlavedToAcquistionDuration',newValue);
         end
         
-        function FilenameEditActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'String');
-            ws.Controller.setWithBenefits(self.Model.Logging,'FileBaseName',newValue);
-        end
-
         function LocationEditActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'String');
             ws.Controller.setWithBenefits(self.Model.Logging,'FileLocation',newValue);
         end
 
+        function BaseNameEditActuated(self,source,event) %#ok<INUSD>
+            newValue=get(source,'String');
+            ws.Controller.setWithBenefits(self.Model.Logging,'FileBaseName',newValue);
+        end
+
+        function IncludeDateCheckboxActuated(self,source,event) %#ok<INUSD>
+            newValue=get(source,'Value');
+            ws.Controller.setWithBenefits(self.Model.Logging,'DoIncludeDate',newValue);
+        end
+        
+        function SessionIndexCheckboxActuated(self,source,event) %#ok<INUSD>
+            newValue=get(source,'Value');
+            ws.Controller.setWithBenefits(self.Model.Logging,'DoIncludeSessionIndex',newValue);
+        end
+        
+        function SessionIndexEditActuated(self,source,event) %#ok<INUSD>
+            newValueAsString=get(source,'String');
+            newValue=str2double(newValueAsString);
+            ws.Controller.setWithBenefits(self.Model.Logging,'SessionIndex',newValue);
+        end
+        
         function NextTrialEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
@@ -1119,7 +1135,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
         
         function changeDataFileLocation(self, varargin)
-            folderName = uigetdir(self.Model.Logging.FileLocation, 'Data Folder Location');
+            folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
             if folderName
                 self.Model.Logging.FileLocation = folderName;
             end
@@ -1776,7 +1792,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function controller=showChildFigure(self, className, varargin)
-            controller = self.createChildControllerIfNonexistant(className,varargin{:});
+            [controller,didCreate] = self.createChildControllerIfNonexistant(className,varargin{:});
+            if didCreate ,
+                % no need to update
+            else
+                controller.updateFigure();  % figure might be out-of-date
+            end
             controller.showFigure();
         end
         
@@ -1816,43 +1837,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
         end  % function
 
-        function controller = createChildControllerIfNonexistant(self, controllerName, varargin)
-            switch controllerName
-                    
-%                 case 'StimulusLibraryEditorController'
-%                     if isempty(self.StimulusLibraryController)
-%                         controller = feval(controllerName, self.Model, self, self.LibraryViewModel);
-%                         self.ChildControllers{end+1}=controller;
-%                         self.StimulusLibraryController=controller;
-%                     else
-%                         controller = self.StimulusLibraryController;
-%                     end
-                                       
-%                 case 'FastProtocolsController'
-%                     if isempty(self.FastProtocolsController)
-%                         fullControllerClassName=['ws.' controllerName];
-%                         controller = feval(fullControllerClassName, self);  
-%                             % THIS ABOVE IS VERY WEIRD!!  The
-%                             % WavesurferController is being passed where a model
-%                             % is typically passed.  Even weirder, the
-%                             % FastProtocolsController class expects this...  --ALT,
-%                             % 2014-05-30.  (See the comments in that class
-%                             % --ALT, 2014-07-25)
-%                         self.ChildControllers{end+1}=controller;
-%                         self.FastProtocolsController=controller;
-%                     else
-%                         controller = self.FastProtocolsController;
-%                     end
-                    
-%                 case 'ws.ui.controller.UserFunctionEditor'
-%                     if isempty(self.UserFunctionEditorController)
-%                         controller = feval(controllerName, self.Model.UserFunctions);
-%                         self.ChildControllers{end+1}=controller;
-%                         self.UserFunctionEditorController=controller;
-%                     else
-%                         controller = self.UserFunctionEditorController;
-%                     end
-                                        
+        function [controller,didCreate] = createChildControllerIfNonexistant(self, controllerName, varargin)
+            switch controllerName ,                                        
                 case 'ScopeController' ,
                     scopeModel=varargin{1};
                     fullControllerClassName=['ws.' controllerName];
@@ -1860,16 +1846,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                        self, ...
                                        scopeModel);
                     self.ChildControllers{end+1}=controller;
-                    self.ScopeControllers{end+1}=controller;
-                    
-                otherwise
+                    self.ScopeControllers{end+1}=controller;                    
+                    didCreate = true ;
+                otherwise ,
                     if isempty(self.(controllerName)) ,
                         fullControllerClassName=['ws.' controllerName];
                         controller = feval(fullControllerClassName,self,self.Model);
                         self.ChildControllers{end+1}=controller;
                         self.(controllerName)=controller;
+                        didCreate = true ;
                     else
                         controller = self.(controllerName);
+                        didCreate = false ;
                     end
             end
         end  % function
@@ -2074,7 +2062,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'FilenameEdit'}});
+%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
 %             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
@@ -2219,6 +2207,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function ChangeLocationButtonActuated(self,source,event) %#ok<INUSD>
             self.changeDataFileLocation();
+        end        
+
+        function IncrementSessionIndexButtonActuated(self,source,event) %#ok<INUSD>
+            self.Model.Logging.incrementSessionIndex();
         end        
         
         function SourcePopupmenuActuated(self,source,event) %#ok<INUSD>

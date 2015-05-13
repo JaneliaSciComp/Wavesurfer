@@ -76,16 +76,20 @@ classdef Controller < ws.most.Controller
     end
     
     methods
+        function updateFigure(self)             
+            self.Figure.update();
+        end
+        
         function showFigure(self)             
             % This exists so that it can optionally be overridden for some
             % controller classes, like ws.ScopeController
-            self.Figure.show()
+            self.Figure.show();
         end
         
         function hideFigure(self)
             % This exists so that it can optionally be overridden for some
             % controller classes, like ws.ScopeController
-            self.Figure.hide()
+            self.Figure.hide();
         end
     end
     

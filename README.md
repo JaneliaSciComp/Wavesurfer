@@ -164,10 +164,37 @@ Version History
 0.777: (April 3, 2015) Fixed issue that prevented acquisition if
        Matlab was installed on a drive other than the C drive.
 
-0.778: (April 14, 2015) Now have toggle-able autoscaling of y-axis 
-       limits for both scope windows and the test pulse window.  Added 
-       per-trialset and per-trial (approximate) timestamps to data file.  
-       No longer rely upon DABS callbacks during data acquisition, but 
-       poll instead.  All internally-generated triggers are now themselves 
-       triggered off a common "master" trigger on PFI8.
+0.778: (April 14, 2015) Now have toggle-able autoscaling of y-axis
+       limits for both scope windows and the test pulse window.  Added
+       per-trialset and per-trial (approximate) timestamps to data
+       file.  No longer rely upon DABS callbacks during data
+       acquisition, but poll instead.  All internally-generated
+       triggers are now themselves triggered off a common "master"
+       trigger on PFI8.
+
+0.779: (April 14, 2015) Fixed bug where couldn't test pulse after
+       acquiring data.
+
+0.78:  (April 15, 2015) Data files for continuous recordings now use
+       the same file naming scheme as trial-based recordings.  Fixed
+       bug with fast protocols not getting cleared when you click that
+       button.  Added a very simple example user function .m file.
+
+0.781: (April 20, 2015) Added more options for data file naming.  
+       Fixed several small bugs.
+
+0.782: (April 22, 2015) Added a two-pulse stimulus.
+
+0.783: (April 22, 2015) Added a generic Matlab expression stimulus.
+
+0.784: (April 29, 2015) Test pulser now uses sampling rate of
+       acquisition system.
+
+0.785: (May 11, 2015) Inactived AI channels are now really and 
+       truly inactivated.
+
+0.786: (May 12, 2015) Fixed bug with TestPulser model not getting 
+       persisted to disk properly.
+
+0.787: (May 12, 2015) Commented out debugging fprintf.  Doh!
 
