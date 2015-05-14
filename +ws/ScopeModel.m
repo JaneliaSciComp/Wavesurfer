@@ -497,14 +497,16 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             wavesurferModel=display.Parent;
             acquisition=wavesurferModel.Acquisition;            
             firstChannelName=self.ChannelNames{1};
-            iFirstChannel=acquisition.iChannelFromName(firstChannelName);
-            newChannelUnits=acquisition.ChannelUnits(iFirstChannel);  
-            newScale=acquisition.ChannelScales(iFirstChannel);  % V/newChannelUnits
-            yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
-            newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
-            self.YLim=newYLimits;
-            self.YUnits=newChannelUnits;  % convert from a scale factor to the native units
-            self.YScale=newScale;
+            iFirstChannel=acquisition.iAnalogChannelFromName(firstChannelName);
+            if isfinite(iFirstChannel) ,
+                newChannelUnits=acquisition.AnalogChannelUnits(iFirstChannel);  
+                newScale=acquisition.AnalogChannelScales(iFirstChannel);  % V/newChannelUnits
+                yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
+                newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
+                self.YLim=newYLimits;
+                self.YUnits=newChannelUnits;  % convert from a scale factor to the native units
+                self.YScale=newScale;
+            end
             self.broadcast('DidSetChannelUnits');
         end
         

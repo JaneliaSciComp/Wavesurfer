@@ -377,7 +377,7 @@ classdef Logging < ws.system.Subsystem
             scansDatasetName = sprintf('/trial_%04d/digitalScans',thisTrialIndex) ;
             % TODO: Probably need to change to number of active digital channels
             % below
-            NActiveDigitalChannels = sum(self.Parent.Acquisition.IsChannelActive & ~self.Parent.Acquisition.IsChannelAnalog);
+            NActiveDigitalChannels = sum(self.Parent.Acquisition.IsDigitalChannelActive);
             if NActiveDigitalChannels<=8
                 dataType = 'uint8';
             elseif NActiveDigitalChannels<=16

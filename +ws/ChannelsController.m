@@ -16,7 +16,7 @@ classdef ChannelsController < ws.Controller
             newValue=str2double(newString);
             if isfinite(newValue) && newValue>0 ,
                 % good value
-                self.Model.Acquisition.setSingleChannelScale(i,newValue);
+                self.Model.Acquisition.setSingleAnalogChannelScale(i,newValue);
                 % changing model should auto-update the view
             else
                 % discard change by re-syncing view to model
@@ -30,7 +30,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             try
                 newValue=ws.utility.SIUnit(newString);
-                self.Model.Acquisition.setSingleChannelUnits(i,newValue);
+                self.Model.Acquisition.setSingleAnalogChannelUnits(i,newValue);
             catch excp, 
                 if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
                     self.Figure.update();

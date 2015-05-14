@@ -34,7 +34,7 @@ classdef Acquisition < ws.system.Subsystem
         NAnalogChannels
         NDigitalChannels
         IsChannelAnalog
-        ChannelIDs  % zero-based AI channel IDs for all available channels
+        AnalogChannelIDs  % zero-based AI channel IDs for all available channels
         IsChannelActive
     end
     
@@ -43,13 +43,15 @@ classdef Acquisition < ws.system.Subsystem
     end
 
     properties (Dependent=true)
-        ChannelScales
-          % An array of scale factors to convert each channel from volts on the coax to 
+        AnalogChannelScales
+          % An array of scale factors to convert each analog channel from volts on the coax to 
           % whatever native units each signal corresponds to in the world.
           % This is in units of volts per ChannelUnits (see below)
-        ChannelUnits
+        %ChannelScales
+        AnalogChannelUnits
           % A list of SIUnit instances that describes the real-world units 
-          % for each channel.
+          % for each analog channel.
+        %ChannelUnits
     end
 
     properties (Dependent = true, SetAccess=immutable, Transient=true)  % what does this being transient acheive?
@@ -89,9 +91,10 @@ classdef Acquisition < ws.system.Subsystem
         %TriggerListener_;
         Duration_ = 1  % s
         %StateStack_ = {};
-        ChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
-        ChannelScales_ = zeros(1,0)  % Store for the current ChannelScales values, but values may be "masked" by ElectrodeManager
-        ChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current ChannelUnits values, but values may be "masked" by ElectrodeManager
+        AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  
+            % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         IsAnalogChannelActive_ = true(1,0)
         IsDigitalChannelActive_ = true(1,0)
     end
@@ -125,11 +128,6 @@ classdef Acquisition < ws.system.Subsystem
     methods
         function self = Acquisition(parent)
             self.Parent=parent;
-            %self.CanEnable = false;
-            %nChannels=length(self.ChannelNames);
-            %self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
-            %V=ws.utility.SIUnit('V');  % by default, the units are volts
-            %self.ChannelUnits_=repmat(V,[1 nChannels]);
         end
         
         function delete(self)
@@ -167,8 +165,8 @@ classdef Acquisition < ws.system.Subsystem
             result = [self.AnalogChannelNames self.DigitalChannelNames] ;
         end
     
-        function result = get.ChannelIDs(self)
-            result = self.ChannelIDs_;
+        function result = get.AnalogChannelIDs(self)
+            result = self.AnalogChannelIDs_;
 %             if ~isempty(self.AnalogInputTask_)
 %                 result = self.AnalogInputTask_.AvailableChannels;
 %             else
@@ -301,7 +299,7 @@ classdef Acquisition < ws.system.Subsystem
 %             out = self.ChannelUnits(self.IsChannelActive);
 %         end
         
-        function value = getNumberOfElectrodesClaimingChannel(self)
+        function value = getNumberOfElectrodesClaimingAnalogChannel(self)
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -314,14 +312,14 @@ classdef Acquisition < ws.system.Subsystem
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                value=zeros(size(self.ChannelScales_));
+                value=zeros(size(self.AnalogChannelScales));
             else
-                channelNames=self.ChannelNames;
+                channelNames=self.AnalogChannelNames;
                 value=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames);
             end
         end
         
-        function value = get.ChannelScales(self)
+        function value = get.AnalogChannelScales(self)
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -335,17 +333,21 @@ classdef Acquisition < ws.system.Subsystem
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                value=self.ChannelScales_;
+                value=self.AnalogChannelScales_;
             else
-                channelNames=self.ChannelNames;
+                analogChannelNames=self.AnalogChannelNames;
                 [channelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
-                    electrodeManager.getMonitorScalingsByName(channelNames);
-                value=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.ChannelScales_);
+                    electrodeManager.getMonitorScalingsByName(analogChannelNames);
+                value=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
             end
         end
         
-        function value = get.ChannelUnits(self)            
+%         function value = get.ChannelScales(self)
+%             value = [self.AnalogChannelScales ones(self.NDigitalChannels,1)] ;
+%         end
+        
+        function value = get.AnalogChannelUnits(self)            
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -359,55 +361,61 @@ classdef Acquisition < ws.system.Subsystem
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                value=self.ChannelUnits_;
+                value=self.AnalogChannelUnits_;
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getMonitorUnitsByName(channelNames);
-                value=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.ChannelUnits_);
+                value=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end
         
-        function set.ChannelUnits(self,newValue)
+%         function value = get.ChannelUnits(self)
+%             pure=ws.utility.SIUnit();  % by default, the units are volts
+%             digitalChannelUnits = repmat(pure,[1 self.NDigitalChannels]);
+%             value = [self.AnalogChannelUnits digitalChannelUnits] ;
+%         end
+        
+        function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            self.ChannelUnits_=fif(isChangeable,newValue,self.ChannelUnits_);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            self.AnalogChannelUnits_=fif(isChangeable,newValue,self.AnalogChannelUnits_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function set.ChannelScales(self,newValue)
+        function set.AnalogChannelScales(self,newValue)
             import ws.utility.*
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            self.ChannelScales_=fif(isChangeable,newValue,self.ChannelScales_);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            self.AnalogChannelScales_=fif(isChangeable,newValue,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setChannelUnitsAndScales(self,newUnits,newScales)
+        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*            
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            self.ChannelUnits_=fif(isChangeable,newUnits,self.ChannelUnits_);
-            self.ChannelScales_=fif(isChangeable,newScales,self.ChannelScales_);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            self.AnalogChannelUnits_=fif(isChangeable,newUnits,self.AnalogChannelUnits_);
+            self.AnalogChannelScales_=fif(isChangeable,newScales,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelUnits(self,i,newValue)
+        function setSingleAnalogChannelUnits(self,i,newValue)
             import ws.utility.*
-            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            self.ChannelUnits_(i)=fif(isChangeable,newValue,self.ChannelUnits_(i));
+            self.AnalogChannelUnits_(i)=fif(isChangeable,newValue,self.AnalogChannelUnits_(i));
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelScale(self,i,newValue)
+        function setSingleAnalogChannelScale(self,i,newValue)
             import ws.utility.*
-            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            self.ChannelScales_(i)=fif(isChangeable,newValue,self.ChannelScales_(i));
+            self.AnalogChannelScales_(i)=fif(isChangeable,newValue,self.AnalogChannelScales_(i));
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
@@ -444,15 +452,15 @@ classdef Acquisition < ws.system.Subsystem
 %             result=self.ChannelUnits(self.iChannelFromName(channelName));
 %         end
         
-        function result=channelUnitsFromName(self,channelName)
+        function result=analogChannelUnitsFromName(self,channelName)
             if isempty(channelName) ,
                 result=ws.utility.SIUnit.empty();
             else
-                iChannel=self.iChannelFromName(channelName);
+                iChannel=self.iAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
-                    result=self.ChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits(iChannel);
                 end
             end
         end
@@ -461,15 +469,15 @@ classdef Acquisition < ws.system.Subsystem
 %             result=self.ChannelScales(self.iChannelFromName(channelName));
 %         end
         
-        function result=channelScaleFromName(self,channelName)
+        function result=analogChannelScaleFromName(self,channelName)
             if isempty(channelName) ,
                 result=ws.utility.SIUnit.empty();
             else
-                iChannel=self.iChannelFromName(channelName);
+                iChannel=self.iAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
-                    result=self.ChannelScales(iChannel);
+                    result=self.AnalogChannelScales(iChannel);
                 end
             end
         end  % function
@@ -548,7 +556,6 @@ classdef Acquisition < ws.system.Subsystem
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
                 self.DeviceNames = inputDeviceNames;
-                self.ChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(physicalInputChannelNames) ;
                 channelNames = mdfStructure.inputChannelNames;
 
                 % Figure out which are analog and which are digital
@@ -557,10 +564,13 @@ classdef Acquisition < ws.system.Subsystem
                 isDigital = ~isAnalog;
 
                 % Sort the channel names
-                self.AnalogPhysicalChannelNames_ = physicalInputChannelNames(isAnalog) ;
-                self.DigitalPhysicalChannelNames_ = physicalInputChannelNames(isDigital) ;
+                analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
+                digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
+                self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
+                self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
                 self.DigitalChannelNames_ = channelNames(isDigital) ;
+                self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
                 
 %                 self.AnalogInputTask_ = ...
 %                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
@@ -574,11 +584,11 @@ classdef Acquisition < ws.system.Subsystem
                 
                 nAnalogChannels = length(self.AnalogPhysicalChannelNames_);
                 nDigitalChannels = length(self.DigitalPhysicalChannelNames_);                
-                nChannels=length(physicalInputChannelNames);
-                self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+                %nChannels=length(physicalInputChannelNames);
+                self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
                 %self.ChannelScales(2)=0.1  % to test
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.ChannelUnits_=repmat(V,[1 nChannels]);
+                self.AnalogChannelUnits_=repmat(V,[1 nAnalogChannels]);
                 %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
                 self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
                 self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
@@ -769,6 +779,18 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
+        function iChannel=iAnalogChannelFromName(self,channelName)
+            % Get the index of the the channel in the available channels
+            % array, given the name.
+            % Note that this does _not_ return a channel ID.
+            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
+            if isempty(iChannels) ,
+                iChannel=nan;
+            else
+                iChannel=iChannels(1);
+            end
+        end  % function
+        
 %         function iChannel=iChannelFromID(self,channelID)
 %             % Get the index of the the channel in the available channels
 %             % array, given the channel ID.
@@ -781,12 +803,12 @@ classdef Acquisition < ws.system.Subsystem
 %             end                
 %         end
         
-        function channelID=channelIDFromName(self,channelName)
+        function channelID=analogChannelIDFromName(self,channelName)
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is AI4,
             % it returns 4.
-            iChannel=self.iChannelFromName(channelName);
-            channelID=self.ChannelIDs(iChannel);
+            iChannel=self.iAnalogChannelFromName(channelName);
+            channelID=self.AnalogChannelIDs(iChannel);
         end  % function
 
         function electrodesRemoved(self)
@@ -893,7 +915,7 @@ classdef Acquisition < ws.system.Subsystem
             % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
-            channelScales=self.ChannelScales(self.IsChannelAnalog & self.IsChannelActive);
+            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
             % scale the data by the channel scales
             if isempty(rawAnalogData) ,
@@ -909,7 +931,7 @@ classdef Acquisition < ws.system.Subsystem
             % Get the data from the main-memory cache, as single-precision floats.  This
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
-            channelScales=self.ChannelScales(self.IsChannelAnalog & self.IsChannelActive);
+            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
             % scale the data by the channel scales
             if isempty(rawAnalogData) ,

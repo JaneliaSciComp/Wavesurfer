@@ -926,7 +926,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
-                channelScales=self.Acquisition.ChannelScales(self.Acquisition.IsChannelAnalog & self.Acquisition.IsChannelActive);
+                channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
                 if isempty(rawAnalogData) ,
                     scaledAnalogData=zeros(size(rawAnalogData));

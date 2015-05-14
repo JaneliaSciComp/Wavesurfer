@@ -570,7 +570,7 @@ classdef TestPulser < ws.Model
         
         function value=get.MonitorUnits(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelUnitsFromName(self.MonitorChannelName);           
+            value=wavesurferModel.Acquisition.analogChannelUnitsFromName(self.MonitorChannelName);           
         end  % function
         
         function result=get.MonitorUnitsPerElectrode(self)        
@@ -586,7 +586,7 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
             for i=1:n ,
-                unit=acquisition.channelUnitsFromName(monitorChannelNames{i});
+                unit=acquisition.analogChannelUnitsFromName(monitorChannelNames{i});
                 if ~isempty(unit) ,
                     result(i)=unit;
                 end
@@ -811,18 +811,18 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.channelIDFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogChannelIDFromName(monitorChannelNames{i});
             end
         end
         
         function value=get.MonitorChannelID(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelIDFromName(self.MonitorChannelName);            
+            value=wavesurferModel.Acquisition.analogChannelIDFromName(self.MonitorChannelName);            
         end
         
         function value=get.MonitorChannelScale(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelScaleFromName(self.MonitorChannelName);
+            value=wavesurferModel.Acquisition.analogChannelScaleFromName(self.MonitorChannelName);
         end
         
         function value=get.CommandChannelScale(self)
@@ -860,7 +860,7 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.channelScaleFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogChannelScaleFromName(monitorChannelNames{i});
             end
         end
         

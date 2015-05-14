@@ -930,6 +930,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods (Access = protected)
         function syncTasksToChannelMembership_(self)
+            % Clear the timed digital output task, will be recreated when acq is
+            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+            % And have to do it first to avoid a temporary collision.
+            self.TheFiniteDigitalOutputTask_ = [] ;
             % Set the untimed output task appropriately
             self.TheUntimedDigitalOutputTask_ = [] ;
             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
@@ -945,10 +949,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
             end
-            
-            % Clear the timed digital output task, will be recreated when acq is
-            % started
-            self.TheFiniteDigitalOutputTask_ = [] ;
         end  % function
         
         function stimulusMap = getCurrentStimulusMap_(self)
