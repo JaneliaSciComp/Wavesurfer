@@ -967,8 +967,20 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access = protected)
         function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            self.AnalogInputTask_.disarm();
-            self.DigitalInputTask_.disarm();
+            if ~isempty(self.AnalogInputTask_) ,
+                if isvalid(self.AnalogInputTask_) ,
+                    self.AnalogInputTask_.disarm();
+                else
+                    self.AnalogInputTask_ = [] ;
+                end
+            end
+            if ~isempty(self.DigitalInputTask_) ,
+                if isvalid(self.DigitalInputTask_) ,
+                    self.DigitalInputTask_.disarm();
+                else
+                    self.DigitalInputTask_ = [] ;
+                end                    
+            end
             self.IsArmedOrAcquiring = false;            
         end  % function
         
