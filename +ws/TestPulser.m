@@ -1033,7 +1033,7 @@ classdef TestPulser < ws.Model
                 if ~isempty(wavesurferModel) ,
                     wavesurferModel.releaseHardwareResources();
                 end
-    
+                
                 % Get the stimulus
                 commandsInVolts=self.CommandInVoltsPerElectrode;
                 nScans=size(commandsInVolts,1);

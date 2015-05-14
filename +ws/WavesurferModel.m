@@ -1,11 +1,5 @@
 classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
-    %EPHUS3 Wavesurfer 3 command line application object.
-    %
-    %   The Wavesurfer 3 application is primarily a container for the various subsystems
-    %   required and used in an Wavesurfer-controlled experiment (acquisition, stimulus,
-    %   data logging, etc...).  It is also responsible for providing the appropriate
-    %   state change messages to each subsystem which manages the transition from
-    %   one trial to the next.
+    % The main Wavesurfer model object.
 
     properties (SetAccess=immutable, Transient=true)  % transient so doesn't get saved
         NFastProtocols = 6
@@ -110,14 +104,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        DataAvailable
-        TrialWillStart
-        TrialDidComplete
-        TrialDidAbort
-        ExperimentWillStart
-        ExperimentDidComplete
-        ExperimentDidAbort
-        %NScopesMayHaveChanged
+        trialWillStart
+        trialDidComplete
+        trialDidAbort
+        experimentWillStart
+        experimentDidComplete
+        experimentDidAbort        %NScopesMayHaveChanged
+        dataIsAvailable
     end
     
     events
@@ -242,6 +235,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 self.willPerformExperiment(modeRequested);
             catch me
+                self.didAbortTrial();
                 me.rethrow();
             end
         end
@@ -584,7 +578,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end            
 %         end  % function
         
-        function samplesAcquired(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
@@ -601,7 +595,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.dataAvailable(rawData, timeSinceExperimentStartAtStartOfData);
+            self.haveDataAvailable(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
             %profile off
         end
         
@@ -668,7 +662,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.ExperimentCompletedTrialCount = 0;
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentWillStart');  
+            self.callUserFunctionsAndBroadcastEvent('experimentWillStart');  
                 % no one listens for this, it seems, but it does directly
                 % lead to user function getting called --ALT, 2014-08-24
             
@@ -724,7 +718,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Notify listeners that the trial is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
             % event.  -- ALT, 2014-05-20
-            self.callUserFunctionsAndBroadcastEvent('TrialWillStart');            
+            self.callUserFunctionsAndBroadcastEvent('trialWillStart');            
             
             % Call willPerformTrial() on all the enabled subsystems
             for idx = 1:numel(self.Subsystems_)
@@ -765,7 +759,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.ExperimentCompletedTrialCount = self.ExperimentCompletedTrialCount + 1;
             
             % Call user functions and broadcast
-            self.callUserFunctionsAndBroadcastEvent('TrialDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('trialDidComplete');
             
             % Daisy-chain another trial, or wrap up the experiment,
             % depending
@@ -868,7 +862,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('TrialDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('trialDidAbort');
             
             self.didAbortExperiment();
         end  % function
@@ -894,7 +888,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('experimentDidComplete');
         end  % function
         
         function didAbortExperiment(self, highestIndexedSubsystemThatNeedsAbortion)
@@ -916,13 +910,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('experimentDidAbort');
         end  % function
         
-        function dataAvailable(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function haveDataAvailable(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
-            nScans=size(rawData,1);
+            nScans=size(rawAnalogData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
                         
@@ -931,21 +925,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 dt=1/self.Acquisition.SampleRate;
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
-                % Scale the data so that all the subsystems only get the scaled
-                % data
-
-                channelScales=self.Acquisition.ActiveChannelScales;
+                % Scale the analog data
+                channelScales=self.Acquisition.ChannelScales(self.Acquisition.IsChannelAnalog & self.Acquisition.IsChannelActive);
                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-
-                % scale the data by the channel scales
-                if isempty(rawData) ,
-                    scaledData=zeros(size(rawData));
+                if isempty(rawAnalogData) ,
+                    scaledAnalogData=zeros(size(rawAnalogData));
                 else
-                    data = double(rawData);
+                    data = double(rawAnalogData);
                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledData=bsxfun(@times,data,combinedScaleFactors); 
+                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
                 end
-
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
@@ -954,7 +943,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData);
+                        self.Subsystems_{idx}.dataIsAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;
                 end
@@ -963,7 +952,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + nScans;
 
                 %self.broadcast('DataAvailable');
-                self.callUserFunctionsAndBroadcastEvent('DataAvailable');
+                self.callUserFunctionsAndBroadcastEvent('dataIsAvailable');
             end
         end  % function
         
@@ -1523,11 +1512,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     methods (Access=protected)        
         function runPollingLoop_(self)
-            % This means we need to start the polling timer
-            %self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
-            %self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
-            %self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
-            %start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
+            % Runs the main polling loop.
             
             pollingTicId = tic() ;
             pollingPeriod = 1/self.Display.UpdateRate ;
@@ -1538,18 +1523,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
                     timeOfLastPoll = timeNow ;
-                    tStart = toc(pollingTicId) ;
+                    %tStart = toc(pollingTicId) ;
                     try
                         self.pollingTimerFired_() ;
                     catch me
                         self.didAbortTrial();
                         rethrow(me);
                     end
-                    tMiddle = toc(pollingTicId) ;
+                    %tMiddle = toc(pollingTicId) ;
                     drawnow() ;  % update, and also process any user actions
-                    tEnd = toc(pollingTicId) ;
-                    coreActionDuration = tMiddle-tStart ;
-                    actionDuration = tEnd-tStart ;
+                    %tEnd = toc(pollingTicId) ;
+                    %coreActionDuration = tMiddle-tStart ;
+                    %actionDuration = tEnd-tStart ;
                     %fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
                 else
                     pause(0.010);  % don't want this loop to completely peg the CPU

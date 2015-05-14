@@ -41,9 +41,18 @@ classdef ChannelsController < ws.Controller
         end
         
         function aiIsActiveCheckboxActuated(self,source)
-            isTheChannel=(source==self.Figure.AIIsActiveCheckboxes);
-            i=find(isTheChannel);
-            self.Model.Acquisition.IsChannelActive(i)=get(source,'Value');             %#ok<FNDSB>
+            isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
+            isChannelActive=self.Model.Acquisition.IsChannelActive;
+            isChannelActive(isTheChannel)=get(source,'Value');
+            self.Model.Acquisition.IsChannelActive=isChannelActive;             %#ok<FNDSB>
+        end
+        
+        function diIsActiveCheckboxActuated(self,source)
+            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
+            isTheChannel=isTheChannel+self.Model.Acquisition.NAnalogChannels;
+            isChannelActive=self.Model.Acquisition.IsChannelActive;
+            isChannelActive(isTheChannel)=get(source,'Value');
+            self.Model.Acquisition.IsChannelActive=isChannelActive;             %#ok<FNDSB>
         end
         
         function aoScaleEditActuated(self,source)
@@ -78,6 +87,21 @@ classdef ChannelsController < ws.Controller
             end
         end
         
+        function doTimedCheckboxActuated(self,source)
+            isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
+            i=find(isTheChannel);            
+            newState = get(self.Figure.DOIsTimedCheckboxes(i),'value');
+            self.Model.Stimulation.IsDigitalChannelTimed(i)=newState;
+            self.Figure.update();
+        end
+        
+        function doOnRadiobuttonActuated(self,source)
+            isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
+            i=find(isTheChannel);            
+            newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
+            self.Model.Stimulation.DigitalOutputStateIfUntimed(i)=newState;
+        end
+        
 %         function aoMultiplierEditActuated(self,source)
 %             isTheChannel=(source==self.Figure.AOMultiplierEdits);
 %             i=find(isTheChannel);
@@ -103,10 +127,16 @@ classdef ChannelsController < ws.Controller
                     self.aiUnitsEditActuated(source);
                 elseif any(source==figureObject.AIIsActiveCheckboxes)
                     self.aiIsActiveCheckboxActuated(source);
+                elseif any(source==figureObject.DIIsActiveCheckboxes)
+                    self.diIsActiveCheckboxActuated(source);
                 elseif any(source==figureObject.AOScaleEdits)
                     self.aoScaleEditActuated(source);
                 elseif any(source==figureObject.AOUnitsEdits)
                     self.aoUnitsEditActuated(source);
+                elseif any(source==figureObject.DOIsTimedCheckboxes)
+                    self.doTimedCheckboxActuated(source);
+                elseif any(source==figureObject.DOIsOnRadiobuttons)
+                    self.doOnRadiobuttonActuated(source);
 %                 elseif any(source==figureObject.AOMultiplierEdits)
 %                     self.aoMultiplierEditActuated(source);
                 end
