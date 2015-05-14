@@ -927,11 +927,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Edit menu items
             set(self.AddSequenceMenuItem,'Enable',onIff(isIdle));
-            set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle));
+            set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusSequence')));
             set(self.AddMapMenuItem,'Enable',onIff(isIdle));
-            set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle));
+            set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusMap')));
             set(self.AddStimulusMenuItem,'Enable',onIff(isIdle));
-            set(self.DeleteItemMenuItem,'Enable',onIff(isIdle));
+            set(self.DeleteItemMenuItem,'Enable',onIff(isIdle&&isSelection));
             
             % Tools menu items
             set(self.PreviewMenuItem,'Enable',onIff(isIdle&&isSelection));
