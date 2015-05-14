@@ -42,17 +42,16 @@ classdef ChannelsController < ws.Controller
         
         function aiIsActiveCheckboxActuated(self,source)
             isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
-            isChannelActive=self.Model.Acquisition.IsChannelActive;
-            isChannelActive(isTheChannel)=get(source,'Value');
-            self.Model.Acquisition.IsChannelActive=isChannelActive;             %#ok<FNDSB>
+            isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
+            isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
         end
         
         function diIsActiveCheckboxActuated(self,source)
             isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
-            isTheChannel=isTheChannel+self.Model.Acquisition.NAnalogChannels;
-            isChannelActive=self.Model.Acquisition.IsChannelActive;
-            isChannelActive(isTheChannel)=get(source,'Value');
-            self.Model.Acquisition.IsChannelActive=isChannelActive;             %#ok<FNDSB>
+            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
+            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
         end
         
         function aoScaleEditActuated(self,source)

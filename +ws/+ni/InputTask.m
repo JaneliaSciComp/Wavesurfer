@@ -14,7 +14,7 @@ classdef InputTask < handle
     end
     
     properties (Dependent = true)
-        IsChannelActive  % boolean
+        %IsChannelActive  % boolean
         SampleRate      % Hz
         AcquisitionDuration  % Seconds
         DurationPerDataAvailableCallback  % Seconds
@@ -34,7 +34,7 @@ classdef InputTask < handle
         IsAnalog_
         PhysicalChannelNames_ = cell(1,0)
         ChannelNames_ = cell(1,0)
-        IsChannelActive_ = true(1,0)
+        %IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
         AcquisitionDuration_ = 1     % Seconds
         DurationPerDataAvailableCallback_ = 0.1  % Seconds
@@ -78,7 +78,7 @@ classdef InputTask < handle
             % Store this stuff
             self.PhysicalChannelNames_ = physicalChannelNames ;
             self.ChannelNames_ = channelNames ;
-            self.IsChannelActive_ = true(1,nChannels);
+            %self.IsChannelActive_ = true(1,nChannels);
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -183,10 +183,10 @@ classdef InputTask < handle
                         packedData = bitor(packedData,shiftedData(:,column));
                     end
                 end
-                nActiveChannels = sum(self.IsChannelActive_);
-                if nActiveChannels<=8
+                nChannels = length(self.ChannelNames_);
+                if nChannels<=8
                     rawData = uint8(packedData);
-                elseif nActiveChannels<=16
+                elseif nChannels<=16
                     rawData = uint16(packedData);
                 else %nActiveChannels<=32
                     rawData = packedData;
@@ -237,25 +237,25 @@ classdef InputTask < handle
             value = self.IsArmed_;
         end  % function
         
-        function set.IsChannelActive(self, newIsChannelActive)
-            % TODO: Need to get rid of this property, since it's not really
-            % that useful: setting readChannelsToRead doesn't affect what
-            % channels are actually sampled.
-            if (islogical(newIsChannelActive) || isnumeric(newIsChannelActive)) && isequal(size(newIsChannelActive),size(self.IsChannelActive_)) ,
-                newIsChannelActive=logical(newIsChannelActive);
-
-                newActiveChannelNames = self.ChannelNames(newIsChannelActive) ;
-                
-                if isempty(self.DabsDaqTask_) ,
-                    % do nothing
-                else
-                    newChannelsToRead = ws.utility.commaSeparatedList(newActiveChannelNames);
-                    set(self.DabsDaqTask_, 'readChannelsToRead', newChannelsToRead);                    
-                end
-
-                self.IsChannelActive_ = newIsChannelActive;
-            end
-        end  % function
+%         function set.IsChannelActive(self, newIsChannelActive)
+%             % TODO: Need to get rid of this property, since it's not really
+%             % that useful: setting readChannelsToRead doesn't affect what
+%             % channels are actually sampled.
+%             if (islogical(newIsChannelActive) || isnumeric(newIsChannelActive)) && isequal(size(newIsChannelActive),size(self.IsChannelActive_)) ,
+%                 newIsChannelActive=logical(newIsChannelActive);
+% 
+%                 newActiveChannelNames = self.ChannelNames(newIsChannelActive) ;
+%                 
+%                 if isempty(self.DabsDaqTask_) ,
+%                     % do nothing
+%                 else
+%                     newChannelsToRead = ws.utility.commaSeparatedList(newActiveChannelNames);
+%                     set(self.DabsDaqTask_, 'readChannelsToRead', newChannelsToRead);                    
+%                 end
+% 
+%                 self.IsChannelActive_ = newIsChannelActive;
+%             end
+%         end  % function
         
 %         function set.ActiveChannels(self, value)
 %             if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,

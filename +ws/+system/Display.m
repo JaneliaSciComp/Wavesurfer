@@ -339,7 +339,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 channelNamesForThisScope = cell(1,0);
                 jInAnalogData = [];                
                 jInDigitalData = [];                
-                NActiveAnalogChannels = sum(self.Parent.Acquisition.IsChannelActive & self.Parent.Acquisition.IsChannelAnalog);
+                NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
                 for cdx = 1:length(inputChannelNames)
                     %channelName = sprintf('Acq_%d', inputChannelIDs(cdx));
                     channelName=inputChannelNames{cdx};

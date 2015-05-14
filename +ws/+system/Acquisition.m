@@ -15,9 +15,8 @@ classdef Acquisition < ws.system.Subsystem
     properties (Dependent=true)
         IsAnalogChannelActive
         IsDigitalChannelActive
-        IsChannelActive
-          % boolean array indicating which channels are active
-          % Setting this is the prefered way for outsiders to change which
+          % boolean arrays indicating which analog/digital channels are active
+          % Setting these is the prefered way for outsiders to change which
           % channels are active
     end
     
@@ -36,6 +35,7 @@ classdef Acquisition < ws.system.Subsystem
         NDigitalChannels
         IsChannelAnalog
         ChannelIDs  % zero-based AI channel IDs for all available channels
+        IsChannelActive
     end
     
     properties (SetAccess=protected)
@@ -51,12 +51,16 @@ classdef Acquisition < ws.system.Subsystem
           % A list of SIUnit instances that describes the real-world units 
           % for each channel.
     end
-    
-    properties (Dependent = true, SetAccess=protected, Transient=true)
+
+    properties (Dependent = true, SetAccess=immutable, Transient=true)  % what does this being transient acheive?
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
-        ActiveChannelScales  % a row vector containing the scale factor for each AI channel, for converting V to native units
-        ActiveChannelUnits
     end
+
+%     properties (Dependent = true, SetAccess=protected, Transient=true)  % what does this being transient acheive?
+%         %ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
+%         %ActiveChannelScales  % a row vector containing the scale factor for each AI channel, for converting V to native units
+%         %ActiveChannelUnits
+%     end
     
     properties (Transient=true)
         IsArmedOrAcquiring = false  
@@ -173,17 +177,17 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function result = get.ActiveChannelNames(self)         
-            result = self.ChannelNames(self.IsChannelActive());
+            result = self.ChannelNames(self.IsChannelActive);
         end
         
-        function set.ActiveChannelNames(self,newActiveChannelNames)
-            % Make it so the given channel names are the active channels
-            channelNames=self.ChannelNames;
-            isToBeActive=ismember(channelNames,newActiveChannelNames);
-            %newActiveChannelIDs=self.AnalogInputTask_.AvailableChannels(isToBeActive);
-            %self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;
-            self.IsChannelActive=isToBeActive;  % call the 'core' setter
-        end
+%         function set.ActiveChannelNames(self,newActiveChannelNames)
+%             % Make it so the given channel names are the active channels
+%             channelNames=self.ChannelNames;
+%             isToBeActive=ismember(channelNames,newActiveChannelNames);
+%             %newActiveChannelIDs=self.AnalogInputTask_.AvailableChannels(isToBeActive);
+%             %self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;
+%             self.IsChannelActive=isToBeActive;  % call the 'core' setter
+%         end
         
         function result=get.IsChannelActive(self)
             % Boolean array indicating which of the available channels is
@@ -219,8 +223,6 @@ classdef Acquisition < ws.system.Subsystem
                 % Now delete any tasks that have the wrong channel subsets,
                 % if needed
                 if ~isempty(self.AnalogInputTask_) ,
-                    newIsChannelAnalogAndActive = self.IsChannelActive & self.IsChannelAnalog ;
-                    newIsAnalogChannelActive = newIsChannelAnalogAndActive(1:self.NAnalogChannels) ;
                     if isequal(newIsAnalogChannelActive,originalIsAnalogChannelActive) ,
                         % no need to do anything
                     else
@@ -252,8 +254,6 @@ classdef Acquisition < ws.system.Subsystem
                 % Now delete any tasks that have the wrong channel subsets,
                 % if needed
                 if ~isempty(self.DigitalInputTask_) ,
-                    newIsChannelDigitalAndActive = self.IsChannelActive & ~self.IsChannelAnalog ;
-                    newIsDigitalChannelActive = newIsChannelDigitalAndActive(self.NAnalogChannels+1 : end) ;
                     if isequal(newIsDigitalChannelActive,originalIsDigitalChannelActive) ,
                         % no need to do anything
                     else
@@ -293,13 +293,13 @@ classdef Acquisition < ws.system.Subsystem
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-        function out = get.ActiveChannelScales(self)
-            out = self.ChannelScales(self.IsChannelActive);
-        end
+%         function out = get.ActiveChannelScales(self)
+%             out = self.ChannelScales(self.IsChannelActive);
+%         end
         
-        function out = get.ActiveChannelUnits(self)            
-            out = self.ChannelUnits(self.IsChannelActive);
-        end
+%         function out = get.ActiveChannelUnits(self)            
+%             out = self.ChannelUnits(self.IsChannelActive);
+%         end
         
         function value = getNumberOfElectrodesClaimingChannel(self)
             wavesurferModel=self.Parent;
@@ -693,8 +693,8 @@ classdef Acquisition < ws.system.Subsystem
             else %self.NDigitalChannels<=32
                 dataType = 'uint32';
             end
-            NActiveAnalogChannels = sum(self.IsChannelActive & self.IsChannelAnalog);
-            NActiveDigitalChannels = sum(self.IsChannelActive & ~self.IsChannelAnalog);
+            NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
+            NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
