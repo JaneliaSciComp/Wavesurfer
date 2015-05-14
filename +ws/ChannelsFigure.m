@@ -586,17 +586,17 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             titleRowBottomY=digitalPanelsHeight-panelToTitleRowSpaceHeight-titleRowHeight;
             channelLabelColLeftX = panelToLabelSpaceWidth;
             ws.utility.alignTextInRectangleBang(self.DIChannelColTitleText,[channelLabelColLeftX titleRowBottomY gainEditWidth titleRowHeight],'cm');
-            isActiveColLeftX=channelLabelColLeftX+aiLabelWidth+spaceBeforeIsActiveColWidth;
+            %isActiveColLeftX=channelLabelColLeftX+aiLabelWidth+spaceBeforeIsActiveColWidth;
             ws.utility.alignTextInRectangleBang(self.DIIsActiveColTitleText,[isActiveColLeftX titleRowBottomY aiIsActiveColWidth titleRowHeight],'cm');
             
             % Position the stuff in the DI rows            
             aiYRowBottom=titleRowBottomY-spaceBelowTitleRowHeight-rowHeight;   
             for i=1:nDIs ,
-                xColLeft=panelToLabelSpaceWidth;
+                %xColLeft=panelToLabelSpaceWidth;
                 set(self.DILabelTexts(i), ...
-                    'Position',[xColLeft aiYRowBottom-4 aiLabelWidth labelHeight]);  % shim to make look nice
-                xColLeft=xColLeft+aiLabelWidth+spaceBeforeIsActiveColWidth;
-                centerCheckboxBang(self.DIIsActiveCheckboxes(i),[xColLeft+aiIsActiveColWidth/2 aiYRowBottom+rowHeight/2]);
+                    'Position',[channelLabelColLeftX aiYRowBottom-4 aiLabelWidth labelHeight]);  % shim to make look nice
+                %xColLeft=xColLeft+aiLabelWidth+spaceBeforeIsActiveColWidth;
+                centerCheckboxBang(self.DIIsActiveCheckboxes(i),[isActiveColLeftX+aiIsActiveColWidth/2 aiYRowBottom+rowHeight/2]);
                 aiYRowBottom=aiYRowBottom-rowToRowHeight;
             end
             

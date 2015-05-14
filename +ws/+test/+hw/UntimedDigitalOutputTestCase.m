@@ -21,7 +21,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
         function testWithOneTimedOneUntimed(self)
             isCommandLineOnly=true;
             thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_2_DOs.m'), ...
+            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_4_AIs_0_DIs_2_AOs_2_DOs.m'), ...
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
