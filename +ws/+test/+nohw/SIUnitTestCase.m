@@ -117,6 +117,31 @@ classdef SIUnitTestCase < matlab.unittest.TestCase
             expected = SIUnit('W');  
             self.verifyEqual(unit,expected,'Error: SIUnit(''N*m/s'') ~= SIUnit(''W'')');
         end
+        
+        function testNewton(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('kg*m/s^2');
+            expected = SIUnit('N');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''kg*m/s^2'') ~= SIUnit(''N'')');
+        end
+        
+        function testNewton2(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('kg*m*s^-2');
+            expected = SIUnit('N');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''kg*m*s^-2'') ~= SIUnit(''N'')');
+        end
+        
+        function testSaveAndLoad(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('kg*m/s^2');
+            fileName = tempname() ;
+            save('-mat',fileName,'unit');
+            s=load('-mat',fileName);
+            unitCheck = s.unit ;
+            self.verifyEqual(unit,unitCheck,'Error: Unit doesn''t saved-and-loaded unit');
+            self.verifyEqual(string(unit),string(unitCheck),'Error: Unit string doesn''t saved-and-loaded unit string');            
+        end
     end  % methods (Test)
 
     methods

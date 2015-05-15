@@ -42,10 +42,13 @@ classdef SIUnit
           % the prefixes
     end  % properties
 
-    properties  % (SetAccess=immutable)
+    properties (SetAccess=immutable)
         Scale  % the power of ten by which the stem unit is multiplied, a scalar double
         Powers  % the exponent for each of the base units, a double row vec of length NBases
-        String  % If constructed from a string, the string used to construct.  Otherwise [] (not ''!).
+    end
+    
+    properties (GetAccess=protected, SetAccess=immutable)
+        String_  % If constructed from a string, the string used to construct.  Otherwise [] (not ''!).
     end  % properties
     
     %----------------------------------------------------------------------
@@ -64,7 +67,7 @@ classdef SIUnit
                 % Return pure unity
                 unit.Scale=0;
                 unit.Powers=zeros(1,SIUnit.NBases);
-                unit.String = [] ;
+                unit.String_ = [] ;
             elseif (nargin==1)
                 % should just be a string arg
                 str=varargin{1};
@@ -74,7 +77,7 @@ classdef SIUnit
                     [scale,powers] = SIUnit.parseUnitString(str) ;
                     unit.Scale = scale ;
                     unit.Powers = powers ;
-                    unit.String = str ;
+                    unit.String_ = str ;
                 else
                     isBadArgs=true;
                 end
@@ -84,7 +87,7 @@ classdef SIUnit
                 if isscalar(varargin{1}) && size(varargin{2},1)==1 && size(varargin{2},2)==SIUnit.NBases ,
                     unit.Scale=varargin{1};
                     unit.Powers=varargin{2};
-                    unit.String = [] ;
+                    unit.String_ = [] ;
                 else
                     isBadArgs=true;
                 end
@@ -252,10 +255,10 @@ classdef SIUnit
                       'The SIUnit.string() method only works on scalar SIUnit arrays'); 
             end
             % If we get here, unit is scalar
-            if ischar(unit.String) ,
+            if ischar(unit.String_) ,
                 % If the unit was constructed from a string, return that
                 % string
-                result = unit.String ;
+                result = unit.String_ ;
             else
                 % If the unit was not constructed from a string, compute an
                 % equivalent string.
@@ -491,14 +494,17 @@ classdef SIUnit
             [m,n]=size(unit);
             scale=cell([m n]);
             powers=cell([m n]);
+            string=cell([m n]);            
             for i=1:m ,
                 for j=1:n ,
                     scale{i,j}=unit(i,j).Scale;
                     powers{i,j}=unit(i,j).Powers;
+                    string{i,j}=unit(i,j).String_;
                 end
             end
             result=struct('Scale',scale, ...
-                          'Powers',powers);
+                          'Powers',powers, ...
+                          'String_',string);
         end
         
 %         %------------------------------------------------------------------
@@ -608,24 +614,24 @@ classdef SIUnit
             s.Power_cd=powers(:,:,7);
         end  % function
 
-        %--------------------------------------------------------------------
-        function s=toStruct(unit)
-            % This is used during header encoding
-            import ws.utility.structWithDims
-            dims=size(unit);
-            s=ws.utility.structWithDims(dims,{'Scale' 'Power_kg' 'Power_m' 'Power_s' 'Power_C' 'Power_K' 'Power_mol' 'Power_cd'});
-            for i=1:numel(unit) ,
-                s(i).Scale=unit(i).Scale;
-                powers=unit(i).Powers;
-                s(i).Power_kg=powers(1);
-                s(i).Power_m=powers(2);
-                s(i).Power_s=powers(3);
-                s(i).Power_C=powers(4);
-                s(i).Power_K=powers(5);
-                s(i).Power_mol=powers(6);
-                s(i).Power_cd=powers(7);                
-            end
-        end  % function
+%         %--------------------------------------------------------------------
+%         function s=toStruct(unit)
+%             % This is used during header encoding
+%             import ws.utility.structWithDims
+%             dims=size(unit);
+%             s=ws.utility.structWithDims(dims,{'Scale' 'Power_kg' 'Power_m' 'Power_s' 'Power_C' 'Power_K' 'Power_mol' 'Power_cd'});
+%             for i=1:numel(unit) ,
+%                 s(i).Scale=unit(i).Scale;
+%                 powers=unit(i).Powers;
+%                 s(i).Power_kg=powers(1);
+%                 s(i).Power_m=powers(2);
+%                 s(i).Power_s=powers(3);
+%                 s(i).Power_C=powers(4);
+%                 s(i).Power_K=powers(5);
+%                 s(i).Power_mol=powers(6);
+%                 s(i).Power_cd=powers(7);                
+%             end
+%         end  % function
 
         %--------------------------------------------------------------------
         function out = eq(self, other)
@@ -673,23 +679,25 @@ classdef SIUnit
     
     methods (Access=protected)
        function value=isequalElement_(self,other)
-            % The String field is not used when testing for value-equality
+            % The String_ field is not used when testing for value-equality
             % of units
-            value = (self.Scale==other.Scale) && isequal(self.Powers,other.Powers) ;
+            value = isequal(self.Scale,other.Scale) && isequal(self.Powers,other.Powers) ;
        end
     end
     
     %--------------------------------------------------------------------
     methods (Static=true)
         function unit=loadobj(s)
-            % See saveobj().                        
+            % See saveobj().        
             import ws.utility.SIUnit
             [m,n]=size(s);
             unit=SIUnit.empty();
-            unit(m,n)=SIUnit();
-            for i=1:m ,
-                for j=1:n ,
-                   unit(i,j)=SIUnit(s(i,j).Scale,s(i,j).Powers);
+            unit(m,n)=SIUnit();  % dimension
+            for i=1:numel(s) ,
+                if ischar(s(i).String_) ,
+                    unit(i) = SIUnit(s(i).String_);
+                else
+                    unit(i) = SIUnit(s(i).Scale,s(i).Powers);
                 end
             end           
         end  % function
@@ -719,7 +727,7 @@ classdef SIUnit
                 isThisMarkAStar = isStarWithInitial(iPart) ;
                 indexOfNextMark = indicesOfMarksWithInitialAndFinal(iPart+1) ;
                 thisPart = str(indexOfThisMark+1:indexOfNextMark-1);
-                [thisScale,thisPowers] = SIUnit.parseSingleAbbreviationString(thisPart);
+                [thisScale,thisPowers] = SIUnit.parseSingleAbbreviationStringWithPossibleExponent(thisPart);
                 if isThisMarkAStar ,
                     scale = scale + thisScale ;
                     powers = powers + thisPowers ;
@@ -731,6 +739,40 @@ classdef SIUnit
             end
         end  % function
 
+        function [scale,powers] = parseSingleAbbreviationStringWithPossibleExponent(str)
+            import ws.utility.SIUnit            
+            indicesOfCarets = strfind(str,'^') ;
+            nCarets = length(indicesOfCarets) ;            
+            if nCarets==0 ,
+                [scale,powers] = SIUnit.parseSingleAbbreviationString(str) ;
+            elseif nCarets==1 ,
+                indexOfCaret = indicesOfCarets ;
+                n = length(str) ;
+                if indexOfCaret==1 ,
+                    error('SIUnits:badConstructorArgs','There seems to be an exponent with no base');
+                end
+                if indexOfCaret==n ,               
+                    error('SIUnits:badConstructorArgs','There seems to be a base with a missing exponent');
+                end
+                baseString = str(1:indexOfCaret-1);
+                exponentString = str(indexOfCaret+1:n);
+                [baseScale,basePowers] = SIUnit.parseSingleAbbreviationString(baseString) ;
+                exponent=str2double(exponentString) ;
+                if isfinite(exponent) 
+                    if round(exponent)==exponent ,
+                        scale = baseScale * exponent ;
+                        powers = exponent * basePowers ;
+                    else
+                        error('SIUnits:badConstructorArgs','Exponents must be integers');
+                    end
+                else
+                    error('SIUnits:badConstructorArgs','Invalid exponent');                    
+                end
+            else
+                error('SIUnits:badConstructorArgs','Can''t have two carets in a single factor');  
+            end
+        end  % function
+        
         function [scale,powers] = parseSingleAbbreviationString(str)
             % need to detemine the unit from str, which is assumed
             % to be an abbreviation, or an expression with some *s and
