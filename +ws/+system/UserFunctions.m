@@ -92,8 +92,11 @@ classdef UserFunctions < ws.system.Subsystem
                       % Calls trial set completion user function, but still passes TrialDidAbort
                 end
             catch me
-                message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
-                warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
+                %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
+                %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
+                warning('wavesurfer:userfunctions:codeerror', 'Error in user class method:');
+                fprintf('Stack trace for user class method error:\n');
+                display(me.getReport());
             end
         end  % function
         
