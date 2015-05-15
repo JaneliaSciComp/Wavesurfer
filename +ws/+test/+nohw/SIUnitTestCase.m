@@ -96,6 +96,27 @@ classdef SIUnitTestCase < matlab.unittest.TestCase
             expected='N';
             self.testSIUnitExpression(expression,expected);
         end  % method
+        
+        function testMPerS(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('m/s');
+            expected = SIUnit(0,[0 1 -1 0 0 0 0]);  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''m/s'') ~= SIUnit(0,[0 1 -1 0 0 0 0])');
+        end
+        
+        function testJoule(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('N*m');
+            expected = SIUnit('J');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''N*m'') ~= SIUnit(''J'')');
+        end
+        
+        function testWatt(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('N*m/s');
+            expected = SIUnit('W');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''N*m/s'') ~= SIUnit(''W'')');
+        end
     end  % methods (Test)
 
     methods

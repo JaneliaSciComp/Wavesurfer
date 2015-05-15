@@ -16,7 +16,7 @@ classdef SIUnit
     properties (Constant=true, Access=protected)
         NBases=7    % the number of base units
         BaseStems={'kg' 'm' 's' 'C' 'K' 'mol' 'cd'}';    % the base units
-        Stems=cat(1,ws.utility.SIUnit.BaseStems,{'A' 'V' 'N' 'Hz' 'Ohm' 'S' 'W' 'Pa' 'J' 'F'}');
+        Stems={'kg' 'm' 's' 'C' 'K' 'mol' 'cd' 'A' 'V' 'N' 'Hz' 'Ohm' 'S' 'W' 'Pa' 'J' 'F'}';
            % the useful abbreviations for units
         StemsPowers=  [ 1  0  0  0  0  0  0 ; ...
                         0  1  0  0  0  0  0 ; ...
@@ -59,7 +59,7 @@ classdef SIUnit
             %          Scale is the power of ten corresponding to the
             %          prefix, Powers is the power to which each base unit
             %          will be raised: kg m s C K mol cd
-            import ws.utility.*
+            import ws.utility.SIUnit
             isBadArgs=false;
             if (nargin==0)
                 % Return pure unity
@@ -71,29 +71,9 @@ classdef SIUnit
                 if ischar(str)
                     % need to detemine the unit from str, which is assumed
                     % to be an abbreviation
-                    nStems=length(SIUnit.Stems);
-                    bestMatchLength=0;
-                    for i=1:nStems
-                        thisAbbrev=SIUnit.Stems{i};
-                        if length(str)>=length(thisAbbrev) && strcmp(thisAbbrev,str(end-length(thisAbbrev)+1:end)) ,
-                            if length(thisAbbrev)>bestMatchLength ,
-                                bestMatchLength=length(thisAbbrev);
-                                iBest=i;
-                            end
-                        end
-                    end
-                    if bestMatchLength==0 , 
-                        error('SIUnits:badConstructorArgs','Unknown unit string');  
-                    else
-                        unit.Powers=SIUnit.StemsPowers(iBest,:);
-                        thisPrefix=str(1:end-length(SIUnit.Stems{iBest}));
-                    end
-                    scaleThis=SIUnit.PrefixScales(strcmp(SIUnit.Prefixes,thisPrefix));
-                    if isempty(scaleThis) ,
-                        error('SIUnits:badConstructorArgs','Unknown prefix string'); 
-                    else
-                        unit.Scale=scaleThis;
-                    end
+                    [scale,powers] = SIUnit.parseUnitString(str) ;
+                    unit.Scale = scale ;
+                    unit.Powers = powers ;
                 else
                     isBadArgs=true;
                 end
@@ -126,7 +106,7 @@ classdef SIUnit
         function result=idiomaticPrefix(unit)
             % If the unit has an idiomatic prefix, returns it as a string.
             % if not, returns nan
-            import ws.utility.*
+            import ws.utility.SIUnit
             prefixList=SIUnit.Prefixes(unit.Scale==SIUnit.PrefixScales);
             if isempty(prefixList)
                 % doesn't match a specific case
@@ -171,7 +151,7 @@ classdef SIUnit
         function result=idiomaticStem(unit)
             % The 'idiomatic' stem of the unit, like 'm', 's', 'V', 'mol',
             % if it exists.  Otherwise, returns nan.
-            import ws.utility.*
+            import ws.utility.SIUnit
             %nStems=length(SIUnit.Stems);
             %hasIdiomaticStem=false;
             stemsPowers=SIUnit.StemsPowers;
@@ -199,7 +179,7 @@ classdef SIUnit
         function result=nonidiomaticStem(unit)
             % The nonidiomatic stem for the unit.  E.g.
             % nonidiomaticStem(SIUnit('W')) => 'kg*m^2*s^-3'
-            import ws.utility.*
+            import ws.utility.SIUnit
             needConjunction=false;
             result='';
             for i=1:SIUnit.NBases ,
@@ -338,22 +318,23 @@ classdef SIUnit
         function result=times(arg1,arg2)
             % Take the product of an SIUnit and either an SIUnit or a number.  
             % This does what you'd think.
-            import ws.utility.*
+            import ws.utility.objectFunctionUnary
+            import ws.utility.objectFunctionBinary            
             if isscalar(arg1),
                 if isscalar(arg2) ,
                     result=timesScalar(arg1,arg2);
                 else
-                    result=ws.utility.objectFunctionUnary(@(x)(timesScalar(arg1,x)), ...
-                                                             arg2);
+                    result=objectFunctionUnary(@(x)(timesScalar(arg1,x)), ...
+                                               arg2);
                 end
             else
                 if isscalar(arg2) ,
-                    result=ws.utility.objectFunctionUnary(@(x)(timesScalar(x,arg2)), ...
-                                                             arg1);
+                    result=objectFunctionUnary(@(x)(timesScalar(x,arg2)), ...
+                                               arg1);
                 else
-                    result=ws.utility.objectFunctionBinary(@timesScalar, ...
-                                                              arg1, ...
-                                                              arg2);
+                    result=objectFunctionBinary(@timesScalar, ...
+                                                arg1, ...
+                                                arg2);
                 end
             end            
         end
@@ -362,7 +343,7 @@ classdef SIUnit
         function result=timesScalar(arg1,arg2)
             % Take the product of an SIUnit and either an SIUnit or a number.  
             % This does what you'd think.
-            import ws.utility.*
+            import ws.utility.SIUnit
             if isa(arg1,'SIUnit') ,
                 if isa(arg2,'SIUnit')
                     result=SIUnit(arg1.Scale+arg2.Scale,arg1.Powers+arg2.Powers);
@@ -390,22 +371,22 @@ classdef SIUnit
         function result=rdivide(arg1,arg2)
             % Take the quotient of a scalar SIUnit and either a scalar SIUnit or a
             % scalar number.  Does what you'd think.
-            import ws.utility.*
+            import ws.utility.objectFunctionUnary
             if isscalar(arg1),
                 if isscalar(arg2) ,
                     result=rdivideScalar(arg1,arg2);
                 else
-                    result=ws.utility.objectFunctionUnary(@(x)(rdivideScalar(arg1,x)), ...
-                                                             arg2);
+                    result=objectFunctionUnary(@(x)(rdivideScalar(arg1,x)), ...
+                                               arg2);
                 end
             else
                 if isscalar(arg2) ,
-                    result=ws.utility.objectFunctionUnary(@(x)(rdivideScalar(x,arg2)), ...
-                                                             arg1);
+                    result=objectFunctionUnary(@(x)(rdivideScalar(x,arg2)), ...
+                                               arg1);
                 else
-                    result=ws.utility.objectFunctionBinary(@rdivideScalar, ...
-                                                              arg1, ...
-                                                              arg2);
+                    result=objectFunctionBinary(@rdivideScalar, ...
+                                                arg1, ...
+                                                arg2);
                 end
             end            
         end
@@ -414,7 +395,7 @@ classdef SIUnit
         function result=rdivideScalar(arg1,arg2)
             % Take the quotient of a scalar SIUnit and either a scalar SIUnit or a
             % scalar number.  Does what you'd think.
-            import ws.utility.*
+            import ws.utility.SIUnit
             if isa(arg1,'SIUnit') ,
                 if isa(arg2,'SIUnit')
                     result=SIUnit(arg1.Scale-arg2.Scale,arg1.Powers-arg2.Powers);
@@ -436,13 +417,13 @@ classdef SIUnit
         %------------------------------------------------------------------
         function result=invertScalar(unit)
             % Take the reciprocal of a scalar SIUnit.
-            import ws.utility.*
+            import ws.utility.SIUnit
             result=SIUnit(-unit.Scale,-unit.Powers);
         end
         
         %------------------------------------------------------------------
         function result=invert(arg)
-            import ws.utility.*
+            import ws.utility.objectFunctionUnary
             result=ws.utility.objectFunctionUnary(@invertScalar, ...
                                                      arg);
         end
@@ -450,13 +431,14 @@ classdef SIUnit
         %------------------------------------------------------------------
         function result=powerScalar(unit,p)
             % Take the an SIUnit to a power.
-            import ws.utility.*
+            import ws.utility.SIUnit
             result=SIUnit(p*unit.Scale,p*unit.Powers);
         end
         
         %------------------------------------------------------------------
         function result=power(arg1,arg2)
-            import ws.utility.*
+            import ws.utility.objectFunctionUnary
+            import ws.utility.objectFunctionBinary
             if isscalar(arg1) ,
                 if isscalar(arg2) ,
                     result=powerScalar(arg1,arg2);
@@ -536,7 +518,7 @@ classdef SIUnit
         function h5save(unit, file, dataset, useCreate)
             % Method to write unit array to an HDF5 file.  Meant to be used with
             % ws.most.fileutil.h5save().
-            import ws.utility.*
+            import ws.utility.SIUnit
             
             if nargin < 4
                 useCreate = false;
@@ -594,7 +576,7 @@ classdef SIUnit
             % The HDF5 library doesn't seem to deal well with structure
             % arrays.  (Or at least I can't get it to work.)  So we encode
             % unit as a scalar structure with array fields.
-            import ws.utility.*
+            import ws.utility.SIUnit
             m=size(unit,1);
             n=size(unit,2);
             s=struct();
@@ -619,7 +601,7 @@ classdef SIUnit
         %--------------------------------------------------------------------
         function s=toStruct(unit)
             % This is used during header encoding
-            import ws.utility.*
+            import ws.utility.structWithDims
             dims=size(unit);
             s=ws.utility.structWithDims(dims,{'Scale' 'Power_kg' 'Power_m' 'Power_s' 'Power_C' 'Power_K' 'Power_mol' 'Power_cd'});
             for i=1:numel(unit) ,
@@ -660,7 +642,7 @@ classdef SIUnit
     methods (Static=true)
         function unit=loadobj(s)
             % See saveobj().                        
-            import ws.utility.*            
+            import ws.utility.SIUnit
             [m,n]=size(s);
             unit=SIUnit.empty();
             unit(m,n)=SIUnit();
@@ -670,6 +652,74 @@ classdef SIUnit
                 end
             end           
         end  % function
+
+        function [scale,powers] = parseUnitString(str)
+            % need to detemine the unit from str, which is assumed
+            % to be an abbreviation, or an expression with some *s and
+            % /s in there.
+            import ws.utility.SIUnit            
+            indicesOfStars = strfind(str,'*') ;
+            indicesOfSlashes = strfind(str,'/') ;
+            indicesOfMarksUnsorted = [indicesOfStars indicesOfSlashes] ;
+            nStars = length(indicesOfStars) ;
+            nSlashes = length(indicesOfSlashes) ;
+            isStarUnsorted = [true(1,nStars) false(1,nSlashes)] ;
+            [indicesOfMarks,sortingPermutation] = sort(indicesOfMarksUnsorted) ;
+            isStar = isStarUnsorted(sortingPermutation) ;
+            
+            indicesOfMarksWithInitialAndFinal = [0 indicesOfMarks length(str)+1] ;
+            isStarWithInitial = [true isStar] ;
+                    
+            scale = 0 ;
+            powers = zeros(1,ws.utility.SIUnit.NBases) ;
+            nParts = length(isStarWithInitial) ;  % guaranteed to be at least one
+            for iPart = 1:nParts ,
+                indexOfThisMark = indicesOfMarksWithInitialAndFinal(iPart) ;
+                isThisMarkAStar = isStarWithInitial(iPart) ;
+                indexOfNextMark = indicesOfMarksWithInitialAndFinal(iPart+1) ;
+                thisPart = str(indexOfThisMark+1:indexOfNextMark-1);
+                [thisScale,thisPowers] = SIUnit.parseSingleAbbreviationString(thisPart);
+                if isThisMarkAStar ,
+                    scale = scale + thisScale ;
+                    powers = powers + thisPowers ;
+                else
+                    % this mark is a slash
+                    scale = scale - thisScale ;
+                    powers = powers - thisPowers ;
+                end
+            end
+        end  % function
+
+        function [scale,powers] = parseSingleAbbreviationString(str)
+            % need to detemine the unit from str, which is assumed
+            % to be an abbreviation, or an expression with some *s and
+            % /s in there.
+            import ws.utility.SIUnit            
+            nStems=length(ws.utility.SIUnit.Stems);
+            bestMatchLength=0;
+            for i=1:nStems
+                thisAbbrev=SIUnit.Stems{i};
+                if length(str)>=length(thisAbbrev) && strcmp(thisAbbrev,str(end-length(thisAbbrev)+1:end)) ,
+                    if length(thisAbbrev)>bestMatchLength ,
+                        bestMatchLength=length(thisAbbrev);
+                        iBest=i;
+                    end
+                end
+            end
+            if bestMatchLength==0 , 
+                error('SIUnits:badConstructorArgs','Unknown unit string');  
+            else
+                powers=SIUnit.StemsPowers(iBest,:);
+                thisPrefix=str(1:end-length(SIUnit.Stems{iBest}));
+            end
+            scaleThis=SIUnit.PrefixScales(strcmp(SIUnit.Prefixes,thisPrefix));
+            if isempty(scaleThis) ,
+                error('SIUnits:badConstructorArgs','Unknown prefix string'); 
+            else
+                scale=scaleThis;
+            end
+        end  % function
+        
     end  % static methods
     
 end
