@@ -42,8 +42,9 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods (Access=protected)
-        function modelWasSet_(self)
+        function didSetModel_(self)
             self.updateSubscriptionsToModelEvents_();
+            didSetModel_@ws.MCOSFigure(self);
         end
     end
     

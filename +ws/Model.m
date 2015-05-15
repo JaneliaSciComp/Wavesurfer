@@ -1,6 +1,15 @@
 classdef Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
+    properties (Dependent=true, SetAccess=immutable, Transient=true)
+        IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
+    end
+    
+    properties (Access=protected, Transient=true)
+        DegreeOfReadiness_ = 1
+    end
+
     events
         Update  % Means that any dependent views need to update themselves
+        UpdateReadiness
     end
     
     methods
@@ -32,6 +41,32 @@ classdef Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
             % If we get here, no exception was raised
             isValid=true;
         end  % function
+        
+        function changeReadiness(self,delta)
+            import ws.utility.*
+
+            if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
+                return
+            end
+                    
+            isReadyBefore=self.IsReady;
+            
+            newDegreeOfReadinessRaw=self.DegreeOfReadiness_+delta;
+            self.DegreeOfReadiness_ = ...
+                    fif(newDegreeOfReadinessRaw<=1, ...
+                        newDegreeOfReadinessRaw, ...
+                        1);
+                        
+            isReadyAfter=self.IsReady;
+            
+            if isReadyAfter ~= isReadyBefore ,
+                self.broadcast('UpdateReadiness');
+            end            
+        end  % function        
+        
+        function value=get.IsReady(self)
+            value=(self.DegreeOfReadiness_>0);
+        end               
     end  % methods block    
     
     methods (Access = protected)

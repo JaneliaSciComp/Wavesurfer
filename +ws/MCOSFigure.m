@@ -12,12 +12,12 @@ classdef (Abstract) MCOSFigure < handle
         NCallsToUpdateWhileDisabled_ = []    
         NCallsToUpdateControlPropertiesWhileDisabled_ = []    
         NCallsToUpdateControlEnablementWhileDisabled_ = []    
-        DegreeOfReadiness_ = 1
+        %DegreeOfReadiness_ = 1
     end
     
     properties (Dependent=true, Transient=true)
         AreUpdatesEnabled   % logical scalar; if false, changes in the model should not be reflected in the UI
-        IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
+        %IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
     end
     
     properties (SetAccess=protected)
@@ -54,8 +54,9 @@ classdef (Abstract) MCOSFigure < handle
         end
         
         function set.Model(self,newValue)
+            self.willSetModel_();
             self.Model=newValue;            
-            self.modelWasSet_();
+            self.didSetModel_();
         end
         
         function set.AreUpdatesEnabled(self,newValue)
@@ -173,38 +174,42 @@ classdef (Abstract) MCOSFigure < handle
             end            
         end
         
-        function changeReadiness(self,delta)
-            import ws.utility.*
+%         function changeReadiness(self,delta)
+%             import ws.utility.*
+% 
+%             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
+%                 return
+%             end
+%                     
+%             isReadyBefore=self.IsReady;
+%             
+%             newDegreeOfReadinessRaw=self.DegreeOfReadiness_+delta;
+%             self.DegreeOfReadiness_ = ...
+%                     fif(newDegreeOfReadinessRaw<=1, ...
+%                         newDegreeOfReadinessRaw, ...
+%                         1);
+%                         
+%             isReadyAfter=self.IsReady;
+%             
+%             if isReadyAfter && ~isReadyBefore ,
+%                 % Change cursor to normal
+%                 set(self.FigureGH,'pointer','arrow');
+%                 drawnow('update');
+%             elseif ~isReadyAfter && isReadyBefore ,
+%                 % Change cursor to hourglass
+%                 set(self.FigureGH,'pointer','watch');
+%                 drawnow('update');
+%             end            
+%         end  % function        
+%         
+%         function value=get.IsReady(self)
+%             value=(self.DegreeOfReadiness_>0);
+%         end       
+        
+        function updateReadiness(self,varargin)
+            self.updateReadinessImplementation_();
+        end
 
-            if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
-                return
-            end
-                    
-            isReadyBefore=self.IsReady;
-            
-            newDegreeOfReadinessRaw=self.DegreeOfReadiness_+delta;
-            self.DegreeOfReadiness_ = ...
-                    fif(newDegreeOfReadinessRaw<=1, ...
-                        newDegreeOfReadinessRaw, ...
-                        1);
-                        
-            isReadyAfter=self.IsReady;
-            
-            if isReadyAfter && ~isReadyBefore ,
-                % Change cursor to normal
-                set(self.FigureGH,'pointer','arrow');
-                drawnow('update');
-            elseif ~isReadyAfter && isReadyBefore ,
-                % Change cursor to hourglass
-                set(self.FigureGH,'pointer','watch');
-                drawnow('update');
-            end            
-        end  % function        
-        
-        function value=get.IsReady(self)
-            value=(self.DegreeOfReadiness_>0);
-        end       
-        
     end  % methods
 
     methods (Access=protected)
@@ -268,6 +273,25 @@ classdef (Abstract) MCOSFigure < handle
             self.updateControlEnablementImplementation_();
             self.layout_();
         end
+        
+        function updateReadinessImplementation_(self)
+            if isempty(self.Model) 
+                pointerValue = 'arrow';
+            else
+                if isvalid(self.Model) ,
+                    if self.Model.IsReady ,
+                        pointerValue = 'arrow';
+                    else
+                        pointerValue = 'watch';
+                    end
+                else
+                    pointerValue = 'arrow';
+                end
+            end
+            set(self.FigureGH,'pointer',pointerValue);
+            fprintf('drawnow(''update'')\n');
+            drawnow('update');
+        end
     end
     
     methods (Access=protected)
@@ -318,9 +342,19 @@ classdef (Abstract) MCOSFigure < handle
     end  % protected methods block
     
     methods (Access=protected)
-        function modelWasSet_(self) %#ok<MANU>
+        function willSetModel_(self)
             % This can be overridden if the figure wants something special to
-            % happen when the model is set
+            % happen just before the model is set
+            self.unsubscribeFromAll();
+        end
+        
+        function didSetModel_(self) 
+            % This can be overridden if the figure wants something special to
+            % happen just after the model is set
+            model=self.Model;
+            if ~isempty(model) && isvalid(model) ,
+                model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
+            end
         end
     end   
     

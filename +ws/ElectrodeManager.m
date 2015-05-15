@@ -284,6 +284,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
+            self.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             if self.AreSoftpanelsEnabled_ ,
                 electrode=self.Electrodes_{electrodeIndex};
                 originalType=electrode.Type;
@@ -301,6 +302,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     end                    
                 end
             end
+            self.changeReadiness(+1);
         end  % function
         
         function setElectrodeIndexWithinType(self,electrodeIndex,newValue)
@@ -775,6 +777,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %         end
         
         function updateSmartElectrodeGainsAndModes(self)
+            self.changeReadiness(-1);
             % Get the current mode and scaling from any smart electrodes
             smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
             for k=1:length(smartElectrodeTypes), 
@@ -811,11 +814,13 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     end
                 end
             end
+            self.changeReadiness(+1);
             self.broadcast('Update');            
         end  % function
         
         function reconnectWithSmartElectrodes(self)
             % Close and repoen the connection to any smart electrodes
+            self.changeReadiness(-1);
             smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
             for k=1:length(smartElectrodeTypes), 
                 smartElectrodeType=smartElectrodeTypes{k};
@@ -825,6 +830,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     self.(socketPropertyName).reopen();
                 end
             end
+            self.changeReadiness(+1);
             self.broadcast('Update');
         end  % function
         

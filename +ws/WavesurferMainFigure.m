@@ -1221,7 +1221,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols(i).IsReady));
+                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols(i).IsNonempty));
             end
 
             % Acquisition controls
