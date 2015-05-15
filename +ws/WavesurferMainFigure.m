@@ -1232,10 +1232,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.TrialDurationEdit,'Enable',onIff(isIdle&&isTrialBased));
             
             % Stimulation controls
+            isStimulationEnableable = model.Stimulation.CanEnable ;
             isStimulusEnabled=model.Stimulation.Enabled;
             stimulusLibrary=model.Stimulation.StimulusLibrary;            
             isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
-            set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle));
+            set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
             set(self.StimulationSampleRateEdit,'Enable',onIff(isIdle && isStimulusEnabled));
             set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
             set(self.EditStimulusLibraryButton,'Enable',onIff(isIdle && isStimulusEnabled));

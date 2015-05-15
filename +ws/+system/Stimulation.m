@@ -423,7 +423,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.syncTasksToChannelMembership_();
                 
                 % Finally, mark outselves as enable-able
-                self.CanEnable = true;
+                nChannels = length(mdfStructure.physicalOutputChannelNames) ;
+                self.CanEnable = (nChannels>0);
             end
         end  % function
 
