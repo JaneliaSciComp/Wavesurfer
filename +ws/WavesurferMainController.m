@@ -412,6 +412,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                         %mdf = ws.MachineDataFile(absoluteFileName);
                         %ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', absoluteFileName);
                         %initializeFromMDFObject(mdf);
+                    else
+                        error('wavesurfer:fileDoesNotExist', 'The file ''%s'' does not seem to exist.', fileName);
                     end
                 end
                 %self.Figure.changeReadiness(+1);
