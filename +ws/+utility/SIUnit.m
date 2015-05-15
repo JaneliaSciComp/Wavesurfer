@@ -45,9 +45,8 @@ classdef SIUnit
     properties  % (SetAccess=immutable)
         Scale  % the power of ten by which the stem unit is multiplied, a scalar double
         Powers  % the exponent for each of the base units, a double row vec of length NBases
+        String  % If constructed from a string, the string used to construct.  Otherwise [] (not ''!).
     end  % properties
-
-    
     
     %----------------------------------------------------------------------
     methods
@@ -65,6 +64,7 @@ classdef SIUnit
                 % Return pure unity
                 unit.Scale=0;
                 unit.Powers=zeros(1,SIUnit.NBases);
+                unit.String = [] ;
             elseif (nargin==1)
                 % should just be a string arg
                 str=varargin{1};
@@ -74,6 +74,7 @@ classdef SIUnit
                     [scale,powers] = SIUnit.parseUnitString(str) ;
                     unit.Scale = scale ;
                     unit.Powers = powers ;
+                    unit.String = str ;
                 else
                     isBadArgs=true;
                 end
@@ -83,6 +84,7 @@ classdef SIUnit
                 if isscalar(varargin{1}) && size(varargin{2},1)==1 && size(varargin{2},2)==SIUnit.NBases ,
                     unit.Scale=varargin{1};
                     unit.Powers=varargin{2};
+                    unit.String = [] ;
                 else
                     isBadArgs=true;
                 end
@@ -250,36 +252,44 @@ classdef SIUnit
                       'The SIUnit.string() method only works on scalar SIUnit arrays'); 
             end
             % If we get here, unit is scalar
-            idiomaticStemThis=idiomaticStem(unit);
-            hasIdiomaticStemThis=~isnan(idiomaticStemThis);
-            if hasIdiomaticStemThis , 
-                if unit.Scale==0 ,
-                    result=idiomaticStemThis;
-                else
-                    idiomaticPrefixThis=idiomaticPrefix(unit);
-                    if ischar(idiomaticPrefixThis) ,
-                        result=[idiomaticPrefixThis idiomaticStemThis];
-                    else
-                        result=[prefix(unit) '*' idiomaticStemThis];
-                    end
-                end
+            if ischar(unit.String) ,
+                % If the unit was constructed from a string, return that
+                % string
+                result = unit.String ;
             else
-                % no idiomatic stem
-                if isPure(unit) ,
-                    % pure number is a special case
+                % If the unit was not constructed from a string, compute an
+                % equivalent string.
+                idiomaticStemThis=idiomaticStem(unit);
+                hasIdiomaticStemThis=~isnan(idiomaticStemThis);
+                if hasIdiomaticStemThis , 
                     if unit.Scale==0 ,
-                        result='';
+                        result=idiomaticStemThis;
                     else
-                        result=['*' nonidiomaticPrefix(unit)];
+                        idiomaticPrefixThis=idiomaticPrefix(unit);
+                        if ischar(idiomaticPrefixThis) ,
+                            result=[idiomaticPrefixThis idiomaticStemThis];
+                        else
+                            result=[prefix(unit) '*' idiomaticStemThis];
+                        end
                     end
                 else
-                    if unit.Scale==0 ,
-                        result=nonidiomaticStem(unit);
+                    % no idiomatic stem
+                    if isPure(unit) ,
+                        % pure number is a special case
+                        if unit.Scale==0 ,
+                            result='';
+                        else
+                            result=['*' nonidiomaticPrefix(unit)];
+                        end
                     else
-                        result=[nonidiomaticPrefix(unit) '*' nonidiomaticStem(unit)];
+                        if unit.Scale==0 ,
+                            result=nonidiomaticStem(unit);
+                        else
+                            result=[nonidiomaticPrefix(unit) '*' nonidiomaticStem(unit)];
+                        end
                     end
-                end
-            end                
+                end                
+            end
         end
         
         %------------------------------------------------------------------
@@ -637,6 +647,37 @@ classdef SIUnit
             out = ~eq(self,other);
         end
     end  % methods
+    
+    methods
+        function value=isequal(self,other)
+            % Custom isequal.
+            if ~isa(other,class(self)) ,
+                value=false;
+                return
+            end
+            dims=size(self);
+            if any(dims~=size(other))
+                value=false;
+                return;
+            end
+            n=numel(self);
+            for i=1:n ,
+                if ~isequalElement_(self(i),other(i)) ,
+                    value=false;
+                    return
+                end
+            end
+            value=true;
+        end                            
+    end
+    
+    methods (Access=protected)
+       function value=isequalElement_(self,other)
+            % The String field is not used when testing for value-equality
+            % of units
+            value = (self.Scale==other.Scale) && isequal(self.Powers,other.Powers) ;
+       end
+    end
     
     %--------------------------------------------------------------------
     methods (Static=true)
