@@ -653,7 +653,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     methods (Access=protected)
        function value=isequalElement(self,other)
             % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'Duration' 'ChannelNames' 'Stimuli' 'Multipliers' 'IsMarkedForDeletion'};
+            propertyNamesToCompare={'Name' 'Duration' 'ChannelNames' 'Stimuli' 'Multipliers'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function
     end  % methods

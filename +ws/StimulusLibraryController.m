@@ -89,6 +89,14 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
+        function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
+                selectedItem.deleteMarkedMaps();
+            end
+        end  % function
+
         function AddMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
 
@@ -287,9 +295,13 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 % this is the Map Name column
                 newMapName=event.EditData;
                 map=model.mapWithName(newMapName);
-                selectedSequence.Maps{rowIndex}=map;
+                selectedSequence.setMap(rowIndex,map);
+            elseif (columnIndex==4) ,
+                % this is the Delete? column
+                newValue=event.EditData;
+                selectedSequence.IsMarkedForDeletion(rowIndex) = newValue ;
             end                        
-        end
+        end  % function
     
         function MapTableCellEdited(self,source,event) %#ok<INUSL>
             model=self.Model;

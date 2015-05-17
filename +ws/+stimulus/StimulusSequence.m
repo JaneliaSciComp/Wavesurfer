@@ -18,7 +18,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     properties (Dependent=true)
         Name
         Maps  % the items in the sequence
-        %IsMarkedForDeletion  % logical, one element per element in Maps
+        IsMarkedForDeletion  % logical, one element per element in Maps
     end      
     
     properties (Dependent=true, SetAccess=immutable)
@@ -31,7 +31,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     end
     
     properties (Access = protected, Transient = true)
-        %IsMarkedForDeletion_ = logical([])
+        IsMarkedForDeletion_ = logical([])
     end    
     
     methods
@@ -140,19 +140,19 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             end            
 %         end   % function
         
-%         function set.IsMarkedForDeletion(self,newValue)
-%             if islogical(newValue) && isequal(size(newValue),size(self.ChannelNames_)) ,  % can't change number of bindings                
-%                 self.IsMarkedForDeletion_ = newValue;
-%             end
-%             % notify the powers that be
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end
-%         end
-%         
-%         function output = get.IsMarkedForDeletion(self)
-%             output = self.IsMarkedForDeletion_ ;
-%         end
+        function set.IsMarkedForDeletion(self,newValue)
+            if islogical(newValue) && isequal(size(newValue),size(self.Maps_)) ,  % can't change number of elements
+                self.IsMarkedForDeletion_ = newValue;
+            end
+            % notify the powers that be
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end
+        
+        function output = get.IsMarkedForDeletion(self)
+            output = self.IsMarkedForDeletion_ ;
+        end
         
         function out = containsMaps(self, mapOrMaps)
             maps=ws.most.idioms.cellifyIfNeeded(mapOrMaps);
@@ -187,6 +187,21 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
             if ~isempty(self.Parent) && ~isempty(map.Parent) && (map.Parent==self.Parent) ,  % map must be a member of same library
                 self.Maps_{end + 1} = map;
+                self.IsMarkedForDeletion_(end+1) = false ;
+            end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end   % function
+
+        function setMap(self, index, map)
+            nMaps = length(self.Maps_) ;            
+            if 1<=index && index<=nMaps && round(index)==index ,
+                if isa(map,'ws.stimulus.StimulusMap') && isscalar(map) ,
+                    if ~isempty(self.Parent) && ~isempty(map.Parent) && (map.Parent==self.Parent) ,  % map must be a member of same library
+                        self.Maps_{index} = map ;
+                    end
+                end
             end
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
@@ -211,8 +226,22 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             nMaps = numel(self.Maps_) ;
             if 1<=index && index<=nMaps && index==round(index) ,
                 self.Maps_(index) = [];
+                self.IsMarkedForDeletion_(index) = [];
+            end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
             end
         end   % function
+
+        function deleteMarkedMaps(self)
+            isMarkedForDeletion = self.IsMarkedForDeletion ;
+            self.Maps_(isMarkedForDeletion)=[];
+            self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end   % function        
+
         
 %         function replaceMap(self, map, index)
 %             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
@@ -225,11 +254,14 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         
         function deleteMapByValue(self, queryMap)
             if isa(queryMap,'ws.stimulus.StimulusMap') && isscalar(queryMap) ,
-                for idx = numel(self.Maps):-1:1 ,
-                    if ~isempty(self.Maps{idx}) && self.Maps{idx} == queryMap
-                        self.Maps(idx) = [];
+                for index = numel(self.Maps):-1:1 ,
+                    if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
+                        self.deleteMap(index);
                     end
                 end
+            end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
             end
         end   % function
         
@@ -358,8 +390,9 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     methods
         function other=copyGivenMaps(self,otherMapDictionary,selfMapDictionary)
-            other=ws.stimulus.StimulusSequence();
-            other.Name_ = self.Name_;
+            other = ws.stimulus.StimulusSequence() ;
+            other.Name_ = self.Name_ ;
+            other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
 
             nMaps=length(self.Maps_);
             other.Maps_ = cell(1,nMaps);
@@ -368,7 +401,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
                 isMatch=cellfun(@(map)(map==thisMapInSelf),selfMapDictionary);
                 indexOfThisMapInDictionary=find(isMatch,1);
                 if isempty(indexOfThisMapInDictionary) ,                    
-                    other.Maps_{j}=[];
+                    other.Maps_{j}=[];  % note that this doesn't delete the element, but sets the cell contents to []
                 else
                     other.Maps_{j}=otherMapDictionary{indexOfThisMapInDictionary};
                 end
@@ -445,6 +478,13 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             result=true;
         end
     end  
+    
+    methods (Static)
+        function self = loadobj(self)
+            self.IsMarkedForDeletion_ = false(size(self.Maps_));
+              % Is MarkedForDeletion_ is transient
+        end
+    end  % class methods block
     
 end  % classdef
 
