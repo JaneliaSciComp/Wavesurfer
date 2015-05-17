@@ -115,6 +115,14 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             end
         end  % function
 
+        function DeleteChannelsFromMapMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+                selectedItem.deleteMarkedBindings();
+            end
+        end  % function
+
         function AddStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;            
             model.addNewStimulus('SquarePulse');
@@ -291,27 +299,30 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             end
             
             indices=event.Indices;
-            newString=event.EditData;
+            newThing=event.EditData;
             rowIndex=indices(1);
             columnIndex=indices(2);
             if (columnIndex==1) ,
                 % this is the Channel Name column
-                if isequal(newString,'(Unspecified)') ,
-                    newString='';
+                if isequal(newThing,'(Unspecified)') ,
+                    newThing='';
                 end
-                selectedMap.ChannelNames{rowIndex}=newString;
+                selectedMap.ChannelNames{rowIndex}=newThing;
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
-                if isequal(newString,'(Unspecified)') ,
+                if isequal(newThing,'(Unspecified)') ,
                     stimulus=[];
                 else
-                    stimulus=model.stimulusWithName(newString);
+                    stimulus=model.stimulusWithName(newThing);
                 end
                 selectedMap.Stimuli{rowIndex}=stimulus;                                
             elseif (columnIndex==4) ,
                 % this is the Multiplier column
-                newValue=str2double(newString);
+                newValue=str2double(newThing);
                 selectedMap.Multipliers(rowIndex)=newValue;
+            elseif (columnIndex==5) ,
+                % this is the Delete? column
+                selectedMap.IsMarkedForDeletion(rowIndex) = newThing ;
             end                        
         end
     end  % public methods block

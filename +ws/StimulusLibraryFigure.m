@@ -11,6 +11,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
         AddMapToSequenceMenuItem
         AddMapMenuItem
         AddChannelToMapMenuItem
+        DeleteChannelsFromMapMenuItem
         AddStimulusMenuItem
         DeleteItemMenuItem
         
@@ -138,6 +139,9 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
             self.AddChannelToMapMenuItem = ...
                 uimenu('Parent',self.EditMenu, ...
                        'Label','Add Channel to Map');
+            self.DeleteChannelsFromMapMenuItem = ...
+                uimenu('Parent',self.EditMenu, ...
+                       'Label','Delete Channels from Map');
             self.AddStimulusMenuItem = ...
                 uimenu('Parent',self.EditMenu, ...
                        'Label','Add Stimulus');
@@ -234,9 +238,9 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                           'String','s');
             self.MapTable = ...
                 uitable('Parent',self.MapPanel, ...
-                        'ColumnName',{'Channel Name' 'Stimulus Name' 'End Time' 'Multiplier'}, ...
-                        'ColumnFormat',{'char' 'char' 'numeric' 'numeric'}, ...
-                        'ColumnEditable',[true true false true]);
+                        'ColumnName',{'Channel Name' 'Stimulus Name' 'End Time' 'Multiplier' 'Delete?'}, ...
+                        'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'logical'}, ...
+                        'ColumnEditable',[true true false true true]);
                       
             % Stimulus Panel
             self.StimulusPanel = ...
@@ -550,12 +554,13 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
             % the slack.
             durationWidth=66;
             multiplierWidth=66;            
-            namesWidth=tableWidth-(durationWidth+multiplierWidth+34);  % 34 for the row titles col
+            deleteQWidth = 50 ;
+            namesWidth=tableWidth-(durationWidth+multiplierWidth+deleteQWidth+34);  % 34 for the row titles col
             channelNameWidth=namesWidth/2;
             stimulusNameWidth=namesWidth/2;            
                         
             set(self.MapTable,'Position',[leftTablePad bottomTablePad tableWidth tableHeight], ...
-                              'ColumnWidth', {channelNameWidth stimulusNameWidth durationWidth multiplierWidth});
+                              'ColumnWidth', {channelNameWidth stimulusNameWidth durationWidth multiplierWidth deleteQWidth});
         end
     end  % protected methods block
     
@@ -797,7 +802,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             
             % Update the table
-            nColumns=4;
+            nColumns=5;
             if isempty(selectedMap) ,
                 nRows=0;
                 data=cell(nRows,nColumns);
@@ -831,6 +836,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                         data{i,3}=stimulus.EndTime;
                     end
                     data{i,4}=selectedMap.Multipliers(i);
+                    data{i,5}=selectedMap.IsMarkedForDeletion(i);
                 end
                 columnFormat={channelNamesWithUnspecified allStimulusNamesWithUnspecified 'numeric' 'numeric'};
                 set(self.MapTable, ...
@@ -916,7 +922,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
             if isempty(model) ,
                 return
             end
-            wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');            
+            wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');   
             isIdle=fif(isempty(wavesurferModel),true,(wavesurferModel.State==ws.ApplicationState.Idle));
             isSelection=~isempty(model.SelectedItem);
             isLibraryEmpty=model.IsEmpty;
@@ -930,6 +936,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusSequence')));
             set(self.AddMapMenuItem,'Enable',onIff(isIdle));
             set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusMap')));
+            set(self.DeleteChannelsFromMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
             set(self.AddStimulusMenuItem,'Enable',onIff(isIdle));
             set(self.DeleteItemMenuItem,'Enable',onIff(isIdle&&isSelection));
             
