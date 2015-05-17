@@ -866,7 +866,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                 self.changeSelectedItemToSomethingElse_(item);
                 self.changeSelectedOutputableToSomethingElse_(item);
                 for i = 1:numel(self.Sequences) ,
-                    self.Sequences{i}.removeElement(item);
+                    self.Sequences{i}.deleteMapByValue(item);
                 end
             elseif isa(item, 'ws.stimulus.Stimulus')
                 self.changeSelectedItemToSomethingElse_(item);
@@ -968,7 +968,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                     % as it is one of them.
                     for cdx = 1:numel(self.Sequences)
                         sequence=self.Sequences{cdx};
-                        if any(sequence.containsElement(item))
+                        if any(sequence.containsMaps(item))
                             out(idx) = true;
                             break;
                         end
