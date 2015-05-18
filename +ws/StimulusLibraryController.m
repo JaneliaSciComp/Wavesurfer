@@ -136,15 +136,15 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             model.addNewStimulus('SquarePulse');
         end  % function
 
-        function DeleteItemMenuItemActuated(self,source,event) %#ok<INUSD>
+        function DeleteSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
-                    str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
-                    str2 = 'Delete Item';
+                    str1 = 'This sequence is referenced by one or more items in the library.  Deleting it will alter those items.';
+                    str2 = 'Delete Sequence?';
                     choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
@@ -155,6 +155,66 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 end                            
             end
         end  % function
+
+        function DeleteMapMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+                isInUse = model.isInUse(selectedItem);
+
+                if isInUse ,
+                    str1 = 'This map is referenced by one or more items in the library.  Deleting it will alter those items.';
+                    str2 = 'Delete Map?';
+                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    switch choice 
+                        case 'Delete'
+                            model.deleteItem(selectedItem);
+                    end
+                else
+                    model.deleteItem(selectedItem);
+                end                            
+            end
+        end  % function
+
+        function DeleteStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.Stimulus') ,
+                isInUse = model.isInUse(selectedItem);
+
+                if isInUse ,
+                    str1 = 'This stimulus is referenced by one or more items in the library.  Deleting it will alter those items.';
+                    str2 = 'Delete Stimulus?';
+                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    switch choice 
+                        case 'Delete'
+                            model.deleteItem(selectedItem);
+                    end
+                else
+                    model.deleteItem(selectedItem);
+                end                            
+            end
+        end  % function
+
+%         function DeleteItemMenuItemActuated(self,source,event) %#ok<INUSD>
+%             model=self.Model;
+%             selectedItem=model.SelectedItem;
+%             if ~isempty(selectedItem) ,
+%                 isInUse = model.isInUse(selectedItem);
+% 
+%                 if isInUse ,
+%                     str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
+%                     str2 = 'Delete Item?';
+%                     choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+%                     switch choice 
+%                         case 'Delete'
+%                             model.deleteItem(selectedItem);
+%                     end
+%                 else
+%                     model.deleteItem(selectedItem);
+%                 end                            
+%             end
+%         end  % function
         
         function PreviewMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;            
