@@ -55,9 +55,6 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         Multipliers_ = []
         Stimuli_ = {}
         Duration_ = 1  % s, internal duration, can be overridden in some circumstances
-    end
-
-    properties (Access = protected, Transient = true)
         IsMarkedForDeletion_ = logical([])
     end
     
@@ -733,10 +730,10 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             s.Stimuli = struct('Classes', 'ws.stimulus.StimulusMap');                            
         end  % function
         
-        function self = loadobj(self)
-            self.IsMarkedForDeletion_ = false(size(self.ChannelNames_));
-              % Is MarkedForDeletion_ is transient
-        end
+%         function self = loadobj(self)
+%             self.IsMarkedForDeletion_ = false(size(self.ChannelNames_));
+%               % Is MarkedForDeletion_ is transient
+%         end
     end  % class methods block
     
 end

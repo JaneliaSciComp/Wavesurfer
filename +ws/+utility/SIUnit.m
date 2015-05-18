@@ -693,13 +693,19 @@ classdef SIUnit
             [m,n]=size(s);
             unit=SIUnit.empty();
             unit(m,n)=SIUnit();  % dimension
-            for i=1:numel(s) ,
-                if ischar(s(i).String_) ,
-                    unit(i) = SIUnit(s(i).String_);
-                else
+            if isfield(s,'String_') ,  % for backwards-compatibility
+                for i=1:numel(s) ,
+                    if ischar(s(i).String_) ,
+                        unit(i) = SIUnit(s(i).String_);
+                    else
+                        unit(i) = SIUnit(s(i).Scale,s(i).Powers);
+                    end
+                end           
+            else
+                for i=1:numel(s) ,
                     unit(i) = SIUnit(s(i).Scale,s(i).Powers);
-                end
-            end           
+                end           
+            end
         end  % function
 
         function [scale,powers] = parseUnitString(str)

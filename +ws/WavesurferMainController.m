@@ -511,32 +511,20 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             shouldStayPut=~shouldClose;
         end  % function
+    end  % protected methods block        
         
-%         function loadConfig(self, fileName, varargin)
-%             startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
-%             
-%             if nargin < 2
-%                 fileName = startLoc;
-%                 if isempty(fileName) || exist(fileName, 'file') ~= 2
-%                     return;
-%                 else
-%                     %self.loadSettings('Config', 'cfg', fileName, '', @(aFileName)(self.loadTheConfigFileForRealsSrsly(aFileName)));
-%                     self.loadConfigSettings(fileName);
-%                 end
-%             elseif ~ischar(fileName)
-%                 fileName = '';
-%                 % self.loadSettings('Config', 'cfg', fileName, startLoc, @(aFileName)(self.loadTheConfigFileForRealsSrsly(aFileName)));
-%                 self.loadConfigSettings(fileName, startLoc);
-%             else
-%                 self.loadConfigFileForRealsSrsly(fileName);
-%             end
-%         end  % function
-        
-        function loadConfigFileForRealsSrsly(self, absoluteFileName)
+    methods
+
+        function loadConfigFileForRealsSrsly(self, fileName)
             % Actually loads the named config file.  fileName should be an
-            % absolute file name referring to a file that is known to be
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            %self.Figure.changeReadiness(-1);            
+            %self.Figure.changeReadiness(-1);
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
             saveStruct=self.Model.loadConfigFileForRealsSrsly(absoluteFileName);
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
@@ -638,23 +626,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end            
 %         end  % function
         
-        function loadUserFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named user file.  absoluteFileName should be an
+        function loadUserFileForRealsSrsly(self, fileName)
+            % Actually loads the named user file.  fileName should be an
             % absolute file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
 
-            %self.Figure.changeReadiness(-1);
-            self.Model.loadUserFileForRealsSrsly(absoluteFileName);
-            %self.loadProperties(absoluteFileName);
-            %self.loadWindowLayouts(userFileName);  % all window positions are stored in user file currently
-            %self.AbsoluteUserSettingsFileName=absoluteFileName;
-            %self.HasUserSpecifiedUserSettingsFileName=true;            
-            %ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            %self.updateUserFileNameInMenu();
-%            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', configFileName);
-%            self.setConfigFileNameInMenu(configFileName);
-            %self.Model.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
-            %self.Figure.changeReadiness(+1);
+            self.Model.loadUserFileForRealsSrsly(fileName);
         end
         
         function saveUser(self, varargin)
@@ -707,7 +684,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.saveUserSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
         end  % method
         
-    end  % protected methods    
+    end  % public methods    
     
     
     methods (Access = protected)
@@ -839,7 +816,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                  isFileNameKnown, fullpath, 'usr', 'load', startLoc);
                 
             if ~isempty(actualFileName)
-                ws.Preferences.sharedPreferences().savePref('lastUserFilePath', actualFileName);
+                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', actualFileName);
                 %feval(replyFcn, actualFileName);
                 self.loadUserFileForRealsSrsly(actualFileName)
                 out = true;
@@ -858,7 +835,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
             
             if ~isempty(actualFileName)
-                ws.Preferences.sharedPreferences().savePref('lastConfigFilePath', actualFileName);
+                ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', actualFileName);
                 %feval(replyFcn, actualFileName);
                 self.loadConfigFileForRealsSrsly(actualFileName)
                 out = true;

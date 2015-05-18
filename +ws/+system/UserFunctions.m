@@ -80,6 +80,7 @@ classdef UserFunctions < ws.system.Subsystem
         function invoke(self, wavesurferModel, eventName)
             try
                 if ~isempty(self.TheObject_) ,
+                    self.TheObject_
                     self.TheObject_.(eventName)(wavesurferModel, eventName);
                 end
 

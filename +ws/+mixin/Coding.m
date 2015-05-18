@@ -251,10 +251,17 @@ classdef Coding < handle
             
             try
                 %originalValues = struct();
-                for i = 1:numel(propertyNames)
+                for i = 1:numel(propertyNames) ,
                     propertyName = propertyNames{i};
                     %originalValue = self.decodePropertyValue(self, propSet, propName);
-                    self.decodePropertyValue_(self, encoding, propertyName);
+                    if isprop(self,propertyName) ,  % Only decode if there's a property to receive it
+                        self.decodePropertyValue_(self, encoding, propertyName);
+                    else
+                        warning('Coding:errSettingProp', ...
+                                'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
+                                propertyName, ...
+                                class(self));
+                    end
                     %if ~isempty(originalValue) || ~isfield(originalValues, propName)
                     %    originalValues.(propName) = originalValue;
                     %end
@@ -539,6 +546,10 @@ classdef Coding < handle
             % value for propertyName given in the property settings structure
             % encoding.
             
+            if isequal(propertyName,'TheObject_') || isequal(propertyName,'TheObject'),
+                keyboard
+            end
+            
             % Define a couple of useful utility functions
             function value=getPropertyValueOfTarget(self,target,propertyName)
                 % Gets the value of propertyName from target, taking
@@ -622,7 +633,7 @@ classdef Coding < handle
                 
                 if isa(subtarget,'ws.Model') ,
                     subtarget.disableBroadcasts();
-                end                
+                end
                 
                 % Actually decode all the sub-properties
                 subPropertyNames = fieldnames(subencoding);

@@ -289,7 +289,7 @@ classdef (Abstract) MCOSFigure < handle
                 end
             end
             set(self.FigureGH,'pointer',pointerValue);
-            fprintf('drawnow(''update'')\n');
+            %fprintf('drawnow(''update'')\n');
             drawnow('update');
         end
     end

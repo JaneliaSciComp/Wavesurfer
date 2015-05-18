@@ -27,10 +27,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     properties (Access = protected)
         Name_ = ''
-        Maps_ = {};
-    end
-    
-    properties (Access = protected, Transient = true)
+        Maps_ = {}
         IsMarkedForDeletion_ = logical([])
     end    
     
@@ -324,7 +321,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
                 % subplot doesn't allow for direct specification of the
                 % target figure
                 ax=axes('Parent',fig, ...
-                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]); %#ok<LAXES>
+                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
                 map=self.Maps{idx};
                 map.plot(fig, ax, samplingRate);
                 ylabel(ax,sprintf('Map %d',idx));
@@ -479,12 +476,12 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end
     end  
     
-    methods (Static)
-        function self = loadobj(self)
-            self.IsMarkedForDeletion_ = false(size(self.Maps_));
-              % Is MarkedForDeletion_ is transient
-        end
-    end  % class methods block
+%     methods (Static)
+%         function self = loadobj(self)
+%             self.IsMarkedForDeletion_ = false(size(self.Maps_));
+%               % Is MarkedForDeletion_ is transient
+%         end
+%     end  % class methods block
     
 end  % classdef
 

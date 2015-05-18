@@ -1412,11 +1412,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
     methods
-        function saveStruct=loadConfigFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named config file.  fileName should be an
-            % absolute file name referring to a file that is known to be
+        function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+            % Actually loads the named config file.  fileName should be a
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1);       
+            self.changeReadiness(-1);
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -1449,15 +1454,21 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end        
     
     methods
-        function loadUserFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named user file.  absoluteFileName should be an
-            % absolute file name referring to a file that is known to be
+        function loadUserFileForRealsSrsly(self, fileName)
+            % Actually loads the named user file.  fileName should be an
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
 
             %self.loadProperties(absoluteFileName);
             
             self.changeReadiness(-1);
 
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
+            
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -1531,7 +1542,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
     end
     
-    methods (Access=protected)        
+    methods (Access=protected)
         function runPollingLoop_(self)
             % Runs the main polling loop.
             
@@ -1543,10 +1554,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 timeNow =  toc(pollingTicId) ;
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
-                    timeSinceLastPoll
+                    %timeSinceLastPoll
                     timeOfLastPoll = timeNow ;
                     %tStart = toc(pollingTicId) ;
-                    profile resume
+                    %profile resume
                     try
                         self.pollingTimerFired_() ;
                     catch me
@@ -1554,9 +1565,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         rethrow(me);
                     end
                     %tMiddle = toc(pollingTicId) ;
-                    fprintf('drawnow()\n');
+                    %fprintf('drawnow()\n');
                     drawnow() ;  % update, and also process any user actions
-                    profile off
+                    %profile off
                     %tEnd = toc(pollingTicId) ;
                     %coreActionDuration = tMiddle-tStart ;
                     %actionDuration = tEnd-tStart ;
