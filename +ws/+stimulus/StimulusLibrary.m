@@ -861,15 +861,18 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             % outputable.
             if isa(item, 'ws.stimulus.StimulusSequence') 
                 self.changeSelectedItemToSomethingElse_(item);
+                self.changeSelectedSequenceToSomethingElse_(item);
                 self.changeSelectedOutputableToSomethingElse_(item);
             elseif isa(item, 'ws.stimulus.StimulusMap')
                 self.changeSelectedItemToSomethingElse_(item);
+                self.changeSelectedMapToSomethingElse_(item);
                 self.changeSelectedOutputableToSomethingElse_(item);
                 for i = 1:numel(self.Sequences) ,
                     self.Sequences{i}.deleteMapByValue(item);
                 end
             elseif isa(item, 'ws.stimulus.Stimulus')
                 self.changeSelectedItemToSomethingElse_(item);
+                self.changeSelectedStimulusToSomethingElse_(item);
                 for i = 1:numel(self.Maps) ,
                     self.Maps{i}.nullStimulus(item);
                 end
@@ -946,6 +949,120 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                             % item is the first, but there are
                             % others, so select the second item
                             self.SelectedItem=items{2};
+                        end
+                    end
+                end
+            end
+        end  % function
+        
+        function changeSelectedStimulusToSomethingElse_(self, item)
+            % Make sure item is not the selected item, hopefully by
+            % picking a different item.  Typically called before
+            % deleting item.  Does nothing if item is not the
+            % selected item.  item must be a scalar.
+            items=self.Stimuli;
+            if isempty(items) ,
+                % This should never happen, but still...
+                return
+            end            
+            if item==self.SelectedStimulus ,
+                % The given item is the selected one,
+                % so change the selected item.
+                isMatch=cellfun(@(element)(element==item),items);
+                j=find(isMatch,1);  % the index of item in the list of all stimuli
+                % j is guaranteed to be nonempty if the library is
+                % self-consistent, but still...
+                if ~isempty(j) ,
+                    if length(items)==1 ,
+                        % item is the last one, so the selection
+                        % will have to be empty
+                        self.SelectedStimulus=[];
+                    else
+                        % there are at least two items
+                        if j>1 ,
+                            % The usual case: point SelectedItem at the
+                            % item before the to-be-deleted item
+                            self.SelectedStimulus=items{j-1};
+                        else
+                            % item is the first, but there are
+                            % others, so select the second item
+                            self.SelectedStimulus=items{2};
+                        end
+                    end
+                end
+            end
+        end  % function
+        
+        function changeSelectedMapToSomethingElse_(self, item)
+            % Make sure item is not the selected item, hopefully by
+            % picking a different item.  Typically called before
+            % deleting item.  Does nothing if item is not the
+            % selected item.  item must be a scalar.
+            items=self.Stimuli;
+            if isempty(items) ,
+                % This should never happen, but still...
+                return
+            end            
+            if item==self.SelectedMap ,
+                % The given item is the selected one,
+                % so change the selected item.
+                isMatch=cellfun(@(element)(element==item),items);
+                j=find(isMatch,1);  % the index of item in the list of all stimuli
+                % j is guaranteed to be nonempty if the library is
+                % self-consistent, but still...
+                if ~isempty(j) ,
+                    if length(items)==1 ,
+                        % item is the last one, so the selection
+                        % will have to be empty
+                        self.SelectedMap=[];
+                    else
+                        % there are at least two items
+                        if j>1 ,
+                            % The usual case: point SelectedItem at the
+                            % item before the to-be-deleted item
+                            self.SelectedMap=items{j-1};
+                        else
+                            % item is the first, but there are
+                            % others, so select the second item
+                            self.SelectedMap=items{2};
+                        end
+                    end
+                end
+            end
+        end  % function
+        
+        function changeSelectedSequenceToSomethingElse_(self, item)
+            % Make sure item is not the selected item, hopefully by
+            % picking a different item.  Typically called before
+            % deleting item.  Does nothing if item is not the
+            % selected item.  item must be a scalar.
+            items=self.Stimuli;
+            if isempty(items) ,
+                % This should never happen, but still...
+                return
+            end            
+            if item==self.SelectedSequence ,
+                % The given item is the selected one,
+                % so change the selected item.
+                isMatch=cellfun(@(element)(element==item),items);
+                j=find(isMatch,1);  % the index of item in the list of all stimuli
+                % j is guaranteed to be nonempty if the library is
+                % self-consistent, but still...
+                if ~isempty(j) ,
+                    if length(items)==1 ,
+                        % item is the last one, so the selection
+                        % will have to be empty
+                        self.SelectedSequence=[];
+                    else
+                        % there are at least two items
+                        if j>1 ,
+                            % The usual case: point SelectedItem at the
+                            % item before the to-be-deleted item
+                            self.SelectedSequence=items{j-1};
+                        else
+                            % item is the first, but there are
+                            % others, so select the second item
+                            self.SelectedSequence=items{2};
                         end
                     end
                 end
