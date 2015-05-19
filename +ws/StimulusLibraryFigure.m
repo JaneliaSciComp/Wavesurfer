@@ -818,7 +818,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                 set(self.MapDurationEdit,'String','');
             else
                 set(self.MapNameEdit,'String',selectedMap.Name);
-                set(self.MapDurationEdit,'String',sprintf('%0.3f',selectedMap.Duration));
+                set(self.MapDurationEdit,'String',sprintf('%g',selectedMap.Duration));
             end
             
             % Update the table

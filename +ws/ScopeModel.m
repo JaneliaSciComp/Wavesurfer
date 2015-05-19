@@ -77,7 +77,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         Title_ = ''  % This is the window title used by any ScopeFigures that use this
                      % ScopeModel as their Model.        
         XUnits_ = ws.utility.SIUnit('s')
-        YUnits_ = ws.utility.SIUnit('V')
+        YUnits_ = ws.utility.SIUnit()  % pure, which is correct for digital lines
         YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
         AreYLimitsLockedTightToData_ = false
         XOffset_ = 0

@@ -507,7 +507,12 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
                 units=self.Model.YUnits;
-                ylabel(self.AxesGH_,sprintf('Signal (%s)',string(units)));
+                if units.isPure() ,
+                    unitsString = 'pure' ;
+                else
+                    unitsString = string(units) ;
+                end
+                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString));
             end
         end
         
