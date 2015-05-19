@@ -230,59 +230,41 @@ classdef Coding < handle
 %             out = self.encodePropertiesSatisfyingPredicateForFileType_(isAppropriateTest, fileType);
 %         end
         
-        function decodeProperties(self, encoding)
+        function decodeProperties(self, encodingContainer)
             % Sets the properties in self to the values encoded in encoding.
             % This is the main public method for setting a ws.mixin.Coding
             % to an encoded representation, and it does so in-place.  self
             % should be a scalar.
-            assert(isstruct(encoding));
-            
-            % If a ws.Model, disable broadcasts while we muck around
-            % under the hood.
-            % This shouldn't break self-consistency if the stored
-            % settings are self-consistent.
-            if isa(self,'ws.Model') ,
-                self.disableBroadcasts();
-            end                
-            
-            propertyNames = fieldnames(encoding);
-            
-            %notify(self, 'WillChangePropertySet');
-            
-            try
-                %originalValues = struct();
-                for i = 1:numel(propertyNames) ,
-                    propertyName = propertyNames{i};
-                    %originalValue = self.decodePropertyValue(self, propSet, propName);
-                    if isprop(self,propertyName) ,  % Only decode if there's a property to receive it
-                        self.decodePropertyValue_(self, encoding, propertyName);
+            if ws.mixin.Coding.isAnEncodingContainer(encodingContainer) ,                        
+                % This can only work if the className specified in encoding
+                % matches the class of self, and also that the object
+                % dimensions represented in encoding match the dimensions
+                % of self.  Otherwise we're stuck, since we can't change
+                % either of those qualities of self from a method.
+                if isequal(encodingContainer.className,class(self)) ,
+                    if isequal(size(encodingContainer.encoding),size(self)) ,
+                        % All is well, to pass the unwrapped encoding to
+                        % decodeProperties.
+                        self.decodeUnwrappedEncoding_(encodingContainer.encoding) ;
                     else
                         warning('Coding:errSettingProp', ...
-                                'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
-                                propertyName, ...
-                                class(self));
+                                'Unable to decode an encoding specifiying one size onto an object array of a different size.');
                     end
-                    %if ~isempty(originalValue) || ~isfield(originalValues, propName)
-                    %    originalValues.(propName) = originalValue;
-                    %end
+                else
+                    warning('Coding:errSettingProp', ...
+                            'Unable to decode an encoding specifiying class %s onto an object of class %s.', ...
+                            encodingContainer.className, ...
+                            class(self));
                 end
-            catch me
-                %notify(self, 'DidChangePropertySet');
-                me.rethrow();
+            else
+                error('Coding:errSettingProp', ...
+                      'decodeProperties() requires an encoding container.');
             end
-            
-            %notify(self, 'DidChangePropertySet');
-            
-            % Broadcast an Update event if self is a ws.Model
-            if isa(self,'ws.Model') ,
-                self.enableBroadcastsMaybe();
-                self.broadcast('Update');
-            end                
-        end
+        end  % function
         
         function out = encodedVariableName(self)
             out = self.createDefaultEncodedVariableName();
-        end
+        end  % function
     end  % public methods
 
     methods 
@@ -369,7 +351,7 @@ classdef Coding < handle
     end
 
     methods
-        function encoding = encodeForFileType(self, fileType)
+        function encodingContainer = encodeForFileType(self, fileType)
             % This if really shouldn't be necessary---we currently store
             % the tag information in an instance var, when it should be in
             % a class var...  But Matlab doesn't have proper class vars.
@@ -378,15 +360,67 @@ classdef Coding < handle
             else
                 propertyNames = self(1).listPropertiesForFileType(fileType);
             end
-            encoding = ws.utility.structWithDims(size(self),propertyNames);
+            encodingContainer=struct();
+            encodingContainer.className = class(self) ;
+            encodingContainer.encoding = ws.utility.structWithDims(size(self),propertyNames);
             for i=1:numel(self) ,
-                encoding(i) = self(i).encodeScalarForFileType_(fileType, encoding(i), propertyNames);
+                encodingContainer.encoding(i) = self(i).encodeScalarForFileType_(fileType, propertyNames);
             end
         end
     end
 
     methods (Access=protected)
-        function encoding = encodeScalarForFileType_(self, fileType, encoding, propertyNames)
+        function decodeUnwrappedEncoding_(self, encoding)
+            % Sets the properties in self to the values encoded in encoding.
+            % This is the main public method for setting a ws.mixin.Coding
+            % to an encoded representation, and it does so in-place.  self
+            % should be a scalar.
+            assert(isstruct(encoding));
+            
+            % If a ws.Model, disable broadcasts while we muck around
+            % under the hood.
+            % This shouldn't break self-consistency if the stored
+            % settings are self-consistent.
+            if isa(self,'ws.Model') ,
+                self.disableBroadcasts();
+            end                
+            
+            propertyNames = fieldnames(encoding);
+
+            %notify(self, 'WillChangePropertySet');
+
+            try
+                %originalValues = struct();
+                for i = 1:numel(propertyNames) ,
+                    propertyName = propertyNames{i};
+                    %originalValue = self.decodePropertyValue(self, propSet, propName);
+                    if isprop(self,propertyName) ,  % Only decode if there's a property to receive it
+                        self.decodePropertyValue_(self, encoding, propertyName);
+                    else
+                        warning('Coding:errSettingProp', ...
+                                'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
+                                propertyName, ...
+                                class(self));
+                    end
+                    %if ~isempty(originalValue) || ~isfield(originalValues, propName)
+                    %    originalValues.(propName) = originalValue;
+                    %end
+                end
+            catch me
+                %notify(self, 'DidChangePropertySet');
+                me.rethrow();
+            end
+
+            %notify(self, 'DidChangePropertySet');
+
+            % Broadcast an Update event if self is a ws.Model
+            if isa(self,'ws.Model') ,
+                self.enableBroadcastsMaybe();
+                self.broadcast('Update');
+            end                
+        end  % function
+        
+        function encoding = encodeScalarForFileType_(self, fileType, propertyNames)
             % Encode properties for the given file type.
             %propertyNames = self.listPropertiesForFileType(fileType);
             
@@ -398,6 +432,7 @@ classdef Coding < handle
 %             end            
             
             % Encode the value for each property
+            encoding = struct() ;  % scalar struct with no fields
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 thisPropertyValue = self.getPropertyValue(thisPropertyName);
@@ -546,9 +581,9 @@ classdef Coding < handle
             % value for propertyName given in the property settings structure
             % encoding.
             
-            if isequal(propertyName,'TheObject_') || isequal(propertyName,'TheObject'),
-                keyboard
-            end
+%             if isequal(propertyName,'TheObject_') || isequal(propertyName,'TheObject'),
+%                 keyboard
+%             end
             
             % Define a couple of useful utility functions
             function value=getPropertyValueOfTarget(self,target,propertyName)
@@ -597,33 +632,68 @@ classdef Coding < handle
 %             elseif ws.utility.isEnumeration(property) ,
 %                 value=property.fromCodeString(propSetForName);
 %                 setPropertyValueOfTarget(self,target,propertyName,value);
-            elseif isstruct(subencoding) && isa(subtarget, 'ws.mixin.Coding')
-                % If we get here, property is a handle object
+            elseif ws.mixin.Coding.isAnEncodingContainer(subencoding) ,
+                % Make sure the subtarget is the right type, and is large
+                % enough.
+                className = subencoding.className ;
+                sz = size(subencoding.encoding) ;
+                nElements = numel(subencoding.encoding) ;
+                if ~isa(subtarget,className) ,
+                    subtarget = feval(className) ;  % must have a zero-arg constructor                    
+                    setPropertyValueOfTarget(self,target,propertyName,subtarget);
+                    subtarget=getPropertyValueOfTarget(self,target,propertyName);
+                end
                 % Make sure the property is large enough
-                if length(subencoding)>length(subtarget) ,
-                    % Need to make property bigger to accomodate the new
-                    % setting
-                    wasPropertyEmpty=isempty(subtarget);
-                    className = class(subtarget);
-                    subtarget(length(subencoding))=feval(className);  % the class of property needs to have a zero-arg constructor
-                    % If property was originally empty, then the line above is not
-                    % sufficient
-                    if wasPropertyEmpty ,
-                        setPropertyValueOfTarget(self,target,propertyName,subtarget);
-                        subtarget=getPropertyValueOfTarget(self,target,propertyName);
+                if ~isequal(size(subencoding.encoding),size(subtarget)) ,
+                    if nElements>numel(subtarget) ,
+                        % Need to make subtarget bigger to accomodate the new
+                        % setting
+                        subtarget(nElements)=feval(className);  % the class of property needs to have a zero-arg constructor
+                        subtarget=reshape(subtarget,sz);
+                    else
+                        % Make subtarget smaller, to match encoding
+                        subtarget=subtarget(1:nElements);
+                        subtarget=reshape(subtarget,sz);
                     end
-                elseif length(subencoding)<length(subtarget) ,
-                    % Make property smaller, to match propSetForName
-                    % In this case, property can't be empty, so things are
-                    % easier.
-                    subtarget=subtarget(1:length(subencoding));
+                    % Have to set the subtarget, b/c matlab handle arrays
+                    % are tricksy
+                    setPropertyValueOfTarget(self,target,propertyName,subtarget);
+                    subtarget=getPropertyValueOfTarget(self,target,propertyName);
                 end
                 % Now that the lengths are the same, set the individual
                 % elements one at a time.
-                for idx = 1:numel(subtarget)
+                for idx = 1:nElements ,
                     %originalValue.(pname)(idx) = decodeProperties(property(idx), propSetForName(idx));
-                    subtarget(idx).decodeProperties(subencoding(idx));
+                    subtarget(idx).decodeUnwrappedEncoding_(subencoding.encoding(idx));
                 end
+            elseif isstruct(subencoding) && isa(subtarget, 'ws.mixin.Coding')
+                error('Adam is a dum-dum');
+%                 % If we get here, property is a handle object
+%                 % Make sure the property is large enough
+%                 if length(subencoding)>length(subtarget) ,
+%                     % Need to make property bigger to accomodate the new
+%                     % setting
+%                     wasPropertyEmpty=isempty(subtarget);
+%                     className = class(subtarget);
+%                     subtarget(length(subencoding))=feval(className);  % the class of property needs to have a zero-arg constructor
+%                     % If property was originally empty, then the line above is not
+%                     % sufficient
+%                     if wasPropertyEmpty ,
+%                         setPropertyValueOfTarget(self,target,propertyName,subtarget);
+%                         subtarget=getPropertyValueOfTarget(self,target,propertyName);
+%                     end
+%                 elseif length(subencoding)<length(subtarget) ,
+%                     % Make property smaller, to match propSetForName
+%                     % In this case, property can't be empty, so things are
+%                     % easier.
+%                     subtarget=subtarget(1:length(subencoding));
+%                 end
+%                 % Now that the lengths are the same, set the individual
+%                 % elements one at a time.
+%                 for idx = 1:numel(subtarget)
+%                     %originalValue.(pname)(idx) = decodeProperties(property(idx), propSetForName(idx));
+%                     subtarget(idx).decodeProperties(subencoding(idx));
+%                 end
             elseif isstruct(subencoding) && isobject(subtarget) ,
                 % If a ws.Model, disable broadcasts while we muck around
                 % under the hood.
@@ -828,6 +898,10 @@ classdef Coding < handle
                 error('Coding:dontKnowHowToEncode', 'I don''t know how to encode some part of that.');
             end
         end  % function                
+
+        function result = isAnEncodingContainer(thing)
+            result = isstruct(thing) && isscalar(thing) && isfield(thing,'className') && isfield(thing,'encoding') ;
+        end  % function
         
     end  % public static methods block
     

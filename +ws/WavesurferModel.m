@@ -1421,7 +1421,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
-            end            
+            end
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
