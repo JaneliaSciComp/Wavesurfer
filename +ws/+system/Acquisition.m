@@ -1075,23 +1075,26 @@ classdef Acquisition < ws.system.Subsystem
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
-                % Check for task doneness, and get the last samples if done
-                tasksAreDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
-%                 if tasksAreDone ,
-%                     fprintf('Acquisition tasks are done.\n')
-%                 end
+                % Check for task doneness
+                areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
+                %if areTasksDone ,
+                %    fprintf('Acquisition tasks are done.\n')
+                %end
                     
                 % Get data
+                %if areTasksDone ,
+                %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
+                %end
                 [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
-                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId) ;
+                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId, areTasksDone) ;
                 %nScans = size(rawAnalogData,1) ;
                 %fprintf('Read acq data. nScans: %d\n',nScans)
 
                 % Notify the whole system that samples were acquired
                 self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
 
-                % If we're done, act accordingly
-                if tasksAreDone ,
+                % If we were done before reading the data, act accordingly
+                if areTasksDone ,
                     %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisTrial_);
                 
                     % Stop tasks, notify rest of system
@@ -1111,10 +1114,14 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     methods (Access=protected)
-        function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = readDataFromTasks_(self, timeSinceTrialStart, fromExperimentStartTicId)
+        function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
+                readDataFromTasks_(self, timeSinceTrialStart, fromExperimentStartTicId, areTasksDone) %#ok<INUSD>
             % both analog and digital tasks are for-real
             [rawAnalogData,timeSinceExperimentStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceTrialStart, fromExperimentStartTicId);
             nScans = size(rawAnalogData,1) ;
+            %if areTasksDone ,
+            %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
+            %end
             rawDigitalData = ...
                 self.DigitalInputTask_.readData(nScans, timeSinceTrialStart, fromExperimentStartTicId);
             self.NScansReadThisTrial_ = self.NScansReadThisTrial_ + nScans ;
