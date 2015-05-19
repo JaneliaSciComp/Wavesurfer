@@ -860,19 +860,21 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             % and item is no longer selected, and is not the current
             % outputable.
             if isa(item, 'ws.stimulus.StimulusSequence') 
-                self.changeSelectedItemToSomethingElse_(item);
-                self.changeSelectedSequenceToSomethingElse_(item);
+                self.tryToChangeSelectedSequenceToSomethingElse_(item);  % if this fails...
+                self.changeSelectedItemToSomethingElse_(item);  % this makes darn sure item is not the selected item
+                  % this above does nothing if
+                  % tryToChangeSelectedSequenceToSomethingElse_() succeeds
                 self.changeSelectedOutputableToSomethingElse_(item);
             elseif isa(item, 'ws.stimulus.StimulusMap')
+                self.tryToChangeSelectedMapToSomethingElse_(item);
                 self.changeSelectedItemToSomethingElse_(item);
-                self.changeSelectedMapToSomethingElse_(item);
                 self.changeSelectedOutputableToSomethingElse_(item);
                 for i = 1:numel(self.Sequences) ,
                     self.Sequences{i}.deleteMapByValue(item);
                 end
             elseif isa(item, 'ws.stimulus.Stimulus')
+                self.tryToChangeSelectedStimulusToSomethingElse_(item);
                 self.changeSelectedItemToSomethingElse_(item);
-                self.changeSelectedStimulusToSomethingElse_(item);
                 for i = 1:numel(self.Maps) ,
                     self.Maps{i}.nullStimulus(item);
                 end
@@ -920,7 +922,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         function changeSelectedItemToSomethingElse_(self, item)
             % Make sure item is not the selected item, hopefully by
             % picking a different item.  Typically called before
-            % deleting item.  Does nothing if outputable is not the
+            % deleting item.  Does nothing if item is not the
             % selected item.  item must be a scalar.
             items=self.getItems();
             if isempty(items) ,
@@ -955,7 +957,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             end
         end  % function
         
-        function changeSelectedStimulusToSomethingElse_(self, item)
+        function tryToChangeSelectedStimulusToSomethingElse_(self, item)
             % Make sure item is not the selected item, hopefully by
             % picking a different item.  Typically called before
             % deleting item.  Does nothing if item is not the
@@ -974,9 +976,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                 % self-consistent, but still...
                 if ~isempty(j) ,
                     if length(items)==1 ,
-                        % item is the last one, so the selection
-                        % will have to be empty
-                        self.SelectedStimulus=[];
+                        % item is the last one, so give up
                     else
                         % there are at least two items
                         if j>1 ,
@@ -993,7 +993,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             end
         end  % function
         
-        function changeSelectedMapToSomethingElse_(self, item)
+        function tryToChangeSelectedMapToSomethingElse_(self, item)
             % Make sure item is not the selected item, hopefully by
             % picking a different item.  Typically called before
             % deleting item.  Does nothing if item is not the
@@ -1012,9 +1012,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                 % self-consistent, but still...
                 if ~isempty(j) ,
                     if length(items)==1 ,
-                        % item is the last one, so the selection
-                        % will have to be empty
-                        self.SelectedMap=[];
+                        % item is the last one, so give up
                     else
                         % there are at least two items
                         if j>1 ,
@@ -1031,7 +1029,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             end
         end  % function
         
-        function changeSelectedSequenceToSomethingElse_(self, item)
+        function tryToChangeSelectedSequenceToSomethingElse_(self, item)
             % Make sure item is not the selected item, hopefully by
             % picking a different item.  Typically called before
             % deleting item.  Does nothing if item is not the
@@ -1050,9 +1048,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                 % self-consistent, but still...
                 if ~isempty(j) ,
                     if length(items)==1 ,
-                        % item is the last one, so the selection
-                        % will have to be empty
-                        self.SelectedSequence=[];
+                        % item is the last one, so give up
                     else
                         % there are at least two items
                         if j>1 ,
