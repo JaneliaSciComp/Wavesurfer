@@ -62,7 +62,7 @@ classdef ChannelsController < ws.Controller
             if isfinite(newValue) && newValue>0 ,
                 % good value
                 %self.Model.Stimulation.ChannelScales(i)=newValue;
-                self.Model.Stimulation.setSingleChannelScale(i,newValue);
+                self.Model.Stimulation.setSingleAnalogChannelScale(i,newValue);
                 % changing model should auto-update the view
             else
                 % discard change by re-syncing view to model
@@ -76,7 +76,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AOUnitsEdits(i),'String');
             try
                 newValue=ws.utility.SIUnit(newString);
-                self.Model.Stimulation.setSingleChannelUnits(i,newValue);
+                self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
             catch excp, 
                 if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
                     self.Figure.update();

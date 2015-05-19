@@ -503,7 +503,8 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
                 newScale=acquisition.AnalogChannelScales(iFirstChannel);  % V/newChannelUnits
                 yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
                 newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
-                self.YLim=newYLimits;
+                %self.YLim=newYLimits;  % Decided we don't want to do this
+                                        % anymore---just leave the y limits in the scope alone
                 self.YUnits=newChannelUnits;  % convert from a scale factor to the native units
                 self.YScale=newScale;
             end

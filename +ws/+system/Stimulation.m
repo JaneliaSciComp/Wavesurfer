@@ -825,7 +825,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelScale(self,i,newValue)
+        function setSingleAnalogChannelScale(self,i,newValue)
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
