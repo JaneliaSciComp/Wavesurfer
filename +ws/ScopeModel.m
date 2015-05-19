@@ -533,7 +533,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
                 thisMax=max(self.YData{iChannel});
                 yMax=fif(isempty(thisMax),yMax,max(yMax,thisMax));
             end
-            yMinAndMax=[yMin yMax];
+            yMinAndMax=double([yMin yMax]);
         end
 
 %         function xMax=dataXMax(self)
@@ -554,6 +554,9 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             end
             yCenter=mean(yMinAndMax);
             yRadius=0.5*diff(yMinAndMax);
+            if yRadius==0 ,
+                yRadius=0.001;
+            end
             self.YLim=yCenter+1.05*yRadius*[-1 +1];
         end  % function
     end  % methods
