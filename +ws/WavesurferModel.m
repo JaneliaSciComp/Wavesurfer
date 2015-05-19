@@ -1442,8 +1442,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForFileType('cfg');
             wavesurferModelSettingsVariableName=self.encodedVariableName();
+            versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-                              'layoutForAllWindows',layoutForAllWindows);  %#ok<NASGU>
+                              'layoutForAllWindows',layoutForAllWindows, ...
+                              'versionString',versionString);  %#ok<NASGU>
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             self.AbsoluteProtocolFileName=absoluteFileName;
             self.HasUserSpecifiedProtocolFileName=true;
@@ -1498,7 +1500,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
             userSettings=self.encodeForFileType('usr');
             wavesurferModelSettingsVariableName=self.encodedVariableName();
-            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings);  %#ok<NASGU>
+            versionString = ws.versionString() ;
+            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
+                              'versionString',versionString);  %#ok<NASGU>
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             
             %self.savePropertiesWithTag(absoluteFileName, 'usr');
