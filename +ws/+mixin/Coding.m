@@ -894,6 +894,8 @@ classdef Coding < handle
                 encoding=thing;
             elseif islogical(thing) ,
                 encoding=thing;
+            elseif isa(thing,'ws.UserClass') ,
+                encoding = thing ;
             else                
                 error('Coding:dontKnowHowToEncode', 'I don''t know how to encode some part of that.');
             end

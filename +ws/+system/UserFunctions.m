@@ -44,7 +44,7 @@ classdef UserFunctions < ws.system.Subsystem
                     else
                         % value is non-empty
                         try                       
-                            newObject = feval(value) ;  % if this fails, self will still be self-consistent
+                            newObject = feval(value,self.Parent) ;  % if this fails, self will still be self-consistent
                         catch me
                             error('most:Model:invalidPropVal', ...
                                   'Invalid value for property ''ClassName'' supplied: Unable to instantiate object.');
