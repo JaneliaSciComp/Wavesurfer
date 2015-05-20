@@ -1,12 +1,19 @@
 classdef TemplateUserClass < ws.UserClass
 
     % Information that you want to stick around between calls to the
-    % functions below
+    % functions below, and want to be settable/gettable from the command
+    % line
     properties
         Parameter1
         Parameter2
     end  % properties
 
+    % Information that only the methods need access to.  (The underscore is
+    % optional, but helps to remind you that it's protected.)
+    properties (Access=protected, Transient=true)
+        SomethingPrivateAndTemporary_
+    end    
+    
     methods
         
         function self = TemplateUserClass(wsModel)

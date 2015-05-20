@@ -741,7 +741,7 @@ classdef Coding < handle
                         className = class(subtarget);
                         value = feval(className,  subencoding);
                     else
-                        value =  subencoding;
+                        value =  subencoding;  % just use the raw thing
                     end
                     % if self == target
                     %     self.setPropertyValue(pname, val);
@@ -894,8 +894,6 @@ classdef Coding < handle
                 encoding=thing;
             elseif islogical(thing) ,
                 encoding=thing;
-            elseif isa(thing,'ws.UserClass') ,
-                encoding = thing ;
             else                
                 error('Coding:dontKnowHowToEncode', 'I don''t know how to encode some part of that.');
             end

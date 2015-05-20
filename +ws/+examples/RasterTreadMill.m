@@ -1,4 +1,4 @@
-classdef rasterTreadMill < ws.Model
+classdef RasterTreadMill < ws.UserClass
 
     % public parameters
     properties
@@ -42,19 +42,19 @@ classdef rasterTreadMill < ws.Model
     
     methods
         
-        function self = rasterTreadMill(parent)
+        function self = RasterTreadMill(wsModel)
         end
         
-        function trialWillStart(self,wsModel,evt)
+        function trialWillStart(self,wsModel,eventName)
         end
         
-        function trialDidComplete(self,wsModel,evt)
+        function trialDidComplete(self,wsModel,eventName)
         end
         
-        function trialDidAbort(self,wsModel,evt)
+        function trialDidAbort(self,wsModel,eventName)
         end
         
-        function experimentWillStart(self,wsModel,evt)
+        function experimentWillStart(self,wsModel,eventName)
             self.BinWidth = self.TreadMillLength / self.NBins;
             self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
             self.SampleRate = wsModel.Acquisition.SampleRate;
@@ -106,13 +106,13 @@ classdef rasterTreadMill < ws.Model
             self.AllBinSubthresholds=cell(1,self.NBins);
         end
         
-        function experimentDidComplete(self,wsModel,evt)
+        function experimentDidComplete(self,wsModel,eventName)
         end
         
-        function experimentDidAbort(self,wsModel,evt)
+        function experimentDidAbort(self,wsModel,eventName)
         end
         
-        function dataIsAvailable(self,wsModel,evt)
+        function dataIsAvailable(self,wsModel,eventName)
 
             % get data
             analogData = wsModel.Acquisition.getLatestAnalogData();
@@ -207,25 +207,7 @@ classdef rasterTreadMill < ws.Model
             self.InitialPosition = self.InitialPosition + integratedVelocity(end);
         end
         
-    end
-
-    % needs to be here; don't ask why
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        mdlHeaderExcludeProps = {};
-    end
-
-    % ditto
-    methods (Access=protected)
-        function out = getPropertyValue(self, name)
-            out = self.(name);
-        end  % function
-        
-        % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
-            self.(name) = value;
-        end  % function
-    end
+    end  % methods
     
 end
 

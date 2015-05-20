@@ -1,4 +1,4 @@
-classdef RasterVirtualReality < ws.Model
+classdef RasterVirtualReality < ws.UserClass
 
     % public parameters
     properties
@@ -27,19 +27,19 @@ classdef RasterVirtualReality < ws.Model
     
     methods
         
-        function self = rasterVirtualReality(parent)
+        function self = RasterVirtualReality(wsModel)
         end
         
-        function trialWillStart(self,wsModel,evt)
+        function trialWillStart(self,wsModel,eventName)
         end
         
-        function trialDidComplete(self,wsModel,evt)
+        function trialDidComplete(self,wsModel,eventName)
         end
         
-        function trialDidAbort(self,wsModel,evt)
+        function trialDidAbort(self,wsModel,eventName)
         end
         
-        function experimentWillStart(self,wsModel,evt)
+        function experimentWillStart(self,wsModel,eventName)
 
             eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayProcess &');            
             self.TcpReceive = ws.jtcp.jtcp('ACCEPT',2000,'TIMEOUT',60000);
@@ -82,16 +82,16 @@ classdef RasterVirtualReality < ws.Model
             end
         end
         
-        function experimentDidComplete(self,wsModel,evt)
+        function experimentDidComplete(self,wsModel,eventName)
             ws.jtcp.jtcp('WRITE',self.TcpSend,'quit');
             self.TcpSend = JTCP('CLOSE',self.TcpSend);
             self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
         end
         
-        function experimentDidAbort(self,wsModel,evt)
+        function experimentDidAbort(self,wsModel,eventName)
         end
         
-        function dataIsAvailable(self,wsModel,evt)
+        function dataIsAvailable(self,wsModel,eventName)
             % syncs found yet?
             tmp=ws.jtcp.jtcp('READ',self.TcpReceive);
             if ~isempty(tmp)
@@ -146,23 +146,6 @@ classdef RasterVirtualReality < ws.Model
             ws.jtcp.jtcp('WRITE',self.TcpSend,serialData);
         end
         
-    end
-
-    % needs to be here; don't ask why
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        mdlHeaderExcludeProps = {};
-    end
-
-    % ditto
-    methods (Access=protected)
-        function out = getPropertyValue(self, name)
-            out = self.(name);
-        end  % function
-        
-        function setPropertyValue(self, name, value)
-            self.(name) = value;
-        end  % function
     end
     
 end
