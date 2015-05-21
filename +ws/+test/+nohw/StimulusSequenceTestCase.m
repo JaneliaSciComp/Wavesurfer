@@ -9,14 +9,14 @@ classdef StimulusSequenceTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function testContainsElement(self)
-            self.verifyTrue(self.DefaultSequence.containsElement(self.DefaultMap1), 'The cycle does contain the specified element.');
-            self.verifyTrue(self.DefaultSequence.containsElement(self.DefaultMap2), 'The cycle does contain the specified element.');
+            self.verifyTrue(self.DefaultSequence.containsMaps(self.DefaultMap1), 'The sequence does contain the specified element.');
+            self.verifyTrue(self.DefaultSequence.containsMaps(self.DefaultMap2), 'The sequence does contain the specified element.');
             
             map3 = self.DefaultLibrary.addNewMap();
-            self.verifyFalse(self.DefaultSequence.containsElement(map3), 'The cycle does not contain the specified element.');
+            self.verifyFalse(self.DefaultSequence.containsMaps(map3), 'The sequence does not contain the specified element.');
             
-            self.verifyEqual(self.DefaultSequence.containsElement({self.DefaultMap1, map3, self.DefaultMap2, map3, map3}), ...
-                [true false true false false], 'Incorrect output for vector containsElement.');
+            self.verifyEqual(self.DefaultSequence.containsMaps({self.DefaultMap1, map3, self.DefaultMap2, map3, map3}), ...
+                [true false true false false], 'Incorrect output for vector containsMaps.');
         end
     end
     

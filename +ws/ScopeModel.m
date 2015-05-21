@@ -77,7 +77,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         Title_ = ''  % This is the window title used by any ScopeFigures that use this
                      % ScopeModel as their Model.        
         XUnits_ = ws.utility.SIUnit('s')
-        YUnits_ = ws.utility.SIUnit('V')
+        YUnits_ = ws.utility.SIUnit()  % pure, which is correct for digital lines
         YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
         AreYLimitsLockedTightToData_ = false
         XOffset_ = 0
@@ -497,14 +497,17 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             wavesurferModel=display.Parent;
             acquisition=wavesurferModel.Acquisition;            
             firstChannelName=self.ChannelNames{1};
-            iFirstChannel=acquisition.iChannelFromName(firstChannelName);
-            newChannelUnits=acquisition.ChannelUnits(iFirstChannel);  
-            newScale=acquisition.ChannelScales(iFirstChannel);  % V/newChannelUnits
-            yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
-            newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
-            self.YLim=newYLimits;
-            self.YUnits=newChannelUnits;  % convert from a scale factor to the native units
-            self.YScale=newScale;
+            iFirstChannel=acquisition.iAnalogChannelFromName(firstChannelName);
+            if isfinite(iFirstChannel) ,
+                newChannelUnits=acquisition.AnalogChannelUnits(iFirstChannel);  
+                newScale=acquisition.AnalogChannelScales(iFirstChannel);  % V/newChannelUnits
+                yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
+                newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
+                %self.YLim=newYLimits;  % Decided we don't want to do this
+                                        % anymore---just leave the y limits in the scope alone
+                self.YUnits=newChannelUnits;  % convert from a scale factor to the native units
+                self.YScale=newScale;
+            end
             self.broadcast('DidSetChannelUnits');
         end
         
@@ -531,7 +534,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
                 thisMax=max(self.YData{iChannel});
                 yMax=fif(isempty(thisMax),yMax,max(yMax,thisMax));
             end
-            yMinAndMax=[yMin yMax];
+            yMinAndMax=double([yMin yMax]);
         end
 
 %         function xMax=dataXMax(self)
@@ -552,6 +555,9 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             end
             yCenter=mean(yMinAndMax);
             yRadius=0.5*diff(yMinAndMax);
+            if yRadius==0 ,
+                yRadius=0.001;
+            end
             self.YLim=yCenter+1.05*yRadius*[-1 +1];
         end  % function
     end  % methods

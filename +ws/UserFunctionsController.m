@@ -56,44 +56,14 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
     end
     
     methods
-        function TrialStartEditActuated(self,source,event) %#ok<INUSD>
+        function ClassNameEditActuated(self,source,event) %#ok<INUSD>
             newString=get(source,'String');
-            self.Model.TrialWillStart=newString;
-        end
-        
-        function TrialCompleteEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            self.Model.TrialDidComplete=newString;
-        end
-        
-        function TrialAbortEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            self.Model.TrialDidAbort=newString;
-        end
-        
-        function TrialSetStartEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            self.Model.ExperimentWillStart=newString;
-        end
-        
-        function TrialSetCompleteEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            self.Model.ExperimentDidComplete=newString;
-        end
-        
-        function TrialSetAbortEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            self.Model.ExperimentDidAbort=newString;
-        end
-
-        function DataAvailableEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            self.Model.DataAvailable=newString;
+            ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
         end
 
         function AbortCallsCompleteCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.Model.AbortCallsComplete=newValue;
+            ws.Controller.setWithBenefits(self.Model,'AbortCallsComplete',newValue);
         end
     end
     

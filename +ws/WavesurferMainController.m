@@ -142,7 +142,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         end
         
         function play(self, varargin)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             try
                 self.Model.Logging.Enabled=false;
                 if self.Model.IsTrialBased ,
@@ -151,15 +151,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     self.startContinuousAcquisition_(varargin{:});
                 end
             catch me
-                self.Figure.changeReadiness(+1);
+                %self.Figure.changeReadiness(+1);
                 rethrow(me)
             end                
-            self.Figure.changeReadiness(+1);            
+            %self.Figure.changeReadiness(+1);            
         end
         
         function record(self, varargin)
             %profile on
-            self.Figure.changeReadiness(-1);            
+            %self.Figure.changeReadiness(-1);            
             try
                 self.Model.Logging.Enabled=true;
                 if self.Model.IsTrialBased ,
@@ -168,10 +168,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     self.startContinuousAcquisition_(varargin{:});
                 end
             catch me
-                self.Figure.changeReadiness(+1);
+                %self.Figure.changeReadiness(+1);
                 rethrow(me)
             end                                
-            self.Figure.changeReadiness(+1);            
+            %self.Figure.changeReadiness(+1);            
             %profile off
         end
         
@@ -398,7 +398,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
     methods  %(Access = protected)
         function initializeGivenMDFFileName(self,fileName)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             try
                 if ischar(fileName) && ~isempty(fileName) && isrow(fileName) ,
                     doesFileExist=ws.utility.fileStatus(fileName);
@@ -412,11 +412,13 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                         %mdf = ws.MachineDataFile(absoluteFileName);
                         %ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', absoluteFileName);
                         %initializeFromMDFObject(mdf);
+                    else
+                        error('wavesurfer:fileDoesNotExist', 'The file ''%s'' does not seem to exist.', fileName);
                     end
                 end
-                self.Figure.changeReadiness(+1);
+                %self.Figure.changeReadiness(+1);
             catch me
-                self.Figure.changeReadiness(+1);
+                %self.Figure.changeReadiness(+1);
 %                 isInDebugMode=~isempty(dbstatus());
 %                 if isInDebugMode ,
 %                     rethrow(me);
@@ -509,32 +511,20 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             shouldStayPut=~shouldClose;
         end  % function
+    end  % protected methods block        
         
-%         function loadConfig(self, fileName, varargin)
-%             startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
-%             
-%             if nargin < 2
-%                 fileName = startLoc;
-%                 if isempty(fileName) || exist(fileName, 'file') ~= 2
-%                     return;
-%                 else
-%                     %self.loadSettings('Config', 'cfg', fileName, '', @(aFileName)(self.loadTheConfigFileForRealsSrsly(aFileName)));
-%                     self.loadConfigSettings(fileName);
-%                 end
-%             elseif ~ischar(fileName)
-%                 fileName = '';
-%                 % self.loadSettings('Config', 'cfg', fileName, startLoc, @(aFileName)(self.loadTheConfigFileForRealsSrsly(aFileName)));
-%                 self.loadConfigSettings(fileName, startLoc);
-%             else
-%                 self.loadConfigFileForRealsSrsly(fileName);
-%             end
-%         end  % function
-        
-        function loadConfigFileForRealsSrsly(self, absoluteFileName)
+    methods
+
+        function loadConfigFileForRealsSrsly(self, fileName)
             % Actually loads the named config file.  fileName should be an
-            % absolute file name referring to a file that is known to be
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.Figure.changeReadiness(-1);            
+            %self.Figure.changeReadiness(-1);
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
             saveStruct=self.Model.loadConfigFileForRealsSrsly(absoluteFileName);
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
@@ -551,7 +541,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.decodeMultiWindowLayoutForSuiGenerisControllers(layoutForAllWindows);
             self.decodeMultiWindowLayoutForExistingScopeControllers(layoutForAllWindows);
             %self.Model.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end  % function
         
         function saveConfig(self, varargin)
@@ -636,23 +626,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end            
 %         end  % function
         
-        function loadUserFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named user file.  absoluteFileName should be an
+        function loadUserFileForRealsSrsly(self, fileName)
+            % Actually loads the named user file.  fileName should be an
             % absolute file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
 
-            self.Figure.changeReadiness(-1);
-            self.Model.loadUserFileForRealsSrsly(absoluteFileName);
-            %self.loadProperties(absoluteFileName);
-            %self.loadWindowLayouts(userFileName);  % all window positions are stored in user file currently
-            %self.AbsoluteUserSettingsFileName=absoluteFileName;
-            %self.HasUserSpecifiedUserSettingsFileName=true;            
-            %ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            %self.updateUserFileNameInMenu();
-%            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', configFileName);
-%            self.setConfigFileNameInMenu(configFileName);
-            %self.Model.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
-            self.Figure.changeReadiness(+1);
+            self.Model.loadUserFileForRealsSrsly(fileName);
         end
         
         function saveUser(self, varargin)
@@ -705,7 +684,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.saveUserSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
         end  % method
         
-    end  % protected methods    
+    end  % public methods    
     
     
     methods (Access = protected)
@@ -837,7 +816,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                  isFileNameKnown, fullpath, 'usr', 'load', startLoc);
                 
             if ~isempty(actualFileName)
-                ws.Preferences.sharedPreferences().savePref('lastUserFilePath', actualFileName);
+                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', actualFileName);
                 %feval(replyFcn, actualFileName);
                 self.loadUserFileForRealsSrsly(actualFileName)
                 out = true;
@@ -856,7 +835,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
             
             if ~isempty(actualFileName)
-                ws.Preferences.sharedPreferences().savePref('lastConfigFilePath', actualFileName);
+                ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', actualFileName);
                 %feval(replyFcn, actualFileName);
                 self.loadConfigFileForRealsSrsly(actualFileName)
                 out = true;
@@ -880,9 +859,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
         
         function saveUserFileForRealsSrsly(self, absoluteFileName)
-            self.Figure.changeReadiness(-1);            
+            %self.Figure.changeReadiness(-1);            
             self.Model.saveUserFileForRealsSrsly(absoluteFileName)
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end  % function
 
         function saveConfigSettings(self, isFileNameKnown, fileName, fileChooserInitialFileName)
@@ -900,7 +879,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
         
         function saveConfigFileForRealsSrsly(self,absoluteFileName)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
 
             %ephusModelSettings=self.Model.encodeConfigurablePropertiesForFileType('cfg');
             %ephusModelSettingsVariableName=self.Model.encodedVariableName();
@@ -918,7 +897,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.updateConfigFileNameInMenu();
             %self.Model.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
 
-            self.Figure.changeReadiness(+1);            
+            %self.Figure.changeReadiness(+1);            
         end
         
 %         function expose_default_bindings(self)
@@ -1030,12 +1009,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
     end  % protected methods
     
-    methods (Access = protected)        
-        function applyFastProtocol_(self, index)
+    methods      
+        function applyFastProtocol(self, index)
             if isempty(self.Model) ,
                 return
             end
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             %self.Window.Cursor=System.Windows.Input.Cursors.Wait;
             try
                 fastProtocol = self.Model.FastProtocols(index);
@@ -1046,7 +1025,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     else
                         errorMessage=sprintf('The protocol file %s is missing.', ...
                                              fileName);
-                        self.Figure.changeReadiness(+1);
+                        %self.Figure.changeReadiness(+1);
                         %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;
                         errordlg(errorMessage, ...
                                  'Missing Protocol File', ...
@@ -1054,7 +1033,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                         return     
                     end
                 end
-                self.Figure.changeReadiness(+1);
+                %self.Figure.changeReadiness(+1);
                 %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;  % go to normal cursor before starting trial
                 if isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Play) ,
                     self.play();
@@ -1062,13 +1041,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     self.record();
                 end
             catch me
-                self.Figure.changeReadiness(+1);
+                %self.Figure.changeReadiness(+1);
                 %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;
                 rethrow(me);
                 %self.showError(me);
             end
         end  % function
+    end
         
+    methods (Access=protected)
         function stimulationOutputComboboxWasManipulated(self, src, varargin)
             % Called after the combobox widget is manipulated.  Causes the
             % viewmodel to be updated, given the widget state.
@@ -2253,7 +2234,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             isMatch=(source==self.Figure.FastProtocolButtons);
             index=find(isMatch,1);
             if ~isempty(index) ,
-                self.applyFastProtocol_(index);
+                self.applyFastProtocol(index);
             end
         end
     end  % methods        

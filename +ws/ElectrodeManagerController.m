@@ -73,16 +73,16 @@ classdef ElectrodeManagerController < ws.Controller
         end
         
         function updateButtonPressed(self)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             self.Model.updateSmartElectrodeGainsAndModes();
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end
         
         function reconnectButtonPressed(self)
-            self.Figure.changeReadiness(-1);
+            %self.Figure.changeReadiness(-1);
             self.Model.reconnectWithSmartElectrodes();
             self.Model.updateSmartElectrodeGainsAndModes();
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end
         
         function softpanelButtonPressed(self)
@@ -216,14 +216,14 @@ classdef ElectrodeManagerController < ws.Controller
         end  % function        
 
         function typePopupActuated(self,source)
-            self.Figure.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
+            %self.Figure.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             choice=ws.utility.getPopupMenuSelection(source,ws.Electrode.Types);
             isTheElectrode=(source==self.Figure.TypePopups);
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.Type=choice;
             electrodeIndex=find(isTheElectrode);
             self.Model.setElectrodeType(electrodeIndex,choice); %#ok<FNDSB>
-            self.Figure.changeReadiness(+1);
+            %self.Figure.changeReadiness(+1);
         end  % function
         
         function indexWithinTypeEditEdited(self,source)

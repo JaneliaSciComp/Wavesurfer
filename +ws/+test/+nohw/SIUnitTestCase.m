@@ -96,6 +96,80 @@ classdef SIUnitTestCase < matlab.unittest.TestCase
             expected='N';
             self.testSIUnitExpression(expression,expected);
         end  % method
+        
+        function testMPerS(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('m/s');
+            expected = SIUnit(0,[0 1 -1 0 0 0 0]);  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''m/s'') ~= SIUnit(0,[0 1 -1 0 0 0 0])');
+        end
+        
+        function testJoule(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('N*m');
+            expected = SIUnit('J');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''N*m'') ~= SIUnit(''J'')');
+        end
+        
+        function testWatt(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('N*m/s');
+            expected = SIUnit('W');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''N*m/s'') ~= SIUnit(''W'')');
+        end
+        
+        function testNewton(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('kg*m/s^2');
+            expected = SIUnit('N');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''kg*m/s^2'') ~= SIUnit(''N'')');
+        end
+        
+        function testNewton2(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('kg*m*s^-2');
+            expected = SIUnit('N');  
+            self.verifyEqual(unit,expected,'Error: SIUnit(''kg*m*s^-2'') ~= SIUnit(''N'')');
+        end
+        
+        function testSaveAndLoad(self)
+            import ws.utility.SIUnit            
+            unit = SIUnit('kg*m/s^2');
+            fileName = tempname() ;
+            save('-mat',fileName,'unit');
+            s=load('-mat',fileName);
+            unitCheck = s.unit ;
+            self.verifyEqual(unit,unitCheck,'Error: Unit doesn''t match saved-and-loaded unit');
+            self.verifyEqual(string(unit),string(unitCheck),'Error: Unit string match doesn''t saved-and-loaded unit string');            
+        end
+        
+        function testScalarDivision(self)
+            import ws.utility.SIUnit            
+            J = SIUnit('J') ;
+            s = SIUnit('s') ;
+            WHopefully = J/s ;
+            W = SIUnit('W') ;
+            self.verifyEqual(W,WHopefully,'Error: J/s ~= W');            
+        end
+        
+        function testArrayDivision(self)
+            import ws.utility.SIUnit            
+            J = repmat(SIUnit('J'),[3 4]) ;
+            s = repmat(SIUnit('s'),[3 4]) ;
+            WHopefully = J/s ;
+            W = repmat(SIUnit('W'),[3 4]) ;
+            self.verifyEqual(W,WHopefully,'Error: J/s ~= W');            
+        end
+        
+        function testArrayMultiplication(self)
+            import ws.utility.SIUnit            
+            A = repmat(SIUnit('A'),[3 4]) ;
+            s = repmat(SIUnit('s'),[3 4]) ;
+            CHopefully = A*s ;
+            C = repmat(SIUnit('C'),[3 4]) ;
+            self.verifyEqual(C,CHopefully,'Error: A*s ~= C');            
+        end
+        
     end  % methods (Test)
 
     methods

@@ -7,7 +7,7 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
     end
     
     properties (SetAccess=immutable, Dependent=true)
-        IsReady  % true iff ProtocolFileName is nonempty
+        IsNonempty  % true iff ProtocolFileName is nonempty
     end
     
     properties (Access=protected)
@@ -49,7 +49,7 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
             value=self.AutoStartType_;
         end
 
-        function value=get.IsReady(self)
+        function value=get.IsNonempty(self)
             value=~isempty(self.ProtocolFileName);
         end
         
@@ -70,9 +70,9 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
 %     methods (Static = true)
 %         function thing=loadobj(pickledThing)
 %             thing=pickledThing;
-%             % Fix the IsReady field
+%             % Fix the IsNonempty field
 %             for i=1:numel(thing) ,
-%                 thing(i).IsReady=~isempty(thing(i).ProtocolFileName);
+%                 thing(i).IsNonempty=~isempty(thing(i).ProtocolFileName);
 %             end
 %         end
 %     end    

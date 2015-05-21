@@ -16,7 +16,7 @@ classdef ChannelsController < ws.Controller
             newValue=str2double(newString);
             if isfinite(newValue) && newValue>0 ,
                 % good value
-                self.Model.Acquisition.setSingleChannelScale(i,newValue);
+                self.Model.Acquisition.setSingleAnalogChannelScale(i,newValue);
                 % changing model should auto-update the view
             else
                 % discard change by re-syncing view to model
@@ -30,7 +30,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             try
                 newValue=ws.utility.SIUnit(newString);
-                self.Model.Acquisition.setSingleChannelUnits(i,newValue);
+                self.Model.Acquisition.setSingleAnalogChannelUnits(i,newValue);
             catch excp, 
                 if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
                     self.Figure.update();
@@ -41,9 +41,17 @@ classdef ChannelsController < ws.Controller
         end
         
         function aiIsActiveCheckboxActuated(self,source)
-            isTheChannel=(source==self.Figure.AIIsActiveCheckboxes);
-            i=find(isTheChannel);
-            self.Model.Acquisition.IsChannelActive(i)=get(source,'Value');             %#ok<FNDSB>
+            isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
+            isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
+            isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
+        end
+        
+        function diIsActiveCheckboxActuated(self,source)
+            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
+            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
+            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
         end
         
         function aoScaleEditActuated(self,source)
@@ -54,7 +62,7 @@ classdef ChannelsController < ws.Controller
             if isfinite(newValue) && newValue>0 ,
                 % good value
                 %self.Model.Stimulation.ChannelScales(i)=newValue;
-                self.Model.Stimulation.setSingleChannelScale(i,newValue);
+                self.Model.Stimulation.setSingleAnalogChannelScale(i,newValue);
                 % changing model should auto-update the view
             else
                 % discard change by re-syncing view to model
@@ -68,7 +76,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AOUnitsEdits(i),'String');
             try
                 newValue=ws.utility.SIUnit(newString);
-                self.Model.Stimulation.setSingleChannelUnits(i,newValue);
+                self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
             catch excp, 
                 if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
                     self.Figure.update();
@@ -76,6 +84,21 @@ classdef ChannelsController < ws.Controller
                     rethrow(excp);
                 end
             end
+        end
+        
+        function doTimedCheckboxActuated(self,source)
+            isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
+            i=find(isTheChannel);            
+            newState = get(self.Figure.DOIsTimedCheckboxes(i),'value');
+            self.Model.Stimulation.IsDigitalChannelTimed(i)=newState;
+            self.Figure.update();
+        end
+        
+        function doOnRadiobuttonActuated(self,source)
+            isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
+            i=find(isTheChannel);            
+            newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
+            self.Model.Stimulation.DigitalOutputStateIfUntimed(i)=newState;
         end
         
 %         function aoMultiplierEditActuated(self,source)
@@ -103,10 +126,16 @@ classdef ChannelsController < ws.Controller
                     self.aiUnitsEditActuated(source);
                 elseif any(source==figureObject.AIIsActiveCheckboxes)
                     self.aiIsActiveCheckboxActuated(source);
+                elseif any(source==figureObject.DIIsActiveCheckboxes)
+                    self.diIsActiveCheckboxActuated(source);
                 elseif any(source==figureObject.AOScaleEdits)
                     self.aoScaleEditActuated(source);
                 elseif any(source==figureObject.AOUnitsEdits)
                     self.aoUnitsEditActuated(source);
+                elseif any(source==figureObject.DOIsTimedCheckboxes)
+                    self.doTimedCheckboxActuated(source);
+                elseif any(source==figureObject.DOIsOnRadiobuttons)
+                    self.doOnRadiobuttonActuated(source);
 %                 elseif any(source==figureObject.AOMultiplierEdits)
 %                     self.aoMultiplierEditActuated(source);
                 end

@@ -89,6 +89,14 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
+        function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
+                selectedItem.deleteMarkedMaps();
+            end
+        end  % function
+
         function AddMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
 
@@ -115,20 +123,28 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             end
         end  % function
 
+        function DeleteChannelsFromMapMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+                selectedItem.deleteMarkedBindings();
+            end
+        end  % function
+
         function AddStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;            
             model.addNewStimulus('SquarePulse');
         end  % function
 
-        function DeleteItemMenuItemActuated(self,source,event) %#ok<INUSD>
+        function DeleteSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
-                    str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
-                    str2 = 'Delete Item';
+                    str1 = 'This sequence is referenced by one or more items in the library.  Deleting it will alter those items.';
+                    str2 = 'Delete Sequence?';
                     choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
@@ -139,6 +155,66 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 end                            
             end
         end  % function
+
+        function DeleteMapMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+                isInUse = model.isInUse(selectedItem);
+
+                if isInUse ,
+                    str1 = 'This map is referenced by one or more items in the library.  Deleting it will alter those items.';
+                    str2 = 'Delete Map?';
+                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    switch choice 
+                        case 'Delete'
+                            model.deleteItem(selectedItem);
+                    end
+                else
+                    model.deleteItem(selectedItem);
+                end                            
+            end
+        end  % function
+
+        function DeleteStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            selectedItem=model.SelectedItem;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.Stimulus') ,
+                isInUse = model.isInUse(selectedItem);
+
+                if isInUse ,
+                    str1 = 'This stimulus is referenced by one or more items in the library.  Deleting it will alter those items.';
+                    str2 = 'Delete Stimulus?';
+                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    switch choice 
+                        case 'Delete'
+                            model.deleteItem(selectedItem);
+                    end
+                else
+                    model.deleteItem(selectedItem);
+                end                            
+            end
+        end  % function
+
+%         function DeleteItemMenuItemActuated(self,source,event) %#ok<INUSD>
+%             model=self.Model;
+%             selectedItem=model.SelectedItem;
+%             if ~isempty(selectedItem) ,
+%                 isInUse = model.isInUse(selectedItem);
+% 
+%                 if isInUse ,
+%                     str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
+%                     str2 = 'Delete Item?';
+%                     choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+%                     switch choice 
+%                         case 'Delete'
+%                             model.deleteItem(selectedItem);
+%                     end
+%                 else
+%                     model.deleteItem(selectedItem);
+%                 end                            
+%             end
+%         end  % function
         
         function PreviewMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;            
@@ -279,9 +355,13 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 % this is the Map Name column
                 newMapName=event.EditData;
                 map=model.mapWithName(newMapName);
-                selectedSequence.Maps{rowIndex}=map;
+                selectedSequence.setMap(rowIndex,map);
+            elseif (columnIndex==4) ,
+                % this is the Delete? column
+                newValue=event.EditData;
+                selectedSequence.IsMarkedForDeletion(rowIndex) = newValue ;
             end                        
-        end
+        end  % function
     
         function MapTableCellEdited(self,source,event) %#ok<INUSL>
             model=self.Model;
@@ -291,27 +371,30 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             end
             
             indices=event.Indices;
-            newString=event.EditData;
+            newThing=event.EditData;
             rowIndex=indices(1);
             columnIndex=indices(2);
             if (columnIndex==1) ,
                 % this is the Channel Name column
-                if isequal(newString,'(Unspecified)') ,
-                    newString='';
+                if isequal(newThing,'(Unspecified)') ,
+                    newThing='';
                 end
-                selectedMap.ChannelNames{rowIndex}=newString;
+                selectedMap.ChannelNames{rowIndex}=newThing;
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
-                if isequal(newString,'(Unspecified)') ,
+                if isequal(newThing,'(Unspecified)') ,
                     stimulus=[];
                 else
-                    stimulus=model.stimulusWithName(newString);
+                    stimulus=model.stimulusWithName(newThing);
                 end
                 selectedMap.Stimuli{rowIndex}=stimulus;                                
             elseif (columnIndex==4) ,
                 % this is the Multiplier column
-                newValue=str2double(newString);
+                newValue=str2double(newThing);
                 selectedMap.Multipliers(rowIndex)=newValue;
+            elseif (columnIndex==5) ,
+                % this is the Delete? column
+                selectedMap.IsMarkedForDeletion(rowIndex) = newThing ;
             end                        
         end
     end  % public methods block

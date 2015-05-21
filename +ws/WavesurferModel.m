@@ -1,11 +1,5 @@
 classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
-    %EPHUS3 Wavesurfer 3 command line application object.
-    %
-    %   The Wavesurfer 3 application is primarily a container for the various subsystems
-    %   required and used in an Wavesurfer-controlled experiment (acquisition, stimulus,
-    %   data logging, etc...).  It is also responsible for providing the appropriate
-    %   state change messages to each subsystem which manages the transition from
-    %   one trial to the next.
+    % The main Wavesurfer model object.
 
     properties (SetAccess=immutable, Transient=true)  % transient so doesn't get saved
         NFastProtocols = 6
@@ -110,14 +104,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        DataAvailable
-        TrialWillStart
-        TrialDidComplete
-        TrialDidAbort
-        ExperimentWillStart
-        ExperimentDidComplete
-        ExperimentDidAbort
-        %NScopesMayHaveChanged
+        trialWillStart
+        trialDidComplete
+        trialDidAbort
+        experimentWillStart
+        experimentDidComplete
+        experimentDidAbort        %NScopesMayHaveChanged
+        dataIsAvailable
     end
     
     events
@@ -242,6 +235,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 self.willPerformExperiment(modeRequested);
             catch me
+                self.didAbortTrial();
                 me.rethrow();
             end
         end
@@ -584,7 +578,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end            
 %         end  % function
         
-        function samplesAcquired(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % Called "from below" when data is available
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_ = self.NTimesSamplesAcquiredCalledSinceExperimentStart_ + 1 ;
             %profile resume
@@ -601,7 +595,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Actually handle the data
             %data = eventData.Samples;
             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.dataAvailable(rawData, timeSinceExperimentStartAtStartOfData);
+            self.haveDataAvailable(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
             %profile off
         end
         
@@ -641,12 +635,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % all API members.
         
         function willPerformExperiment(self, desiredApplicationState)
-            %fprintf('WavesurferModel::willPerformExperiment()\n');                        
+            %fprintf('WavesurferModel::willPerformExperiment()\n');     
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
             if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration) 
                 assert(self.ExperimentTrialCount == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
             end
+            
+            self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
@@ -655,12 +651,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
                     self.didAbortExperiment();
+                    self.changeReadiness(+1);
                     rethrow(excp);
                 end
                 [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
                 if ~isScanImageReady ,
                     self.ensureYokingFilesAreGone_();
                     self.didAbortExperiment();
+                    self.changeReadiness(+1);
                     error('WavesurferModel:ScanImageNotReady', ...
                           errorMessage);
                 end
@@ -668,7 +666,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.ExperimentCompletedTrialCount = 0;
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentWillStart');  
+            self.callUserFunctionsAndBroadcastEvent('experimentWillStart');  
                 % no one listens for this, it seems, but it does directly
                 % lead to user function getting called --ALT, 2014-08-24
             
@@ -683,6 +681,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             catch me
                 self.didAbortExperiment();
+                self.changeReadiness(+1);
                 me.rethrow();
             end
             
@@ -694,6 +693,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_=0;
             self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.TrialDuration);  % s
             
+            self.changeReadiness(+1);
+
             % Move on to performing the first (and perhaps only) trial
             self.willPerformTrial();
         end  % function
@@ -724,7 +725,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Notify listeners that the trial is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
             % event.  -- ALT, 2014-05-20
-            self.callUserFunctionsAndBroadcastEvent('TrialWillStart');            
+            self.callUserFunctionsAndBroadcastEvent('trialWillStart');            
             
             % Call willPerformTrial() on all the enabled subsystems
             for idx = 1:numel(self.Subsystems_)
@@ -765,7 +766,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.ExperimentCompletedTrialCount = self.ExperimentCompletedTrialCount + 1;
             
             % Call user functions and broadcast
-            self.callUserFunctionsAndBroadcastEvent('TrialDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('trialDidComplete');
             
             % Daisy-chain another trial, or wrap up the experiment,
             % depending
@@ -868,7 +869,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('TrialDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('trialDidAbort');
             
             self.didAbortExperiment();
         end  % function
@@ -894,7 +895,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('experimentDidComplete');
         end  % function
         
         function didAbortExperiment(self, highestIndexedSubsystemThatNeedsAbortion)
@@ -916,13 +917,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('ExperimentDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('experimentDidAbort');
         end  % function
         
-        function dataAvailable(self, rawData, timeSinceExperimentStartAtStartOfData)
+        function haveDataAvailable(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
-            nScans=size(rawData,1);
+            nScans=size(rawAnalogData,1);
             %nChannels=size(data,2);
             %assert(nChannels == numel(expectedChannelNames));
                         
@@ -931,21 +932,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 dt=1/self.Acquisition.SampleRate;
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
-                % Scale the data so that all the subsystems only get the scaled
-                % data
-
-                channelScales=self.Acquisition.ActiveChannelScales;
+                % Scale the analog data
+                channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-
-                % scale the data by the channel scales
-                if isempty(rawData) ,
-                    scaledData=zeros(size(rawData));
+                if isempty(rawAnalogData) ,
+                    scaledAnalogData=zeros(size(rawAnalogData));
                 else
-                    data = double(rawData);
+                    data = double(rawAnalogData);
                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledData=bsxfun(@times,data,combinedScaleFactors); 
+                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
                 end
-
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
@@ -954,7 +950,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.dataAvailable(state, t, scaledData, rawData, timeSinceExperimentStartAtStartOfData);
+                        self.Subsystems_{idx}.dataIsAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
                     end
                     %T(idx)=toc;
                 end
@@ -963,7 +959,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + nScans;
 
                 %self.broadcast('DataAvailable');
-                self.callUserFunctionsAndBroadcastEvent('DataAvailable');
+                self.callUserFunctionsAndBroadcastEvent('dataIsAvailable');
             end
         end  % function
         
@@ -1056,9 +1052,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     methods
         function initializeFromMDFFileName(self,mdfFileName)
+            self.changeReadiness(-1);
             mdfStructure = ws.readMachineDataFile(mdfFileName);
             ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
             self.initializeFromMDFStructure_(mdfStructure);
+            self.changeReadiness(+1);
         end
     end  % methods block
         
@@ -1414,10 +1412,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
     methods
-        function saveStruct=loadConfigFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named config file.  fileName should be an
-            % absolute file name referring to a file that is known to be
+        function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+            % Actually loads the named config file.  fileName should be a
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
+            self.changeReadiness(-1);
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -1428,31 +1432,44 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
+            self.changeReadiness(+1);       
         end  % function
     end
     
     methods
         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
+            self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForFileType('cfg');
             wavesurferModelSettingsVariableName=self.encodedVariableName();
+            versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-                              'layoutForAllWindows',layoutForAllWindows);  %#ok<NASGU>
-            save('-mat',absoluteFileName,'-struct','saveStruct');     
+                              'layoutForAllWindows',layoutForAllWindows, ...
+                              'versionString',versionString);  %#ok<NASGU>
+            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             self.AbsoluteProtocolFileName=absoluteFileName;
             self.HasUserSpecifiedProtocolFileName=true;
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
+            self.changeReadiness(+1);            
         end
     end        
     
     methods
-        function loadUserFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named user file.  absoluteFileName should be an
-            % absolute file name referring to a file that is known to be
+        function loadUserFileForRealsSrsly(self, fileName)
+            % Actually loads the named user file.  fileName should be an
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
 
             %self.loadProperties(absoluteFileName);
+            
+            self.changeReadiness(-1);
+
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
             
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
@@ -1463,6 +1480,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.HasUserSpecifiedUserSettingsFileName=true;            
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
+            
+            self.changeReadiness(+1);            
         end
     end        
 
@@ -1476,11 +1495,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                 end
 %             end
             
+            self.changeReadiness(-1);
+
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
             userSettings=self.encodeForFileType('usr');
             wavesurferModelSettingsVariableName=self.encodedVariableName();
-            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings);  %#ok<NASGU>
-            save('-mat',absoluteFileName,'-struct','saveStruct');     
+            versionString = ws.versionString() ;
+            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
+                              'versionString',versionString);  %#ok<NASGU>
+            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             
             %self.savePropertiesWithTag(absoluteFileName, 'usr');
             
@@ -1492,6 +1515,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %controller.updateUserFileNameInMenu();
 
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
+            
+            self.changeReadiness(+1);            
         end  % function
     end
     
@@ -1521,13 +1546,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
     end
     
-    methods (Access=protected)        
+    methods (Access=protected)
         function runPollingLoop_(self)
-            % This means we need to start the polling timer
-            %self.PollingTimer_.Period = 1/self.Display.UpdateRate ;
-            %self.PollingTimer_.TimerFcn = @(timer,eventStruct)(self.pollingTimerFired_()) ;
-            %self.PollingTimer_.ErrorFcn = @(timer,eventStruct,godOnlyKnows)(self.pollingTimerErrored_(eventStruct)) ;
-            %start(self.PollingTimer_);  % .start() doesn't work: Error says "The 'start' property name is ambiguous for timer objects."  Lame.
+            % Runs the main polling loop.
             
             pollingTicId = tic() ;
             pollingPeriod = 1/self.Display.UpdateRate ;
@@ -1537,19 +1558,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 timeNow =  toc(pollingTicId) ;
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
+                    %timeSinceLastPoll
                     timeOfLastPoll = timeNow ;
-                    tStart = toc(pollingTicId) ;
+                    %tStart = toc(pollingTicId) ;
+                    %profile resume
                     try
                         self.pollingTimerFired_() ;
                     catch me
                         self.didAbortTrial();
                         rethrow(me);
                     end
-                    tMiddle = toc(pollingTicId) ;
+                    %tMiddle = toc(pollingTicId) ;
+                    %fprintf('drawnow()\n');
                     drawnow() ;  % update, and also process any user actions
-                    tEnd = toc(pollingTicId) ;
-                    coreActionDuration = tMiddle-tStart ;
-                    actionDuration = tEnd-tStart ;
+                    %profile off
+                    %tEnd = toc(pollingTicId) ;
+                    %coreActionDuration = tMiddle-tStart ;
+                    %actionDuration = tEnd-tStart ;
                     %fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
                 else
                     pause(0.010);  % don't want this loop to completely peg the CPU

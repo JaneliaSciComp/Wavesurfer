@@ -1,21 +1,7 @@
 classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
     properties
-        TrialStartText
-        TrialStartEdit
-        TrialCompleteText
-        TrialCompleteEdit
-        TrialAbortText
-        TrialAbortEdit
-
-        TrialSetStartText
-        TrialSetStartEdit
-        TrialSetCompleteText
-        TrialSetCompleteEdit
-        TrialSetAbortText
-        TrialSetAbortEdit
-
-        DataAvailableText
-        DataAvailableEdit        
+        ClassNameText
+        ClassNameEdit        
         
         AbortCallsCompleteCheckbox
     end  % properties
@@ -58,8 +44,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods (Access=protected)
-        function modelWasSet_(self)
+        function didSetModel_(self)
             self.updateSubscriptionsToModelEvents_();
+            didSetModel_@ws.MCOSFigure(self);
         end
     end
     
@@ -67,59 +54,11 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
         function createFixedControls_(self)
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
-            self.TrialStartText = ...
+            self.ClassNameText = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','text', ...
-                          'String','Trial Start:');
-            self.TrialStartEdit = ...
-                uicontrol('Parent',self.FigureGH, ...                
-                          'Style','edit');
-
-            self.TrialCompleteText = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','Trial Complete:');
-            self.TrialCompleteEdit = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
-
-            self.TrialAbortText = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','Trial Abort:');
-            self.TrialAbortEdit = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
-                      
-            self.TrialSetStartText = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','Trial Set Start:');
-            self.TrialSetStartEdit = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
-
-            self.TrialSetCompleteText = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','Trial Set Complete:');
-            self.TrialSetCompleteEdit = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
-
-            self.TrialSetAbortText = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','Trial Set Abort:');
-            self.TrialSetAbortEdit = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
-
-            self.DataAvailableText = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','Data Available:');
-            self.DataAvailableEdit = ...
+                          'String','Class Name:');
+            self.ClassNameEdit = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','edit');
                       
@@ -189,14 +128,14 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             rightPadWidth=10;
             bottomPadHeight=10;
             topPadHeight=10;
-            labelWidth=100;
+            labelWidth=75;
             editWidth=300;
             typicalHeightBetweenEdits=4;
             heightBetweenEditBlocks=16;
             heightFromCheckboxToBottomEdit=4;
             
             % Just want to use the default edit height
-            sampleEditPosition=get(self.TrialStartEdit,'Position');
+            sampleEditPosition=get(self.ClassNameEdit,'Position');
             editHeight=sampleEditPosition(4);  
 
             % Just want to use the default checkbox height
@@ -209,43 +148,13 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
                           checkboxHeight + ...
                           heightFromCheckboxToBottomEdit + ...
                           editHeight + ...
-                          heightBetweenEditBlocks + ...
-                          3*editHeight + 2*typicalHeightBetweenEdits + ...
-                          heightBetweenEditBlocks + ...
-                          3*editHeight + 2*typicalHeightBetweenEdits + ...
                           topPadHeight;
             
             % The edits and their labels
             editXOffset=leftPadWidth+labelWidth;
             
             rowYOffset=figureHeight-topPadHeight-editHeight;
-            positionEditLabelAndUnitsBang(self.TrialStartText,self.TrialStartEdit,[], ....
-                                          editXOffset,rowYOffset,editWidth)
-           
-            rowYOffset=rowYOffset-typicalHeightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.TrialCompleteText,self.TrialCompleteEdit,[], ....
-                                          editXOffset,rowYOffset,editWidth)
-            
-            rowYOffset=rowYOffset-typicalHeightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.TrialAbortText,self.TrialAbortEdit,[], ....
-                                          editXOffset,rowYOffset,editWidth)
-            
-            
-            rowYOffset=rowYOffset-heightBetweenEditBlocks-editHeight;
-            positionEditLabelAndUnitsBang(self.TrialSetStartText,self.TrialSetStartEdit,[], ....
-                                          editXOffset,rowYOffset,editWidth)
-           
-            rowYOffset=rowYOffset-typicalHeightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.TrialSetCompleteText,self.TrialSetCompleteEdit,[], ....
-                                          editXOffset,rowYOffset,editWidth)
-            
-            rowYOffset=rowYOffset-typicalHeightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.TrialSetAbortText,self.TrialSetAbortEdit,[], ....
-                                          editXOffset,rowYOffset,editWidth)                                      
-                                      
-                                      
-            rowYOffset=rowYOffset-heightBetweenEditBlocks-editHeight;
-            positionEditLabelAndUnitsBang(self.DataAvailableText,self.DataAvailableEdit,[], ....
+            positionEditLabelAndUnitsBang(self.ClassNameText,self.ClassNameEdit,[], ....
                                           editXOffset,rowYOffset,editWidth)
 
             % Checkbox
@@ -289,13 +198,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
 
-            set(self.TrialStartEdit,'String',model.TrialWillStart);
-            set(self.TrialCompleteEdit,'String',model.TrialDidComplete);
-            set(self.TrialAbortEdit,'String',model.TrialDidAbort);            
-            set(self.TrialSetStartEdit,'String',model.ExperimentWillStart);
-            set(self.TrialSetCompleteEdit,'String',model.ExperimentDidComplete);
-            set(self.TrialSetAbortEdit,'String',model.ExperimentDidAbort);            
-            set(self.DataAvailableEdit,'String',model.DataAvailable);            
+            set(self.ClassNameEdit,'String',model.ClassName);            
             set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
         end
     end
@@ -312,13 +215,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             import ws.utility.onIff
             isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
-            set(self.TrialStartEdit,'Enable',onIff(isIdle));
-            set(self.TrialCompleteEdit,'Enable',onIff(isIdle));
-            set(self.TrialAbortEdit,'Enable',onIff(isIdle));            
-            set(self.TrialSetStartEdit,'Enable',onIff(isIdle));
-            set(self.TrialSetCompleteEdit,'Enable',onIff(isIdle));
-            set(self.TrialSetAbortEdit,'Enable',onIff(isIdle));            
-            set(self.DataAvailableEdit,'Enable',onIff(isIdle));            
+            set(self.ClassNameEdit,'Enable',onIff(isIdle));            
             set(self.AbortCallsCompleteCheckbox,'Enable',onIff(isIdle));
         end
     end
@@ -328,7 +225,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
             % Unsubscribe from all events, then subsribe to all the
             % approprate events of model.  model should be a UserFunctions subsystem
             %fprintf('UserFunctionsFigure::updateSubscriptionsToModelEvents_()\n');
-            self.unsubscribeFromAll();
+            %self.unsubscribeFromAll();
             
             model=self.Model;
             if isempty(model) ,

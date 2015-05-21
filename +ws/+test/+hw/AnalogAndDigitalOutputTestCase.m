@@ -1,7 +1,6 @@
 classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
     % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be on the current path, 
-    % and be named Machine_Data_File_8_AIs.m.
+    % the MDF.  (Can be a simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>

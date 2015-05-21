@@ -130,7 +130,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettings=em.encodeForFileType('cfg');
 
             % Check that the stimulusLibrary in protocolSettings is self-consistent
-            self.verifyTrue(protocolSettings.Stimulation.StimulusLibrary_.isSelfConsistent());
+            self.verifyTrue(protocolSettings.encoding.Stimulation.encoding.StimulusLibrary_.isSelfConsistent());
         end  % function
         
         function testRestorationOfStimulusSource(self)

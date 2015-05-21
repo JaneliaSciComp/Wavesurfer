@@ -66,7 +66,7 @@ classdef TestPulser < ws.Model
         %ResistanceUnitsPerElectrode
         GainOrResistanceUnitsPerElectrode
         GainOrResistancePerElectrode
-        IsReady  % if true, the model is not busy
+        %IsReady  % if true, the model is not busy
     end
     
     properties  (Access=protected)  % need to see if some of these things should be transient
@@ -120,12 +120,12 @@ classdef TestPulser < ws.Model
         MonitorPerElectrode_
         NSweepsPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many sweeps (if we can)
         NSweepsCompletedAsOfLastYLimitsUpdate_
-        IsReady_
+        %IsReady_
     end    
     
     events
         UpdateTrace
-        UpdateIsReady
+        %UpdateReadiness
     end
     
     methods
@@ -193,7 +193,7 @@ classdef TestPulser < ws.Model
             self.IsCCCached_=nan;  % only matters in the midst of an experiment
             self.IsVCCached_=nan;  % only matters in the midst of an experiment            
             %self.IsStopping_=false;
-            self.IsReady_ = true ;
+            %self.IsReady_ = true ;
             
 %             % add listeners on host events
 %             if ~isempty(ephys) ,
@@ -239,9 +239,9 @@ classdef TestPulser < ws.Model
             end
         end
         
-        function value = get.IsReady(self)
-            value = self.IsReady_ ;
-        end
+%         function value = get.IsReady(self)
+%             value = self.IsReady_ ;
+%         end
         
         function value=get.Electrode(self)
             value=self.Electrode_;
@@ -570,7 +570,7 @@ classdef TestPulser < ws.Model
         
         function value=get.MonitorUnits(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelUnitsFromName(self.MonitorChannelName);           
+            value=wavesurferModel.Acquisition.analogChannelUnitsFromName(self.MonitorChannelName);           
         end  % function
         
         function result=get.MonitorUnitsPerElectrode(self)        
@@ -586,7 +586,7 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
             for i=1:n ,
-                unit=acquisition.channelUnitsFromName(monitorChannelNames{i});
+                unit=acquisition.analogChannelUnitsFromName(monitorChannelNames{i});
                 if ~isempty(unit) ,
                     result(i)=unit;
                 end
@@ -811,18 +811,18 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.channelIDFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogChannelIDFromName(monitorChannelNames{i});
             end
         end
         
         function value=get.MonitorChannelID(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelIDFromName(self.MonitorChannelName);            
+            value=wavesurferModel.Acquisition.analogChannelIDFromName(self.MonitorChannelName);            
         end
         
         function value=get.MonitorChannelScale(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelScaleFromName(self.MonitorChannelName);
+            value=wavesurferModel.Acquisition.analogChannelScaleFromName(self.MonitorChannelName);
         end
         
         function value=get.CommandChannelScale(self)
@@ -860,7 +860,7 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.channelScaleFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogChannelScaleFromName(monitorChannelNames{i});
             end
         end
         
@@ -996,8 +996,9 @@ classdef TestPulser < ws.Model
 
             try
                 % Takes some time to start...
-                self.IsReady_ = false ;
-                self.broadcast('UpdateIsReady');
+                self.changeReadiness(-1);
+                %self.IsReady_ = false ;
+                %self.broadcast('UpdateReadiness');
 
                 % Get some handles we'll need
                 electrode=self.Electrode;
@@ -1033,7 +1034,7 @@ classdef TestPulser < ws.Model
                 if ~isempty(wavesurferModel) ,
                     wavesurferModel.releaseHardwareResources();
                 end
-    
+                
                 % Get the stimulus
                 commandsInVolts=self.CommandInVoltsPerElectrode;
                 nScans=size(commandsInVolts,1);
@@ -1131,8 +1132,9 @@ classdef TestPulser < ws.Model
                 self.LastToc_=toc(self.TimerValue_);
 
                 % OK, now we consider ourselves no longer busy
-                self.IsReady_ = true ;
-                self.broadcast('UpdateIsReady');
+                self.changeReadiness(+1);
+                %self.IsReady_ = true ;
+                %self.broadcast('UpdateReadiness');
 
                 % actually start the data acq tasks
                 self.InputTask_.start();  % won't actually start until output starts b/c see above
@@ -1140,6 +1142,7 @@ classdef TestPulser < ws.Model
             catch me
                 %fprintf('probelm with output task start\n');
                 self.abort();
+                self.changeReadiness(+1);
                 rethrow(me);
             end
             
@@ -1157,9 +1160,10 @@ classdef TestPulser < ws.Model
             
             try 
                 % Takes some time to stop...
-                self.IsReady_ = false ;
-                self.broadcast('UpdateIsReady');
-
+                self.changeReadiness(-1);
+                %self.IsReady_ = false ;
+                %self.broadcast('UpdateReadiness');
+               
                 %if self.IsStopping_ ,
                 %    fprintf('Stopping while already stopping...\n');
                 %    dbstack
@@ -1213,10 +1217,12 @@ classdef TestPulser < ws.Model
                 end
 
                 % Takes some time to stop...
-                self.IsReady_ = true ;
-                self.broadcast('Update');
+                self.changeReadiness(+1);
+                %self.IsReady_ = true ;
+                %self.broadcast('Update');
             catch me
                 self.abort();
+                self.changeReadiness(+1);
                 rethrow(me);
             end
         end  % function
@@ -1226,8 +1232,7 @@ classdef TestPulser < ws.Model
             % want to try very hard to get back to a known, sane, state.
 
             % And now we are once again ready to service method calls...
-            self.IsReady_ = false ;
-            self.broadcast('UpdateIsReady');            
+            self.changeReadiness(-1);
 
             % Try to gracefully wind down the output task
             if isempty(self.OutputTask_) ,
@@ -1283,8 +1288,7 @@ classdef TestPulser < ws.Model
             end
             
             % And now we are once again ready to service method calls...
-            self.IsReady_ = true ;
-            self.broadcast('Update');            
+            self.changeReadiness(+1);
         end  % function
         
         function set.IsRunning(self,newValue)
