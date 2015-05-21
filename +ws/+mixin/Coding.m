@@ -351,7 +351,7 @@ classdef Coding < handle
     end
 
     methods
-        function encodingContainer = encodeForFileType(self, fileType)
+        function encoding = encodeForFileType(self, fileType)
             % This if really shouldn't be necessary---we currently store
             % the tag information in an instance var, when it should be in
             % a class var...  But Matlab doesn't have proper class vars.
@@ -360,11 +360,20 @@ classdef Coding < handle
             else
                 propertyNames = self(1).listPropertiesForFileType(fileType);
             end
-            encodingContainer=struct();
-            encodingContainer.className = class(self) ;
-            encodingContainer.encoding = ws.utility.structWithDims(size(self),propertyNames);
-            for i=1:numel(self) ,
-                encodingContainer.encoding(i) = self(i).encodeScalarForFileType_(fileType, propertyNames);
+            if isequal(fileType,'header') ,
+                encoding = ws.utility.structWithDims(size(self),propertyNames);
+                for i=1:numel(self) ,
+                    encoding(i) = self(i).encodeScalarForFileType_(fileType, propertyNames);
+                end                
+            else
+                % Need to make an "encoding container" that captures the
+                % class name.
+                encoding=struct();
+                encoding.className = class(self) ;
+                encoding.encoding = ws.utility.structWithDims(size(self),propertyNames);
+                for i=1:numel(self) ,
+                    encoding.encoding(i) = self(i).encodeScalarForFileType_(fileType, propertyNames);
+                end
             end
         end
     end
@@ -868,10 +877,8 @@ classdef Coding < handle
                     encoding=thing;
                 end
             elseif isa(thing,'ws.utility.DoubleString') && isequal(fileType,'header') ,
-                % In the value is of an SIUnit, and we're
-                % encoding for a header, save in native representation,
-                % either a double or a string.
-                encoding=thing.getRepresentation();
+                % For header, just convert DoubleStrings to doubles
+                encoding=double(thing);
             elseif isa(thing, 'ws.mixin.Coding') ,
                 encoding = thing.encodeForFileType(fileType);
             elseif iscell(thing) ,

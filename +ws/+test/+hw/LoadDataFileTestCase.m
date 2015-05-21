@@ -21,7 +21,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         function testAnalogAndDigital(self)
             isCommandLineOnly=true;
             thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
+            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
@@ -76,20 +76,20 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
             
             % These should not error, at the least...
-            fs = dataAsStruct.header.SampleRate ;  %#ok<NASGU> % Hz
-            analogChannelNames = dataAsStruct.header.AnalogChannelNames ;  %#ok<NASGU> 
-            analogChannelScales = dataAsStruct.header.AnalogChannelScales ;  %#ok<NASGU> 
-            analogChannelUnits = dataAsStruct.header.AnalogChannelUnits ;  %#ok<NASGU> 
-            digitalChannelNames = dataAsStruct.header.DigitalChannelNames ;  %#ok<NASGU>    
-            trial0001 = dataAsStruct.trial_0001 ;  %#ok<NASGU> 
-            trial0002 = dataAsStruct.trial_0002 ;  %#ok<NASGU> 
-            trial0003 = dataAsStruct.trial_0003 ;  %#ok<NASGU> 
+            fs = dataAsStruct.header.Acquisition.SampleRate;   %#ok<NASGU> % Hz
+            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
+            analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
+            analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
+            digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
+            analogData = dataAsStruct.trial_0003.analogScans ;   %#ok<NASGU>
+            %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
+            digitalData = dataAsStruct.trial_0003.digitalScans ;   %#ok<NASGU>
+            %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
+            %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
             
             % Delete the data file
             delete(dataFilePatternAbsolute);
         end  % function
-
-        
         
     end  % test methods
 
