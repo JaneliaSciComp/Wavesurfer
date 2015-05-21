@@ -636,10 +636,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
         function didAbortTrial(self, ~)
-            self.TheFiniteAnalogOutputTask_.abort();
-            self.TheFiniteDigitalOutputTask_.abort();
-            self.TheUntimedDigitalOutputTask_.abort();
-            self.IsArmedOrStimulating_ = false;
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+                self.TheFiniteAnalogOutputTask_.abort();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+                self.TheFiniteDigitalOutputTask_.abort();
+            end
+            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+                self.TheUntimedDigitalOutputTask_.abort();            
+            end
+            self.IsArmedOrStimulating_ = false ;
         end  % function
         
         function armForEpisode(self)

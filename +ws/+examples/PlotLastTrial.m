@@ -1,5 +1,10 @@
 classdef PlotLastTrial < ws.UserClass
 
+    % This (rather useless) user object plots the the first AI channel at
+    % the end of each trial.  It exists mainly to demonstrate how a user
+    % object might get the analog input traces out of the Wavesurfer model
+    % object.
+    
     % Information that you want to stick around between calls to the
     % functions below
     properties

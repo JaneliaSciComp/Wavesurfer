@@ -139,9 +139,37 @@ classdef SIUnitTestCase < matlab.unittest.TestCase
             save('-mat',fileName,'unit');
             s=load('-mat',fileName);
             unitCheck = s.unit ;
-            self.verifyEqual(unit,unitCheck,'Error: Unit doesn''t saved-and-loaded unit');
-            self.verifyEqual(string(unit),string(unitCheck),'Error: Unit string doesn''t saved-and-loaded unit string');            
+            self.verifyEqual(unit,unitCheck,'Error: Unit doesn''t match saved-and-loaded unit');
+            self.verifyEqual(string(unit),string(unitCheck),'Error: Unit string match doesn''t saved-and-loaded unit string');            
         end
+        
+        function testScalarDivision(self)
+            import ws.utility.SIUnit            
+            J = SIUnit('J') ;
+            s = SIUnit('s') ;
+            WHopefully = J/s ;
+            W = SIUnit('W') ;
+            self.verifyEqual(W,WHopefully,'Error: J/s ~= W');            
+        end
+        
+        function testArrayDivision(self)
+            import ws.utility.SIUnit            
+            J = repmat(SIUnit('J'),[3 4]) ;
+            s = repmat(SIUnit('s'),[3 4]) ;
+            WHopefully = J/s ;
+            W = repmat(SIUnit('W'),[3 4]) ;
+            self.verifyEqual(W,WHopefully,'Error: J/s ~= W');            
+        end
+        
+        function testArrayMultiplication(self)
+            import ws.utility.SIUnit            
+            A = repmat(SIUnit('A'),[3 4]) ;
+            s = repmat(SIUnit('s'),[3 4]) ;
+            CHopefully = A*s ;
+            C = repmat(SIUnit('C'),[3 4]) ;
+            self.verifyEqual(C,CHopefully,'Error: A*s ~= C');            
+        end
+        
     end  % methods (Test)
 
     methods

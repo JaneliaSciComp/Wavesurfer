@@ -1,5 +1,11 @@
 classdef TurnD0OnWhenAI0GoesTTLHigh < ws.UserClass
 
+    % This object constantly monitors the first AI channel, and sets the
+    % first DO channel on or off depending on whether the AI channel is
+    % above or below 5 V.  Additionally, it assumes the user has
+    % looped-back the DO channel into the second AI channel, and it then
+    % computes some latency statistics and makes some plots of all this.
+    
     % Information that you want to stick around between calls to the
     % functions below, and want to be settable/gettable from the command
     % line
@@ -106,11 +112,11 @@ classdef TurnD0OnWhenAI0GoesTTLHigh < ws.UserClass
                     self.DidSetCommandHighButHaventSeenOutputEdgeYet_ = false ;
                     timeOfOutputEdge = dt*(nScansReadThisTrial-1-(nScansInLatest-iRisingOutput)) ;  % s, relative to first scan in trial
 
-                    delayToInputEdge = self.timeOfInputEdge_ - self.timeOfInputEdge_ ;
-                    delayToDataReadForInputEdge = self.TimeOfDataReadForInputEdge_ - self.timeOfInputEdge_ ;
-                    delayToOutputEdge = timeOfOutputEdge - self.timeOfInputEdge_ ;
-                    delayToDataReadForOutputEdge = timeOfDataReadForOutputEdge - self.timeOfInputEdge_ ;
-                    %delayToCommand = timeOfLastCommand - self.timeOfInputEdge_ ;
+                    delayToInputEdge = self.TimeOfInputEdge_ - self.TimeOfInputEdge_ ;
+                    delayToDataReadForInputEdge = self.TimeOfDataReadForInputEdge_ - self.TimeOfInputEdge_ ;
+                    delayToOutputEdge = timeOfOutputEdge - self.TimeOfInputEdge_ ;
+                    delayToDataReadForOutputEdge = timeOfDataReadForOutputEdge - self.TimeOfInputEdge_ ;
+                    %delayToCommand = timeOfLastCommand - self.TimeOfInputEdge_ ;
                     line('Parent',self.Axes_, ...
                          'Color','k', ...
                          'XData', 1000*[delayToInputEdge delayToDataReadForOutputEdge] , ...
@@ -178,9 +184,9 @@ classdef TurnD0OnWhenAI0GoesTTLHigh < ws.UserClass
                     iRisingInput = find(isRisingInputLatest,1);
                     if isempty(iRisingInput) ,
                         fprintf('Odd: a rising input detected, but couldn''t find an edge\n');
-                        self.timeOfInputEdge_ = nan ;
+                        self.TimeOfInputEdge_ = nan ;
                     else
-                        self.timeOfInputEdge_ = dt*(nScansReadThisTrial-1-(nScansInLatest-iRisingInput)) ;  % s, relative to first scan in trial
+                        self.TimeOfInputEdge_ = dt*(nScansReadThisTrial-1-(nScansInLatest-iRisingInput)) ;  % s, relative to first scan in trial
                     end
                     % Determine the time of the data read in which the rising edge was
                     % detected

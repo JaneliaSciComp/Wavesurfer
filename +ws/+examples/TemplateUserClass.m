@@ -1,5 +1,8 @@
 classdef TemplateUserClass < ws.UserClass
 
+    % This is a very simple user class.  It writes to the console when
+    % things like a trial start/end happen,
+    
     % Information that you want to stick around between calls to the
     % functions below, and want to be settable/gettable from the command
     % line

@@ -385,6 +385,7 @@ classdef SIUnit
             % Take the quotient of a scalar SIUnit and either a scalar SIUnit or a
             % scalar number.  Does what you'd think.
             import ws.utility.objectFunctionUnary
+            import ws.utility.objectFunctionBinary            
             if isscalar(arg1),
                 if isscalar(arg2) ,
                     result=rdivideScalar(arg1,arg2);
@@ -436,9 +437,8 @@ classdef SIUnit
         
         %------------------------------------------------------------------
         function result=invert(arg)
-            import ws.utility.objectFunctionUnary
             result=ws.utility.objectFunctionUnary(@invertScalar, ...
-                                                     arg);
+                                                  arg);
         end
         
         %------------------------------------------------------------------
