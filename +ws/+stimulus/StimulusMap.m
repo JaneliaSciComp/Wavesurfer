@@ -42,24 +42,20 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         NBindings
     end
     
-    properties (Dependent = true, Transient=true)
+    properties (Dependent = true, Transient=true)  % Why transient?
         ChannelNames  % a cell array of strings
         Stimuli  % a cell array, with [] for missing stimuli
         Multipliers  % a double array
+        IsMarkedForDeletion  % a logical array
     end
     
     properties (Access = protected)
         ChannelNames_ = {}
         %StimulusUUIDs_ = {}
         Multipliers_ = []
-    end
-
-    properties (Access=protected)
         Stimuli_ = {}
-    end
-    
-    properties (Access = protected)        
         Duration_ = 1  % s, internal duration, can be overridden in some circumstances
+        IsMarkedForDeletion_ = logical([])
     end
     
     methods
@@ -226,6 +222,20 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             output = self.Multipliers_ ;
         end
                 
+        function set.IsMarkedForDeletion(self,newValue)
+            if islogical(newValue) && isequal(size(newValue),size(self.ChannelNames_)) ,  % can't change number of bindings                
+                self.IsMarkedForDeletion_ = newValue;
+            end
+            % notify the powers that be
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end
+        
+        function output = get.IsMarkedForDeletion(self)
+            output = self.IsMarkedForDeletion_ ;
+        end
+                
         function value = get.Duration(self)  % always returns a double
             try
                 % See if we can collect all the information we need to make
@@ -380,21 +390,32 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %                     self.StimulusUUIDs_{end+1} = stimulus.UUID;
 %                 end
                 self.Multipliers_(end+1)=multiplier;
+                self.IsMarkedForDeletion_(end+1)=false;
             end            
             
             % notify the powers that be
             self.Parent.childMayHaveChanged(self);
         end   % function
         
-        function removeBinding(self, index)
+        function deleteBinding(self, index)
             nBindingsOriginally=length(self.ChannelNames);
             if (1<=index) && (index<=nBindingsOriginally) ,
                 self.ChannelNames_(index)=[];
                 self.Stimuli_(index)=[];
-                self.Multiplier_(index)=[];                
+                self.Multipliers_(index)=[];                
+                self.IsMarkedForDeletion_(index)=[];                
             end
             self.Parent.childMayHaveChanged(self);            
         end   % function
+
+        function deleteMarkedBindings(self)            
+            isMarkedForDeletion = self.IsMarkedForDeletion ;
+            self.ChannelNames_(isMarkedForDeletion)=[];
+            self.Stimuli_(isMarkedForDeletion)=[];
+            self.Multipliers_(isMarkedForDeletion)=[];
+            self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
+            self.Parent.childMayHaveChanged(self);            
+        end   % function        
         
 %         function replaceStimulus(self, oldStimulus, newStimulus)
 %             for idx = 1:numel(self.Bindings) ,
@@ -646,6 +667,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             other.Name_ = self.Name_ ;
             other.ChannelNames_ = self.ChannelNames_ ;
             other.Multipliers_ = self.Multipliers_ ;
+            other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
             other.Duration_ = self.Duration_ ;
 
             % re-do the bindings so that they point to corresponding
@@ -707,6 +729,11 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             s.Multipliers = struct('Classes', 'numeric', 'Attributes', {{'row', 'real', 'finite'}});
             s.Stimuli = struct('Classes', 'ws.stimulus.StimulusMap');                            
         end  % function
+        
+%         function self = loadobj(self)
+%             self.IsMarkedForDeletion_ = false(size(self.ChannelNames_));
+%               % Is MarkedForDeletion_ is transient
+%         end
     end  % class methods block
     
 end

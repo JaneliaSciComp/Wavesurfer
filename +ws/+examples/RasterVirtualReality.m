@@ -1,21 +1,29 @@
-classdef rasterVirtualReality < ws.Model
+classdef RasterVirtualReality < ws.UserClass
 
+    % A user class to turn on a laser when the membrane potential goes
+    % above a threshold, and also build up location-triggered spike
+    % heatmaps, based on input from a VR system.  Uses a TCP/IP connection
+    % to a second Matlab process (which runs
+    % ws.examples.rasterVirtualRealityDisplayProcess) to do the heatmaps in
+    % parallel with data acquisition, while still achieving reasonable
+    % latencies for the laser updates.
+    
     % public parameters
     properties
-        SerialChannel = 'COM5';
+        SerialChannel = 'COM5';  % Com port used for getting info from the VR system
         SyncChannel = 1;
         ElectrodeChannel = 1;  % duplicate in display thread
-        LaserOnThreshold = -57;  %mV
+        LaserOnThreshold = -57;  % mV, if the voltage on the ElectrodeChannel is above this, we set LaserChannel high
         LaserChannel = 2;
-        Test = true;
+        Test = true;  % true iff we are testing this user class, rather than using it for real
     end
 
     % local variables
     properties (Access = protected, Transient = true)
-        TcpSend
-        TcpReceive
-        SampleRate
-        SerialPort
+        TcpSend  % TCP/IP socket used to send data to the display process
+        TcpReceive  % TCP/IP socket used to receive data from the display process
+        SampleRate  % Cache of the sample rate, for fast access during data acq
+        SerialPort  % A Matlab serial port object, used to get info from the VR system
         SerialSyncFound
         NISyncFound
         SerialSyncZero
@@ -27,21 +35,21 @@ classdef rasterVirtualReality < ws.Model
     
     methods
         
-        function self = rasterVirtualReality(parent)
-        end
+        function self = RasterVirtualReality(wsModel) %#ok<INUSD>
+        end  % function
         
-        function trialWillStart(self,wsModel,evt)
-        end
+        function trialWillStart(self,wsModel,eventName) %#ok<INUSD>
+        end  % function
         
-        function trialDidComplete(self,wsModel,evt)
-        end
+        function trialDidComplete(self,wsModel,eventName) %#ok<INUSD>
+        end  % function
         
-        function trialDidAbort(self,wsModel,evt)
-        end
+        function trialDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        end  % function
         
-        function experimentWillStart(self,wsModel,evt)
+        function experimentWillStart(self,wsModel,eventName) %#ok<INUSD>
 
-            eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayThread &');            
+            eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayProcess &');            
             self.TcpReceive = ws.jtcp.jtcp('ACCEPT',2000,'TIMEOUT',60000);
             self.TcpSend = ws.jtcp.jtcp('REQUEST','127.0.0.1',2000,'TIMEOUT',60000);
             
@@ -80,18 +88,18 @@ classdef rasterVirtualReality < ws.Model
                     self.Fid=fopen('data\jeremy\jc20131030d_rawData\mouseover_behav_data\jcvr120_15a_MouseoVeR_oval-track-28_11_jc20131030d.txt');
                 end
             end
-        end
+        end  % function
         
-        function experimentDidComplete(self,wsModel,evt)
+        function experimentDidComplete(self,wsModel,eventName) %#ok<INUSD>
             ws.jtcp.jtcp('WRITE',self.TcpSend,'quit');
             self.TcpSend = JTCP('CLOSE',self.TcpSend);
             self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
-        end
+        end  % function
         
-        function experimentDidAbort(self,wsModel,evt)
-        end
+        function experimentDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        end  % function
         
-        function dataIsAvailable(self,wsModel,evt)
+        function dataIsAvailable(self,wsModel,eventName) %#ok<INUSD>
             % syncs found yet?
             tmp=ws.jtcp.jtcp('READ',self.TcpReceive);
             if ~isempty(tmp)
@@ -144,25 +152,8 @@ classdef rasterVirtualReality < ws.Model
             ws.jtcp.jtcp('WRITE',self.TcpSend,analogData);
             ws.jtcp.jtcp('WRITE',self.TcpSend,logical(bitget(digitalData,self.SyncChannel)));
             ws.jtcp.jtcp('WRITE',self.TcpSend,serialData);
-        end
-        
-    end
-
-    % needs to be here; don't ask why
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        mdlHeaderExcludeProps = {};
-    end
-
-    % ditto
-    methods (Access=protected)
-        function out = getPropertyValue(self, name)
-            out = self.(name);
         end  % function
         
-        function setPropertyValue(self, name, value)
-            self.(name) = value;
-        end  % function
     end
     
 end

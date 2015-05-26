@@ -326,8 +326,8 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
 
             % Feed the data to the scopes
             %T=zeros(3,1);
-            inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
-            IsActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
+            activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
+            isActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
             for sdx = 1:numel(self.Scopes)
                 % Figure out which channels go in this scope, and the
                 % corresponding channel names
@@ -339,13 +339,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 channelNamesForThisScope = cell(1,0);
                 jInAnalogData = [];                
                 jInDigitalData = [];                
-                NActiveAnalogChannels = sum(self.Parent.Acquisition.IsChannelActive & self.Parent.Acquisition.IsChannelAnalog);
-                for cdx = 1:length(inputChannelNames)
+                NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
+                for cdx = 1:length(activeInputChannelNames)
                     %channelName = sprintf('Acq_%d', inputChannelIDs(cdx));
-                    channelName=inputChannelNames{cdx};
+                    channelName=activeInputChannelNames{cdx};
                     if any(strcmp(channelName, self.Scopes(sdx).ChannelNames)) ,
                         channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
-                        if IsActiveChannelAnalog(cdx)
+                        if isActiveChannelAnalog(cdx)
                             jInAnalogData(end + 1) = cdx; %#ok<AGROW>
                         else
                             jInDigitalData(end + 1) = cdx - NActiveAnalogChannels; %#ok<AGROW>

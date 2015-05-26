@@ -1,18 +1,10 @@
-classdef FlipDOFromTrialToTrial < ws.Model
+classdef FlipDOFromTrialToTrial < ws.UserClass
     % This is an example user class.  
     % It flips the first DO channel back and forth between high and low
     % from trial to trial.
 
-    % public parameters
-    properties
-    end
-
-    % local variables
-    properties (Access = protected, Transient = true)
-    end
-    
     methods        
-        function self = FlipDOFromTrialToTrial()
+        function self = FlipDOFromTrialToTrial(wsModel)
         end
         
         function trialWillStart(self,wsModel,eventName) %#ok<INUSD,INUSL>
@@ -38,23 +30,6 @@ classdef FlipDOFromTrialToTrial < ws.Model
         function dataIsAvailable(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-    end
-
-    % needs to be here; don't ask why
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        mdlHeaderExcludeProps = {};
-    end
-
-    % ditto
-    methods (Access=protected)
-        function out = getPropertyValue(self, name)
-            out = self.(name);
-        end  % function
-        
-        function setPropertyValue(self, name, value)
-            self.(name) = value;
-        end  % function
     end
     
 end

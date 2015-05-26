@@ -16,7 +16,7 @@ classdef ChannelsController < ws.Controller
             newValue=str2double(newString);
             if isfinite(newValue) && newValue>0 ,
                 % good value
-                self.Model.Acquisition.setSingleChannelScale(i,newValue);
+                self.Model.Acquisition.setSingleAnalogChannelScale(i,newValue);
                 % changing model should auto-update the view
             else
                 % discard change by re-syncing view to model
@@ -30,7 +30,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             try
                 newValue=ws.utility.SIUnit(newString);
-                self.Model.Acquisition.setSingleChannelUnits(i,newValue);
+                self.Model.Acquisition.setSingleAnalogChannelUnits(i,newValue);
             catch excp, 
                 if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
                     self.Figure.update();
@@ -42,17 +42,16 @@ classdef ChannelsController < ws.Controller
         
         function aiIsActiveCheckboxActuated(self,source)
             isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
-            isChannelActive=self.Model.Acquisition.IsChannelActive;
-            isChannelActive(isTheChannel)=get(source,'Value');
-            self.Model.Acquisition.IsChannelActive=isChannelActive;             %#ok<FNDSB>
+            isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
+            isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
         end
         
         function diIsActiveCheckboxActuated(self,source)
             isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
-            isTheChannel=isTheChannel+self.Model.Acquisition.NAnalogChannels;
-            isChannelActive=self.Model.Acquisition.IsChannelActive;
-            isChannelActive(isTheChannel)=get(source,'Value');
-            self.Model.Acquisition.IsChannelActive=isChannelActive;             %#ok<FNDSB>
+            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
+            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
         end
         
         function aoScaleEditActuated(self,source)
@@ -63,7 +62,7 @@ classdef ChannelsController < ws.Controller
             if isfinite(newValue) && newValue>0 ,
                 % good value
                 %self.Model.Stimulation.ChannelScales(i)=newValue;
-                self.Model.Stimulation.setSingleChannelScale(i,newValue);
+                self.Model.Stimulation.setSingleAnalogChannelScale(i,newValue);
                 % changing model should auto-update the view
             else
                 % discard change by re-syncing view to model
@@ -77,7 +76,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AOUnitsEdits(i),'String');
             try
                 newValue=ws.utility.SIUnit(newString);
-                self.Model.Stimulation.setSingleChannelUnits(i,newValue);
+                self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
             catch excp, 
                 if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
                     self.Figure.update();

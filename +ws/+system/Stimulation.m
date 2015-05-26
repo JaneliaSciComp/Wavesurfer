@@ -423,7 +423,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.syncTasksToChannelMembership_();
                 
                 % Finally, mark outselves as enable-able
-                self.CanEnable = true;
+                nChannels = length(mdfStructure.physicalOutputChannelNames) ;
+                self.CanEnable = (nChannels>0);
             end
         end  % function
 
@@ -479,9 +480,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             if isempty(self.TriggerScheme.Target)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
             end            
-            if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-                error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
-            end
+            %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
+            %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
+            %end
             
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources_();
@@ -635,10 +636,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
         function didAbortTrial(self, ~)
-            self.TheFiniteAnalogOutputTask_.abort();
-            self.TheFiniteDigitalOutputTask_.abort();
-            self.TheUntimedDigitalOutputTask_.abort();
-            self.IsArmedOrStimulating_ = false;
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+                self.TheFiniteAnalogOutputTask_.abort();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+                self.TheFiniteDigitalOutputTask_.abort();
+            end
+            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+                self.TheUntimedDigitalOutputTask_.abort();            
+            end
+            self.IsArmedOrStimulating_ = false ;
         end  % function
         
         function armForEpisode(self)
@@ -824,7 +831,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelScale(self,i,newValue)
+        function setSingleAnalogChannelScale(self,i,newValue)
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
@@ -930,6 +937,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods (Access = protected)
         function syncTasksToChannelMembership_(self)
+            % Clear the timed digital output task, will be recreated when acq is
+            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+            % And have to do it first to avoid a temporary collision.
+            self.TheFiniteDigitalOutputTask_ = [] ;
             % Set the untimed output task appropriately
             self.TheUntimedDigitalOutputTask_ = [] ;
             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
@@ -945,10 +956,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
             end
-            
-            % Clear the timed digital output task, will be recreated when acq is
-            % started
-            self.TheFiniteDigitalOutputTask_ = [] ;
         end  % function
         
         function stimulusMap = getCurrentStimulusMap_(self)
@@ -957,25 +964,30 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
             % things
-            if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
-                isThereAMap=true;
-                indexOfMapIfSequence=[];
+            if isempty(self.SelectedOutputableCache_) ,
+                isThereAMap = false ;
+                indexOfMapIfSequence=[];  % arbitrary: doesn't get used if isThereAMap==false
             else
-                % outputable must be a sequence                
-                nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
-                if episodeIndexWithinExperiment <= nMapsInSequence ,
+                if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
                     isThereAMap=true;
-                    indexOfMapIfSequence=episodeIndexWithinExperiment;
+                    indexOfMapIfSequence=[];
                 else
-                    if self.DoRepeatSequence ,
+                    % outputable must be a sequence                
+                    nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
+                    if episodeIndexWithinExperiment <= nMapsInSequence ,
                         isThereAMap=true;
-                        indexOfMapIfSequence=mod(episodeIndexWithinExperiment-1,nMapsInSequence)+1;
+                        indexOfMapIfSequence=episodeIndexWithinExperiment;
                     else
-                        isThereAMap=false;
-                        indexOfMapIfSequence=1;
+                        if self.DoRepeatSequence ,
+                            isThereAMap=true;
+                            indexOfMapIfSequence=mod(episodeIndexWithinExperiment-1,nMapsInSequence)+1;
+                        else
+                            isThereAMap=false;
+                            indexOfMapIfSequence=1;  % arbitrary: doesn't get used if isThereAMap==false
+                        end
                     end
-                end
-            end            
+                end            
+            end
             if isThereAMap ,
                 if isempty(indexOfMapIfSequence) ,
                     % this means the outputable is a "naked" map

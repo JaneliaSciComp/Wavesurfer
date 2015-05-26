@@ -26,12 +26,12 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % User wants raw data, so nothing to do
     else
         try
-            channelScales=dataFileAsStruct.header.Acquisition.ChannelScales(...
-                    dataFileAsStruct.header.Acquisition.IsChannelAnalog & dataFileAsStruct.header.Acquisition.IsChannelActive) ;
+            analogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales(...
+                    dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
         catch
             error('Unable to read channel scale information from file.');
         end
-        inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+        inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
         doesUserWantSingle = strcmpi(formatString,'single') ;
         %doesUserWantDouble = ~doesUserWantSingle ;
         fieldNames = fieldnames(dataFileAsStruct);
@@ -41,20 +41,20 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
                 rawAnalogData = dataFileAsStruct.(fieldName).analogScans;
                 if isempty(rawAnalogData) ,
                     if doesUserWantSingle ,
-                        scaledData=zeros(size(rawAnalogData),'single');
+                        scaledAnalogData=zeros(size(rawAnalogData),'single');
                     else                        
-                        scaledData=zeros(size(rawAnalogData));
+                        scaledAnalogData=zeros(size(rawAnalogData));
                     end
                 else
                     if doesUserWantSingle ,
-                        data = single(rawAnalogData) ;
+                        analogData = single(rawAnalogData) ;
                     else
-                        data = double(rawAnalogData);
+                        analogData = double(rawAnalogData);
                     end
-                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledData=bsxfun(@times,data,combinedScaleFactors);                    
+                    combinedScaleFactors = 3.0517578125e-4 * inverseAnalogChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                    scaledAnalogData=bsxfun(@times,analogData,combinedScaleFactors);                    
                 end
-                dataFileAsStruct.(fieldName).analogScans = scaledData ;
+                dataFileAsStruct.(fieldName).analogScans = scaledAnalogData ;
             end
         end
     end    

@@ -235,25 +235,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	int32 numSampsRead;
 	int32 numBytesPerSamp;
 
-	switch (outputDataClass)
-	{
-	case mxUINT8_CLASS:
-		status = DAQmxReadDigitalU8(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
-		break;
-	case mxUINT16_CLASS:
-		status = DAQmxReadDigitalU16(taskID, numSampsPerChan, timeout, fillMode, (uInt16*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
-		break;
-	case mxUINT32_CLASS:
-		status = DAQmxReadDigitalU32(taskID, numSampsPerChan, timeout, fillMode, (uInt32*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
-		break;
-	case mxLOGICAL_CLASS:
-	case mxDOUBLE_CLASS:
-		status = DAQmxReadDigitalLines(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels * bytesPerChan, &numSampsRead, &numBytesPerSamp, NULL);
-		break;
-	default:
-		mexErrMsgTxt("There must be two output arguments specified if a preallocated MATLAB variable is not specified");
-
+	// The DAQmx reading functions complain if you call them when there's no more data to read, even if you ask for zero scans.
+	// So we don't attempt a read if numSampsPerChanToTryToRead is zero.
+	if (numSampsPerChan>0)  {
+		switch (outputDataClass)
+		{
+		case mxUINT8_CLASS:
+			status = DAQmxReadDigitalU8(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
+			break;
+		case mxUINT16_CLASS:
+			status = DAQmxReadDigitalU16(taskID, numSampsPerChan, timeout, fillMode, (uInt16*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
+			break;
+		case mxUINT32_CLASS:
+			status = DAQmxReadDigitalU32(taskID, numSampsPerChan, timeout, fillMode, (uInt32*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
+			break;
+		case mxLOGICAL_CLASS:
+		case mxDOUBLE_CLASS:
+			status = DAQmxReadDigitalLines(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels * bytesPerChan, &numSampsRead, &numBytesPerSamp, NULL);
+			break;
+		default:
+			mexErrMsgTxt("There must be two output arguments specified if a preallocated MATLAB variable is not specified");
+		}
 	}
+	else  {
+		numSampsRead=0;
+		status=0;
+	}
+
 
 	//Return output data
 	if (!status)

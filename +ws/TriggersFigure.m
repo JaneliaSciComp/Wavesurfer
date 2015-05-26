@@ -61,8 +61,9 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods (Access=protected)
-        function modelWasSet_(self)
+        function didSetModel_(self)
             self.updateSubscriptionsToModelEvents_();
+            didSetModel_@ws.MCOSFigure(self);
         end
     end
     
@@ -593,7 +594,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
         function updateSubscriptionsToModelEvents_(self)
             % Unsubscribe from all events, then subsribe to all the
             % approprate events of model.  model should be a Triggering subsystem
-            self.unsubscribeFromAll();
+            %self.unsubscribeFromAll();
             model=self.Model;
             if ~isempty(model) && isvalid(model) ,
                 % Sources and Destinations setters did nothing, and those

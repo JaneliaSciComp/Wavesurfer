@@ -253,12 +253,12 @@ classdef Logging < ws.system.Subsystem
             self.DidCreateCurrentDataFile_ = false ;
             
             % Set the chunk size for writing data to disk
-            active = sum(wavesurferModel.Acquisition.IsChannelActive & wavesurferModel.Acquisition.IsChannelAnalog);
+            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive);
             switch desiredApplicationState ,
                 case ws.ApplicationState.AcquiringTrialBased ,
-                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount active];
+                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
                     if any(isinf(self.ExpectedTrialSize_))
-                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate active];
+                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
                     else
                         self.ChunkSize_ = self.ExpectedTrialSize_;
                     end
@@ -271,8 +271,8 @@ classdef Logging < ws.system.Subsystem
 %                                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
 %                     end
                 case ws.ApplicationState.AcquiringContinuously ,
-                    self.ExpectedTrialSize_ = [Inf active];
-                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate active];
+                    self.ExpectedTrialSize_ = [Inf nActiveAnalogChannels];
+                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
 %                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
                 otherwise
                     error('wavesurfer:saveddatasystem:invalidmode', ...
@@ -377,7 +377,7 @@ classdef Logging < ws.system.Subsystem
             scansDatasetName = sprintf('/trial_%04d/digitalScans',thisTrialIndex) ;
             % TODO: Probably need to change to number of active digital channels
             % below
-            NActiveDigitalChannels = sum(self.Parent.Acquisition.IsChannelActive & ~self.Parent.Acquisition.IsChannelAnalog);
+            NActiveDigitalChannels = sum(self.Parent.Acquisition.IsDigitalChannelActive);
             if NActiveDigitalChannels<=8
                 dataType = 'uint8';
             elseif NActiveDigitalChannels<=16

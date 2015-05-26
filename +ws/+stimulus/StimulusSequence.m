@@ -1,15 +1,5 @@
 classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
-    %STIMCYLE Define a collection of StimulusMap objects for cycling.
-    %
-    %   S = STIMCYCLE() creates and empty StimulusSequence object.  StimulusMap objects can be
-    %   added and removed using the addMap, insterMap, removeMap, and related
-    %   functions.
-    %
-    %   Iteration through the maps of a StimulusSequence is typically performed using a
-    %   StimulusSequenceIterator object.
-    %
-    %   See also ws.stimulus.StimulusSequenceIterator.
-    
+    % Represents a sequence of stimulus maps, to be used in sequence.
     % Note that StimulusSequences should only ever
     % exist as an item in a StimulusLibrary!
     
@@ -25,12 +15,10 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         MapDurations
     end
 
-    properties (Dependent = true)
-        Maps  % the items in the sequence
-    end
-    
     properties (Dependent=true)
         Name
+        Maps  % the items in the sequence
+        IsMarkedForDeletion  % logical, one element per element in Maps
     end      
     
     properties (Dependent=true, SetAccess=immutable)
@@ -39,8 +27,9 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     properties (Access = protected)
         Name_ = ''
-        Maps_ = {};
-    end
+        Maps_ = {}
+        IsMarkedForDeletion_ = logical([])
+    end    
     
     methods
         function self = StimulusSequence(varargin)
@@ -108,61 +97,75 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end
 
         function out = get.Name(self)
-            out = self.Name_;
+            out = self.Name_ ;
         end   % function
         
         function out = get.Maps(self)
-            out = self.Maps_;
+            out = self.Maps_ ;
         end   % function
         
-        function set.Maps(self, newValue)
-            % newValue must be a row cell array, with each element a scalar
-            % StimulusMap, and each a map already in the library
-            if iscell(newValue) && isrow(newValue) ,
-                nElements=length(newValue);
-                isGoodSoFar=true;
-                for i=1:nElements ,
-                    putativeMap=newValue{i};
-                    if isa(putativeMap,'ws.stimulus.StimulusMap') && isscalar(putativeMap) ,
-                        % do nothing
-                    else
-                        isGoodSoFar=false;
-                        break
-                    end
-                end
-                if isGoodSoFar ,
-                    if ~isempty(self.Parent) ,
-                        mapsInLibrary=self.Parent.Maps;
-                        if all(ws.most.idioms.ismemberOfCellArray(newValue,mapsInLibrary)) ,
-                            % If get here, everything checks out, ok to
-                            % mutate our state
-                            self.Maps_ = newValue;
-                            %self.MapUUIDs_ = cellfun(@(item)(item.UUID),self.Maps_);
-                        end
-                    end
-                end   
+%         function set.Maps(self, newValue)
+%             % newValue must be a row cell array, with each element a scalar
+%             % StimulusMap, and each a map already in the library
+%             if iscell(newValue) && isrow(newValue) ,
+%                 nElements=length(newValue);
+%                 isGoodSoFar=true;
+%                 for i=1:nElements ,
+%                     putativeMap=newValue{i};
+%                     if isa(putativeMap,'ws.stimulus.StimulusMap') && isscalar(putativeMap) ,
+%                         % do nothing
+%                     else
+%                         isGoodSoFar=false;
+%                         break
+%                     end
+%                 end
+%                 if isGoodSoFar ,
+%                     if ~isempty(self.Parent) ,
+%                         mapsInLibrary=self.Parent.Maps;
+%                         if all(ws.most.idioms.ismemberOfCellArray(newValue,mapsInLibrary)) ,
+%                             % If get here, everything checks out, ok to
+%                             % mutate our state
+%                             self.Maps_ = newValue;
+%                             %self.MapUUIDs_ = cellfun(@(item)(item.UUID),self.Maps_);
+%                         end
+%                     end
+%                 end   
+%             end
+%             % notify the stim library so that views can be updated    
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end            
+%         end   % function
+        
+        function set.IsMarkedForDeletion(self,newValue)
+            if islogical(newValue) && isequal(size(newValue),size(self.Maps_)) ,  % can't change number of elements
+                self.IsMarkedForDeletion_ = newValue;
             end
-            % notify the stim library so that views can be updated    
+            % notify the powers that be
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
-            end            
-        end   % function
+            end
+        end
         
-        function out = containsElement(self, elementOrElements)
-            elements=ws.most.idioms.cellifyIfNeeded(elementOrElements);
-            out = false(size(elements));
+        function output = get.IsMarkedForDeletion(self)
+            output = self.IsMarkedForDeletion_ ;
+        end
+        
+        function out = containsMaps(self, mapOrMaps)
+            maps=ws.most.idioms.cellifyIfNeeded(mapOrMaps);
+            out = false(size(maps));
             
-            if isempty(elements)
+            if isempty(maps)
                 return
             end
             
-            validateattributes(elements, {'cell'}, {'vector'});
-            for i = 1:numel(elements) ,                
-                validateattributes(elements{i}, {'ws.stimulus.StimulusMap'}, {'scalar'});
+            validateattributes(maps, {'cell'}, {'vector'});
+            for i = 1:numel(maps) ,                
+                validateattributes(maps{i}, {'ws.stimulus.StimulusMap'}, {'scalar'});
             end
             
-            for index = 1:numel(elements)
-                thisElement=elements{index};
+            for index = 1:numel(maps)
+                thisElement=maps{index};
                 isMatch=cellfun(@(item)(item==thisElement),self.Maps_);
                 if any(isMatch) ,
                     out(index) = true;
@@ -180,74 +183,99 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         function addMap(self, map)
             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
             if ~isempty(self.Parent) && ~isempty(map.Parent) && (map.Parent==self.Parent) ,  % map must be a member of same library
-                self.Maps{end + 1} = map;
+                self.Maps_{end + 1} = map;
+                self.IsMarkedForDeletion_(end+1) = false ;
+            end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end   % function
+
+        function setMap(self, index, map)
+            nMaps = length(self.Maps_) ;            
+            if 1<=index && index<=nMaps && round(index)==index ,
+                if isa(map,'ws.stimulus.StimulusMap') && isscalar(map) ,
+                    if ~isempty(self.Parent) && ~isempty(map.Parent) && (map.Parent==self.Parent) ,  % map must be a member of same library
+                        self.Maps_{index} = map ;
+                    end
+                end
             end
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
             end
         end   % function
         
-        function insertMap(self, map, index)
-            validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
-            if ~(map.Parent==self.Parent) ,  % map must be a member of same library
-                return
+%         function insertMap(self, map, index)
+%             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             if ~(map.Parent==self.Parent) ,  % map must be a member of same library
+%                 return
+%             end
+%             if index <= numel(self.Maps)
+%                 current = self.Maps(index:end);
+%                 self.Maps(index) = map;
+%                 self.Maps((index+1):(numel(current)+1)) = current;
+%             else
+%                 self.Maps(index) = map;
+%             end
+%         end   % function
+        
+        function deleteMap(self, index)
+            nMaps = numel(self.Maps_) ;
+            if 1<=index && index<=nMaps && index==round(index) ,
+                self.Maps_(index) = [];
+                self.IsMarkedForDeletion_(index) = [];
             end
-            if index <= numel(self.Maps)
-                current = self.Maps(index:end);
-                self.Maps(index) = map;
-                self.Maps((index+1):(numel(current)+1)) = current;
-            else
-                self.Maps(index) = map;
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
             end
         end   % function
-        
-        function removeMap(self, index)
-            assert(index > 0, 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be positive.', index);
-            assert(index <= numel(self.Maps), 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be less than or equal to cyleCount');
-            if index == numel(self.Maps) ,
-                self.Maps = self.Maps(1:(end-1));
-            else
-                self.Maps(index) = [];
+
+        function deleteMarkedMaps(self)
+            isMarkedForDeletion = self.IsMarkedForDeletion ;
+            self.Maps_(isMarkedForDeletion)=[];
+            self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
             end
-        end   % function
+        end   % function        
+
         
-        function replaceMap(self, map, index)
-            validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
-            assert(index > 0, 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be positive.', index);
-            assert(index <= numel(self.Maps), 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be less than or equal to cyleCount');
-            if self.Maps(index) ~= map ,
-                self.Maps(index) = map;
-            end
-        end   % function
+%         function replaceMap(self, map, index)
+%             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             assert(index > 0, 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be positive.', index);
+%             assert(index <= numel(self.Maps), 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be less than or equal to cyleCount');
+%             if self.Maps(index) ~= map ,
+%                 self.Maps(index) = map;
+%             end
+%         end   % function
         
-        function removeElement(self, element)
-            validateattributes(element, {'ws.stimulus.StimulusMap'}, {'scalar'});
-            
-            if isempty(element)
-                return
-            end
-            
-            for idx = numel(self.Maps):-1:1 ,
-                if ~isempty(self.Maps{idx}) && self.Maps{idx} == element
-                    self.Maps(idx) = [];
+        function deleteMapByValue(self, queryMap)
+            if isa(queryMap,'ws.stimulus.StimulusMap') && isscalar(queryMap) ,
+                for index = numel(self.Maps):-1:1 ,
+                    if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
+                        self.deleteMap(index);
+                    end
                 end
             end
-        end   % function
-        
-        function removeElements(self)
-            self.Maps = ws.stimulus.StimulusMap.empty();
-        end   % function
-        
-        function replaceElement(self, originalElement, newElement)
-            validateattributes(originalElement, {'ws.stimulus.StimulusMap'}, {'scalar'});
-            validateattributes(newElement     , {'ws.stimulus.StimulusMap'}, {'scalar'});
-            
-            for idx = numel(self.Maps):-1:1 ,
-                if ~isempty(self.Maps{idx}) && self.Maps{idx} == originalElement
-                    self.Maps{idx} = newElement;
-                end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
             end
-        end  % function
+        end   % function
+        
+%         function removeElements(self)
+%             self.Maps = ws.stimulus.StimulusMap.empty();
+%         end   % function
+        
+%         function replaceElement(self, originalElement, newElement)
+%             validateattributes(originalElement, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             validateattributes(newElement     , {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             
+%             for idx = numel(self.Maps):-1:1 ,
+%                 if ~isempty(self.Maps{idx}) && self.Maps{idx} == originalElement
+%                     self.Maps{idx} = newElement;
+%                 end
+%             end
+%         end  % function
         
 %         function map = mapForCycle(obj, index)
 %             assert(index > 0, 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be positive.', index);
@@ -293,7 +321,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
                 % subplot doesn't allow for direct specification of the
                 % target figure
                 ax=axes('Parent',fig, ...
-                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]); %#ok<LAXES>
+                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
                 map=self.Maps{idx};
                 map.plot(fig, ax, samplingRate);
                 ylabel(ax,sprintf('Map %d',idx));
@@ -302,26 +330,26 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     end  % methods
     
     methods (Access = protected)
-        function reviveElement(self,maps) %#ok<INUSD>
-%             % We assume here that all the items in the cycle are maps
-%             % The maps argument should be an array of sound (non-broken) maps
-%             
-%             % Now repair the items
-%             mapUUIDs=ws.most.idioms.cellArrayPropertyAsArray(maps,'UUID');
-%             itemUUIDs=self.MapUUIDs_;
-%             nMaps=length(itemUUIDs);
-%             self.Maps_={};
-%             for i=1:nMaps ,
-%                 itemUUID=itemUUIDs(i);
-%                 isMatch=(mapUUIDs==itemUUID);
-%                 nMatches=sum(isMatch);
-%                 if nMatches>=1 ,
-%                     iMatches=find(isMatch);
-%                     iMatch=iMatches(1);
-%                     self.Maps_{i}=maps{iMatch};
-%                 end
-%             end
-        end  % function
+%         function reviveElement(self,maps) %#ok<INUSD>
+% %             % We assume here that all the items in the cycle are maps
+% %             % The maps argument should be an array of sound (non-broken) maps
+% %             
+% %             % Now repair the items
+% %             mapUUIDs=ws.most.idioms.cellArrayPropertyAsArray(maps,'UUID');
+% %             itemUUIDs=self.MapUUIDs_;
+% %             nMaps=length(itemUUIDs);
+% %             self.Maps_={};
+% %             for i=1:nMaps ,
+% %                 itemUUID=itemUUIDs(i);
+% %                 isMatch=(mapUUIDs==itemUUID);
+% %                 nMatches=sum(isMatch);
+% %                 if nMatches>=1 ,
+% %                     iMatches=find(isMatch);
+% %                     iMatch=iMatches(1);
+% %                     self.Maps_{i}=maps{iMatch};
+% %                 end
+% %             end
+%         end  % function
                 
         function value=isLiveAndSelfConsistentElement(self)
             if ~self.IsLive ,
@@ -359,8 +387,9 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     methods
         function other=copyGivenMaps(self,otherMapDictionary,selfMapDictionary)
-            other=ws.stimulus.StimulusSequence();
-            other.Name_ = self.Name_;
+            other = ws.stimulus.StimulusSequence() ;
+            other.Name_ = self.Name_ ;
+            other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
 
             nMaps=length(self.Maps_);
             other.Maps_ = cell(1,nMaps);
@@ -368,9 +397,8 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
                 thisMapInSelf=self.Maps_{j};
                 isMatch=cellfun(@(map)(map==thisMapInSelf),selfMapDictionary);
                 indexOfThisMapInDictionary=find(isMatch,1);
-                if isempty(indexOfThisMapInDictionary) ,
-                    
-                    other.Maps_{j}=[];
+                if isempty(indexOfThisMapInDictionary) ,                    
+                    other.Maps_{j}=[];  % note that this doesn't delete the element, but sets the cell contents to []
                 else
                     other.Maps_{j}=otherMapDictionary{indexOfThisMapInDictionary};
                 end
@@ -447,6 +475,13 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             result=true;
         end
     end  
+    
+%     methods (Static)
+%         function self = loadobj(self)
+%             self.IsMarkedForDeletion_ = false(size(self.Maps_));
+%               % Is MarkedForDeletion_ is transient
+%         end
+%     end  % class methods block
     
 end  % classdef
 

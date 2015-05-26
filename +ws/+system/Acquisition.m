@@ -13,9 +13,10 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     properties (Dependent=true)
-        IsChannelActive
-          % boolean array indicating which channels are active
-          % Setting this is the prefered way for outsiders to change which
+        IsAnalogChannelActive
+        IsDigitalChannelActive
+          % boolean arrays indicating which analog/digital channels are active
+          % Setting these is the prefered way for outsiders to change which
           % channels are active
     end
     
@@ -26,12 +27,15 @@ classdef Acquisition < ws.system.Subsystem
         AnalogChannelNames
         DigitalChannelNames
         ChannelNames
+        NActiveAnalogChannels
+        NActiveDigitalChannels
         NActiveChannels
         NChannels
         NAnalogChannels
         NDigitalChannels
         IsChannelAnalog
-        ChannelIDs  % zero-based AI channel IDs for all available channels
+        AnalogChannelIDs  % zero-based AI channel IDs for all available channels
+        IsChannelActive
     end
     
     properties (SetAccess=protected)
@@ -39,20 +43,26 @@ classdef Acquisition < ws.system.Subsystem
     end
 
     properties (Dependent=true)
-        ChannelScales
-          % An array of scale factors to convert each channel from volts on the coax to 
+        AnalogChannelScales
+          % An array of scale factors to convert each analog channel from volts on the coax to 
           % whatever native units each signal corresponds to in the world.
           % This is in units of volts per ChannelUnits (see below)
-        ChannelUnits
+        %ChannelScales
+        AnalogChannelUnits
           % A list of SIUnit instances that describes the real-world units 
-          % for each channel.
+          % for each analog channel.
+        %ChannelUnits
     end
-    
-    properties (Dependent = true, SetAccess=protected, Transient=true)
+
+    properties (Dependent = true, SetAccess=immutable, Transient=true)  % what does this being transient acheive?
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
-        ActiveChannelScales  % a row vector containing the scale factor for each AI channel, for converting V to native units
-        ActiveChannelUnits
     end
+
+%     properties (Dependent = true, SetAccess=protected, Transient=true)  % what does this being transient acheive?
+%         %ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
+%         %ActiveChannelScales  % a row vector containing the scale factor for each AI channel, for converting V to native units
+%         %ActiveChannelUnits
+%     end
     
     properties (Transient=true)
         IsArmedOrAcquiring = false  
@@ -81,10 +91,12 @@ classdef Acquisition < ws.system.Subsystem
         %TriggerListener_;
         Duration_ = 1  % s
         %StateStack_ = {};
-        ChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
-        ChannelScales_ = zeros(1,0)  % Store for the current ChannelScales values, but values may be "masked" by ElectrodeManager
-        ChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current ChannelUnits values, but values may be "masked" by ElectrodeManager
-        IsChannelActive_ = true(1,0)
+        AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  
+            % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+        IsAnalogChannelActive_ = true(1,0)
+        IsDigitalChannelActive_ = true(1,0)
     end
     
     properties (Access=protected)
@@ -116,11 +128,6 @@ classdef Acquisition < ws.system.Subsystem
     methods
         function self = Acquisition(parent)
             self.Parent=parent;
-            %self.CanEnable = false;
-            %nChannels=length(self.ChannelNames);
-            %self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
-            %V=ws.utility.SIUnit('V');  % by default, the units are volts
-            %self.ChannelUnits_=repmat(V,[1 nChannels]);
         end
         
         function delete(self)
@@ -158,8 +165,8 @@ classdef Acquisition < ws.system.Subsystem
             result = [self.AnalogChannelNames self.DigitalChannelNames] ;
         end
     
-        function result = get.ChannelIDs(self)
-            result = self.ChannelIDs_;
+        function result = get.AnalogChannelIDs(self)
+            result = self.AnalogChannelIDs_;
 %             if ~isempty(self.AnalogInputTask_)
 %                 result = self.AnalogInputTask_.AvailableChannels;
 %             else
@@ -168,22 +175,22 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function result = get.ActiveChannelNames(self)         
-            result = self.ChannelNames(self.IsChannelActive());
+            result = self.ChannelNames(self.IsChannelActive);
         end
         
-        function set.ActiveChannelNames(self,newActiveChannelNames)
-            % Make it so the given channel names are the active channels
-            channelNames=self.ChannelNames;
-            isToBeActive=ismember(channelNames,newActiveChannelNames);
-            %newActiveChannelIDs=self.AnalogInputTask_.AvailableChannels(isToBeActive);
-            %self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;
-            self.IsChannelActive=isToBeActive;  % call the 'core' setter
-        end
+%         function set.ActiveChannelNames(self,newActiveChannelNames)
+%             % Make it so the given channel names are the active channels
+%             channelNames=self.ChannelNames;
+%             isToBeActive=ismember(channelNames,newActiveChannelNames);
+%             %newActiveChannelIDs=self.AnalogInputTask_.AvailableChannels(isToBeActive);
+%             %self.AnalogInputTask_.ActiveChannels=newActiveChannelIDs;
+%             self.IsChannelActive=isToBeActive;  % call the 'core' setter
+%         end
         
         function result=get.IsChannelActive(self)
             % Boolean array indicating which of the available channels is
             % active.
-            result=self.IsChannelActive_;
+            result=[self.IsAnalogChannelActive_ self.IsDigitalChannelActive_];
 %             if isempty(self.AnalogInputTask_) || isempty(self.AnalogInputTask_.AvailableChannels) ,
 %                 result = false(1,0);  % want row vector
 %             else
@@ -193,29 +200,78 @@ classdef Acquisition < ws.system.Subsystem
 %             end
         end
         
-        function set.IsChannelActive(self,newIsChannelActive)
+        function result=get.IsAnalogChannelActive(self)
+            % Boolean array indicating which of the available analog channels is
+            % active.
+            result =  self.IsAnalogChannelActive_ ;
+        end
+        
+        function set.IsAnalogChannelActive(self,newIsAnalogChannelActive)
+            % Boolean array indicating which of the analog channels is
+            % active.
+            if islogical(newIsAnalogChannelActive) && isequal(size(newIsAnalogChannelActive),size(self.IsAnalogChannelActive)) ,
+                % For the current settings, break into analog and digital
+                % parts.
+                % We'll check these for changes later.
+                originalIsAnalogChannelActive = self.IsAnalogChannelActive ;
+
+                % Set the setting
+                self.IsAnalogChannelActive_ = newIsAnalogChannelActive;
+
+                % Now delete any tasks that have the wrong channel subsets,
+                % if needed
+                if ~isempty(self.AnalogInputTask_) ,
+                    if isequal(newIsAnalogChannelActive,originalIsAnalogChannelActive) ,
+                        % no need to do anything
+                    else
+                        self.AnalogInputTask_= [] ;  % need to clear, will re-create when needed 
+                    end
+                end
+            end
+            self.broadcast('DidSetIsChannelActive');
+        end
+        
+        function result=get.IsDigitalChannelActive(self)
+            % Boolean array indicating which of the available digital channels is
+            % active.
+            result =  self.IsDigitalChannelActive_ ;
+        end
+        
+        function set.IsDigitalChannelActive(self,newIsDigitalChannelActive)
             % Boolean array indicating which of the available channels is
             % active.
-            if islogical(newIsChannelActive) && isequal(size(newIsChannelActive),size(self.IsChannelActive)) ,
-                self.IsChannelActive_ = newIsChannelActive;
-                % TODO: Need to change this to simply set the relevant task
-                % to empty, to fix issue #85.
-                if ~isempty(self.AnalogInputTask_) ,
-                    active = self.IsChannelActive & self.IsChannelAnalog;
-                    active = active(1:self.NAnalogChannels);
-                    self.AnalogInputTask_.IsChannelActive=active;
-                end
+            if islogical(newIsDigitalChannelActive) && isequal(size(newIsDigitalChannelActive),size(self.IsDigitalChannelActive)) ,
+                % For the current settings, break into analog and digital
+                % parts.
+                % We'll check these for changes later.
+                originalIsDigitalChannelActive = self.IsDigitalChannelActive ;
+
+                % Set the setting
+                self.IsDigitalChannelActive_ = newIsDigitalChannelActive;
+
+                % Now delete any tasks that have the wrong channel subsets,
+                % if needed
                 if ~isempty(self.DigitalInputTask_) ,
-                    active = self.IsChannelActive & ~self.IsChannelAnalog;
-                    active = active(self.NAnalogChannels+1 : end);
-                    self.DigitalInputTask_.IsChannelActive=active;
+                    if isequal(newIsDigitalChannelActive,originalIsDigitalChannelActive) ,
+                        % no need to do anything
+                    else
+                        self.DigitalInputTask_= [] ;  % need to clear, will re-create when needed 
+                    end
                 end
             end
             self.broadcast('DidSetIsChannelActive');
         end
         
         function value = get.NActiveChannels(self)
-            value=sum(double(self.IsChannelActive_));
+            value = self.NActiveAnalogChannels+self.NActiveDigitalChannels ;
+        end
+        
+        function value = get.NActiveAnalogChannels(self)
+            value=sum(double(self.IsAnalogChannelActive_));
+        end
+        
+        function value = get.NActiveDigitalChannels(self)
+            value=sum(double(self.IsDigitalChannelActive_));
         end
         
         function value = get.NAnalogChannels(self)
@@ -235,15 +291,15 @@ classdef Acquisition < ws.system.Subsystem
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-        function out = get.ActiveChannelScales(self)
-            out = self.ChannelScales(self.IsChannelActive);
-        end
+%         function out = get.ActiveChannelScales(self)
+%             out = self.ChannelScales(self.IsChannelActive);
+%         end
         
-        function out = get.ActiveChannelUnits(self)            
-            out = self.ChannelUnits(self.IsChannelActive);
-        end
+%         function out = get.ActiveChannelUnits(self)            
+%             out = self.ChannelUnits(self.IsChannelActive);
+%         end
         
-        function value = getNumberOfElectrodesClaimingChannel(self)
+        function value = getNumberOfElectrodesClaimingAnalogChannel(self)
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -256,14 +312,14 @@ classdef Acquisition < ws.system.Subsystem
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                value=zeros(size(self.ChannelScales_));
+                value=zeros(size(self.AnalogChannelScales));
             else
-                channelNames=self.ChannelNames;
+                channelNames=self.AnalogChannelNames;
                 value=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames);
             end
         end
         
-        function value = get.ChannelScales(self)
+        function value = get.AnalogChannelScales(self)
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -277,17 +333,21 @@ classdef Acquisition < ws.system.Subsystem
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                value=self.ChannelScales_;
+                value=self.AnalogChannelScales_;
             else
-                channelNames=self.ChannelNames;
+                analogChannelNames=self.AnalogChannelNames;
                 [channelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
-                    electrodeManager.getMonitorScalingsByName(channelNames);
-                value=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.ChannelScales_);
+                    electrodeManager.getMonitorScalingsByName(analogChannelNames);
+                value=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
             end
         end
         
-        function value = get.ChannelUnits(self)            
+%         function value = get.ChannelScales(self)
+%             value = [self.AnalogChannelScales ones(self.NDigitalChannels,1)] ;
+%         end
+        
+        function value = get.AnalogChannelUnits(self)            
             import ws.utility.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
@@ -301,55 +361,61 @@ classdef Acquisition < ws.system.Subsystem
                 electrodeManager=ephys.ElectrodeManager;
             end
             if isempty(electrodeManager) ,
-                value=self.ChannelUnits_;
+                value=self.AnalogChannelUnits_;
             else
-                channelNames=self.ChannelNames;            
+                channelNames=self.AnalogChannelNames;            
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getMonitorUnitsByName(channelNames);
-                value=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.ChannelUnits_);
+                value=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end
         
-        function set.ChannelUnits(self,newValue)
+%         function value = get.ChannelUnits(self)
+%             pure=ws.utility.SIUnit();  % by default, the units are volts
+%             digitalChannelUnits = repmat(pure,[1 self.NDigitalChannels]);
+%             value = [self.AnalogChannelUnits digitalChannelUnits] ;
+%         end
+        
+        function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            self.ChannelUnits_=fif(isChangeable,newValue,self.ChannelUnits_);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            self.AnalogChannelUnits_=fif(isChangeable,newValue,self.AnalogChannelUnits_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function set.ChannelScales(self,newValue)
+        function set.AnalogChannelScales(self,newValue)
             import ws.utility.*
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            self.ChannelScales_=fif(isChangeable,newValue,self.ChannelScales_);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            self.AnalogChannelScales_=fif(isChangeable,newValue,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setChannelUnitsAndScales(self,newUnits,newScales)
+        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*            
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            self.ChannelUnits_=fif(isChangeable,newUnits,self.ChannelUnits_);
-            self.ChannelScales_=fif(isChangeable,newScales,self.ChannelScales_);
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            self.AnalogChannelUnits_=fif(isChangeable,newUnits,self.AnalogChannelUnits_);
+            self.AnalogChannelScales_=fif(isChangeable,newScales,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelUnits(self,i,newValue)
+        function setSingleAnalogChannelUnits(self,i,newValue)
             import ws.utility.*
-            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            self.ChannelUnits_(i)=fif(isChangeable,newValue,self.ChannelUnits_(i));
+            self.AnalogChannelUnits_(i)=fif(isChangeable,newValue,self.AnalogChannelUnits_(i));
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleChannelScale(self,i,newValue)
+        function setSingleAnalogChannelScale(self,i,newValue)
             import ws.utility.*
-            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
+            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            self.ChannelScales_(i)=fif(isChangeable,newValue,self.ChannelScales_(i));
+            self.AnalogChannelScales_(i)=fif(isChangeable,newValue,self.AnalogChannelScales_(i));
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
@@ -386,15 +452,15 @@ classdef Acquisition < ws.system.Subsystem
 %             result=self.ChannelUnits(self.iChannelFromName(channelName));
 %         end
         
-        function result=channelUnitsFromName(self,channelName)
+        function result=analogChannelUnitsFromName(self,channelName)
             if isempty(channelName) ,
                 result=ws.utility.SIUnit.empty();
             else
-                iChannel=self.iChannelFromName(channelName);
+                iChannel=self.iAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
-                    result=self.ChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits(iChannel);
                 end
             end
         end
@@ -403,15 +469,15 @@ classdef Acquisition < ws.system.Subsystem
 %             result=self.ChannelScales(self.iChannelFromName(channelName));
 %         end
         
-        function result=channelScaleFromName(self,channelName)
+        function result=analogChannelScaleFromName(self,channelName)
             if isempty(channelName) ,
                 result=ws.utility.SIUnit.empty();
             else
-                iChannel=self.iChannelFromName(channelName);
+                iChannel=self.iAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
                     result=ws.utility.SIUnit.empty();
                 else
-                    result=self.ChannelScales(iChannel);
+                    result=self.AnalogChannelScales(iChannel);
                 end
             end
         end  % function
@@ -490,7 +556,6 @@ classdef Acquisition < ws.system.Subsystem
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
                 self.DeviceNames = inputDeviceNames;
-                self.ChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(physicalInputChannelNames) ;
                 channelNames = mdfStructure.inputChannelNames;
 
                 % Figure out which are analog and which are digital
@@ -499,10 +564,13 @@ classdef Acquisition < ws.system.Subsystem
                 isDigital = ~isAnalog;
 
                 % Sort the channel names
-                self.AnalogPhysicalChannelNames_ = physicalInputChannelNames(isAnalog) ;
-                self.DigitalPhysicalChannelNames_ = physicalInputChannelNames(isDigital) ;
+                analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
+                digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
+                self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
+                self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
                 self.DigitalChannelNames_ = channelNames(isDigital) ;
+                self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
                 
 %                 self.AnalogInputTask_ = ...
 %                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
@@ -514,13 +582,16 @@ classdef Acquisition < ws.system.Subsystem
                 
 %                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionTrialComplete_);
                 
-                nChannels=length(physicalInputChannelNames);
-                self.ChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
+                nAnalogChannels = length(self.AnalogPhysicalChannelNames_);
+                nDigitalChannels = length(self.DigitalPhysicalChannelNames_);                
+                %nChannels=length(physicalInputChannelNames);
+                self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
                 %self.ChannelScales(2)=0.1  % to test
                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.ChannelUnits_=repmat(V,[1 nChannels]);
+                self.AnalogChannelUnits_=repmat(V,[1 nAnalogChannels]);
                 %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
-                self.IsChannelActive_ = true(1,nChannels);
+                self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
+                self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
                 
                 self.CanEnable = true;
                 self.Enabled = true;
@@ -533,15 +604,15 @@ classdef Acquisition < ws.system.Subsystem
             % it will create a DABS Task only if the number of channels is
             % greater than zero.  But InputTask hides that detail from us.
             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
+                % Only hand the active channels to the AnalogInputTask
+                isAnalogChannelActive = self.IsAnalogChannelActive ;
+                activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;                
+                activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;                
                 self.AnalogInputTask_ = ...
                     ws.ni.InputTask(self, 'analog', ...
                                           'Wavesurfer Analog Acquisition Task', ...
-                                          self.AnalogPhysicalChannelNames, ...
-                                          self.AnalogChannelNames);
-                % Have to make sure the active channels gets set in the Task object
-                active = self.IsChannelActive & self.IsChannelAnalog;
-                active = active(1:self.NAnalogChannels);
-                self.AnalogInputTask_.IsChannelActive=active;
+                                          activeAnalogPhysicalChannelNames, ...
+                                          activeAnalogChannelNames);
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
@@ -549,15 +620,14 @@ classdef Acquisition < ws.system.Subsystem
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
             end
             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
+                isDigitalChannelActive = self.IsDigitalChannelActive ;
+                activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
+                activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
                 self.DigitalInputTask_ = ...
                     ws.ni.InputTask(self, 'digital', ...
                                           'Wavesurfer Digital Acquisition Task', ...
-                                          self.DigitalPhysicalChannelNames, ...
-                                          self.DigitalChannelNames);
-                % Have to make sure the active channels gets set in the Task object
-                active = self.IsChannelActive & ~self.IsChannelAnalog;
-                active = active(self.NAnalogChannels+1 : end);
-                self.DigitalInputTask_.IsChannelActive=active;
+                                          activeDigitalPhysicalChannelNames, ...
+                                          activeDigitalChannelNames);
                 % Set other things in the Task object
                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
@@ -633,8 +703,8 @@ classdef Acquisition < ws.system.Subsystem
             else %self.NDigitalChannels<=32
                 dataType = 'uint32';
             end
-            NActiveAnalogChannels = sum(self.IsChannelActive & self.IsChannelAnalog);
-            NActiveDigitalChannels = sum(self.IsChannelActive & ~self.IsChannelAnalog);
+            NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
+            NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
             if experimentMode == ws.ApplicationState.AcquiringContinuously ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
@@ -678,35 +748,16 @@ classdef Acquisition < ws.system.Subsystem
         end
         
         function didAbortTrial(self, ~)
-            self.AnalogInputTask_.abort();
-            self.DigitalInputTask_.abort();
+            try
+                self.AnalogInputTask_.abort();
+                self.DigitalInputTask_.abort();
+            catch me %#ok<NASGU>
+                % didAbortTrial() cannot throw an error, so we ignore any
+                % errors that arise here.
+            end
             self.IsArmedOrAcquiring = false;
         end  % function
-        
-%         function ids = aisFromChannelNames(self, channelNames)
-%             % Returns a row vector of the AI indices (zero-based) of the
-%             % given channel names.
-%             validateattributes(channelNames, {'cell'}, {});
-%             
-%             ids = NaN(1, numel(channelNames));
-%             
-%             for cdx = 1:numel(channelNames)
-%                 validateattributes(channelNames{cdx}, {'char'}, {});
-%                 
-%                 idx = self.AnalogInputTask_.AvailableChannels(find(strcmp(channelNames{cdx}, self.ChannelNames), 1));
-%                 
-%                 if isempty(idx)
-%                     ws.most.mimics.warning('wavesurfer:acquisition:unknownchannelname', ...
-%                                         'Channel ''%s'' is not a member of the acquisition system and will be ignored.', ...
-%                                         channelNames{cdx});
-%                 else
-%                     ids(cdx) = idx;
-%                 end
-%             end
-%             
-%             ids(isnan(ids)) = [];
-%         end  % function
-        
+                
         function iChannel=iActiveChannelFromName(self,channelName)
             iChannels=find(strcmp(channelName,self.ActiveChannelNames));
             if isempty(iChannels) ,
@@ -728,6 +779,18 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
+        function iChannel=iAnalogChannelFromName(self,channelName)
+            % Get the index of the the channel in the available channels
+            % array, given the name.
+            % Note that this does _not_ return a channel ID.
+            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
+            if isempty(iChannels) ,
+                iChannel=nan;
+            else
+                iChannel=iChannels(1);
+            end
+        end  % function
+        
 %         function iChannel=iChannelFromID(self,channelID)
 %             % Get the index of the the channel in the available channels
 %             % array, given the channel ID.
@@ -740,12 +803,12 @@ classdef Acquisition < ws.system.Subsystem
 %             end                
 %         end
         
-        function channelID=channelIDFromName(self,channelName)
+        function channelID=analogChannelIDFromName(self,channelName)
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is AI4,
             % it returns 4.
-            iChannel=self.iChannelFromName(channelName);
-            channelID=self.ChannelIDs(iChannel);
+            iChannel=self.iAnalogChannelFromName(channelName);
+            channelID=self.AnalogChannelIDs(iChannel);
         end  % function
 
         function electrodesRemoved(self)
@@ -852,7 +915,7 @@ classdef Acquisition < ws.system.Subsystem
             % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
-            channelScales=self.ChannelScales(self.IsChannelAnalog & self.IsChannelActive);
+            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
             % scale the data by the channel scales
             if isempty(rawAnalogData) ,
@@ -868,7 +931,7 @@ classdef Acquisition < ws.system.Subsystem
             % Get the data from the main-memory cache, as single-precision floats.  This
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
-            channelScales=self.ChannelScales(self.IsChannelAnalog & self.IsChannelActive);
+            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
             % scale the data by the channel scales
             if isempty(rawAnalogData) ,
@@ -926,8 +989,20 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access = protected)
         function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
-            self.AnalogInputTask_.disarm();
-            self.DigitalInputTask_.disarm();
+            if ~isempty(self.AnalogInputTask_) ,
+                if isvalid(self.AnalogInputTask_) ,
+                    self.AnalogInputTask_.disarm();
+                else
+                    self.AnalogInputTask_ = [] ;
+                end
+            end
+            if ~isempty(self.DigitalInputTask_) ,
+                if isvalid(self.DigitalInputTask_) ,
+                    self.DigitalInputTask_.disarm();
+                else
+                    self.DigitalInputTask_ = [] ;
+                end                    
+            end
             self.IsArmedOrAcquiring = false;            
         end  % function
         
@@ -1000,23 +1075,26 @@ classdef Acquisition < ws.system.Subsystem
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
-                % Check for task doneness, and get the last samples if done
-                tasksAreDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
-%                 if tasksAreDone ,
-%                     fprintf('Acquisition tasks are done.\n')
-%                 end
+                % Check for task doneness
+                areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
+                %if areTasksDone ,
+                %    fprintf('Acquisition tasks are done.\n')
+                %end
                     
                 % Get data
+                %if areTasksDone ,
+                %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
+                %end
                 [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
-                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId) ;
+                    self.readDataFromTasks_(timeSinceTrialStart, fromExperimentStartTicId, areTasksDone) ;
                 %nScans = size(rawAnalogData,1) ;
                 %fprintf('Read acq data. nScans: %d\n',nScans)
 
                 % Notify the whole system that samples were acquired
                 self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
 
-                % If we're done, act accordingly
-                if tasksAreDone ,
+                % If we were done before reading the data, act accordingly
+                if areTasksDone ,
                     %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisTrial_);
                 
                     % Stop tasks, notify rest of system
@@ -1036,10 +1114,14 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     methods (Access=protected)
-        function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = readDataFromTasks_(self, timeSinceTrialStart, fromExperimentStartTicId)
+        function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
+                readDataFromTasks_(self, timeSinceTrialStart, fromExperimentStartTicId, areTasksDone) %#ok<INUSD>
             % both analog and digital tasks are for-real
             [rawAnalogData,timeSinceExperimentStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceTrialStart, fromExperimentStartTicId);
             nScans = size(rawAnalogData,1) ;
+            %if areTasksDone ,
+            %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
+            %end
             rawDigitalData = ...
                 self.DigitalInputTask_.readData(nScans, timeSinceTrialStart, fromExperimentStartTicId);
             self.NScansReadThisTrial_ = self.NScansReadThisTrial_ + nScans ;

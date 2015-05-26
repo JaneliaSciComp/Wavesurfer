@@ -1,4 +1,4 @@
-classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
+classdef TestPulser < ws.Model 
     properties (Dependent=true)  % do we need *so* many public properties?
         Parent
         Electrode
@@ -66,7 +66,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         %ResistanceUnitsPerElectrode
         GainOrResistanceUnitsPerElectrode
         GainOrResistancePerElectrode
-        IsReady  % if true, the model is not busy
+        %IsReady  % if true, the model is not busy
     end
     
     properties  (Access=protected)  % need to see if some of these things should be transient
@@ -120,12 +120,12 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         MonitorPerElectrode_
         NSweepsPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many sweeps (if we can)
         NSweepsCompletedAsOfLastYLimitsUpdate_
-        IsReady_
+        %IsReady_
     end    
     
     events
         UpdateTrace
-        UpdateIsReady
+        %UpdateReadiness
     end
     
     methods
@@ -193,7 +193,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.IsCCCached_=nan;  % only matters in the midst of an experiment
             self.IsVCCached_=nan;  % only matters in the midst of an experiment            
             %self.IsStopping_=false;
-            self.IsReady_ = true ;
+            %self.IsReady_ = true ;
             
 %             % add listeners on host events
 %             if ~isempty(ephys) ,
@@ -226,7 +226,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         end
                 
         function delete(self)
-            self.Parent_=[];
+            self.Parent_=[];  % not necessary, but harmless
         end
         
         function value=get.Parent(self)
@@ -239,9 +239,9 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             end
         end
         
-        function value = get.IsReady(self)
-            value = self.IsReady_ ;
-        end
+%         function value = get.IsReady(self)
+%             value = self.IsReady_ ;
+%         end
         
         function value=get.Electrode(self)
             value=self.Electrode_;
@@ -570,7 +570,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
         
         function value=get.MonitorUnits(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelUnitsFromName(self.MonitorChannelName);           
+            value=wavesurferModel.Acquisition.analogChannelUnitsFromName(self.MonitorChannelName);           
         end  % function
         
         function result=get.MonitorUnitsPerElectrode(self)        
@@ -586,7 +586,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             acquisition=wavesurferModel.Acquisition;
             result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
             for i=1:n ,
-                unit=acquisition.channelUnitsFromName(monitorChannelNames{i});
+                unit=acquisition.analogChannelUnitsFromName(monitorChannelNames{i});
                 if ~isempty(unit) ,
                     result(i)=unit;
                 end
@@ -811,18 +811,18 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.channelIDFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogChannelIDFromName(monitorChannelNames{i});
             end
         end
         
         function value=get.MonitorChannelID(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelIDFromName(self.MonitorChannelName);            
+            value=wavesurferModel.Acquisition.analogChannelIDFromName(self.MonitorChannelName);            
         end
         
         function value=get.MonitorChannelScale(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.channelScaleFromName(self.MonitorChannelName);
+            value=wavesurferModel.Acquisition.analogChannelScaleFromName(self.MonitorChannelName);
         end
         
         function value=get.CommandChannelScale(self)
@@ -860,7 +860,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.channelScaleFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogChannelScaleFromName(monitorChannelNames{i});
             end
         end
         
@@ -977,7 +977,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             if (self.Electrode == electrode) ,  % pointer comparison, essentially
                 self.Electrode=electrode;  % call the setter to change everything that should change
             end
-        end
+        end  % function
         
         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
             % Redimension MonitorPerElectrode_ appropriately, etc.
@@ -985,7 +985,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             
             % Change the electrode if needed
             self.changeElectrodeIfCurrentOneIsNotAvailable_();
-        end
+        end  % function
         
         function start(self)
             % fprintf('Just entered start()...\n');
@@ -996,8 +996,9 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
 
             try
                 % Takes some time to start...
-                self.IsReady_ = false ;
-                self.broadcast('UpdateIsReady');
+                self.changeReadiness(-1);
+                %self.IsReady_ = false ;
+                %self.broadcast('UpdateReadiness');
 
                 % Get some handles we'll need
                 electrode=self.Electrode;
@@ -1131,8 +1132,9 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                 self.LastToc_=toc(self.TimerValue_);
 
                 % OK, now we consider ourselves no longer busy
-                self.IsReady_ = true ;
-                self.broadcast('UpdateIsReady');
+                self.changeReadiness(+1);
+                %self.IsReady_ = true ;
+                %self.broadcast('UpdateReadiness');
 
                 % actually start the data acq tasks
                 self.InputTask_.start();  % won't actually start until output starts b/c see above
@@ -1140,11 +1142,12 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             catch me
                 %fprintf('probelm with output task start\n');
                 self.abort();
+                self.changeReadiness(+1);
                 rethrow(me);
             end
             
             % fprintf('About to exit start()...\n');
-        end
+        end  % function
         
         function stop(self)
             % This is what gets called when the user presses the 'Stop' button,
@@ -1157,9 +1160,10 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             
             try 
                 % Takes some time to stop...
-                self.IsReady_ = false ;
-                self.broadcast('UpdateIsReady');
-
+                self.changeReadiness(-1);
+                %self.IsReady_ = false ;
+                %self.broadcast('UpdateReadiness');
+               
                 %if self.IsStopping_ ,
                 %    fprintf('Stopping while already stopping...\n');
                 %    dbstack
@@ -1213,21 +1217,22 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                 end
 
                 % Takes some time to stop...
-                self.IsReady_ = true ;
-                self.broadcast('Update');
+                self.changeReadiness(+1);
+                %self.IsReady_ = true ;
+                %self.broadcast('Update');
             catch me
                 self.abort();
+                self.changeReadiness(+1);
                 rethrow(me);
             end
-        end
+        end  % function
         
         function abort(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
 
             % And now we are once again ready to service method calls...
-            self.IsReady_ = false ;
-            self.broadcast('UpdateIsReady');            
+            self.changeReadiness(-1);
 
             % Try to gracefully wind down the output task
             if isempty(self.OutputTask_) ,
@@ -1283,8 +1288,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             end
             
             % And now we are once again ready to service method calls...
-            self.IsReady_ = true ;
-            self.broadcast('Update');            
+            self.changeReadiness(+1);
         end  % function
         
         function set.IsRunning(self,newValue)
@@ -1299,7 +1303,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
                     end
                 end
             end
-        end
+        end  % function
         
         function toggleIsRunning(self)
             if self.IsRunning ,
@@ -1307,7 +1311,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             else
                 self.start();
             end
-        end
+        end  % function
         
         function didPerformSweep(self,varargin)
             % compute resistance
@@ -1373,47 +1377,15 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             %fprintf('About to exit TestPulser::didPerformTrial()\n');            
         end  % function
         
-%         function doppelganger=clone(self)
-%             % Make a clone of the ElectrodeManager.  This is another
-%             % ElectrodeManager with the same settings.
-%             import ws.*
-%             s=self.encodeSettings();
-%             doppelganger=TestPulser();
-%             doppelganger.restoreSettings(s);
-%         end
-%         
-%         function s=encodeSettings(self)
-%             % Return a structure representing the current object settings.
-%             s=struct();
-%             s.PulseDurationInMsAsString=self.PulseDurationInMsAsString;
-%             s.DoSubtractBaseline=self.DoSubtractBaseline;
-%             s.IsAutoY=self.IsAutoY;
-%             s.ElectrodeName=self.ElectrodeName;            
-%         end
-%         
-%         function restoreSettings(self, s)
+%         function mimic(self, other)
 %             % Note that this uses the high-level setters, so it will cause
 %             % any subscribers to get (several) MayHaveChanged events.
-%             self.PulseDurationInMsAsString=s.PulseDurationInMsAsString;
-%             self.DoSubtractBaseline=s.DoSubtractBaseline;
-%             self.IsAutoY=s.IsAutoY;
-%             self.ElectrodeName=s.ElectrodeName;            
-%         end
-
-        function mimic(self, other)
-            % Note that this uses the high-level setters, so it will cause
-            % any subscribers to get (several) MayHaveChanged events.
-            self.PulseDurationInMsAsString=other.PulseDurationInMsAsString;
-            self.DoSubtractBaseline=other.DoSubtractBaseline;
-            self.IsAutoY=other.IsAutoY;
-            electrodeName=other.ElectrodeName;
-            %keyboard
-            self.ElectrodeName=electrodeName;
-        end
-        
-%         function original=restoreSettingsAndReturnCopyOfOriginal(self, s)
-%             original=self.clone();
-%             self.restoreSettings(s);
+%             self.PulseDurationInMsAsString=other.PulseDurationInMsAsString;
+%             self.DoSubtractBaseline=other.DoSubtractBaseline;
+%             self.IsAutoY=other.IsAutoY;
+%             electrodeName=other.ElectrodeName;
+%             %keyboard
+%             self.ElectrodeName=electrodeName;
 %         end
         
         function zoomIn(self)
@@ -1462,7 +1434,7 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
             self.GainPerElectrode_=nan(1,self.NElectrodes);
             self.GainOrResistancePerElectrode_=nan(1,self.NElectrodes);
             self.UpdateRate_=nan;
-        end
+        end  % function
         
         function tryToSetYLimitsIfCalledFor_(self)
             % If setting the y limits is appropriate right now, try to set them
@@ -1529,16 +1501,30 @@ classdef TestPulser < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before M
     end  % protected methods block
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.TestPulser.propertyAttributes();        
+        mdlPropAttributes = struct();
         mdlHeaderExcludeProps = {};
+    end    
+    
+    % These next two methods allow access to private and protected variables from ws.mixin.Coding. 
+    methods (Access=protected)
+        function out = getPropertyValue(self, name)
+            out = self.(name);
+        end  % function
+        
+        function setPropertyValue(self, name, value)
+            self.(name) = value;
+        end  % function
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            
-            s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
+    methods
+        % Have to override decodeProperties() to sync up transient properties
+        % after.
+        function decodeProperties(self, encoding)
+            decodeProperties@ws.mixin.Coding(self, encoding) ;
+            self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
         end  % function
-    end  % class methods block
+    end
+    
 
+    
 end  % classdef

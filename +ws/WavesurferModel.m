@@ -1,11 +1,5 @@
 classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
-    %EPHUS3 Wavesurfer 3 command line application object.
-    %
-    %   The Wavesurfer 3 application is primarily a container for the various subsystems
-    %   required and used in an Wavesurfer-controlled experiment (acquisition, stimulus,
-    %   data logging, etc...).  It is also responsible for providing the appropriate
-    %   state change messages to each subsystem which manages the transition from
-    %   one trial to the next.
+    % The main Wavesurfer model object.
 
     properties (SetAccess=immutable, Transient=true)  % transient so doesn't get saved
         NFastProtocols = 6
@@ -248,7 +242,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function stop(self)
             % Called when you press the "Stop" button in the UI, for instance.
-            if self.State == ws.ApplicationState.Idle
+            if self.State == ws.ApplicationState.Idle, 
                 return
             end
 
@@ -641,12 +635,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % all API members.
         
         function willPerformExperiment(self, desiredApplicationState)
-            %fprintf('WavesurferModel::willPerformExperiment()\n');                        
+            %fprintf('WavesurferModel::willPerformExperiment()\n');     
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
             if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration) 
                 assert(self.ExperimentTrialCount == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
             end
+            
+            self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
@@ -655,12 +651,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
                     self.didAbortExperiment();
+                    self.changeReadiness(+1);
                     rethrow(excp);
                 end
                 [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
                 if ~isScanImageReady ,
                     self.ensureYokingFilesAreGone_();
                     self.didAbortExperiment();
+                    self.changeReadiness(+1);
                     error('WavesurferModel:ScanImageNotReady', ...
                           errorMessage);
                 end
@@ -683,6 +681,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             catch me
                 self.didAbortExperiment();
+                self.changeReadiness(+1);
                 me.rethrow();
             end
             
@@ -694,6 +693,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_=0;
             self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.TrialDuration);  % s
             
+            self.changeReadiness(+1);
+
             % Move on to performing the first (and perhaps only) trial
             self.willPerformTrial();
         end  % function
@@ -857,7 +858,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didAbortTrial(self);
+                    try 
+                        self.Subsystems_{idx}.didAbortTrial(self);
+                    catch me
+                        % In theory, Subsystem::didAbortTrail() never
+                        % throws an exception
+                        % But just in case, we catch it here and ignore it
+                        disp(me.getReport());
+                    end
                 end
             end
             
@@ -891,6 +899,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function didAbortExperiment(self, highestIndexedSubsystemThatNeedsAbortion)
+            % Deal with optional arguments
             if nargin < 2 ,
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
@@ -924,7 +933,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
-                channelScales=self.Acquisition.ChannelScales(self.Acquisition.IsChannelAnalog & self.Acquisition.IsChannelActive);
+                channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
                 if isempty(rawAnalogData) ,
                     scaledAnalogData=zeros(size(rawAnalogData));
@@ -1043,9 +1052,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     methods
         function initializeFromMDFFileName(self,mdfFileName)
+            self.changeReadiness(-1);
             mdfStructure = ws.readMachineDataFile(mdfFileName);
             ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
             self.initializeFromMDFStructure_(mdfStructure);
+            self.changeReadiness(+1);
         end
     end  % methods block
         
@@ -1401,10 +1412,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
     methods
-        function saveStruct=loadConfigFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named config file.  fileName should be an
-            % absolute file name referring to a file that is known to be
+        function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+            % Actually loads the named config file.  fileName should be a
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
+            self.changeReadiness(-1);
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -1415,31 +1432,44 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
+            self.changeReadiness(+1);       
         end  % function
     end
     
     methods
         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
+            self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForFileType('cfg');
             wavesurferModelSettingsVariableName=self.encodedVariableName();
+            versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-                              'layoutForAllWindows',layoutForAllWindows);  %#ok<NASGU>
-            save('-mat',absoluteFileName,'-struct','saveStruct');     
+                              'layoutForAllWindows',layoutForAllWindows, ...
+                              'versionString',versionString);  %#ok<NASGU>
+            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             self.AbsoluteProtocolFileName=absoluteFileName;
             self.HasUserSpecifiedProtocolFileName=true;
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
+            self.changeReadiness(+1);            
         end
     end        
     
     methods
-        function loadUserFileForRealsSrsly(self, absoluteFileName)
-            % Actually loads the named user file.  absoluteFileName should be an
-            % absolute file name referring to a file that is known to be
+        function loadUserFileForRealsSrsly(self, fileName)
+            % Actually loads the named user file.  fileName should be an
+            % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
 
             %self.loadProperties(absoluteFileName);
+            
+            self.changeReadiness(-1);
+
+            if ws.most.util.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
             
             saveStruct=load('-mat',absoluteFileName);
             wavesurferModelSettingsVariableName=self.encodedVariableName();
@@ -1450,6 +1480,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.HasUserSpecifiedUserSettingsFileName=true;            
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
+            
+            self.changeReadiness(+1);            
         end
     end        
 
@@ -1463,11 +1495,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                 end
 %             end
             
+            self.changeReadiness(-1);
+
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
             userSettings=self.encodeForFileType('usr');
             wavesurferModelSettingsVariableName=self.encodedVariableName();
-            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings);  %#ok<NASGU>
-            save('-mat',absoluteFileName,'-struct','saveStruct');     
+            versionString = ws.versionString() ;
+            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
+                              'versionString',versionString);  %#ok<NASGU>
+            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             
             %self.savePropertiesWithTag(absoluteFileName, 'usr');
             
@@ -1479,6 +1515,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %controller.updateUserFileNameInMenu();
 
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
+            
+            self.changeReadiness(+1);            
         end  % function
     end
     
@@ -1500,14 +1538,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
     methods
         function triggeringSubsystemJustStartedFirstTrialInExperiment(self)
-            % This means we need to start the polling loop            
+            % Called by the triggering subsystem just after first trial
+            % started.
+            
+            % This means we need to run the main polling loop.
             self.runPollingLoop_();
-        end
+        end  % function
     end
     
     methods (Access=protected)
         function runPollingLoop_(self)
-            % Runs the main polling loop
+            % Runs the main polling loop.
+            
             pollingTicId = tic() ;
             pollingPeriod = 1/self.Display.UpdateRate ;
             self.DoContinuePolling_ = true ;
@@ -1516,11 +1558,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 timeNow =  toc(pollingTicId) ;
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
+                    %timeSinceLastPoll
                     timeOfLastPoll = timeNow ;
                     %tStart = toc(pollingTicId) ;
-                    self.pollingTimerFired_() ;
+                    %profile resume
+                    try
+                        self.pollingTimerFired_() ;
+                    catch me
+                        self.didAbortTrial();
+                        rethrow(me);
+                    end
                     %tMiddle = toc(pollingTicId) ;
+                    %fprintf('drawnow()\n');
                     drawnow() ;  % update, and also process any user actions
+                    %profile off
                     %tEnd = toc(pollingTicId) ;
                     %coreActionDuration = tMiddle-tStart ;
                     %actionDuration = tEnd-tStart ;
@@ -1528,8 +1579,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 else
                     pause(0.010);  % don't want this loop to completely peg the CPU
                 end
-            end                        
-        end
+            end            
+        end  % function
         
         function pollingTimerFired_(self)
             %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');

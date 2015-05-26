@@ -190,4 +190,17 @@ Version History
 0.784: (April 29, 2015) Test pulser now uses sampling rate of
        acquisition system.
 
+0.785: (May 11, 2015) Inactived AI channels are now really and 
+       truly inactivated.
 
+0.786: (May 12, 2015) Fixed bug with TestPulser model not getting 
+       persisted to disk properly.
+
+0.787: (May 12, 2015) Commented out debugging fprintf.  Doh!
+
+0.8:   (May 19, 2015) Added support for digital inputs, untimed digital
+       outputs.  Changed user hook function infrastructure to more
+       powerful object-based scheme.  Added example user hook classes
+       that implement treadmill- and VR-triggered spike rasters.  Many
+       other small tweaks and improvements.  Note that version 0.8
+       will not generally read protocol files from earlier versions.

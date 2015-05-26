@@ -1,4 +1,4 @@
-classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
+classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
     % To run these tests, need to have an NI daq attached, pointed to by
     % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be on the current path, 
     % and be named Machine_Data_File_8_AIs.m.
@@ -21,7 +21,7 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
         function theTest(self)
             isCommandLineOnly=true;
             thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_4_AIs_0_DIs_2_AOs_2_DOs.m'), ...
+            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
@@ -30,21 +30,11 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.ExperimentTrialCount=1;
-            wsModel.TrialDuration=20;  % s, this actually seems to be long enough to cause crash
+            nTrials=100;
+            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.TrialDuration=1;  % s
 
-            wsModel.start();
-
-            dtBetweenChecks=1;  % s
-            maxTimeToWait = 1.1*wsModel.TrialDuration ;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
-                    break
-                end
-            end                   
+            wsModel.start();  % This now blocks...
 
             self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
         end  % function

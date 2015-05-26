@@ -586,17 +586,17 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             titleRowBottomY=digitalPanelsHeight-panelToTitleRowSpaceHeight-titleRowHeight;
             channelLabelColLeftX = panelToLabelSpaceWidth;
             ws.utility.alignTextInRectangleBang(self.DIChannelColTitleText,[channelLabelColLeftX titleRowBottomY gainEditWidth titleRowHeight],'cm');
-            isActiveColLeftX=channelLabelColLeftX+aiLabelWidth+spaceBeforeIsActiveColWidth;
+            %isActiveColLeftX=channelLabelColLeftX+aiLabelWidth+spaceBeforeIsActiveColWidth;
             ws.utility.alignTextInRectangleBang(self.DIIsActiveColTitleText,[isActiveColLeftX titleRowBottomY aiIsActiveColWidth titleRowHeight],'cm');
             
             % Position the stuff in the DI rows            
             aiYRowBottom=titleRowBottomY-spaceBelowTitleRowHeight-rowHeight;   
             for i=1:nDIs ,
-                xColLeft=panelToLabelSpaceWidth;
+                %xColLeft=panelToLabelSpaceWidth;
                 set(self.DILabelTexts(i), ...
-                    'Position',[xColLeft aiYRowBottom-4 aiLabelWidth labelHeight]);  % shim to make look nice
-                xColLeft=xColLeft+aiLabelWidth+spaceBeforeIsActiveColWidth;
-                centerCheckboxBang(self.DIIsActiveCheckboxes(i),[xColLeft+aiIsActiveColWidth/2 aiYRowBottom+rowHeight/2]);
+                    'Position',[channelLabelColLeftX aiYRowBottom-4 aiLabelWidth labelHeight]);  % shim to make look nice
+                %xColLeft=xColLeft+aiLabelWidth+spaceBeforeIsActiveColWidth;
+                centerCheckboxBang(self.DIIsActiveCheckboxes(i),[isActiveColLeftX+aiIsActiveColWidth/2 aiYRowBottom+rowHeight/2]);
                 aiYRowBottom=aiYRowBottom-rowToRowHeight;
             end
             
@@ -700,11 +700,11 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             normalBackgroundColor=[1 1 1];
             warningBackgroundColor=[1 0.8 0.8];
             deviceNames=model.Acquisition.DeviceNames;  % cell array of strings
-            channelIDs=model.Acquisition.ChannelIDs;  % zero-based NI channel index
-            channelNames=model.Acquisition.ChannelNames;
-            channelScales=model.Acquisition.ChannelScales;
-            channelUnits=model.Acquisition.ChannelUnits;
-            nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingChannel();
+            channelIDs=model.Acquisition.AnalogChannelIDs;  % zero-based NI channel index
+            channelNames=model.Acquisition.AnalogChannelNames;
+            channelScales=model.Acquisition.AnalogChannelScales;
+            channelUnits=model.Acquisition.AnalogChannelUnits;
+            nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingAnalogChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAIs ,
@@ -715,7 +715,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
                 set(self.AIUnitsEdits(i),'String',toString(channelUnits(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
-                set(self.AIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsChannelActive(i), ...
+                set(self.AIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsAnalogChannelActive(i), ...
                                                  'Enable',onIff(isWavesurferIdle));                                     
             end
             
@@ -745,7 +745,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             channelNames=model.Acquisition.DigitalChannelNames;
             for i=1:nDIs ,
                 set(self.DILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
-                set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsChannelActive(self.Model.Acquisition.NAnalogChannels + i), ...
+                set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelActive(i), ...
                                                  'Enable',onIff(isWavesurferIdle));                                     
             end
             
