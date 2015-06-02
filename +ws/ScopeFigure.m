@@ -37,6 +37,10 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         SetYLimTightToDataLockedButtonGH_
         ScopeMenuGH_
         YLimitsMenuItemGH_
+        ZoomInButtonGH_
+        ZoomOutButtonGH_
+        ScrollUpButtonGH_
+        ScrollDownButtonGH_
     end
     
 %     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
@@ -192,8 +196,8 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                     if ~isempty(wavesurferModel) ,
                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
                     end
-                end                
-            end            
+                end
+            end
             
             % Do stuff to make ws.most.Controller happy
             self.setHGTagsToPropertyNames_();
@@ -414,31 +418,44 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
     end  % methods
     
     methods (Access=protected)
-        function updateImplementation_(self,varargin)
-            % Syncs self with the model.
-            
+%         function updateImplementation_(self,varargin)
+%             % Syncs self with the model.
+%             
+%             % If there are issues with the model, just return
+%             model=self.Model;
+%             if isempty(model) || ~isvalid(model) ,
+%                 return
+%             end
+% 
+%             % Update the togglebutton
+%             self.updateAreYLimitsLockedTightToData_();
+% 
+%             % Update the axis limits
+%             self.updateXAxisLimits_();
+%             self.updateYAxisLimits_();
+%             
+%             % Update the graphics objects to match the model
+%             self.updateYAxisLabel_();
+%             self.updateLineXDataAndYData_();
+%             
+%             % Update the enablement of controls
+%             %import ws.utility.onIff
+%             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(isWavesurferIdle));
+%             %set(self.YLimitsMenuItemGH_,'Enable',onIff(isWavesurferIdle));            
+%             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(true));
+%             %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
+%         end                
+
+        function updateControlsInExistance_(self) %#ok<MANU>
+            % No need to do anything
+        end
+        
+        function updateControlPropertiesImplementation_(self)
             % If there are issues with the model, just return
             model=self.Model;
             if isempty(model) || ~isvalid(model) ,
                 return
             end
-            
-%             % Need to figure out the wavesurferModel State            
-%             display=[];
-%             if ~isempty(model) && isvalid(model),
-%                 display=model.Parent;
-%             end
-%             wavesurferModel=[];
-%             if ~isempty(display) && isvalid(display),
-%                 wavesurferModel=display.Parent;
-%             end
-%             isWavesurferIdle=[];
-%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                 isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
-%             end
-%             if isempty(isWavesurferIdle)
-%                 isWavesurferIdle=true;  % things are probably fucked anyway...
-%             end            
 
             % Update the togglebutton
             self.updateAreYLimitsLockedTightToData_();
@@ -450,14 +467,28 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Update the graphics objects to match the model
             self.updateYAxisLabel_();
             self.updateLineXDataAndYData_();
-            
+        end
+        
+        function updateControlEnablementImplementation_(self) %#ok<MANU>
             % Update the enablement of controls
             %import ws.utility.onIff
             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(isWavesurferIdle));
             %set(self.YLimitsMenuItemGH_,'Enable',onIff(isWavesurferIdle));            
             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(true));
             %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
-        end                
+        end
+        
+        function layout_(self)
+%             % Update the axes position
+%             figurePosition = get(self.FigureGH_, 'Position') ;
+%             figureSize = figurePosition(3:4);
+%             figureWidth = figureSize(1) ;
+%             figureHeight = figureSize(2) ;
+%             
+%             
+%             [0.11 0.11 0.87 0.83]          
+        end
+        
     end
     
     methods (Access = protected)

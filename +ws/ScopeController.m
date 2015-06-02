@@ -183,6 +183,14 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                         self.setYLimTightToDataLockedButtonActuated();
                     case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
+                    case 'ZoomInButtonGH' ,
+                        self.zoomInButtonPressed();
+                    case 'ZoomOutButtonGH' ,
+                        self.zoomOutButtonPressed();
+                    case 'ScrollUpButtonGH' ,
+                        self.scrollUpButtonPressed();
+                    case 'ScrollDownButtonGH' ,
+                        self.scrollDownButtonPressed();
                 end  % switch
             catch me
 %                 isInDebugMode=~isempty(dbstatus());
@@ -199,6 +207,23 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             self.MyYLimDialogController=...
                 ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'));
         end  % method        
+        
+        function zoomInButtonPressed(self)
+            self.Model.zoomIn();
+        end
+        
+        function zoomOutButtonPressed(self)
+            self.Model.zoomOut();
+        end
+        
+        function scrollUpButtonPressed(self)
+            self.Model.scrollUp();
+        end
+        
+        function scrollDownButtonPressed(self)
+            self.Model.scrollDown();
+        end
+        
     end  % public methods block
 
     methods (Access=protected)
