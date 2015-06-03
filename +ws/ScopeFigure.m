@@ -77,31 +77,30 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Subscribe to some model events
             %self.didSetModel_();
             
-            % reset the downsampled data
-            nChannels=length(model.ChannelNames);
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);
-            
-            % Subscribe to some model events
-            model.subscribeMe(self,'Update','','update');
-            model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-            model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-            model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-            model.subscribeMe(self,'DataAdded','','modelDataAdded');
-            model.subscribeMe(self,'DataCleared','','modelDataCleared');
-            model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
-
-            % Subscribe to events in the master model
-            if ~isempty(model) ,
-                display=model.Parent;
-                if ~isempty(display) ,
-                    wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) ,
-                        wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                    end
-                end
-            end
-            
+%             % reset the downsampled data
+%             nChannels=length(model.ChannelNames);
+%             self.XForPlotting_=zeros(0,1);
+%             self.YForPlotting_=zeros(0,nChannels);
+%             
+%             % Subscribe to some model events
+%             model.subscribeMe(self,'Update','','update');
+%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
+%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
+%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
+% 
+%             % Subscribe to events in the master model
+%             if ~isempty(model) ,
+%                 display=model.Parent;
+%                 if ~isempty(display) ,
+%                     wavesurferModel=display.Parent;
+%                     if ~isempty(wavesurferModel) ,
+%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
+%                     end
+%                 end
+%             end            
             
             % Do stuff to make ws.most.Controller happy
             self.setHGTagsToPropertyNames_();
@@ -131,58 +130,68 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
     end  % public methods block
     
     methods (Access=protected)        
-%         function willSetModel_(self)
-%             % clear the downsampled data
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,0);
-%             
-%             % Get the Model
-%             model = self.Model ;            
-% 
-%             % If model is nonempty, do some unsubscribing
-%             if ~isempty(model) ,
-%                 % Unsubscribe from events in the model
-%                 model.unsubscribeMeFromAll(self) ;
-% 
-%                 % Unsubsribe from events in the master model
-%                 display=model.Parent;
-%                 if ~isempty(display) ,
-%                     wavesurferModel=display.Parent;
-%                     if ~isempty(wavesurferModel) ,
-%                         wavesurferModel.unsubscribeMeFromAll(self);
-%                     end
-%                 end
-%             end
-%         end  % function
-%         
-%         function didSetModel_(self)
-%             model = self.Model ;
-%             
-%             % reset the downsampled data
-%             nChannels=length(model.ChannelNames);
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,nChannels);
-% 
-%             % Subscribe to some model events
-%             model.subscribeMe(self,'Update','','update');
-%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
-%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
-%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
-% 
-%             % Subscribe to events in the master model
-%             if ~isempty(model) ,
-%                 display=model.Parent;
-%                 if ~isempty(display) ,
-%                     wavesurferModel=display.Parent;
-%                     if ~isempty(wavesurferModel) ,
-%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
-%                     end
-%                 end
-%             end
-%         end
+        function willSetModel_(self)            
+            % clear the downsampled data
+            self.XForPlotting_=zeros(0,1);
+            self.YForPlotting_=zeros(0,0);
+
+            % Call the superclass method
+            willSetModel_@ws.MCOSFigure(self);
+
+            % Get the Model
+            model = self.Model ;            
+
+            % If model is nonempty, do some unsubscribing
+            if ~isempty(model) ,
+                % Unsubscribe from events in the model
+                %model.unsubscribeMeFromAll(self) ;
+
+                % Unsubsribe from events in the master model
+                display=model.Parent;
+                if ~isempty(display) ,
+                    wavesurferModel=display.Parent;
+                    if ~isempty(wavesurferModel) ,
+                        wavesurferModel.unsubscribeMeFromAll(self);
+                    end
+                end
+            end
+        end  % function
+        
+        function didSetModel_(self)
+            model = self.Model ;
+
+            % reset the downsampled data
+            if ~isempty(model) ,
+                nChannels=length(model.ChannelNames);
+                self.XForPlotting_=zeros(0,1);
+                self.YForPlotting_=zeros(0,nChannels);
+            end
+
+            % Call the superclass method
+            didSetModel_@ws.MCOSFigure(self);
+
+            % Subscribe to some model events
+            if ~isempty(model) ,
+                model.subscribeMe(self,'Update','','update');
+                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+                model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+                model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+                model.subscribeMe(self,'DataAdded','','modelDataAdded');
+                model.subscribeMe(self,'DataCleared','','modelDataCleared');
+                model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
+            end
+
+            % Subscribe to events in the master model
+            if ~isempty(model) ,
+                display=model.Parent;
+                if ~isempty(display) ,
+                    wavesurferModel=display.Parent;
+                    if ~isempty(wavesurferModel) ,
+                        wavesurferModel.subscribeMe(self,'DidSetState','','update');
+                    end
+                end
+            end
+        end  % function
     end  % protected methods block    
     
     methods
