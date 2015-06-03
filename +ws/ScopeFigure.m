@@ -445,9 +445,8 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             
             % Add a toolbar button
             wavesurferDirName=fileparts(which('wavesurfer'));
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
             self.SetYLimTightToDataButtonGH_ = ...
                 uipushtool(toolbarGH, ...
@@ -456,9 +455,8 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                            'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
                          
             % Add a second toolbar button           
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.SetYLimTightToDataLockedButtonGH_ = ...
                 uitoggletool(toolbarGH, ...
                              'CData', cdata, ...

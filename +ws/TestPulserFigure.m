@@ -496,9 +496,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
 
             wavesurferDirName=fileparts(which('wavesurfer'));
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);                      
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollUpButton= ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
@@ -508,9 +507,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
 %                           'String','^', ...
 
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);                      
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollDownButton= ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
