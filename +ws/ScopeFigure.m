@@ -54,18 +54,10 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 
     methods
         function self=ScopeFigure(model,controller)
-            import ws.utility.*
-            
+            % Call the superclass constructor
             self = self@ws.MCOSFigure(model,controller);
             
-            % create the downsampled data
-            nChannels=length(model.ChannelNames);
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);
-            
-            %
-            % Create all the widgets, set them up
-            %
+            % Set properties of the figure
             set(self.FigureGH, ...
                 'Tag',model.Tag,...
                 'Name', model.Title, ...
@@ -78,106 +70,17 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %                 'Toolbar','none', ...
 %                 'MenuBar','none', ...
             
-            xl=model.XLim;
-            yl=model.YLim;
-            self.AxesGH_ = ...
-                axes('Parent', self.FigureGH, ...
-                     'Position', [0.11 0.11 0.87 0.83], ...
-                     'FontSize', model.FontSize, ...
-                     'FontWeight', model.FontWeight, ...
-                     'Color', model.BackgroundColor, ...
-                     'XColor', model.ForegroundColor, ...
-                     'YColor', model.ForegroundColor, ...
-                     'ZColor', model.ForegroundColor, ...
-                     'XGrid', onIff(model.GridOn), ...
-                     'YGrid', onIff(model.GridOn), ...
-                     'XLim',xl, ...
-                     'YLim',yl ...
-                     );
-            self.XLim_=xl;
-            self.YLim_=yl;
+            % Create the widgets that will persist through the life of the
+            % figure
+            self.createFixedControls_();
             
-            colorOrder = get(self.AxesGH_, 'ColorOrder');
-            colorOrder = [1 1 1; 1 0.25 0.25; colorOrder];
-            set(self.AxesGH_, 'ColorOrder', colorOrder);
+            % Subscribe to some model events
+            %self.didSetModel_();
             
-%             self.HorizontalCenterLineGH = ...
-%                 line('Parent', self.AxesGH_,...
-%                      'XData',[],...
-%                      'YData',[],...
-%                      'Color',[0 0 0],...
-%                      'LineStyle','-.',...
-%                      'Marker','d',...
-%                      'Tag','scope_horizontalCenterLine');
-%             
-%             self.VerticalCenterLineGH = ...
-%                 line('Parent',self.AxesGH_,...
-%                      'XData',[],...
-%                      'YData',[],...
-%                      'Color',[0 0 0],...
-%                      'LineStyle','-.',...
-%                      'Marker','d',...
-%                      'Tag','scope_verticalCenterLine');
-%             
-%             self.GroundLineGH = ...
-%                 line('Parent',self.AxesGH_,...
-%                      'XData',[],...
-%                      'YData',[],...
-%                      'Color',[0 .5 0],...
-%                      'LineStyle','-.',...
-%                      'LineWidth',2,...
-%                      'Marker','none',...
-%                      'Tag','scope_groundLine',...
-%                      'Visible','off');
-
-            xlabel(self.AxesGH_,sprintf('Time (%s)',string(model.XUnits)));
-
-            % Set up listeners to monitor the axes XLim, YLim, and to set
-            % the XLim and YLim properties when they change.  This is
-            % mainly so that the XLim and YLim properties can be observed,
-            % and used to change them in the model to maintain
-            % synchronization.
-            % Can't do this using EventBroadcaster/EventSubscriber
-            % mechanism b/c can't make the axes HG object an
-            % EventBroadcaster.
-            addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
-            addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
-            
-            % Add a line for each channel in the model
-            for i=1:self.Model.NChannels
-                self.addChannelLine_();
-            end
-            
-            % Add a toolbar button
-            wavesurferDirName=fileparts(which('wavesurfer'));
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);
-            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
-            self.SetYLimTightToDataButtonGH_ = ...
-                uipushtool(toolbarGH, ...
-                           'CData', cdata, ...
-                           'TooltipString', 'Set y-axis limits tight to data', ....
-                           'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
-                         
-            % Add a second toolbar button           
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);
-            self.SetYLimTightToDataLockedButtonGH_ = ...
-                uitoggletool(toolbarGH, ...
-                             'CData', cdata, ...
-                             'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
-                             'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
-                       
-            % Add a menu, and a single menu item
-            self.ScopeMenuGH_ = ...
-                uimenu('Parent',self.FigureGH, ...
-                       'Label','Scope');
-            self.YLimitsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
-                       'Label','Y Limits...', ...
-                       'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));
+            % reset the downsampled data
+            nChannels=length(model.ChannelNames);
+            self.XForPlotting_=zeros(0,1);
+            self.YForPlotting_=zeros(0,nChannels);
             
             % Subscribe to some model events
             model.subscribeMe(self,'Update','','update');
@@ -199,6 +102,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 end
             end
             
+            
             % Do stuff to make ws.most.Controller happy
             self.setHGTagsToPropertyNames_();
             self.updateGuidata_();
@@ -208,15 +112,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         end  % constructor
         
         function delete(self)
-            % if ~isempty(self.Model) && isvalid(self.Model) ,
-            %     self.Model.unsubscribeMeFromAll(self);
-            % end
+            % Do I even need to do this stuff?  Those GHs will become
+            % invalid when the figure HG object is deleted...
             ws.utility.deleteIfValidHGHandle(self.LineGHs_);
-            %deleteIfValidHGHandle(self.GroundLineGH);
-            %deleteIfValidHGHandle(self.VerticalCenterLineGH);
-            %deleteIfValidHGHandle(self.HorizontalCenterLineGH);
             ws.utility.deleteIfValidHGHandle(self.AxesGH_);            
-        end
+        end  % function
         
 %         function result=get.IsVisibleWhenDisplayEnabled(self)
 %             model=self.Model;
@@ -259,11 +159,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 set(self.AxesGH_,'XLim',newValue);
             end
             self.broadcast('DidSetXLim');
-        end
+        end  % function
         
         function value=get.XLim(self)
             value=self.XLim_;
-        end
+        end  % function
         
         function set.YLim(self,newValue)
             %fprintf('ScopeFigure::set.YLim()\n');
@@ -272,22 +172,22 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 set(self.AxesGH_,'YLim',newValue);
             end
             self.broadcast('DidSetYLim');
-        end
+        end  % function
             
         function value=get.YLim(self)
             value=self.YLim_;
-        end
+        end  % function
                 
         function didSetXLimInAxesGH(self,varargin)
             self.XLim=get(self.AxesGH_,'XLim');
-        end
+        end  % function
         
         function didSetYLimInAxesGH(self,varargin)
             %fprintf('ScopeFigure::didSetYLimInAxesGH()\n');
             %ylOld=self.YLim
             ylNew=get(self.AxesGH_,'YLim');
             self.YLim=ylNew;
-        end
+        end  % function
         
 %         function modelPropertyWasSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD,INUSL>
 %             if isequal(propertyName,'YLim') ,
@@ -308,27 +208,27 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         
         function modelXAxisLimitSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateXAxisLimits_();
-        end
+        end  % function
         
         function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateYAxisLimits_();
-        end
+        end  % function
         
         function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateAreYLimitsLockedTightToData_();
-        end
+        end  % function
         
         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Redimension downsampled data, clearing the existing data in
             % the process
             nChannels=self.Model.NChannels;
             self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);            
+            self.YForPlotting_=zeros(0,nChannels);
             
             % Do other stuff
-            self.addChannelLine_();
+            self.addChannelLineToAxes_();
             self.update();
-        end
+        end  % function
         
         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Need to pack up all the y data into a single array for
@@ -382,7 +282,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 
             % Update the lines
             self.updateLineXDataAndYData_();
-        end
+        end  % function
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             %fprintf('ScopeFigure::modelDataCleared()\n');
@@ -390,11 +290,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.XForPlotting_=zeros(0,1);
             self.YForPlotting_=zeros(0,nChannels);                        
             self.updateLineXDataAndYData_();                      
-        end
+        end  % function
         
         function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.update();
-        end
+        end  % function
 
         function updateColorsFontsTitleGridAndTags(self)
             import ws.utility.onIff
@@ -414,10 +314,63 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 'XGrid', onIff(model.GridOn), ...
                 'YGrid', onIff(model.GridOn) ...
                 );
-        end
+        end  % function
     end  % methods
     
-    methods (Access=protected)
+    methods (Access=protected)        
+%         function willSetModel_(self)
+%             % clear the downsampled data
+%             self.XForPlotting_=zeros(0,1);
+%             self.YForPlotting_=zeros(0,0);
+%             
+%             % Get the Model
+%             model = self.Model ;            
+% 
+%             % If model is nonempty, do some unsubscribing
+%             if ~isempty(model) ,
+%                 % Unsubscribe from events in the model
+%                 model.unsubscribeMeFromAll(self) ;
+% 
+%                 % Unsubsribe from events in the master model
+%                 display=model.Parent;
+%                 if ~isempty(display) ,
+%                     wavesurferModel=display.Parent;
+%                     if ~isempty(wavesurferModel) ,
+%                         wavesurferModel.unsubscribeMeFromAll(self);
+%                     end
+%                 end
+%             end
+%         end  % function
+%         
+%         function didSetModel_(self)
+%             model = self.Model ;
+%             
+%             % reset the downsampled data
+%             nChannels=length(model.ChannelNames);
+%             self.XForPlotting_=zeros(0,1);
+%             self.YForPlotting_=zeros(0,nChannels);
+% 
+%             % Subscribe to some model events
+%             model.subscribeMe(self,'Update','','update');
+%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
+%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
+%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
+% 
+%             % Subscribe to events in the master model
+%             if ~isempty(model) ,
+%                 display=model.Parent;
+%                 if ~isempty(display) ,
+%                     wavesurferModel=display.Parent;
+%                     if ~isempty(wavesurferModel) ,
+%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
+%                     end
+%                 end
+%             end
+%         end
+        
 %         function updateImplementation_(self,varargin)
 %             % Syncs self with the model.
 %             
@@ -446,9 +399,93 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %             %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
 %         end                
 
-        function updateControlsInExistance_(self) %#ok<MANU>
-            % No need to do anything
-        end
+        function createFixedControls_(self)
+            % Creates the controls that are guaranteed to persist
+            % throughout the life of the window.
+            
+            model = self.Model ;
+            self.AxesGH_ = ...
+                axes('Parent', self.FigureGH, ...
+                     'FontSize', model.FontSize, ...
+                     'FontWeight', model.FontWeight, ...
+                     'Color', model.BackgroundColor, ...
+                     'XColor', model.ForegroundColor, ...
+                     'YColor', model.ForegroundColor, ...
+                     'ZColor', model.ForegroundColor, ...
+                     'XGrid', ws.utility.onIff(model.GridOn), ...
+                     'YGrid', ws.utility.onIff(model.GridOn) );
+            %         'Position', [0.11 0.11 0.87 0.83], ...
+            
+            colorOrder = get(self.AxesGH_, 'ColorOrder');
+            colorOrder = [1 1 1; 1 0.25 0.25; colorOrder];
+            set(self.AxesGH_, 'ColorOrder', colorOrder);
+
+            % Create the x-axis label
+            xlabel(self.AxesGH_,sprintf('Time (%s)',string(model.XUnits)));
+
+            % Set up listeners to monitor the axes XLim, YLim, and to set
+            % the XLim and YLim properties when they change.  This is
+            % mainly so that the XLim and YLim properties can be observed,
+            % and used to change them in the model to maintain
+            % synchronization.
+            % Can't do this using EventBroadcaster/EventSubscriber
+            % mechanism b/c can't make the axes HG object an
+            % EventBroadcaster.
+            addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
+            addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
+            
+%             % Add a line for each channel in the model
+%             for i=1:self.Model.NChannels
+%                 self.addChannelLineToAxes_();
+%             end
+            
+            % Add a toolbar button
+            wavesurferDirName=fileparts(which('wavesurfer'));
+            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png'));
+            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
+            cdata = ind2rgb(cdata, map);
+            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
+            self.SetYLimTightToDataButtonGH_ = ...
+                uipushtool(toolbarGH, ...
+                           'CData', cdata, ...
+                           'TooltipString', 'Set y-axis limits tight to data', ....
+                           'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
+                         
+            % Add a second toolbar button           
+            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png'));
+            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
+            cdata = ind2rgb(cdata, map);
+            self.SetYLimTightToDataLockedButtonGH_ = ...
+                uitoggletool(toolbarGH, ...
+                             'CData', cdata, ...
+                             'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+                             'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
+                       
+            % Add a menu, and a single menu item
+            self.ScopeMenuGH_ = ...
+                uimenu('Parent',self.FigureGH, ...
+                       'Label','Scope');
+            self.YLimitsMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Y Limits...', ...
+                       'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
+        end  % function            
+
+        function updateControlsInExistance_(self)            
+            % Make it so we have the same number of lines as channels,
+            % adding/deleting them as needed
+            nChannels = self.Model.NChannels ;            
+            currentLineGHs = self.LineGHs_ ;            
+            nLines= length(currentLineGHs);
+            if nLines>nChannels ,
+                delete(self.LineGHs_(nChannels+1:nLines));
+                self.LineGHs_(nChannels+1:nLines)=[];
+            elseif nLines<nChannels
+                for i=nLines+1:nChannels ,
+                    self.addChannelLineToAxes_();
+                end                
+            end
+        end  % function
         
         function updateControlPropertiesImplementation_(self)
             % If there are issues with the model, just return
@@ -467,7 +504,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Update the graphics objects to match the model
             self.updateYAxisLabel_();
             self.updateLineXDataAndYData_();
-        end
+        end  % function
         
         function updateControlEnablementImplementation_(self) %#ok<MANU>
             % Update the enablement of controls
@@ -476,9 +513,25 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             %set(self.YLimitsMenuItemGH_,'Enable',onIff(isWavesurferIdle));            
             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(true));
             %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
-        end
+        end  % function
         
         function layout_(self)
+            % This method should make sure all the controls are sized and placed
+            % appropraitely given the current model state.  
+
+            % We can use a simplified version of this, since all the
+            % controls are fixed (i.e. they exist for the lifetime of the
+            % figure)
+            self.layoutFixedControls_() ;
+            
+            % This implementation should work in most cases, but can be overridden by
+            % subclasses if needed.
+            %figureSize=self.layoutFixedControls_();
+            %figureSizeModified=self.layoutNonfixedControls_(figureSize);
+            %ws.utility.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
+        end  % function
+        
+        function layoutFixedControls_(self)
 %             % Update the axes position
 %             figurePosition = get(self.FigureGH_, 'Position') ;
 %             figureSize = figurePosition(3:4);
@@ -487,12 +540,12 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %             
 %             
 %             [0.11 0.11 0.87 0.83]          
-        end
+        end  % function
         
     end
     
     methods (Access = protected)
-        function addChannelLine_(self)
+        function addChannelLineToAxes_(self)
             % Creates a new channel line, adding it to the end of self.LineGHs_.
             iChannel=length(self.LineGHs_)+1;
             newChannelName=self.Model.ChannelNames{iChannel};
@@ -510,7 +563,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                      'LineStyle', self.Model.LineStyle,...
                      'Tag', sprintf('%s::%s', self.Model.Tag, newChannelName));
 %                                      'LineWidth', 2,...
-        end
+        end  % function
         
 %         function modelAxisLimitWasSet(self)
 %             self.updateReferenceLines();
@@ -518,14 +571,14 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         
         function modelGenericVisualPropertyWasSet_(self)
             self.update();
-        end 
+        end  % function 
         
         function updateLineXDataAndYData_(self)
             for iChannel = 1:self.Model.NChannels ,                
                 thisLineGH = self.LineGHs_(iChannel);
                 ws.utility.setifhg(thisLineGH, 'XData', self.XForPlotting_, 'YData', self.YForPlotting_(:,iChannel));
             end                     
-        end
+        end  % function
         
         function updateYAxisLabel_(self)
             % Updates the y axis label handle graphics to match the model state
@@ -545,7 +598,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 end
                 ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString));
             end
-        end
+        end  % function
         
         function updateXAxisLimits_(self)
             % Update the axes limits to match those in the model
@@ -554,7 +607,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             end
             xlimInModel=self.Model.XLim;
             %ws.utility.setifhg(self.AxesGH_, 'XLim', xl);
-            if any(xlimInModel~=self.XLim) ,                
+            if ~isequal(xlimInModel,self.XLim) ,                
                 % Set this directly, instead of calling the XLim setter
                 % This means that we don't fire the DidSetXLim method.
                 % This should be OK, since updateXAxisLimits_ is only called in 
@@ -562,7 +615,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.XLim_=xlimInModel;
                 set(self.AxesGH_,'XLim',xlimInModel);
             end
-        end        
+        end  % function        
 
         function updateYAxisLimits_(self)
             % Update the axes limits to match those in the model
@@ -571,7 +624,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             end
             ylimInModel=self.Model.YLim;
             %ws.utility.setifhg(self.AxesGH_, 'YLim', yl);
-            if any(ylimInModel~=self.YLim) ,   
+            if ~isequal(ylimInModel,self.YLim) ,   
                 % Set this directly, instead of calling the YLim setter
                 % This means that we don't fire the DidSetYLim method.
                 % This should be OK, since updateYAxisLimits_ is only called in 
@@ -579,7 +632,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.YLim_=ylimInModel;
                 set(self.AxesGH_,'YLim',ylimInModel);
             end
-        end        
+        end  % function        
 
         function updateAreYLimitsLockedTightToData_(self)
             % Update the axes limits to match those in the model
@@ -588,7 +641,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             end
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
             set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
-        end        
+        end  % function        
         
         
 %         function updateAxisLimits(self)
@@ -667,7 +720,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             pos=get(ax,'Position');
             result=pos(3);
             set(ax,'Units',savedUnits);            
-        end
+        end  % function
         
         function r=ratioSubsampling(t,T_view,n_pels_view)
             % Computes r, a good ratio to use for subsampling data on time base t
