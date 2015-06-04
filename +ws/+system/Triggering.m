@@ -603,6 +603,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function didSetIsTrialBased(self)
             %fprintf('Triggering::didSetIsTrialBased()\n');
             self.syncTriggerSourcesFromTriggeringState_();
+            self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
             %self.syncIntervalAndRepeatCountListeners_();
         end  % function 
         
