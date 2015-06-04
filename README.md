@@ -204,3 +204,11 @@ Version History
        that implement treadmill- and VR-triggered spike rasters.  Many
        other small tweaks and improvements.  Note that version 0.8
        will not generally read protocol files from earlier versions.
+
+0.801: (June 4, 2015) Made electrodes window narrower, so that it fits
+       on a 1280x1024 screen.  Added zoom in/out, scroll up/down
+       buttons to scope windows, got rid of green-on-black color scheme.  
+       Test pulser now shows resistance in units tailored to the scale 
+       of the resistance value.  Protocol and user settings file formats 
+       were not changed from release 0.8.
+
