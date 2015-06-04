@@ -24,15 +24,15 @@ classdef TestPulser < ws.Model
         CommandChannelNames
         MonitorChannelNames
         PulseDuration  % s
-        Gain  % in units given by ResistanceUnits
-        Resistance  % in units given by ResistanceUnits
-        GainOrResistance
+        %Gain  % in units given by ResistanceUnits
+        %Resistance  % in units given by ResistanceUnits
+        %GainOrResistance
         SamplingRate  % in Hz
         CommandUnits
         MonitorUnits
-        GainUnits
-        ResistanceUnits
-        GainOrResistanceUnits
+        %GainUnits
+        %ResistanceUnits
+        %GainOrResistanceUnits
         IsCC
         IsVC
         UpdateRate
@@ -62,7 +62,7 @@ classdef TestPulser < ws.Model
         CommandUnitsPerElectrode
         MonitorUnitsPerElectrode
         ElectrodeIndex
-        GainUnitsPerElectrode
+        %GainUnitsPerElectrode
         %ResistanceUnitsPerElectrode
         GainOrResistanceUnitsPerElectrode
         GainOrResistancePerElectrode
@@ -102,8 +102,8 @@ classdef TestPulser < ws.Model
         LastToc_
         %AreYLimitsForRunDetermined_  %  whether the proper y limits for the ongoing run have been determined
         ElectrodeIndexCached_
-        IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
-        IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
+        %IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
+        %IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
         AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during trials
         IsCCPerElectrodeCached_  
         IsVCPerElectrodeCached_  
@@ -121,6 +121,7 @@ classdef TestPulser < ws.Model
         NSweepsPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many sweeps (if we can)
         NSweepsCompletedAsOfLastYLimitsUpdate_
         %IsReady_
+        GainOrResistanceUnitsPerElectrodeCached_
     end    
     
     events
@@ -190,8 +191,8 @@ classdef TestPulser < ws.Model
             %                                                     'PulseAmplitude', self.Amplitude ));
             self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
             %self.nScansInMonitor=nan;  % only matters in the midst of an experiment
-            self.IsCCCached_=nan;  % only matters in the midst of an experiment
-            self.IsVCCached_=nan;  % only matters in the midst of an experiment            
+            %self.IsCCCached_=nan;  % only matters in the midst of an experiment
+            %self.IsVCCached_=nan;  % only matters in the midst of an experiment            
             %self.IsStopping_=false;
             %self.IsReady_ = true ;
             
@@ -663,15 +664,15 @@ classdef TestPulser < ws.Model
             end
         end
 
-        function value=get.ResistanceUnits(self)
-            if self.IsCC ,
-                value=self.GainUnits;
-            elseif self.IsVC , 
-                value=1/self.GainUnits;                
-            else
-                value=ws.utility.SIUnit.empty();
-            end
-        end
+%         function value=get.ResistanceUnits(self)
+%             if self.IsCC ,
+%                 value=self.GainUnits;
+%             elseif self.IsVC , 
+%                 value=1/self.GainUnits;                
+%             else
+%                 value=ws.utility.SIUnit.empty();
+%             end
+%         end
         
 %         function value=get.ResistanceUnitsPerElectrode(self)
 %             value=self.GainUnitsPerElectrode;
@@ -680,36 +681,46 @@ classdef TestPulser < ws.Model
 %             % leave as gain
 %         end
         
-        function value=get.GainUnits(self)
-            if isempty(self.Electrode_)
-                value=ws.utility.SIUnit.empty();                
-            else
-                value=(self.MonitorUnits/self.CommandUnits);
-            end
-        end
+%         function value=get.GainUnits(self)
+%             if isempty(self.Electrode_)
+%                 value=ws.utility.SIUnit.empty();                
+%             else
+%                 value=(self.MonitorUnits/self.CommandUnits);
+%             end
+%         end
         
-        function value=get.GainUnitsPerElectrode(self)
-            value=(self.MonitorUnitsPerElectrode./self.CommandUnitsPerElectrode);
-        end
+%         function value=get.GainUnitsPerElectrode(self)
+%             value=(self.MonitorUnitsPerElectrode./self.CommandUnitsPerElectrode);
+%         end
         
-        function value=get.GainOrResistanceUnits(self)
-            if self.IsCC || self.IsVC ,
-                value=self.ResistanceUnits;
-            else
-                value=self.GainUnits;
-            end
-        end
+%         function value=get.GainOrResistanceUnits(self)
+%             if self.IsCC || self.IsVC ,
+%                 value=self.ResistanceUnits;
+%             else
+%                 value=self.GainUnits;
+%             end
+%         end
         
         function value=get.GainOrResistanceUnitsPerElectrode(self)
-            value=self.GainUnitsPerElectrode;
-            isVCPerElectrode=self.IsVCPerElectrode;
-            value(isVCPerElectrode)=1./value(isVCPerElectrode);
-            % for elements that are not convertible to resistance, just
-            % leave as gain
+            if self.IsRunning_ ,
+                value = self.GainOrResistanceUnitsPerElectrodeCached_ ;
+            else
+                value=(self.MonitorUnitsPerElectrode./self.CommandUnitsPerElectrode);
+                isVCPerElectrode=self.IsVCPerElectrode;
+                value(isVCPerElectrode)=1./value(isVCPerElectrode);
+                % for elements that are not convertible to resistance, just
+                % leave as gain
+            end
         end
         
         function value=get.GainOrResistancePerElectrode(self)
             value=self.GainOrResistancePerElectrode_;
+        end
+        
+        function [gainOrResistance,gainOrResistanceUnits] = getGainOrResistancePerElectrodeWithNiceUnits(self)
+            rawGainOrResistance = self.GainOrResistancePerElectrode;
+            rawGainOrResistanceUnits = self.GainOrResistanceUnitsPerElectrode ;
+            [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;            
         end
         
         function value=get.UpdateRate(self)
@@ -733,33 +744,33 @@ classdef TestPulser < ws.Model
             end
         end
         
-        function value=get.Resistance(self)
-            if isempty(self.Electrode_)
-                value=zeros(1,0); 
-            else
-                %isElectrode=(self.Electrode_==self.Electrodes);
-                isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
-                value=self.ResistancePerElectrode_(isElectrode);
-            end
-        end
-        
-        function value=get.Gain(self)
-            if isempty(self.Electrode_)
-                value=zeros(1,0); 
-            else
-                %isElectrode=(self.Electrode_==self.Electrodes);
-                isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
-                value=self.GainPerElectrode_(isElectrode);
-            end
-        end
-        
-        function value=get.GainOrResistance(self)
-            if self.IsVC || self.IsCC ,
-                value=self.Resistance;
-            else
-                value=self.Gain;
-            end
-        end
+%         function value=get.Resistance(self)
+%             if isempty(self.Electrode_)
+%                 value=zeros(1,0); 
+%             else
+%                 %isElectrode=(self.Electrode_==self.Electrodes);
+%                 isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
+%                 value=self.ResistancePerElectrode_(isElectrode);
+%             end
+%         end
+%         
+%         function value=get.Gain(self)
+%             if isempty(self.Electrode_)
+%                 value=zeros(1,0); 
+%             else
+%                 %isElectrode=(self.Electrode_==self.Electrodes);
+%                 isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
+%                 value=self.GainPerElectrode_(isElectrode);
+%             end
+%         end
+%         
+%         function value=get.GainOrResistance(self)
+%             if self.IsVC || self.IsCC ,
+%                 value=self.Resistance;
+%             else
+%                 value=self.Gain;
+%             end
+%         end
         
         function value=get.Monitor(self)
             if isempty(self.Electrode_)
@@ -1082,6 +1093,7 @@ classdef TestPulser < ws.Model
                 self.ElectrodeIndexCached_=self.ElectrodeIndex;
                 self.NScansInSweepCached_ = self.NScansInSweep;
                 self.NElectrodesCached_ = self.NElectrodes;
+                self.GainOrResistanceUnitsPerElectrodeCached_ = self.GainOrResistanceUnitsPerElectrode ;
 
                 % Compute some indices and cache them, again for speed during
                 % sweeps
