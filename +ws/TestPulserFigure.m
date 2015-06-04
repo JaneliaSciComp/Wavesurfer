@@ -182,11 +182,21 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % Extra spaces b/c right-align cuts of last char a bit
             set(self.UpdateRateText,'String',fif(isnan(self.Model.UpdateRate),'? ',sprintf('%0.1f ',self.Model.UpdateRate)));
             %fprintf('here\n');
-            gainOrResistance=self.Model.GainOrResistancePerElectrode;
+            %rawGainOrResistance=self.Model.GainOrResistancePerElectrode;
+            %rawGainOrResistanceUnits = self.Model.GainOrResistanceUnitsPerElectrode ;
+            %[gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;
+            [gainOrResistance,gainOrResistanceUnits] = self.Model.getGainOrResistancePerElectrodeWithNiceUnits() ;
             %fprintf('here 2\n');
             nElectrodes=length(gainOrResistance);
             for j=1:nElectrodes ,
-                set(self.GainTexts(j),'String',fif(isnan(gainOrResistance(j)),'? ',sprintf('%0.3g ',gainOrResistance(j))));
+                gainOrResistanceThis = gainOrResistance(j) ;
+                if isnan(gainOrResistanceThis) ,
+                    set(self.GainTexts(j),'String','? ');
+                    set(self.GainUnitsTexts(j),'String','');
+                else
+                    set(self.GainTexts(j),'String',sprintf('%0.1f ',gainOrResistanceThis));
+                    set(self.GainUnitsTexts(j),'String',string(gainOrResistanceUnits(j)));
+                end
             end
             %fprintf('here 3\n');
             % draw the trace line
@@ -299,7 +309,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                 else
                     set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',self.Model.Electrodes{i}.Name));
                 end
-                set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
+                %set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
+                set(self.GainUnitsTexts(i),'String','');
             end
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
             self.YLimits_ = self.Model.YLimits;
@@ -494,20 +505,29 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                           'FontSize',9, ...
                           'String','-', ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+
+            wavesurferDirName=fileparts(which('wavesurfer'));
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollUpButton= ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
-                          'String','^', ...
+                          'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+%                           'String','^', ...
+
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollDownButton= ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
-                          'String','v', ...
+                          'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+%                           'String','v', ...
                     
 %             % Gain text
 %             self.GainLabelTexts= ...
@@ -942,7 +962,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                                   'Style','text', ...
                                   'Units','pixels', ...
                                   'FontSize',9, ...
-                                  'String','GOhm');
+                                  'String','MOhm');
                 end
             elseif nNewElectrodes<0 ,
                 % Delete the excess HG objects

@@ -1,6 +1,9 @@
-function rasterVirtualRealityDisplayThread(wsModel,evt)
+function rasterVirtualRealityDisplayProcess()
 
-% usage:  see rasterVirtualReality.m
+% Usage:  See RasterVirtualReality.m
+
+% This is run in a second Matlab process, to compute location-triggered
+% spike heatmaps for a VR setup.
 
 % user-defined parameters
 SpikeThreshold = 2;  % delta mV
@@ -19,7 +22,7 @@ NISyncFound=false;
 AnalogData=[];
 DigitalData=[];
 SerialXYV=[];
-InterpolatedSerialXYV=[];
+%InterpolatedSerialXYV=[];
 SerialSyncPulses=[];
 NTrimmedTicks=0;
 
@@ -80,14 +83,14 @@ while true
     if strcmp(tmp,'quit')
         break;
     end
-    AnalogData = [AnalogData; tmp];
+    AnalogData = [AnalogData; tmp]; %#ok<AGROW>
 
     tmp=[];
     while isempty(tmp)
         tmp=ws.jtcp.jtcp('READ',TcpReceive);
         pause(0.01);
     end
-    DigitalData = [DigitalData; tmp];
+    DigitalData = [DigitalData; tmp]; %#ok<AGROW>
     
     % get serial data
     tmp=[];
@@ -96,15 +99,15 @@ while true
         pause(0.01);
     end
     if ~strcmp(tmp,'nothing')
-        cellstr(char(tmp)');
-        serialData = strsplit(ans{1});
+        tmpAsCellString = cellstr(char(tmp)');
+        serialData = strsplit(tmpAsCellString{1});
 
         idx=cellfun(@(x) ~isempty(strfind(x,',VR')), serialData);
         data=cellfun(@(x) sscanf(x,'%ld,VR,%*ld,%ld,%ld,%*ld,%*s'), serialData(idx), 'uniformoutput',false);
-        SerialXYV = [ SerialXYV; [data{:}]' ];  % time, y, z %, velocity
+        SerialXYV = [ SerialXYV; [data{:}]' ];  %#ok<AGROW> % time, y, z %, velocity
         idx=cellfun(@(x) ~isempty(strfind(x,',PM')), serialData);
         data=cellfun(@(x) sscanf(x,'%ld,PM,%*s'), serialData(idx), 'uniformoutput',false);
-        SerialSyncPulses = [SerialSyncPulses; [data{:}]'];
+        SerialSyncPulses = [SerialSyncPulses; [data{:}]']; %#ok<AGROW>
     end
 
     % align with sync pulse
@@ -173,8 +176,8 @@ while true
     AllNSpikesData(AllNSpikesData==0) = nan;
     set(NSpikesSurf, 'cdata', AllNSpikesData);
     if any(~isnan(AllNSpikesData))
-        prctile(reshape(AllNSpikesData,1,numel(AllNSpikesData)),[1; 99]);
-        caxis(NSpikesAxes, ans);
+        range=prctile(reshape(AllNSpikesData,1,numel(AllNSpikesData)),[1; 99]);
+        caxis(NSpikesAxes, range);
     end
 
     idx=find((SerialXYV(:,1) >= NTrimmedTicks/SampleRate*1e6+serialSyncZero) & ...
@@ -185,15 +188,15 @@ while true
     AllBinDwellTimes = AllBinDwellTimes + BinDwellTimes;
     set(SpikeRateSurf, 'cdata', AllNSpikesData./AllBinDwellTimes);
     if any(~isnan(AllNSpikesData))
-        prctile(reshape(AllNSpikesData./AllBinDwellTimes,1,numel(AllNSpikesData)),[1; 99]);
-        caxis(SpikeRateAxes, ans);
+        range=prctile(reshape(AllNSpikesData./AllBinDwellTimes,1,numel(AllNSpikesData)),[1; 99]);
+        caxis(SpikeRateAxes, range);
     end
 
     AllMeanSubthresholds = cellfun(@(x) nanmedian(x),AllBinSubthresholds);
     set(SubthresholdSurf, 'cdata', AllMeanSubthresholds);
     if any(~isnan(AllMeanSubthresholds))
-        prctile(reshape(AllMeanSubthresholds,1,numel(AllMeanSubthresholds)),[1; 99]);
-        caxis(SubthresholdAxes, ans);
+        range=prctile(reshape(AllMeanSubthresholds,1,numel(AllMeanSubthresholds)),[1; 99]);
+        caxis(SubthresholdAxes, range);
     end
     
     drawnow;
@@ -203,12 +206,15 @@ while true
     NTrimmedTicks = NTrimmedTicks + NToTrim;
     AnalogData = AnalogData(NToTrim+1:end,:);
     DigitalData = DigitalData(NToTrim+1:end);
-    find(SerialXYV(:,1)>=NTrimmedTicks/SampleRate*1e6+serialSyncZero,1);
-    SerialXYV = SerialXYV(ans:end,:);
-    find(SerialSyncPulses>=NTrimmedTicks/SampleRate*1e6+serialSyncZero,1);
-    SerialSyncPulses = SerialSyncPulses(ans:end);
+    iSomething = find(SerialXYV(:,1)>=NTrimmedTicks/SampleRate*1e6+serialSyncZero,1);
+    SerialXYV = SerialXYV(iSomething:end,:);
+    iSomethingElse = find(SerialSyncPulses>=NTrimmedTicks/SampleRate*1e6+serialSyncZero,1);
+    SerialSyncPulses = SerialSyncPulses(iSomethingElse:end);
 
 end
 
-self.TcpSend = JTCP('CLOSE',self.TcpSend);
-self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
+TcpSend = JTCP('CLOSE',TcpSend); %#ok<NASGU>
+TcpReceive = JTCP('CLOSE',TcpReceive); %#ok<NASGU>
+
+
+

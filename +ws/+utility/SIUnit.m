@@ -652,7 +652,41 @@ classdef SIUnit
         function out = ne(self, other)
             out = ~eq(self,other);
         end
-    end  % methods
+        
+        %--------------------------------------------------------------------
+        function [newUnit, newValue] = convertToEngineering(unit, value)
+            % If value * unit is a dimensioned quantity, returns an equal
+            % quantity newValue * newUnit where newUnit's Scale is equal to 
+            % 3*n for some integer n, and 1<=newValue<1000.
+            if isempty(unit) ,
+                newUnit = unit ;
+                newValue = value ;
+            else
+                scale = reshape([unit.Scale],size(unit));
+                nPlusY = (scale+log10(value))/3 ;
+                n = floor( nPlusY ) ;  % integer
+                newScale = 3*n ;  % integer
+                %y = nPlusY - n ;            
+                %newValue = 10.^(3*y) ;
+
+                scaleChange = newScale-scale ;  % integer
+                newValue = value .* 10.^(-scaleChange) ;
+
+%                 newPowers = unit.Powers ;
+%                 newUnit = ws.utility.SIUnit(newScale,newPowers) ;
+                
+                [m,n] = size(unit) ;
+                for j=n:-1:1 ,
+                    for i=m:-1:1 ,
+                        newUnit(i,j) = ws.utility.SIUnit(newScale(i,j),unit(i,j).Powers) ;
+                    end
+                end
+                
+            end
+        end
+        
+        
+    end  % public methods block
     
     methods
         function value=isequal(self,other)
