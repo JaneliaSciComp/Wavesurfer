@@ -26,26 +26,34 @@ classdef ElectrodeManagerController < ws.Controller
                     self.testPulseQCheckboxClicked(source);
                 elseif any(source==figureObject.RemoveQCheckboxes) ,
                     self.removeQCheckboxClicked(source);
-                elseif any(source==figureObject.CurrentMonitorPopups) , 
-                    self.currentMonitorPopupActuated(source);
-                elseif any(source==figureObject.VoltageCommandPopups) , 
-                    self.voltageCommandPopupActuated(source);
-                elseif any(source==figureObject.VoltageMonitorPopups) , 
-                    self.voltageMonitorPopupActuated(source);
-                elseif any(source==figureObject.CurrentCommandPopups) , 
-                    self.currentCommandPopupActuated(source);
+                elseif any(source==figureObject.MonitorPopups) , 
+                    self.monitorPopupActuated(source);
+                elseif any(source==figureObject.CommandPopups) , 
+                    self.commandPopupActuated(source);
+%                 elseif any(source==figureObject.CurrentMonitorPopups) , 
+%                     self.currentMonitorPopupActuated(source);
+%                 elseif any(source==figureObject.VoltageCommandPopups) , 
+%                     self.voltageCommandPopupActuated(source);
+%                 elseif any(source==figureObject.VoltageMonitorPopups) , 
+%                     self.voltageMonitorPopupActuated(source);
+%                 elseif any(source==figureObject.CurrentCommandPopups) , 
+%                     self.currentCommandPopupActuated(source);
                 elseif any(source==figureObject.ModePopups) ,
                     self.modePopupActuated(source);
                 elseif any(source==figureObject.LabelEdits) ,
                     self.labelEditEdited(source);
-                elseif any(source==figureObject.CurrentMonitorScaleEdits) ,
-                    self.currentMonitorScaleEditEdited(source);
-                elseif any(source==figureObject.VoltageCommandScaleEdits) ,
-                    self.voltageCommandScaleEditEdited(source);
-                elseif any(source==figureObject.VoltageMonitorScaleEdits) ,
-                    self.voltageMonitorScaleEditEdited(source);
-                elseif any(source==figureObject.CurrentCommandScaleEdits) ,
-                    self.currentCommandScaleEditEdited(source);                
+                elseif any(source==figureObject.MonitorScaleEdits) ,
+                    self.monitorScaleEditEdited(source);
+                elseif any(source==figureObject.CommandScaleEdits) ,
+                    self.commandScaleEditEdited(source);
+%                 elseif any(source==figureObject.CurrentMonitorScaleEdits) ,
+%                     self.currentMonitorScaleEditEdited(source);
+%                 elseif any(source==figureObject.VoltageCommandScaleEdits) ,
+%                     self.voltageCommandScaleEditEdited(source);
+%                 elseif any(source==figureObject.VoltageMonitorScaleEdits) ,
+%                     self.voltageMonitorScaleEditEdited(source);
+%                 elseif any(source==figureObject.CurrentCommandScaleEdits) ,
+%                     self.currentCommandScaleEditEdited(source);                
                 elseif any(source==figureObject.TypePopups) ,
                     self.typePopupActuated(source);
                 elseif any(source==figureObject.IndexWithinTypeEdits) ,
@@ -105,8 +113,8 @@ classdef ElectrodeManagerController < ws.Controller
             isTheElectrode=(source==self.Figure.RemoveQCheckboxes);
             self.Model.IsElectrodeMarkedForRemoval(isTheElectrode)=get(source,'Value');            
         end        
-        
-        function voltageMonitorPopupActuated(self,source)
+
+        function monitorPopupActuated(self,source)
             % Get the list of valid choices, if we can
             electrodeManager=self.Model;
             ephys=electrodeManager.Parent;
@@ -114,12 +122,38 @@ classdef ElectrodeManagerController < ws.Controller
             validChoices=wavesurferModel.Acquisition.ChannelNames;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            isTheElectrode=(source==self.Figure.VoltageMonitorPopups);
+            isTheElectrode=(source==self.Figure.MonitorPopups);
             electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.VoltageMonitorChannelName=choice;
+            electrode.MonitorChannelName=choice;
         end
         
-        function voltageCommandPopupActuated(self,source)
+%         function currentMonitorPopupActuated(self,source)
+%             % Get the list of valid choices, if we can
+%             electrodeManager=self.Model;
+%             ephys=electrodeManager.Parent;
+%             wavesurferModel=ephys.Parent;
+%             validChoices=wavesurferModel.Acquisition.ChannelNames;
+%             % Do the rest
+%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             isTheElectrode=(source==self.Figure.CurrentMonitorPopups);
+%             electrode=self.Model.Electrodes{isTheElectrode};
+%             electrode.CurrentMonitorChannelName=choice;
+%         end
+%         
+%         function voltageMonitorPopupActuated(self,source)
+%             % Get the list of valid choices, if we can
+%             electrodeManager=self.Model;
+%             ephys=electrodeManager.Parent;
+%             wavesurferModel=ephys.Parent;
+%             validChoices=wavesurferModel.Acquisition.ChannelNames;
+%             % Do the rest
+%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             isTheElectrode=(source==self.Figure.VoltageMonitorPopups);
+%             electrode=self.Model.Electrodes{isTheElectrode};
+%             electrode.VoltageMonitorChannelName=choice;
+%         end
+        
+        function commandPopupActuated(self,source)
             % Get the list of valid choices, if we can
             electrodeManager=self.Model;
             ephys=electrodeManager.Parent;
@@ -127,36 +161,36 @@ classdef ElectrodeManagerController < ws.Controller
             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            isTheElectrode=(source==self.Figure.VoltageCommandPopups);
+            isTheElectrode=(source==self.Figure.CommandPopups);
             electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.VoltageCommandChannelName=choice;
+            electrode.CommandChannelName=choice;
         end
         
-        function currentMonitorPopupActuated(self,source)
-            % Get the list of valid choices, if we can
-            electrodeManager=self.Model;
-            ephys=electrodeManager.Parent;
-            wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Acquisition.ChannelNames;
-            % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            isTheElectrode=(source==self.Figure.CurrentMonitorPopups);
-            electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.CurrentMonitorChannelName=choice;
-        end
-        
-        function currentCommandPopupActuated(self,source)
-            % Get the list of valid choices, if we can
-            electrodeManager=self.Model;
-            ephys=electrodeManager.Parent;
-            wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
-            % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            isTheElectrode=(source==self.Figure.CurrentCommandPopups);
-            electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.CurrentCommandChannelName=choice;
-        end
+%         function voltageCommandPopupActuated(self,source)
+%             % Get the list of valid choices, if we can
+%             electrodeManager=self.Model;
+%             ephys=electrodeManager.Parent;
+%             wavesurferModel=ephys.Parent;
+%             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+%             % Do the rest
+%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             isTheElectrode=(source==self.Figure.VoltageCommandPopups);
+%             electrode=self.Model.Electrodes{isTheElectrode};
+%             electrode.VoltageCommandChannelName=choice;
+%         end
+%         
+%         function currentCommandPopupActuated(self,source)
+%             % Get the list of valid choices, if we can
+%             electrodeManager=self.Model;
+%             ephys=electrodeManager.Parent;
+%             wavesurferModel=ephys.Parent;
+%             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+%             % Do the rest
+%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             isTheElectrode=(source==self.Figure.CurrentCommandPopups);
+%             electrode=self.Model.Electrodes{isTheElectrode};
+%             electrode.CurrentCommandChannelName=choice;
+%         end
         
         function modePopupActuated(self,source)
             isTheElectrode=(source==self.Figure.ModePopups);
@@ -179,41 +213,50 @@ classdef ElectrodeManagerController < ws.Controller
             electrode.Name=newLabel;            
         end  % function
 
-        function currentMonitorScaleEditEdited(self,source)
-            isTheElectrode=(source==self.Figure.CurrentMonitorScaleEdits);
+        function monitorScaleEditEdited(self,source)
+            isTheElectrode=(source==self.Figure.MonitorScaleEdits);
             newValue=str2double(get(source,'String'));
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.MonitorScaling=newValue;
             electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeModeOrScaling(electrodeIndex,'CurrentMonitorScaling',newValue);  %#ok<FNDSB>
+            self.Model.setElectrodeMonitorScaling(electrodeIndex,newValue);  %#ok<FNDSB>
         end  % function
-
-        function currentCommandScaleEditEdited(self,source)
-            isTheElectrode=(source==self.Figure.CurrentCommandScaleEdits);
-            newValue=str2double(get(source,'String'));
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.CommandScaling=newValue;
-            electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeModeOrScaling(electrodeIndex,'CurrentCommandScaling',newValue);  %#ok<FNDSB>
-        end  % function        
         
-        function voltageMonitorScaleEditEdited(self,source)
-            isTheElectrode=(source==self.Figure.VoltageMonitorScaleEdits);
-            newValue=str2double(get(source,'String'));
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.MonitorScaling=newValue;
-            electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeModeOrScaling(electrodeIndex,'VoltageMonitorScaling',newValue);  %#ok<FNDSB>
-        end  % function
+%         function currentMonitorScaleEditEdited(self,source)
+%             isTheElectrode=(source==self.Figure.CurrentMonitorScaleEdits);
+%             newValue=str2double(get(source,'String'));
+%             %electrode=self.Model.Electrodes{isTheElectrode};
+%             %electrode.MonitorScaling=newValue;
+%             electrodeIndex=find(isTheElectrode);
+%             self.Model.setElectrodeModeOrScaling(electrodeIndex,'CurrentMonitorScaling',newValue);  %#ok<FNDSB>
+%         end  % function
 
-        function voltageCommandScaleEditEdited(self,source)
-            isTheElectrode=(source==self.Figure.VoltageCommandScaleEdits);
+        function commandScaleEditEdited(self,source)
+            isTheElectrode=(source==self.Figure.CommandScaleEdits);
             newValue=str2double(get(source,'String'));
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.CommandScaling=newValue;
             electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeModeOrScaling(electrodeIndex,'VoltageCommandScaling',newValue);  %#ok<FNDSB>
-        end  % function        
+            self.Model.setElectrodeCommandScaling(electrodeIndex,newValue);  %#ok<FNDSB>
+        end  % function
+        
+%         function voltageMonitorScaleEditEdited(self,source)
+%             isTheElectrode=(source==self.Figure.VoltageMonitorScaleEdits);
+%             newValue=str2double(get(source,'String'));
+%             %electrode=self.Model.Electrodes{isTheElectrode};
+%             %electrode.MonitorScaling=newValue;
+%             electrodeIndex=find(isTheElectrode);
+%             self.Model.setElectrodeModeOrScaling(electrodeIndex,'VoltageMonitorScaling',newValue);  %#ok<FNDSB>
+%         end  % function
+
+%         function voltageCommandScaleEditEdited(self,source)
+%             isTheElectrode=(source==self.Figure.VoltageCommandScaleEdits);
+%             newValue=str2double(get(source,'String'));
+%             %electrode=self.Model.Electrodes{isTheElectrode};
+%             %electrode.CommandScaling=newValue;
+%             electrodeIndex=find(isTheElectrode);
+%             self.Model.setElectrodeModeOrScaling(electrodeIndex,'VoltageCommandScaling',newValue);  %#ok<FNDSB>
+%         end  % function        
 
         function typePopupActuated(self,source)
             %self.Figure.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while

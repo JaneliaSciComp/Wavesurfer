@@ -154,7 +154,7 @@ classdef Electrode < ws.Model & ws.Mimic
             end
             self.mayHaveChanged('VoltageCommandChannelName');
         end  % function
-        
+
         function set.CurrentMonitorChannelName(self,newValue)
             if ischar(newValue)
                 self.CurrentMonitorChannelName_=newValue;
@@ -645,7 +645,7 @@ classdef Electrode < ws.Model & ws.Mimic
             end
         end
         
-        function result=getCommandUnitsByName(self,channelName)
+        function result = getCommandUnitsByName(self,channelName)
             % Get the scaling for the named command channel dictated by
             % this electrode.  If the named channel is both the current and
             % voltage command name, use the mode to break the tie.
@@ -670,9 +670,18 @@ classdef Electrode < ws.Model & ws.Mimic
             keyboard
         end
         
-        function modes=getAllowedModes(self)
+        function modes = getAllowedModes(self)
             modes=ws.Electrode.allowedModesForType(self.Type);
-        end            
+        end
+        
+        function result = getIsInACCMode(self)
+            result = isequal(self.Mode_,ws.ElectrodeMode.CC) || isequal(self.Mode_,ws.ElectrodeMode.IEqualsZero) ;
+        end
+
+        function result = getIsInAVCMode(self)
+            result = isequal(self.Mode_,ws.ElectrodeMode.VC) ;
+        end
+        
     end  % public methods block
     
     methods (Access = protected)

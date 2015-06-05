@@ -334,8 +334,28 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             electrodeIndices=(1:self.NElectrodes);
             testPulseElectrodeIndices=electrodeIndices(self.IsElectrodeMarkedForTestPulse_);
             electrodeIndex=testPulseElectrodeIndices(testPulseElectrodeIndex);
-            self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue)
-        end
+            self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue);
+        end  % function
+
+        function setElectrodeMonitorScaling(self, electrodeIndex, newValue)
+            electrode = self.Electrodes_{electrodeIndex} ;
+            if electrode.getIsInAVCMode() ,
+                propertyName = 'CurrentMonitorScaling' ;
+            else
+                propertyName = 'VoltageMonitorScaling' ;
+            end                
+            self.setElectrodeModeOrScaling(electrodeIndex, propertyName, newValue) ;
+        end  % function
+        
+        function setElectrodeCommandScaling(self, electrodeIndex, newValue)
+            electrode = self.Electrodes_{electrodeIndex} ;
+            if electrode.getIsInAVCMode() ,
+                propertyName = 'VoltageCommandScaling' ;
+            else
+                propertyName = 'CurrentCommandScaling' ;
+            end                
+            self.setElectrodeModeOrScaling(electrodeIndex, propertyName, newValue) ;
+        end  % function
         
         function setElectrodeModeOrScaling(self,electrodeIndex,propertyName,newValue)
             electrode=self.Electrodes_{electrodeIndex};

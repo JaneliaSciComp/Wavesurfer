@@ -262,6 +262,40 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             value=self.YLim_;
         end
         
+        function zoomIn(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            yRadius=0.5*diff(yLimits);
+            newYLimits=yMiddle+0.5*yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function
+        
+        function zoomOut(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            yRadius=0.5*diff(yLimits);
+            newYLimits=yMiddle+2*yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function
+        
+        function scrollUp(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            ySpan=diff(yLimits);
+            yRadius=0.5*ySpan;
+            newYLimits=(yMiddle+0.1*ySpan)+yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function
+        
+        function scrollDown(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            ySpan=diff(yLimits);
+            yRadius=0.5*ySpan;
+            newYLimits=(yMiddle-0.1*ySpan)+yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function
+        
         function value=get.NChannels(self)
             value=length(self.ChannelNames);
         end
@@ -501,8 +535,8 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             if isfinite(iFirstChannel) ,
                 newChannelUnits=acquisition.AnalogChannelUnits(iFirstChannel);  
                 newScale=acquisition.AnalogChannelScales(iFirstChannel);  % V/newChannelUnits
-                yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
-                newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
+                %yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
+                %newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
                 %self.YLim=newYLimits;  % Decided we don't want to do this
                                         % anymore---just leave the y limits in the scope alone
                 self.YUnits=newChannelUnits;  % convert from a scale factor to the native units

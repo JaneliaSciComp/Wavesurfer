@@ -140,7 +140,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 
                model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
                
-               model.Stimulation.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');               
+               model.Stimulation.subscribeMe(self,'DidSetEnabled','','update');               
                model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
