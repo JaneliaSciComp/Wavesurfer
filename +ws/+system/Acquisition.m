@@ -641,7 +641,7 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_=[];            
         end
         
-        function willPerformRun(self, wavesurferModel)
+        function willPerformRun(self)
             %fprintf('Acquisition::willPerformRun()\n');
             %errors = [];
             %abort = false;
@@ -661,6 +661,8 @@ classdef Acquisition < ws.system.Subsystem
                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
                       'The acquisition trigger scheme target can not be empty when the system is enabled.');
             end
+            
+            wavesurferModel = self.Parent ;
             
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources_();
@@ -723,16 +725,16 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.arm();
         end  % function
         
-        function didPerformRun(self, wavesurferModel)
+        function didPerformRun(self)
             %fprintf('Acquisition::didPerformRun()\n');
-            self.didPerformOrAbortRun_(wavesurferModel);
+            self.didPerformOrAbortRun_();
         end  % function
         
-        function didAbortRun(self, wavesurferModel)
-            self.didPerformOrAbortRun_(wavesurferModel);
+        function didAbortRun(self)
+            self.didPerformOrAbortRun_();
         end  % function
 
-        function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function willPerformSweep(self)
             %fprintf('Acquisition::willPerformSweep()\n');
             self.IsArmedOrAcquiring = true;
             self.NScansFromLatestCallback_ = [] ;
@@ -744,11 +746,11 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.start();
         end  % function
         
-        function didPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function didPerformSweep(self) %#ok<MANU>
             %fprintf('Acquisition::didPerformSweep()\n');
         end
         
-        function didAbortSweep(self, ~)
+        function didAbortSweep(self)
             try
                 self.AnalogInputTask_.abort();
                 self.DigitalInputTask_.abort();
@@ -989,7 +991,7 @@ classdef Acquisition < ws.system.Subsystem
     end  % methods block
     
     methods (Access = protected)
-        function didPerformOrAbortRun_(self, wavesurferModel)  %#ok<INUSD>
+        function didPerformOrAbortRun_(self)
             if ~isempty(self.AnalogInputTask_) ,
                 if isvalid(self.AnalogInputTask_) ,
                     self.AnalogInputTask_.disarm();

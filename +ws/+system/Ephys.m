@@ -157,18 +157,18 @@ classdef Ephys < ws.system.Subsystem
         end
                 
         %%
-        function willPerformRun(self, wavesurferObj, runMode) %#ok<INUSD>
+        function willPerformRun(self)
             % Update all the gains and modes that are associated with smart
             % electrodes
             self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();
         end
         
         %%
-        function didPerformRun(self, wavesurferModel) %#ok<INUSD>
+        function didPerformRun(self) %#ok<MANU>
         end
         
         %%
-        function didAbortRun(self, wavesurferModel) %#ok<INUSD>
+        function didAbortRun(self) %#ok<INUSD>
         end
         
         function didSetAcquisitionSampleRate(self,newValue)

@@ -228,7 +228,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 try
                     self.performRun_();
                 catch me
-                    self.abortSweep_('problem');
+                    self.abortSweepAndRun_('problem');
                     me.rethrow();
                 end
             else
@@ -244,7 +244,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 % do nothing
             else
                 % Actually stop the ongoing sweep
-                self.abortSweep_('user');
+                self.abortSweepAndRun_('user');
             end
         end
     end  % methods
@@ -607,7 +607,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 for idx = 1: numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.willPerformRun(self);
+                        self.Subsystems_{idx}.willPerformRun();
                     end
                 end
             catch me
@@ -666,11 +666,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             for idx = 1:numel(self.Subsystems_)
                 try
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.willPerformSweep(self);
+                        self.Subsystems_{idx}.willPerformSweep();
                     end
                 catch me
                     % Unwind those systems that did prepare.
-                    self.abortSweep_('problem',idx - 1);
+                    self.abortSweepAndRun_('problem',idx - 1);
                     me.rethrow();
                 end
             end
@@ -705,7 +705,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didPerformSweep(self);
+                    self.Subsystems_{idx}.didPerformSweep();
                 end
             end
             
@@ -803,8 +803,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
         
-        function abortSweep_(self, reason, highestIndexedSubsystemThatNeedsAbortion)
-            % Command to abort the current sweep.  reason should be either
+        function abortSweepAndRun_(self, reason, highestIndexedSubsystemThatNeedsAbortion)
+            % Command to abort the current sweep, and the current run.  reason should be either
             % 'user' (meaning a user caused the sweep to stop), or
             % 'problem', meaning some problem occured.
             
@@ -812,10 +812,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
             
-            for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1
-                if self.Subsystems_{idx}.Enabled
+            for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
+                if self.Subsystems_{idx}.Enabled ,
                     try 
-                        self.Subsystems_{idx}.didAbortSweep(self);
+                        self.Subsystems_{idx}.didAbortSweep();
                     catch me
                         % In theory, Subsystem::didAbortTrail() never
                         % throws an exception
@@ -847,29 +847,21 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didPerformRun(self);
+                    self.Subsystems_{idx}.didPerformRun();
                 end
             end
             
             self.callUserFunctionsAndBroadcastEvent_('runDidComplete');
         end  % function
         
-        function abortRun_(self, reason, highestIndexedSubsystemThatNeedsAbortion) %#ok<INUSL>
-            % Deal with optional arguments
-            if nargin < 3 ,
-                highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
-            end
-            
-            %stop(self.PollingTimer_);
-            %self.PollingTimer_.TimerFcn = [] ;
-            %self.PollingTimer_.ErrorFcn = [] ;
+        function abortRun_(self, reason)  %#ok<INUSD>
             self.DoContinuePolling_ = false ;  % this prevents the next iteration of the polling loop from running
             
             self.State = ws.ApplicationState.Idle;
             
-            for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
+            for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.Enabled ,
-                    self.Subsystems_{idx}.didAbortRun(self);
+                    self.Subsystems_{idx}.didAbortRun() ;
                 end
             end
             
@@ -1521,7 +1513,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     try
                         self.pollingTimerFired_() ;
                     catch me
-                        self.abortSweep_('problem');
+                        self.abortSweepAndRun_('problem');
                         rethrow(me);
                     end
                     %tMiddle = toc(pollingTicId) ;
@@ -1554,7 +1546,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('WavesurferModel::pollTimerErrored()\n');
             %eventData
             %eventData.Data            
-            self.abortSweep_('problem');  % Put an end to the run
+            self.abortSweepAndRun_('problem');  % Put an end to the run
             error('waversurfer:pollingTimerError',...
                   'The polling timer had a problem.  Acquisition aborted.');
         end        

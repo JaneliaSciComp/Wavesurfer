@@ -265,23 +265,23 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             end
         end
         
-        function willPerformRun(self, wavesurferModel)
+        function willPerformRun(self)
             self.XOffset = 0;
             self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            self.XAutoScroll= (wavesurferModel.IsContinuous);
+            self.XAutoScroll= (self.Parent.IsContinuous);
         end  % function
         
-        function didPerformRun(self, wavesurferModel)
-            self.didPerformOrAbortRun_(wavesurferModel);
+        function didPerformRun(self)
+            self.didPerformOrAbortRun_();
         end
         
-        function didAbortRun(self, wavesurferModel)
-            self.didPerformOrAbortRun_(wavesurferModel);
+        function didAbortRun(self)
+            self.didPerformOrAbortRun_();
         end
     end
     
     methods (Access=protected)
-        function didPerformOrAbortRun_(self, wavesurferModel) %#ok<INUSD>
+        function didPerformOrAbortRun_(self)
             if ~isempty(self.prvCachedDisplayXSpan)
                 self.XSpan = self.prvCachedDisplayXSpan;
             end
@@ -290,7 +290,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
     end
         
     methods    
-        function willPerformSweep(self, ~)
+        function willPerformSweep(self)
             self.prvClearOnNextData = true;
         end
         

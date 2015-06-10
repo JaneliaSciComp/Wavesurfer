@@ -57,13 +57,13 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
             self.setCanEnableImplementation(value);
         end
         
-        function willPerformRun(self, wavesurferModel) %#ok<INUSD>
+        function willPerformRun(self) %#ok<MANU>
         end
         
-        function didPerformRun(self, wavesurferModel) %#ok<INUSD>
+        function didPerformRun(self) %#ok<MANU>
         end
         
-        function didAbortRun(self, wavesurferModel) %#ok<INUSD>
+        function didAbortRun(self) %#ok<MANU>
             % Called if a failure occurred during willPerformRun() for subsystems
             % that have already passed willPerformRun() to clean up, and called fater
             % didAbortSweep().
@@ -71,13 +71,13 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
             % This code MUST be exception free.
         end
         
-        function willPerformSweep(~, ~)          % self, wavesurferObj
+        function willPerformSweep(~)          % self
         end
         
-        function didPerformSweep(~, ~)           % self, wavesurferObj
+        function didPerformSweep(~)           % self
         end
         
-        function didAbortSweep(~, ~)              % self, wavesurferObj
+        function didAbortSweep(~)              % self
             % Called when a sweep is interrupted, either unexpectedly because of an error,
             % or intentionally such as stopping preview mode or stopping an ephys test
             % pulse.

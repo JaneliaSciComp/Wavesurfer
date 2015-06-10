@@ -467,7 +467,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-        function willPerformRun(self, wavesurferModel)
+        function willPerformRun(self)
             %fprintf('Stimulation::willPerformRun()\n');
             %errors = [];
             %abort = false;
@@ -483,6 +483,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
             %end
+            
+            wavesurferModel = self.Parent ;
             
             % Make the NI daq task, if don't have it already
             self.acquireHardwareResources_();
@@ -531,7 +533,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.IsWithinRun_=true;
         end  % willPerformRun() function
         
-        function didPerformRun(self, ~)
+        function didPerformRun(self)
             %fprintf('Stimulation::didPerformRun()\n');
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();
@@ -541,7 +543,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
         end  % function
         
-        function didAbortRun(self, ~)
+        function didAbortRun(self)
             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_.disarm();
             end
@@ -554,7 +556,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.IsWithinRun_=false;
         end  % function
         
-        function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function willPerformSweep(self)
             % This gets called from above when an (acq) sweep is about to
             % start.  What we do here depends a lot on the current triggering
             % settings.
@@ -631,11 +633,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             end
 %         end  % function
         
-        function didPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function didPerformSweep(self)  %#ok<MANU>
             %fprintf('Stimulation::didPerformSweep()\n');            
         end
         
-        function didAbortSweep(self, ~)
+        function didAbortSweep(self)
             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
                 self.TheFiniteAnalogOutputTask_.abort();
             end

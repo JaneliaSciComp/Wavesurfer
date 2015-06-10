@@ -453,7 +453,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
 %         end  % function        
         
-        function willPerformRun(self, wavesurferModel, runMode) %#ok<INUSD>
+        function willPerformRun(self)
             self.setupMasterTriggerTask();            
 %             if runMode == ws.ApplicationState.AcquiringSweepBased ,
                 if self.AcquisitionUsesASAPTriggering ,
@@ -469,32 +469,32 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
         end  % function
         
-        function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function willPerformSweep(self)
             if self.AcquisitionUsesASAPTriggering ,
             %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
                 self.setupInternalSweepBasedTriggers();
             end
         end  % function
 
-        function didPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function didPerformSweep(self)
             %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
                 self.teardownInternalSweepBasedTriggers();
             end
         end  % function
         
-        function didAbortSweep(self, wavesurferModel) %#ok<INUSD>
+        function didAbortSweep(self)
             %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
                 self.teardownInternalSweepBasedTriggers();
             end
         end  % function
         
-        function didPerformRun(self, ~)
+        function didPerformRun(self)
             self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didAbortRun(self, ~)
+        function didAbortRun(self)
             self.teardownInternalSweepBasedTriggers();
         end  % function
         

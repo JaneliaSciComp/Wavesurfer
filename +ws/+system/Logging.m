@@ -244,10 +244,12 @@ classdef Logging < ws.system.Subsystem
             value = self.CurrentRunAbsoluteFileName_ ;
         end  % function
         
-        function willPerformRun(self, wavesurferModel)
+        function willPerformRun(self)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
+            
+            wavesurferModel = self.Parent ;
             
             % Note that we have not yet created the current data file
             self.DidCreateCurrentDataFile_ = false ;
@@ -350,7 +352,7 @@ classdef Logging < ws.system.Subsystem
             self.DidWriteSomeDataForThisSweep_ = [] ;
         end
         
-        function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function willPerformSweep(self)
             %profile resume
             thisSweepIndex = self.NextSweepIndex ;
             timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
@@ -384,14 +386,14 @@ classdef Logging < ws.system.Subsystem
             %profile off
         end
         
-        function didPerformSweep(self, wavesurferModel) %#ok<INUSD>
+        function didPerformSweep(self)
             %if wavesurferModel.State == ws.ApplicationState.AcquiringSweepBased ,
                 %self.CurrentSweepIndex_ = self.CurrentSweepIndex_ + 1 ;
                 self.NextSweepIndex = self.NextSweepIndex + 1;
             %end
         end
         
-        function didAbortSweep(self, wavesurferModel) %#ok<INUSD>
+        function didAbortSweep(self)
             %if wavesurferModel.State == ws.ApplicationState.AcquiringSweepBased ,
                 if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
                     if isempty(self.FirstSweepIndex_) ,
@@ -409,11 +411,11 @@ classdef Logging < ws.system.Subsystem
             %end
         end
         
-        function didPerformRun(self, ~)
+        function didPerformRun(self)
             self.didPerformOrAbortRun_();
         end
         
-        function didAbortRun(self, wavesurferModel) %#ok<INUSD>
+        function didAbortRun(self)
             %fprintf('Logging::didAbortRun()\n');
         
             %dbstop if caught
