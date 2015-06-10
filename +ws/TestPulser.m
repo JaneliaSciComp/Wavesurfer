@@ -190,9 +190,9 @@ classdef TestPulser < ws.Model
             %                   ws.stimulus.function.TestPulse('PulseDuration', self.PulseDuration, ...
             %                                                     'PulseAmplitude', self.Amplitude ));
             self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
-            %self.nScansInMonitor=nan;  % only matters in the midst of an experiment
-            %self.IsCCCached_=nan;  % only matters in the midst of an experiment
-            %self.IsVCCached_=nan;  % only matters in the midst of an experiment            
+            %self.nScansInMonitor=nan;  % only matters in the midst of a run
+            %self.IsCCCached_=nan;  % only matters in the midst of a run
+            %self.IsVCCached_=nan;  % only matters in the midst of a run            
             %self.IsStopping_=false;
             %self.IsReady_ = true ;
             

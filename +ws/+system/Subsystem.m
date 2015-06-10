@@ -60,15 +60,15 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
         % Passes the appState that the system will be going into (e.g., run, preview,
         % ...) in case that matters to the subsystem, since the wavesurferObj State property
         % is still Idle at this moment.
-        function willPerformExperiment(self, wavesurferModel, desiredApplicationState) %#ok<INUSD>
+        function willPerformRun(self, wavesurferModel, desiredApplicationState) %#ok<INUSD>
         end
         
-        function didPerformExperiment(self, wavesurferModel) %#ok<INUSD>
+        function didPerformRun(self, wavesurferModel) %#ok<INUSD>
         end
         
-        function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
-            % Called if a failure occurred during willPerformExperiment() for subsystems
-            % that have already passed willPerformExperiment() to clean up, and called fater
+        function didAbortRun(self, wavesurferModel) %#ok<INUSD>
+            % Called if a failure occurred during willPerformRun() for subsystems
+            % that have already passed willPerformRun() to clean up, and called fater
             % didAbortSweep().
             
             % This code MUST be exception free.
@@ -88,7 +88,7 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
             % This code MUST be exception free.
         end
         
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSD>
+        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
         end
     end  % methods block
     

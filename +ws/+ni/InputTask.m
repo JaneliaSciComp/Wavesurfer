@@ -145,10 +145,10 @@ classdef InputTask < handle
             value = self.Parent_;
         end  % function
         
-        function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromExperimentStartTicId) %#ok<INUSL>
+        function [rawData,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>
             % If nScansToRead is empty, read all the available scans.  If
             % nScansToRead is nonempty, read that number of scans.
-            timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;
+            timeSinceRunStartNow = toc(fromRunStartTicId) ;
             if self.IsAnalog ,
                 if isempty(self.DabsDaqTask_) ,
                     if isempty(nScansToRead) ,
@@ -192,7 +192,7 @@ classdef InputTask < handle
                     rawData = packedData;
                 end
             end
-            timeSinceExperimentStartAtStartOfData = timeSinceExperimentStartNow - size(rawData,1)/self.SampleRate_ ;
+            timeSinceRunStartAtStartOfData = timeSinceRunStartNow - size(rawData,1)/self.SampleRate_ ;
         end  % function
     
         function debug(self) %#ok<MANU>

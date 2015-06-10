@@ -4,9 +4,9 @@ classdef UserClass < handle
         sweepWillStart(self,wsModel,eventName)        
         sweepDidComplete(self,wsModel,eventName)      
         sweepDidAbort(self,wsModel,eventName)
-        experimentWillStart(self,wsModel,eventName)
-        experimentDidComplete(self,wsModel,eventName)
-        experimentDidAbort(self,wsModel,eventName)
+        runWillStart(self,wsModel,eventName)
+        runDidComplete(self,wsModel,eventName)
+        runDidAbort(self,wsModel,eventName)
         dataIsAvailable(self,wsModel,eventName)
     end
     

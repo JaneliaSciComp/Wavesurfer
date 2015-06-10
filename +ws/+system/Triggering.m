@@ -355,7 +355,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function startMeMaybe(self, experimentMode, nSweepsInSet, nSweepsCompletedInSet) %#ok<INUSL>
+        function startMeMaybe(self, runMode, nSweepsInSet, nSweepsCompletedInSet) %#ok<INUSL>
             % This gets called once per sweep, to start() all the relevant
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
             % whether we start the triggers for each sweep, or only for the
@@ -393,7 +393,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
             % Notify the WSM, which starts the polling timer
             if nSweepsCompletedInSet==0 ,
-                self.Parent.triggeringSubsystemJustStartedFirstSweepInExperiment();
+                self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
             end            
         end  % function
 
@@ -453,9 +453,9 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
 %         end  % function        
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSD>
+        function willPerformRun(self, wavesurferModel, runMode) %#ok<INUSD>
             self.setupMasterTriggerTask();            
-%             if experimentMode == ws.ApplicationState.AcquiringSweepBased ,
+%             if runMode == ws.ApplicationState.AcquiringSweepBased ,
                 if self.AcquisitionUsesASAPTriggering ,
                     % do nothing --- will arm for each sweep
                 else
@@ -490,11 +490,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function didPerformExperiment(self, ~)
+        function didPerformRun(self, ~)
             self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didAbortExperiment(self, ~)
+        function didAbortRun(self, ~)
             self.teardownInternalSweepBasedTriggers();
         end  % function
         
@@ -577,12 +577,12 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function        
         
-        function willSetNSweepsPerExperiment(self)
+        function willSetNSweepsPerRun(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
 
-        function didSetNSweepsPerExperiment(self)
+        function didSetNSweepsPerRun(self)
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
@@ -763,7 +763,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                         self.AcquisitionTriggerScheme.Target.releaseInterval();
                         self.AcquisitionTriggerScheme.Target.placeLowerLimitOnInterval( ...
                             self.Parent.Acquisition.Duration+self.MinDurationBetweenSweepsIfNotASAP );
-                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NSweepsPerExperiment);
+                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NSweepsPerRun);
                     end
                 end
 %             elseif self.Parent.IsContinuous ,

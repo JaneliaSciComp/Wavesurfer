@@ -181,9 +181,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
 %             set(self.SweepStartEdit,'String',model.SweepWillStart);
 %             set(self.SweepCompleteEdit,'String',model.SweepDidComplete);
 %             set(self.SweepAbortEdit,'String',model.SweepDidAbort);            
-%             set(self.ExperimentStartEdit,'String',model.ExperimentWillStart);
-%             set(self.ExperimentCompleteEdit,'String',model.ExperimentDidComplete);
-%             set(self.ExperimentAbortEdit,'String',model.ExperimentDidAbort);            
+%             set(self.RunStartEdit,'String',model.RunWillStart);
+%             set(self.RunCompleteEdit,'String',model.RunDidComplete);
+%             set(self.RunAbortEdit,'String',model.RunDidAbort);            
 %             set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
 %             
 %             updateControlEnablementImplementation_();
@@ -239,9 +239,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
 %             model.subscribeMe(self,'PostSet','SweepWillStart','update');
 %             model.subscribeMe(self,'PostSet','SweepDidComplete','update');
 %             model.subscribeMe(self,'PostSet','SweepDidAbort','update');   
-%             model.subscribeMe(self,'PostSet','ExperimentWillStart','update');
-%             model.subscribeMe(self,'PostSet','ExperimentDidComplete','update');
-%             model.subscribeMe(self,'PostSet','ExperimentDidAbort','update');           
+%             model.subscribeMe(self,'PostSet','RunWillStart','update');
+%             model.subscribeMe(self,'PostSet','RunDidComplete','update');
+%             model.subscribeMe(self,'PostSet','RunDidAbort','update');           
 %             model.subscribeMe(self,'PostSet','AbortCallsComplete','update');
             model.subscribeMe(self,'Update','','update');
             

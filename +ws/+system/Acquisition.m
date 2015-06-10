@@ -641,8 +641,8 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_=[];            
         end
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode)  %#ok<INUSL>
-            %fprintf('Acquisition::willPerformExperiment()\n');
+        function willPerformRun(self, wavesurferModel, runMode)  %#ok<INUSL>
+            %fprintf('Acquisition::willPerformRun()\n');
             %errors = [];
             %abort = false;
 
@@ -672,7 +672,7 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
             % Set for finite vs. continous sampling
-            if experimentMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) ,
+            if runMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) ,
                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
                 self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
@@ -705,11 +705,11 @@ classdef Acquisition < ws.system.Subsystem
             end
             NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
             NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
-            if experimentMode == ws.ApplicationState.AcquiringContinuously ,
+            if runMode == ws.ApplicationState.AcquiringContinuously ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
-            elseif experimentMode == ws.ApplicationState.AcquiringSweepBased ,
+            elseif runMode == ws.ApplicationState.AcquiringSweepBased ,
                 self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else
@@ -722,13 +722,13 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.arm();
         end  % function
         
-        function didPerformExperiment(self, wavesurferModel)
-            %fprintf('Acquisition::didPerformExperiment()\n');
-            self.didPerformOrAbortExperiment_(wavesurferModel);
+        function didPerformRun(self, wavesurferModel)
+            %fprintf('Acquisition::didPerformRun()\n');
+            self.didPerformOrAbortRun_(wavesurferModel);
         end  % function
         
-        function didAbortExperiment(self, wavesurferModel)
-            self.didPerformOrAbortExperiment_(wavesurferModel);
+        function didAbortRun(self, wavesurferModel)
+            self.didPerformOrAbortRun_(wavesurferModel);
         end  % function
 
         function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
@@ -841,7 +841,7 @@ classdef Acquisition < ws.system.Subsystem
             keyboard
         end
         
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSD,INUSL>
+        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             self.LatestAnalogData_ = scaledAnalogData ;
@@ -988,7 +988,7 @@ classdef Acquisition < ws.system.Subsystem
     end  % methods block
     
     methods (Access = protected)
-        function didPerformOrAbortExperiment_(self, wavesurferModel)  %#ok<INUSD>
+        function didPerformOrAbortRun_(self, wavesurferModel)  %#ok<INUSD>
             if ~isempty(self.AnalogInputTask_) ,
                 if isvalid(self.AnalogInputTask_) ,
                     self.AnalogInputTask_.disarm();
@@ -1007,7 +1007,7 @@ classdef Acquisition < ws.system.Subsystem
         end  % function
         
         function acquisitionSweepComplete_(self)
-            %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
+            %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
             self.IsArmedOrAcquiring = false;
             % TODO If there are multiple acquisition boards, notify only when all are complete.
 %             if ~isempty(self.DelegateDoneFcn_)
@@ -1019,7 +1019,7 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData)
+        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             %fprintf('Acquisition::samplesAcquired_()\n');
             %profile resume
 
@@ -1027,7 +1027,7 @@ classdef Acquisition < ws.system.Subsystem
             % lock-step
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
-                parent.samplesAcquired(rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData);
+                parent.samplesAcquired(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
             end
             %profile off
         end  % function
@@ -1069,7 +1069,7 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     methods
-        function pollingTimerFired(self, timeSinceSweepStart, fromExperimentStartTicId)
+        function pollingTimerFired(self, timeSinceSweepStart, fromRunStartTicId)
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
@@ -1085,13 +1085,13 @@ classdef Acquisition < ws.system.Subsystem
                 %if areTasksDone ,
                 %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
                 %end
-                [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
-                    self.readDataFromTasks_(timeSinceSweepStart, fromExperimentStartTicId, areTasksDone) ;
+                [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+                    self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
                 %nScans = size(rawAnalogData,1) ;
                 %fprintf('Read acq data. nScans: %d\n',nScans)
 
                 % Notify the whole system that samples were acquired
-                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData);
+                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
 
                 % If we were done before reading the data, act accordingly
                 if areTasksDone ,
@@ -1114,16 +1114,16 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     methods (Access=protected)
-        function [rawAnalogData,rawDigitalData,timeSinceExperimentStartAtStartOfData] = ...
-                readDataFromTasks_(self, timeSinceSweepStart, fromExperimentStartTicId, areTasksDone) %#ok<INUSD>
+        function [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+                readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone) %#ok<INUSD>
             % both analog and digital tasks are for-real
-            [rawAnalogData,timeSinceExperimentStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceSweepStart, fromExperimentStartTicId);
+            [rawAnalogData,timeSinceRunStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
             nScans = size(rawAnalogData,1) ;
             %if areTasksDone ,
             %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
             %end
             rawDigitalData = ...
-                self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromExperimentStartTicId);
+                self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
         end  % function
     end

@@ -2,7 +2,7 @@ classdef Ephys < ws.system.Subsystem
     %Ephys  Wavesurfer subsystem responsible for most Ephys-related behaviors.
     %
     %    The Ephys subsystem manages electrode configuration and settings
-    %    communication for Wavesurfer electrophysiology experiments.
+    %    communication for Wavesurfer electrophysiology runs.
     
     %%
     properties (Access = protected)
@@ -157,18 +157,18 @@ classdef Ephys < ws.system.Subsystem
         end
                 
         %%
-        function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
+        function willPerformRun(self, wavesurferObj, runMode) %#ok<INUSD>
             % Update all the gains and modes that are associated with smart
             % electrodes
             self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();
         end
         
         %%
-        function didPerformExperiment(self, wavesurferModel) %#ok<INUSD>
+        function didPerformRun(self, wavesurferModel) %#ok<INUSD>
         end
         
         %%
-        function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
+        function didAbortRun(self, wavesurferModel) %#ok<INUSD>
         end
         
         function didSetAcquisitionSampleRate(self,newValue)

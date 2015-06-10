@@ -99,9 +99,9 @@ classdef UserFunctions < ws.system.Subsystem
                     self.TheObject_.SweepDidComplete(wavesurferModel, eventName); % Calls sweep completion user function, but still passes SweepDidAbort
                 end
 
-                if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject_) ,
-                    self.TheObject_.ExperimentDidComplete(wavesurferModel, eventName); 
-                      % Calls experiment completion user function, but still passes SweepDidAbort
+                if self.AbortCallsComplete && strcmp(eventName, 'RunDidAbort') && ~isempty(self.TheObject_) ,
+                    self.TheObject_.RunDidComplete(wavesurferModel, eventName); 
+                      % Calls run completion user function, but still passes SweepDidAbort
                 end
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];

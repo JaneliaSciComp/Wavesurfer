@@ -265,28 +265,28 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             end
         end
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSL>
-%             if experimentMode == ws.ApplicationState.TestPulsing ,
+        function willPerformRun(self, wavesurferModel, runMode) %#ok<INUSL>
+%             if runMode == ws.ApplicationState.TestPulsing ,
 %                 self.prvCachedDisplayXSpan = self.XSpan;
 %                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
 %             else
             self.XOffset = 0;
             self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
 %             end
-            self.XAutoScroll= (experimentMode == ws.ApplicationState.AcquiringContinuously);
+            self.XAutoScroll= (runMode == ws.ApplicationState.AcquiringContinuously);
         end  % function
         
-        function didPerformExperiment(self, wavesurferModel)
-            self.didPerformOrAbortExperiment_(wavesurferModel);
+        function didPerformRun(self, wavesurferModel)
+            self.didPerformOrAbortRun_(wavesurferModel);
         end
         
-        function didAbortExperiment(self, wavesurferModel)
-            self.didPerformOrAbortExperiment_(wavesurferModel);
+        function didAbortRun(self, wavesurferModel)
+            self.didPerformOrAbortRun_(wavesurferModel);
         end
     end
     
     methods (Access=protected)
-        function didPerformOrAbortExperiment_(self, wavesurferModel) %#ok<INUSD>
+        function didPerformOrAbortRun_(self, wavesurferModel) %#ok<INUSD>
             if ~isempty(self.prvCachedDisplayXSpan)
                 self.XSpan = self.prvCachedDisplayXSpan;
             end
@@ -299,7 +299,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.prvClearOnNextData = true;
         end
         
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL,INUSD>
+        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
             %fprintf('Display::dataAvailable()\n');
             %dbstack
             %T=zeros(4,1);

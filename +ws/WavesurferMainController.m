@@ -300,7 +300,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function NSweepsEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model,'NSweepsPerExperiment',newValue);
+            ws.Controller.setWithBenefits(self.Model,'NSweepsPerRun',newValue);
         end
 
         function SweepDurationEditActuated(self,source,event) %#ok<INUSD>
@@ -791,7 +791,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 % %                 'Gestures', {'Key', 'P', 'Modifiers', 'Control'});
 %             commands(end + 1) = ws.most.app.CommandBinding( ...
 %                 'Sources', {{'WavesurferWindow', 'StopMenu'}, {'WavesurferWindow', 'StopToolbarButton'}}, ...
-%                 'Action', @self.stopControlActuated, 'Name', 'StopExperiment', ...
+%                 'Action', @self.stopControlActuated, 'Name', 'StopRun', ...
 %                 'Gestures', {'Key', 'OemPeriod', 'Modifiers', 'Control', 'Text', 'Ctrl+.'});
 % %             commands(end + 1) = ws.most.app.CommandBinding( ...
 % %                 'Sources', {{'WavesurferWindow', 'TestPulseExpMenu'}}, ...
@@ -935,7 +935,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                                                          'Target', 'WavesurferWindow.LogFileLocation', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.NextSweepIndex', 'Target', 'WavesurferWindow.NextSweepId');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'NSweepsPerExperiment', 'Target', 'WavesurferWindow.SweepsPerExperiment');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'NSweepsPerRun', 'Target', 'WavesurferWindow.SweepsPerRun');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'State', ...
 %                                                          'Target', 'WavesurferWindow.StatusLabel', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
@@ -1126,7 +1126,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % Action for the Start button.
 %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
 %             progressBar.IsIndeterminate = false;
-%             progressBar.Maximum = self.Model.NSweepsPerExperiment;
+%             progressBar.Maximum = self.Model.NSweepsPerRun;
 %             progressBar.Value = 0;
             
 %             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
@@ -1367,7 +1367,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             set(figureObject.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoMDF));
 %             %set(figureObject.QuitMenuItem,'Enable',onIff(true));  % always available          
 %             
-%             %% Experiment Menu
+%             %% Run Menu
 %             %window.StartMenu.IsEnabled=isIdle;
 %             %%window.PreviewMenu.IsEnabled=isIdle;
 %             %window.StopMenu.IsEnabled= isAcquiring;
@@ -2029,7 +2029,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             s = struct();
 %             s.IsSweepBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
 %             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.NSweepsPerExperiment = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
+%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
 %             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             

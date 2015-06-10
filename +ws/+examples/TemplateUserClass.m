@@ -25,10 +25,10 @@ classdef TemplateUserClass < ws.UserClass
             self.Parameter2 = exp(1) ;            
         end
         
-        function experimentWillStart(self,wsModel,eventName)
+        function runWillStart(self,wsModel,eventName)
             % Called just before each set of sweeps (a.k.a. each
-            % "experiment")
-            fprintf('About to start an experiment.\n');
+            % "run")
+            fprintf('About to start a run.\n');
         end
         
         function sweepWillStart(self,wsModel,eventName)
@@ -46,16 +46,16 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Oh noes!  A sweep aborted.\n');
         end        
         
-        function experimentDidComplete(self,wsModel,eventName)
+        function runDidComplete(self,wsModel,eventName)
             % Called just after each set of sweeps (a.k.a. each
-            % "experiment")
-            fprintf('Finished an experiment.\n');
+            % "run")
+            fprintf('Finished a run.\n');
         end
         
-        function experimentDidAbort(self,wsModel,eventName)
-            % Called if an experiment goes wrong, after the call to
+        function runDidAbort(self,wsModel,eventName)
+            % Called if a run goes wrong, after the call to
             % sweepDidAbort()
-            fprintf('Oh noes!  A experiment aborted.\n');
+            fprintf('Oh noes!  A run aborted.\n');
         end
         
         function dataIsAvailable(self,wsModel,eventName)

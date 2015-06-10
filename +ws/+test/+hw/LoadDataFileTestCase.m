@@ -31,7 +31,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=true;
 
             nSweeps=3;
-            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -63,14 +63,14 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
-            absoluteFileName = wsModel.Logging.NextExperimentAbsoluteFileName ;
+            absoluteFileName = wsModel.Logging.NextRunAbsoluteFileName ;
             
             pause(1);
             wsModel.start();  % blocking, now
             pause(0.5);
 
             % Make sure that worked
-            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
             
             % Try to read the data file
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;

@@ -31,7 +31,7 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nSweeps=1;
-            wsModel.NSweepsPerExperiment=1;
+            wsModel.NSweepsPerRun=1;
             wsModel.SweepDuration=20;  % s, this actually seems to be long enough to cause crash
 
             wsModel.start();
@@ -41,12 +41,12 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
     end  % test methods
 

@@ -31,7 +31,7 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nSweeps=1;
-            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration = 1 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
@@ -59,12 +59,12 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
     end  % test methods

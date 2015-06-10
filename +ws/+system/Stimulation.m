@@ -30,7 +30,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
-        IsWithinExperiment
+        IsWithinRun
         IsChannelAnalog
     end
     
@@ -38,9 +38,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         TheFiniteAnalogOutputTask_ = []
         TheFiniteDigitalOutputTask_ = []
         TheUntimedDigitalOutputTask_ = []
-        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformExperiment(), set to [] in didPerformExperiment())
+        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didPerformRun())
         IsArmedOrStimulating_ = false
-        IsWithinExperiment_ = false                       
+        IsWithinRun_ = false                       
         TriggerScheme_ = ws.TriggerScheme.empty()
         HasAnalogChannels_
         HasTimedDigitalChannels_
@@ -62,7 +62,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         StimulusLibrary_ 
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         SampleRate_ = 20000  % Hz
-        EpisodesPerExperiment_
+        EpisodesPerRun_
         EpisodesCompleted_
         IsDigitalChannelTimed_ = false(1,0)
         DigitalOutputStateIfUntimed_ = false(1,0)
@@ -168,8 +168,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetDoRepeatSequence');
         end
         
-        function result = get.IsWithinExperiment(self)
-            result = self.IsWithinExperiment_ ;
+        function result = get.IsWithinRun(self)
+            result = self.IsWithinRun_ ;
         end
         
         function result = get.IsArmedOrStimulating(self)
@@ -467,13 +467,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-        function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
-            %fprintf('Stimulation::willPerformExperiment()\n');
+        function willPerformRun(self, wavesurferObj, runMode) %#ok<INUSD>
+            %fprintf('Stimulation::willPerformRun()\n');
             %errors = [];
             %abort = false;
             
             % Do a bunch of checks to make sure all is well for running an
-            % experiment
+            % run
             if isempty(self.TriggerScheme)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
             end            
@@ -499,24 +499,24 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             % Determine how many episodes there will be, if possible
             if self.TriggerScheme.IsExternal ,
-                self.EpisodesPerExperiment_ = [];
+                self.EpisodesPerRun_ = [];
             else
                 % stim trigger scheme is internal
                 if wavesurferObj.Triggering.AcquisitionTriggerScheme.IsInternal
                     % acq trigger scheme is internal
                     if self.TriggerScheme.Target == wavesurferObj.Triggering.AcquisitionTriggerScheme.Target ,
-                        self.EpisodesPerExperiment_ = self.Parent.NSweepsPerExperiment;
+                        self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
                     else
-                        self.EpisodesPerExperiment_ = self.TriggerScheme.Target.RepeatCount;
+                        self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
                     end
                 elseif wavesurferObj.Triggering.AcquisitionTriggerScheme.IsExternal
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme
-                    self.EpisodesPerExperiment_ = self.TriggerScheme.Target.RepeatCount;
+                    self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
                 else
-                    % acq trigger scheme is null --- this experiment is
+                    % acq trigger scheme is null --- this run is
                     % stillborn, so doesn't matter
-                    self.EpisodesPerExperiment_ = [];
+                    self.EpisodesPerRun_ = [];
                 end
             end
 
@@ -528,20 +528,20 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.SelectedOutputableCache_=stimulusOutputable;
             
             % Set the state
-            self.IsWithinExperiment_=true;
-        end  % willPerformExperiment() function
+            self.IsWithinRun_=true;
+        end  % willPerformRun() function
         
-        function didPerformExperiment(self, ~)
-            %fprintf('Stimulation::didPerformExperiment()\n');
+        function didPerformRun(self, ~)
+            %fprintf('Stimulation::didPerformRun()\n');
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
-            self.IsWithinExperiment_=false;  % might already be guaranteed to be false here...
+            self.IsWithinRun_=false;  % might already be guaranteed to be false here...
         end  % function
         
-        function didAbortExperiment(self, ~)
+        function didAbortRun(self, ~)
             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_.disarm();
             end
@@ -551,7 +551,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
-            self.IsWithinExperiment_=false;
+            self.IsWithinRun_=false;
         end  % function
         
         function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
@@ -559,7 +559,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % start.  What we do here depends a lot on the current triggering
             % settings.
             
-            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
+            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
             %fprintf('Stimulation::willPerformSweep()\n');
 
             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
@@ -572,7 +572,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % sources.
                 % If first sweep, arm.  Otherwise, we handle
                 % re-arming independently from the acq sweeps.
-                if self.Parent.NSweepsCompletedInThisExperiment == 0 ,
+                if self.Parent.NSweepsCompletedInThisRun == 0 ,
                     self.armForEpisode();
                 end
             end
@@ -583,13 +583,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
-%             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
+%             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
 %             fprintf('Stimulation::willPerformSweep()\n');
 %             
 %             if self.TriggerScheme.IsExternal ,
 %                 % If external triggering, we set up for a trigger only if
 %                 % this is the first 
-%                 if self.Parent.NSweepsCompletedInThisExperiment == 0 ,
+%                 if self.Parent.NSweepsCompletedInThisRun == 0 ,
 %                     self.armForEpisode();
 %                 end
 %             else
@@ -605,7 +605,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                         % sources
 %                         % if first sweep, arm.  Otherwise, we handle
 %                         % re-arming independently from the acq sweeps.
-%                         if self.Parent.NSweepsCompletedInThisExperiment == 0 ,                            
+%                         if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
 %                             self.armForEpisode();
 %                         else
 %                             % do nothing
@@ -614,15 +614,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 else
 %                     % acq trigger scheme is external, so must be different
 %                     % from stim trigger scheme, which is internal
-% %                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+% %                     if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
 % %                         self.armForEpisode();
 % %                     else
-% %                         self.IsWithinExperiment_ = false;
+% %                         self.IsWithinRun_ = false;
 % %                         self.Parent.stimulationEpisodeComplete();
 % %                     end
 %                     % if first sweep, arm.  Otherwise, we handle
 %                     % re-arming independently from the acq sweeps.
-%                     if self.Parent.NSweepsCompletedInThisExperiment == 0 ,                            
+%                     if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
 %                         self.armForEpisode();
 %                     else
 %                         % do nothing
@@ -649,7 +649,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function armForEpisode(self)
-            %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
+            %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
             %self.DidAnalogEpisodeComplete_ = false ;
@@ -960,7 +960,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function stimulusMap = getCurrentStimulusMap_(self)
             % Calculate the episode index
-            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            episodeIndexWithinRun=self.EpisodesCompleted_+1;
             
             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
             % things
@@ -974,13 +974,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 else
                     % outputable must be a sequence                
                     nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
-                    if episodeIndexWithinExperiment <= nMapsInSequence ,
+                    if episodeIndexWithinRun <= nMapsInSequence ,
                         isThereAMap=true;
-                        indexOfMapIfSequence=episodeIndexWithinExperiment;
+                        indexOfMapIfSequence=episodeIndexWithinRun;
                     else
                         if self.DoRepeatSequence ,
                             isThereAMap=true;
-                            indexOfMapIfSequence=mod(episodeIndexWithinExperiment-1,nMapsInSequence)+1;
+                            indexOfMapIfSequence=mod(episodeIndexWithinRun-1,nMapsInSequence)+1;
                         else
                             isThereAMap=false;
                             indexOfMapIfSequence=1;  % arbitrary: doesn't get used if isThereAMap==false
@@ -1004,7 +1004,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             import ws.utility.*
             
             % Calculate the episode index
-            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            episodeIndexWithinRun=self.EpisodesCompleted_+1;
             
             % Calculate the signals
             if isempty(stimulusMap) ,
@@ -1013,7 +1013,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             else
                 isChannelAnalog = true(1,self.NAnalogChannels) ;
                 [aoData,nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinExperiment);
+                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinRun);
             end
             
             % Want to return the number of scans in the stimulus data
@@ -1043,7 +1043,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             import ws.utility.*
             
             % Calculate the episode index
-            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            episodeIndexWithinRun=self.EpisodesCompleted_+1;
             
             % Calculate the signals
             if isempty(stimulusMap) ,
@@ -1052,7 +1052,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             else
                 isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
                 [doData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinExperiment);
+                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinRun);
             end
             
             % Want to return the number of scans in the stimulus data
@@ -1106,20 +1106,20 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     else
                         % stim and acq are using distinct internal trigger
                         % sources
-                        if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+                        if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
                             self.armForEpisode();
                         else
-                            self.IsWithinExperiment_ = false;
+                            self.IsWithinRun_ = false;
                             self.Parent.stimulationEpisodeComplete();
                         end
                     end
                 else
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme, which is internal
-                    if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+                    if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
                         self.armForEpisode();
                     else
-                        self.IsWithinExperiment_ = false;
+                        self.IsWithinRun_ = false;
                         self.Parent.stimulationEpisodeComplete();
                     end
                 end

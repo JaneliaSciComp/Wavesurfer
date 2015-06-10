@@ -31,7 +31,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=true;
 
             nSweeps=1;
-            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -71,7 +71,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
@@ -79,7 +79,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
             
             %
             % Now check that we can still test pulse

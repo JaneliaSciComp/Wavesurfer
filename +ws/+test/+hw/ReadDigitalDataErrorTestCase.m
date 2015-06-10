@@ -31,12 +31,12 @@ classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nSweeps=100;
-            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration=1;  % s
 
             wsModel.start();  % This now blocks...
 
-            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
     end  % test methods
 

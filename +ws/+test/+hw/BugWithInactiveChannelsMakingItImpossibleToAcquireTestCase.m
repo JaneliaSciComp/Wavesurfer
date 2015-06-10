@@ -32,7 +32,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.Logging.Enabled=false;
 
             nSweeps=1;
-            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.NSweepsPerRun=nSweeps;
 
             pause(0.1);
             wsModel.start();
@@ -42,12 +42,12 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -66,7 +66,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             wsModel.Logging.Enabled=true;
 % 
 %             nSweeps=10;
-%             wsModel.NSweepsPerExperiment=nSweeps;
+%             wsModel.NSweepsPerRun=nSweeps;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -86,12 +86,12 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);
+%             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

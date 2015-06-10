@@ -1052,7 +1052,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 
 %             s.IsSweepBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
 %             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.NSweepsPerExperiment = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
+%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
 %             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             
@@ -1075,7 +1075,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.SweepBasedRadiobutton,'Value',model.IsSweepBased);
             set(self.ContinuousRadiobutton,'Value',model.IsContinuous);
             set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
-            set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerExperiment));
+            set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
             
             % Stimulation panel (most of it)
@@ -1098,11 +1098,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Sweep:','Next Sweep:'));
             %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            %set(self.FileNameEdit, 'String', model.Logging.NextExperimentAbsoluteFileName);
+            %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
             if ~isIdle&&model.Logging.Enabled ,
-                set(self.FileNameEdit, 'String', model.Logging.CurrentExperimentAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
             else
-                set(self.FileNameEdit, 'String', model.Logging.NextExperimentAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
             end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
@@ -1194,7 +1194,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoMDF));
             %set(self.QuitMenuItem,'Enable',onIff(true));  % always available          
             
-            %% Experiment Menu
+            %% Run Menu
             %window.StartMenu.IsEnabled=isIdle;
             %%window.PreviewMenu.IsEnabled=isIdle;
             %window.StopMenu.IsEnabled= isAcquiring;
@@ -1436,9 +1436,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             model=self.Model;
             state=model.State;
             if state==ws.ApplicationState.AcquiringSweepBased ,
-                if isfinite(model.NSweepsPerExperiment) ,
-                    nSweeps=model.NSweepsPerExperiment;
-                    nSweepsCompleted=model.NSweepsCompletedInThisExperiment;
+                if isfinite(model.NSweepsPerRun) ,
+                    nSweeps=model.NSweepsPerRun;
+                    nSweepsCompleted=model.NSweepsCompletedInThisRun;
                     fractionCompleted=nSweepsCompleted/nSweeps;
                     set(self.ProgressBarPatch, ...
                         'XData',[0 fractionCompleted fractionCompleted 0 0], ...
@@ -1449,7 +1449,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 else
                     % number of sweeps is infinite
                     nSweepsPretend=20;
-                    nSweepsCompleted = model.NSweepsCompletedInThisExperiment ;
+                    nSweepsCompleted = model.NSweepsCompletedInThisRun ;
                     nSweepsCompletedModded=mod(nSweepsCompleted,nSweepsPretend);
                     if nSweepsCompletedModded==0 ,
                         if nSweepsCompleted==0 ,
@@ -1469,12 +1469,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                         'Visible','on');
                 end
             elseif state==ws.ApplicationState.AcquiringContinuously ,
-                nTimesSamplesAcquiredCalledSinceExperimentStart=model.NTimesSamplesAcquiredCalledSinceExperimentStart;
+                nTimesSamplesAcquiredCalledSinceRunStart=model.NTimesSamplesAcquiredCalledSinceRunStart;
                 nSegments=10;
                 nPositions=2*nSegments;
                 barWidth=1/nSegments;
                 stepWidth=1/nPositions;
-                xOffset=stepWidth*mod(nTimesSamplesAcquiredCalledSinceExperimentStart,nPositions);
+                xOffset=stepWidth*mod(nTimesSamplesAcquiredCalledSinceRunStart,nPositions);
                 set(self.ProgressBarPatch, ...
                     'XData',xOffset+[0 barWidth barWidth 0 0], ...
                     'YData',[0 0 1 1 0], ...

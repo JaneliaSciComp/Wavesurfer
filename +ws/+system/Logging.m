@@ -13,8 +13,8 @@ classdef Logging < ws.system.Subsystem
     
     properties (Dependent=true, SetAccess=immutable)
         AugmentedBaseName
-        NextExperimentAbsoluteFileName
-        CurrentExperimentAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current experiment file name
+        NextRunAbsoluteFileName
+        CurrentRunAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current run file name
         %CurrentSweepIndex
     end
 
@@ -33,10 +33,10 @@ classdef Logging < ws.system.Subsystem
     end
     
     % These are all properties that are only used when acquisition is
-    % ongoing.  They are set in willPerformExperiment(), and are nulled in
-    % didPerformExperiment() and didAbortExperiment()
+    % ongoing.  They are set in willPerformRun(), and are nulled in
+    % didPerformRun() and didAbortRun()
     properties (Access = protected, Transient=true)
-        CurrentExperimentAbsoluteFileName_
+        CurrentRunAbsoluteFileName_
         CurrentDatasetOffset_
             % during acquisition, the index of the next "scan" to be written (one-based)
             % "scan" is an NI-ism meaning all the samples acquired for a
@@ -45,10 +45,10 @@ classdef Logging < ws.system.Subsystem
             % if all the acquired data for one sweep were put into an array, this
             % would be the size of that array.  
             % I.e. [nScans nActiveChannels]        
-        WriteToSweepId_  % During the acquisition of an experiment, the current sweep index being written to
+        WriteToSweepId_  % During the acquisition of a run, the current sweep index being written to
         ChunkSize_
-        FirstSweepIndex_  % index of the first sweep in the ongoing experiment
-        DidCreateCurrentDataFile_  % whether the data file for the current experiment has been created
+        FirstSweepIndex_  % index of the first sweep in the ongoing run
+        DidCreateCurrentDataFile_  % whether the data file for the current run has been created
         LastSweepIndexForWhichDatasetCreated_  
           % For the current file/sweepset, the sweep index of the most-recently dataset in the data file.
           % Empty if the no dataset has yet been created for the current file.
@@ -72,7 +72,7 @@ classdef Logging < ws.system.Subsystem
             self.NextSweepIndex_ = 1 ; % Number of sweeps acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
             %self.FirstSweepIndexInNextFile_ = 1 ; % Number of sweeps acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
             self.IsOKToOverwrite_ = false ;
-            self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-experiment
+            self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-run
         end
         
         function delete(self)
@@ -232,19 +232,19 @@ classdef Logging < ws.system.Subsystem
             result = self.augmentedBaseName_();
         end  % function
         
-        function value=get.NextExperimentAbsoluteFileName(self)
+        function value=get.NextRunAbsoluteFileName(self)
             wavesurferModel=self.Parent;
             firstSweepIndex = self.NextSweepIndex ;
-            numberOfSweeps = wavesurferModel.NSweepsPerExperiment ;
+            numberOfSweeps = wavesurferModel.NSweepsPerRun ;
             fileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfSweeps);
             value = fullfile(self.FileLocation, fileName);
         end  % function
         
-        function value=get.CurrentExperimentAbsoluteFileName(self)
-            value = self.CurrentExperimentAbsoluteFileName_ ;
+        function value=get.CurrentRunAbsoluteFileName(self)
+            value = self.CurrentRunAbsoluteFileName_ ;
         end  % function
         
-        function willPerformExperiment(self, wavesurferModel, desiredApplicationState)
+        function willPerformRun(self, wavesurferModel, desiredApplicationState)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
@@ -262,13 +262,13 @@ classdef Logging < ws.system.Subsystem
                     else
                         self.ChunkSize_ = self.ExpectedSweepSize_;
                     end
-%                     if wavesurferModel.NSweepsPerExperiment == 1 ,
+%                     if wavesurferModel.NSweepsPerRun == 1 ,
 %                         trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextSweepIndex);
 %                     else
 %                         trueLogFileName = sprintf('%s_%04d-%04d', ...
 %                                                   self.FileBaseName, ...
 %                                                   self.NextSweepIndex, ...
-%                                                   self.NextSweepIndex + wavesurferModel.NSweepsPerExperiment - 1);
+%                                                   self.NextSweepIndex + wavesurferModel.NSweepsPerRun - 1);
 %                     end
                 case ws.ApplicationState.AcquiringContinuously ,
                     self.ExpectedSweepSize_ = [Inf nActiveAnalogChannels];
@@ -280,11 +280,11 @@ classdef Logging < ws.system.Subsystem
             end
             
             % Determine the absolute file names
-            %self.CurrentExperimentAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            self.CurrentExperimentAbsoluteFileName_ = self.NextExperimentAbsoluteFileName ;
+            %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
+            self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
             %self.CurrentSweepIndex_ = self.NextSweepIndex ;
             
-            % Store the first sweep index for the experiment 
+            % Store the first sweep index for the run 
             self.FirstSweepIndex_ = self.NextSweepIndex ;
             
             % If the target dir doesn't exist, create it
@@ -297,21 +297,21 @@ classdef Logging < ws.system.Subsystem
                 % don't need to check anything
                 % But need to delete pre-existing files, otherwise h5create
                 % will just add datasets to a pre-existing file.
-                if exist(self.CurrentExperimentAbsoluteFileName_, 'file') == 2 ,
-                    ws.utility.deleteFileWithoutWarning(self.CurrentExperimentAbsoluteFileName_);
+                if exist(self.CurrentRunAbsoluteFileName_, 'file') == 2 ,
+                    ws.utility.deleteFileWithoutWarning(self.CurrentRunAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
 %                 end
             else
                 % Check if the log file already exists, and error if so
-                if exist(self.CurrentExperimentAbsoluteFileName_, 'file') == 2 ,
+                if exist(self.CurrentRunAbsoluteFileName_, 'file') == 2 ,
                     error('wavesurfer:logFileAlreadyExists', ...
-                          'The data file %s already exists', self.CurrentExperimentAbsoluteFileName_);
+                          'The data file %s already exists', self.CurrentRunAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     error('wavesurfer:sidecarFileAlreadyExists', ...
-%                           'The sidecar file %s already exists', self.CurrentExperimentAbsoluteFileName_);
+%                           'The sidecar file %s already exists', self.CurrentRunAbsoluteFileName_);
 %                 end
             end
 
@@ -323,8 +323,8 @@ classdef Logging < ws.system.Subsystem
             %numericPrecision=4;
             %stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
             doCreateFile=true;
-            %ws.most.fileutil.h5savestr(self.CurrentExperimentAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-            ws.most.fileutil.h5save(self.CurrentExperimentAbsoluteFileName_, '/header', headerStruct, doCreateFile);
+            %ws.most.fileutil.h5savestr(self.CurrentRunAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.most.fileutil.h5save(self.CurrentRunAbsoluteFileName_, '/header', headerStruct, doCreateFile);
             self.DidCreateCurrentDataFile_ = true ;
             
 %             % Save the "header" information to a sidecar file instead.
@@ -342,8 +342,8 @@ classdef Logging < ws.system.Subsystem
             % willPerformSweep() --- This is the cause of slowness at sweep
             % set start for Justin Little, possibly others.
 %             if ~isempty(wavesurferModel.Acquisition) ,
-%                 for indexOfSweepWithinSet = 1:wavesurferModel.NSweepsPerExperiment ,
-%                     h5create(self.CurrentExperimentAbsoluteFileName_, ...
+%                 for indexOfSweepWithinSet = 1:wavesurferModel.NSweepsPerRun ,
+%                     h5create(self.CurrentRunAbsoluteFileName_, ...
 %                              sprintf('/sweep_%04d', ...
 %                                      self.WriteToSweepId_ + (indexOfSweepWithinSet-1)), ...
 %                              self.ExpectedSweepSize_, ...
@@ -367,9 +367,9 @@ classdef Logging < ws.system.Subsystem
             %profile resume
             thisSweepIndex = self.NextSweepIndex ;
             timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
-            h5create(self.CurrentExperimentAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
+            h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
             scansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
-            h5create(self.CurrentExperimentAbsoluteFileName_, ...
+            h5create(self.CurrentRunAbsoluteFileName_, ...
                      scansDatasetName, ...
                      self.ExpectedSweepSize_, ...
                      'ChunkSize', self.ChunkSize_, ...
@@ -386,7 +386,7 @@ classdef Logging < ws.system.Subsystem
                 dataType = 'uint32';
             end
             if NActiveDigitalChannels>0 ,
-                h5create(self.CurrentExperimentAbsoluteFileName_, ...
+                h5create(self.CurrentRunAbsoluteFileName_, ...
                          scansDatasetName, ...
                          [self.ExpectedSweepSize_(1) 1], ...
                          'ChunkSize', [self.ChunkSize_(1) 1], ...
@@ -422,12 +422,12 @@ classdef Logging < ws.system.Subsystem
             %end
         end
         
-        function didPerformExperiment(self, ~)
-            self.didPerformOrAbortExperiment_();
+        function didPerformRun(self, ~)
+            self.didPerformOrAbortRun_();
         end
         
-        function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
-            %fprintf('Logging::didAbortExperiment()\n');
+        function didAbortRun(self, wavesurferModel) %#ok<INUSD>
+            %fprintf('Logging::didAbortRun()\n');
         
             %dbstop if caught
             %
@@ -436,7 +436,7 @@ classdef Logging < ws.system.Subsystem
             exception = [] ;
             if self.DidCreateCurrentDataFile_ ,
                 % A data file was created.  Might need to rename it, or delete it.
-                originalAbsoluteLogFileName = self.CurrentExperimentAbsoluteFileName_ ;
+                originalAbsoluteLogFileName = self.CurrentRunAbsoluteFileName_ ;
                 firstSweepIndex = self.FirstSweepIndex_ ;
                 if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
                     % This means no sweeps were actually added to the log file.
@@ -445,7 +445,7 @@ classdef Logging < ws.system.Subsystem
                     numberOfPartialSweepsLogged = self.LastSweepIndexForWhichDatasetCreated_ - firstSweepIndex + 1 ;  % includes complete and partial sweeps
                 end
                 if numberOfPartialSweepsLogged == 0 ,
-                    % If no sweeps logged, and we actually created the data file for the current experiment, delete the file
+                    % If no sweeps logged, and we actually created the data file for the current run, delete the file
                     if self.DidCreateCurrentDataFile_ ,
                         ws.utility.deleteFileWithoutWarning(originalAbsoluteLogFileName);
                     else
@@ -483,7 +483,7 @@ classdef Logging < ws.system.Subsystem
             end
 
             % Now do things common to performance and abortion
-            self.didPerformOrAbortExperiment_();
+            self.didPerformOrAbortRun_();
 
             % Now throw that exception, if there was one
             %dbclear all
@@ -503,10 +503,10 @@ classdef Logging < ws.system.Subsystem
 %             end
 %         end
         
-        function didPerformOrAbortExperiment_(self)
+        function didPerformOrAbortRun_(self)
             % null-out all the transient things that are only used during
-            % the experiment
-            self.CurrentExperimentAbsoluteFileName_ = [];
+            % the run
+            self.CurrentRunAbsoluteFileName_ = [];
             self.FirstSweepIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
             self.ExpectedSweepSize_ = [];
@@ -520,7 +520,7 @@ classdef Logging < ws.system.Subsystem
     end
 
     methods
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
+        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL>
             %ticId=tic();
             
 %             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
@@ -532,19 +532,19 @@ classdef Logging < ws.system.Subsystem
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~self.DidWriteSomeDataForThisSweep_ ,
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',self.WriteToSweepId_) ;
-                h5write(self.CurrentExperimentAbsoluteFileName_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
+                h5write(self.CurrentRunAbsoluteFileName_, timestampDatasetName, timeSinceRunStartAtStartOfData);
                 self.DidWriteSomeDataForThisSweep_ = true ;  % will be true momentarily...
             end
             
             if ~isempty(self.FileBaseName) ,
-                h5write(self.CurrentExperimentAbsoluteFileName_, ...
+                h5write(self.CurrentRunAbsoluteFileName_, ...
                         sprintf('/sweep_%04d/analogScans', ...
                                 self.WriteToSweepId_), ...
                                 rawAnalogData, ...
                                 [self.CurrentDatasetOffset_ 1], ...
                                 size(rawAnalogData));
                 if ~isempty(rawDigitalData) ,
-                    h5write(self.CurrentExperimentAbsoluteFileName_, ...
+                    h5write(self.CurrentRunAbsoluteFileName_, ...
                             sprintf('/sweep_%04d/digitalScans', ...
                                     self.WriteToSweepId_), ...
                             rawDigitalData, ...
