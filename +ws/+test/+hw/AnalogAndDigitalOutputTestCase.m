@@ -29,8 +29,8 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=true;
 
-            nTrials=3;
-            wsModel.NTrialsPerExperiment=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerExperiment=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -64,11 +64,11 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
@@ -76,7 +76,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
         function testDigitalOnly(self)
@@ -91,8 +91,8 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=true;
 
-            nTrials=3;
-            wsModel.NTrialsPerExperiment=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerExperiment=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -127,11 +127,11 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
@@ -139,7 +139,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
         function testAnalogAndDigital(self)
@@ -154,8 +154,8 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=true;
 
-            nTrials=3;
-            wsModel.NTrialsPerExperiment=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerExperiment=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -191,11 +191,11 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
@@ -203,7 +203,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
         

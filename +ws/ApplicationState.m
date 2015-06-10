@@ -7,7 +7,7 @@ classdef ApplicationState < int32
         % If in any othe modes below, implies that the MDF has been
         % specified
         Idle(2);  % Not doing much of anything
-        AcquiringTrialBased(3);     % Running a standard acq set with one or more acqs
+        AcquiringSweepBased(3);     % Running a standard acq set with one or more acqs
         AcquiringContinuously(4);        % Continuously acquire until the user interrupts
         TestPulsing(5);  % Running a test pulse
     end
@@ -21,8 +21,8 @@ classdef ApplicationState < int32
                     out = 'No MDF';
                 case ws.ApplicationState.Idle
                     out = 'Idle';
-                case ws.ApplicationState.AcquiringTrialBased
-                    out = 'Acquiring (trial-based)';
+                case ws.ApplicationState.AcquiringSweepBased
+                    out = 'Acquiring (sweep-based)';
                 case ws.ApplicationState.AcquiringContinuously
                     out = 'Acquiring (continuous)';
                 case ws.ApplicationState.TestPulsing
@@ -40,8 +40,8 @@ classdef ApplicationState < int32
                     out = 'NoMDF';
                 case ws.ApplicationState.Idle
                     out = 'Idle';
-                case ws.ApplicationState.AcquiringTrialBased
-                    out = 'AcquiringTrialBased)';
+                case ws.ApplicationState.AcquiringSweepBased
+                    out = 'AcquiringSweepBased)';
                 case ws.ApplicationState.AcquiringContinuously
                     out = 'AcquiringContinuously';
                 case ws.ApplicationState.TestPulsing

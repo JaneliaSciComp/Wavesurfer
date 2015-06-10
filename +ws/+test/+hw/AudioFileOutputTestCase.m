@@ -30,9 +30,9 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.NTrialsPerExperiment=nTrials;
-            wsModel.TrialDuration = 4 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
@@ -58,16 +58,16 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
         function testWithNonexistantFile(self)
@@ -82,9 +82,9 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.NTrialsPerExperiment=nTrials;
-            wsModel.TrialDuration = 4 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
@@ -110,16 +110,16 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.start();  % this should *not* throw an error
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
         function testWithTemplateFileName(self)
@@ -134,9 +134,9 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.NTrialsPerExperiment=nTrials;
-            wsModel.TrialDuration = 4 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
@@ -162,16 +162,16 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
     end  % test methods

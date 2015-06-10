@@ -19,14 +19,14 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     
     % Invariant: All the values in Delay, Duration, Amplitude, DCOffset and
     % the subclass parameter properties are s.t.
-    % ~isempty(evaluateTrialExpression(self.(propertyName),1)).  That is,
+    % ~isempty(evaluateSweepExpression(self.(propertyName),1)).  That is,
     % each is a _string_ which represents either a valid double, or an
     % arithmetic expression in 'i' s.t. the expression evaluates to a valid
     % double for i==1.
     
     properties (Dependent=true)
         Name
-        Delay  % this and all below are string trial expressions, in seconds
+        Delay  % this and all below are string sweep expressions, in seconds
         Duration % s
             % this is the duration of the "support" of the stimulus.  I.e.
             % the stim is zero for the delay period, generally nonzero for
@@ -96,7 +96,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
 
         function set.Delay(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.Delay_ = value;
@@ -107,7 +107,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function set.Duration(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isreal(test) && isfinite(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.Duration_ = value;
@@ -118,7 +118,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function set.Amplitude(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
@@ -129,7 +129,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
         
         function set.DCOffset(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.DCOffset_ = value;
@@ -160,21 +160,21 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function val = get.EndTime(self)
-            val = ws.stimulus.Stimulus.evaluateTrialExpression(self.Delay,1) + ws.stimulus.Stimulus.evaluateTrialExpression(self.Duration,1);
+            val = ws.stimulus.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.stimulus.Stimulus.evaluateSweepExpression(self.Duration,1);
         end
         
         function output = get.Delegate(self)
             output = self.Delegate_ ;
         end
         
-        function data = calculateSignal(self, t, trialIndexWithinSet)
+        function data = calculateSignal(self, t, sweepIndexWithinSet)
             % Process args
-            if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
-                trialIndexWithinSet=1;
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
             end
                         
             % Compute the delay from the expression for it
-            delay = ws.stimulus.Stimulus.evaluateTrialExpression(self.Delay,trialIndexWithinSet) ;
+            delay = ws.stimulus.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(delay) || ~isnumeric(delay) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
                 data=zeros(size(t));
@@ -186,11 +186,11 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             
             % Call a likely-overloaded method to generate the raw output data
             delegate=self.Delegate_;
-            data = delegate.calculateCoreSignal(self,tShiftedByDelay,trialIndexWithinSet);
+            data = delegate.calculateCoreSignal(self,tShiftedByDelay,sweepIndexWithinSet);
                 % data should be same size as t at this point
             
             % Compute the amplitude from the expression for it
-            amplitude = ws.stimulus.Stimulus.evaluateTrialExpression(self.Amplitude,trialIndexWithinSet) ;
+            amplitude = ws.stimulus.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(amplitude) || ~isnumeric(amplitude) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
                 data=zeros(size(t));
@@ -198,7 +198,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
 
             % Compute the delay from the expression for it
-            dcOffset = ws.stimulus.Stimulus.evaluateTrialExpression(self.DCOffset,trialIndexWithinSet) ;
+            dcOffset = ws.stimulus.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(dcOffset) || ~isnumeric(dcOffset) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
                 data=zeros(size(t));
@@ -209,7 +209,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             data = amplitude*data + dcOffset;
 
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateTrialExpression(self.Duration,trialIndexWithinSet) ;
+            duration = ws.stimulus.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 data=zeros(size(t));
@@ -255,7 +255,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     end  % public methods block
     
     methods (Access = protected)
-        function data = calculateCoreSignal(self, t, trialIndexWithinSet) %#ok<INUSD,INUSL>
+        function data = calculateCoreSignal(self, t, sweepIndexWithinSet) %#ok<INUSD,INUSL>
             % This calculates a non-time shifted, non-scaled "core"
             % version of the signal, and is meant to be overridden by
             % subclasses.
@@ -341,20 +341,20 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
 %     end  % class methods block
     
     methods (Static)
-        function output = evaluateTrialExpression(expression,trialIndex)
-            % Evaluates a putative trial expression for i==trialIndex, and returns
+        function output = evaluateSweepExpression(expression,sweepIndex)
+            % Evaluates a putative sweep expression for i==sweepIndex, and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty matrix.
             if ischar(expression) && isrow(expression) ,
                 % value should be a string representing an
-                % expression involving 'i', which stands for the trial
+                % expression involving 'i', which stands for the sweep
                 % index, e.g. '-30+10*(i-1)'                
                 try
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     evalString=sprintf('@(i)(%s)',expression);
                     lambda=eval(evalString);
-                    output=lambda(trialIndex);
+                    output=lambda(sweepIndex);
                 catch me %#ok<NASGU>
                     output=[];
                 end
@@ -363,15 +363,15 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
         end
         
-        function output = evaluateStringTrialTemplate(template,trialIndex)
-            % Evaluates sprintf(template,trialIndex), and returns
+        function output = evaluateStringSweepTemplate(template,sweepIndex)
+            % Evaluates sprintf(template,sweepIndex), and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty string.
             if ischar(template) && isrow(template) ,
                 % value should be a string, possibly containing a %d or %02d or whatever.
-                % the trialIndex is used for the %d value
+                % the sweepIndex is used for the %d value
                 try
-                    output=sprintf(template,trialIndex);
+                    output=sprintf(template,sweepIndex);
                 catch me %#ok<NASGU>
                     output='';
                 end
@@ -380,20 +380,20 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
         end
 
-        function output = evaluateTrialTimeExpression(expression,trialIndex,t)
-            % Evaluates a putative trial expression for i==trialIndex, t==t, and returns
+        function output = evaluateSweepTimeExpression(expression,sweepIndex,t)
+            % Evaluates a putative sweep expression for i==sweepIndex, t==t, and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty matrix.
             if ischar(expression) && isrow(expression) ,
                 % value should be a string representing an
-                % expression involving 'i', which stands for the trial
+                % expression involving 'i', which stands for the sweep
                 % index, e.g. '-30+10*(i-1)'                
                 try
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     evalString=sprintf('@(i,t)(%s)',expression);
                     expressionAsFunction=eval(evalString);
-                    output=expressionAsFunction(trialIndex,t);
+                    output=expressionAsFunction(sweepIndex,t);
                 catch me %#ok<NASGU>
                     output=zeros(size(t));
                 end

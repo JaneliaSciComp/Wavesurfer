@@ -41,7 +41,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end
     
     properties (GetAccess=public, SetAccess=immutable, Transient=true)
-        MinDurationBetweenTrialsIfNotASAP = 0.25  % seconds
+        MinDurationBetweenSweepsIfNotASAP = 0.25  % seconds
     end
     
     properties (Access=protected, Transient=true)
@@ -88,8 +88,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             % have an "external" trigger source in any meaningful sense.
 %             % Pretty sure this is just a hack to get an item labelled
 %             % "External" into the dropdown list of trigger sources for the
-%             % trial trigger "map", so that it is possible to specify
-%             % external triggering for the trials.  There really must be a
+%             % sweep trigger "map", so that it is possible to specify
+%             % external triggering for the sweeps.  There really must be a
 %             % better way to organize this.  -- ALT, 2014-08-08           
             
             % Need to monitor these guys to maintain higher-level
@@ -106,10 +106,10 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function initializeFromMDFStructure(self,mdfStructure)
 %             % Add a built-in internal trigger for use when running
-%             % trial-based.  Can't do this in the constructor b/c we need
+%             % sweep-based.  Can't do this in the constructor b/c we need
 %             % the device ID.
 %             builtinTriggerSource = ws.TriggerSource();
-%             builtinTriggerSource.Name='Built-in Trial Trigger Scheme';
+%             builtinTriggerSource.Name='Built-in Sweep Trigger Scheme';
 %             builtinTriggerSource.DeviceName=mdfStructure.inputDeviceName;
 %             builtinTriggerSource.CounterID=0;
 %             builtinTriggerSource.RepeatCount=1;
@@ -182,11 +182,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 
 %         function acquireHardwareResources(self)
 %             self.setupMasterTriggerTask();
-%             self.setupInternalTrialBasedTriggers();
+%             self.setupInternalSweepBasedTriggers();
 %         end
         
         function releaseHardwareResources(self)
-            self.teardownInternalTrialBasedTriggers();
+            self.teardownInternalSweepBasedTriggers();
             self.teardownMasterTriggerTask();
         end
         
@@ -355,36 +355,36 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function startMeMaybe(self, experimentMode, nTrialsInSet, nTrialsCompletedInSet) %#ok<INUSL>
-            % This gets called once per trial, to start() all the relevant
+        function startMeMaybe(self, experimentMode, nSweepsInSet, nSweepsCompletedInSet) %#ok<INUSL>
+            % This gets called once per sweep, to start() all the relevant
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
-            % whether we start the triggers for each trial, or only for the
-            % first trial.
+            % whether we start the triggers for each sweep, or only for the
+            % first sweep.
             
             % Start the trigger tasks, if appropriate
             if self.AcquisitionUsesASAPTriggering ,
                 % In this case, start the acq & stim trigger tasks on
-                % each trial.
-                self.startAllDistinctTrialBasedTriggers();
+                % each sweep.
+                self.startAllDistinctSweepBasedTriggers();
             else
                 % Using "ballistic" triggering
-                if nTrialsCompletedInSet==0 ,
-                    % For the first trial in the set, need to start the
+                if nSweepsCompletedInSet==0 ,
+                    % For the first sweep in the set, need to start the
                     % acq task (if internal), and also the stim task,
                     % if it's internal but distinct.
-                    self.startAllDistinctTrialBasedTriggers();
+                    self.startAllDistinctSweepBasedTriggers();
                 end
             end
                 
             % Pulse the master trigger, if appropriate
             if self.AcquisitionUsesASAPTriggering ,
                 % In this case, start the acq & stim trigger tasks on
-                % each trial.
+                % each sweep.
                 self.pulseMasterTrigger();
             else
                 % Using "ballistic" triggering
-                if nTrialsCompletedInSet==0 ,
-                    % For the first trial in the set, need to start the
+                if nSweepsCompletedInSet==0 ,
+                    % For the first sweep in the set, need to start the
                     % acq task (if internal), and also the stim task,
                     % if it's internal but distinct.
                     self.pulseMasterTrigger();
@@ -392,13 +392,13 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
             
             % Notify the WSM, which starts the polling timer
-            if nTrialsCompletedInSet==0 ,
-                self.Parent.triggeringSubsystemJustStartedFirstTrialInExperiment();
+            if nSweepsCompletedInSet==0 ,
+                self.Parent.triggeringSubsystemJustStartedFirstSweepInExperiment();
             end            
         end  % function
 
-        function startAllDistinctTrialBasedTriggers(self)
-            triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
+        function startAllDistinctSweepBasedTriggers(self)
+            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes) ,
                 thisTriggerScheme=triggerSchemes{idx};
                 if thisTriggerScheme==self.StimulationTriggerScheme ,
@@ -418,16 +418,16 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
         
-%         function startStimulationTrialBasedTriggerIfDistinct(self)
-%             % Starts the stim trial-based trigger if it's different from
-%             % the acq trial-based one.
-%             if self.isStimulationTrialBasedTriggerDistinct() ,
+%         function startStimulationSweepBasedTriggerIfDistinct(self)
+%             % Starts the stim sweep-based trigger if it's different from
+%             % the acq sweep-based one.
+%             if self.isStimulationSweepBasedTriggerDistinct() ,
 %                 self.StimulationTriggerScheme.start()
 %             end
 %         end  % function
         
-%         function result=isStimulationTrialBasedTriggerDistinct(self)
-%             % True iff the trial-based acq and stim triggers are both
+%         function result=isStimulationSweepBasedTriggerDistinct(self)
+%             % True iff the sweep-based acq and stim triggers are both
 %             % non-null, and they are distinct, i.e. not the same.
 %             if self.StimulationTriggerScheme.IsInternal ,
 %                 if self.AcquisitionTriggerScheme.IsInternal ,
@@ -455,11 +455,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSD>
             self.setupMasterTriggerTask();            
-%             if experimentMode == ws.ApplicationState.AcquiringTrialBased ,
+%             if experimentMode == ws.ApplicationState.AcquiringSweepBased ,
                 if self.AcquisitionUsesASAPTriggering ,
-                    % do nothing --- will arm for each trial
+                    % do nothing --- will arm for each sweep
                 else
-                    self.setupInternalTrialBasedTriggers();
+                    self.setupInternalSweepBasedTriggers();
                 end
 %             else
 %                 % Continuous acq
@@ -469,37 +469,37 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
         end  % function
         
-        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
+        function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
             if self.AcquisitionUsesASAPTriggering ,
-            %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
-                self.setupInternalTrialBasedTriggers();
+            %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
+                self.setupInternalSweepBasedTriggers();
             end
         end  % function
 
-        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+        function didPerformSweep(self, wavesurferModel) %#ok<INUSD>
+            %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
-                self.teardownInternalTrialBasedTriggers();
+                self.teardownInternalSweepBasedTriggers();
             end
         end  % function
         
-        function didAbortTrial(self, wavesurferModel) %#ok<INUSD>
-            %if wavesurferModel.IsTrialBased && self.AcquisitionUsesASAPTriggering ,
+        function didAbortSweep(self, wavesurferModel) %#ok<INUSD>
+            %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
             if self.AcquisitionUsesASAPTriggering ,
-                self.teardownInternalTrialBasedTriggers();
+                self.teardownInternalSweepBasedTriggers();
             end
         end  % function
         
         function didPerformExperiment(self, ~)
-            self.teardownInternalTrialBasedTriggers();
+            self.teardownInternalSweepBasedTriggers();
         end  % function
         
         function didAbortExperiment(self, ~)
-            self.teardownInternalTrialBasedTriggers();
+            self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function setupInternalTrialBasedTriggers(self)        
-            triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
+        function setupInternalSweepBasedTriggers(self)        
+            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes) ,
                 thisTriggerScheme=triggerSchemes{idx};
                 thisTriggerScheme.setup();
@@ -540,7 +540,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function set.AcquisitionUsesASAPTriggering(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 % Can only change this if the trigger scheme is internal
-                if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsTrialBased) ,
+                if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsSweepBased) ,
                     if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
                         self.AcquisitionUsesASAPTriggering_ = logical(newValue);
                         self.syncTriggerSourcesFromTriggeringState_();
@@ -559,7 +559,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 if isempty(self.Parent) ,
                     value = self.AcquisitionUsesASAPTriggering_ ;
                 else
-                    if self.Parent.IsTrialBased ,
+                    if self.Parent.IsSweepBased ,
                         value = self.AcquisitionUsesASAPTriggering_ ;
                     else
                         value = false;
@@ -577,12 +577,12 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function        
         
-        function willSetNTrialsPerExperiment(self)
+        function willSetNSweepsPerExperiment(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
 
-        function didSetNTrialsPerExperiment(self)
+        function didSetNSweepsPerExperiment(self)
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
@@ -595,13 +595,13 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
-        function willSetIsTrialBased(self)
+        function willSetIsSweepBased(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
         
-        function didSetIsTrialBased(self)
-            %fprintf('Triggering::didSetIsTrialBased()\n');
+        function didSetIsSweepBased(self)
+            %fprintf('Triggering::didSetIsSweepBased()\n');
             self.syncTriggerSourcesFromTriggeringState_();
             self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
             %self.syncIntervalAndRepeatCountListeners_();
@@ -622,15 +622,15 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     methods (Access = protected)
         function defineDefaultPropertyAttributes(self)
             defineDefaultPropertyAttributes@ws.system.Subsystem(self);            
-            %self.setPropertyAttributeFeatures('AcquisitionUsesTrialTrigger', 'Classes', 'logical', 'Attributes', {'scalar'});
+            %self.setPropertyAttributeFeatures('AcquisitionUsesSweepTrigger', 'Classes', 'logical', 'Attributes', {'scalar'});
             self.setPropertyAttributeFeatures('StimulationUsesAcquisitionTriggerScheme', 'Classes', 'logical', 'Attributes', {'scalar'});
             self.setPropertyAttributeFeatures('AcquisitionUsesASAPTriggering', 'Classes', 'logical', 'Attributes', {'scalar'});
         end  % function
         
         function defineDefaultPropertyTags(self)
             defineDefaultPropertyTags@ws.system.Subsystem(self);            
-            %self.setPropertyTags('prvTrialTriggerSourceIndex', 'IncludeInFileTypes', {'cfg'});
-            %self.setPropertyTags('prvTrialTriggerDestinationIndex', 'IncludeInFileTypes', {'cfg'});
+            %self.setPropertyTags('prvSweepTriggerSourceIndex', 'IncludeInFileTypes', {'cfg'});
+            %self.setPropertyTags('prvSweepTriggerDestinationIndex', 'IncludeInFileTypes', {'cfg'});
             
             % These have to be marked b/c they're all dependent props, so
             % they would not normally be saved in the config file.  But
@@ -670,7 +670,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end  % protected methods block
     
     methods (Access = protected)
-        function result = getUniqueInternalTrialBasedTriggersInOrderForStarting_(self)
+        function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
             % Just what it says on the tin.  For starting, want the acq
             % trigger last so that the stim trigger can trigger off it if
             % they're using the same source.  Result is a cell array.
@@ -693,12 +693,12 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function teardownInternalTrialBasedTriggers(self)
+        function teardownInternalSweepBasedTriggers(self)
 %             if self.ContinuousModeTriggerScheme.IsInternal ,
 %                 self.ContinuousModeTriggerScheme.clear();
 %             end
             
-            triggerSchemes = self.getUniqueInternalTrialBasedTriggersInOrderForStarting_();
+            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes)
                 triggerSchemes{idx}.teardown();
             end
@@ -734,7 +734,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
             
         function releaseCurrentTriggerSources_(self)
-%             if self.Parent.IsTrialBased ,
+%             if self.Parent.IsSweepBased ,
                 if self.AcquisitionTriggerScheme.IsInternal ,
                     if self.AcquisitionUsesASAPTriggering ,
                         self.AcquisitionTriggerScheme.Target.releaseInterval();
@@ -753,7 +753,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
         
         function syncTriggerSourcesFromTriggeringState_(self)
-%            if self.Parent.IsTrialBased ,
+%            if self.Parent.IsSweepBased ,
                 if self.AcquisitionTriggerScheme.IsInternal ,
                     if self.AcquisitionUsesASAPTriggering ,
                         self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
@@ -762,8 +762,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                     else
                         self.AcquisitionTriggerScheme.Target.releaseInterval();
                         self.AcquisitionTriggerScheme.Target.placeLowerLimitOnInterval( ...
-                            self.Parent.Acquisition.Duration+self.MinDurationBetweenTrialsIfNotASAP );
-                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NTrialsPerExperiment);
+                            self.Parent.Acquisition.Duration+self.MinDurationBetweenSweepsIfNotASAP );
+                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NSweepsPerExperiment);
                     end
                 end
 %             elseif self.Parent.IsContinuous ,
@@ -781,7 +781,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             self.TriggerSchemeIntervalAndRepeatCountListeners_=event.listener.empty();
 %             
 %             % Set up new listeners
-%             if self.Parent.IsTrialBased ,
+%             if self.Parent.IsSweepBased ,
 %                 if self.AcquisitionTriggerScheme.IsInternal ,
 %                     self.TriggerSchemeIntervalAndRepeatCountListeners_(end+1) = ...
 %                         self.AcquisitionTriggerScheme.Source.addlistener('Interval', 'PostSet', ...
@@ -820,10 +820,10 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end  % class methods block
         
     methods
-        function pollingTimerFired(self,timeSinceTrialStart)
+        function pollingTimerFired(self,timeSinceSweepStart)
             % Call the task to do the real work
-            self.AcquisitionTriggerScheme.pollingTimerFired(timeSinceTrialStart);
-            self.StimulationTriggerScheme.pollingTimerFired(timeSinceTrialStart);
+            self.AcquisitionTriggerScheme.pollingTimerFired(timeSinceSweepStart);
+            self.StimulationTriggerScheme.pollingTimerFired(timeSinceSweepStart);
         end
     end    
 end

@@ -69,19 +69,19 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
         function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
             % Called if a failure occurred during willPerformExperiment() for subsystems
             % that have already passed willPerformExperiment() to clean up, and called fater
-            % didAbortTrial().
+            % didAbortSweep().
             
             % This code MUST be exception free.
         end
         
-        function willPerformTrial(~, ~)          % self, wavesurferObj
+        function willPerformSweep(~, ~)          % self, wavesurferObj
         end
         
-        function didPerformTrial(~, ~)           % self, wavesurferObj
+        function didPerformSweep(~, ~)           % self, wavesurferObj
         end
         
-        function didAbortTrial(~, ~)              % self, wavesurferObj
-            % Called when a trial is interrupted, either unexpectedly because of an error,
+        function didAbortSweep(~, ~)              % self, wavesurferObj
+            % Called when a sweep is interrupted, either unexpectedly because of an error,
             % or intentionally such as stopping preview mode or stopping an ephys test
             % pulse.
             

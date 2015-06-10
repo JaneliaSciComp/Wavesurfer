@@ -38,13 +38,13 @@ classdef RasterVirtualReality < ws.UserClass
         function self = RasterVirtualReality(wsModel) %#ok<INUSD>
         end  % function
         
-        function trialWillStart(self,wsModel,eventName) %#ok<INUSD>
+        function sweepWillStart(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function trialDidComplete(self,wsModel,eventName) %#ok<INUSD>
+        function sweepDidComplete(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function trialDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        function sweepDidAbort(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
         function experimentWillStart(self,wsModel,eventName) %#ok<INUSD>

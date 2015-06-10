@@ -178,9 +178,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
 %                 return
 %             end
 % 
-%             set(self.TrialStartEdit,'String',model.TrialWillStart);
-%             set(self.TrialCompleteEdit,'String',model.TrialDidComplete);
-%             set(self.TrialAbortEdit,'String',model.TrialDidAbort);            
+%             set(self.SweepStartEdit,'String',model.SweepWillStart);
+%             set(self.SweepCompleteEdit,'String',model.SweepDidComplete);
+%             set(self.SweepAbortEdit,'String',model.SweepDidAbort);            
 %             set(self.ExperimentStartEdit,'String',model.ExperimentWillStart);
 %             set(self.ExperimentCompleteEdit,'String',model.ExperimentDidComplete);
 %             set(self.ExperimentAbortEdit,'String',model.ExperimentDidAbort);            
@@ -236,9 +236,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             
-%             model.subscribeMe(self,'PostSet','TrialWillStart','update');
-%             model.subscribeMe(self,'PostSet','TrialDidComplete','update');
-%             model.subscribeMe(self,'PostSet','TrialDidAbort','update');   
+%             model.subscribeMe(self,'PostSet','SweepWillStart','update');
+%             model.subscribeMe(self,'PostSet','SweepDidComplete','update');
+%             model.subscribeMe(self,'PostSet','SweepDidAbort','update');   
 %             model.subscribeMe(self,'PostSet','ExperimentWillStart','update');
 %             model.subscribeMe(self,'PostSet','ExperimentDidComplete','update');
 %             model.subscribeMe(self,'PostSet','ExperimentDidAbort','update');           

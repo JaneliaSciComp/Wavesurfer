@@ -95,13 +95,13 @@ classdef UserFunctions < ws.system.Subsystem
                     self.TheObject_.(eventName)(wavesurferModel, eventName);
                 end
 
-                if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && ~isempty(self.TheObject_) ,
-                    self.TheObject_.TrialDidComplete(wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
+                if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
+                    self.TheObject_.SweepDidComplete(wavesurferModel, eventName); % Calls sweep completion user function, but still passes SweepDidAbort
                 end
 
                 if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject_) ,
                     self.TheObject_.ExperimentDidComplete(wavesurferModel, eventName); 
-                      % Calls experiment completion user function, but still passes TrialDidAbort
+                      % Calls experiment completion user function, but still passes SweepDidAbort
                 end
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];

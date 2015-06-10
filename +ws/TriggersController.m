@@ -167,7 +167,7 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             self.Model.AcquisitionUsesASAPTriggering=value;
         end  % function
 
-        function TrialBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function SweepBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
         end  % function
         
@@ -176,7 +176,7 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             self.Model.StimulationUsesAcquisitionTriggerScheme=value;
         end  % function
 
-        function TrialBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function SweepBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
         end
         

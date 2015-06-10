@@ -20,13 +20,13 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
     properties (Dependent=true)
         IsXSpanSlavedToAcquistionDuration
           % if true, the x span for all the scopes is set to the acquisiton
-          % trial duration
+          % sweep duration
     end
     
     properties (Access=protected)
         IsXSpanSlavedToAcquistionDuration_ = true
           % if true, the x span for all the scopes is set to the acquisiton
-          % trial duration
+          % sweep duration
     end
     
     properties (Dependent = true, SetAccess = immutable)
@@ -295,7 +295,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
     end
         
     methods    
-        function willPerformTrial(self, ~)
+        function willPerformSweep(self, ~)
             self.prvClearOnNextData = true;
         end
         

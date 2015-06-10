@@ -145,8 +145,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(-1);
             try
                 self.Model.Logging.Enabled=false;
-                if self.Model.IsTrialBased ,
-                    self.startTrialBasedAcquisition_(varargin{:});
+                if self.Model.IsSweepBased ,
+                    self.startSweepBasedAcquisition_(varargin{:});
                 else
                     self.startContinuousAcquisition_(varargin{:});
                 end
@@ -162,8 +162,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(-1);            
             try
                 self.Model.Logging.Enabled=true;
-                if self.Model.IsTrialBased ,
-                    self.startTrialBasedAcquisition_(varargin{:});
+                if self.Model.IsSweepBased ,
+                    self.startSweepBasedAcquisition_(varargin{:});
                 else
                     self.startContinuousAcquisition_(varargin{:});
                 end
@@ -281,9 +281,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             self.updateEnablementAndVisibilityOfControls();
 %         end            
         
-        function TrialBasedRadiobuttonActuated(self,source,event) %#ok<INUSD>
+        function SweepBasedRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model,'IsTrialBased',newValue);
+            ws.Controller.setWithBenefits(self.Model,'IsSweepBased',newValue);
         end
 
         function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
@@ -297,16 +297,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Acquisition,'SampleRate',newValue);
         end
 
-        function NTrialsEditActuated(self,source,event) %#ok<INUSD>
+        function NSweepsEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model,'NTrialsPerExperiment',newValue);
+            ws.Controller.setWithBenefits(self.Model,'NSweepsPerExperiment',newValue);
         end
 
-        function TrialDurationEditActuated(self,source,event) %#ok<INUSD>
+        function SweepDurationEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model,'TrialDuration',newValue);
+            ws.Controller.setWithBenefits(self.Model,'SweepDuration',newValue);
         end
 
         function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -373,10 +373,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Logging,'SessionIndex',newValue);
         end
         
-        function NextTrialEditActuated(self,source,event) %#ok<INUSD>
+        function NextSweepEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model.Logging,'NextTrialIndex',newValue);
+            ws.Controller.setWithBenefits(self.Model.Logging,'NextSweepIndex',newValue);
         end
 
         function OverwriteCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -902,19 +902,19 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
 %         function expose_default_bindings(self)
 %             bindings=ws.most.app.PropertyBinding.empty();
-% %             bindings(end+11) = ws.most.app.PropertyBinding('SourceProperty', 'TrialDurations', ...
+% %             bindings(end+11) = ws.most.app.PropertyBinding('SourceProperty', 'SweepDurations', ...
 % %                                                         'Target', 'WavesurferWindow.DurationLabel', ...
-% %                                                         'ValueTransformer', 'ws.app.TrialDurationTransformer', ...
+% %                                                         'ValueTransformer', 'ws.app.SweepDurationTransformer', ...
 % %                                                         'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsTrialBased', ...
-%                                                          'Target', 'WavesurferWindow.IsTrialBased');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsSweepBased', ...
+%                                                          'Target', 'WavesurferWindow.IsSweepBased');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsContinuous', ...
 %                                                          'Target', 'WavesurferWindow.IsContinuous');
 % %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.Enabled', ...
 % %                                                          'Target', 'WavesurferWindow.AcqEnabled');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.SampleRate', ...
 %                                                          'Target', 'WavesurferWindow.AcqSampleRate');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'TrialDuration', ...
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'SweepDuration', ...
 %                                                          'Target', 'WavesurferWindow.AcqTraceLength');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.CanEnable', ...
 %                                                          'Target', 'WavesurferWindow.StimEnabled', ...
@@ -934,8 +934,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.FileLocation', ...
 %                                                          'Target', 'WavesurferWindow.LogFileLocation', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.NextTrialIndex', 'Target', 'WavesurferWindow.NextTrialId');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'NTrialsPerExperiment', 'Target', 'WavesurferWindow.TrialsPerExperiment');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.NextSweepIndex', 'Target', 'WavesurferWindow.NextSweepId');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'NSweepsPerExperiment', 'Target', 'WavesurferWindow.SweepsPerExperiment');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'State', ...
 %                                                          'Target', 'WavesurferWindow.StatusLabel', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
@@ -970,7 +970,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 self.updateEnablementAndVisibilityOfControls();                
 %                 self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
 %                 self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
-%                 self.Model.subscribeMe(self,'PostSet','IsTrialBased','updateEnablementAndVisibilityOfControls');
+%                 self.Model.subscribeMe(self,'PostSet','IsSweepBased','updateEnablementAndVisibilityOfControls');
 %                 self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
 %                 self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
 %                 self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
@@ -998,7 +998,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
                 self.Model.subscribeMe(self,'DidSetStateAwayFromNoMDF','','nukeAndRepaveScopeControllers');
                 %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-                %self.Model.subscribeMe(self,'PostSet','IsTrialBased','updateEnablementAndVisibilityOfControls');
+                %self.Model.subscribeMe(self,'PostSet','IsSweepBased','updateEnablementAndVisibilityOfControls');
                 %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
                 %self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
                 %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
@@ -1034,7 +1034,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     end
                 end
                 %self.Figure.changeReadiness(+1);
-                %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;  % go to normal cursor before starting trial
+                %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;  % go to normal cursor before starting sweep
                 if isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Play) ,
                     self.play();
                 elseif isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Record) ,
@@ -1122,11 +1122,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
-        function startTrialBasedAcquisition_(self, varargin)
+        function startSweepBasedAcquisition_(self, varargin)
             % Action for the Start button.
 %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
 %             progressBar.IsIndeterminate = false;
-%             progressBar.Maximum = self.Model.NTrialsPerExperiment;
+%             progressBar.Maximum = self.Model.NSweepsPerExperiment;
 %             progressBar.Value = 0;
             
 %             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
@@ -1352,9 +1352,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             
 %             isNoMDF=(model.State == ws.ApplicationState.NoMDF);
 %             isIdle=(model.State == ws.ApplicationState.Idle);
-%             isTrialBased=model.IsTrialBased;
+%             isSweepBased=model.IsSweepBased;
 %             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
-%             isAcquiring= (model.State == ws.ApplicationState.AcquiringTrialBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
+%             isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
 %             
 %             % File menu items
 %             set(figureObject.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
@@ -1398,11 +1398,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 % 
 %             % Acquisition controls
-%             set(figureObject.TrialBasedRadiobutton,'Enable',onIff(isIdle));
+%             set(figureObject.SweepBasedRadiobutton,'Enable',onIff(isIdle));
 %             set(figureObject.ContinuousRadiobutton,'Enable',onIff(isIdle));            
 %             set(figureObject.AcquisitionSampleRateEdit,'Enable',onIff(isIdle));
-%             set(figureObject.NTrialsEdit,'Enable',onIff(isIdle&&isTrialBased));
-%             set(figureObject.TrialDurationEdit,'Enable',onIff(isIdle&&isTrialBased));
+%             set(figureObject.NSweepsEdit,'Enable',onIff(isIdle&&isSweepBased));
+%             set(figureObject.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
 %             
 %             % Stimulation controls
 %             isStimulusEnabled=model.Stimulation.Enabled;
@@ -2027,11 +2027,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %     methods (Static=true)
 %         function s=initialPropertyBindings()
 %             s = struct();
-%             s.IsTrialBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialBasedRadiobutton'}});
+%             s.IsSweepBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
 %             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.NTrialsPerExperiment = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
+%             s.NSweepsPerExperiment = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
-%             s.TrialDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialDurationEdit'}});
+%             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             
 %             % Need to handle stim.CanEnable
 %             s.Stimulation.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
@@ -2045,7 +2045,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             
 %             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
-%             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
+%             s.Logging.NextSweepIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextSweepEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
 %             
 %             %s.State = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StatusText'}});            

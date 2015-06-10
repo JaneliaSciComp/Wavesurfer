@@ -28,7 +28,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.InitialFrequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.InitialFrequency_ = value;
@@ -43,7 +43,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.FinalFrequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.FinalFrequency_ = value;
@@ -71,23 +71,23 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
 %     end
     
     methods
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateTrialExpression(stimulus.Duration,trialIndexWithinSet) ;
+            duration = ws.stimulus.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 y=zeros(size(t));
                 return
             end   
             
             % Compute the duration from the expression for it
-            f0 = ws.stimulus.Stimulus.evaluateTrialExpression(self.InitialFrequency,trialIndexWithinSet) ;
+            f0 = ws.stimulus.Stimulus.evaluateSweepExpression(self.InitialFrequency,sweepIndexWithinSet) ;
             if isempty(f0) || ~isnumeric(f0) || ~isscalar(f0) || ~isreal(f0) || ~isfinite(f0) || f0<0 ,
                 y=zeros(size(t));
                 return
             end   
             
             % Compute the duration from the expression for it
-            ff = ws.stimulus.Stimulus.evaluateTrialExpression(self.FinalFrequency,trialIndexWithinSet) ;
+            ff = ws.stimulus.Stimulus.evaluateSweepExpression(self.FinalFrequency,sweepIndexWithinSet) ;
             if isempty(ff) || ~isnumeric(ff) || ~isscalar(ff) || ~isreal(ff) || ~isfinite(ff) || ff<0 ,
                 y=zeros(size(t));
                 return

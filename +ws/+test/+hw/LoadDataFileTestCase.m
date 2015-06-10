@@ -30,8 +30,8 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=true;
 
-            nTrials=3;
-            wsModel.NTrialsPerExperiment=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerExperiment=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -70,7 +70,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             pause(0.5);
 
             % Make sure that worked
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
             
             % Try to read the data file
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
@@ -81,9 +81,9 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
             analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
             digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
-            analogData = dataAsStruct.trial_0003.analogScans ;   %#ok<NASGU>
+            analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
             %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
-            digitalData = dataAsStruct.trial_0003.digitalScans ;   %#ok<NASGU>
+            digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>
             %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
             %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
             

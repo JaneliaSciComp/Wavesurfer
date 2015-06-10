@@ -243,7 +243,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-%         function out = get.TrialDurations(self)
+%         function out = get.SweepDurations(self)
 %             if ~self.Enabled || isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
 %                 out = 0;
 %             else                
@@ -255,7 +255,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             end
 %         end
 %         
-%         function set.TrialDurations(~, ~)  % Empty for triggering property events.
+%         function set.SweepDurations(~, ~)  % Empty for triggering property events.
 %         end
         
         function set.TriggerScheme(self, value)
@@ -505,7 +505,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 if wavesurferObj.Triggering.AcquisitionTriggerScheme.IsInternal
                     % acq trigger scheme is internal
                     if self.TriggerScheme.Target == wavesurferObj.Triggering.AcquisitionTriggerScheme.Target ,
-                        self.EpisodesPerExperiment_ = self.Parent.NTrialsPerExperiment;
+                        self.EpisodesPerExperiment_ = self.Parent.NSweepsPerExperiment;
                     else
                         self.EpisodesPerExperiment_ = self.TriggerScheme.Target.RepeatCount;
                     end
@@ -554,13 +554,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.IsWithinExperiment_=false;
         end  % function
         
-        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            % This gets called from above when an (acq) trial is about to
+        function willPerformSweep(self, wavesurferModel) %#ok<INUSD>
+            % This gets called from above when an (acq) sweep is about to
             % start.  What we do here depends a lot on the current triggering
             % settings.
             
-            %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
-            %fprintf('Stimulation::willPerformTrial()\n');
+            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
+            %fprintf('Stimulation::willPerformSweep()\n');
 
             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
             if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
@@ -570,26 +570,26 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             else
                 % Stim and acq are using distinct trigger
                 % sources.
-                % If first trial, arm.  Otherwise, we handle
-                % re-arming independently from the acq trials.
-                if self.Parent.NTrialsCompletedInThisExperiment == 0 ,
+                % If first sweep, arm.  Otherwise, we handle
+                % re-arming independently from the acq sweeps.
+                if self.Parent.NSweepsCompletedInThisExperiment == 0 ,
                     self.armForEpisode();
                 end
             end
         end  % function
 
-%         function willPerformTrial(self, wavesurferObj) %#ok<INUSD>
-%             % This gets called from above when an (acq) trial is about to
+%         function willPerformSweep(self, wavesurferObj) %#ok<INUSD>
+%             % This gets called from above when an (acq) sweep is about to
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
-%             %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
-%             fprintf('Stimulation::willPerformTrial()\n');
+%             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
+%             fprintf('Stimulation::willPerformSweep()\n');
 %             
 %             if self.TriggerScheme.IsExternal ,
 %                 % If external triggering, we set up for a trigger only if
 %                 % this is the first 
-%                 if self.Parent.NTrialsCompletedInThisExperiment == 0 ,
+%                 if self.Parent.NSweepsCompletedInThisExperiment == 0 ,
 %                     self.armForEpisode();
 %                 end
 %             else
@@ -603,9 +603,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                     else
 %                         % stim and acq are using distinct internal trigger
 %                         % sources
-%                         % if first trial, arm.  Otherwise, we handle
-%                         % re-arming independently from the acq trials.
-%                         if self.Parent.NTrialsCompletedInThisExperiment == 0 ,                            
+%                         % if first sweep, arm.  Otherwise, we handle
+%                         % re-arming independently from the acq sweeps.
+%                         if self.Parent.NSweepsCompletedInThisExperiment == 0 ,                            
 %                             self.armForEpisode();
 %                         else
 %                             % do nothing
@@ -620,9 +620,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 % %                         self.IsWithinExperiment_ = false;
 % %                         self.Parent.stimulationEpisodeComplete();
 % %                     end
-%                     % if first trial, arm.  Otherwise, we handle
-%                     % re-arming independently from the acq trials.
-%                     if self.Parent.NTrialsCompletedInThisExperiment == 0 ,                            
+%                     % if first sweep, arm.  Otherwise, we handle
+%                     % re-arming independently from the acq sweeps.
+%                     if self.Parent.NSweepsCompletedInThisExperiment == 0 ,                            
 %                         self.armForEpisode();
 %                     else
 %                         % do nothing
@@ -631,11 +631,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             end
 %         end  % function
         
-        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            %fprintf('Stimulation::didPerformTrial()\n');            
+        function didPerformSweep(self, wavesurferModel) %#ok<INUSD>
+            %fprintf('Stimulation::didPerformSweep()\n');            
         end
         
-        function didAbortTrial(self, ~)
+        function didAbortSweep(self, ~)
             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
                 self.TheFiniteAnalogOutputTask_.abort();
             end
@@ -1146,14 +1146,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % class methods block
     
     methods
-        function pollingTimerFired(self,timeSinceTrialStart)
+        function pollingTimerFired(self,timeSinceSweepStart)
             % Call the task to do the real work
             if self.IsArmedOrStimulating_ ,
                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                    self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceTrialStart);
+                    self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceSweepStart);
                 end
                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-                    self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceTrialStart);
+                    self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceSweepStart);
                 end
             end
         end

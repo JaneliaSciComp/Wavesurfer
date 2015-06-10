@@ -62,7 +62,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Make it so the stim library map durations are not overridden
-            % by the WavesurferModel trial duration, which would mess things up.
+            % by the WavesurferModel sweep duration, which would mess things up.
             em.Triggering.AcquisitionUsesASAPTriggering=false;
             em.Triggering.StimulationUsesAcquisitionTriggerScheme=false;
             
@@ -108,7 +108,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Make it so the stim library map durations are not overridden
-            % by the WavesurferModel trial duration, which would mess things up.
+            % by the WavesurferModel sweep duration, which would mess things up.
             em.Triggering.StimulationUsesAcquisitionTriggerScheme=false;
             
             % Clear the stim lib within the WavesurferModel
@@ -140,7 +140,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Make it so the stim library map durations are not overridden
-            % by the WavesurferModel trial duration, which would mess things up.
+            % by the WavesurferModel sweep duration, which would mess things up.
             wsModel.Triggering.StimulationUsesAcquisitionTriggerScheme=false;
             
             % Clear the stim lib within the WavesurferModel
@@ -245,8 +245,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % A list of settings
             settings=cell(0,2);
-            settings(end+1,:)={'IsTrialBased' true};            
-            settings(end+1,:)={'NTrialsPerExperiment' 11};
+            settings(end+1,:)={'IsSweepBased' true};            
+            settings(end+1,:)={'NSweepsPerExperiment' 11};
 
             settings(end+1,:)={'Acquisition.SampleRate' 19979};
             settings(end+1,:)={'Acquisition.Duration' 2.17};

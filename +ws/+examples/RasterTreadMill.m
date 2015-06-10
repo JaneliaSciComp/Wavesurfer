@@ -45,13 +45,13 @@ classdef RasterTreadMill < ws.UserClass
         function self = RasterTreadMill(wsModel)
         end
         
-        function trialWillStart(self,wsModel,eventName)
+        function sweepWillStart(self,wsModel,eventName)
         end
         
-        function trialDidComplete(self,wsModel,eventName)
+        function sweepDidComplete(self,wsModel,eventName)
         end
         
-        function trialDidAbort(self,wsModel,eventName)
+        function sweepDidAbort(self,wsModel,eventName)
         end
         
         function experimentWillStart(self,wsModel,eventName)

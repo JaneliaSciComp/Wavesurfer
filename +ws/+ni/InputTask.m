@@ -145,7 +145,7 @@ classdef InputTask < handle
             value = self.Parent_;
         end  % function
         
-        function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceTrialStart, fromExperimentStartTicId) %#ok<INUSL>
+        function [rawData,timeSinceExperimentStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromExperimentStartTicId) %#ok<INUSL>
             % If nScansToRead is empty, read all the available scans.  If
             % nScansToRead is nonempty, read that number of scans.
             timeSinceExperimentStartNow = toc(fromExperimentStartTicId) ;

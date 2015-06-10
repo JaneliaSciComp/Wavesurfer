@@ -114,7 +114,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             self.DabsDaqTask_.channels(1).set('pulseFreq', newValue);
         end        
         
-        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
+        function pollingTimerFired(self,timeSinceSweepStart) %#ok<INUSD>
             if self.DabsDaqTask_.isTaskDoneQuiet() ,
                 self.stop();  % probably better to do self.DabsDaqTask_.stop() here...
                 %self.DabsDaqTask_.doneEventCallbacks = {};

@@ -1,9 +1,9 @@
 classdef UserClass < handle
 
     methods        
-        trialWillStart(self,wsModel,eventName)        
-        trialDidComplete(self,wsModel,eventName)      
-        trialDidAbort(self,wsModel,eventName)
+        sweepWillStart(self,wsModel,eventName)        
+        sweepDidComplete(self,wsModel,eventName)      
+        sweepDidAbort(self,wsModel,eventName)
         experimentWillStart(self,wsModel,eventName)
         experimentDidComplete(self,wsModel,eventName)
         experimentDidAbort(self,wsModel,eventName)

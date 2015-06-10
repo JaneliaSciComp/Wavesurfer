@@ -38,7 +38,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.FirstPulseAmplitude(self, newValue)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(newValue,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(newValue,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.FirstPulseAmplitude_ = newValue;
@@ -49,7 +49,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.FirstPulseDuration(self, newValue)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(newValue,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(newValue,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.FirstPulseDuration_ = newValue;
@@ -60,7 +60,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.DelayBetweenPulses(self, newValue)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(newValue,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(newValue,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.DelayBetweenPulses_ = newValue;
@@ -71,7 +71,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.SecondPulseAmplitude(self, newValue)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(newValue,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(newValue,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.SecondPulseAmplitude_ = newValue;
@@ -82,7 +82,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.SecondPulseDuration(self, newValue)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(newValue,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(newValue,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.SecondPulseDuration_ = newValue;
@@ -112,37 +112,37 @@ classdef TwoSquarePulsesStimulusDelegate < ws.stimulus.StimulusDelegate
             out = self.SecondPulseDuration_ ;
         end
         
-        function data = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet) %#ok<INUSL>
+        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
             % Compute the first pulse amplitude from the expression for it
-            firstPulseAmplitude = ws.stimulus.Stimulus.evaluateTrialExpression(self.FirstPulseAmplitude,trialIndexWithinSet) ;
+            firstPulseAmplitude = ws.stimulus.Stimulus.evaluateSweepExpression(self.FirstPulseAmplitude,sweepIndexWithinSet) ;
             if isempty(firstPulseAmplitude) || ~isnumeric(firstPulseAmplitude) || ~isscalar(firstPulseAmplitude) || ~isreal(firstPulseAmplitude) || ...
                                                ~isfinite(firstPulseAmplitude) ,
                 firstPulseAmplitude=nan;  % s
             end
             
             % Compute the first pulse duration from the expression for it
-            firstPulseDuration = ws.stimulus.Stimulus.evaluateTrialExpression(self.FirstPulseDuration,trialIndexWithinSet) ;
+            firstPulseDuration = ws.stimulus.Stimulus.evaluateSweepExpression(self.FirstPulseDuration,sweepIndexWithinSet) ;
             if isempty(firstPulseDuration) || ~isnumeric(firstPulseDuration) || ~isscalar(firstPulseDuration) || ~isreal(firstPulseDuration) || ...
                                                ~isfinite(firstPulseDuration) || ~(firstPulseDuration>=0) ,
                 firstPulseDuration=nan;  % s
             end
             
             % Compute the delay between pulses from the expression for it
-            delayBetweenPulses = ws.stimulus.Stimulus.evaluateTrialExpression(self.DelayBetweenPulses,trialIndexWithinSet) ;
+            delayBetweenPulses = ws.stimulus.Stimulus.evaluateSweepExpression(self.DelayBetweenPulses,sweepIndexWithinSet) ;
             if isempty(delayBetweenPulses) || ~isnumeric(delayBetweenPulses) || ~isscalar(delayBetweenPulses) || ~isreal(delayBetweenPulses) || ...
                                                ~isfinite(delayBetweenPulses) ,
                 delayBetweenPulses=nan;  % s
             end
             
             % Compute the second pulse amplitude from the expression for it
-            secondPulseAmplitude = ws.stimulus.Stimulus.evaluateTrialExpression(self.SecondPulseAmplitude,trialIndexWithinSet) ;
+            secondPulseAmplitude = ws.stimulus.Stimulus.evaluateSweepExpression(self.SecondPulseAmplitude,sweepIndexWithinSet) ;
             if isempty(secondPulseAmplitude) || ~isnumeric(secondPulseAmplitude) || ~isscalar(secondPulseAmplitude) || ~isreal(secondPulseAmplitude) || ...
                                                ~isfinite(secondPulseAmplitude) ,
                 secondPulseAmplitude=nan;  % s
             end
             
             % Compute the second pulse duration from the expression for it
-            secondPulseDuration = ws.stimulus.Stimulus.evaluateTrialExpression(self.SecondPulseDuration,trialIndexWithinSet) ;
+            secondPulseDuration = ws.stimulus.Stimulus.evaluateSweepExpression(self.SecondPulseDuration,sweepIndexWithinSet) ;
             if isempty(secondPulseDuration) || ~isnumeric(secondPulseDuration) || ~isscalar(secondPulseDuration) || ~isreal(secondPulseDuration) || ...
                                                ~isfinite(secondPulseDuration) || ~(secondPulseDuration>=0) ,
                 secondPulseDuration=nan;  % s

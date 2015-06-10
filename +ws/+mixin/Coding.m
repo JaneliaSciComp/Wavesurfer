@@ -12,7 +12,7 @@ classdef Coding < handle
 %   different files.  For instance, Wavesurfer has (at least) two different
 %   kinds of configuration files: .usr files and .cfg files.  .usr files
 %   store per-user configuration settings (like a .bashrc or a .emacs file
-%   in Unix), whereas .cfg stores the setup for a particular kind of trial
+%   in Unix), whereas .cfg stores the setup for a particular kind of sweep
 %   (like a .pro "protocol" file in Clampex).  The properties that get
 %   stored in the different file types can be tagged appropriately, so that
 %   the ones that should be stored in the .usr can be easily extracted and

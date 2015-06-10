@@ -39,23 +39,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
     properties (Dependent = true, Transient=true)  % transient b/c actually stored in Acquisition subsystem  % SetObservable = true, 
-        TrialDuration  % the trial duration, in s
+        SweepDuration  % the sweep duration, in s
     end
     
     properties (Dependent = true)  % SetObservable = true, 
-        IsTrialBased  % boolean scalar, whether the current acquisition mode is trial-based.
-        IsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.IsContinuous == ~self.IsTrialBased
+        IsSweepBased  % boolean scalar, whether the current acquisition mode is sweep-based.
+        IsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.IsContinuous == ~self.IsSweepBased
     end
     
     properties (Dependent = true)  % SetObservable = true, 
-        NTrialsPerExperiment  
-            % Number of trials to perform during experiment.  If in
-            % trial-based mode, this is a pass through to the repeat count
+        NSweepsPerExperiment  
+            % Number of sweeps to perform during experiment.  If in
+            % sweep-based mode, this is a pass through to the repeat count
             % of the start trigger.  If in continuous mode, it is always 1.
     end
     
     properties (SetAccess = protected, Transient=true)  % SetObservable = true, 
-        NTrialsCompletedInThisExperiment = 0   % Current number of completed trials while the experiment is running (range of 0 to NTrialsPerExperiment).
+        NSweepsCompletedInThisExperiment = 0   % Current number of completed sweeps while the experiment is running (range of 0 to NSweepsPerExperiment).
     end
     
     properties (Dependent=true)   %, SetObservable=true)
@@ -63,7 +63,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
 %     properties (Dependent=true, Hidden=true)
-%         NextTrialIndex
+%         NextSweepIndex
 %     end
 
     properties (Dependent=true)
@@ -79,23 +79,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     properties (Access = protected)
         IsYokedToScanImage_ = false
-        IsTrialBased_ = true
-        NTrialsPerExperiment_ = 1
+        IsSweepBased_ = true
+        NSweepsPerExperiment_ = 1
     end
 
     properties (Access=protected, Transient=true)
         State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         t_
-        TrialAcqSampleCount_
+        SweepAcqSampleCount_
         FromExperimentStartTicId_
-        FromTrialStartTicId_
-        TimeOfLastWillPerformTrial_        
+        FromSweepStartTicId_
+        TimeOfLastWillPerformSweep_        
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceExperimentStart_ = 0
         %PollingTimer_
         MinimumPollingDt_
-        TimeOfLastPollInTrial_
+        TimeOfLastPollInSweep_
         ClockAtExperimentStart_
         DoContinuePolling_
     end
@@ -104,9 +104,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % As of 2014-10-16, none of these events are subscribed to
         % anywhere in the WS code.  But we'll leave them in as hooks for
         % user customization.
-        trialWillStart
-        trialDidComplete
-        trialDidAbort
+        sweepWillStart
+        sweepDidComplete
+        sweepDidAbort
         experimentWillStart
         experimentDidComplete
         experimentDidAbort        %NScopesMayHaveChanged
@@ -122,15 +122,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
-        DidSetIsTrialBasedContinuous
+        DidSetIsSweepBasedContinuous
     end
     
     methods
         function self = WavesurferModel()
             %self.State_ = ws.ApplicationState.Uninitialized;
             %self.IsYokedToScanImage_ = false;
-            %self.IsTrialBased_=true;
-            %self.NTrialsPerExperiment_ = 1;
+            %self.IsSweepBased_=true;
+            %self.NSweepsPerExperiment_ = 1;
             
             % Initialize the fast protocols
             self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
@@ -226,8 +226,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                    'wavesurfer:misconfigured', ...
                    'The acquisition or stimulus system must be enabled.  If neither system can be enabled verify the contents of your machine data file.');
                
-            if self.IsTrialBased,
-                modeRequested=ws.ApplicationState.AcquiringTrialBased;
+            if self.IsSweepBased,
+                modeRequested=ws.ApplicationState.AcquiringSweepBased;
             else
                 modeRequested=ws.ApplicationState.AcquiringContinuously;
             end                
@@ -235,7 +235,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 self.willPerformExperiment(modeRequested);
             catch me
-                self.didAbortTrial();
+                self.didAbortSweep();
                 me.rethrow();
             end
         end
@@ -246,8 +246,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 return
             end
 
-            % Actually stop the ongoing trial
-            self.didAbortTrial();
+            % Actually stop the ongoing sweep
+            self.didAbortSweep();
         end
     end  % methods
     
@@ -270,47 +270,47 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.broadcast('DidSetState');
         end  % function
         
-%         function value=get.NextTrialIndex(self)
-%             % This is a pass-through method to get the NextTrialIndex from
+%         function value=get.NextSweepIndex(self)
+%             % This is a pass-through method to get the NextSweepIndex from
 %             % the Logging subsystem, where it is actually stored.
 %             if isempty(self.Logging) || ~isvalid(self.Logging),
 %                 value=[];
 %             else
-%                 value=self.Logging.NextTrialIndex;
+%                 value=self.Logging.NextSweepIndex;
 %             end
 %         end  % function
         
-        function val = get.NTrialsPerExperiment(self)
+        function val = get.NSweepsPerExperiment(self)
             if self.IsContinuous ,
                 val = 1;
             else
-                %val = self.Triggering.TrialTrigger.Source.RepeatCount;
-                val = self.NTrialsPerExperiment_;
+                %val = self.Triggering.SweepTrigger.Source.RepeatCount;
+                val = self.NSweepsPerExperiment_;
             end
         end  % function
         
-        function set.NTrialsPerExperiment(self, newValue)
+        function set.NSweepsPerExperiment(self, newValue)
             % Sometimes want to trigger the listeners without actually
             % setting, and without throwing an error
             if ws.utility.isASettableValue(newValue) ,
-                % s.NTrialsPerExperiment = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-                %value=self.validatePropArg('NTrialsPerExperiment',value);
+                % s.NSweepsPerExperiment = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+                %value=self.validatePropArg('NSweepsPerExperiment',value);
                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
-                    if self.IsTrialBased ,
-                        self.Triggering.willSetNTrialsPerExperiment();
-                        self.NTrialsPerExperiment_ = newValue;
-                        self.Triggering.didSetNTrialsPerExperiment();
+                    if self.IsSweepBased ,
+                        self.Triggering.willSetNSweepsPerExperiment();
+                        self.NSweepsPerExperiment_ = newValue;
+                        self.Triggering.didSetNSweepsPerExperiment();
                     end
                 else
                     error('most:Model:invalidPropVal', ...
-                          'NTrialsPerExperiment must be a (scalar) positive integer, or inf');       
+                          'NSweepsPerExperiment must be a (scalar) positive integer, or inf');       
                 end
             end
             self.broadcast('Update');
         end  % function
         
-        function value = get.TrialDuration(self)
+        function value = get.SweepDuration(self)
             if self.IsContinuous ,
                 value=inf;
             else
@@ -318,52 +318,52 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
         
-        function set.TrialDuration(self, newValue)
+        function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
                 % Do nothing if in continuous mode
-                if self.IsTrialBased ,
+                if self.IsSweepBased ,
                     % Check value and set if valid
                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                         % If get here, newValue is a valid value for this prop
                         self.Acquisition.Duration = newValue;
                     else
                         error('most:Model:invalidPropVal', ...
-                              'TrialDuration must be a (scalar) positive finite value');
+                              'SweepDuration must be a (scalar) positive finite value');
                     end
                 end
             end
             self.broadcast('Update');
         end  % function
         
-        function value=get.IsTrialBased(self)
-            value=self.IsTrialBased_;
+        function value=get.IsSweepBased(self)
+            value=self.IsSweepBased_;
         end
         
-        function set.IsTrialBased(self,newValue)
-            %fprintf('inside set.IsTrialBased.  self.IsTrialBased_: %d\n', self.IsTrialBased_);
+        function set.IsSweepBased(self,newValue)
+            %fprintf('inside set.IsSweepBased.  self.IsSweepBased_: %d\n', self.IsSweepBased_);
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                %fprintf('setting self.IsTrialBased_ to %d\n',logical(newValue));
-                self.Triggering.willSetIsTrialBased();
-                self.IsTrialBased_=logical(newValue);
+                %fprintf('setting self.IsSweepBased_ to %d\n',logical(newValue));
+                self.Triggering.willSetIsSweepBased();
+                self.IsSweepBased_=logical(newValue);
                 self.IsContinuous=ws.most.util.Nonvalue.The;
-                self.NTrialsPerExperiment=ws.most.util.Nonvalue.The;
-                self.TrialDuration=ws.most.util.Nonvalue.The;
+                self.NSweepsPerExperiment=ws.most.util.Nonvalue.The;
+                self.SweepDuration=ws.most.util.Nonvalue.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetIsTrialBased();
+                self.Triggering.didSetIsSweepBased();
             end
-            self.broadcast('DidSetIsTrialBasedContinuous');            
+            self.broadcast('DidSetIsSweepBasedContinuous');            
             self.broadcast('Update');
         end
         
         function value=get.IsContinuous(self)
-            value=~self.IsTrialBased_;
+            value=~self.IsSweepBased_;
         end
         
         function set.IsContinuous(self,newValue)
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                self.IsTrialBased=~logical(newValue);
+                self.IsSweepBased=~logical(newValue);
             end
         end
         
@@ -461,40 +461,40 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end  % function
         
-        function acquisitionTrialComplete(self)
+        function acquisitionSweepComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
-            % trial.
-            %fprintf('WavesurferModel::acquisitionTrialComplete()\n');
-            self.didPerformTrialMaybe();            
+            % sweep.
+            %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
+            self.didPerformSweepMaybe();            
         end  % function
         
         function stimulationEpisodeComplete(self)
             % Called by the stimulation subsystem when it is done outputting
-            % the trial
+            % the sweep
             
             %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromExperimentStartTicId_));
-            self.didPerformTrialMaybe();
+            self.didPerformSweepMaybe();
         end  % function
         
         function internalStimulationCounterTriggerTaskComplete(self)
             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            self.didPerformTrialMaybe();
+            self.didPerformSweepMaybe();
         end
         
-        function didPerformTrialMaybe(self)
-            % Either calls self.didPerformTrial(), or does nothing,
+        function didPerformSweepMaybe(self)
+            % Either calls self.didPerformSweep(), or does nothing,
             % depending on the states of the Acquisition, Stimulation, and
             % Triggering subsystems.  Generally speaking, we want to make
-            % sure that all three subsystems are done with the trial before
-            % calling self.didPerformTrial().
+            % sure that all three subsystems are done with the sweep before
+            % calling self.didPerformSweep().
             if self.Stimulation.Enabled ,
                 if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
                     % acq and stim trig sources are identical
                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
                     else
-                        self.didPerformTrial();
+                        self.didPerformSweep();
                     end
                 else
                     % acq and stim trig sources are distinct
@@ -503,7 +503,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     if self.Acquisition.IsArmedOrAcquiring ,
                         % do nothing
                     else
-                        self.didPerformTrial();
+                        self.didPerformSweep();
                     end
                 end
             else
@@ -511,30 +511,30 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 if self.Acquisition.IsArmedOrAcquiring , 
                     % do nothing
                 else
-                    self.didPerformTrial();
+                    self.didPerformSweep();
                 end
             end            
         end  % function
         
-%         function didPerformTrialMaybe(self)
-%             % Either calls self.didPerformTrial(), or does nothing,
+%         function didPerformSweepMaybe(self)
+%             % Either calls self.didPerformSweep(), or does nothing,
 %             % depending on the states of the Acquisition, Stimulation, and
 %             % Triggering subsystems.  Generally speaking, we want to make
-%             % sure that all three subsystems are done with the trial before
-%             % calling self.didPerformTrial().  But depending on the
+%             % sure that all three subsystems are done with the sweep before
+%             % calling self.didPerformSweep().  But depending on the
 %             % settings, in some cases some of the checks can be skipped.
 %             % This function could be compressed, but I like that
 %             % it's just a simple tree with simple tests at each if
 %             % statement, because it makes it easier to reason about.
 %             if self.Stimulation.Enabled ,
 %                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
-%                     % In this case, the trial is done when the acquisition is
+%                     % In this case, the sweep is done when the acquisition is
 %                     % done (But: What if there's a stimulus being delivered
 %                     % right now?  What happens to it?  Is this a bug?)
 %                     if self.Acquisition.IsArmedOrAcquiring ,
 %                         % do nothing
 %                     else
-%                         self.didPerformTrial();
+%                         self.didPerformSweep();
 %                     end
 %                 else
 %                     % Stim triggering is internal
@@ -544,7 +544,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                             if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
 %                                 % do nothing
 %                             else
-%                                 self.didPerformTrial();
+%                                 self.didPerformSweep();
 %                             end
 %                         else
 %                             % acq and stim trig sources are internal, but distinct
@@ -553,7 +553,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                             if self.Acquisition.IsArmedOrAcquiring ,
 %                                 % do nothing
 %                             else
-%                                 self.didPerformTrial();
+%                                 self.didPerformSweep();
 %                             end
 %                         end
 %                     else
@@ -564,7 +564,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                         if self.Acquisition.IsArmedOrAcquiring ,
 %                             % do nothing
 %                         else
-%                             self.didPerformTrial();
+%                             self.didPerformSweep();
 %                         end
 %                     end
 %                 end
@@ -573,7 +573,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                 if self.Acquisition.IsArmedOrAcquiring , 
 %                     % do nothing
 %                 else
-%                     self.didPerformTrial();
+%                     self.didPerformSweep();
 %                 end                                    
 %             end            
 %         end  % function
@@ -604,7 +604,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function didSetAcquisitionDuration(self)
-            self.TrialDuration=ws.most.util.Nonvalue.The;  % this will cause the WavesurferMainFigure to update
+            self.SweepDuration=ws.most.util.Nonvalue.The;  % this will cause the WavesurferMainFigure to update
             self.Triggering.didSetAcquisitionDuration();
             self.Display.didSetAcquisitionDuration();
         end        
@@ -638,15 +638,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('WavesurferModel::willPerformExperiment()\n');     
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
-            if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration) 
-                assert(self.NTrialsPerExperiment == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
+            if (desiredApplicationState == ws.ApplicationState.AcquiringSweepBased) && isinf(self.Acquisition.Duration) 
+                assert(self.NSweepsPerExperiment == 1, 'wavesurfer:invalidsweepcount', 'The sweep count must be 1 when the acqusition duration is infinite.');
             end
             
             self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
-            if self.IsYokedToScanImage_ && desiredApplicationState==ws.ApplicationState.AcquiringTrialBased,
+            if self.IsYokedToScanImage_ && desiredApplicationState==ws.ApplicationState.AcquiringSweepBased,
                 try
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
@@ -664,7 +664,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.NTrialsCompletedInThisExperiment = 0;
+            self.NSweepsCompletedInThisExperiment = 0;
             
             self.callUserFunctionsAndBroadcastEvent('experimentWillStart');  
                 % no one listens for this, it seems, but it does directly
@@ -688,87 +688,87 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.State = desiredApplicationState;
             
             % Handle timing stuff
-            self.TimeOfLastWillPerformTrial_=[];
+            self.TimeOfLastWillPerformSweep_=[];
             self.FromExperimentStartTicId_=tic();
             self.NTimesSamplesAcquiredCalledSinceExperimentStart_=0;
-            self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.TrialDuration);  % s
+            self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
             
             self.changeReadiness(+1);
 
-            % Move on to performing the first (and perhaps only) trial
-            self.willPerformTrial();
+            % Move on to performing the first (and perhaps only) sweep
+            self.willPerformSweep();
         end  % function
         
-        function willPerformTrial(self)
-            %fprintf('WavesurferModel::willPerformTrial()\n');            
+        function willPerformSweep(self)
+            %fprintf('WavesurferModel::willPerformSweep()\n');            
             %dbstack
             % time between subsequent calls to this
             t=toc(self.FromExperimentStartTicId_);
-            %if ~isempty(self.TimeOfLastWillPerformTrial_) ,
-            %    dt=t-self.TimeOfLastWillPerformTrial_;
-            %    fprintf('Interval between calls to WavesurferModel.willPerformTrial(): %0.3f\n', dt);                
+            %if ~isempty(self.TimeOfLastWillPerformSweep_) ,
+            %    dt=t-self.TimeOfLastWillPerformSweep_;
+            %    fprintf('Interval between calls to WavesurferModel.willPerformSweep(): %0.3f\n', dt);                
             %end
-            self.TimeOfLastWillPerformTrial_=t;
+            self.TimeOfLastWillPerformSweep_=t;
             
-            % clear timing stuff that is strictly within-trial
+            % clear timing stuff that is strictly within-sweep
             self.TimeOfLastSamplesAcquired_=[];            
             
-            % Reset the sample count for the trial
-            self.TrialAcqSampleCount_ = 0;
+            % Reset the sample count for the sweep
+            self.SweepAcqSampleCount_ = 0;
             
             % update the current time
             self.t_=0;            
             
             % Pretend that we last polled at time 0
-            self.TimeOfLastPollInTrial_ = 0 ;  % s 
+            self.TimeOfLastPollInSweep_ = 0 ;  % s 
             
-            % Notify listeners that the trial is about to start.
+            % Notify listeners that the sweep is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
             % event.  -- ALT, 2014-05-20
-            self.callUserFunctionsAndBroadcastEvent('trialWillStart');            
+            self.callUserFunctionsAndBroadcastEvent('sweepWillStart');            
             
-            % Call willPerformTrial() on all the enabled subsystems
+            % Call willPerformSweep() on all the enabled subsystems
             for idx = 1:numel(self.Subsystems_)
                 try
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.willPerformTrial(self);
+                        self.Subsystems_{idx}.willPerformSweep(self);
                     end
                 catch me
                     % Unwind those systems that did prepare.
-                    self.didAbortTrial(idx - 1);
+                    self.didAbortSweep(idx - 1);
                     me.rethrow();
                 end
             end
 
-            % Set the trial timer
-            self.FromTrialStartTicId_=tic();
+            % Set the sweep timer
+            self.FromSweepStartTicId_=tic();
 
             %% Start the timer that will poll for data and task doneness
             %self.PollingTimer_.start();
                         
             % Any system waiting for an internal or external trigger was armed and waiting
-            % in the subsystem willPerformTrial() above.
-            self.Triggering.startMeMaybe(self.State, self.NTrialsPerExperiment, self.NTrialsCompletedInThisExperiment);            
+            % in the subsystem willPerformSweep() above.
+            self.Triggering.startMeMaybe(self.State, self.NSweepsPerExperiment, self.NSweepsCompletedInThisExperiment);            
         end  % function
         
-        function didPerformTrial(self)
-            %fprintf('WavesurferModel::didPerformTrial()\n');
+        function didPerformSweep(self)
+            %fprintf('WavesurferModel::didPerformSweep()\n');
             %dbstack
             
-            % Notify all the subsystems that the trial is done
+            % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didPerformTrial(self);
+                    self.Subsystems_{idx}.didPerformSweep(self);
                 end
             end
             
-            % Bump the number of completed trials
-            self.NTrialsCompletedInThisExperiment = self.NTrialsCompletedInThisExperiment + 1;
+            % Bump the number of completed sweeps
+            self.NSweepsCompletedInThisExperiment = self.NSweepsCompletedInThisExperiment + 1;
             
             % Call user functions and broadcast
-            self.callUserFunctionsAndBroadcastEvent('trialDidComplete');
+            self.callUserFunctionsAndBroadcastEvent('sweepDidComplete');
             
-            % Daisy-chain another trial, or wrap up the experiment,
+            % Daisy-chain another sweep, or wrap up the experiment,
             % depending
             if self.Stimulation.Enabled ,
                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
@@ -777,13 +777,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
                             % stim, acq are both external, and are
                             % identical
-                            self.willPerformTrialOrDidPerformExperimentDependingOnAcqOnly();
+                            self.willPerformSweepOrDidPerformExperimentDependingOnAcqOnly();
                         else
                             % stim, acq are both external, but are distinct
                             % In this case, we never declare the exp done, but we
-                            % might daisy chain another trial.
-                            if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
-                                self.willPerformTrial();
+                            % might daisy chain another sweep.
+                            if self.NSweepsCompletedInThisExperiment < self.NSweepsPerExperiment ,
+                                self.willPerformSweep();
                             else
                                 % do nothing
                             end
@@ -791,9 +791,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     else
                         % stim external, acq internal
                         % In this case, we never declare the exp done, but we
-                        % might daisy chain another trial.
-                        if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
-                            self.willPerformTrial();
+                        % might daisy chain another sweep.
+                        if self.NSweepsCompletedInThisExperiment < self.NSweepsPerExperiment ,
+                            self.willPerformSweep();
                         else
                             % do nothing
                         end
@@ -804,54 +804,54 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         % Stim and acq triggers are both internal
                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
                             % acq and stim trig sources are internal and identical
-                            self.willPerformTrialOrDidPerformExperimentDependingOnAcqOnly();
+                            self.willPerformSweepOrDidPerformExperimentDependingOnAcqOnly();
                         else
                             % acq and stim trig sources are internal, but distinct
                             if self.Stimulation.IsWithinExperiment ,
-                                if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
-                                    self.willPerformTrial();
+                                if self.NSweepsCompletedInThisExperiment < self.NSweepsPerExperiment ,
+                                    self.willPerformSweep();
                                 else
-                                    % no more acq trials to do, but
+                                    % no more acq sweeps to do, but
                                     % have to wait for stim to finish
                                     % before experiment is done
                                 end                                
                             else
                                 % stim is done, so all depends on acq
-                                self.willPerformTrialOrDidPerformExperimentDependingOnAcqOnly();
+                                self.willPerformSweepOrDidPerformExperimentDependingOnAcqOnly();
                             end
                         end
                     else
                         % stim trig internal, acq trig external
                         % therefore they're distinct
                         if self.Stimulation.IsWithinExperiment ,
-                            if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
-                                self.willPerformTrial();
+                            if self.NSweepsCompletedInThisExperiment < self.NSweepsPerExperiment ,
+                                self.willPerformSweep();
                             else
-                                % no more acq trials to do, but
+                                % no more acq sweeps to do, but
                                 % have to wait for stim to finish
                                 % before experiment is done
                             end                                
                         else
                             % stim is done, so all depends on acq
-                            self.willPerformTrialOrDidPerformExperimentDependingOnAcqOnly();
+                            self.willPerformSweepOrDidPerformExperimentDependingOnAcqOnly();
                         end
                     end
                 end
             else
                 % Stimulation subsystem is disabled
-                self.willPerformTrialOrDidPerformExperimentDependingOnAcqOnly();
+                self.willPerformSweepOrDidPerformExperimentDependingOnAcqOnly();
             end            
         end  % function
         
-        function willPerformTrialOrDidPerformExperimentDependingOnAcqOnly(self)
-            if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
-                self.willPerformTrial();
+        function willPerformSweepOrDidPerformExperimentDependingOnAcqOnly(self)
+            if self.NSweepsCompletedInThisExperiment < self.NSweepsPerExperiment ,
+                self.willPerformSweep();
             else
                 self.didPerformExperiment();
             end
         end  % function
         
-        function didAbortTrial(self, highestIndexedSubsystemThatNeedsAbortion)
+        function didAbortSweep(self, highestIndexedSubsystemThatNeedsAbortion)
             if nargin < 2 ,
                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
             end
@@ -859,7 +859,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1
                 if self.Subsystems_{idx}.Enabled
                     try 
-                        self.Subsystems_{idx}.didAbortTrial(self);
+                        self.Subsystems_{idx}.didAbortSweep(self);
                     catch me
                         % In theory, Subsystem::didAbortTrail() never
                         % throws an exception
@@ -869,7 +869,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent('trialDidAbort');
+            self.callUserFunctionsAndBroadcastEvent('sweepDidAbort');
             
             self.didAbortExperiment();
         end  % function
@@ -956,7 +956,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
-                self.TrialAcqSampleCount_ = self.TrialAcqSampleCount_ + nScans;
+                self.SweepAcqSampleCount_ = self.SweepAcqSampleCount_ + nScans;
 
                 %self.broadcast('DataAvailable');
                 self.callUserFunctionsAndBroadcastEvent('dataIsAvailable');
@@ -968,9 +968,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
 %             defineDefaultPropertyAttributes@ws.most.app.Model(self);
-%             self.setPropertyAttributeFeatures('NTrialsPerExperiment', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-%             self.setPropertyAttributeFeatures('TrialDuration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('IsTrialBased', 'Classes', 'logical', 'Attributes', {'scalar'});
+%             self.setPropertyAttributeFeatures('NSweepsPerExperiment', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
+%             self.setPropertyAttributeFeatures('SweepDuration', 'Attributes', {'positive', 'scalar'});
+%             self.setPropertyAttributeFeatures('IsSweepBased', 'Classes', 'logical', 'Attributes', {'scalar'});
 %             self.setPropertyAttributeFeatures('IsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
 %         end  % function
         
@@ -991,13 +991,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
 %             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('NTrialsCompletedInThisExperiment', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('NTrialsPerExperiment', 'IncludeInFileTypes', {'header'});
-%             self.setPropertyTags('NTrialsPerExperiment_', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('NSweepsCompletedInThisExperiment', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('NSweepsPerExperiment', 'IncludeInFileTypes', {'header'});
+%             self.setPropertyTags('NSweepsPerExperiment_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
 %             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('IsTrialBased', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('IsTrialBased', 'IncludeInFileTypes', {'cfg', 'header'});
+%             self.setPropertyTags('IsSweepBased', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('IsSweepBased', 'IncludeInFileTypes', {'cfg', 'header'});
 %             self.setPropertyTags('IsContinuous', 'ExcludeFromFileTypes', {'*'});
             
             % Exclude all the subsystems except FastProtocols from usr
@@ -1008,7 +1008,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
             % Exclude Logging from .cfg (aka protocol) file
-            % This is because we want to maintain e.g. serial trial indices even if
+            % This is because we want to maintain e.g. serial sweep indices even if
             % user switches protocols.
             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
@@ -1019,8 +1019,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % Exclude a few more things from .usr file
             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('IsTrialBased_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('NTrialsPerExperiment_', 'ExcludeFromFileTypes', {'usr'});            
+            self.setPropertyTags('IsSweepBased_', 'ExcludeFromFileTypes', {'usr'});
+            self.setPropertyTags('NSweepsPerExperiment_', 'ExcludeFromFileTypes', {'usr'});            
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
@@ -1038,8 +1038,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % This is a hack to make sure the UI gets updated on loading
             % the .cfg file.
-            if isequal(name,'NTrialsPerExperiment_') ,
-                self.NTrialsPerExperiment=ws.most.util.Nonvalue.The;
+            if isequal(name,'NSweepsPerExperiment_') ,
+                self.NSweepsPerExperiment=ws.most.util.Nonvalue.The;
             end                
         end  % function
         
@@ -1087,26 +1087,26 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %         end
         
 %         function AcquisitionTriggerSchemeSourceChanged_(self, ~)
-%             % Delete the listener on the old trial trigger
+%             % Delete the listener on the old sweep trigger
 %             delete(self.TrigListener_);
 %             
 %             % Set up a new listener
 %             if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
 %                 self.TrigListener_ = ...
-%                     self.Triggering.AcquisitionTriggerScheme.Source.addlistener({'RepeatCount', 'Interval'}, 'PostSet', @(src,evt)self.zprvSetExperimentalTrialCount);
+%                     self.Triggering.AcquisitionTriggerScheme.Source.addlistener({'RepeatCount', 'Interval'}, 'PostSet', @(src,evt)self.zprvSetExperimentalSweepCount);
 %             else
 %                 self.TrigListener_ = ...
-%                     self.Triggering.AcquisitionTriggerScheme.Source.addlistener('RepeatCount', 'PostSet', @(src,evt)self.zprvSetExperimentalTrialCount);
+%                     self.Triggering.AcquisitionTriggerScheme.Source.addlistener('RepeatCount', 'PostSet', @(src,evt)self.zprvSetExperimentalSweepCount);
 %             end
 %             
 %             % Call the listener callback once to sync things up
-%             self.zprvSetExperimentalTrialCount();
+%             self.zprvSetExperimentalSweepCount();
 %         end  % function
 %         
-%         function zprvSetExperimentalTrialCount(self, ~)
-%             %fprintf('WavesurferModel.zprvSetExperimentalTrialCount()\n');
-%             %self.NTrialsPerExperiment = self.Triggering.TrialTrigger.Source.RepeatCount;
-%             %self.Triggering.TrialTrigger.Source.RepeatCount=1;  % Don't allow this to change
+%         function zprvSetExperimentalSweepCount(self, ~)
+%             %fprintf('WavesurferModel.zprvSetExperimentalSweepCount()\n');
+%             %self.NSweepsPerExperiment = self.Triggering.SweepTrigger.Source.RepeatCount;
+%             %self.Triggering.SweepTrigger.Source.RepeatCount=1;  % Don't allow this to change
 %         end  % function
         
         function callUserFunctionsAndBroadcastEvent(self, eventName)
@@ -1189,8 +1189,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             else
 %                 edgeTypeString=edgeType.toString();  % 'rising' or 'falling'
 %             end
-            nAcqsInSet=self.NTrialsPerExperiment;
-            iFirstAcqInSet=self.Logging.NextTrialIndex;
+            nAcqsInSet=self.NSweepsPerExperiment;
+            iFirstAcqInSet=self.Logging.NextSweepIndex;
             
             [fid,fopenErrorMessage]=fopen(absoluteFileName,'wt');
             if fid<0 ,
@@ -1386,9 +1386,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function s = propertyAttributes()
             s = struct();
             
-            %s.NTrialsPerExperiment = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-            %s.TrialDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.IsTrialBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
+            %s.NSweepsPerExperiment = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+            %s.SweepDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+            s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
         end  % function
     end  % class methods block
@@ -1537,8 +1537,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
 
     methods
-        function triggeringSubsystemJustStartedFirstTrialInExperiment(self)
-            % Called by the triggering subsystem just after first trial
+        function triggeringSubsystemJustStartedFirstSweepInExperiment(self)
+            % Called by the triggering subsystem just after first sweep
             % started.
             
             % This means we need to run the main polling loop.
@@ -1565,7 +1565,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     try
                         self.pollingTimerFired_() ;
                     catch me
-                        self.didAbortTrial();
+                        self.didAbortSweep();
                         rethrow(me);
                     end
                     %tMiddle = toc(pollingTicId) ;
@@ -1584,13 +1584,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         
         function pollingTimerFired_(self)
             %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
-            timeSinceTrialStart = toc(self.FromTrialStartTicId_);
-            self.Acquisition.pollingTimerFired(timeSinceTrialStart,self.FromExperimentStartTicId_);
-            self.Stimulation.pollingTimerFired(timeSinceTrialStart);
-            self.Triggering.pollingTimerFired(timeSinceTrialStart);
-            %self.Display.pollingTimerFired(timeSinceTrialStart);
-            %self.Logging.pollingTimerFired(timeSinceTrialStart);
-            %self.UserFunctions.pollingTimerFired(timeSinceTrialStart);
+            timeSinceSweepStart = toc(self.FromSweepStartTicId_);
+            self.Acquisition.pollingTimerFired(timeSinceSweepStart,self.FromExperimentStartTicId_);
+            self.Stimulation.pollingTimerFired(timeSinceSweepStart);
+            self.Triggering.pollingTimerFired(timeSinceSweepStart);
+            %self.Display.pollingTimerFired(timeSinceSweepStart);
+            %self.Logging.pollingTimerFired(timeSinceSweepStart);
+            %self.UserFunctions.pollingTimerFired(timeSinceSweepStart);
             %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
         end
         
@@ -1598,7 +1598,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %fprintf('WavesurferModel::pollTimerErrored()\n');
             %eventData
             %eventData.Data            
-            self.didAbortTrial();  % Put an end to the trialset
+            self.didAbortSweep();  % Put an end to the sweepset
             error('waversurfer:pollingTimerError',...
                   'The polling timer had a problem.  Acquisition aborted.');
         end        

@@ -4,7 +4,7 @@ classdef TestPulser < ws.Model
         Electrode
         ElectrodeName
         Amplitude  % a DoubleString, in units of the electrode command channel
-        PulseDurationInMsAsString  % the duration of the pulse, in ms.  The trial duration is twice this.
+        PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline
         IsAutoY
         IsAutoYRepeating
@@ -74,7 +74,7 @@ classdef TestPulser < ws.Model
           % a local place to store the ElectrodeName, which gets persisted, unlike Electrode_
           % Invariant: isempty(self.Electrode_) ||
           %            isequal(self.Electrode_.Name,self.ElectrodeName_)
-        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The trial duration is twice this.
+        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline_
         SamplingRate_  % in Hz
         YLimits_
@@ -104,7 +104,7 @@ classdef TestPulser < ws.Model
         ElectrodeIndexCached_
         %IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
         %IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
-        AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during trials
+        AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during sweeps
         IsCCPerElectrodeCached_  
         IsVCPerElectrodeCached_  
         MonitorChannelInverseScalePerElectrodeCached_
@@ -168,7 +168,7 @@ classdef TestPulser < ws.Model
 
             self.PulseDurationInMsAsString_='10';  % ms
             %self.Amplitude_='10';  % units determined by electrode mode, channel units
-            %self.AmplitudeAsDouble_=self.Amplitude.toDouble();  % keep around in this form for speed during trials
+            %self.AmplitudeAsDouble_=self.Amplitude.toDouble();  % keep around in this form for speed during sweeps
             self.DoSubtractBaseline_=true;
             self.IsAutoY_=true;
             self.IsAutoYRepeating_=false;
@@ -410,7 +410,7 @@ classdef TestPulser < ws.Model
             value=self.PulseDurationInMsAsString_;
         end
         
-        function set.PulseDurationInMsAsString(self,newString)  % the duration of the pulse, in seconds.  The trial duration is twice this.
+        function set.PulseDurationInMsAsString(self,newString)  % the duration of the pulse, in seconds.  The sweep duration is twice this.
             newValue=str2double(newString);
             if ~isnan(newValue) && 5<=newValue && newValue<=500,
                 self.PulseDurationInMsAsString_=strtrim(newString);
@@ -1329,7 +1329,7 @@ classdef TestPulser < ws.Model
             % compute resistance
             % compute delta in monitor
             % Specify the time windows for measuring the baseline and the pulse amplitude
-            %fprintf('Inside TestPulser::didPerformTrial()\n');
+            %fprintf('Inside TestPulser::didPerformSweep()\n');
             rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
                 % We now read exactly the number of scans we expect.  Not
                 % doing this seemed to work fine on ALT's machine, but caused
@@ -1386,7 +1386,7 @@ classdef TestPulser < ws.Model
             self.LastToc_=thisToc;
             
             self.broadcast('UpdateTrace');
-            %fprintf('About to exit TestPulser::didPerformTrial()\n');            
+            %fprintf('About to exit TestPulser::didPerformSweep()\n');            
         end  % function
         
 %         function mimic(self, other)

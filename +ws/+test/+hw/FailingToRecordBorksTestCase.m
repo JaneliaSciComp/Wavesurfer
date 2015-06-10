@@ -72,7 +72,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=1 ,
+                if wsModel.NSweepsCompletedInThisExperiment>=1 ,
                     break
                 end
             end                   
@@ -82,7 +82,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,1);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,1);            
         end  % function
         
     end  % test methods

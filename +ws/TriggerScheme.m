@@ -326,9 +326,9 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
             end                            
         end  % function
         
-        function pollingTimerFired(self,timeSinceTrialStart)
+        function pollingTimerFired(self,timeSinceSweepStart)
             if self.IsInternal_ ,
-                self.Source_.pollingTimerFired(timeSinceTrialStart);
+                self.Source_.pollingTimerFired(timeSinceSweepStart);
             else
                 % Nothing to do for external triggers
             end

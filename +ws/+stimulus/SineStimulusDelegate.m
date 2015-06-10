@@ -26,7 +26,7 @@ classdef SineStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.Frequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.Frequency_ = value;
@@ -60,8 +60,8 @@ classdef SineStimulusDelegate < ws.stimulus.StimulusDelegate
 %     end
     
     methods
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet) %#ok<INUSL>
-            f = ws.stimulus.Stimulus.evaluateTrialExpression(self.Frequency,trialIndexWithinSet) ;
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
+            f = ws.stimulus.Stimulus.evaluateSweepExpression(self.Frequency,sweepIndexWithinSet) ;
             if ~isempty(f) && isnumeric(f) && isscalar(f) && isfinite(f) && isreal(f) && f>0 ,
                 y=sin(2*pi*f*t);
             else

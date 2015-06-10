@@ -28,7 +28,7 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
             end
         end
         
-        y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)  % abstract        
+        y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  % abstract        
     end
        
     properties (Hidden, SetAccess=protected)

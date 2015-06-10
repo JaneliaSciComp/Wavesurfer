@@ -1,7 +1,7 @@
 classdef TemplateUserClass < ws.UserClass
 
     % This is a very simple user class.  It writes to the console when
-    % things like a trial start/end happen,
+    % things like a sweep start/end happen,
     
     % Information that you want to stick around between calls to the
     % functions below, and want to be settable/gettable from the command
@@ -26,35 +26,35 @@ classdef TemplateUserClass < ws.UserClass
         end
         
         function experimentWillStart(self,wsModel,eventName)
-            % Called just before each set of trials (a.k.a. each
+            % Called just before each set of sweeps (a.k.a. each
             % "experiment")
             fprintf('About to start an experiment.\n');
         end
         
-        function trialWillStart(self,wsModel,eventName)
-            % Called just before each trial
-            fprintf('About to start a trial.\n');
+        function sweepWillStart(self,wsModel,eventName)
+            % Called just before each sweep
+            fprintf('About to start a sweep.\n');
         end
         
-        function trialDidComplete(self,wsModel,eventName)
-            % Called after each trial completes
-            fprintf('Finished a trial.\n');
+        function sweepDidComplete(self,wsModel,eventName)
+            % Called after each sweep completes
+            fprintf('Finished a sweep.\n');
         end
         
-        function trialDidAbort(self,wsModel,eventName)
-            % Called if a trial goes wrong
-            fprintf('Oh noes!  A trial aborted.\n');
+        function sweepDidAbort(self,wsModel,eventName)
+            % Called if a sweep goes wrong
+            fprintf('Oh noes!  A sweep aborted.\n');
         end        
         
         function experimentDidComplete(self,wsModel,eventName)
-            % Called just after each set of trials (a.k.a. each
+            % Called just after each set of sweeps (a.k.a. each
             % "experiment")
             fprintf('Finished an experiment.\n');
         end
         
         function experimentDidAbort(self,wsModel,eventName)
             % Called if an experiment goes wrong, after the call to
-            % trialDidAbort()
+            % sweepDidAbort()
             fprintf('Oh noes!  A experiment aborted.\n');
         end
         

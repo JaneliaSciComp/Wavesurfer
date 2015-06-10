@@ -30,8 +30,8 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=true;
 
-            nTrials=10;
-            wsModel.NTrialsPerExperiment=nTrials;
+            nSweeps=10;
+            wsModel.NSweepsPerExperiment=nSweeps;
 
             % set the data file name
             thisFileName=mfilename();
@@ -47,11 +47,11 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
@@ -59,7 +59,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -77,8 +77,8 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %             wsModel.Display.Enabled=true;
 %             wsModel.Logging.Enabled=true;
 % 
-%             nTrials=10;
-%             wsModel.NTrialsPerExperiment=nTrials;
+%             nSweeps=10;
+%             wsModel.NSweepsPerExperiment=nSweeps;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -94,16 +94,16 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %             wsModel.start();
 % 
 %             dtBetweenChecks=1;  % s
-%             maxTimeToWait=2.5*nTrials;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+%                 if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
+%             self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

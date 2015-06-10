@@ -1,4 +1,4 @@
-classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
+classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
     % To run these tests, need to have an NI daq attached, pointed to by
     % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be on the current path, 
     % and be named Machine_Data_File_8_AIs.m.
@@ -30,23 +30,23 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.NTrialsPerExperiment=1;
-            wsModel.TrialDuration=20;  % s, this actually seems to be long enough to cause crash
+            nSweeps=1;
+            wsModel.NSweepsPerExperiment=1;
+            wsModel.SweepDuration=20;  % s, this actually seems to be long enough to cause crash
 
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait = 1.1*wsModel.TrialDuration ;  % s
+            maxTimeToWait = 1.1*wsModel.SweepDuration ;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
     end  % test methods
 

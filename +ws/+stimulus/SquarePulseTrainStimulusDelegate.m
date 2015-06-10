@@ -29,7 +29,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.Period(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.Period_ = value;
@@ -47,7 +47,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
 %         end
         
         function set.PulseDuration(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.PulseDuration_ = value;
@@ -86,15 +86,15 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
 %     end
     
     methods
-        function data = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet) %#ok<INUSL>
+        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
             % Compute the period from the expression for it
-            period = ws.stimulus.Stimulus.evaluateTrialExpression(self.Period,trialIndexWithinSet) ;
+            period = ws.stimulus.Stimulus.evaluateSweepExpression(self.Period,sweepIndexWithinSet) ;
             if isempty(period) || ~isnumeric(period) || ~isscalar(period) || ~isreal(period) || ~isfinite(period) || period<=0 ,
                 period=nan;  % s
             end
             
             % Compute the period from the expression for it
-            pulseDuration = ws.stimulus.Stimulus.evaluateTrialExpression(self.PulseDuration,trialIndexWithinSet) ;
+            pulseDuration = ws.stimulus.Stimulus.evaluateSweepExpression(self.PulseDuration,sweepIndexWithinSet) ;
             if isempty(pulseDuration) || ~isnumeric(pulseDuration) || ~isscalar(pulseDuration) || ~isreal(pulseDuration) || ~isfinite(pulseDuration) || ...
                pulseDuration<=0 ,
                 pulseDuration=nan;  % s

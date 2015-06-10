@@ -241,7 +241,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 % See if we can collect all the information we need to make
                 % an informed decision about whether to use the acquisition
                 % duration or our own internal duration
-                [isTrialBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=self.collectExternalInformationAboutDuration();
+                [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=self.collectExternalInformationAboutDuration();
             catch 
                 % If we can't collect enough information to make an
                 % informed decision, just fall back to the internal
@@ -252,7 +252,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             
             % Return the acquisiton duration or the internal duration,
             % depending
-            if isTrialBased && doesStimulusUseAcquisitionTriggerScheme ,
+            if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
                 value=acquisitionDuration;
             else
                 value=self.Duration_;
@@ -271,7 +271,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 % the duration from external object are set up.  If this
                 % throws, we know that they're _not_ set up, and so we are
                 % free to set the internal duration to the given value.)
-                [isTrialBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
+                [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
             catch 
                 self.Duration_ = newValue;
                 if ~isempty(self.Parent) ,
@@ -282,7 +282,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             
             % Return the acquisition duration or the internal duration,
             % depending
-            if isTrialBased && doesStimulusUseAcquisitionTriggerScheme ,
+            if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
                % internal duration is overridden, so don't set it.
                % Note that even though we 'do nothing', the PostSet event
                % will still occur.
@@ -299,7 +299,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 % See if we can collect all the information we need to make
                 % an informed decision about whether to use the acquisition
                 % duration or our own internal duration
-                [isTrialBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
+                [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
             catch me %#ok<NASGU>
                 % If we can't collect enough information to make an
                 % informed decision, then we are free!  Ignorance is
@@ -310,7 +310,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             
             % Return the acquisiton duration or the internal duration,
             % depending
-            value=~(isTrialBased && doesStimulusUseAcquisitionTriggerScheme);
+            value=~(isSweepBased && doesStimulusUseAcquisitionTriggerScheme);
         end   % function
         
         function set.IsDurationFree(self, newValue) %#ok<INUSD>
@@ -319,7 +319,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             % change.
         end   % function
 
-        function [isTrialBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=collectExternalInformationAboutDuration(self)
+        function [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=collectExternalInformationAboutDuration(self)
             % Collect information that determines whether we use the
             % internal duration or the acquisition duration.  This will
             % throw if the parent/child relationships are not set up.
@@ -332,7 +332,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             wavesurferModel=stimulationSubsystem.Parent;
             triggeringSubsystem=wavesurferModel.Triggering;
             acquisitionSubsystem=wavesurferModel.Acquisition;            
-            isTrialBased=wavesurferModel.IsTrialBased;
+            isSweepBased=wavesurferModel.IsSweepBased;
             doesStimulusUseAcquisitionTriggerScheme=triggeringSubsystem.StimulationUsesAcquisitionTriggerScheme;
             acquisitionDuration=acquisitionSubsystem.Duration;
         end   % function
@@ -434,11 +434,11 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
         end  % function
         
-        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, trialIndexWithinSet)
+        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
             % nBoundChannels is the number of channels *in channelNames* for which
             % a non-empty binding was found.
-            if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
-                trialIndexWithinSet=1;
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
             end
             
             % Create a timeline
@@ -473,7 +473,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                         % Calc the signal, scale it, overwrite the appropriate col of
                         % data
                         nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
-                        rawSignal = thisStimulus.calculateSignal(t, trialIndexWithinSet);
+                        rawSignal = thisStimulus.calculateSignal(t, sweepIndexWithinSet);
                         multiplier=self.Multipliers(stimIndex);
                         if isChannelAnalog(iChannel) ,
                             data(:, iChannel) = multiplier*rawSignal ;

@@ -11,7 +11,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     properties (Access=protected)
-        FileName_ = ''  % path, possibly containing %d, which is replaced by the trial number
+        FileName_ = ''  % path, possibly containing %d, which is replaced by the sweep number
     end
     
     methods
@@ -30,7 +30,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
-                test = ws.stimulus.Stimulus.evaluateStringTrialTemplate(valueWithoutBackslashes,1);
+                test = ws.stimulus.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set
                     self.FileName_ = valueWithoutBackslashes;
@@ -48,9 +48,9 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         % digital signals should be returned as doubles and are thresholded at 0.5
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)  %#ok<INUSL>
-            %eval(['i=trialIndexWithinSet; fileNameAfterEvaluation=' self.FileName ';']);
-            fileNameAfterEvaluation = ws.stimulus.Stimulus.evaluateStringTrialTemplate(self.FileName,trialIndexWithinSet);
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  %#ok<INUSL>
+            %eval(['i=sweepIndexWithinSet; fileNameAfterEvaluation=' self.FileName ';']);
+            fileNameAfterEvaluation = ws.stimulus.Stimulus.evaluateStringSweepTemplate(self.FileName,sweepIndexWithinSet);
             if isempty(fileNameAfterEvaluation) ,
                 y=zeros(size(t));
             else

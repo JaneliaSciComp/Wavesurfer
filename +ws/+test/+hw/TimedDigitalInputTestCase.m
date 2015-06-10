@@ -30,9 +30,9 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.NTrialsPerExperiment=nTrials;
-            wsModel.TrialDuration = 1 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerExperiment=nSweeps;
+            wsModel.SweepDuration = 1 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulse');
@@ -55,16 +55,16 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration*nTrials;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);            
         end  % function
 
     end  % test methods

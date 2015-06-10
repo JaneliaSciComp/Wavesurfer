@@ -1,6 +1,6 @@
 function dataFileAsStruct = loadDataFile(filename,formatString)
     % Loads Wavesurfer data file.  The returned data is a structure array
-    % with one element per trial in the data file.
+    % with one element per sweep in the data file.
 
     % Deal with optional args
     if ~exist('formatString','var') || isempty(formatString) ,
@@ -37,7 +37,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         fieldNames = fieldnames(dataFileAsStruct);
         for i=1:length(fieldNames) ,
             fieldName = fieldNames{i};
-            if length(fieldName)>=5 && isequal(fieldName(1:5),'trial') ,
+            if length(fieldName)>=5 && isequal(fieldName(1:5),'sweep') ,
                 rawAnalogData = dataFileAsStruct.(fieldName).analogScans;
                 if isempty(rawAnalogData) ,
                     if doesUserWantSingle ,

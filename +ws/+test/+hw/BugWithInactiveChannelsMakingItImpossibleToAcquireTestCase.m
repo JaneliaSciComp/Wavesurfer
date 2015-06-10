@@ -31,23 +31,23 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.Display.Enabled=true;
             wsModel.Logging.Enabled=false;
 
-            nTrials=1;
-            wsModel.NTrialsPerExperiment=nTrials;
+            nSweeps=1;
+            wsModel.NSweepsPerExperiment=nSweeps;
 
             pause(0.1);
             wsModel.start();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+                if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
+            self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -65,8 +65,8 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             wsModel.Display.Enabled=true;
 %             wsModel.Logging.Enabled=true;
 % 
-%             nTrials=10;
-%             wsModel.NTrialsPerExperiment=nTrials;
+%             nSweeps=10;
+%             wsModel.NSweepsPerExperiment=nSweeps;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -82,16 +82,16 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             wsModel.start();
 % 
 %             dtBetweenChecks=1;  % s
-%             maxTimeToWait=2.5*nTrials;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
+%                 if wsModel.NSweepsCompletedInThisExperiment>=nSweeps ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
+%             self.verifyEqual(wsModel.NSweepsCompletedInThisExperiment,nSweeps);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

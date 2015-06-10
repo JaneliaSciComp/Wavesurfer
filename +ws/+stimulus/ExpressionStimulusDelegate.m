@@ -11,7 +11,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     properties (Access=protected)
-        Expression_ = ''  % matlab expression, possibly containing i, which is replaced by the trial number, and t, which is a vector of times
+        Expression_ = ''  % matlab expression, possibly containing i, which is replaced by the sweep number, and t, which is a vector of times
     end
     
     methods
@@ -29,7 +29,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
-                test = ws.stimulus.Stimulus.evaluateStringTrialTemplate(valueWithoutBackslashes,1);
+                test = ws.stimulus.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set
                     self.Expression_ = valueWithoutBackslashes;
@@ -45,19 +45,19 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         % digital signals should be returned as doubles and are thresholded at 0.5
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)  %#ok<INUSL>
-            %eval(['i=trialIndexWithinSet; fileNameAfterEvaluation=' self.Expression ';']);
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  %#ok<INUSL>
+            %eval(['i=sweepIndexWithinSet; fileNameAfterEvaluation=' self.Expression ';']);
             expression = self.Expression ;
             if ischar(expression) && isrow(expression) ,
                 % value should be a string representing an
-                % expression involving 'i', which stands for the trial
+                % expression involving 'i', which stands for the sweep
                 % index, and 't', a vector if times (in seconds) e.g. '10*(i-1)*(3<=t & t<4)'                
                 try
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     stringToEval=sprintf('@(t,i)(%s)',expression);
                     expressionAsFunction=eval(stringToEval);
-                    y=expressionAsFunction(t,trialIndexWithinSet);
+                    y=expressionAsFunction(t,sweepIndexWithinSet);
                 catch me %#ok<NASGU>
                     y=zeros(size(t));
                 end

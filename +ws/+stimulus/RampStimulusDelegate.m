@@ -13,9 +13,9 @@ classdef RampStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     methods
-        function data = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet) %#ok<INUSL>
+        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateTrialExpression(stimulus.Duration,trialIndexWithinSet) ;
+            duration = ws.stimulus.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 duration=0;

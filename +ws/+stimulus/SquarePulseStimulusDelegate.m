@@ -13,7 +13,7 @@ classdef SquarePulseStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     methods
-        function data = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet) %#ok<INUSD,INUSL>
+        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSD,INUSL>
             %dbstack
             data=ones(size(t));
         end        

@@ -1,14 +1,14 @@
 classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     properties
-        TrialBasedAcquisitionPanel
+        SweepBasedAcquisitionPanel
         UseASAPTriggeringCheckbox
-        TrialBasedAcquisitionSchemeText
-        TrialBasedAcquisitionSchemePopupmenu
+        SweepBasedAcquisitionSchemeText
+        SweepBasedAcquisitionSchemePopupmenu
         
-        TrialBasedStimulationPanel
+        SweepBasedStimulationPanel
         UseAcquisitionTriggerCheckbox
-        TrialBasedStimulationSchemeText
-        TrialBasedStimulationSchemePopupmenu
+        SweepBasedStimulationSchemeText
+        SweepBasedStimulationSchemePopupmenu
         
 %         ContinuousPanel
 %         ContinuousSchemeText
@@ -72,43 +72,43 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
             
-            % Trial-based Acquisition Panel
-            self.TrialBasedAcquisitionPanel = ...
+            % Sweep-based Acquisition Panel
+            self.SweepBasedAcquisitionPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Acquisition');
             self.UseASAPTriggeringCheckbox = ...
-                uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
+                uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
                           'Style','checkbox', ...
                           'String','Use ASAP triggering');
-            self.TrialBasedAcquisitionSchemeText = ...
-                uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
+            self.SweepBasedAcquisitionSchemeText = ...
+                uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
                           'Style','text', ...
                           'String','Scheme:');
-            self.TrialBasedAcquisitionSchemePopupmenu = ...
-                uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
+            self.SweepBasedAcquisitionSchemePopupmenu = ...
+                uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
                           
-            % Trial-based Stimulation Panel
-            self.TrialBasedStimulationPanel = ...
+            % Sweep-based Stimulation Panel
+            self.SweepBasedStimulationPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Stimulation');
             self.UseAcquisitionTriggerCheckbox = ...
-                uicontrol('Parent',self.TrialBasedStimulationPanel, ...
+                uicontrol('Parent',self.SweepBasedStimulationPanel, ...
                           'Style','checkbox', ...
                           'String','Use acquisition scheme');
-            self.TrialBasedStimulationSchemeText = ...
-                uicontrol('Parent',self.TrialBasedStimulationPanel, ...
+            self.SweepBasedStimulationSchemeText = ...
+                uicontrol('Parent',self.SweepBasedStimulationPanel, ...
                           'Style','text', ...
                           'String','Scheme:');
-            self.TrialBasedStimulationSchemePopupmenu = ...
-                uicontrol('Parent',self.TrialBasedStimulationPanel, ...
+            self.SweepBasedStimulationSchemePopupmenu = ...
+                uicontrol('Parent',self.SweepBasedStimulationPanel, ...
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
 
@@ -221,42 +221,42 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             figureWidth=schemesAreaWidth+tablePanelsAreaWidth;
             figureHeight=tablePanelAreaHeight+heightBetweenTableAreas+tablePanelAreaHeight+topPadHeight;
 
-            trialBasedAcquisitionPanelAreaHeight=78;
-            trialBasedStimulationPanelAreaHeight=78;
+            sweepBasedAcquisitionPanelAreaHeight=78;
+            sweepBasedStimulationPanelAreaHeight=78;
             continuousPanelAreaHeight=56;
             spaceBetweenPanelsHeight=30;
             
             
             %
-            % The schemes area containing the trial-based acq, trial-based
+            % The schemes area containing the sweep-based acq, sweep-based
             % stim, and continuous panels, arranged in a column
             %
             panelInset=3;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
             
-            % The Trial-based Acquisition panel
-            trialBasedAcquisitionPanelXOffset=panelInset;
-            trialBasedAcquisitionPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            trialBasedAcquisitionPanelAreaYOffset=figureHeight-topPadHeight-trialBasedAcquisitionPanelAreaHeight;
-            trialBasedAcquisitionPanelYOffset=trialBasedAcquisitionPanelAreaYOffset+panelInset;            
-            trialBasedAcquisitionPanelHeight=trialBasedAcquisitionPanelAreaHeight-panelInset-panelInset;
-            set(self.TrialBasedAcquisitionPanel, ...
-                'Position',[trialBasedAcquisitionPanelXOffset trialBasedAcquisitionPanelYOffset ...
-                            trialBasedAcquisitionPanelWidth trialBasedAcquisitionPanelHeight]);
+            % The Sweep-based Acquisition panel
+            sweepBasedAcquisitionPanelXOffset=panelInset;
+            sweepBasedAcquisitionPanelWidth=schemesAreaWidth-panelInset-panelInset;
+            sweepBasedAcquisitionPanelAreaYOffset=figureHeight-topPadHeight-sweepBasedAcquisitionPanelAreaHeight;
+            sweepBasedAcquisitionPanelYOffset=sweepBasedAcquisitionPanelAreaYOffset+panelInset;            
+            sweepBasedAcquisitionPanelHeight=sweepBasedAcquisitionPanelAreaHeight-panelInset-panelInset;
+            set(self.SweepBasedAcquisitionPanel, ...
+                'Position',[sweepBasedAcquisitionPanelXOffset sweepBasedAcquisitionPanelYOffset ...
+                            sweepBasedAcquisitionPanelWidth sweepBasedAcquisitionPanelHeight]);
 
-            % The Trial-based Stimulation panel
-            trialBasedStimulationPanelXOffset=panelInset;
-            trialBasedStimulationPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            trialBasedStimulationPanelAreaYOffset=trialBasedAcquisitionPanelAreaYOffset-trialBasedStimulationPanelAreaHeight-spaceBetweenPanelsHeight;
-            trialBasedStimulationPanelYOffset=trialBasedStimulationPanelAreaYOffset+panelInset;            
-            trialBasedStimulationPanelHeight=trialBasedStimulationPanelAreaHeight-panelInset-panelInset;
-            set(self.TrialBasedStimulationPanel, ...
-                'Position',[trialBasedStimulationPanelXOffset trialBasedStimulationPanelYOffset ...
-                            trialBasedStimulationPanelWidth trialBasedStimulationPanelHeight]);
+            % The Sweep-based Stimulation panel
+            sweepBasedStimulationPanelXOffset=panelInset;
+            sweepBasedStimulationPanelWidth=schemesAreaWidth-panelInset-panelInset;
+            sweepBasedStimulationPanelAreaYOffset=sweepBasedAcquisitionPanelAreaYOffset-sweepBasedStimulationPanelAreaHeight-spaceBetweenPanelsHeight;
+            sweepBasedStimulationPanelYOffset=sweepBasedStimulationPanelAreaYOffset+panelInset;            
+            sweepBasedStimulationPanelHeight=sweepBasedStimulationPanelAreaHeight-panelInset-panelInset;
+            set(self.SweepBasedStimulationPanel, ...
+                'Position',[sweepBasedStimulationPanelXOffset sweepBasedStimulationPanelYOffset ...
+                            sweepBasedStimulationPanelWidth sweepBasedStimulationPanelHeight]);
 
             % The Continuous Acquisition+Stimulation panel
             continuousPanelXOffset=panelInset;
             continuousPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            continuousPanelAreaYOffset=trialBasedStimulationPanelAreaYOffset-continuousPanelAreaHeight-spaceBetweenPanelsHeight;
+            continuousPanelAreaYOffset=sweepBasedStimulationPanelAreaYOffset-continuousPanelAreaHeight-spaceBetweenPanelsHeight;
             continuousPanelYOffset=continuousPanelAreaYOffset+panelInset;            
             continuousPanelHeight=continuousPanelAreaHeight-panelInset-panelInset;
 %             set(self.ContinuousPanel, ...
@@ -285,8 +285,8 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                             triggerDestinationsPanelWidth triggerDestinationsPanelHeight]);
 
             % Contents of panels
-            self.layoutTrialBasedAcquisitionPanel_(trialBasedAcquisitionPanelWidth,trialBasedAcquisitionPanelHeight);
-            self.layoutTrialBasedStimulationPanel_(trialBasedStimulationPanelWidth,trialBasedStimulationPanelHeight);
+            self.layoutSweepBasedAcquisitionPanel_(sweepBasedAcquisitionPanelWidth,sweepBasedAcquisitionPanelHeight);
+            self.layoutSweepBasedStimulationPanel_(sweepBasedStimulationPanelWidth,sweepBasedStimulationPanelHeight);
             %self.layoutContinuousPanel_(continuousPanelWidth,continuousPanelHeight);
             self.layoutTriggerSourcesPanel_(triggerSourcesPanelWidth,triggerSourcesPanelHeight);
             self.layoutTriggerDestinationsPanel_(triggerDestinationsPanelWidth,triggerDestinationsPanelHeight);
@@ -297,7 +297,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods (Access = protected)
-        function layoutTrialBasedAcquisitionPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
+        function layoutSweepBasedAcquisitionPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
             import ws.utility.positionEditLabelAndUnitsBang
             import ws.utility.positionPopupmenuAndLabelBang
 
@@ -309,10 +309,10 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             popupmenuWidth=200;
             
             % Source popupmenu
-            position=get(self.TrialBasedAcquisitionSchemePopupmenu,'Position');
+            position=get(self.SweepBasedAcquisitionSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-height;  %checkboxYOffset-heightFromPopupmenuToRest-height;
-            positionPopupmenuAndLabelBang(self.TrialBasedAcquisitionSchemeText,self.TrialBasedAcquisitionSchemePopupmenu, ...
+            positionPopupmenuAndLabelBang(self.SweepBasedAcquisitionSchemeText,self.SweepBasedAcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
 
             % Checkbox
@@ -330,7 +330,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
 
     methods (Access = protected)
-        function layoutTrialBasedStimulationPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
+        function layoutSweepBasedStimulationPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
             import ws.utility.positionEditLabelAndUnitsBang
             import ws.utility.positionPopupmenuAndLabelBang
 
@@ -354,10 +354,10 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                             checkboxWidth checkboxHeight]);
             
             % Source popupmenu
-            position=get(self.TrialBasedStimulationSchemePopupmenu,'Position');
+            position=get(self.SweepBasedStimulationSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=checkboxYOffset-heightFromCheckboxToRest-height;
-            positionPopupmenuAndLabelBang(self.TrialBasedStimulationSchemeText,self.TrialBasedStimulationSchemePopupmenu, ...
+            positionPopupmenuAndLabelBang(self.SweepBasedStimulationSchemeText,self.SweepBasedStimulationSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
         end  % function
     end
@@ -461,8 +461,8 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             if isempty(self.Model) ,
                 return
             end            
-            self.updateTrialBasedAcquisitionControls();
-            self.updateTrialBasedStimulationControls();
+            self.updateSweepBasedAcquisitionControls();
+            self.updateSweepBasedStimulationControls();
             %self.updateContinuousModeControls();
             self.updateTriggerSourcesTable();
             self.updateTriggerDestinationsTable();                   
@@ -477,18 +477,18 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             end            
             wsModel=triggeringModel.Parent;  % this is the WavesurferModel
             isIdle=(wsModel.State==ws.ApplicationState.Idle);
-            isTrialBased = wsModel.IsTrialBased;
+            isSweepBased = wsModel.IsSweepBased;
             
             import ws.utility.onIff
             
-            set(self.TrialBasedAcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
+            set(self.SweepBasedAcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
             
             acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
             isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
             isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
-            set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isTrialBased&&isAcquisitionSchemeInternal));
+            set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
             set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~acquisitionUsesASAPTriggering));
-            set(self.TrialBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
+            set(self.SweepBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
@@ -498,7 +498,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods
-        function updateTrialBasedAcquisitionControls(self,varargin)
+        function updateSweepBasedAcquisitionControls(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
@@ -508,14 +508,14 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.UseASAPTriggeringCheckbox,'Value',model.AcquisitionUsesASAPTriggering);
             rawMenuItems={model.Sources.Name model.Destinations.Name};
             rawCurrentItem=model.AcquisitionTriggerScheme.Target.Name;
-            setPopupMenuItemsAndSelectionBang(self.TrialBasedAcquisitionSchemePopupmenu, ...
+            setPopupMenuItemsAndSelectionBang(self.SweepBasedAcquisitionSchemePopupmenu, ...
                                               rawMenuItems, ...
                                               rawCurrentItem);
         end  % function       
     end  % methods
     
     methods
-        function updateTrialBasedStimulationControls(self,varargin)
+        function updateSweepBasedStimulationControls(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
@@ -525,7 +525,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
             rawMenuItems={model.Sources.Name model.Destinations.Name};
             rawCurrentItem=model.StimulationTriggerScheme.Target.Name;
-            setPopupMenuItemsAndSelectionBang(self.TrialBasedStimulationSchemePopupmenu, ...
+            setPopupMenuItemsAndSelectionBang(self.SweepBasedStimulationSchemePopupmenu, ...
                                               rawMenuItems, ...
                                               rawCurrentItem);
         end  % function       
@@ -604,16 +604,16 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
 %                 model.subscribeMe(self, 'PostSet', 'Destinations', 'updateTriggerDestinationsTable');
                 
 
-%                 model.AcquisitionTriggerScheme.subscribeMe(self,'PostSet','Target','updateTrialBasedAcquisitionControls');  
-%                 model.StimulationTriggerScheme.subscribeMe(self,'PostSet','Target','updateTrialBasedStimulationControls');  
+%                 model.AcquisitionTriggerScheme.subscribeMe(self,'PostSet','Target','updateSweepBasedAcquisitionControls');  
+%                 model.StimulationTriggerScheme.subscribeMe(self,'PostSet','Target','updateSweepBasedStimulationControls');  
 %                 model.ContinuousModeTriggerScheme.subscribeMe(self,'PostSet','Target','updateContinuousModeControls');  
-                model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateTrialBasedAcquisitionControls');
-                model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateTrialBasedStimulationControls');  
+                model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedAcquisitionControls');
+                model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedStimulationControls');  
                 %model.ContinuousModeTriggerScheme.subscribeMe(self,'DidSetTarget','','updateContinuousModeControls');  
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                model.Parent.subscribeMe(self,'DidSetIsTrialBasedContinuous','','update');
+                model.Parent.subscribeMe(self,'DidSetIsSweepBasedContinuous','','update');
 %                 model.subscribeMe(self,'PostSet','AcquisitionUsesASAPTriggering','update');
 %                 model.subscribeMe(self,'PostSet','StimulationUsesAcquisitionTriggerScheme','update');
                 model.subscribeMe(self,'Update','','update');
