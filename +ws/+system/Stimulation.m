@@ -467,7 +467,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-        function willPerformRun(self, wavesurferObj, desiredApplicationState) %#ok<INUSD>
+        function willPerformRun(self, wavesurferModel)
             %fprintf('Stimulation::willPerformRun()\n');
             %errors = [];
             %abort = false;
@@ -502,14 +502,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.EpisodesPerRun_ = [];
             else
                 % stim trigger scheme is internal
-                if wavesurferObj.Triggering.AcquisitionTriggerScheme.IsInternal
+                if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal
                     % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == wavesurferObj.Triggering.AcquisitionTriggerScheme.Target ,
+                    if self.TriggerScheme.Target == wavesurferModel.Triggering.AcquisitionTriggerScheme.Target ,
                         self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
                     else
                         self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
                     end
-                elseif wavesurferObj.Triggering.AcquisitionTriggerScheme.IsExternal
+                elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme
                     self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;

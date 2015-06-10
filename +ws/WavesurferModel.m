@@ -222,32 +222,30 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %         end
         
         function start(self)
-            assert(self.Acquisition.Enabled || self.Stimulation.Enabled, ...
-                   'wavesurfer:misconfigured', ...
-                   'The acquisition or stimulus system must be enabled.  If neither system can be enabled verify the contents of your machine data file.');
-               
-            if self.IsSweepBased ,
-                modeRequested=ws.ApplicationState.AcquiringSweepBased;
+            % Start a run.
+            
+            if self.State == ws.ApplicationState.Idle ,
+                try
+                    self.performRun_();
+                catch me
+                    self.abortSweep_('problem');
+                    me.rethrow();
+                end
             else
-                modeRequested=ws.ApplicationState.AcquiringContinuously;
-            end                
-               
-            try
-                self.performRun_(modeRequested);
-            catch me
-                self.abortSweep_('problem');
-                me.rethrow();
+                % ignore
             end
         end
         
         function stop(self)
-            % Called when you press the "Stop" button in the UI, for instance.
-            if self.State == ws.ApplicationState.Idle, 
-                return
-            end
+            % Called when you press the "Stop" button in the UI, for
+            % instance.  Stops the current run, if any.
 
-            % Actually stop the ongoing sweep
-            self.abortSweep_('user');
+            if self.State == ws.ApplicationState.Idle , 
+                % do nothing
+            else
+                % Actually stop the ongoing sweep
+                self.abortSweep_('user');
+            end
         end
     end  % methods
     
@@ -572,19 +570,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         % inherits from ws.subsystem.Subsystem contains default implementations for
         % all API members.
         
-        function performRun_(self, desiredApplicationState)
-            %fprintf('WavesurferModel::willPerformRun()\n');     
-            assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An run is currently running. Operation ignored.');
-            
-            if (desiredApplicationState == ws.ApplicationState.AcquiringSweepBased) && isinf(self.Acquisition.Duration) 
-                assert(self.NSweepsPerRun == 1, 'wavesurfer:invalidsweepcount', 'The sweep count must be 1 when the acqusition duration is infinite.');
-            end
+        function performRun_(self)
+            %fprintf('WavesurferModel::performRun_()\n');     
             
             self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
-            if self.IsYokedToScanImage_ && desiredApplicationState==ws.ApplicationState.AcquiringSweepBased,
+            if self.IsYokedToScanImage_ && self.IsSweepBased ,
                 try
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
@@ -614,7 +607,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             try
                 for idx = 1: numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.willPerformRun(self, desiredApplicationState);
+                        self.Subsystems_{idx}.willPerformRun(self);
                     end
                 end
             catch me
@@ -623,7 +616,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 me.rethrow();
             end
             
-            self.State = desiredApplicationState;
+            if self.IsSweepBased ,
+                self.State = ws.ApplicationState.AcquiringSweepBased ;
+            else
+                self.State = ws.ApplicationState.AcquiringContinuously ;
+            end
             
             % Handle timing stuff
             self.TimeOfLastWillPerformSweep_=[];

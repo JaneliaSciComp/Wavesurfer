@@ -641,7 +641,7 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_=[];            
         end
         
-        function willPerformRun(self, wavesurferModel, runMode)  %#ok<INUSL>
+        function willPerformRun(self, wavesurferModel)
             %fprintf('Acquisition::willPerformRun()\n');
             %errors = [];
             %abort = false;
@@ -672,7 +672,7 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
             % Set for finite vs. continous sampling
-            if runMode == ws.ApplicationState.AcquiringContinuously || isinf(self.Duration) ,
+            if wavesurferModel.IsContinuous ,
                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
                 self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
@@ -705,14 +705,15 @@ classdef Acquisition < ws.system.Subsystem
             end
             NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
             NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
-            if runMode == ws.ApplicationState.AcquiringContinuously ,
+            if wavesurferModel.IsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
-            elseif runMode == ws.ApplicationState.AcquiringSweepBased ,
+            elseif wavesurferModel.IsSweepBased ,
                 self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else
+                % Shouldn't ever happen
                 self.RawAnalogDataCache_ = [];                
                 self.RawDigitalDataCache_ = [];                
             end

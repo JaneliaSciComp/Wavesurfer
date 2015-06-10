@@ -244,7 +244,7 @@ classdef Logging < ws.system.Subsystem
             value = self.CurrentRunAbsoluteFileName_ ;
         end  % function
         
-        function willPerformRun(self, wavesurferModel, desiredApplicationState)
+        function willPerformRun(self, wavesurferModel)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
@@ -253,30 +253,17 @@ classdef Logging < ws.system.Subsystem
             self.DidCreateCurrentDataFile_ = false ;
             
             % Set the chunk size for writing data to disk
-            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive);
-            switch desiredApplicationState ,
-                case ws.ApplicationState.AcquiringSweepBased ,
-                    self.ExpectedSweepSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
-                    if any(isinf(self.ExpectedSweepSize_))
-                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-                    else
-                        self.ChunkSize_ = self.ExpectedSweepSize_;
-                    end
-%                     if wavesurferModel.NSweepsPerRun == 1 ,
-%                         trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextSweepIndex);
-%                     else
-%                         trueLogFileName = sprintf('%s_%04d-%04d', ...
-%                                                   self.FileBaseName, ...
-%                                                   self.NextSweepIndex, ...
-%                                                   self.NextSweepIndex + wavesurferModel.NSweepsPerRun - 1);
-%                     end
-                case ws.ApplicationState.AcquiringContinuously ,
-                    self.ExpectedSweepSize_ = [Inf nActiveAnalogChannels];
+            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
+            if wavesurferModel.IsSweepBased ,
+                self.ExpectedSweepSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+                if any(isinf(self.ExpectedSweepSize_))
                     self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-%                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
-                otherwise
-                    error('wavesurfer:saveddatasystem:invalidmode', ...
-                          sprintf('%s is not a supported mode for data logging.', char(desiredApplicationState))); %#ok<SPERR>
+                else
+                    self.ChunkSize_ = self.ExpectedSweepSize_;
+                end
+            else
+                self.ExpectedSweepSize_ = [Inf nActiveAnalogChannels];
+                self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
             end
             
             % Determine the absolute file names

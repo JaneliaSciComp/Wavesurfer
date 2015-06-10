@@ -265,15 +265,10 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             end
         end
         
-        function willPerformRun(self, wavesurferModel, runMode) %#ok<INUSL>
-%             if runMode == ws.ApplicationState.TestPulsing ,
-%                 self.prvCachedDisplayXSpan = self.XSpan;
-%                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
-%             else
+        function willPerformRun(self, wavesurferModel)
             self.XOffset = 0;
             self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-%             end
-            self.XAutoScroll= (runMode == ws.ApplicationState.AcquiringContinuously);
+            self.XAutoScroll= (wavesurferModel.IsContinuous);
         end  % function
         
         function didPerformRun(self, wavesurferModel)

@@ -57,10 +57,7 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
             self.setCanEnableImplementation(value);
         end
         
-        % Passes the appState that the system will be going into (e.g., run, preview,
-        % ...) in case that matters to the subsystem, since the wavesurferObj State property
-        % is still Idle at this moment.
-        function willPerformRun(self, wavesurferModel, desiredApplicationState) %#ok<INUSD>
+        function willPerformRun(self, wavesurferModel) %#ok<INUSD>
         end
         
         function didPerformRun(self, wavesurferModel) %#ok<INUSD>
