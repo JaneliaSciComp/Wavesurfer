@@ -37,9 +37,9 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             wsModel.Logging.FileBaseName=dataFileBaseName;
 
             % Want to make sure there's a pre-existing file by that name
-            nextTrialSetAbsoluteFileName=wsModel.Logging.NextTrialSetAbsoluteFileName;
-            if ~exist(nextTrialSetAbsoluteFileName,'file');
-                fid=fopen(nextTrialSetAbsoluteFileName,'w');
+            nextExperimentAbsoluteFileName=wsModel.Logging.NextExperimentAbsoluteFileName;
+            if ~exist(nextExperimentAbsoluteFileName,'file');
+                fid=fopen(nextExperimentAbsoluteFileName,'w');
                 fclose(fid);
             end
 
@@ -72,7 +72,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=1 ,
+                if wsModel.NTrialsCompletedInThisExperiment>=1 ,
                     break
                 end
             end                   
@@ -82,7 +82,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,1);            
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,1);            
         end  % function
         
     end  % test methods

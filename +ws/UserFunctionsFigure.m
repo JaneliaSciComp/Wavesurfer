@@ -181,9 +181,9 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
 %             set(self.TrialStartEdit,'String',model.TrialWillStart);
 %             set(self.TrialCompleteEdit,'String',model.TrialDidComplete);
 %             set(self.TrialAbortEdit,'String',model.TrialDidAbort);            
-%             set(self.TrialSetStartEdit,'String',model.ExperimentWillStart);
-%             set(self.TrialSetCompleteEdit,'String',model.ExperimentDidComplete);
-%             set(self.TrialSetAbortEdit,'String',model.ExperimentDidAbort);            
+%             set(self.ExperimentStartEdit,'String',model.ExperimentWillStart);
+%             set(self.ExperimentCompleteEdit,'String',model.ExperimentDidComplete);
+%             set(self.ExperimentAbortEdit,'String',model.ExperimentDidAbort);            
 %             set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
 %             
 %             updateControlEnablementImplementation_();

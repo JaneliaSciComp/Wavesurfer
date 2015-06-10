@@ -31,7 +31,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.NTrialsPerExperiment=nTrials;
             wsModel.TrialDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
@@ -62,12 +62,12 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
         end  % function
 
         function testWithNonexistantFile(self)
@@ -83,7 +83,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.NTrialsPerExperiment=nTrials;
             wsModel.TrialDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
@@ -114,12 +114,12 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
         end  % function
 
         function testWithTemplateFileName(self)
@@ -135,7 +135,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.NTrialsPerExperiment=nTrials;
             wsModel.TrialDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
@@ -166,12 +166,12 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
         end  % function
 
     end  % test methods

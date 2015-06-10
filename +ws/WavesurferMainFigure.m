@@ -1052,7 +1052,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 
 %             s.IsTrialBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialBasedRadiobutton'}});
 %             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.ExperimentTrialCount = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
+%             s.NTrialsPerExperiment = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
 %             s.TrialDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialDurationEdit'}});
 %             
@@ -1075,7 +1075,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.TrialBasedRadiobutton,'Value',model.IsTrialBased);
             set(self.ContinuousRadiobutton,'Value',model.IsContinuous);
             set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
-            set(self.NTrialsEdit,'String',sprintf('%d',model.ExperimentTrialCount));
+            set(self.NTrialsEdit,'String',sprintf('%d',model.NTrialsPerExperiment));
             set(self.TrialDurationEdit,'String',sprintf('%.6g',model.TrialDuration));
             
             % Stimulation panel (most of it)
@@ -1098,11 +1098,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
             %set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
             set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
-            %set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+            %set(self.FileNameEdit, 'String', model.Logging.NextExperimentAbsoluteFileName);
             if ~isIdle&&model.Logging.Enabled ,
-                set(self.FileNameEdit, 'String', model.Logging.CurrentTrialSetAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.Logging.CurrentExperimentAbsoluteFileName);
             else
-                set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.Logging.NextExperimentAbsoluteFileName);
             end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
@@ -1436,9 +1436,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             model=self.Model;
             state=model.State;
             if state==ws.ApplicationState.AcquiringTrialBased ,
-                if isfinite(model.ExperimentTrialCount) ,
-                    nTrials=model.ExperimentTrialCount;
-                    nTrialsCompleted=model.ExperimentCompletedTrialCount;
+                if isfinite(model.NTrialsPerExperiment) ,
+                    nTrials=model.NTrialsPerExperiment;
+                    nTrialsCompleted=model.NTrialsCompletedInThisExperiment;
                     fractionCompleted=nTrialsCompleted/nTrials;
                     set(self.ProgressBarPatch, ...
                         'XData',[0 fractionCompleted fractionCompleted 0 0], ...
@@ -1449,7 +1449,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 else
                     % number of trials is infinite
                     nTrialsPretend=20;
-                    nTrialsCompleted = model.ExperimentCompletedTrialCount ;
+                    nTrialsCompleted = model.NTrialsCompletedInThisExperiment ;
                     nTrialsCompletedModded=mod(nTrialsCompleted,nTrialsPretend);
                     if nTrialsCompletedModded==0 ,
                         if nTrialsCompleted==0 ,

@@ -32,7 +32,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.Logging.Enabled=false;
 
             nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.NTrialsPerExperiment=nTrials;
 
             pause(0.1);
             wsModel.start();
@@ -42,12 +42,12 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -66,7 +66,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             wsModel.Logging.Enabled=true;
 % 
 %             nTrials=10;
-%             wsModel.ExperimentTrialCount=nTrials;
+%             wsModel.NTrialsPerExperiment=nTrials;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -86,12 +86,12 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+%                 if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+%             self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

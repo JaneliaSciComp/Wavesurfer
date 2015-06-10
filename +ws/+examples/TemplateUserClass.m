@@ -28,7 +28,7 @@ classdef TemplateUserClass < ws.UserClass
         function experimentWillStart(self,wsModel,eventName)
             % Called just before each set of trials (a.k.a. each
             % "experiment")
-            fprintf('About to start a trial set.\n');
+            fprintf('About to start an experiment.\n');
         end
         
         function trialWillStart(self,wsModel,eventName)
@@ -49,13 +49,13 @@ classdef TemplateUserClass < ws.UserClass
         function experimentDidComplete(self,wsModel,eventName)
             % Called just after each set of trials (a.k.a. each
             % "experiment")
-            fprintf('Finished a trial set.\n');
+            fprintf('Finished an experiment.\n');
         end
         
         function experimentDidAbort(self,wsModel,eventName)
-            % Called if a trial set goes wrong, after the call to
+            % Called if an experiment goes wrong, after the call to
             % trialDidAbort()
-            fprintf('Oh noes!  A trial set aborted.\n');
+            fprintf('Oh noes!  A experiment aborted.\n');
         end
         
         function dataIsAvailable(self,wsModel,eventName)

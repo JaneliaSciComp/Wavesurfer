@@ -31,12 +31,12 @@ classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nTrials=100;
-            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.NTrialsPerExperiment=nTrials;
             wsModel.TrialDuration=1;  % s
 
             wsModel.start();  % This now blocks...
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
         end  % function
     end  % test methods
 

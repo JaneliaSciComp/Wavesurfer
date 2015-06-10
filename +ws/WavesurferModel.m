@@ -48,14 +48,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
     properties (Dependent = true)  % SetObservable = true, 
-        ExperimentTrialCount  
+        NTrialsPerExperiment  
             % Number of trials to perform during experiment.  If in
             % trial-based mode, this is a pass through to the repeat count
             % of the start trigger.  If in continuous mode, it is always 1.
     end
     
     properties (SetAccess = protected, Transient=true)  % SetObservable = true, 
-        ExperimentCompletedTrialCount = 0   % Current number of completed trials while the experiment is running (range of 0 to ExperimentTrialCount).
+        NTrialsCompletedInThisExperiment = 0   % Current number of completed trials while the experiment is running (range of 0 to NTrialsPerExperiment).
     end
     
     properties (Dependent=true)   %, SetObservable=true)
@@ -80,7 +80,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     properties (Access = protected)
         IsYokedToScanImage_ = false
         IsTrialBased_ = true
-        ExperimentTrialCount_ = 1
+        NTrialsPerExperiment_ = 1
     end
 
     properties (Access=protected, Transient=true)
@@ -130,7 +130,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %self.State_ = ws.ApplicationState.Uninitialized;
             %self.IsYokedToScanImage_ = false;
             %self.IsTrialBased_=true;
-            %self.ExperimentTrialCount_ = 1;
+            %self.NTrialsPerExperiment_ = 1;
             
             % Initialize the fast protocols
             self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
@@ -280,31 +280,31 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end
 %         end  % function
         
-        function val = get.ExperimentTrialCount(self)
+        function val = get.NTrialsPerExperiment(self)
             if self.IsContinuous ,
                 val = 1;
             else
                 %val = self.Triggering.TrialTrigger.Source.RepeatCount;
-                val = self.ExperimentTrialCount_;
+                val = self.NTrialsPerExperiment_;
             end
         end  % function
         
-        function set.ExperimentTrialCount(self, newValue)
+        function set.NTrialsPerExperiment(self, newValue)
             % Sometimes want to trigger the listeners without actually
             % setting, and without throwing an error
             if ws.utility.isASettableValue(newValue) ,
-                % s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-                %value=self.validatePropArg('ExperimentTrialCount',value);
+                % s.NTrialsPerExperiment = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+                %value=self.validatePropArg('NTrialsPerExperiment',value);
                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
                     if self.IsTrialBased ,
-                        self.Triggering.willSetExperimentTrialCount();
-                        self.ExperimentTrialCount_ = newValue;
-                        self.Triggering.didSetExperimentTrialCount();
+                        self.Triggering.willSetNTrialsPerExperiment();
+                        self.NTrialsPerExperiment_ = newValue;
+                        self.Triggering.didSetNTrialsPerExperiment();
                     end
                 else
                     error('most:Model:invalidPropVal', ...
-                          'ExperimentTrialCount must be a (scalar) positive integer, or inf');       
+                          'NTrialsPerExperiment must be a (scalar) positive integer, or inf');       
                 end
             end
             self.broadcast('Update');
@@ -348,7 +348,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.Triggering.willSetIsTrialBased();
                 self.IsTrialBased_=logical(newValue);
                 self.IsContinuous=ws.most.util.Nonvalue.The;
-                self.ExperimentTrialCount=ws.most.util.Nonvalue.The;
+                self.NTrialsPerExperiment=ws.most.util.Nonvalue.The;
                 self.TrialDuration=ws.most.util.Nonvalue.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
                 self.Triggering.didSetIsTrialBased();
@@ -639,7 +639,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             assert(self.State == ws.ApplicationState.Idle, 'wavesurfer:unexpectedstate', 'An experiment is currently running. Operation ignored.');
             
             if (desiredApplicationState == ws.ApplicationState.AcquiringTrialBased) && isinf(self.Acquisition.Duration) 
-                assert(self.ExperimentTrialCount == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
+                assert(self.NTrialsPerExperiment == 1, 'wavesurfer:invalidtrialcount', 'The trial count must be 1 when the acqusition duration is infinite.');
             end
             
             self.changeReadiness(-1);
@@ -664,13 +664,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.ExperimentCompletedTrialCount = 0;
+            self.NTrialsCompletedInThisExperiment = 0;
             
             self.callUserFunctionsAndBroadcastEvent('experimentWillStart');  
                 % no one listens for this, it seems, but it does directly
                 % lead to user function getting called --ALT, 2014-08-24
             
-            % Tell all the subsystems to prepare for the trial set
+            % Tell all the subsystems to prepare for the experiment
             self.ClockAtExperimentStart_ = clock() ;
               % do this now so that the data file header has the right value
             try
@@ -748,7 +748,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         
             % Any system waiting for an internal or external trigger was armed and waiting
             % in the subsystem willPerformTrial() above.
-            self.Triggering.startMeMaybe(self.State, self.ExperimentTrialCount, self.ExperimentCompletedTrialCount);            
+            self.Triggering.startMeMaybe(self.State, self.NTrialsPerExperiment, self.NTrialsCompletedInThisExperiment);            
         end  % function
         
         function didPerformTrial(self)
@@ -763,7 +763,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
             
             % Bump the number of completed trials
-            self.ExperimentCompletedTrialCount = self.ExperimentCompletedTrialCount + 1;
+            self.NTrialsCompletedInThisExperiment = self.NTrialsCompletedInThisExperiment + 1;
             
             % Call user functions and broadcast
             self.callUserFunctionsAndBroadcastEvent('trialDidComplete');
@@ -782,7 +782,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                             % stim, acq are both external, but are distinct
                             % In this case, we never declare the exp done, but we
                             % might daisy chain another trial.
-                            if self.ExperimentCompletedTrialCount < self.ExperimentTrialCount ,
+                            if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
                                 self.willPerformTrial();
                             else
                                 % do nothing
@@ -792,7 +792,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         % stim external, acq internal
                         % In this case, we never declare the exp done, but we
                         % might daisy chain another trial.
-                        if self.ExperimentCompletedTrialCount < self.ExperimentTrialCount ,
+                        if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
                             self.willPerformTrial();
                         else
                             % do nothing
@@ -808,7 +808,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         else
                             % acq and stim trig sources are internal, but distinct
                             if self.Stimulation.IsWithinExperiment ,
-                                if self.ExperimentCompletedTrialCount < self.ExperimentTrialCount ,
+                                if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
                                     self.willPerformTrial();
                                 else
                                     % no more acq trials to do, but
@@ -824,7 +824,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                         % stim trig internal, acq trig external
                         % therefore they're distinct
                         if self.Stimulation.IsWithinExperiment ,
-                            if self.ExperimentCompletedTrialCount < self.ExperimentTrialCount ,
+                            if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
                                 self.willPerformTrial();
                             else
                                 % no more acq trials to do, but
@@ -844,7 +844,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function willPerformTrialOrDidPerformExperimentDependingOnAcqOnly(self)
-            if self.ExperimentCompletedTrialCount < self.ExperimentTrialCount ,
+            if self.NTrialsCompletedInThisExperiment < self.NTrialsPerExperiment ,
                 self.willPerformTrial();
             else
                 self.didPerformExperiment();
@@ -968,7 +968,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
 %             defineDefaultPropertyAttributes@ws.most.app.Model(self);
-%             self.setPropertyAttributeFeatures('ExperimentTrialCount', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
+%             self.setPropertyAttributeFeatures('NTrialsPerExperiment', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
 %             self.setPropertyAttributeFeatures('TrialDuration', 'Attributes', {'positive', 'scalar'});
 %             self.setPropertyAttributeFeatures('IsTrialBased', 'Classes', 'logical', 'Attributes', {'scalar'});
 %             self.setPropertyAttributeFeatures('IsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
@@ -991,9 +991,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
 %             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ExperimentCompletedTrialCount', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('ExperimentTrialCount', 'IncludeInFileTypes', {'header'});
-%             self.setPropertyTags('ExperimentTrialCount_', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('NTrialsCompletedInThisExperiment', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('NTrialsPerExperiment', 'IncludeInFileTypes', {'header'});
+%             self.setPropertyTags('NTrialsPerExperiment_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
 %             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
 %             self.setPropertyTags('IsTrialBased', 'ExcludeFromFileTypes', {'usr'});
@@ -1020,7 +1020,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Exclude a few more things from .usr file
             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('IsTrialBased_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('ExperimentTrialCount_', 'ExcludeFromFileTypes', {'usr'});            
+            self.setPropertyTags('NTrialsPerExperiment_', 'ExcludeFromFileTypes', {'usr'});            
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
@@ -1038,8 +1038,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % This is a hack to make sure the UI gets updated on loading
             % the .cfg file.
-            if isequal(name,'ExperimentTrialCount_') ,
-                self.ExperimentTrialCount=ws.most.util.Nonvalue.The;
+            if isequal(name,'NTrialsPerExperiment_') ,
+                self.NTrialsPerExperiment=ws.most.util.Nonvalue.The;
             end                
         end  % function
         
@@ -1105,7 +1105,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %         
 %         function zprvSetExperimentalTrialCount(self, ~)
 %             %fprintf('WavesurferModel.zprvSetExperimentalTrialCount()\n');
-%             %self.ExperimentTrialCount = self.Triggering.TrialTrigger.Source.RepeatCount;
+%             %self.NTrialsPerExperiment = self.Triggering.TrialTrigger.Source.RepeatCount;
 %             %self.Triggering.TrialTrigger.Source.RepeatCount=1;  % Don't allow this to change
 %         end  % function
         
@@ -1189,7 +1189,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             else
 %                 edgeTypeString=edgeType.toString();  % 'rising' or 'falling'
 %             end
-            nAcqsInSet=self.ExperimentTrialCount;
+            nAcqsInSet=self.NTrialsPerExperiment;
             iFirstAcqInSet=self.Logging.NextTrialIndex;
             
             [fid,fopenErrorMessage]=fopen(absoluteFileName,'wt');
@@ -1205,7 +1205,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             fprintf(fid,'Index of first acq in set| %d\n',iFirstAcqInSet);
             fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
             fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
-            fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextTrialSetAbsoluteFileName);
+            fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextExperimentAbsoluteFileName);
             fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
             fclose(fid);
         end  % function
@@ -1386,7 +1386,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function s = propertyAttributes()
             s = struct();
             
-            %s.ExperimentTrialCount = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+            %s.NTrialsPerExperiment = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
             %s.TrialDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.IsTrialBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter

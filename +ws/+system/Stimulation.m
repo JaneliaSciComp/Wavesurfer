@@ -505,7 +505,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 if wavesurferObj.Triggering.AcquisitionTriggerScheme.IsInternal
                     % acq trigger scheme is internal
                     if self.TriggerScheme.Target == wavesurferObj.Triggering.AcquisitionTriggerScheme.Target ,
-                        self.EpisodesPerExperiment_ = self.Parent.ExperimentTrialCount;
+                        self.EpisodesPerExperiment_ = self.Parent.NTrialsPerExperiment;
                     else
                         self.EpisodesPerExperiment_ = self.TriggerScheme.Target.RepeatCount;
                     end
@@ -572,7 +572,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % sources.
                 % If first trial, arm.  Otherwise, we handle
                 % re-arming independently from the acq trials.
-                if self.Parent.ExperimentCompletedTrialCount == 0 ,
+                if self.Parent.NTrialsCompletedInThisExperiment == 0 ,
                     self.armForEpisode();
                 end
             end
@@ -589,7 +589,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             if self.TriggerScheme.IsExternal ,
 %                 % If external triggering, we set up for a trigger only if
 %                 % this is the first 
-%                 if self.Parent.ExperimentCompletedTrialCount == 0 ,
+%                 if self.Parent.NTrialsCompletedInThisExperiment == 0 ,
 %                     self.armForEpisode();
 %                 end
 %             else
@@ -605,7 +605,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                         % sources
 %                         % if first trial, arm.  Otherwise, we handle
 %                         % re-arming independently from the acq trials.
-%                         if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
+%                         if self.Parent.NTrialsCompletedInThisExperiment == 0 ,                            
 %                             self.armForEpisode();
 %                         else
 %                             % do nothing
@@ -622,7 +622,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 % %                     end
 %                     % if first trial, arm.  Otherwise, we handle
 %                     % re-arming independently from the acq trials.
-%                     if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
+%                     if self.Parent.NTrialsCompletedInThisExperiment == 0 ,                            
 %                         self.armForEpisode();
 %                     else
 %                         % do nothing

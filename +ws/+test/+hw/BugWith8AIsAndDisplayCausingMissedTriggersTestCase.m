@@ -31,7 +31,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             wsModel.Logging.Enabled=true;
 
             nTrials=10;
-            wsModel.ExperimentTrialCount=nTrials;
+            wsModel.NTrialsPerExperiment=nTrials;
 
             % set the data file name
             thisFileName=mfilename();
@@ -51,7 +51,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
                     break
                 end
             end                   
@@ -59,7 +59,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -78,7 +78,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %             wsModel.Logging.Enabled=true;
 % 
 %             nTrials=10;
-%             wsModel.ExperimentTrialCount=nTrials;
+%             wsModel.NTrialsPerExperiment=nTrials;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -98,12 +98,12 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+%                 if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+%             self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

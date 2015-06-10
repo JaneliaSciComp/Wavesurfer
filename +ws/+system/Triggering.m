@@ -577,12 +577,12 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function        
         
-        function willSetExperimentTrialCount(self)
+        function willSetNTrialsPerExperiment(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
 
-        function didSetExperimentTrialCount(self)
+        function didSetNTrialsPerExperiment(self)
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
@@ -763,7 +763,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                         self.AcquisitionTriggerScheme.Target.releaseInterval();
                         self.AcquisitionTriggerScheme.Target.placeLowerLimitOnInterval( ...
                             self.Parent.Acquisition.Duration+self.MinDurationBetweenTrialsIfNotASAP );
-                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.ExperimentTrialCount);
+                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NTrialsPerExperiment);
                     end
                 end
 %             elseif self.Parent.IsContinuous ,

@@ -246,7 +246,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % A list of settings
             settings=cell(0,2);
             settings(end+1,:)={'IsTrialBased' true};            
-            settings(end+1,:)={'ExperimentTrialCount' 11};
+            settings(end+1,:)={'NTrialsPerExperiment' 11};
 
             settings(end+1,:)={'Acquisition.SampleRate' 19979};
             settings(end+1,:)={'Acquisition.Duration' 2.17};

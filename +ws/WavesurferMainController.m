@@ -300,7 +300,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function NTrialsEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model,'ExperimentTrialCount',newValue);
+            ws.Controller.setWithBenefits(self.Model,'NTrialsPerExperiment',newValue);
         end
 
         function TrialDurationEditActuated(self,source,event) %#ok<INUSD>
@@ -935,7 +935,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                                                          'Target', 'WavesurferWindow.LogFileLocation', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.NextTrialIndex', 'Target', 'WavesurferWindow.NextTrialId');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'ExperimentTrialCount', 'Target', 'WavesurferWindow.TrialsPerExperiment');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'NTrialsPerExperiment', 'Target', 'WavesurferWindow.TrialsPerExperiment');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'State', ...
 %                                                          'Target', 'WavesurferWindow.StatusLabel', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
@@ -1126,7 +1126,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % Action for the Start button.
 %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
 %             progressBar.IsIndeterminate = false;
-%             progressBar.Maximum = self.Model.ExperimentTrialCount;
+%             progressBar.Maximum = self.Model.NTrialsPerExperiment;
 %             progressBar.Value = 0;
             
 %             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
@@ -2029,7 +2029,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             s = struct();
 %             s.IsTrialBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialBasedRadiobutton'}});
 %             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.ExperimentTrialCount = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
+%             s.NTrialsPerExperiment = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
 %             s.TrialDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialDurationEdit'}});
 %             

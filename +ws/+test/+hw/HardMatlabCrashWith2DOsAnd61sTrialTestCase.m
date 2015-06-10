@@ -31,7 +31,7 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
             wsModel.Logging.Enabled=false;
 
             nTrials=1;
-            wsModel.ExperimentTrialCount=1;
+            wsModel.NTrialsPerExperiment=1;
             wsModel.TrialDuration=20;  % s, this actually seems to be long enough to cause crash
 
             wsModel.start();
@@ -41,12 +41,12 @@ classdef HardMatlabCrashWith2DOsAnd61sTrialTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NTrialsCompletedInThisExperiment>=nTrials ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NTrialsCompletedInThisExperiment,nTrials);            
         end  % function
     end  % test methods
 

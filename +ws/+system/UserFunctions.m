@@ -101,7 +101,7 @@ classdef UserFunctions < ws.system.Subsystem
 
                 if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject_) ,
                     self.TheObject_.ExperimentDidComplete(wavesurferModel, eventName); 
-                      % Calls trial set completion user function, but still passes TrialDidAbort
+                      % Calls experiment completion user function, but still passes TrialDidAbort
                 end
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];

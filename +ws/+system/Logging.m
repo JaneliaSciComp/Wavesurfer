@@ -13,8 +13,8 @@ classdef Logging < ws.system.Subsystem
     
     properties (Dependent=true, SetAccess=immutable)
         AugmentedBaseName
-        NextTrialSetAbsoluteFileName
-        CurrentTrialSetAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current trial set file name
+        NextExperimentAbsoluteFileName
+        CurrentExperimentAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current experiment file name
         %CurrentTrialIndex
     end
 
@@ -36,7 +36,7 @@ classdef Logging < ws.system.Subsystem
     % ongoing.  They are set in willPerformExperiment(), and are nulled in
     % didPerformExperiment() and didAbortExperiment()
     properties (Access = protected, Transient=true)
-        CurrentTrialSetAbsoluteFileName_
+        CurrentExperimentAbsoluteFileName_
         CurrentDatasetOffset_
             % during acquisition, the index of the next "scan" to be written (one-based)
             % "scan" is an NI-ism meaning all the samples acquired for a
@@ -45,10 +45,10 @@ classdef Logging < ws.system.Subsystem
             % if all the acquired data for one trial were put into an array, this
             % would be the size of that array.  
             % I.e. [nScans nActiveChannels]        
-        WriteToTrialId_  % During the acquisition of a trial set, the current trial index being written to
+        WriteToTrialId_  % During the acquisition of an experiment, the current trial index being written to
         ChunkSize_
-        FirstTrialIndex_  % index of the first trial in the ongoing trial set
-        DidCreateCurrentDataFile_  % whether the data file for the current trial set has been created
+        FirstTrialIndex_  % index of the first trial in the ongoing experiment
+        DidCreateCurrentDataFile_  % whether the data file for the current experiment has been created
         LastTrialIndexForWhichDatasetCreated_  
           % For the current file/trialset, the trial index of the most-recently dataset in the data file.
           % Empty if the no dataset has yet been created for the current file.
@@ -232,16 +232,16 @@ classdef Logging < ws.system.Subsystem
             result = self.augmentedBaseName_();
         end  % function
         
-        function value=get.NextTrialSetAbsoluteFileName(self)
+        function value=get.NextExperimentAbsoluteFileName(self)
             wavesurferModel=self.Parent;
             firstTrialIndex = self.NextTrialIndex ;
-            numberOfTrials = wavesurferModel.ExperimentTrialCount ;
+            numberOfTrials = wavesurferModel.NTrialsPerExperiment ;
             fileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfTrials);
             value = fullfile(self.FileLocation, fileName);
         end  % function
         
-        function value=get.CurrentTrialSetAbsoluteFileName(self)
-            value = self.CurrentTrialSetAbsoluteFileName_ ;
+        function value=get.CurrentExperimentAbsoluteFileName(self)
+            value = self.CurrentExperimentAbsoluteFileName_ ;
         end  % function
         
         function willPerformExperiment(self, wavesurferModel, desiredApplicationState)
@@ -262,13 +262,13 @@ classdef Logging < ws.system.Subsystem
                     else
                         self.ChunkSize_ = self.ExpectedTrialSize_;
                     end
-%                     if wavesurferModel.ExperimentTrialCount == 1 ,
+%                     if wavesurferModel.NTrialsPerExperiment == 1 ,
 %                         trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextTrialIndex);
 %                     else
 %                         trueLogFileName = sprintf('%s_%04d-%04d', ...
 %                                                   self.FileBaseName, ...
 %                                                   self.NextTrialIndex, ...
-%                                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
+%                                                   self.NextTrialIndex + wavesurferModel.NTrialsPerExperiment - 1);
 %                     end
                 case ws.ApplicationState.AcquiringContinuously ,
                     self.ExpectedTrialSize_ = [Inf nActiveAnalogChannels];
@@ -280,11 +280,11 @@ classdef Logging < ws.system.Subsystem
             end
             
             % Determine the absolute file names
-            %self.CurrentTrialSetAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            self.CurrentTrialSetAbsoluteFileName_ = self.NextTrialSetAbsoluteFileName ;
+            %self.CurrentExperimentAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
+            self.CurrentExperimentAbsoluteFileName_ = self.NextExperimentAbsoluteFileName ;
             %self.CurrentTrialIndex_ = self.NextTrialIndex ;
             
-            % Store the first trial index for the trial set 
+            % Store the first trial index for the experiment 
             self.FirstTrialIndex_ = self.NextTrialIndex ;
             
             % If the target dir doesn't exist, create it
@@ -297,21 +297,21 @@ classdef Logging < ws.system.Subsystem
                 % don't need to check anything
                 % But need to delete pre-existing files, otherwise h5create
                 % will just add datasets to a pre-existing file.
-                if exist(self.CurrentTrialSetAbsoluteFileName_, 'file') == 2 ,
-                    ws.utility.deleteFileWithoutWarning(self.CurrentTrialSetAbsoluteFileName_);
+                if exist(self.CurrentExperimentAbsoluteFileName_, 'file') == 2 ,
+                    ws.utility.deleteFileWithoutWarning(self.CurrentExperimentAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
 %                 end
             else
                 % Check if the log file already exists, and error if so
-                if exist(self.CurrentTrialSetAbsoluteFileName_, 'file') == 2 ,
+                if exist(self.CurrentExperimentAbsoluteFileName_, 'file') == 2 ,
                     error('wavesurfer:logFileAlreadyExists', ...
-                          'The data file %s already exists', self.CurrentTrialSetAbsoluteFileName_);
+                          'The data file %s already exists', self.CurrentExperimentAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     error('wavesurfer:sidecarFileAlreadyExists', ...
-%                           'The sidecar file %s already exists', self.CurrentTrialSetAbsoluteFileName_);
+%                           'The sidecar file %s already exists', self.CurrentExperimentAbsoluteFileName_);
 %                 end
             end
 
@@ -323,8 +323,8 @@ classdef Logging < ws.system.Subsystem
             %numericPrecision=4;
             %stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
             doCreateFile=true;
-            %ws.most.fileutil.h5savestr(self.CurrentTrialSetAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-            ws.most.fileutil.h5save(self.CurrentTrialSetAbsoluteFileName_, '/header', headerStruct, doCreateFile);
+            %ws.most.fileutil.h5savestr(self.CurrentExperimentAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.most.fileutil.h5save(self.CurrentExperimentAbsoluteFileName_, '/header', headerStruct, doCreateFile);
             self.DidCreateCurrentDataFile_ = true ;
             
 %             % Save the "header" information to a sidecar file instead.
@@ -342,8 +342,8 @@ classdef Logging < ws.system.Subsystem
             % willPerformTrial() --- This is the cause of slowness at trial
             % set start for Justin Little, possibly others.
 %             if ~isempty(wavesurferModel.Acquisition) ,
-%                 for indexOfTrialWithinSet = 1:wavesurferModel.ExperimentTrialCount ,
-%                     h5create(self.CurrentTrialSetAbsoluteFileName_, ...
+%                 for indexOfTrialWithinSet = 1:wavesurferModel.NTrialsPerExperiment ,
+%                     h5create(self.CurrentExperimentAbsoluteFileName_, ...
 %                              sprintf('/trial_%04d', ...
 %                                      self.WriteToTrialId_ + (indexOfTrialWithinSet-1)), ...
 %                              self.ExpectedTrialSize_, ...
@@ -367,9 +367,9 @@ classdef Logging < ws.system.Subsystem
             %profile resume
             thisTrialIndex = self.NextTrialIndex ;
             timestampDatasetName = sprintf('/trial_%04d/timestamp',thisTrialIndex) ;
-            h5create(self.CurrentTrialSetAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
+            h5create(self.CurrentExperimentAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
             scansDatasetName = sprintf('/trial_%04d/analogScans',thisTrialIndex) ;
-            h5create(self.CurrentTrialSetAbsoluteFileName_, ...
+            h5create(self.CurrentExperimentAbsoluteFileName_, ...
                      scansDatasetName, ...
                      self.ExpectedTrialSize_, ...
                      'ChunkSize', self.ChunkSize_, ...
@@ -386,7 +386,7 @@ classdef Logging < ws.system.Subsystem
                 dataType = 'uint32';
             end
             if NActiveDigitalChannels>0 ,
-                h5create(self.CurrentTrialSetAbsoluteFileName_, ...
+                h5create(self.CurrentExperimentAbsoluteFileName_, ...
                          scansDatasetName, ...
                          [self.ExpectedTrialSize_(1) 1], ...
                          'ChunkSize', [self.ChunkSize_(1) 1], ...
@@ -436,7 +436,7 @@ classdef Logging < ws.system.Subsystem
             exception = [] ;
             if self.DidCreateCurrentDataFile_ ,
                 % A data file was created.  Might need to rename it, or delete it.
-                originalAbsoluteLogFileName = self.CurrentTrialSetAbsoluteFileName_ ;
+                originalAbsoluteLogFileName = self.CurrentExperimentAbsoluteFileName_ ;
                 firstTrialIndex = self.FirstTrialIndex_ ;
                 if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
                     % This means no trials were actually added to the log file.
@@ -445,7 +445,7 @@ classdef Logging < ws.system.Subsystem
                     numberOfPartialTrialsLogged = self.LastTrialIndexForWhichDatasetCreated_ - firstTrialIndex + 1 ;  % includes complete and partial trials
                 end
                 if numberOfPartialTrialsLogged == 0 ,
-                    % If no trials logged, and we actually created the data file for the current trial set, delete the file
+                    % If no trials logged, and we actually created the data file for the current experiment, delete the file
                     if self.DidCreateCurrentDataFile_ ,
                         ws.utility.deleteFileWithoutWarning(originalAbsoluteLogFileName);
                     else
@@ -505,8 +505,8 @@ classdef Logging < ws.system.Subsystem
         
         function didPerformOrAbortExperiment_(self)
             % null-out all the transient things that are only used during
-            % the trial set
-            self.CurrentTrialSetAbsoluteFileName_ = [];
+            % the experiment
+            self.CurrentExperimentAbsoluteFileName_ = [];
             self.FirstTrialIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
             self.ExpectedTrialSize_ = [];
@@ -532,19 +532,19 @@ classdef Logging < ws.system.Subsystem
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~self.DidWriteSomeDataForThisTrial_ ,
                 timestampDatasetName = sprintf('/trial_%04d/timestamp',self.WriteToTrialId_) ;
-                h5write(self.CurrentTrialSetAbsoluteFileName_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
+                h5write(self.CurrentExperimentAbsoluteFileName_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
                 self.DidWriteSomeDataForThisTrial_ = true ;  % will be true momentarily...
             end
             
             if ~isempty(self.FileBaseName) ,
-                h5write(self.CurrentTrialSetAbsoluteFileName_, ...
+                h5write(self.CurrentExperimentAbsoluteFileName_, ...
                         sprintf('/trial_%04d/analogScans', ...
                                 self.WriteToTrialId_), ...
                                 rawAnalogData, ...
                                 [self.CurrentDatasetOffset_ 1], ...
                                 size(rawAnalogData));
                 if ~isempty(rawDigitalData) ,
-                    h5write(self.CurrentTrialSetAbsoluteFileName_, ...
+                    h5write(self.CurrentExperimentAbsoluteFileName_, ...
                             sprintf('/trial_%04d/digitalScans', ...
                                     self.WriteToTrialId_), ...
                             rawDigitalData, ...

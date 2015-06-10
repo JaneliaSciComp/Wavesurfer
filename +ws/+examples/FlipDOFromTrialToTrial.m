@@ -9,7 +9,7 @@ classdef FlipDOFromTrialToTrial < ws.UserClass
         
         function trialWillStart(self,wsModel,eventName) %#ok<INUSD,INUSL>
             wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
-                mod(wsModel.ExperimentCompletedTrialCount,2);
+                mod(wsModel.NTrialsCompletedInThisExperiment,2);
         end
         
         function trialDidComplete(self,wsModel,eventName)  %#ok<INUSD>
