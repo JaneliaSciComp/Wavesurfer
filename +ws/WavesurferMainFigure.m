@@ -1107,7 +1107,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
-            set(self.StatusText,'String',model.State.num2str());
+            statusString = model.State.toTitleString() ;
+            set(self.StatusText,'String',statusString);
             
             % Progress bar
             self.updateProgressBarProperties_();
@@ -1181,7 +1182,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             isIdle=(model.State == ws.ApplicationState.Idle);
             isSweepBased=model.IsSweepBased;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
-            isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
+            %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
+            isAcquiring = (model.State == ws.ApplicationState.Running) ;
             
             % File menu items
             set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
@@ -1435,52 +1437,54 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
             model=self.Model;
             state=model.State;
-            if state==ws.ApplicationState.AcquiringSweepBased ,
-                if isfinite(model.NSweepsPerRun) ,
-                    nSweeps=model.NSweepsPerRun;
-                    nSweepsCompleted=model.NSweepsCompletedInThisRun;
-                    fractionCompleted=nSweepsCompleted/nSweeps;
-                    set(self.ProgressBarPatch, ...
-                        'XData',[0 fractionCompleted fractionCompleted 0 0], ...
-                        'YData',[0 0 1 1 0], ...
-                        'Visible','on');
-                    set(self.ProgressBarAxes, ...                
-                        'Visible','on');
-                else
-                    % number of sweeps is infinite
-                    nSweepsPretend=20;
-                    nSweepsCompleted = model.NSweepsCompletedInThisRun ;
-                    nSweepsCompletedModded=mod(nSweepsCompleted,nSweepsPretend);
-                    if nSweepsCompletedModded==0 ,
-                        if nSweepsCompleted==0 ,
-                            nSweepsCompletedPretend = 0 ;
-                        else
-                            nSweepsCompletedPretend = nSweepsPretend ;                            
-                        end
+            if state==ws.ApplicationState.Running ,
+                if model.IsSweepBased ,
+                    if isfinite(model.NSweepsPerRun) ,
+                        nSweeps=model.NSweepsPerRun;
+                        nSweepsCompleted=model.NSweepsCompletedInThisRun;
+                        fractionCompleted=nSweepsCompleted/nSweeps;
+                        set(self.ProgressBarPatch, ...
+                            'XData',[0 fractionCompleted fractionCompleted 0 0], ...
+                            'YData',[0 0 1 1 0], ...
+                            'Visible','on');
+                        set(self.ProgressBarAxes, ...                
+                            'Visible','on');
                     else
-                        nSweepsCompletedPretend = nSweepsCompletedModded ;
-                    end                    
-                    fractionCompletedPretend=nSweepsCompletedPretend/nSweepsPretend;
+                        % number of sweeps is infinite
+                        nSweepsPretend=20;
+                        nSweepsCompleted = model.NSweepsCompletedInThisRun ;
+                        nSweepsCompletedModded=mod(nSweepsCompleted,nSweepsPretend);
+                        if nSweepsCompletedModded==0 ,
+                            if nSweepsCompleted==0 ,
+                                nSweepsCompletedPretend = 0 ;
+                            else
+                                nSweepsCompletedPretend = nSweepsPretend ;                            
+                            end
+                        else
+                            nSweepsCompletedPretend = nSweepsCompletedModded ;
+                        end                    
+                        fractionCompletedPretend=nSweepsCompletedPretend/nSweepsPretend;
+                        set(self.ProgressBarPatch, ...
+                            'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
+                            'YData',[0 0 1 1 0], ...
+                            'Visible','on');
+                        set(self.ProgressBarAxes, ...                
+                            'Visible','on');
+                    end
+                else
+                    nTimesSamplesAcquiredCalledSinceRunStart=model.NTimesSamplesAcquiredCalledSinceRunStart;
+                    nSegments=10;
+                    nPositions=2*nSegments;
+                    barWidth=1/nSegments;
+                    stepWidth=1/nPositions;
+                    xOffset=stepWidth*mod(nTimesSamplesAcquiredCalledSinceRunStart,nPositions);
                     set(self.ProgressBarPatch, ...
-                        'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
+                        'XData',xOffset+[0 barWidth barWidth 0 0], ...
                         'YData',[0 0 1 1 0], ...
                         'Visible','on');
                     set(self.ProgressBarAxes, ...                
                         'Visible','on');
                 end
-            elseif state==ws.ApplicationState.AcquiringContinuously ,
-                nTimesSamplesAcquiredCalledSinceRunStart=model.NTimesSamplesAcquiredCalledSinceRunStart;
-                nSegments=10;
-                nPositions=2*nSegments;
-                barWidth=1/nSegments;
-                stepWidth=1/nPositions;
-                xOffset=stepWidth*mod(nTimesSamplesAcquiredCalledSinceRunStart,nPositions);
-                set(self.ProgressBarPatch, ...
-                    'XData',xOffset+[0 barWidth barWidth 0 0], ...
-                    'YData',[0 0 1 1 0], ...
-                    'Visible','on');
-                set(self.ProgressBarAxes, ...                
-                    'Visible','on');
             else
                 set(self.ProgressBarPatch, ...
                     'XData',[0 0 0 0 0], ...
@@ -1497,8 +1501,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % Want this to be as fast as possible, so we just update the
             % bare minimum
             model=self.Model;
-            state=model.State;
-            if state==ws.ApplicationState.AcquiringContinuously ,
+            if model.IsContinuous ,
                 self.updateProgressBarProperties_();
             end
         end

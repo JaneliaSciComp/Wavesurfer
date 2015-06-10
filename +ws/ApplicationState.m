@@ -7,8 +7,7 @@ classdef ApplicationState < int32
         % If in any othe modes below, implies that the MDF has been
         % specified
         Idle(2);  % Not doing much of anything
-        AcquiringSweepBased(3);     % Running a standard acq set with one or more acqs
-        AcquiringContinuously(4);        % Continuously acquire until the user interrupts
+        Running(3);     % Acquiring
         TestPulsing(5);  % Running a test pulse
     end
     
@@ -21,10 +20,8 @@ classdef ApplicationState < int32
                     out = 'No MDF';
                 case ws.ApplicationState.Idle
                     out = 'Idle';
-                case ws.ApplicationState.AcquiringSweepBased
-                    out = 'Acquiring (sweep-based)';
-                case ws.ApplicationState.AcquiringContinuously
-                    out = 'Acquiring (continuous)';
+                case ws.ApplicationState.Running
+                    out = 'Running';
                 case ws.ApplicationState.TestPulsing
                     out = 'Test Pulsing';
                 otherwise
@@ -40,10 +37,8 @@ classdef ApplicationState < int32
                     out = 'NoMDF';
                 case ws.ApplicationState.Idle
                     out = 'Idle';
-                case ws.ApplicationState.AcquiringSweepBased
-                    out = 'AcquiringSweepBased)';
-                case ws.ApplicationState.AcquiringContinuously
-                    out = 'AcquiringContinuously';
+                case ws.ApplicationState.Running
+                    out = 'Running';
                 case ws.ApplicationState.TestPulsing
                     out = 'TestPulsing';
                 otherwise
@@ -51,9 +46,9 @@ classdef ApplicationState < int32
             end
         end
         
-        function out = num2str(self)  % deprecated
-            out = toTitleString(self);
-        end
+%         function out = num2str(self)  % deprecated
+%             out = toTitleString(self);
+%         end
     end  % methods
     
     methods (Static=true)

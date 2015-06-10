@@ -168,7 +168,7 @@ classdef Ephys < ws.system.Subsystem
         end
         
         %%
-        function didAbortRun(self) %#ok<INUSD>
+        function didAbortRun(self) %#ok<MANU>
         end
         
         function didSetAcquisitionSampleRate(self,newValue)

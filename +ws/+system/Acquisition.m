@@ -844,13 +844,25 @@ classdef Acquisition < ws.system.Subsystem
             keyboard
         end
         
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
+        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;
-            if state == ws.ApplicationState.AcquiringContinuously ,
+            if isSweepBased ,
+                % add data to cache
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawAnalogData,1);
+                jf=j0+n-1;
+                self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                self.IndexOfLastScanInCache_ = jf ;
+                self.NScansFromLatestCallback_ = n ;                
+                if jf == size(self.RawAnalogDataCache_,1) ,
+                     self.IsAllDataInCacheValid_ = true;
+                end
+            else                
                 % Add data to cache, wrapping around if needed
                 j0=self.IndexOfLastScanInCache_ + 1;
                 n=size(rawAnalogData,1);
@@ -880,20 +892,6 @@ classdef Acquisition < ws.system.Subsystem
                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
                 end
                 self.NScansFromLatestCallback_ = n ;
-            elseif state == ws.ApplicationState.AcquiringSweepBased ,
-                % add data to cache
-                j0=self.IndexOfLastScanInCache_ + 1;
-                n=size(rawAnalogData,1);
-                jf=j0+n-1;
-                self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-                self.IndexOfLastScanInCache_ = jf ;
-                self.NScansFromLatestCallback_ = n ;                
-                if jf == size(self.RawAnalogDataCache_,1) ,
-                     self.IsAllDataInCacheValid_ = true;
-                end
-            else
-                % do nothing
             end
         end  % function
         

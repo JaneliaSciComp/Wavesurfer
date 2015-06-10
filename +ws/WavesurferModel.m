@@ -616,11 +616,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 me.rethrow();
             end
             
-            if self.IsSweepBased ,
-                self.State = ws.ApplicationState.AcquiringSweepBased ;
-            else
-                self.State = ws.ApplicationState.AcquiringContinuously ;
-            end
+            self.State = ws.ApplicationState.Running ;
             
             % Handle timing stuff
             self.TimeOfLastWillPerformSweep_=[];
@@ -893,12 +889,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
-                state = self.State_ ;
+                %state = self.State_ ;
+                isSweepBased = self.IsSweepBased_ ;
                 t = self.t_;
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
                     if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.dataIsAvailable(state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
+                        self.Subsystems_{idx}.dataIsAvailable(isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
                     end
                     %T(idx)=toc;
                 end
