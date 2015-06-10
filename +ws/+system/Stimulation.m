@@ -467,7 +467,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-        function willPerformRun(self, wavesurferObj, runMode) %#ok<INUSD>
+        function willPerformRun(self, wavesurferObj, desiredApplicationState) %#ok<INUSD>
             %fprintf('Stimulation::willPerformRun()\n');
             %errors = [];
             %abort = false;
