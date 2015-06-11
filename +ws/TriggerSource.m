@@ -309,7 +309,12 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
         
         function teardown(self)
             if ~isempty(self.CounterTask_) ,
-                self.CounterTask_.stop();
+                try
+                    self.CounterTask_.stop();
+                catch me  %#ok<NASGU>
+                    % if there's a problem, can't really do much about
+                    % it...
+                end
             end
             %delete(self.CounterTask_);  % do we need to explicitly delete?  self.CounterTask_ is not a DABS task...
             self.CounterTask_ = [];
@@ -337,10 +342,10 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
     end  % public methods
     
     methods
-        function pollingTimerFired(self,timeSinceSweepStart)
+        function poll(self,timeSinceSweepStart)
             % Call the task to do the real work
             if ~isempty(self.CounterTask_) ,
-                self.CounterTask_.pollingTimerFired(timeSinceSweepStart);
+                self.CounterTask_.poll(timeSinceSweepStart);
             end
         end
     end    

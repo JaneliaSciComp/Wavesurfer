@@ -1,7 +1,7 @@
 classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     properties
         SweepBasedAcquisitionPanel
-        UseASAPTriggeringCheckbox
+        %UseASAPTriggeringCheckbox
         SweepBasedAcquisitionSchemeText
         SweepBasedAcquisitionSchemePopupmenu
         
@@ -79,10 +79,10 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Acquisition');
-            self.UseASAPTriggeringCheckbox = ...
-                uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
-                          'Style','checkbox', ...
-                          'String','Use ASAP triggering');
+%             self.UseASAPTriggeringCheckbox = ...
+%                 uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Use ASAP triggering');
             self.SweepBasedAcquisitionSchemeText = ...
                 uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
                           'Style','text', ...
@@ -315,17 +315,17 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             positionPopupmenuAndLabelBang(self.SweepBasedAcquisitionSchemeText,self.SweepBasedAcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
 
-            % Checkbox
-            checkboxFullExtent=get(self.UseASAPTriggeringCheckbox,'Extent');
-            checkboxExtent=checkboxFullExtent(3:4);
-            checkboxPosition=get(self.UseASAPTriggeringCheckbox,'Position');
-            checkboxXOffset=rulerXOffset;
-            checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
-            checkboxHeight=checkboxPosition(4);
-            checkboxYOffset=popupmenuYOffset-heightFromPopupmenuToRest-checkboxHeight;  % panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-checkboxHeight;            
-            set(self.UseASAPTriggeringCheckbox, ...
-                'Position',[checkboxXOffset checkboxYOffset ...
-                            checkboxWidth checkboxHeight]);            
+%             % Checkbox
+%             checkboxFullExtent=get(self.UseASAPTriggeringCheckbox,'Extent');
+%             checkboxExtent=checkboxFullExtent(3:4);
+%             checkboxPosition=get(self.UseASAPTriggeringCheckbox,'Position');
+%             checkboxXOffset=rulerXOffset;
+%             checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
+%             checkboxHeight=checkboxPosition(4);
+%             checkboxYOffset=popupmenuYOffset-heightFromPopupmenuToRest-checkboxHeight;  % panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-checkboxHeight;            
+%             set(self.UseASAPTriggeringCheckbox, ...
+%                 'Position',[checkboxXOffset checkboxYOffset ...
+%                             checkboxWidth checkboxHeight]);            
         end  % function
     end
 
@@ -483,11 +483,11 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             
             set(self.SweepBasedAcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
             
-            acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
+            %acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
             isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
             isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
-            set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
-            set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~acquisitionUsesASAPTriggering));
+            %set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
+            set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~isSweepBased));
             set(self.SweepBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
@@ -505,7 +505,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             import ws.utility.setPopupMenuItemsAndSelectionBang
             import ws.utility.onIff
-            set(self.UseASAPTriggeringCheckbox,'Value',model.AcquisitionUsesASAPTriggering);
+            %set(self.UseASAPTriggeringCheckbox,'Value',model.AcquisitionUsesASAPTriggering);
             rawMenuItems={model.Sources.Name model.Destinations.Name};
             rawCurrentItem=model.AcquisitionTriggerScheme.Target.Name;
             setPopupMenuItemsAndSelectionBang(self.SweepBasedAcquisitionSchemePopupmenu, ...

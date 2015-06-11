@@ -13,7 +13,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end
     
     properties (AbortSet = true, Dependent = true)
-        AcquisitionUsesASAPTriggering  % bound to a checkbox
+        %AcquisitionUsesASAPTriggering  % bound to a checkbox
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
     end
@@ -41,7 +41,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end
     
     properties (GetAccess=public, SetAccess=immutable, Transient=true)
-        MinDurationBetweenSweepsIfNotASAP = 0.25  % seconds
+        %MinDurationBetweenSweepsIfNotASAP = 0.25  % seconds
     end
     
     properties (Access=protected, Transient=true)
@@ -49,7 +49,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end
 
     properties (Access=protected)
-        AcquisitionUsesASAPTriggering_ = true
+        %AcquisitionUsesASAPTriggering_ = true
         StimulationUsesAcquisitionTriggerScheme_ = true
     end
 
@@ -355,48 +355,66 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-        function startMeMaybe(self, runMode, nSweepsInSet, nSweepsCompletedInSet) %#ok<INUSL>
+%         function startMeMaybe(self, runMode, nSweepsInSet, nSweepsCompletedInSet) %#ok<INUSL>
+%             % This gets called once per sweep, to start() all the relevant
+%             % triggers.  But self.AcquisitionUsesASAPTriggering determines
+%             % whether we start the triggers for each sweep, or only for the
+%             % first sweep.
+%             
+%             % Start the trigger tasks, if appropriate
+%             if self.AcquisitionUsesASAPTriggering ,
+%                 % In this case, start the acq & stim trigger tasks on
+%                 % each sweep.
+%                 self.startAllDistinctSweepBasedTriggerTasks_();
+%             else
+%                 % Using "ballistic" triggering
+%                 if nSweepsCompletedInSet==0 ,
+%                     % For the first sweep in the set, need to start the
+%                     % acq task (if internal), and also the stim task,
+%                     % if it's internal but distinct.
+%                     self.startAllDistinctSweepBasedTriggerTasks_();
+%                 end
+%             end
+%                 
+%             % Pulse the master trigger, if appropriate
+%             if self.AcquisitionUsesASAPTriggering ,
+%                 % In this case, start the acq & stim trigger tasks on
+%                 % each sweep.
+%                 self.pulseMasterTrigger();
+%             else
+%                 % Using "ballistic" triggering
+%                 if nSweepsCompletedInSet==0 ,
+%                     % For the first sweep in the set, need to start the
+%                     % acq task (if internal), and also the stim task,
+%                     % if it's internal but distinct.
+%                     self.pulseMasterTrigger();
+%                 end
+%             end
+%             
+%             % Notify the WSM, which starts the polling timer
+%             if nSweepsCompletedInSet==0 ,
+%                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
+%             end            
+%         end  % function
+
+        function startAllTriggerTasksAndPulseMasterTrigger(self)
             % This gets called once per sweep, to start() all the relevant
             % triggers.  But self.AcquisitionUsesASAPTriggering determines
             % whether we start the triggers for each sweep, or only for the
             % first sweep.
             
-            % Start the trigger tasks, if appropriate
-            if self.AcquisitionUsesASAPTriggering ,
-                % In this case, start the acq & stim trigger tasks on
-                % each sweep.
-                self.startAllDistinctSweepBasedTriggerTasks_();
-            else
-                % Using "ballistic" triggering
-                if nSweepsCompletedInSet==0 ,
-                    % For the first sweep in the set, need to start the
-                    % acq task (if internal), and also the stim task,
-                    % if it's internal but distinct.
-                    self.startAllDistinctSweepBasedTriggerTasks_();
-                end
-            end
+            % Start the acq & stim trigger tasks
+            self.startAllDistinctSweepBasedTriggerTasks_();
                 
-            % Pulse the master trigger, if appropriate
-            if self.AcquisitionUsesASAPTriggering ,
-                % In this case, start the acq & stim trigger tasks on
-                % each sweep.
-                self.pulseMasterTrigger();
-            else
-                % Using "ballistic" triggering
-                if nSweepsCompletedInSet==0 ,
-                    % For the first sweep in the set, need to start the
-                    % acq task (if internal), and also the stim task,
-                    % if it's internal but distinct.
-                    self.pulseMasterTrigger();
-                end
-            end
+            % Pulse the master trigger
+            self.pulseMasterTrigger();
             
-            % Notify the WSM, which starts the polling timer
-            if nSweepsCompletedInSet==0 ,
-                self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
-            end            
+%             % Notify the WSM, which starts the polling timer
+%             if nSweepsCompletedInSet==0 ,
+%                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
+%             end            
         end  % function
-
+        
         function startAllDistinctSweepBasedTriggerTasks_(self)
             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes) ,
@@ -455,42 +473,37 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function willPerformRun(self)
             self.setupMasterTriggerTask();            
-%             if runMode == ws.ApplicationState.AcquiringSweepBased ,
-                if self.AcquisitionUsesASAPTriggering ,
-                    % do nothing --- will arm for each sweep
-                else
-                    self.setupInternalSweepBasedTriggers();
-                end
+%             if self.AcquisitionUsesASAPTriggering ,
+%                 % do nothing --- will arm for each sweep
 %             else
-%                 % Continuous acq
-%                 assert(~isempty(self.ContinuousModeTriggerScheme.Target), ...
-%                        'Continuous acquisition mode requires a properly configured trigger scheme.');
-%                 self.ContinuousModeTriggerScheme.setup();
+%                 self.setupInternalSweepBasedTriggers();
 %             end
         end  % function
         
         function willPerformSweep(self)
-            if self.AcquisitionUsesASAPTriggering ,
-            %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
-                self.setupInternalSweepBasedTriggers();
-            end
+%             if self.AcquisitionUsesASAPTriggering ,
+%                 self.setupInternalSweepBasedTriggers();
+%             end
+            self.setupInternalSweepBasedTriggers();
         end  % function
 
-        function didPerformSweep(self)
+        function didCompleteSweep(self)
             %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
-            if self.AcquisitionUsesASAPTriggering ,
-                self.teardownInternalSweepBasedTriggers();
-            end
+%             if self.AcquisitionUsesASAPTriggering ,
+%                 self.teardownInternalSweepBasedTriggers();
+%             end
+            self.teardownInternalSweepBasedTriggers();            
         end  % function
         
         function didAbortSweep(self)
             %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
-            if self.AcquisitionUsesASAPTriggering ,
-                self.teardownInternalSweepBasedTriggers();
-            end
+%             if self.AcquisitionUsesASAPTriggering ,
+%                 self.teardownInternalSweepBasedTriggers();
+%             end
+            self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didPerformRun(self)
+        function didCompleteRun(self)
             self.teardownInternalSweepBasedTriggers();
         end  % function
         
@@ -517,8 +530,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
-                if self.AcquisitionUsesASAPTriggering ,
-                    % overridden by AcquisitionUsesASAPTriggering, do nothing
+                if self.Parent.IsSweepBased ,
+                    % overridden by IsSweepBased, do nothing
                 else
                     self.validatePropArg(newValue,'StimulationUsesAcquisitionTriggerScheme');
                     self.StimulationUsesAcquisitionTriggerScheme_ = newValue;
@@ -530,45 +543,46 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
         
         function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            if self.AcquisitionUsesASAPTriggering ,
+            %if self.AcquisitionUsesASAPTriggering ,
+            if self.Parent.IsSweepBased ,
                 value=true;
             else
                 value=self.StimulationUsesAcquisitionTriggerScheme_;
             end
         end  % function
         
-        function set.AcquisitionUsesASAPTriggering(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                % Can only change this if the trigger scheme is internal
-                if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsSweepBased) ,
-                    if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
-                        self.AcquisitionUsesASAPTriggering_ = logical(newValue);
-                        self.syncTriggerSourcesFromTriggeringState_();
-                        self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-                        self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-                    else
-                        error('most:Model:invalidPropVal','Invalid value for AcquisitionUsesASAPTriggering.');
-                    end
-                end
-            end
-            self.broadcast('Update');
-        end  % function
-
-        function value=get.AcquisitionUsesASAPTriggering(self)
-            if self.AcquisitionTriggerScheme.IsInternal ,
-                if isempty(self.Parent) ,
-                    value = self.AcquisitionUsesASAPTriggering_ ;
-                else
-                    if self.Parent.IsSweepBased ,
-                        value = self.AcquisitionUsesASAPTriggering_ ;
-                    else
-                        value = false;
-                    end
-                end
-            else
-                value = false;
-            end
-        end  % function
+%         function set.AcquisitionUsesASAPTriggering(self,newValue)
+%             if ws.utility.isASettableValue(newValue) ,
+%                 % Can only change this if the trigger scheme is internal
+%                 if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsSweepBased) ,
+%                     if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
+%                         self.AcquisitionUsesASAPTriggering_ = logical(newValue);
+%                         self.syncTriggerSourcesFromTriggeringState_();
+%                         self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+%                         self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+%                     else
+%                         error('most:Model:invalidPropVal','Invalid value for AcquisitionUsesASAPTriggering.');
+%                     end
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
+% 
+%         function value=get.AcquisitionUsesASAPTriggering(self)
+%             if self.AcquisitionTriggerScheme.IsInternal ,
+%                 if isempty(self.Parent) ,
+%                     value = self.AcquisitionUsesASAPTriggering_ ;
+%                 else
+%                     if self.Parent.IsSweepBased ,
+%                         value = self.AcquisitionUsesASAPTriggering_ ;
+%                     else
+%                         value = false;
+%                     end
+%                 end
+%             else
+%                 value = false;
+%             end
+%         end  % function
 
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
             wavesurferModel=self.Parent;
@@ -604,6 +618,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             %fprintf('Triggering::didSetIsSweepBased()\n');
             self.syncTriggerSourcesFromTriggeringState_();
             self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+            self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
             %self.syncIntervalAndRepeatCountListeners_();
         end  % function 
         
@@ -624,7 +639,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             defineDefaultPropertyAttributes@ws.system.Subsystem(self);            
             %self.setPropertyAttributeFeatures('AcquisitionUsesSweepTrigger', 'Classes', 'logical', 'Attributes', {'scalar'});
             self.setPropertyAttributeFeatures('StimulationUsesAcquisitionTriggerScheme', 'Classes', 'logical', 'Attributes', {'scalar'});
-            self.setPropertyAttributeFeatures('AcquisitionUsesASAPTriggering', 'Classes', 'logical', 'Attributes', {'scalar'});
+            %self.setPropertyAttributeFeatures('AcquisitionUsesASAPTriggering', 'Classes', 'logical', 'Attributes', {'scalar'});
         end  % function
         
         function defineDefaultPropertyTags(self)
@@ -734,45 +749,30 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
             
         function releaseCurrentTriggerSources_(self)
-%             if self.Parent.IsSweepBased ,
-                if self.AcquisitionTriggerScheme.IsInternal ,
-                    if self.AcquisitionUsesASAPTriggering ,
-                        self.AcquisitionTriggerScheme.Target.releaseInterval();
-                        self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
-                    else
-                        self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
-                        self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
-                    end
-                end
-%             elseif self.Parent.IsContinuous ,
-%                 if self.ContinuousModeTriggerScheme.IsInternal ,
-%                     self.ContinuousModeTriggerScheme.Target.releaseInterval();
-%                     self.ContinuousModeTriggerScheme.Target.releaseRepeatCount();
-%                 end
-%             end            
+            if self.AcquisitionTriggerScheme.IsInternal ,
+                %if self.AcquisitionUsesASAPTriggering ,
+                    self.AcquisitionTriggerScheme.Target.releaseInterval();
+                    self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
+                %else
+                %    self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
+                %    self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
+                %end
+            end
         end  % function
         
         function syncTriggerSourcesFromTriggeringState_(self)
-%            if self.Parent.IsSweepBased ,
-                if self.AcquisitionTriggerScheme.IsInternal ,
-                    if self.AcquisitionUsesASAPTriggering ,
-                        self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
-                        self.AcquisitionTriggerScheme.Target.overrideInterval(0.01);
-                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(1);
-                    else
-                        self.AcquisitionTriggerScheme.Target.releaseInterval();
-                        self.AcquisitionTriggerScheme.Target.placeLowerLimitOnInterval( ...
-                            self.Parent.Acquisition.Duration+self.MinDurationBetweenSweepsIfNotASAP );
-                        self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NSweepsPerRun);
-                    end
-                end
-%             elseif self.Parent.IsContinuous ,
-%                 if self.ContinuousModeTriggerScheme.IsInternal ,
-%                     self.ContinuousModeTriggerScheme.Target.releaseLowerLimitOnInterval();
-%                     self.ContinuousModeTriggerScheme.Target.overrideInterval(0.01);
-%                     self.ContinuousModeTriggerScheme.Target.overrideRepeatCount(1);
-%                 end
-%             end
+            if self.AcquisitionTriggerScheme.IsInternal ,
+                %if self.AcquisitionUsesASAPTriggering ,
+                    self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
+                    self.AcquisitionTriggerScheme.Target.overrideInterval(0.01);
+                    self.AcquisitionTriggerScheme.Target.overrideRepeatCount(1);
+                %else
+                %    self.AcquisitionTriggerScheme.Target.releaseInterval();
+                %    self.AcquisitionTriggerScheme.Target.placeLowerLimitOnInterval( ...
+                %        self.Parent.Acquisition.Duration+self.MinDurationBetweenSweepsIfNotASAP );
+                %    self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NSweepsPerRun);
+                %end
+            end
         end  % function
         
 %         function syncIntervalAndRepeatCountListeners_(self)
@@ -814,16 +814,16 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             s = ws.system.Subsystem.propertyAttributes();
 
             s.StimulationUsesAcquisitionTriggerScheme = struct('Classes','binarylogical');
-            s.AcquisitionUsesASAPTriggering = struct('Classes','binarylogical');
+            %s.AcquisitionUsesASAPTriggering = struct('Classes','binarylogical');
 
         end  % function
     end  % class methods block
         
     methods
-        function pollingTimerFired(self,timeSinceSweepStart)
+        function poll(self,timeSinceSweepStart)
             % Call the task to do the real work
-            self.AcquisitionTriggerScheme.pollingTimerFired(timeSinceSweepStart);
-            self.StimulationTriggerScheme.pollingTimerFired(timeSinceSweepStart);
+            self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
+            self.StimulationTriggerScheme.poll(timeSinceSweepStart);
         end
     end    
 end

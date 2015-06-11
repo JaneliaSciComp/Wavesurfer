@@ -38,7 +38,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         TheFiniteAnalogOutputTask_ = []
         TheFiniteDigitalOutputTask_ = []
         TheUntimedDigitalOutputTask_ = []
-        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didPerformRun())
+        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didCompleteRun())
         IsArmedOrStimulating_ = false
         IsWithinRun_ = false                       
         TriggerScheme_ = ws.TriggerScheme.empty()
@@ -533,8 +533,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.IsWithinRun_=true;
         end  % willPerformRun() function
         
-        function didPerformRun(self)
-            %fprintf('Stimulation::didPerformRun()\n');
+        function didCompleteRun(self)
+            %fprintf('Stimulation::didCompleteRun()\n');
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();
             
@@ -633,8 +633,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             end
 %         end  % function
         
-        function didPerformSweep(self)  %#ok<MANU>
-            %fprintf('Stimulation::didPerformSweep()\n');            
+        function didCompleteSweep(self)  %#ok<MANU>
+            %fprintf('Stimulation::didCompleteSweep()\n');            
         end
         
         function didAbortSweep(self)
@@ -1148,14 +1148,14 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % class methods block
     
     methods
-        function pollingTimerFired(self,timeSinceSweepStart)
+        function poll(self,timeSinceSweepStart)
             % Call the task to do the real work
             if self.IsArmedOrStimulating_ ,
                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                    self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceSweepStart);
+                    self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
                 end
                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-                    self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceSweepStart);
+                    self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
                 end
             end
         end

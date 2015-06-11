@@ -162,10 +162,10 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             end
         end  % function       
 
-        function UseASAPTriggeringCheckboxActuated(self,source,event)  %#ok<INUSD>
-            value=logical(get(source,'Value'));
-            self.Model.AcquisitionUsesASAPTriggering=value;
-        end  % function
+%         function UseASAPTriggeringCheckboxActuated(self,source,event)  %#ok<INUSD>
+%             value=logical(get(source,'Value'));
+%             self.Model.AcquisitionUsesASAPTriggering=value;
+%         end  % function
 
         function SweepBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);

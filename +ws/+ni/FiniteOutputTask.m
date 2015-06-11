@@ -314,8 +314,8 @@ classdef FiniteOutputTask < handle
             end
         end  % function   
         
-        function pollingTimerFired(self,timeSinceSweepStart) %#ok<INUSD>
-            %fprintf('FiniteOutputTask::pollingTimerFired()\n');
+        function poll(self,timeSinceSweepStart) %#ok<INUSD>
+            %fprintf('FiniteOutputTask::poll()\n');
             if isempty(self.DabsDaqTask_)
                 % This means there are no channels, so nothing to do
             else

@@ -164,7 +164,7 @@ classdef Ephys < ws.system.Subsystem
         end
         
         %%
-        function didPerformRun(self) %#ok<MANU>
+        function didCompleteRun(self) %#ok<MANU>
         end
         
         %%

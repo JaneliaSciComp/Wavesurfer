@@ -97,7 +97,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         MinimumPollingDt_
         TimeOfLastPollInSweep_
         ClockAtRunStart_
-        DoContinuePolling_
+        %DoContinuePolling_
+        IsSweepComplete_
+        WasRunStoppedByUser_        
+        WasExceptionThrown_
+        ThrownException_
     end
     
     events
@@ -171,7 +175,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                                        'Period',0.100, ...
 %                                        'BusyMode','drop', ...
 %                                        'ObjectVisibility','off');
-%             %                           'TimerFcn',@(timer,timerStruct)(self.pollingTimerFired_()), ...
+%             %                           'TimerFcn',@(timer,timerStruct)(self.poll_()), ...
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
             % The object is now initialized, but not very useful until an
@@ -224,13 +228,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function play(self)
             % Start a run without recording data to disk.
             self.Logging.Enabled = false ;
-            self.runWithGuards_() ;
+            self.run_() ;
         end
         
         function record(self)
             % Start a run, recording data to disk.
             self.Logging.Enabled = true ;
-            self.runWithGuards_() ;
+            self.run_() ;
         end
 
         function stop(self)
@@ -241,7 +245,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 % do nothing
             else
                 % Actually stop the ongoing sweep
-                self.abortSweepAndRun_('user');
+                %self.abortSweepAndRun_('user');
+                self.WasRunStoppedByUser_ = true ;
             end
         end
     end  % methods
@@ -460,7 +465,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Called by the acq subsystem when it's done acquiring for the
             % sweep.
             %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
-            self.wrapUpSweepMaybe_();            
+            self.checkIfSweepIsComplete_();            
         end  % function
         
         function stimulationEpisodeComplete(self)
@@ -469,15 +474,15 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.wrapUpSweepMaybe_();
+            self.checkIfSweepIsComplete_();
         end  % function
         
         function internalStimulationCounterTriggerTaskComplete(self)
             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            self.wrapUpSweepMaybe_();
+            self.checkIfSweepIsComplete_();
         end
         
-        function wrapUpSweepMaybe_(self)
+        function checkIfSweepIsComplete_(self)
             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
             % depending on the states of the Acquisition, Stimulation, and
             % Triggering subsystems.  Generally speaking, we want to make
@@ -489,7 +494,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
                     else
-                        self.cleanUpAfterSweepAndDaisyChainNextAction_();
+                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+                        self.IsSweepComplete_ = true ;
                     end
                 else
                     % acq and stim trig sources are distinct
@@ -498,7 +504,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     if self.Acquisition.IsArmedOrAcquiring ,
                         % do nothing
                     else
-                        self.cleanUpAfterSweepAndDaisyChainNextAction_();
+                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+                        self.IsSweepComplete_ = true ;
                     end
                 end
             else
@@ -506,7 +513,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 if self.Acquisition.IsArmedOrAcquiring , 
                     % do nothing
                 else
-                    self.cleanUpAfterSweepAndDaisyChainNextAction_();
+                    %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+                    self.IsSweepComplete_ = true ;
                 end
             end            
         end  % function
@@ -562,24 +570,23 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end  % methods
     
     methods (Access = protected)
-        function runWithGuards_(self)
-            % Start a run.
-            
-            if self.State == ws.ApplicationState.Idle ,
-                try
-                    self.run_();
-                catch me
-                    self.abortSweepAndRun_('problem');
-                    me.rethrow();
-                end
-            else
-                % ignore
-            end
-        end
+%         function runWithGuards_(self)
+%             % Start a run.
+%             
+%             if self.State == ws.ApplicationState.Idle ,
+%                 self.run_();
+%             else
+%                 % ignore
+%             end
+%         end
         
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
-            
+
+            if self.State ~= ws.ApplicationState.Idle ,
+                return
+            end
+
             self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
@@ -618,7 +625,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     end
                 end
             catch me
-                self.abortRun_('problem');
+                self.cleanUpAfterAbortedRun_('problem');
                 self.changeReadiness(+1);
                 me.rethrow();
             end
@@ -633,19 +640,35 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.changeReadiness(+1);
 
-            % Move on to performing the first (and perhaps only) sweep
-            self.performSweep_();
+            % Move on to performing the sweeps
+            didCompleteLastSweep = true ;
+            didUserStop = false ;
+            didThrow = false ;
+            exception = [] ;
+            for iSweep = 1:self.NSweepsPerRun ,
+                if didCompleteLastSweep ,
+                    [didCompleteLastSweep,didUserStop,didThrow,exception] = self.performSweep_() ;
+                end
+            end
+            
+            % Do some kind of clean up
+            if didCompleteLastSweep ,
+                self.cleanUpAfterCompletedRun_();
+            else
+                % do something else                
+                reason = ws.utility.fif(didUserStop, 'user', 'problem') ;
+                self.cleanUpAfterAbortedRun_(reason);
+            end
+            
+            % If an exception was thrown, re-throw it
+            if didThrow ,
+                rethrow(exception) ;
+            end
         end  % function
         
-        function performSweep_(self)
-            %fprintf('WavesurferModel::performSweep_()\n');            
-            %dbstack
-            % time between subsequent calls to this
+        function [didCompleteSweep,didUserStop,didThrow,exception] = performSweep_(self)
+            % time between subsequent calls to this, etc
             t=toc(self.FromRunStartTicId_);
-            %if ~isempty(self.TimeOfLastWillPerformSweep_) ,
-            %    dt=t-self.TimeOfLastWillPerformSweep_;
-            %    fprintf('Interval between calls to WavesurferModel.performSweep_(): %0.3f\n', dt);                
-            %end
             self.TimeOfLastWillPerformSweep_=t;
             
             % clear timing stuff that is strictly within-sweep
@@ -666,49 +689,67 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctionsAndBroadcastEvent_('sweepWillStart');            
             
             % Call willPerformSweep() on all the enabled subsystems
-            for idx = 1:numel(self.Subsystems_)
-                try
+            try
+                for idx = 1:numel(self.Subsystems_)
                     if self.Subsystems_{idx}.Enabled ,
                         self.Subsystems_{idx}.willPerformSweep();
                     end
-                catch me
-                    % Unwind those systems that did prepare.
-                    self.abortSweepAndRun_('problem',idx - 1);
-                    me.rethrow();
                 end
+
+                % Set the sweep timer
+                self.FromSweepStartTicId_=tic();
+
+                %% Start the timer that will poll for data and task doneness
+                %self.PollingTimer_.start();
+
+                % Any system waiting for an internal or external trigger was armed and waiting
+                % in the subsystem willPerformSweep() above.
+                %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
+                self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
+
+                % Now poll
+                [didCompleteSweep,didUserStop] = self.runPollingLoop_();
+
+                % When done, clean up after sweep
+                if didCompleteSweep ,
+                    self.cleanUpAfterCompletedSweep_();
+                else
+                    self.cleanUpAfterAbortedSweep_();
+                end
+                
+                % No errors thrown, so set return values accordingly
+                didThrow = false ;  
+                exception = [] ;
+            catch me
+                self.cleanUpAfterAbortedSweep_();
+                didCompleteSweep = false ;
+                didUserStop = false ;
+                didThrow = true ;
+                exception = me ;
+                return
             end
-
-            % Set the sweep timer
-            self.FromSweepStartTicId_=tic();
-
-            %% Start the timer that will poll for data and task doneness
-            %self.PollingTimer_.start();
-                        
-            % Any system waiting for an internal or external trigger was armed and waiting
-            % in the subsystem willPerformSweep() above.
-            self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
         end  % function
 
-        function cleanUpAfterSweepAndDaisyChainNextAction_(self)
-            %fprintf('WavesurferModel::cleanUpAfterSweepAndDaisyChainNextAction_()\n');
-            %dbstack
-
-            % clean up after the sweep
-            self.cleanUpAfterSweep_() ;
-            
-            % Daisy-chain another sweep, or wrap up the run,
-            % depending
-            self.daisyChainNextAction_();
-        end  % function
+%         function cleanUpAfterSweepAndDaisyChainNextAction_(self)
+%             %fprintf('WavesurferModel::cleanUpAfterSweepAndDaisyChainNextAction_()\n');
+%             %dbstack
+% 
+%             % clean up after the sweep
+%             self.cleanUpAfterSweep_() ;
+%             
+%             % Daisy-chain another sweep, or wrap up the run,
+%             % depending
+%             self.daisyChainNextAction_();
+%         end  % function
         
-        function cleanUpAfterSweep_(self)
+        function cleanUpAfterCompletedSweep_(self)
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');
             %dbstack
             
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didPerformSweep();
+                    self.Subsystems_{idx}.didCompleteSweep();
                 end
             end
             
@@ -717,110 +758,106 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % Call user functions and broadcast
             self.callUserFunctionsAndBroadcastEvent_('sweepDidComplete');
-        end
-        
-        function daisyChainNextAction_(self)
-            %fprintf('WavesurferModel::daisyChainNextAction_()\n');
-            %dbstack
-            
-            % Daisy-chain another sweep, or wrap up the run,
-            % depending
-            if self.Stimulation.Enabled ,
-                if self.Triggering.StimulationTriggerScheme.IsExternal ,
-                    if self.Triggering.AcquisitionTriggerScheme.IsExternal ,
-                        % stim, acq are both external
-                        if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-                            % stim, acq are both external, and are
-                            % identical
-                            self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-                        else
-                            % stim, acq are both external, but are distinct
-                            % In this case, we never declare the exp done, but we
-                            % might daisy chain another sweep.
-                            if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-                                self.performSweep_();
-                            else
-                                % do nothing
-                            end
-                        end
-                    else
-                        % stim external, acq internal
-                        % In this case, we never declare the exp done, but we
-                        % might daisy chain another sweep.
-                        if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-                            self.performSweep_();
-                        else
-                            % do nothing
-                        end
-                    end                    
-                else
-                    % Stim triggering is internal
-                    if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-                        % Stim and acq triggers are both internal
-                        if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-                            % acq and stim trig sources are internal and identical
-                            self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-                        else
-                            % acq and stim trig sources are internal, but distinct
-                            if self.Stimulation.IsWithinRun ,
-                                if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-                                    self.performSweep_();
-                                else
-                                    % no more acq sweeps to do, but
-                                    % have to wait for stim to finish
-                                    % before run is done
-                                end                                
-                            else
-                                % stim is done, so all depends on acq
-                                self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-                            end
-                        end
-                    else
-                        % stim trig internal, acq trig external
-                        % therefore they're distinct
-                        if self.Stimulation.IsWithinRun ,
-                            if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-                                self.performSweep_();
-                            else
-                                % no more acq sweeps to do, but
-                                % have to wait for stim to finish
-                                % before run is done
-                            end                                
-                        else
-                            % stim is done, so all depends on acq
-                            self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-                        end
-                    end
-                end
-            else
-                % Stimulation subsystem is disabled
-                self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-            end            
         end  % function
         
-        function performSweepOrCleanupAfterRunDependingOnAcqOnly_(self)
-            if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-                self.performSweep_();
-            else
-                self.cleanupAfterRun_();
-            end
-        end  % function
+%         function daisyChainNextAction_(self)
+%             %fprintf('WavesurferModel::daisyChainNextAction_()\n');
+%             %dbstack
+%             
+%             % Daisy-chain another sweep, or wrap up the run,
+%             % depending
+%             if self.Stimulation.Enabled ,
+%                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
+%                     if self.Triggering.AcquisitionTriggerScheme.IsExternal ,
+%                         % stim, acq are both external
+%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                             % stim, acq are both external, and are
+%                             % identical
+%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
+%                         else
+%                             % stim, acq are both external, but are distinct
+%                             % In this case, we never declare the exp done, but we
+%                             % might daisy chain another sweep.
+%                             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
+%                                 self.performSweep_();
+%                             else
+%                                 % do nothing
+%                             end
+%                         end
+%                     else
+%                         % stim external, acq internal
+%                         % In this case, we never declare the exp done, but we
+%                         % might daisy chain another sweep.
+%                         if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
+%                             self.performSweep_();
+%                         else
+%                             % do nothing
+%                         end
+%                     end                    
+%                 else
+%                     % Stim triggering is internal
+%                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
+%                         % Stim and acq triggers are both internal
+%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                             % acq and stim trig sources are internal and identical
+%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
+%                         else
+%                             % acq and stim trig sources are internal, but distinct
+%                             if self.Stimulation.IsWithinRun ,
+%                                 if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
+%                                     self.performSweep_();
+%                                 else
+%                                     % no more acq sweeps to do, but
+%                                     % have to wait for stim to finish
+%                                     % before run is done
+%                                 end                                
+%                             else
+%                                 % stim is done, so all depends on acq
+%                                 self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
+%                             end
+%                         end
+%                     else
+%                         % stim trig internal, acq trig external
+%                         % therefore they're distinct
+%                         if self.Stimulation.IsWithinRun ,
+%                             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
+%                                 self.performSweep_();
+%                             else
+%                                 % no more acq sweeps to do, but
+%                                 % have to wait for stim to finish
+%                                 % before run is done
+%                             end                                
+%                         else
+%                             % stim is done, so all depends on acq
+%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
+%                         end
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
+%             end            
+%         end  % function
         
-        function abortSweepAndRun_(self, reason, highestIndexedSubsystemThatNeedsAbortion)
+%         function performSweepOrCleanupAfterRunDependingOnAcqOnly_(self)
+%             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
+%                 self.performSweep_();
+%             else
+%                 self.cleanupAfterRun_();
+%             end
+%         end  % function
+        
+        function cleanUpAfterAbortedSweep_(self)
             % Command to abort the current sweep, and the current run.  reason should be either
             % 'user' (meaning a user caused the sweep to stop), or
             % 'problem', meaning some problem occured.
             
-            if nargin < 3 ,
-                highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
-            end
-            
-            for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
-                if self.Subsystems_{idx}.Enabled ,
+            for i = numel(self.Subsystems_):-1:1 ,
+                if self.Subsystems_{i}.Enabled ,
                     try 
-                        self.Subsystems_{idx}.didAbortSweep();
+                        self.Subsystems_{i}.didAbortSweep();
                     catch me
-                        % In theory, Subsystem::didAbortTrail() never
+                        % In theory, Subsystem::didAbortSweep() never
                         % throws an exception
                         % But just in case, we catch it here and ignore it
                         disp(me.getReport());
@@ -830,36 +867,51 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.callUserFunctionsAndBroadcastEvent_('sweepDidAbort');
             
-            self.abortRun_(reason);
+            %self.abortRun_(reason);
         end  % function
         
-        function cleanupAfterRun_(self)
+%         function abortSweepAndRun_(self, reason, highestIndexedSubsystemThatNeedsAbortion)
+%             % Command to abort the current sweep, and the current run.  reason should be either
+%             % 'user' (meaning a user caused the sweep to stop), or
+%             % 'problem', meaning some problem occured.
+%             
+%             if nargin < 3 ,
+%                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
+%             end
+%             
+%             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
+%                 if self.Subsystems_{idx}.Enabled ,
+%                     try 
+%                         self.Subsystems_{idx}.didAbortSweep();
+%                     catch me
+%                         % In theory, Subsystem::didAbortSweep() never
+%                         % throws an exception
+%                         % But just in case, we catch it here and ignore it
+%                         disp(me.getReport());
+%                     end
+%                 end
+%             end
+%             
+%             self.callUserFunctionsAndBroadcastEvent_('sweepDidAbort');
+%             
+%             self.abortRun_(reason);
+%         end  % function
+        
+        function cleanUpAfterCompletedRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
-            %fprintf('WavesurferModel::cleanupAfterRun_()\n');                                    
-            %dbstack
-            %fprintf('\n\n');                                                
-            assert(self.State ~= ws.ApplicationState.Idle);
-            
-%             stop(self.PollingTimer_);
-%             self.PollingTimer_.TimerFcn = [] ;
-%             self.PollingTimer_.ErrorFcn = [] ;
-            self.DoContinuePolling_ = false ;  % this prevents the next iteration of the polling loop from running
-
             self.State = ws.ApplicationState.Idle;
             
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.Enabled
-                    self.Subsystems_{idx}.didPerformRun();
+                    self.Subsystems_{idx}.didCompleteRun();
                 end
             end
             
             self.callUserFunctionsAndBroadcastEvent_('runDidComplete');
         end  % function
         
-        function abortRun_(self, reason)  %#ok<INUSD>
-            self.DoContinuePolling_ = false ;  % this prevents the next iteration of the polling loop from running
-            
+        function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
             self.State = ws.ApplicationState.Idle;
             
             for idx = numel(self.Subsystems_):-1:1 ,
@@ -1011,7 +1063,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.changeReadiness(+1);
         end
     end  % methods block
-        
+    
     methods (Access=protected)
         function initializeFromMDFStructure_(self, mdfStructure)                        
             % Initialize the acquisition subsystem given the MDF data
@@ -1488,72 +1540,67 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
     end
 
-    methods
-        function triggeringSubsystemJustStartedFirstSweepInRun(self)
-            % Called by the triggering subsystem just after first sweep
-            % started.
-            
-            % This means we need to run the main polling loop.
-            self.runPollingLoop_();
-        end  % function
-    end
+%     methods
+%         function triggeringSubsystemJustStartedFirstSweepInRun(self)
+%             % Called by the triggering subsystem just after first sweep
+%             % started.
+%             
+%             % This means we need to run the main polling loop.
+%             self.runPollingLoop_();
+%         end  % function
+%     end
     
     methods (Access=protected)
-        function runPollingLoop_(self)
+        function [isSweepComplete,wasStoppedByUser] = runPollingLoop_(self)
             % Runs the main polling loop.
             
             pollingTicId = tic() ;
             pollingPeriod = 1/self.Display.UpdateRate ;
-            self.DoContinuePolling_ = true ;
+            %self.DoContinuePolling_ = true ;
+            self.IsSweepComplete_ = false ;
+            self.WasRunStoppedByUser_ = false ;
             timeOfLastPoll = toc(pollingTicId) ;
-            while self.DoContinuePolling_ ,
+            while ~(self.IsSweepComplete_ || self.WasRunStoppedByUser_) ,
                 timeNow =  toc(pollingTicId) ;
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
-                    %timeSinceLastPoll
                     timeOfLastPoll = timeNow ;
-                    %tStart = toc(pollingTicId) ;
-                    %profile resume
-                    try
-                        self.pollingTimerFired_() ;
-                    catch me
-                        self.abortSweepAndRun_('problem');
-                        rethrow(me);
-                    end
-                    %tMiddle = toc(pollingTicId) ;
-                    %fprintf('drawnow()\n');
+                    timeSinceSweepStart = toc(self.FromSweepStartTicId_);
+                    self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
+                    self.Stimulation.poll(timeSinceSweepStart);
+                    self.Triggering.poll(timeSinceSweepStart);
+                    %self.Display.poll(timeSinceSweepStart);
+                    %self.Logging.poll(timeSinceSweepStart);
+                    %self.UserFunctions.poll(timeSinceSweepStart);
                     drawnow() ;  % update, and also process any user actions
-                    %profile off
-                    %tEnd = toc(pollingTicId) ;
-                    %coreActionDuration = tMiddle-tStart ;
-                    %actionDuration = tEnd-tStart ;
-                    %fprintf('Action duration this poll was %g (core: %g)s.\n',actionDuration,coreActionDuration) ;
                 else
                     pause(0.010);  % don't want this loop to completely peg the CPU
-                end
-            end            
+                end                
+            end    
+            isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
+            wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to
         end  % function
         
-        function pollingTimerFired_(self)
-            %fprintf('\n\n\nWavesurferModel::pollingTimerFired()\n');
-            timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-            self.Acquisition.pollingTimerFired(timeSinceSweepStart,self.FromRunStartTicId_);
-            self.Stimulation.pollingTimerFired(timeSinceSweepStart);
-            self.Triggering.pollingTimerFired(timeSinceSweepStart);
-            %self.Display.pollingTimerFired(timeSinceSweepStart);
-            %self.Logging.pollingTimerFired(timeSinceSweepStart);
-            %self.UserFunctions.pollingTimerFired(timeSinceSweepStart);
-            %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
-        end
+%         function poll_(self)
+%             %fprintf('\n\n\nWavesurferModel::poll()\n');
+%             timeSinceSweepStart = toc(self.FromSweepStartTicId_);
+%             self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
+%             self.Stimulation.poll(timeSinceSweepStart);
+%             self.Triggering.poll(timeSinceSweepStart);
+%             %self.Display.poll(timeSinceSweepStart);
+%             %self.Logging.poll(timeSinceSweepStart);
+%             %self.UserFunctions.poll(timeSinceSweepStart);
+%             %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
+%         end
         
-        function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
-            %fprintf('WavesurferModel::pollTimerErrored()\n');
-            %eventData
-            %eventData.Data            
-            self.abortSweepAndRun_('problem');  % Put an end to the run
-            error('waversurfer:pollingTimerError',...
-                  'The polling timer had a problem.  Acquisition aborted.');
-        end        
+%         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
+%             %fprintf('WavesurferModel::pollTimerErrored()\n');
+%             %eventData
+%             %eventData.Data            
+%             self.abortSweepAndRun_('problem');  % Put an end to the run
+%             error('waversurfer:pollingTimerError',...
+%                   'The polling timer had a problem.  Acquisition aborted.');
+%         end        
     end
     
 end  % classdef

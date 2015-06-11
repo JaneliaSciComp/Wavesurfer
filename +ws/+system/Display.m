@@ -271,7 +271,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             self.XAutoScroll= (self.Parent.IsContinuous);
         end  % function
         
-        function didPerformRun(self)
+        function didCompleteRun(self)
             self.didPerformOrAbortRun_();
         end
         

@@ -34,7 +34,7 @@ classdef Logging < ws.system.Subsystem
     
     % These are all properties that are only used when acquisition is
     % ongoing.  They are set in willPerformRun(), and are nulled in
-    % didPerformRun() and didAbortRun()
+    % didCompleteRun() and didAbortRun()
     properties (Access = protected, Transient=true)
         CurrentRunAbsoluteFileName_
         CurrentDatasetOffset_
@@ -386,7 +386,7 @@ classdef Logging < ws.system.Subsystem
             %profile off
         end
         
-        function didPerformSweep(self)
+        function didCompleteSweep(self)
             %if wavesurferModel.State == ws.ApplicationState.AcquiringSweepBased ,
                 %self.CurrentSweepIndex_ = self.CurrentSweepIndex_ + 1 ;
                 self.NextSweepIndex = self.NextSweepIndex + 1;
@@ -411,7 +411,7 @@ classdef Logging < ws.system.Subsystem
             %end
         end
         
-        function didPerformRun(self)
+        function didCompleteRun(self)
             self.didPerformOrAbortRun_();
         end
         

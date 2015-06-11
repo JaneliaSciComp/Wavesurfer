@@ -63,7 +63,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Make it so the stim library map durations are not overridden
             % by the WavesurferModel sweep duration, which would mess things up.
-            em.Triggering.AcquisitionUsesASAPTriggering=false;
+            %em.Triggering.AcquisitionUsesASAPTriggering=false;
+            em.IsContinuous = true ;
             em.Triggering.StimulationUsesAcquisitionTriggerScheme=false;
             
             % Clear the stim lib within the WavesurferModel

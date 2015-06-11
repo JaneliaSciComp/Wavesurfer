@@ -60,7 +60,7 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
         function willPerformRun(self) %#ok<MANU>
         end
         
-        function didPerformRun(self) %#ok<MANU>
+        function didCompleteRun(self) %#ok<MANU>
         end
         
         function didAbortRun(self) %#ok<MANU>
@@ -74,7 +74,7 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
         function willPerformSweep(~)          % self
         end
         
-        function didPerformSweep(~)           % self
+        function didCompleteSweep(~)           % self
         end
         
         function didAbortSweep(~)              % self

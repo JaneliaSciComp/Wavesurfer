@@ -725,8 +725,8 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.arm();
         end  % function
         
-        function didPerformRun(self)
-            %fprintf('Acquisition::didPerformRun()\n');
+        function didCompleteRun(self)
+            %fprintf('Acquisition::didCompleteRun()\n');
             self.didPerformOrAbortRun_();
         end  % function
         
@@ -746,8 +746,8 @@ classdef Acquisition < ws.system.Subsystem
             self.DigitalInputTask_.start();
         end  % function
         
-        function didPerformSweep(self) %#ok<MANU>
-            %fprintf('Acquisition::didPerformSweep()\n');
+        function didCompleteSweep(self) %#ok<MANU>
+            %fprintf('Acquisition::didCompleteSweep()\n');
         end
         
         function didAbortSweep(self)
@@ -1070,7 +1070,7 @@ classdef Acquisition < ws.system.Subsystem
     end
     
     methods
-        function pollingTimerFired(self, timeSinceSweepStart, fromRunStartTicId)
+        function poll(self, timeSinceSweepStart, fromRunStartTicId)
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
