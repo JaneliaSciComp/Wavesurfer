@@ -46,7 +46,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.Stimulation.StimulusLibrary.SelectedOutputable=map;
 
             % attempt to output
-            model.start();
+            model.play();
             
             % wait for task to finish
             pause(3);

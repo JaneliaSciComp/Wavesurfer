@@ -29,13 +29,13 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
 
             pause(0.1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=2.5*nSweeps;  % s

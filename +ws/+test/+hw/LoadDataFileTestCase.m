@@ -28,7 +28,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            %wsModel.Logging.Enabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -66,7 +66,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             absoluteFileName = wsModel.Logging.NextRunAbsoluteFileName ;
             
             pause(1);
-            wsModel.start();  % blocking, now
+            wsModel.record();  % blocking, now
             pause(0.5);
 
             % Make sure that worked

@@ -28,13 +28,13 @@ classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
 
             nSweeps=100;
             wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration=1;  % s
 
-            wsModel.start();  % This now blocks...
+            wsModel.play();  % This now blocks...
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function

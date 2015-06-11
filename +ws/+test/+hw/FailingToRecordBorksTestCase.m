@@ -29,7 +29,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
 
             % Turn on logging
-            wsModel.Logging.Enabled=true;
+            %wsModel.Logging.Enabled=true;
 
             % set the data file name
             thisFileName=mfilename();
@@ -48,7 +48,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             
             % start the acq, which should error
             try
-                wsModel.start();
+                wsModel.record();
             catch me
                 if isequal(me.identifier,'wavesurfer:logFileAlreadyExists') ,
                     % ignore error
@@ -64,7 +64,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             pause(0.1);
             
             % start the acq, which should work this time
-            wsModel.start();
+            wsModel.record();
             
             % Wait for acq to complete
             dtBetweenChecks=0.1;  % s

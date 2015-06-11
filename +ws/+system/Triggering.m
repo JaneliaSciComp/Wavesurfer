@@ -365,14 +365,14 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             if self.AcquisitionUsesASAPTriggering ,
                 % In this case, start the acq & stim trigger tasks on
                 % each sweep.
-                self.startAllDistinctSweepBasedTriggers();
+                self.startAllDistinctSweepBasedTriggerTasks_();
             else
                 % Using "ballistic" triggering
                 if nSweepsCompletedInSet==0 ,
                     % For the first sweep in the set, need to start the
                     % acq task (if internal), and also the stim task,
                     % if it's internal but distinct.
-                    self.startAllDistinctSweepBasedTriggers();
+                    self.startAllDistinctSweepBasedTriggerTasks_();
                 end
             end
                 
@@ -397,7 +397,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end            
         end  % function
 
-        function startAllDistinctSweepBasedTriggers(self)
+        function startAllDistinctSweepBasedTriggerTasks_(self)
             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
             for idx = 1:numel(triggerSchemes) ,
                 thisTriggerScheme=triggerSchemes{idx};

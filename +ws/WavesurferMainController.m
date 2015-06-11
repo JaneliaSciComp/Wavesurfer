@@ -144,12 +144,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function play(self, varargin)
             %self.Figure.changeReadiness(-1);
             try
-                self.Model.Logging.Enabled=false;
-                if self.Model.IsSweepBased ,
-                    self.startSweepBasedAcquisition_(varargin{:});
-                else
-                    self.startContinuousAcquisition_(varargin{:});
-                end
+                self.Model.play();
             catch me
                 %self.Figure.changeReadiness(+1);
                 rethrow(me)
@@ -161,12 +156,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %profile on
             %self.Figure.changeReadiness(-1);            
             try
-                self.Model.Logging.Enabled=true;
-                if self.Model.IsSweepBased ,
-                    self.startSweepBasedAcquisition_(varargin{:});
-                else
-                    self.startContinuousAcquisition_(varargin{:});
-                end
+                self.Model.record();
             catch me
                 %self.Figure.changeReadiness(+1);
                 rethrow(me)
@@ -1122,28 +1112,28 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
-        function startSweepBasedAcquisition_(self, varargin)
-            % Action for the Start button.
-%             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
-%             progressBar.IsIndeterminate = false;
-%             progressBar.Maximum = self.Model.NSweepsPerRun;
-%             progressBar.Value = 0;
-            
-%             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
-%             if isa(f, 'System.Windows.Controls.TextBox')
-%                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, []);
-%                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, f);
-%             end
-            
-            self.Model.start();
-        end  % function
+%         function startSweepBasedAcquisition_(self, varargin)
+%             % Action for the Start button.
+% %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
+% %             progressBar.IsIndeterminate = false;
+% %             progressBar.Maximum = self.Model.NSweepsPerRun;
+% %             progressBar.Value = 0;
+%             
+% %             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
+% %             if isa(f, 'System.Windows.Controls.TextBox')
+% %                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, []);
+% %                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, f);
+% %             end
+%             
+%             self.Model.start();
+%         end  % function
         
-        function startContinuousAcquisition_(self, varargin)
-            % Action method for the Preview button
-            %progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
-            %progressBar.IsIndeterminate = true;
-            self.Model.start();
-        end  % function
+%         function startContinuousAcquisition_(self, varargin)
+%             % Action method for the Preview button
+%             %progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
+%             %progressBar.IsIndeterminate = true;
+%             self.Model.start();
+%         end  % function
                 
     end  % protected methods block
         

@@ -28,7 +28,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -55,7 +55,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=1.1*wsModel.SweepDuration;  % s
@@ -80,7 +80,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -107,7 +107,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();  % this should *not* throw an error
+            wsModel.play();  % this should *not* throw an error
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=1.1*wsModel.SweepDuration;  % s
@@ -132,7 +132,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -159,7 +159,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=1.1*wsModel.SweepDuration;  % s

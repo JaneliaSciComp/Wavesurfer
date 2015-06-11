@@ -28,13 +28,13 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=1;
             wsModel.SweepDuration=20;  % s, this actually seems to be long enough to cause crash
 
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait = 1.1*wsModel.SweepDuration ;  % s

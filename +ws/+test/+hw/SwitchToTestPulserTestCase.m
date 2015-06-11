@@ -28,7 +28,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            %wsModel.Logging.Enabled=true;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -64,7 +64,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.start();
+            wsModel.record();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=2.5*nSweeps;  % s

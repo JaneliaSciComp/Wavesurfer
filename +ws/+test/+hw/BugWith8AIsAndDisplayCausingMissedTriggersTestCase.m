@@ -28,7 +28,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            %wsModel.Logging.Enabled=true;
 
             nSweeps=10;
             wsModel.NSweepsPerRun=nSweeps;
@@ -44,7 +44,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.start();
+            wsModel.record();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=2.5*nSweeps;  % s

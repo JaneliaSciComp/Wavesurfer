@@ -221,21 +221,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             end
 %         end
         
-        function start(self)
-            % Start a run.
-            
-            if self.State == ws.ApplicationState.Idle ,
-                try
-                    self.performRun_();
-                catch me
-                    self.abortSweepAndRun_('problem');
-                    me.rethrow();
-                end
-            else
-                % ignore
-            end
+        function play(self)
+            % Start a run without recording data to disk.
+            self.Logging.Enabled = false ;
+            self.start_() ;
         end
         
+        function record(self)
+            % Start a run, recording data to disk.
+            self.Logging.Enabled = true ;
+            self.start_() ;
+        end
+
         function stop(self)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current run, if any.
@@ -565,10 +562,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end  % methods
     
     methods (Access = protected)
-        % This section of protected methods contain the subsystem API calls.  These
-        % methods assume any subsystem implements the full API.  Any subsystem that
-        % inherits from ws.subsystem.Subsystem contains default implementations for
-        % all API members.
+        function start_(self)
+            % Start a run.
+            
+            if self.State == ws.ApplicationState.Idle ,
+                try
+                    self.performRun_();
+                catch me
+                    self.abortSweepAndRun_('problem');
+                    me.rethrow();
+                end
+            else
+                % ignore
+            end
+        end
         
         function performRun_(self)
             %fprintf('WavesurferModel::performRun_()\n');     

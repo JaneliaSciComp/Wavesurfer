@@ -28,7 +28,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.Enabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            %wsModel.Logging.Enabled=false;
             wsModel.UserFunctions.ClassName='ws.examples.FlipDOFromSweepToSweep';
 
             nSweeps=5;
@@ -53,7 +53,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
             maxTimeToWait=1.1*wsModel.SweepDuration*nSweeps;  % s
