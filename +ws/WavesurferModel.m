@@ -224,13 +224,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function play(self)
             % Start a run without recording data to disk.
             self.Logging.Enabled = false ;
-            self.start_() ;
+            self.runWithGuards_() ;
         end
         
         function record(self)
             % Start a run, recording data to disk.
             self.Logging.Enabled = true ;
-            self.start_() ;
+            self.runWithGuards_() ;
         end
 
         function stop(self)
@@ -562,12 +562,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end  % methods
     
     methods (Access = protected)
-        function start_(self)
+        function runWithGuards_(self)
             % Start a run.
             
             if self.State == ws.ApplicationState.Idle ,
                 try
-                    self.performRun_();
+                    self.run_();
                 catch me
                     self.abortSweepAndRun_('problem');
                     me.rethrow();
@@ -577,8 +577,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             end
         end
         
-        function performRun_(self)
-            %fprintf('WavesurferModel::performRun_()\n');     
+        function run_(self)
+            %fprintf('WavesurferModel::run_()\n');     
             
             self.changeReadiness(-1);
             
