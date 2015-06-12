@@ -6,7 +6,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         FontWeight = 'normal';
         LineStyle = '-';
         Marker = 'none';
-        GridOn = true;
+        %GridOn = true
     end
 
     properties (Dependent=true, SetAccess=protected)
@@ -39,6 +39,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         XSpan  % the difference between the xcoord shown at the rightmost edge of the plot and XOffset
         XLim
         YLim
+        IsGridOn
     end
 
     properties (Dependent=true, Transient=true)  % not sure this needs to be transient, since it's dependent...
@@ -65,7 +66,10 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         RunningMin_ = zeros(1,0)  % length == self.NChannels
         RunningMax_ = zeros(1,0)
         RunningMean_ = zeros(1,0)
-        IsVisibleWhenDisplayEnabled_
+        IsVisibleWhenDisplayEnabled_  
+          % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
+          % "layout" part of the .cfg file.  Long-term, would be cleaner to
+          % store it here, it seems to me.
     end
     
     properties (Access = protected)
@@ -85,6 +89,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         YLim_ = [-10 +10]
         ChannelNames_ = cell(1,0)  % row vector
         ChannelColorIndex_ = zeros(1,0)
+        IsGridOn_ = true
     end
     
     events
@@ -213,7 +218,27 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
 %                 self.broadcast('AxisLimitSet');
 %             end
 %         end
+
+        function toggleIsGridOn(self)
+            self.IsGridOn = ~(self.IsGridOn) ;
+        end
+
+        function set.IsGridOn(self,newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.IsGridOn_ = logical(newValue) ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
         
+        function result = get.IsGridOn(self)
+            result = self.IsGridOn_ ;
+        end
+            
         function set.XOffset(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.XOffset_ = newValue;
