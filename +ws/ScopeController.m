@@ -27,7 +27,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
             scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
             self.IsSuiGeneris=false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
-            %scopeFigure.updateColorsFontsTitleGridAndTags();  % ws.most.Controller changes the background color, so change it back
+            scopeFigure.syncTitleAndTagsToModel();  % Shouldn't this happen somewhere else?
             self.updateWindowVisibility();
               % Need to update the window visibility to match Display
               % subsystem enablement and the per-scope visibility setting.

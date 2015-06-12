@@ -66,7 +66,10 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         RunningMin_ = zeros(1,0)  % length == self.NChannels
         RunningMax_ = zeros(1,0)
         RunningMean_ = zeros(1,0)
-        IsVisibleWhenDisplayEnabled_
+        IsVisibleWhenDisplayEnabled_  
+          % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
+          % "layout" part of the .cfg file.  Long-term, would be cleaner to
+          % store it here, it seems to me.
     end
     
     properties (Access = protected)
