@@ -160,8 +160,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                model.Logging.subscribeMe(self,'Update','','updateControlProperties');
                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
 
-               model.subscribeMe(self,'sweepDidComplete','','updateControlProperties');
-               model.subscribeMe(self,'dataIsAvailable','','dataWasAcquired');
+               model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
+               model.subscribeMe(self,'DataAvailable','','dataAvailable');
                
                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
                  % no longer publicly settable
@@ -877,7 +877,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             changeLocationButtonWidth=90;
             widthBetweenLocationWidgets=6;
             nextSweepEditWidth=50;
-            nextSweepLabelFixedWidth=70;  % We fix this, because the label text changes
+            nextSweepLabelFixedWidth=80;  % We fix this, because the label text changes
             fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
             widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
             
@@ -1497,7 +1497,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods 
-        function dataWasAcquired(self,varargin)
+        function dataAvailable(self,varargin)
             % Want this to be as fast as possible, so we just update the
             % bare minimum
             model=self.Model;

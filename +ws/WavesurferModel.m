@@ -104,18 +104,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         ThrownException_
     end
     
-    events
-        % As of 2014-10-16, none of these events are subscribed to
-        % anywhere in the WS code.  But we'll leave them in as hooks for
-        % user customization.
-        sweepWillStart
-        sweepDidComplete
-        sweepDidAbort
-        runWillStart
-        runDidComplete
-        runDidAbort        %NScopesMayHaveChanged
-        dataIsAvailable
-    end
+%     events
+%         % As of 2014-10-16, none of these events are subscribed to
+%         % anywhere in the WS code.  But we'll leave them in as hooks for
+%         % user customization.
+%         sweepWillStart
+%         sweepDidComplete
+%         sweepDidAbort
+%         runWillStart
+%         runDidComplete
+%         runDidAbort        %NScopesMayHaveChanged
+%         dataIsAvailable
+%     end
     
     events
         % These events _are_ used by WS itself.
@@ -127,6 +127,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         WillSetState
         DidSetState
         DidSetIsSweepBasedContinuous
+        DataAvailable
+        DidCompleteSweep
     end
     
     methods
@@ -611,7 +613,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             self.NSweepsCompletedInThisRun = 0;
             
-            self.callUserFunctionsAndBroadcastEvent_('runWillStart');  
+            self.callUserFunctions_('runWillStart');  
                 % no one listens for this, it seems, but it does directly
                 % lead to user function getting called --ALT, 2014-08-24
             
@@ -686,7 +688,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Notify listeners that the sweep is about to start.
             % Not clear to me who, if anyone, currently subscribes to this
             % event.  -- ALT, 2014-05-20
-            self.callUserFunctionsAndBroadcastEvent_('sweepWillStart');            
+            self.callUserFunctions_('sweepWillStart');            
             
             % Call willPerformSweep() on all the enabled subsystems
             try
@@ -755,9 +757,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             
             % Bump the number of completed sweeps
             self.NSweepsCompletedInThisRun = self.NSweepsCompletedInThisRun + 1;
+        
+            % Broadcast event
+            self.broadcast('DidCompleteSweep');
             
             % Call user functions and broadcast
-            self.callUserFunctionsAndBroadcastEvent_('sweepDidComplete');
+            self.callUserFunctions_('sweepDidComplete');
         end  % function
         
 %         function daisyChainNextAction_(self)
@@ -865,7 +870,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent_('sweepDidAbort');
+            self.callUserFunctions_('sweepDidAbort');
             
             %self.abortRun_(reason);
         end  % function
@@ -892,7 +897,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                 end
 %             end
 %             
-%             self.callUserFunctionsAndBroadcastEvent_('sweepDidAbort');
+%             self.callUserFunctions_('sweepDidAbort');
 %             
 %             self.abortRun_(reason);
 %         end  % function
@@ -908,7 +913,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent_('runDidComplete');
+            self.callUserFunctions_('runDidComplete');
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
@@ -920,7 +925,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctionsAndBroadcastEvent_('runDidAbort');
+            self.callUserFunctions_('runDidAbort');
         end  % function
         
         function haveDataAvailable_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -962,8 +967,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 
                 self.SweepAcqSampleCount_ = self.SweepAcqSampleCount_ + nScans;
 
-                %self.broadcast('DataAvailable');
-                self.callUserFunctionsAndBroadcastEvent_('dataIsAvailable');
+                self.broadcast('DataAvailable');
+                
+                self.callUserFunctions_('dataIsAvailable');
             end
         end  % function
         
@@ -1113,7 +1119,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             %self.Triggering.SweepTrigger.Source.RepeatCount=1;  % Don't allow this to change
 %         end  % function
         
-        function callUserFunctionsAndBroadcastEvent_(self, eventName)
+        function callUserFunctions_(self, eventName)
             % Handle user functions.  It would be possible to just make the UserFunctions
             % subsystem a regular listener of these events.  Handling it
             % directly removes at 
@@ -1122,7 +1128,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.UserFunctions.invoke(self, eventName);
             
             % Handle as standard event if applicable.
-            self.broadcast(eventName);
+            %self.broadcast(eventName);
         end  % function
         
         function [areFilesGone,errorMessage]=ensureYokingFilesAreGone_(self) %#ok<MANU>
