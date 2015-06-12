@@ -27,7 +27,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
             scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
             self.IsSuiGeneris=false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
-            scopeFigure.updateColorsFontsTitleGridAndTags();  % ws.most.Controller changes the background color, so change it back
+            %scopeFigure.updateColorsFontsTitleGridAndTags();  % ws.most.Controller changes the background color, so change it back
             self.updateWindowVisibility();
               % Need to update the window visibility to match Display
               % subsystem enablement and the per-scope visibility setting.
@@ -183,6 +183,8 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                         self.setYLimTightToDataLockedButtonActuated();
                     case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
+                    case 'ShowGridMenuItemGH' ,
+                        self.showGridMenuItemActuated();
                     case 'ZoomInButtonGH' ,
                         self.zoomInButtonPressed();
                     case 'ZoomOutButtonGH' ,
@@ -208,6 +210,10 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                 ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'));
         end  % method        
         
+        function showGridMenuItemActuated(self)
+            self.Model.toggleIsGridOn();
+        end  % method        
+
         function zoomInButtonPressed(self)
             self.Model.zoomIn();
         end
