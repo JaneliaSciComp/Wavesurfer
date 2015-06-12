@@ -212,3 +212,6 @@ Version History
        of the resistance value.  Protocol and user settings file formats 
        were not changed from release 0.8.
 
+0.802: (June 12, 2015) Fixed error on MDF load under R2013b.  Added
+       ability to turn on/off scope grids.  Protocol and user settings
+       files from release 0.8 will still work with this release.
