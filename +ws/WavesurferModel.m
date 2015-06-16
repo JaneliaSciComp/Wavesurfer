@@ -466,7 +466,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         function acquisitionSweepComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % sweep.
-            %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
+            fprintf('WavesurferModel::acquisitionSweepComplete()\n');
             self.checkIfSweepIsComplete_();            
         end  % function
         
@@ -474,13 +474,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Called by the stimulation subsystem when it is done outputting
             % the sweep
             
-            %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
+            fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
             self.checkIfSweepIsComplete_();
         end  % function
         
         function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+            fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+            dbstack
             self.checkIfSweepIsComplete_();
         end
         
@@ -1574,7 +1575,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     timeSinceSweepStart = toc(self.FromSweepStartTicId_);
                     self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
                     self.Stimulation.poll(timeSinceSweepStart);
-                    self.Triggering.poll(timeSinceSweepStart);
+                    %self.Triggering.poll(timeSinceSweepStart);
                     %self.Display.poll(timeSinceSweepStart);
                     %self.Logging.poll(timeSinceSweepStart);
                     %self.UserFunctions.poll(timeSinceSweepStart);
