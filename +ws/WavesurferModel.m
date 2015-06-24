@@ -480,8 +480,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function internalStimulationCounterTriggerTaskComplete(self)
-            fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            dbstack
+            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+            %dbstack
             self.checkIfSweepIsComplete_();
         end
         

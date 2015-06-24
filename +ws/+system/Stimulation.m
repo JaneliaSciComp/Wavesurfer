@@ -654,6 +654,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
+            %dbstack
+            %fprintf('\n\n');
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
@@ -669,7 +671,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.setAnalogChannelData_(stimulusMap);
             self.setDigitalChannelData_(stimulusMap);
 
-            % Arm and start the analog task
+            % Arm and start the analog task (which will then wait for a
+            % trigger)
             if self.HasAnalogChannels_ ,
                 if self.EpisodesCompleted_ == 0 ,
                     self.TheFiniteAnalogOutputTask_.arm();
@@ -677,7 +680,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 self.TheFiniteAnalogOutputTask_.start();                
             end
             
-            % Arm and start the digital task
+            % Arm and start the digital task (which will then wait for a
+            % trigger)
             if self.HasTimedDigitalChannels_ ,
                 if self.EpisodesCompleted_ == 0 ,
                     self.TheFiniteDigitalOutputTask_.arm();
