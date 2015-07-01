@@ -381,10 +381,9 @@ classdef Coding < handle
     methods (Access=protected)
         function decodeUnwrappedEncoding_(self, encoding)
             % Sets the properties in self to the values encoded in encoding.
-            % This is the main public method for setting a ws.mixin.Coding
+            % This is the main method for setting a ws.mixin.Coding
             % to an encoded representation, and it does so in-place.  self
             % should be a scalar.
-            assert(isstruct(encoding));
             
             % If a ws.Model, disable broadcasts while we muck around
             % under the hood.
@@ -393,34 +392,10 @@ classdef Coding < handle
             if isa(self,'ws.Model') ,
                 self.disableBroadcasts();
             end                
-            
-            propertyNames = fieldnames(encoding);
 
-            %notify(self, 'WillChangePropertySet');
-
-            try
-                %originalValues = struct();
-                for i = 1:numel(propertyNames) ,
-                    propertyName = propertyNames{i};
-                    %originalValue = self.decodePropertyValue(self, propSet, propName);
-                    if isprop(self,propertyName) ,  % Only decode if there's a property to receive it
-                        self.decodePropertyValue_(self, encoding, propertyName);
-                    else
-                        warning('Coding:errSettingProp', ...
-                                'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
-                                propertyName, ...
-                                class(self));
-                    end
-                    %if ~isempty(originalValue) || ~isfield(originalValues, propName)
-                    %    originalValues.(propName) = originalValue;
-                    %end
-                end
-            catch me
-                %notify(self, 'DidChangePropertySet');
-                me.rethrow();
-            end
-
-            %notify(self, 'DidChangePropertySet');
+            % Actually do the decoding, which is sometimes overridden by
+            % subclasses
+            self.decodeUnwrappedEncodingCore_(encoding);
 
             % Broadcast an Update event if self is a ws.Model
             if isa(self,'ws.Model') ,
@@ -429,6 +404,29 @@ classdef Coding < handle
             end                
         end  % function
         
+        function decodeUnwrappedEncodingCore_(self, encoding)
+            % Sets the properties in self to the values encoded in encoding.
+            % self should be a scalar.  This does the actual decoding,
+            % without dealing with enabling/disabling broadcasts
+            
+            % Get the property names from the encoding
+            propertyNames = fieldnames(encoding);
+
+            % Set each property name in self
+            for i = 1:numel(propertyNames) ,
+                propertyName = propertyNames{i};
+                %originalValue = self.decodePropertyValue(self, propSet, propName);
+                if isprop(self,propertyName) ,  % Only decode if there's a property to receive it
+                    self.decodePropertyValue_(self, encoding, propertyName);
+                else
+                    warning('Coding:errSettingProp', ...
+                            'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
+                            propertyName, ...
+                            class(self));
+                end
+            end  % for            
+        end  % function
+
         function encoding = encodeScalarForFileType_(self, fileType, propertyNames)
             % Encode properties for the given file type.
             %propertyNames = self.listPropertiesForFileType(fileType);
