@@ -35,13 +35,19 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         YLim_
         SetYLimTightToDataButtonGH_
         SetYLimTightToDataLockedButtonGH_
+        
         ScopeMenuGH_
+        YZoomInMenuItemGH_
+        YZoomOutMenuItemGH_
+        YScrollUpMenuItemGH_
+        YScrollDownMenuItemGH_
         YLimitsMenuItemGH_
         ShowGridMenuItemGH_
-        ZoomInButtonGH_
-        ZoomOutButtonGH_
-        ScrollUpButtonGH_
-        ScrollDownButtonGH_
+        
+        YZoomInButtonGH_
+        YZoomOutButtonGH_
+        YScrollUpButtonGH_
+        YScrollDownButtonGH_
     end
     
 %     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
@@ -476,49 +482,66 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.ScopeMenuGH_ = ...
                 uimenu('Parent',self.FigureGH, ...
                        'Label','Scope');
+            self.YScrollUpMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Scroll Up Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YScrollUpMenuItemGH',source,event));            
+            self.YScrollDownMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Scroll Down Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YScrollDownMenuItemGH',source,event));                               
+            self.YZoomInMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Zoom In Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YZoomInMenuItemGH',source,event));            
+            self.YZoomOutMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Zoom Out Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YZoomOutMenuItemGH',source,event));            
             self.YLimitsMenuItemGH_ = ...
                 uimenu('Parent',self.ScopeMenuGH_, ...
                        'Label','Y Limits...', ...
                        'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
             self.ShowGridMenuItemGH_ = ...
                 uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Separator','on', ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
                                       
             % Y axis control buttons
-            self.ZoomInButtonGH_ = ...
+            self.YZoomInButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
                           'String','+', ...
-                          'Callback',@(source,event)(self.controlActuated('ZoomInButtonGH',source,event)));
-            self.ZoomOutButtonGH_ = ...
+                          'Callback',@(source,event)(self.controlActuated('YZoomInButtonGH',source,event)));
+            self.YZoomOutButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
                           'String','-', ...
-                          'Callback',@(source,event)(self.controlActuated('ZoomOutButtonGH',source,event)));
+                          'Callback',@(source,event)(self.controlActuated('YZoomOutButtonGH',source,event)));
             wavesurferDirName=fileparts(which('wavesurfer'));
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
-            self.ScrollUpButtonGH_ = ...
+            self.YScrollUpButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
                           'CData',cdata, ...
-                          'Callback',@(source,event)(self.controlActuated('ScrollUpButtonGH',source,event)));
+                          'Callback',@(source,event)(self.controlActuated('YScrollUpButtonGH',source,event)));
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
-            self.ScrollDownButtonGH_ = ...
+            self.YScrollDownButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
                           'CData',cdata, ...
-                          'Callback',@(source,event)(self.controlActuated('ScrollDownButtonGH',source,event)));
+                          'Callback',@(source,event)(self.controlActuated('YScrollDownButtonGH',source,event)));
         end  % function            
 
         function updateControlsInExistance_(self)            
@@ -578,10 +601,14 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             onIffNotAreYLimitsLockedTightToData = ws.utility.onIff(~areYLimitsLockedTightToData) ;
             set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.ZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.ZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.ScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.ScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
         end  % function
         
         function layout_(self)
@@ -602,14 +629,26 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         
         function layoutFixedControls_(self)
             % Layout parameters
-            axesLeftMargin = 62 ;
-            axesRightMargin = 8 ;            
-            axesBottomMargin = 52 ;
-            axesTopMargin = 26 ;
+            minLeftMargin = 46 ;
+            maxLeftMargin = 62 ;
+            
+            minRightMargin = 8 ;            
+            maxRightMargin = 8 ;            
+            
+            minBottomMargin = 38 ;
+            maxBottomMargin = 52 ;
+            
+            minTopMargin = 10 ;
+            maxTopMargin = 26 ;            
+            
+            minAxesAndButtonsAreaWidth = 20 ;
+            minAxesAndButtonsAreaHeight = 20 ;
+            
             fromAxesToYRangeButtonsWidth = 6 ;
             yRangeButtonSize = 20 ;  % those buttons are square
             spaceBetweenScrollButtons=5;
             spaceBetweenZoomButtons=5;
+            minHeightBetweenButtonBanks = 5 ;
             
             % Get the current figure width, height
             figurePosition = get(self.FigureGH, 'Position') ;
@@ -617,35 +656,72 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             figureWidth = figureSize(1) ;
             figureHeight = figureSize(2) ;
             
+            % Calculate the first-pass dimensions
+            leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
+            rightMargin = max(minRightMargin,min(0.905*figureWidth,maxRightMargin)) ;
+            bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
+            topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
+            axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
+            axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
+            
+            % If not enough vertical space for the buttons, hide them
+            if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
+                doShowButtons = false ;                
+            else
+                doShowButtons = true ;
+            end
+            
+            % If the axes-and-buttons-area is too small, make it larger,
+            % and change the right margin and/or bottom margin to accomodate
+            if axesAndButtonsAreaWidth<minAxesAndButtonsAreaWidth ,                
+                axesAndButtonsAreaWidth = minAxesAndButtonsAreaWidth ;
+                %rightMargin = figureWidth - axesAndButtonsAreaWidth - leftMargin ;  % can be less than minRightMargin, and that's ok
+            end
+            if axesAndButtonsAreaHeight<minAxesAndButtonsAreaHeight ,                
+                axesAndButtonsAreaHeight = minAxesAndButtonsAreaHeight ;
+                bottomMargin = figureHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
+            end
+
+            % Set the axes width, depends on whether we're showing the
+            % buttons or not
+            if doShowButtons ,
+                axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
+            else
+                axesWidth = axesAndButtonsAreaWidth ;
+            end
+            axesHeight = axesAndButtonsAreaHeight ;            
+            
             % Update the axes position
-            axesWidth = max(20,figureWidth - axesLeftMargin - axesRightMargin - fromAxesToYRangeButtonsWidth - yRangeButtonSize) ;
-            axesHeight = max(20,figureHeight - axesBottomMargin - axesTopMargin) ;
-            axesXOffset = axesLeftMargin ;
-            axesYOffset = figureHeight - axesTopMargin - axesHeight ;  % when axes height gets very small, want the top edge of axes to stay fixed
+            axesXOffset = leftMargin ;
+            axesYOffset = bottomMargin ;
             set(self.AxesGH_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
             
             % the zoom buttons
             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
             zoomOutButtonX=yRangeButtonsX;
             zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
-            set(self.ZoomOutButtonGH_, ...
+            set(self.YZoomOutButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
                 'Position',[zoomOutButtonX zoomOutButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             zoomInButtonX=yRangeButtonsX;
             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
-            set(self.ZoomInButtonGH_, ...
+            set(self.YZoomInButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
                 'Position',[zoomInButtonX zoomInButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
             % the scroll buttons
             scrollUpButtonX=yRangeButtonsX;
             scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
-            set(self.ScrollUpButtonGH_, ...
+            set(self.YScrollUpButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
                 'Position',[scrollUpButtonX scrollUpButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             scrollDownButtonX=yRangeButtonsX;
             scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
-            set(self.ScrollDownButtonGH_, ...
+            set(self.YScrollDownButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
                 'Position',[scrollDownButtonX scrollDownButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
         end  % function

@@ -185,13 +185,13 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                         self.yLimitsMenuItemActuated();
                     case 'ShowGridMenuItemGH' ,
                         self.showGridMenuItemActuated();
-                    case 'ZoomInButtonGH' ,
+                    case {'YZoomInButtonGH','YZoomInMenuItemGH'} ,
                         self.zoomInButtonPressed();
-                    case 'ZoomOutButtonGH' ,
+                    case {'YZoomOutButtonGH','YZoomOutMenuItemGH'} ,
                         self.zoomOutButtonPressed();
-                    case 'ScrollUpButtonGH' ,
+                    case {'YScrollUpButtonGH','YScrollUpMenuItemGH'} ,
                         self.scrollUpButtonPressed();
-                    case 'ScrollDownButtonGH' ,
+                    case {'YScrollDownButtonGH','YScrollDownMenuItemGH'} ,
                         self.scrollDownButtonPressed();
                 end  % switch
             catch me
