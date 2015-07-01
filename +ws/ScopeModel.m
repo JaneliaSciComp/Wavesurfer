@@ -1,13 +1,13 @@
 classdef ScopeModel < ws.Model     % & ws.EventBroadcaster 
-    properties (Constant=true)
-        BackgroundColor = [0 0 0];
-        ForegroundColor = [.15 .9 .15];
-        FontSize = 10;
-        FontWeight = 'normal';
-        LineStyle = '-';
-        Marker = 'none';
-        %GridOn = true
-    end
+%     properties (Constant=true)
+%         BackgroundColor = [0 0 0];
+%         ForegroundColor = [.15 .9 .15];
+%         FontSize = 10;
+%         FontWeight = 'normal';
+%         LineStyle = '-';
+%         Marker = 'none';
+%         %GridOn = true
+%     end
 
     properties (Dependent=true, SetAccess=protected)
         Parent  % the parent Display object
