@@ -40,6 +40,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         XLim
         YLim
         IsGridOn
+        AreColorsNormal
     end
 
     properties (Dependent=true, Transient=true)  % not sure this needs to be transient, since it's dependent...
@@ -90,6 +91,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         ChannelNames_ = cell(1,0)  % row vector
         ChannelColorIndex_ = zeros(1,0)
         IsGridOn_ = true
+        AreColorsNormal_ = true  % if false, colors are inverted, approximately
     end
     
     events
@@ -223,6 +225,10 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             self.IsGridOn = ~(self.IsGridOn) ;
         end
 
+        function toggleAreColorsNormal(self)
+            self.AreColorsNormal = ~(self.AreColorsNormal) ;
+        end
+
         function set.IsGridOn(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
@@ -237,6 +243,22 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         
         function result = get.IsGridOn(self)
             result = self.IsGridOn_ ;
+        end
+            
+        function set.AreColorsNormal(self,newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.AreColorsNormal_ = logical(newValue) ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.AreColorsNormal(self)
+            result = self.AreColorsNormal_ ;
         end
             
         function set.XOffset(self,newValue)

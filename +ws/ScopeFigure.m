@@ -42,6 +42,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         YScrollUpMenuItemGH_
         YScrollDownMenuItemGH_
         YLimitsMenuItemGH_
+        InvertColorsMenuItemGH_
         ShowGridMenuItemGH_
         
         YZoomInButtonGH_
@@ -415,6 +416,28 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %             %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
 %         end                
 
+%         function loadIcons_(self)
+%             % Load icons from disk, store them in instance vars
+%             
+%             wavesurferDirName=fileparts(which('wavesurfer'));
+% 
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             self.SetYLimTightToDataIcon_ = cdata ;
+%                                      
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             self.SetYLimTightToDataLockedIcon_ = cdata ;
+% 
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
+%             self.YScrollUpIcon_ = cdata ;
+%             
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
+%             self.YScrollDownIcon_ = cdata ;
+%         end
+
         function createFixedControls_(self)
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
@@ -457,24 +480,28 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %             for i=1:self.Model.NChannels
 %                 self.addChannelLineToAxes_();
 %             end
-            
-            % Add a toolbar button
+
+            % Load some icons
             wavesurferDirName=fileparts(which('wavesurfer'));
+            
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            setYLimTightToDataIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+                                     
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+            setYLimTightToDataLockedIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+
+            % Add a toolbar button
             toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
             self.SetYLimTightToDataButtonGH_ = ...
                 uipushtool(toolbarGH, ...
-                           'CData', cdata, ...
+                           'CData', setYLimTightToDataIcon , ...
                            'TooltipString', 'Set y-axis limits tight to data', ....
                            'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
                          
             % Add a second toolbar button           
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.SetYLimTightToDataLockedButtonGH_ = ...
                 uitoggletool(toolbarGH, ...
-                             'CData', cdata, ...
+                             'CData', setYLimTightToDataLockedIcon , ...
                              'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
                              'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
                        
@@ -502,9 +529,13 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 uimenu('Parent',self.ScopeMenuGH_, ...
                        'Label','Y Limits...', ...
                        'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
-            self.ShowGridMenuItemGH_ = ...
+            self.InvertColorsMenuItemGH_ = ...
                 uimenu('Parent',self.ScopeMenuGH_, ...
                        'Separator','on', ...
+                       'Label','Green On Black', ...
+                       'Callback',@(source,event)self.controlActuated('InvertColorsMenuItemGH',source,event));            
+            self.ShowGridMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
                                       
@@ -523,24 +554,17 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                           'FontSize',9, ...
                           'String','-', ...
                           'Callback',@(source,event)(self.controlActuated('YZoomOutButtonGH',source,event)));
-            wavesurferDirName=fileparts(which('wavesurfer'));
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
             self.YScrollUpButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
-                          'CData',cdata, ...
                           'Callback',@(source,event)(self.controlActuated('YScrollUpButtonGH',source,event)));
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
             self.YScrollDownButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
-                          'CData',cdata, ...
                           'Callback',@(source,event)(self.controlActuated('YScrollDownButtonGH',source,event)));
         end  % function            
 
@@ -567,6 +591,20 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 return
             end
 
+            persistent persistentYScrollUpIcon
+            if isempty(persistentYScrollUpIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+                persistentYScrollUpIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+
+            persistent persistentYScrollDownIcon
+            if isempty(persistentYScrollDownIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+                persistentYScrollDownIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+            
             % Update the togglebutton
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
             set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
@@ -574,6 +612,71 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Update the Show Grid togglemenu
             isGridOn = self.Model.IsGridOn ;
             set(self.ShowGridMenuItemGH_,'Checked',ws.utility.onIff(isGridOn));
+
+            % Update the Invert Colors togglemenu
+            areColorsNormal = self.Model.AreColorsNormal ;
+            set(self.InvertColorsMenuItemGH_,'Checked',ws.utility.onIff(~areColorsNormal));
+
+            % Update the colors
+            areColorsNormal = self.Model.AreColorsNormal ;
+            defaultUIControlBackgroundColor = get(0,'defaultUIControlBackgroundColor') ;
+            controlBackground  = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForeground = ws.utility.fif(areColorsNormal,'k','w') ;
+            figureBackground = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            set(self.FigureGH,'Color',figureBackground);
+            axesBackground = ws.utility.fif(areColorsNormal,'w','k') ;
+            set(self.AxesGH_,'Color',axesBackground);
+            axesForeground = ws.utility.fif(areColorsNormal,'k','g') ;
+            set(self.AxesGH_,'XColor',axesForeground);
+            set(self.AxesGH_,'YColor',axesForeground);
+            set(self.AxesGH_,'ZColor',axesForeground);
+            if areColorsNormal ,
+                colorOrder = ...
+                    [      0                         0                         0  ; ...
+                           0                         0                         1  ; ...
+                           0                       0.5                         0  ; ...
+                           1                         0                         0  ; ...
+                           0                      0.75                      0.75  ; ...
+                        0.75                         0                      0.75  ; ...
+                        0.75                      0.75                         0  ; ...
+                        0.25                      0.25                      0.25  ] ;
+            else
+                colorOrder = ...
+                    [      1                         1                         1  ; ...
+                           0                       0.5                         1  ; ...
+                           0                         1                         0  ; ...
+                           1                         0                         1  ; ...
+                           0                         1                         1  ; ...
+                        0.75                         0                      0.75  ; ...
+                           1                         1                         0  ; ...
+                        0.75                      0.75                      0.75  ] ;
+                
+            end
+            set(self.AxesGH_,'ColorOrder',colorOrder);
+
+            % Set the line colors
+            for iChannel = 1:length(self.LineGHs_)
+                lineGH = self.LineGHs_(iChannel) ;
+                color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
+                set(lineGH,'Color',color);
+            end
+
+            % Set the button colors
+            set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            
+            % Set the button scroll up/down button images
+            if areColorsNormal ,
+                yScrollUpIcon   = persistentYScrollUpIcon   ;
+                yScrollDownIcon = persistentYScrollDownIcon ;
+            else
+                yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
+                yScrollDownIcon = 1-persistentYScrollDownIcon ;                
+            end                
+            set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
+            set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
             
             % Update the axes grid on/off
             set(self.AxesGH_, ...
@@ -586,7 +689,8 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.updateYAxisLimits_();
             
             % Update the graphics objects to match the model
-            self.updateYAxisLabel_();
+            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground);
+            self.updateYAxisLabel_(axesForeground);
             self.updateLineXDataAndYData_();
         end  % function
         
@@ -764,12 +868,12 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             end                     
         end  % function
         
-        function updateYAxisLabel_(self)
+        function updateYAxisLabel_(self,color)
             % Updates the y axis label handle graphics to match the model state
             % and that of the Acquisition subsystem.
             %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
             if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal');
+                ylabel(self.AxesGH_,'Signal','Color',color);
             else
                 %firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
@@ -780,7 +884,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 else
                     unitsString = string(units) ;
                 end
-                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString));
+                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color);
             end
         end  % function
         
