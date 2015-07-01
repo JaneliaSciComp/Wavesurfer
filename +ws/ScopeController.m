@@ -185,6 +185,8 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                         self.yLimitsMenuItemActuated();
                     case 'InvertColorsMenuItemGH' ,
                         self.invertColorsMenuItemActuated();
+                    case 'DoShowButtonsMenuItemGH' ,
+                        self.doShowButtonsMenuItemActuated();
                     case 'ShowGridMenuItemGH' ,
                         self.showGridMenuItemActuated();
                     case {'YZoomInButtonGH','YZoomInMenuItemGH'} ,
@@ -214,6 +216,10 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
         
         function showGridMenuItemActuated(self)
             self.Model.toggleIsGridOn();
+        end  % method        
+
+        function doShowButtonsMenuItemActuated(self)
+            self.Model.toggleDoShowButtons();
         end  % method        
 
         function invertColorsMenuItemActuated(self)

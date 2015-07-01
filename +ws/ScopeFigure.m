@@ -44,6 +44,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         YLimitsMenuItemGH_
         InvertColorsMenuItemGH_
         ShowGridMenuItemGH_
+        DoShowButtonsMenuItemGH_
         
         YZoomInButtonGH_
         YZoomOutButtonGH_
@@ -442,7 +443,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
             
-            model = self.Model ;
+            %model = self.Model ;
             self.AxesGH_ = ...
                 axes('Parent', self.FigureGH, ...
                      'Units','pixels', ...
@@ -463,7 +464,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             set(self.AxesGH_, 'ColorOrder', colorOrder);
 
             % Create the x-axis label
-            xlabel(self.AxesGH_,sprintf('Time (%s)',string(model.XUnits)));
+            %xlabel(self.AxesGH_,sprintf('Time (%s)',string(model.XUnits)),'FontSize',10);
 
             % Set up listeners to monitor the axes XLim, YLim, and to set
             % the XLim and YLim properties when they change.  This is
@@ -538,6 +539,10 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 uimenu('Parent',self.ScopeMenuGH_, ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
+            self.DoShowButtonsMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Show Buttons', ...
+                       'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
                                       
             % Y axis control buttons
             self.YZoomInButtonGH_ = ...
@@ -617,6 +622,10 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             areColorsNormal = self.Model.AreColorsNormal ;
             set(self.InvertColorsMenuItemGH_,'Checked',ws.utility.onIff(~areColorsNormal));
 
+            % Update the Do Show Buttons togglemenu
+            doShowButtons = self.Model.DoShowButtons ;
+            set(self.DoShowButtonsMenuItemGH_,'Checked',ws.utility.onIff(doShowButtons));
+
             % Update the colors
             areColorsNormal = self.Model.AreColorsNormal ;
             defaultUIControlBackgroundColor = get(0,'defaultUIControlBackgroundColor') ;
@@ -689,7 +698,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.updateYAxisLimits_();
             
             % Update the graphics objects to match the model
-            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground);
+            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10);
             self.updateYAxisLabel_(axesForeground);
             self.updateLineXDataAndYData_();
         end  % function
@@ -736,10 +745,14 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             minLeftMargin = 46 ;
             maxLeftMargin = 62 ;
             
-            minRightMargin = 8 ;            
-            maxRightMargin = 8 ;            
+            minRightMarginIfButtons = 8 ;            
+            maxRightMarginIfButtons = 8 ;            
+
+            minRightMarginIfNoButtons = 8 ;            
+            maxRightMarginIfNoButtons = 16 ;            
             
-            minBottomMargin = 38 ;
+            %minBottomMargin = 38 ;  % works ok with HG1
+            minBottomMargin = 44 ;  % works ok with HG2 and HG1
             maxBottomMargin = 52 ;
             
             minTopMargin = 10 ;
@@ -754,6 +767,17 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             spaceBetweenZoomButtons=5;
             minHeightBetweenButtonBanks = 5 ;
             
+            % Show buttons only if user wants them
+            doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
+
+            if doesUserWantToSeeButtons ,
+                minRightMargin = minRightMarginIfButtons ;
+                maxRightMargin = maxRightMarginIfButtons ;
+            else
+                minRightMargin = minRightMarginIfNoButtons ;
+                maxRightMargin = maxRightMarginIfNoButtons ;
+            end
+            
             % Get the current figure width, height
             figurePosition = get(self.FigureGH, 'Position') ;
             figureSize = figurePosition(3:4);
@@ -762,18 +786,24 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             
             % Calculate the first-pass dimensions
             leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
-            rightMargin = max(minRightMargin,min(0.905*figureWidth,maxRightMargin)) ;
+            rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
             bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
             topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
             axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
             axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
-            
+
             % If not enough vertical space for the buttons, hide them
             if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
-                doShowButtons = false ;                
+                isEnoughHeightForButtons = false ;
+                % Recalculate some things that are affected by this change
+                minRightMargin = minRightMarginIfNoButtons ;
+                maxRightMargin = maxRightMarginIfNoButtons ;
+                rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
+                axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;                
             else
-                doShowButtons = true ;
+                isEnoughHeightForButtons = true ;
             end
+            doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons ;
             
             % If the axes-and-buttons-area is too small, make it larger,
             % and change the right margin and/or bottom margin to accomodate
@@ -873,7 +903,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % and that of the Acquisition subsystem.
             %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
             if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal','Color',color);
+                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10);
             else
                 %firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
@@ -884,7 +914,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 else
                     unitsString = string(units) ;
                 end
-                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color);
+                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color,'FontSize',10);
             end
         end  % function
         

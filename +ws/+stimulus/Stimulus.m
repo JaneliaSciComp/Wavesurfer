@@ -249,8 +249,8 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             
             ws.utility.setYAxisLimitsToAccomodateLinesBang(ax,h);
             %title(ax,sprintf('Stimulus using %s', ));
-            xlabel(ax,'Time (s)');
-            ylabel(ax,self.Name);
+            xlabel(ax,'Time (s)','FontSize',10);
+            ylabel(ax,self.Name,'FontSize',10);
         end        
     end  % public methods block
     

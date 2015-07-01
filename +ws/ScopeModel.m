@@ -40,7 +40,8 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         XLim
         YLim
         IsGridOn
-        AreColorsNormal
+        AreColorsNormal        
+        DoShowButtons
     end
 
     properties (Dependent=true, Transient=true)  % not sure this needs to be transient, since it's dependent...
@@ -92,6 +93,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         ChannelColorIndex_ = zeros(1,0)
         IsGridOn_ = true
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
+        DoShowButtons_ = true % if false, don't show buttons in the figure
     end
     
     events
@@ -229,6 +231,10 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             self.AreColorsNormal = ~(self.AreColorsNormal) ;
         end
 
+        function toggleDoShowButtons(self)
+            self.DoShowButtons = ~(self.DoShowButtons) ;
+        end
+        
         function set.IsGridOn(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
@@ -259,6 +265,22 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         
         function result = get.AreColorsNormal(self)
             result = self.AreColorsNormal_ ;
+        end
+            
+        function set.DoShowButtons(self,newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.DoShowButtons_ = logical(newValue) ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.DoShowButtons(self)
+            result = self.DoShowButtons_ ;
         end
             
         function set.XOffset(self,newValue)
