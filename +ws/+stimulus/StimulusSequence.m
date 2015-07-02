@@ -324,7 +324,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
                         'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
                 map=self.Maps{idx};
                 map.plot(fig, ax, samplingRate);
-                ylabel(ax,sprintf('Map %d',idx));
+                ylabel(ax,sprintf('Map %d',idx),'FontSize',10);
             end
         end  % function
     end  % methods

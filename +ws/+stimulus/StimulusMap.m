@@ -559,8 +559,8 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             ws.utility.setYAxisLimitsToAccomodateLinesBang(ax,lines);
             legend(ax, channelNames, 'Interpreter', 'None');
             %title(ax,sprintf('Stimulus Map: %s', self.Name));
-            xlabel(ax,'Time (s)');
-            ylabel(ax,self.Name);
+            xlabel(ax,'Time (s)','FontSize',10);
+            ylabel(ax,self.Name,'FontSize',10);
             
             %set(ax, 'NextPlot', 'Replace');
         end        

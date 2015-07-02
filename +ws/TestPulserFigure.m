@@ -458,9 +458,9 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Axis labels
             self.XAxisLabel= ...
-                xlabel(self.TraceAxes,'Time (ms)');
+                xlabel(self.TraceAxes,'Time (ms)','FontSize',10);
             self.YAxisLabel= ...
-                ylabel(self.TraceAxes,'Monitor (pA)');
+                ylabel(self.TraceAxes,'Monitor (pA)','FontSize',10);
             
             % Trace line
             self.TraceLine= ...
