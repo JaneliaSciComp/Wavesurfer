@@ -20,7 +20,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver 9.8.x (more recent ones will not work)
+National Instruments DAQmx driver, version 9.8.x or 14.5.x
 
 Matlab R2013b or later (64-bit)
 
@@ -218,4 +218,11 @@ Version History
 
 0.803: (June 29, 2015) Fixed bug in ws.loadDataFile() that made it error 
        if any channels were not active.
+
+0.804: (July 3, 2015) Fixed bug that caused warnings on .cfg load if
+       the acquisition sample rate had been changed.  Restored
+       green-on-black theme for scope windows as an option.  Scope
+       window buttons are now hidden if the window is not tall enough.
+       Added option to always hide scope window buttons.
+
 
