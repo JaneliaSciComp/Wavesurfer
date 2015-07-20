@@ -177,9 +177,9 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             %figureObject=self.Figure;
             try
                 switch controlName ,
-                    case 'SetYLimTightToDataButtonGH' ,
+                    case {'SetYLimTightToDataButtonGH', 'SetYLimTightToDataMenuItemGH'} ,
                         self.setYLimTightToDataButtonActuated();
-                    case 'SetYLimTightToDataLockedButtonGH' ,
+                    case {'SetYLimTightToDataLockedButtonGH', 'SetYLimTightToDataLockedMenuItemGH'} ,
                         self.setYLimTightToDataLockedButtonActuated();
                     case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
