@@ -183,15 +183,19 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                         self.setYLimTightToDataLockedButtonActuated();
                     case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
+                    case 'InvertColorsMenuItemGH' ,
+                        self.invertColorsMenuItemActuated();
+                    case 'DoShowButtonsMenuItemGH' ,
+                        self.doShowButtonsMenuItemActuated();
                     case 'ShowGridMenuItemGH' ,
                         self.showGridMenuItemActuated();
-                    case 'ZoomInButtonGH' ,
+                    case {'YZoomInButtonGH','YZoomInMenuItemGH'} ,
                         self.zoomInButtonPressed();
-                    case 'ZoomOutButtonGH' ,
+                    case {'YZoomOutButtonGH','YZoomOutMenuItemGH'} ,
                         self.zoomOutButtonPressed();
-                    case 'ScrollUpButtonGH' ,
+                    case {'YScrollUpButtonGH','YScrollUpMenuItemGH'} ,
                         self.scrollUpButtonPressed();
-                    case 'ScrollDownButtonGH' ,
+                    case {'YScrollDownButtonGH','YScrollDownMenuItemGH'} ,
                         self.scrollDownButtonPressed();
                 end  % switch
             catch me
@@ -212,6 +216,14 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
         
         function showGridMenuItemActuated(self)
             self.Model.toggleIsGridOn();
+        end  % method        
+
+        function doShowButtonsMenuItemActuated(self)
+            self.Model.toggleDoShowButtons();
+        end  % method        
+
+        function invertColorsMenuItemActuated(self)
+            self.Model.toggleAreColorsNormal();
         end  % method        
 
         function zoomInButtonPressed(self)

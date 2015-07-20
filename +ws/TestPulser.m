@@ -1528,15 +1528,22 @@ classdef TestPulser < ws.Model
         end  % function
     end
     
-    methods
-        % Have to override decodeProperties() to sync up transient properties
+%     methods
+%         % Have to override decodeProperties() to sync up transient properties
+%         % after.
+%         function decodeProperties(self, encoding)
+%             decodeProperties@ws.mixin.Coding(self, encoding) ;
+%             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
+%         end  % function
+%     end
+    
+    methods (Access=protected)
+        % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
         % after.
-        function decodeProperties(self, encoding)
-            decodeProperties@ws.mixin.Coding(self, encoding) ;
+        function decodeUnwrappedEncodingCore_(self, encoding)
+            decodeUnwrappedEncodingCore_@ws.mixin.Coding(self, encoding) ;
             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
         end  % function
     end
-    
-
     
 end  % classdef

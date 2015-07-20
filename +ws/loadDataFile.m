@@ -26,11 +26,16 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % User wants raw data, so nothing to do
     else
         try
-            analogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales(...
-                    dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
         catch
             error('Unable to read channel scale information from file.');
         end
+        try
+            isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+        catch
+            error('Unable to read active/inactive channel information from file.');
+        end
+        analogChannelScales = allAnalogChannelScales(isActive) ;
         inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
         doesUserWantSingle = strcmpi(formatString,'single') ;
         %doesUserWantDouble = ~doesUserWantSingle ;

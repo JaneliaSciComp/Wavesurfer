@@ -388,35 +388,47 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             out = length(self.Scopes);
         end
                 
-        % Need to override the decodeProperties() method supplied by
-        % ws.mixin.Coding() to get correct behavior when the number of
-        % scopes changes.
-        %function originalValues = decodeProperties(self, propSet)
-        function decodeProperties(self, propSet)
-            % Sets the properties in self to the values encoded in propSet.
-            % Returns the _old_ property values from self in
-            % originalValues.
-            
-            assert(isstruct(propSet));
-            
-            % Need to clear the existing scopes first
-            self.removeScopes();
-            
-            % Now call the superclass method
-            %originalValues=self.decodeProperties@ws.mixin.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
-            self.decodeProperties@ws.mixin.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
-
-            % Update the view
-            self.broadcast('NScopesMayHaveChanged');
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.nScopesMayHaveChanged();
-%             end            
-        end  % function
+%         % Need to override the decodeProperties() method supplied by
+%         % ws.mixin.Coding() to get correct behavior when the number of
+%         % scopes changes.
+%         function decodeProperties(self, propSet)
+%             % Sets the properties in self to the values encoded in propSet.
+%             % Returns the _old_ property values from self in
+%             % originalValues.
+%             
+%             assert(isstruct(propSet));
+%             
+%             % Need to clear the existing scopes first
+%             self.removeScopes();
+%             
+%             % Now call the superclass method
+%             %originalValues=self.decodeProperties@ws.mixin.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
+%             self.decodeProperties@ws.mixin.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
+% 
+%             % Update the view
+%             self.broadcast('NScopesMayHaveChanged');
+%         end  % function
         
         function didSetScopeIsVisibleWhenDisplayEnabled(self)
             self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
         end
     end  % pulic methods block
+    
+    methods (Access = protected)        
+        % Need to override the decodeUnwrappedEncodingCore_() method supplied
+        % by ws.mixin.Coding() to get correct behavior when the number of
+        % scopes changes.
+        function decodeUnwrappedEncodingCore_(self, encoding)            
+            % Need to clear the existing scopes first
+            self.removeScopes();
+            
+            % Now call the superclass method
+            self.decodeUnwrappedEncodingCore_@ws.mixin.Coding(encoding);
+
+            % Update the view
+            %self.broadcast('NScopesMayHaveChanged');  % do I need this?
+        end  % function        
+    end  % protected methods block
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.
