@@ -1,15 +1,18 @@
 classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
-    %Triggering
     
     properties (Dependent = true, SetAccess = immutable)
         Sources  % this is an array of type ws.TriggerSource, not a cell array
         Destinations  % this is an array of type ws.TriggerDestination, not a cell array
     end
     
-    properties (SetAccess = immutable, Transient=true)  % Transient b/c the indices get saved
-        %ContinuousModeTriggerScheme
+    properties (SetAccess=immutable, Dependent=true)
         AcquisitionTriggerScheme
         StimulationTriggerScheme
+    end
+
+    properties (Access=protected)
+        AcquisitionTriggerScheme_
+        StimulationTriggerScheme_
     end
     
     properties (AbortSet = true, Dependent = true)
@@ -24,16 +27,14 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             % waiting for something to trigger it.
     end
     
-    properties (Dependent = true, Access = protected)  % these seem to only be used when saving/loading to/from the .cfg file
-        prvAcquisitionTriggerSchemeSourceIndex
-        prvAcquisitionTriggerSchemeDestinationIndex
-        prvStimulationTriggerSchemeSourceIndex
-        prvStimulationTriggerSchemeDestinationIndex
-        %prvContinuousModeTriggerSchemeSourceIndex
-        %prvContinuousModeTriggerSchemeDestinationIndex        
-        prvSourceIntervals
-        prvSourceRepeatCounts
-    end
+%     properties (Dependent = true, Access = protected)  % these seem to only be used when saving/loading to/from the .cfg file
+%         prvAcquisitionTriggerSchemeSourceIndex
+%         prvAcquisitionTriggerSchemeDestinationIndex
+%         prvStimulationTriggerSchemeSourceIndex
+%         prvStimulationTriggerSchemeDestinationIndex
+%         prvSourceIntervals
+%         prvSourceRepeatCounts
+%     end
     
     properties (Access = protected)
         Sources_  % this is an array of type ws.TriggerSource, not a cell array
@@ -74,8 +75,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
 %             self.ContinuousModeTriggerScheme = ws.TriggerScheme('Name', 'ContinuousAcquisition', ...
 %                                                                 'IsExternalAllowed', false);
-            self.AcquisitionTriggerScheme = ws.TriggerScheme(self, 'Name', 'Acquisition');
-            self.StimulationTriggerScheme = ws.TriggerScheme(self, 'Name', 'Stimulus');
+            self.AcquisitionTriggerScheme_ = ws.TriggerScheme(self, 'Name', 'Acquisition');
+            self.StimulationTriggerScheme_ = ws.TriggerScheme(self, 'Name', 'Stimulus');
             
 %             % Always include an external source.
 %             extSource = ws.Source();
@@ -201,45 +202,45 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             self.Parent = [] ;
         end  % function
         
-        function out = get.prvAcquisitionTriggerSchemeSourceIndex(self)
-            out = self.indexOfTriggerSource(self.AcquisitionTriggerScheme);
-        end  % function
-        
-        function set.prvAcquisitionTriggerSchemeSourceIndex(self, value)
-            if ~isempty(value) ,
-                self.AcquisitionTriggerScheme.Target = self.Sources_(value);
-            end
-        end  % function
-        
-        function out = get.prvAcquisitionTriggerSchemeDestinationIndex(self)
-            out = self.indexOfTriggerDestination(self.AcquisitionTriggerScheme);
-        end  % function
-        
-        function set.prvAcquisitionTriggerSchemeDestinationIndex(self, value)
-            if ~isempty(value) ,
-                self.AcquisitionTriggerScheme.Target = self.Destinations_(value);
-            end
-        end  % function
-        
-        function out = get.prvStimulationTriggerSchemeSourceIndex(self)
-            out = self.indexOfTriggerSource(self.StimulationTriggerScheme);
-        end  % function
-        
-        function set.prvStimulationTriggerSchemeSourceIndex(self, value)
-            if ~isempty(value) ,
-                self.StimulationTriggerScheme.Target = self.Sources_(value);
-            end
-        end  % function
-        
-        function out = get.prvStimulationTriggerSchemeDestinationIndex(self)
-            out = self.indexOfTriggerDestination(self.StimulationTriggerScheme);
-        end  % function
-        
-        function set.prvStimulationTriggerSchemeDestinationIndex(self, value)
-            if ~isempty(value) ,
-                self.StimulationTriggerScheme.Target = self.Destinations_(value);
-            end
-        end  % function
+%         function out = get.prvAcquisitionTriggerSchemeSourceIndex(self)
+%             out = self.indexOfTriggerSource(self.AcquisitionTriggerScheme);
+%         end  % function
+%         
+%         function set.prvAcquisitionTriggerSchemeSourceIndex(self, value)
+%             if ~isempty(value) ,
+%                 self.AcquisitionTriggerScheme.Target = self.Sources_(value);
+%             end
+%         end  % function
+%         
+%         function out = get.prvAcquisitionTriggerSchemeDestinationIndex(self)
+%             out = self.indexOfTriggerDestination(self.AcquisitionTriggerScheme);
+%         end  % function
+%         
+%         function set.prvAcquisitionTriggerSchemeDestinationIndex(self, value)
+%             if ~isempty(value) ,
+%                 self.AcquisitionTriggerScheme.Target = self.Destinations_(value);
+%             end
+%         end  % function
+%         
+%         function out = get.prvStimulationTriggerSchemeSourceIndex(self)
+%             out = self.indexOfTriggerSource(self.StimulationTriggerScheme);
+%         end  % function
+%         
+%         function set.prvStimulationTriggerSchemeSourceIndex(self, value)
+%             if ~isempty(value) ,
+%                 self.StimulationTriggerScheme.Target = self.Sources_(value);
+%             end
+%         end  % function
+%         
+%         function out = get.prvStimulationTriggerSchemeDestinationIndex(self)
+%             out = self.indexOfTriggerDestination(self.StimulationTriggerScheme);
+%         end  % function
+%         
+%         function set.prvStimulationTriggerSchemeDestinationIndex(self, value)
+%             if ~isempty(value) ,
+%                 self.StimulationTriggerScheme.Target = self.Destinations_(value);
+%             end
+%         end  % function
         
 %         function out = get.prvContinuousModeTriggerSchemeSourceIndex(self)
 %             out = self.indexOfTriggerSource(self.ContinuousModeTriggerScheme);
@@ -261,29 +262,29 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end
 %         end  % function
         
-        function out = get.prvSourceIntervals(self)
-            out = [self.Sources_(2:end).Interval];
-        end  % function
-        
-        function set.prvSourceIntervals(self, value)
-            count = min([numel(self.Sources_) (numel(value) + 1)]);
-            
-            for idx = 2:count
-                self.Sources_(idx).Interval = value(idx - 1);
-            end
-        end  % function
-        
-        function out = get.prvSourceRepeatCounts(self)
-            out = [self.Sources_.RepeatCount];
-        end  % function
-        
-        function set.prvSourceRepeatCounts(self, value)
-            count = min([numel(self.Sources_) numel(value)]);
-            
-            for idx = 1:count
-                self.Sources_(idx).RepeatCount = value(idx);
-            end
-        end  % function
+%         function out = get.prvSourceIntervals(self)
+%             out = [self.Sources_(2:end).Interval];
+%         end  % function
+%         
+%         function set.prvSourceIntervals(self, value)
+%             count = min([numel(self.Sources_) (numel(value) + 1)]);
+%             
+%             for idx = 2:count
+%                 self.Sources_(idx).Interval = value(idx - 1);
+%             end
+%         end  % function
+%         
+%         function out = get.prvSourceRepeatCounts(self)
+%             out = [self.Sources_.RepeatCount];
+%         end  % function
+%         
+%         function set.prvSourceRepeatCounts(self, value)
+%             count = min([numel(self.Sources_) numel(value)]);
+%             
+%             for idx = 1:count
+%                 self.Sources_(idx).RepeatCount = value(idx);
+%             end
+%         end  % function
         
         function out = get.Destinations(self)
             out = self.Destinations_;
@@ -301,6 +302,14 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function out = get.Sources(self)
             out = self.Sources_;
+        end  % function
+        
+        function out = get.AcquisitionTriggerScheme(self)
+            out = self.AcquisitionTriggerScheme_ ;
+        end  % function
+        
+        function out = get.StimulationTriggerScheme(self)
+            out = self.StimulationTriggerScheme_ ;
         end  % function
         
 %         function set.Sources(~, ~)
@@ -644,33 +653,24 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function defineDefaultPropertyTags(self)
             defineDefaultPropertyTags@ws.system.Subsystem(self);            
-            %self.setPropertyTags('prvSweepTriggerSourceIndex', 'IncludeInFileTypes', {'cfg'});
-            %self.setPropertyTags('prvSweepTriggerDestinationIndex', 'IncludeInFileTypes', {'cfg'});
             
-            % These have to be marked b/c they're all dependent props, so
-            % they would not normally be saved in the config file.  But
-            % they must be saved, because when they get set on restore is
-            % what actually restores the various handles.
-            self.setPropertyTags('prvAcquisitionTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
-            self.setPropertyTags('prvAcquisitionTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
-            self.setPropertyTags('prvStimulationTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
-            self.setPropertyTags('prvStimulationTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
-            %self.setPropertyTags('prvContinuousModeTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
-            %self.setPropertyTags('prvContinuousModeTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
+%             % These have to be marked b/c they're all dependent props, so
+%             % they would not normally be saved in the config file.  But
+%             % they must be saved, because when they get set on restore is
+%             % what actually restores the various handles.
+%             self.setPropertyTags('prvAcquisitionTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('prvAcquisitionTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('prvStimulationTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('prvStimulationTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
             
-            % These are also dependent, but are also saved to the protocol
-            % file so that they get restored on load.  (But why don't 
-            % these just get restored automatically when the sources are
-            % restored?  Why do we need a second cache?  I think I
-            % understood this once, but am now drawing a blank...  ALT,
-            % 2015-02-10)
-            self.setPropertyTags('prvSourceIntervals',    'IncludeInFileTypes', {'cfg'});
-            self.setPropertyTags('prvSourceRepeatCounts', 'IncludeInFileTypes', {'cfg'});            
-            
-%             self.setPropertyTags('StimulationUsesAcquisitionTriggerScheme_', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('StimulationUsesAcquisitionTriggerScheme', 'ExcludeFromFileTypes', {'cfg'});            
-%             self.setPropertyTags('AcquisitionUsesASAPTriggering_', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('AcquisitionUsesASAPTriggering', 'ExcludeFromFileTypes', {'cfg'});            
+%             % These are also dependent, but are also saved to the protocol
+%             % file so that they get restored on load.  (But why don't 
+%             % these just get restored automatically when the sources are
+%             % restored?  Why do we need a second cache?  I think I
+%             % understood this once, but am now drawing a blank...  ALT,
+%             % 2015-02-10)
+%             self.setPropertyTags('prvSourceIntervals',    'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('prvSourceRepeatCounts', 'IncludeInFileTypes', {'cfg'});            
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.

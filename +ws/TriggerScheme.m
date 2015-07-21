@@ -83,7 +83,7 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
             %self.Source_ = ws.TriggerSource.empty();
             %self.Destination_ = ws.TriggerDestination.empty();
             self.SourceIndex_ = [] ;
-            self.Destination_ = [] ;
+            self.DestinationIndex_ = [] ;
             %self.SupportedSourceTypes_ = [ws.SourceType.Internal ws.SourceType.External];  % any source type, by default
             self.IsExternalAllowed_ = true;
             
@@ -361,6 +361,17 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
         end  % function
       
     end  % methods
+    
+    % These methods allow access to protected variables from ws.mixin.Coding.
+    methods (Access=protected)
+        function out = getPropertyValue(self, name)
+            out = self.(name);
+        end  % function
+        
+        function setPropertyValue(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
     
     methods (Access=protected)        
         function defineDefaultPropertyTags(self)

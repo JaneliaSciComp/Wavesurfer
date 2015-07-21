@@ -159,11 +159,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % data values are correct.
             self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserFunctions};
             
-            % Configure subystem trigger relationships.
-            self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
-            self.Stimulation.TriggerScheme = self.Triggering.StimulationTriggerScheme;
-            %self.Acquisition.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
-            %self.Stimulation.ContinuousModeTriggerScheme = self.Triggering.ContinuousModeTriggerScheme;
+%             % Configure subystem trigger relationships.  (Essentially,
+%             % this happens automatically now.)
+%             self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
+%             self.Stimulation.TriggerScheme = self.Triggering.StimulationTriggerScheme;
 
             % Create a timer object to poll during acquisition/stimulation
             % We can't set the callbacks here, b/c timers don't seem to behave like other objects for the purposes of

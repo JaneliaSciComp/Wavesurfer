@@ -485,7 +485,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             
             %acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
             isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
-            isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
+            %isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
             %set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
             set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~isSweepBased));
             set(self.SweepBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
