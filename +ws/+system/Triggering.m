@@ -57,7 +57,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     properties (Access=protected, Transient=true)
         MasterTriggerDABSTask_
     end
-        
+    
     properties (Constant=true, Access=protected)
         MasterTriggerPhysicalChannelName_ = 'pfi8'
         MasterTriggerPFIID_ = 8
@@ -143,9 +143,9 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 
                 % If the first source, set things to point to it
                 if idx==1 ,
-                    self.AcquisitionTriggerScheme.Target = source;
+                    self.AcquisitionTriggerScheme_.Target = source;
+                    self.StimulationTriggerScheme_.Target = source;  
                     self.StimulationUsesAcquisitionTriggerScheme = true;
-                    %self.ContinuousModeTriggerScheme.Target = source;
                 end                    
             end  % for loop
             
@@ -309,7 +309,11 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
         
         function out = get.StimulationTriggerScheme(self)
-            out = self.StimulationTriggerScheme_ ;
+            if self.StimulationUsesAcquisitionTriggerScheme ,
+                out = self.AcquisitionTriggerScheme_ ;
+            else                
+                out = self.StimulationTriggerScheme_ ;
+            end
         end  % function
         
 %         function set.Sources(~, ~)
@@ -544,7 +548,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
                 else
                     self.validatePropArg(newValue,'StimulationUsesAcquisitionTriggerScheme');
                     self.StimulationUsesAcquisitionTriggerScheme_ = newValue;
-                    self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+                    %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
                     self.stimulusMapDurationPrecursorMayHaveChanged();            
                 end
             end
@@ -552,7 +556,6 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         end  % function
         
         function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            %if self.AcquisitionUsesASAPTriggering ,
             if self.Parent.IsSweepBased ,
                 value=true;
             else
@@ -560,39 +563,6 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             end
         end  % function
         
-%         function set.AcquisitionUsesASAPTriggering(self,newValue)
-%             if ws.utility.isASettableValue(newValue) ,
-%                 % Can only change this if the trigger scheme is internal
-%                 if self.AcquisitionTriggerScheme.IsInternal && (isempty(self.Parent) || self.Parent.IsSweepBased) ,
-%                     if (islogical(newValue) || isnumeric(newValue)) && isscalar(newValue) ,
-%                         self.AcquisitionUsesASAPTriggering_ = logical(newValue);
-%                         self.syncTriggerSourcesFromTriggeringState_();
-%                         self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-%                         self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-%                     else
-%                         error('most:Model:invalidPropVal','Invalid value for AcquisitionUsesASAPTriggering.');
-%                     end
-%                 end
-%             end
-%             self.broadcast('Update');
-%         end  % function
-% 
-%         function value=get.AcquisitionUsesASAPTriggering(self)
-%             if self.AcquisitionTriggerScheme.IsInternal ,
-%                 if isempty(self.Parent) ,
-%                     value = self.AcquisitionUsesASAPTriggering_ ;
-%                 else
-%                     if self.Parent.IsSweepBased ,
-%                         value = self.AcquisitionUsesASAPTriggering_ ;
-%                     else
-%                         value = false;
-%                     end
-%                 end
-%             else
-%                 value = false;
-%             end
-%         end  % function
-
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
             wavesurferModel=self.Parent;
             if ~isempty(wavesurferModel) ,
@@ -626,7 +596,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function didSetIsSweepBased(self)
             %fprintf('Triggering::didSetIsSweepBased()\n');
             self.syncTriggerSourcesFromTriggeringState_();
-            self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+            %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
             self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
             %self.syncIntervalAndRepeatCountListeners_();
         end  % function 
@@ -728,7 +698,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 
         function didSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.syncTriggerSourcesFromTriggeringState_();
-            self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+            %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
         end  % function
         
 %         function willSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
@@ -742,11 +712,18 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end
        
     methods (Access=protected)
-        function syncStimulationTriggerSchemeToAcquisitionTriggerScheme_(self)
-            if self.StimulationUsesAcquisitionTriggerScheme ,
-                self.StimulationTriggerScheme.Target = self.AcquisitionTriggerScheme.Target;
-            end
-        end  % function
+%         function syncStimulationTriggerSchemeToAcquisitionTriggerScheme_(self) %#ok<MANU>
+%             % This does nothing now, b/c the getter for
+%             % StimulationTriggerScheme now simply returns the
+%             % AcquisitionTriggerScheme if
+%             % StimulationUsesAcquisitionTriggerScheme is true.
+%             % This has the advantage the that stim trigger scheme settings
+%             % are simply shadowed, not overwritten.
+%             
+% %             if self.StimulationUsesAcquisitionTriggerScheme ,
+% %                 self.StimulationTriggerScheme.Target = self.AcquisitionTriggerScheme.Target;
+% %             end
+%         end  % function
             
         function releaseCurrentTriggerSources_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
@@ -763,7 +740,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         function syncTriggerSourcesFromTriggeringState_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
                 %if self.AcquisitionUsesASAPTriggering ,
-                    self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
+                    %self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
                     self.AcquisitionTriggerScheme.Target.overrideInterval(0.01);
                     self.AcquisitionTriggerScheme.Target.overrideRepeatCount(1);
                 %else

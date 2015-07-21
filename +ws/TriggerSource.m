@@ -26,8 +26,8 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
         Interval_  % our internal Interval value, which can be overridden
         IsIntervalOverridden_ = false  % boolean, true iff Interval is overridden
         IntervalOverride_  % the value of Interval if IsIntervalOverridden_
-        IsIntervalLimited_ = false  % boolean
-        IntervalLowerLimit_
+        %IsIntervalLimited_ = false  % boolean
+        %IntervalLowerLimit_
     end
     
     properties (Dependent=true)
@@ -145,11 +145,11 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             else
                 rawValue=self.Interval_;
             end
-            if self.IsIntervalLimited_ ,
-                value=max(self.IntervalLowerLimit_,rawValue);
-            else
-                value=rawValue;
-            end            
+%             if self.IsIntervalLimited_ ,
+%                 value=max(self.IntervalLowerLimit_,rawValue);
+%             else
+            value=rawValue;
+            %end            
         end
         
         function set.Interval(self, value)
@@ -185,18 +185,18 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
             self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
         end
 
-        function placeLowerLimitOnInterval(self,newValue)
-            self.validatePropArg('Interval', newValue);            
-            self.IntervalLowerLimit_ = newValue;
-            self.IsIntervalLimited_=true;
-            self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
-        end
-        
-        function releaseLowerLimitOnInterval(self)
-            self.IsIntervalLimited_=false;
-            self.IntervalLowerLimit_ = [];  % for tidiness
-            self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
-        end        
+%         function placeLowerLimitOnInterval(self,newValue)
+%             self.validatePropArg('Interval', newValue);            
+%             self.IntervalLowerLimit_ = newValue;
+%             self.IsIntervalLimited_=true;
+%             self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+%         end
+%         
+%         function releaseLowerLimitOnInterval(self)
+%             self.IsIntervalLimited_=false;
+%             self.IntervalLowerLimit_ = [];  % for tidiness
+%             self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+%         end        
     end  % public methods block
     
     methods
