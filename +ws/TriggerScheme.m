@@ -23,6 +23,10 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
     % the Trigger Scheme, but rather are owned by the Triggering subsystem
     % that contains the scheme, the source, and the destination.
     
+    properties (Dependent=true, SetAccess=immutable)
+        Parent
+    end
+    
     properties (Dependent=true)
         Name
     end
@@ -49,11 +53,18 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
         RepeatCount
         Interval
     end
-    
+
+    properties  (Access=protected, Transient = true)
+        Parent_
+    end
+
     properties  (Access=protected)
         Name_
-        Source_  % At most one of Source_ and Destination is nonempty
-        Destination_
+        %Source_  % At most one of Source_ and Destination is nonempty
+        %Destination_
+        SourceIndex_  % An index into the Sources array of the parent Triggering subsystem, or empty
+        DestinationIndex_  % An index into the Destinations array of the parent Triggering subsystem, or empty
+            % At most one of SourceIndex_ and DestinationIndex_ is nonempty.  
         IsExternalAllowed_
         IsInternal_
         IsExternal_
@@ -66,10 +77,13 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
     end
     
     methods
-        function self = TriggerScheme(varargin)
+        function self = TriggerScheme(parent,varargin)
+            self.Parent_ = parent ;
             self.Name_='Trigger';
-            self.Source_ = ws.TriggerSource.empty();
-            self.Destination_ = ws.TriggerDestination.empty();
+            %self.Source_ = ws.TriggerSource.empty();
+            %self.Destination_ = ws.TriggerDestination.empty();
+            self.SourceIndex_ = [] ;
+            self.Destination_ = [] ;
             %self.SupportedSourceTypes_ = [ws.SourceType.Internal ws.SourceType.External];  % any source type, by default
             self.IsExternalAllowed_ = true;
             
@@ -81,6 +95,10 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
             for idx = 1:length(prop)
                 self.(prop{idx}) = vals{idx};
             end
+        end  % function
+        
+        function out = get.Parent(self)
+            out = self.Parent_;
         end  % function
         
         function out = get.Name(self)
@@ -95,9 +113,11 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
         
         function result = get.Target(self)
             if self.IsInternal ,
-                result=self.Source_;
+                %result=self.Source_;
+                result=self.Parent.Sources(self.SourceIndex_) ;
             elseif self.IsExternal ,
-                result=self.Destination_;
+                %result=self.Destination_;
+                result=self.Parent.Destinations(self.DestinationIndex_) ;
             else
                 result=[];
             end                
@@ -110,8 +130,10 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
             else
                 self.validatePropArg('Target', newValue);
                 if isempty(newValue) ,
-                    self.Source_=ws.TriggerSource.empty();
-                    self.Destination_=ws.TriggerDestination.empty();
+                    %self.Source_=ws.TriggerSource.empty();
+                    %self.Destination_=ws.TriggerDestination.empty();
+                    self.SourceIndex_=[];
+                    self.DestinationIndex_=[];
                     self.syncIsInternal_();
                 elseif isa(newValue,'ws.TriggerDestination') ,
                     self.setDestination_(newValue);
@@ -133,15 +155,17 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
 
     methods (Access=protected)
         function setSource_(self, value)
-            %if isa(value,'ws.most.util.Nonvalue'), return, end            
-            %self.validatePropArg('Source', value);
-%             if ~isempty(value) ,
-%                 assert(ismember(value.Type, self.SupportedSourceTypes), ...
-%                        sprintf('%s is not a supported source type for this trigger scheme.', char(value.Type)));
-%             end
-            self.Source_ = value;
-            self.Destination_ = ws.TriggerDestination.empty();
-            %self.syncIsInternal_();
+            %self.Source_ = value;
+            %self.Destination_ = ws.TriggerDestination.empty();
+            
+            % Find the matching source in the parent triggering system
+            sources = self.Parent.Sources ;
+            isMatch = (sources==value) ;
+            iMatch = find(isMatch,1) ;
+            if ~isempty(iMatch) ,
+                self.SourceIndex_ = iMatch ;
+                self.DestinationIndex_ = [] ;
+            end
         end  % function
         
 %         function out = get.Destination(self)
@@ -149,15 +173,18 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
 %         end  % function
         
         function setDestination_(self, value)
-            %if isa(value,'ws.most.util.Nonvalue'), return, end            
-            %self.validatePropArg('Destination', value);
-            %assert(value.Type == ws.TriggerDestinationType.UserDefined, 'The Destination Type must be ''UserDefined''');
-            %self.UserDefinedDestination = value;
             if self.IsExternalAllowed ,
-                %if value.Type == ws.TriggerDestinationType.UserDefined ,  % can't set the destination to a predefined destination
-                self.Source_=ws.TriggerSource.empty();
-                self.Destination_ = value;
-                %end
+                %self.Source_=ws.TriggerSource.empty();
+                %self.Destination_ = value;
+                
+                % Find the matching destination in the parent triggering system
+                destinations = self.Parent.Destinations ;
+                isMatch = (destinations==value) ;
+                iMatch = find(isMatch,1) ;
+                if ~isempty(iMatch) ,
+                    self.SourceIndex_ = [] ;
+                    self.DestinationIndex_ = iMatch ;
+                end                
             end
         end  % function
     end
@@ -246,29 +273,25 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
 
         function value=get.RepeatCount(self)
             % Get the repeat count for the trigger, if defined
-            source=self.Source_;
-            if isempty(source) ,
-                value=[];
-            else                
+            if self.IsInternal ,
+                source=self.Target ;
                 value=source.RepeatCount;
-            end            
+            else
+                value=[];
+            end
         end  % function
 
         function set.RepeatCount(self, newValue)
-            source=self.Source_;
-            if isempty(source) ,
-                % do nothing
-            else                
+            if self.IsInternal ,
+                source=self.Target;
                 source.RepeatCount=newValue;
             end            
         end  % function
 
         function value=get.Interval(self)
             % Get the repeat count for the trigger, if defined
-            source=self.Source_;
-            if isempty(source) ,
-                value=[];
-            elseif isa(source,'ws.TriggerSource') ,
+            if self.IsInternal ,
+                source=self.Target ;
                 value=source.Interval;
             else
                 value=[];
@@ -276,13 +299,9 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
         end  % function
 
         function set.Interval(self, newValue)
-            source=self.Source_;
-            if isempty(source) ,
-                % do nothing
-            elseif isa(source,'ws.TriggerSource') ,
+            if self.IsInternal ,
+                source=self.Target;
                 source.Interval=newValue;
-            else
-                % do nothing
             end            
         end  % function
 
@@ -328,44 +347,28 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
         
         function poll(self,timeSinceSweepStart)
             if self.IsInternal_ ,
-                self.Source_.poll(timeSinceSweepStart);
+                self.Target.poll(timeSinceSweepStart);
             else
                 % Nothing to do for external triggers
             end
         end
         
         function syncIsInternal_(self)  % protected by convention
-            self.IsInternal = ~isempty(self.Source_);  % set the public property so that the change gets broadcast
-            self.IsExternal = isempty(self.Source_) && ~isempty(self.Destination_);  % set the public property so that the change gets broadcast
+            self.IsInternal = ~isempty(self.SourceIndex_);  % set the public property so that the change gets broadcast
+            self.IsExternal = isempty(self.SourceIndex_) && ~isempty(self.DestinationIndex_);  % set the public property so that the change gets broadcast
               % Note: this implies that a scheme can be neither internal or
               % external, if both Source_ and Destination_ are empty.
-              
-%             if isempty(self.Source_) ,
-%                 self.IsInternal=logical([]);  % set the public property so that the change gets broadcast
-%                 self.IsExternal=logical([]);  % set the public property so that the change gets broadcast
-%             else
-%                 self.IsInternal=(self.Source_.Type == ws.SourceType.Internal);
-%                 self.IsExternal=(self.Source_.Type == ws.SourceType.External);
-%                   % set the public property so that the change gets broadcast
-%             end
         end  % function
       
     end  % methods
     
-%     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.mixin.AttributableProperties(self);            
-%             self.setPropertyAttributeFeatures('Name', 'Classes', 'char', 'Attributes', {'vector'}, 'AllowEmpty', false);
-%             self.setPropertyAttributeFeatures('Target', 'Classes', {'ws.TriggerSource' 'ws.TriggerDestination'}, ...
-%                                               'Attributes', {'scalar'}, ...
-%                                               'AllowEmpty', true);
-%             self.setPropertyAttributeFeatures('Source', 'Classes', 'ws.TriggerSource', 'Attributes', {'scalar'}, 'AllowEmpty', true);
-%             self.setPropertyAttributeFeatures('Destination', 'Classes', 'ws.TriggerDestination', 'Attributes', {'scalar'}, 'AllowEmpty', true);
-%             %self.setPropertyAttributeFeatures('SupportedSourceTypes', 'Classes', 'ws.SourceType', 'AllowEmpty', false);
-%             self.setPropertyAttributeFeatures('IsExternalAllowed', 'Classes', 'logical', 'Attributes', {'scalar'}, 'AllowEmpty', false);
-%         end  % function
-%     end  % methods
-   
+    methods (Access=protected)        
+        function defineDefaultPropertyTags(self)
+            defineDefaultPropertyTags@ws.Model(self);
+            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+        end
+    end    
+       
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = ws.system.Triggering.propertyAttributes();
         

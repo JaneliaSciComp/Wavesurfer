@@ -41,7 +41,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didCompleteRun())
         IsArmedOrStimulating_ = false
         IsWithinRun_ = false                       
-        TriggerScheme_ = ws.TriggerScheme.empty()
+        %TriggerScheme_ = ws.TriggerScheme.empty()
         HasAnalogChannels_
         HasTimedDigitalChannels_
         DidAnalogEpisodeComplete_
@@ -243,65 +243,27 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-%         function out = get.SweepDurations(self)
-%             if ~self.Enabled || isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-%                 out = 0;
-%             else                
-%                 if isa(self.StimulusLibrary.SelectedOutputable, 'ws.stimulus.StimulusSequence') ,
-%                     out = self.StimulusLibrary.SelectedOutputable.ItemDurations;
-%                 else
-%                     out = self.StimulusLibrary.SelectedOutputable.Duration;
-%                 end
-%             end
+%         function set.TriggerScheme(self, value)
+%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             self.validatePropArg('TriggerScheme', value);
+%             self.TriggerScheme_ = value;
 %         end
-%         
-%         function set.SweepDurations(~, ~)  % Empty for triggering property events.
+% 
+%         function value=get.TriggerScheme(self)
+%             value=self.TriggerScheme_;
 %         end
-        
+
         function set.TriggerScheme(self, value)
             if isa(value,'ws.most.util.Nonvalue'), return, end            
             self.validatePropArg('TriggerScheme', value);
-            self.TriggerScheme_ = value;
-        end
+            %self.TriggerScheme = value;
+            self.Parent.Triggering.StimulationTriggerScheme = value ;
+        end  % function
 
-        function value=get.TriggerScheme(self)
-            value=self.TriggerScheme_;
+        function output = get.TriggerScheme(self)
+            output = self.Parent.Triggering.StimulationTriggerScheme ;
         end
         
-%         function out = get.LibraryStore_(self)
-%             % Get the file name of the current stimulus library
-%             out = '';
-%             
-%             if ~isempty(self.CycleInLibrary_)
-%                 if ~isempty(self.CycleInLibrary_.Library)
-%                     if self.CycleInLibrary_.Library.FileStoreExists
-%                         out = self.CycleInLibrary_.Library.Store;
-%                     end
-%                 end
-%             end
-%         end
-%         
-%         function set.LibraryStore_(self, value)            
-%             self.LibraryStoreState_ = value;
-%             self.load_stimulus_cycle_from_configuration_data();
-%         end
-        
-%         function out = get.SelectedOutputableUUID(self)
-%             out=self.StimulusLibrary_.SelectedOutputableUUID;
-%         end
-%         
-%         function set.SelectedOutputableUUID(self, newValue)
-%             self.StimulusLibrary_.SelectedOutputableUUID=newValue;
-%         end
-% 
-%         function value = get.SelectedOutputable(self)
-%             value=self.StimulusLibrary_.SelectedOutputable;
-%         end
-%         
-%         function set.SelectedOutputable(self, newValue)
-%             self.StimulusLibrary_.SelectedOutputable=newValue;
-%         end
-
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
             % Called by the parent WavesurferModel to notify that the electrode
             % may have changed.

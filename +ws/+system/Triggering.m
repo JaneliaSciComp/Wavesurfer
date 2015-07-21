@@ -74,8 +74,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
 %             self.ContinuousModeTriggerScheme = ws.TriggerScheme('Name', 'ContinuousAcquisition', ...
 %                                                                 'IsExternalAllowed', false);
-            self.AcquisitionTriggerScheme = ws.TriggerScheme('Name', 'Acquisition');
-            self.StimulationTriggerScheme = ws.TriggerScheme('Name', 'Stimulus');
+            self.AcquisitionTriggerScheme = ws.TriggerScheme(self, 'Name', 'Acquisition');
+            self.StimulationTriggerScheme = ws.TriggerScheme(self, 'Name', 'Stimulus');
             
 %             % Always include an external source.
 %             extSource = ws.Source();

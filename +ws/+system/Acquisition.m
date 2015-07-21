@@ -71,7 +71,7 @@ classdef Acquisition < ws.system.Subsystem
             % cycle may repeat, depending...
     end
     
-    properties (Transient=true)
+    properties (Dependent=true)
        	TriggerScheme
         %ContinuousModeTriggerScheme
     end
@@ -543,9 +543,14 @@ classdef Acquisition < ws.system.Subsystem
         function set.TriggerScheme(self, value)
             if isa(value,'ws.most.util.Nonvalue'), return, end            
             self.validatePropArg('TriggerScheme', value);
-            self.TriggerScheme = value;
+            %self.TriggerScheme = value;
+            self.Parent.Triggering.AcquisitionTriggerScheme = value ;
         end  % function
-       
+
+        function output = get.TriggerScheme(self)
+            output = self.Parent.Triggering.AcquisitionTriggerScheme ;
+        end
+        
         function initializeFromMDFStructure(self, mdfStructure)
             if ~isempty(mdfStructure.physicalInputChannelNames) ,
                 physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
