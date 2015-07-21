@@ -11,7 +11,8 @@ function installWavesurferForNow()
         error('wavesurfer:configureFailure', 'Wavesurfer does not appear to be installed correctly.  wavesurfer.m is missing.\n');
     end
 
-    wavesurferParentFolder=fileparts(wavesurferPath);
-    addpath(wavesurferParentFolder);
-    addpath(fullfile(wavesurferParentFolder,'wavesurfer_guis'));
+    wavesurferParentFolder=fileparts(wavesurferPath) ;
+    addpath(wavesurferParentFolder) ;
+    addpath(fullfile(wavesurferParentFolder,'wavesurfer_guis')) ;
+    addpath(fullfile(wavesurferParentFolder,'matlab-zmq','lib')) ;
 end

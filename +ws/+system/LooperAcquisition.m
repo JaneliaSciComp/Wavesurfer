@@ -1,4 +1,4 @@
-classdef Acquisition < ws.system.Subsystem
+classdef LooperAcquisition < ws.system.Subsystem
     
     properties (Dependent = true)
         Duration   % s

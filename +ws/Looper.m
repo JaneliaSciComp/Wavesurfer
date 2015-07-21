@@ -1,5 +1,5 @@
-classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
-    % The main Wavesurfer model object.
+classdef Looper < ws.Model
+    % The Looper object
 
     properties (SetAccess=immutable, Transient=true)  % transient so doesn't get saved
         NFastProtocols = 6
@@ -28,10 +28,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         Acquisition
         Stimulation
         Triggering
-        Display
-        Logging
-        UserFunctions
-        Ephys
+        %Display
+        %Logging
+        %UserFunctions
+        %Ephys
     end
     
     properties (SetAccess = protected, Dependent = true)  % SetObservable = true, 
@@ -117,18 +117,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %         dataIsAvailable
 %     end
     
-    properties (Constant = true)
-        LooperRPCPortNumber = 8081
-        RefillerRPCPortNumber = 8082
-        DataPubSubPortNumber = 8083
-    end
-    
     properties (Access=protected, Transient=true)
-        LooperRPCClient_
-        RefillerRPCClient_
-        DataSubscriber_
         DoKeepRunningMainLoop_
-        ExpectedNextScanIndex_
+        RPCServer_
+        IPCPublisher_
     end
     
     events
@@ -146,7 +138,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end
     
     methods
-        function self = WavesurferModel()
+        function self = Looper()
             %self.State_ = ws.ApplicationState.Uninitialized;
             %self.IsYokedToScanImage_ = false;
             %self.IsSweepBased_=true;
@@ -157,13 +149,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.IndexOfSelectedFastProtocol=1;
             
             % Create all subsystems.
-            self.Acquisition = ws.system.Acquisition(self);
-            self.Stimulation = ws.system.Stimulation(self);
-            self.Display = ws.system.Display(self);
-            self.Triggering = ws.system.Triggering(self);
-            self.UserFunctions = ws.system.UserFunctions(self);
-            self.Logging = ws.system.Logging(self);
-            self.Ephys = ws.system.Ephys(self);
+            self.Acquisition = ws.system.LooperAcquisition(self);
+            self.Stimulation = ws.system.LooperStimulation(self);
+            self.Triggering = ws.system.LooperTriggering(self);
+%            self.Display = ws.system.Display(self);
+%            self.UserFunctions = ws.system.UserFunctions(self);
+%            self.Logging = ws.system.Logging(self);
+%            self.Ephys = ws.system.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -171,7 +163,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserFunctions};
+            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering};
             
             % Configure subystem trigger relationships.
             self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
@@ -194,20 +186,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             %                           'TimerFcn',@(timer,timerStruct)(self.poll_()), ...
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
-            % Create the satellite processes
-            self.LooperRPCClient_ = RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ; 
-            self.RefillerRPCClient_ = RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ; 
-            self.DataSubscriber_ = IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
-            self.DataSubscriber_.setDelegate(self) ;
-
-            % Start the other Matlab processes
-            system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
-            system('start matlab -nojvm -minimize -r "refiller=ws.Refiller(); refiller.runMainLoop();"');
-            
-            % Connect to the various sockets
-            self.LooperRPCClient_.connect() ;
-            self.RefillerRPCClient_.connect() ;
-            self.DataSubscriber_.connect() ;
+            % Create ZMQ sockets we'll need to communicate with others
+            self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
+            self.RPCServer_.setDelegate(self) ;
+            self.RPCServer_.bind();
+            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.DataPubSubPortNumber) ;
+            self.IPCPublisher_.bind() ;
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -215,6 +199,8 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         end
         
         function delete(self) %#ok<INUSD>
+            % Need to unbind ZMQ sockets, release context, or something?
+            
             %fprintf('WavesurferModel::delete()\n');
             %if ~isempty(self) ,
             %import ws.utility.*
@@ -231,30 +217,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             %deleteIfValidHandle(self.Ephys);
             %end
         end
-        
-%         function unstring(self)
-%             % Called to eliminate all the child-to-parent references, so
-%             % that all the descendents will be properly deleted once the
-%             % last reference to the WavesurferModel goes away.
-%             if ~isempty(self.Acquisition) ,
-%                 self.Acquisition.unstring();
-%             end
-%             if ~isempty(self.Stimulation) ,
-%                 self.Stimulation.unstring();
-%             end
-%             if ~isempty(self.Triggering) ,
-%                 self.Triggering.unstring();
-%             end
-%             if ~isempty(self.Logging) ,
-%                 self.Logging.unstring();
-%             end
-%             if ~isempty(self.UserFunctions) ,
-%                 self.UserFunctions.unstring();
-%             end
-%             if ~isempty(self.Ephys) ,
-%                 self.Ephys.unstring();
-%             end
-%         end
+                
+        function err = configureForRun(self,wsm)
+            % Configure self for a run, copying settings from
+            % wavesurferModel
+            
+            self.IsSweepBased = wsm.IsSweepBased ;
+            self.NSweepsPerRun = wsm.NSweepsPerRun ;
+            self.Triggering.configureForRun(wsm.Triggering) ;  % Do this first so other subsystems have trigger schemes to point to
+            self.Acquisition.configureForRun(wsm.Acquisition) ;
+            self.Stimulation.configureForRun(wsm.Stimulation) ;
+            err = [] ;
+        end
         
         function play(self)
             % Start a run without recording data to disk.
