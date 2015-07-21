@@ -218,15 +218,15 @@ classdef Looper < ws.Model
             %end
         end
                 
-        function err = configureForRun(self,wsm)
+        function err = configureForRun(self,wavesurferModel)
             % Configure self for a run, copying settings from
             % wavesurferModel
             
-            self.IsSweepBased = wsm.IsSweepBased ;
-            self.NSweepsPerRun = wsm.NSweepsPerRun ;
-            self.Triggering.configureForRun(wsm.Triggering) ;  % Do this first so other subsystems have trigger schemes to point to
-            self.Acquisition.configureForRun(wsm.Acquisition) ;
-            self.Stimulation.configureForRun(wsm.Stimulation) ;
+            self.IsSweepBased = wavesurferModel.IsSweepBased ;
+            self.NSweepsPerRun = wavesurferModel.NSweepsPerRun ;
+            self.Triggering.configureForRun(wavesurferModel.Triggering) ;  % Do this first so other subsystems have trigger schemes to point to
+            self.Acquisition.configureForRun(wavesurferModel.Acquisition) ;
+            self.Stimulation.configureForRun(wavesurferModel.Stimulation) ;
             err = [] ;
         end
         
