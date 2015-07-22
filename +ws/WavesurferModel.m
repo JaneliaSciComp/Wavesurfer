@@ -1,30 +1,26 @@
 classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     % The main Wavesurfer model object.
 
-    properties (SetAccess=immutable, Transient=true)  % transient so doesn't get saved
-        NFastProtocols = 6
+    properties (Dependent = true, SetAccess=immutable)  % transient so doesn't get saved
+        NFastProtocols
     end
     
-    properties (SetAccess = protected, GetAccess = public, Transient = true)
-        HasUserSpecifiedProtocolFileName = false
-        AbsoluteProtocolFileName = ''
-        HasUserSpecifiedUserSettingsFileName = false
-        AbsoluteUserSettingsFileName = ''
+    properties (Dependent = true, SetAccess = protected)
+        HasUserSpecifiedProtocolFileName
+        AbsoluteProtocolFileName
+        HasUserSpecifiedUserSettingsFileName
+        AbsoluteUserSettingsFileName
     end
     
-    properties (Dependent=true, SetAccess = immutable)  %, SetObservable=true)
+    properties (Dependent=true, SetAccess = immutable)
         FastProtocols
     end
 
-    properties (Access=protected)
-        FastProtocols_ = ws.fastprotocol.FastProtocol.empty()
+    properties (Dependent = true)
+        IndexOfSelectedFastProtocol
     end
     
-    properties (Transient=true)  % SetObservable=true, 
-        IndexOfSelectedFastProtocol = []
-    end
-    
-    properties (SetAccess = protected)
+    properties (Dependent = true, SetAccess = protected)
         Acquisition
         Stimulation
         Triggering
@@ -34,11 +30,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         Ephys
     end
     
-    properties (SetAccess = protected, Dependent = true)  % SetObservable = true, 
+    properties (Dependent = true, SetAccess = protected)  % SetObservable = true, 
         State
     end
     
-    properties (Dependent = true, Transient=true)  % transient b/c actually stored in Acquisition subsystem  % SetObservable = true, 
+    properties (Dependent = true)
         SweepDuration  % the sweep duration, in s
     end
     
@@ -54,18 +50,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % of the start trigger.  If in continuous mode, it is always 1.
     end
     
-    properties (SetAccess = protected, Transient=true)  % SetObservable = true, 
-        NSweepsCompletedInThisRun = 0   % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
+    properties (Dependent=true)
+        NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
     end
     
     properties (Dependent=true)   %, SetObservable=true)
         IsYokedToScanImage
     end
     
-%     properties (Dependent=true, Hidden=true)
-%         NextSweepIndex
-%     end
-
     properties (Dependent=true)
         NTimesSamplesAcquiredCalledSinceRunStart
     end
@@ -75,6 +67,39 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+    end
+
+    %
+    % Non-dependent props (i.e. those with storage) start here
+    %
+    
+    properties (Access=protected, Transient=true)  % transient so doesn't get saved
+        NFastProtocols_ = 6
+    end
+    
+    properties (Access = protected, Transient = true)
+        HasUserSpecifiedProtocolFileName_ = false
+        AbsoluteProtocolFileName_ = ''
+        HasUserSpecifiedUserSettingsFileName_ = false
+        AbsoluteUserSettingsFileName_ = ''
+    end
+    
+    properties (Access=protected)
+        FastProtocols_ = ws.fastprotocol.FastProtocol.empty()
+    end
+    
+    properties (Access=protected, Transient=true)
+        IndexOfSelectedFastProtocol_ = []
+    end
+    
+    properties (Access = protected)
+        Acquisition_
+        Stimulation_
+        Triggering_
+        Display_
+        Logging_
+        UserFunctions_
+        Ephys_
     end
     
     properties (Access = protected)
@@ -102,6 +127,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         WasRunStoppedByUser_        
         WasExceptionThrown_
         ThrownException_
+        NSweepsCompletedInThisRun_ = 0
     end
     
 %     events
@@ -280,6 +306,58 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %                 value=self.Logging.NextSweepIndex;
 %             end
 %         end  % function
+        
+        function out = get.Acquisition(self)
+            out = self.Acquisition_ ;
+        end
+        
+        function out = get.Stimulation(self)
+            out = self.Stimulation_ ;
+        end
+        
+        function out = get.Triggering(self)
+            out = self.Triggering_ ;
+        end
+        
+        function out = get.UserFunctions(self)
+            out = self.UserFunctions_ ;
+        end
+
+        function out = get.Display(self)
+            out = self.Display_ ;
+        end
+        
+        function out = get.Logging(self)
+            out = self.Logging_ ;
+        end
+        
+        function out = get.Ephys(self)
+            out = self.Ephys_ ;
+        end
+        
+        function out = get.NSweepsCompletedInThisRun(self)
+            out = self.NSweepsCompletedInThisRun_ ;
+        end
+        
+        function out = get.HasUserSpecifiedProtocolFileName(self)
+            out = self.HasUserSpecifiedProtocolFileName_ ;
+        end
+        
+        function out = get.AbsoluteProtocolFileName(self)
+            out = self.AbsoluteProtocolFileName_ ;
+        end
+        
+        function out = get.HasUserSpecifiedUserSettingsFileName(self)
+            out = self.HasUserSpecifiedUserSettingsFileName_ ;
+        end
+        
+        function out = get.AbsoluteUserSettingsFileName(self)
+            out = self.AbsoluteUserSettingsFileName_ ;
+        end
+        
+        function out = get.IndexOfSelectedFastProtocol(self)
+            out = self.IndexOfSelectedFastProtocol_ ;
+        end
         
         function val = get.NSweepsPerRun(self)
             if self.IsContinuous ,
@@ -559,6 +637,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.Ephys.releaseHardwareResources();
         end
         
+        function result=get.NFastProtocols(self)
+            result = self.NFastProtocols_ ;
+        end
+        
         function result=get.FastProtocols(self)
             result = self.FastProtocols_;
         end
@@ -683,9 +765,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Pretend that we last polled at time 0
             self.TimeOfLastPollInSweep_ = 0 ;  % s 
             
-            % Notify listeners that the sweep is about to start.
-            % Not clear to me who, if anyone, currently subscribes to this
-            % event.  -- ALT, 2014-05-20
+            % Call user functions 
             self.callUserFunctions_('sweepWillStart');            
             
             % Call willPerformSweep() on all the enabled subsystems

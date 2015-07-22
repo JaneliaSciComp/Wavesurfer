@@ -112,6 +112,9 @@ classdef UserFunctions < ws.system.Subsystem
             end
         end  % function
         
+        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+            self.invoke(self.Parent,'dataIsAvailable');
+        end
     end  % methods
        
     methods (Access=protected)

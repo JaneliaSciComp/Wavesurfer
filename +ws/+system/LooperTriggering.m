@@ -410,23 +410,31 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
 %             end            
 %         end  % function
 
-        function startAllTriggerTasksAndPulseMasterTrigger(self)
+        function startAllTriggerTasks(self)
             % This gets called once per sweep, to start() all the relevant
-            % triggers.  But self.AcquisitionUsesASAPTriggering determines
-            % whether we start the triggers for each sweep, or only for the
-            % first sweep.
+            % counter trigger tasks.
             
             % Start the acq & stim trigger tasks
-            self.startAllDistinctSweepBasedTriggerTasks_();
-                
-            % Pulse the master trigger
-            self.pulseMasterTrigger();
-            
-%             % Notify the WSM, which starts the polling timer
-%             if nSweepsCompletedInSet==0 ,
-%                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
-%             end            
+            self.startAllDistinctSweepBasedTriggerTasks_();                
         end  % function
+
+%         function startAllTriggerTasksAndPulseMasterTrigger(self)
+%             % This gets called once per sweep, to start() all the relevant
+%             % triggers.  But self.AcquisitionUsesASAPTriggering determines
+%             % whether we start the triggers for each sweep, or only for the
+%             % first sweep.
+%             
+%             % Start the acq & stim trigger tasks
+%             self.startAllDistinctSweepBasedTriggerTasks_();
+%                 
+%             % Pulse the master trigger
+%             self.pulseMasterTrigger();
+%             
+% %             % Notify the WSM, which starts the polling timer
+% %             if nSweepsCompletedInSet==0 ,
+% %                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
+% %             end            
+%         end  % function
         
         function startAllDistinctSweepBasedTriggerTasks_(self)
             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();

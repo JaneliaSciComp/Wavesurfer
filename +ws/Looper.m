@@ -1,35 +1,7 @@
-classdef Looper < ws.Model  %& ws.EventBroadcaster
-    % The main Wavesurfer model object.
-
-    properties (Access = protected)
-        RPCServer_
-        IPCPublisher_
-    end
+classdef Looper < ws.Model
+    % The main Looper model object.
     
-%     properties (SetAccess=immutable, Transient=true)  % transient so doesn't get saved
-%         NFastProtocols = 6
-%     end
-%     
-%     properties (SetAccess = protected, GetAccess = public, Transient = true)
-%         HasUserSpecifiedProtocolFileName = false
-%         AbsoluteProtocolFileName = ''
-%         HasUserSpecifiedUserSettingsFileName = false
-%         AbsoluteUserSettingsFileName = ''
-%     end
-    
-%     properties (Dependent=true, SetAccess = immutable)  %, SetObservable=true)
-%         FastProtocols
-%     end
-% 
-%     properties (Access=protected)
-%         FastProtocols_ = ws.fastprotocol.FastProtocol.empty()
-%     end
-%     
-%     properties (Transient=true)  % SetObservable=true, 
-%         IndexOfSelectedFastProtocol = []
-%     end
-    
-    properties (SetAccess = protected)
+    properties (Dependent = true, SetAccess = immutable)
         Acquisition
         Stimulation
         Triggering
@@ -39,8 +11,8 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
         %Ephys
     end
     
-    properties (SetAccess = protected, Dependent = true)  % SetObservable = true, 
-        State
+    properties (Dependent = true, SetAccess = protected)  % SetObservable = true, 
+        %State
     end
     
     properties (Dependent = true, Transient=true)  % transient b/c actually stored in Acquisition subsystem  % SetObservable = true, 
@@ -59,7 +31,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             % of the start trigger.  If in continuous mode, it is always 1.
     end
     
-    properties (SetAccess = protected, Transient=true)  % SetObservable = true, 
+    properties (Dependent = true, SetAccess = protected)  % SetObservable = true, 
         NSweepsCompletedInThisRun = 0   % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
     end
     
@@ -83,30 +55,45 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
     end
     
     properties (Access = protected)
+        RPCServer_
+        IPCPublisher_
+    end
+    
+    properties (Access = protected)
         %IsYokedToScanImage_ = false
+        Acquisition_
+        Stimulation_
+        Triggering_
+        %Display
+        %Logging
+        UserFunctions_
+        %Ephys
         IsSweepBased_ = true
         NSweepsPerRun_ = 1
     end
 
     properties (Access=protected, Transient=true)
-        State_ = ws.ApplicationState.Uninitialized
+        %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
+        NSweepsCompletedInThisRun_ = 0
         t_
-        SweepAcqSampleCount_
-        FromRunStartTicId_
+        NScansAcquiredInSweepSoFar_
+        FromRunStartTicId_  
         FromSweepStartTicId_
-        TimeOfLastWillPerformSweep_        
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceRunStart_ = 0
         %PollingTimer_
-        MinimumPollingDt_
+        %MinimumPollingDt_
         TimeOfLastPollInSweep_
-        ClockAtRunStart_
+        %ClockAtRunStart_
         %DoContinuePolling_
         IsSweepComplete_
         WasRunStoppedByUser_        
         WasExceptionThrown_
         ThrownException_
+        DoKeepRunningMainLoop_
+        IsPerformingRun_ = false
+        IsPerformingSweep_ = false
     end
     
 %     events
@@ -143,18 +130,18 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             %self.IsSweepBased_=true;
             %self.NSweepsPerRun_ = 1;
             
-            % Initialize the fast protocols
-            self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
-            self.IndexOfSelectedFastProtocol=1;
+%             % Initialize the fast protocols
+%             self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
+%             self.IndexOfSelectedFastProtocol=1;
             
             % Create all subsystems.
-            self.Acquisition = ws.system.Acquisition(self);
-            self.Stimulation = ws.system.Stimulation(self);
-            self.Display = ws.system.Display(self);
-            self.Triggering = ws.system.Triggering(self);
-            self.UserFunctions = ws.system.UserFunctions(self);
-            self.Logging = ws.system.Logging(self);
-            self.Ephys = ws.system.Ephys(self);
+            self.Acquisition_ = ws.system.LooperAcquisition(self);
+            self.Stimulation_ = ws.system.LooperStimulation(self);
+            %self.Display = ws.system.Display(self);
+            self.Triggering_ = ws.system.LooperTriggering(self);
+            self.UserFunctions_ = ws.system.UserFunctions(self);
+            %self.Logging = ws.system.Logging(self);
+            %self.Ephys = ws.system.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -162,28 +149,8 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserFunctions};
+            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering, self.UserFunctions};
             
-%             % Configure subystem trigger relationships.  (Essentially,
-%             % this happens automatically now.)
-%             self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
-%             self.Stimulation.TriggerScheme = self.Triggering.StimulationTriggerScheme;
-
-            % Create a timer object to poll during acquisition/stimulation
-            % We can't set the callbacks here, b/c timers don't seem to behave like other objects for the purposes of
-            % object destruction.  If the polling timer has callbacks that point at the WavesurferModel, and the WSM
-            % points at the polling timer (as it will), then that seems to function as a reference loop that Matlab
-            % can't figure out is reclaimable b/c it's not refered to anywhere.  So we set the callbacks just before we
-            % start the timer, and we clear them just after we stop the timer.  This seems to solve the problem, and the
-            % WSM gets deleted once there are no more references to it.
-%             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
-%                                        'ExecutionMode','fixedRate', ...
-%                                        'Period',0.100, ...
-%                                        'BusyMode','drop', ...
-%                                        'ObjectVisibility','off');
-%             %                           'TimerFcn',@(timer,timerStruct)(self.poll_()), ...
-%             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
-
             % Set up sockets
             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
             self.RPCServer_.setDelegate(self) ;
@@ -193,7 +160,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
-            self.State = ws.ApplicationState.NoMDF;
+            %self.State = ws.ApplicationState.NoMDF;
         end
         
         function delete(self) %#ok<INUSD>
@@ -238,50 +205,124 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
 %             end
 %         end
         
-        function play(self)
-            % Start a run without recording data to disk.
-            self.Logging.Enabled = false ;
-            self.run_() ;
-        end
-        
-        function record(self)
-            % Start a run, recording data to disk.
-            self.Logging.Enabled = true ;
-            self.run_() ;
-        end
+        function runMainLoop(self)
+            % Main loop
+            self.DoKeepRunningMainLoop_ = true ;
+            while self.DoKeepRunningMainLoop_ ,
+                %fprintf('\n\n\nLooper: At top of main loop\n');
+                if self.IsPerformingSweep_ ,
+                    % Check for messages, but don't wait for them
+                    self.RPCServer.processMessageIfAvailable() ;
+                    
+                    % Acquire data, update soft real-time outputs
+                    self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+                        % This causes dataAcquired() to be fired for each
+                        % subsystem, which should do the rest of the work.
+                    %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;                    
+                else
+                    % Check for messages, blocking until we get one
+                    self.RPCServer.processMessage() ;
+                end
+            end
+        end  % function
 
-        function stop(self)
+        function err = willPerformRun(self,wavesurferModelSettings)
+            % Make the looper settings look like the
+            % wavesurferModelSettings, set everything else up for a run.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % Set default return value, if nothing goes wrong
+            err = [] ;
+            
+            % Prepare for the run
+            try
+                self.prepareForRun_(wavesurferModelSettings) ;
+            catch me
+                err=me ;
+            end
+        end  % function
+        
+%         function err = start(self)
+%             % Start a run
+%             self.run_() ;
+%             err = [] ;
+%         end
+
+        function err = willPerformSweep(self,indexOfSweepWithinRun)
+            % Sent by the wavesurferModel to 
+            % Make the looper settings look like the
+            % wavesurferModelSettings, set everything else up for a run.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % Set default return value, if nothing goes wrong
+            err = [] ;
+            
+            % Prepare for the run
+            try
+                self.prepareForSweep_(indexOfSweepWithinRun) ;
+            catch me
+                err=me ;
+            end
+        end  % function
+
+        function err = startSweep(self,indexOfSweepWithinRun)
+            % Once everything is prepped, WSM calls this to actually start
+            % the sweep
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % Set default return value, if nothing goes wrong
+            err = [] ;
+            
+            % Prepare for the run
+            try
+                self.startSweep_(indexOfSweepWithinRun) ;
+            catch me
+                err=me ;
+            end
+        end  % function
+        
+        function err = stopSweepAndRun(self)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current run, if any.
 
-            if self.State == ws.ApplicationState.Idle , 
+            % Set default return value, if nothing goes wrong
+            err = [] ;
+            
+            if self.IsPerformingRun_ , 
                 % do nothing
             else
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');
                 self.WasRunStoppedByUser_ = true ;
             end
+            
         end
     end  % methods
     
     methods
-        function value=get.State(self)
-            value=self.State_;
-        end  % function
-        
-        function set.State(self,newValue)
-            self.broadcast('WillSetState');
-            if isa(newValue,'ws.ApplicationState') ,
-                if self.State_ ~= newValue ,
-                    oldValue=self.State_;
-                    self.State_ = newValue;
-                    if oldValue==ws.ApplicationState.NoMDF && newValue~=ws.ApplicationState.NoMDF ,
-                        self.broadcast('DidSetStateAwayFromNoMDF');
-                    end
-                end
-            end
-            self.broadcast('DidSetState');
-        end  % function
+%         function value=get.State(self)
+%             value=self.State_;
+%         end  % function
+%         
+%         function set.State(self,newValue)
+%             self.broadcast('WillSetState');
+%             if isa(newValue,'ws.ApplicationState') ,
+%                 if self.State_ ~= newValue ,
+%                     oldValue=self.State_;
+%                     self.State_ = newValue;
+%                     if oldValue==ws.ApplicationState.NoMDF && newValue~=ws.ApplicationState.NoMDF ,
+%                         self.broadcast('DidSetStateAwayFromNoMDF');
+%                     end
+%                 end
+%             end
+%             self.broadcast('DidSetState');
+%         end  % function
         
 %         function value=get.NextSweepIndex(self)
 %             % This is a pass-through method to get the NextSweepIndex from
@@ -293,6 +334,26 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
 %             end
 %         end  % function
         
+        function out = get.Acquisition(self)
+            out = self.Acquisition_ ;
+        end
+        
+        function out = get.Stimulation(self)
+            out = self.Stimulation_ ;
+        end
+        
+        function out = get.Triggering(self)
+            out = self.Triggering_ ;
+        end
+        
+        function out = get.UserFunctions(self)
+            out = self.UserFunctions_ ;
+        end
+        
+        function out = get.NSweepsCompletedInThisRun(self)
+            out = self.NSweepsCompletedInThisRun_ ;
+        end
+
         function val = get.NSweepsPerRun(self)
             if self.IsContinuous ,
                 val = 1;
@@ -424,25 +485,25 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             end            
         end
         
-        function set.IsYokedToScanImage(self,newValue)
-            if islogical(newValue) && isscalar(newValue) ,
-                areFilesGone=self.ensureYokingFilesAreGone_();
-                % If the yoking is being turned on (from being off), and
-                % deleting the command/response files fails, don't go into
-                % yoked mode.
-                if ~areFilesGone && newValue && ~self.IsYokedToScanImage_ ,
-                    self.broadcast('UpdateIsYokedToScanImage');
-                    error('WavesurferModel:UnableToDeleteExistingYokeFiles', ...
-                          'Unable to delete one or more yoking files');
-                end
-                self.IsYokedToScanImage_ = newValue;
-            end
-            self.broadcast('UpdateIsYokedToScanImage');
-        end  % function
-
-        function value=get.IsYokedToScanImage(self)
-            value = self.IsYokedToScanImage_ ;
-        end  % function        
+%         function set.IsYokedToScanImage(self,newValue)
+%             if islogical(newValue) && isscalar(newValue) ,
+%                 areFilesGone=self.ensureYokingFilesAreGone_();
+%                 % If the yoking is being turned on (from being off), and
+%                 % deleting the command/response files fails, don't go into
+%                 % yoked mode.
+%                 if ~areFilesGone && newValue && ~self.IsYokedToScanImage_ ,
+%                     self.broadcast('UpdateIsYokedToScanImage');
+%                     error('WavesurferModel:UnableToDeleteExistingYokeFiles', ...
+%                           'Unable to delete one or more yoking files');
+%                 end
+%                 self.IsYokedToScanImage_ = newValue;
+%             end
+%             self.broadcast('UpdateIsYokedToScanImage');
+%         end  % function
+% 
+%         function value=get.IsYokedToScanImage(self)
+%             value = self.IsYokedToScanImage_ ;
+%         end  % function        
         
         function willPerformTestPulse(self)
             % Called by the TestPulserModel to inform the WavesurferModel that
@@ -571,9 +632,9 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             self.Ephys.releaseHardwareResources();
         end
         
-        function result=get.FastProtocols(self)
-            result = self.FastProtocols_;
-        end
+%         function result=get.FastProtocols(self)
+%             result = self.FastProtocols_;
+%         end
         
         function didSetAcquisitionSampleRate(self,newValue)
             ephys = self.Ephys ;
@@ -594,169 +655,129 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
 %             end
 %         end
         
-        function run_(self)
-            %fprintf('WavesurferModel::run_()\n');     
+        function prepareForRun_(self, wavesurferModelSettings)
+            % Get ready to run, but don't start anything.
 
-            if self.State ~= ws.ApplicationState.Idle ,
+            % If we're already acquiring, just ignore the message
+            if self.IsPerformingRun_ ,
                 return
             end
-
-            self.changeReadiness(-1);
             
-            % If yoked to scanimage, write to the command file, wait for a
-            % response
-            if self.IsYokedToScanImage_ && self.IsSweepBased ,
-                try
-                    self.writeAcqSetParamsToScanImageCommandFile_();
-                catch excp
-                    self.abortRun_('problem');
-                    self.changeReadiness(+1);
-                    rethrow(excp);
-                end
-                [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
-                if ~isScanImageReady ,
-                    self.ensureYokingFilesAreGone_();
-                    self.abortRun_('problem');
-                    self.changeReadiness(+1);
-                    error('WavesurferModel:ScanImageNotReady', ...
-                          errorMessage);
-                end
-            end
+            % Change our own acquisition state if get this far
+            self.WasRunStoppedByUser_ = false ;
+            self.NSweepsCompletedInThisRun_ = 0 ;
+            self.IsPerformingRun_ = true ;                        
             
-            self.NSweepsCompletedInThisRun = 0;
-            
-            self.callUserFunctions_('runWillStart');  
+            % Make our own settings mimic those of wavesurferModelSettings
+            self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
+            self.decodeProperties(wavesurferModelSettings);
             
             % Tell all the subsystems to prepare for the run
-            self.ClockAtRunStart_ = clock() ;
-              % do this now so that the data file header has the right value
             try
-                for idx = 1: numel(self.Subsystems_) ,
+                for idx = 1:numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.Enabled ,
                         self.Subsystems_{idx}.willPerformRun();
                     end
                 end
             catch me
-                self.cleanUpAfterAbortedRun_('problem');
-                self.changeReadiness(+1);
+                self.cleanUpAfterAbortedRun_('problem') ;
+                %self.changeReadiness(+1);
                 me.rethrow();
             end
             
-            self.State = ws.ApplicationState.Running ;
-            
-            % Handle timing stuff
-            self.TimeOfLastWillPerformSweep_=[];
-            self.FromRunStartTicId_=tic();
-            self.NTimesSamplesAcquiredCalledSinceRunStart_=0;
-            self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
-            
-            self.changeReadiness(+1);
+            % Initialize timing variables
+            self.FromRunStartTicId_ = tic() ;
+            self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
-            % Move on to performing the sweeps
-            didCompleteLastSweep = true ;
-            didUserStop = false ;
-            didThrow = false ;
-            exception = [] ;
-            for iSweep = 1:self.NSweepsPerRun ,
-                if didCompleteLastSweep ,
-                    [didCompleteLastSweep,didUserStop,didThrow,exception] = self.performSweep_() ;
-                end
-            end
+            %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
             
-            % Do some kind of clean up
-            if didCompleteLastSweep ,
-                self.cleanUpAfterCompletedRun_();
-            else
-                % do something else                
-                reason = ws.utility.fif(didUserStop, 'user', 'problem') ;
-                self.cleanUpAfterAbortedRun_(reason);
-            end
-            
-            % If an exception was thrown, re-throw it
-            if didThrow ,
-                rethrow(exception) ;
-            end
+%             % Move on to performing the sweeps
+%             didCompleteLastSweep = true ;
+%             didUserStop = false ;
+%             didThrow = false ;
+%             exception = [] ;
+%             for iSweep = 1:self.NSweepsPerRun ,
+%                 if didCompleteLastSweep ,
+%                     [didCompleteLastSweep,didUserStop,didThrow,exception] = self.performSweep_() ;
+%                 end
+%             end
+%             
+%             % Do some kind of clean up
+%             if didCompleteLastSweep ,
+%                 self.cleanUpAfterCompletedRun_();
+%             else
+%                 % do something else                
+%                 reason = ws.utility.fif(didUserStop, 'user', 'problem') ;
+%                 self.cleanUpAfterAbortedRun_(reason);
+%             end
+%             
+%             % If an exception was thrown, re-throw it
+%             if didThrow ,
+%                 rethrow(exception) ;
+%             end
         end  % function
         
-        function [didCompleteSweep,didUserStop,didThrow,exception] = performSweep_(self)
-            % time between subsequent calls to this, etc
-            t=toc(self.FromRunStartTicId_);
-            self.TimeOfLastWillPerformSweep_=t;
+        function err = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+            % Get everything set up for the Looper to run a sweep, but
+            % don't pulse the master trigger yet.
             
-            % clear timing stuff that is strictly within-sweep
-            self.TimeOfLastSamplesAcquired_=[];            
+            % Set the fallback err value, which gets returned if nothing
+            % goes wrong
+            err = [] ;
             
             % Reset the sample count for the sweep
-            self.SweepAcqSampleCount_ = 0;
-            
-            % update the current time
-            self.t_=0;            
-            
-            % Pretend that we last polled at time 0
-            self.TimeOfLastPollInSweep_ = 0 ;  % s 
-            
-            % Notify listeners that the sweep is about to start.
-            % Not clear to me who, if anyone, currently subscribes to this
-            % event.  -- ALT, 2014-05-20
-            self.callUserFunctions_('sweepWillStart');            
-            
-            % Call willPerformSweep() on all the enabled subsystems
+            self.NScansAcquiredInSweepSoFar_ = 0;
+                        
+            % Call willPerformSweep() on all the enabled subsystems, and
+            % start the counter timer tasks
             try
-                for idx = 1:numel(self.Subsystems_)
-                    if self.Subsystems_{idx}.Enabled ,
-                        self.Subsystems_{idx}.willPerformSweep();
+                for i = 1:numel(self.Subsystems_) ,
+                    if self.Subsystems_{i}.Enabled ,
+                        self.Subsystems_{i}.willPerformSweep();
                     end
                 end
 
-                % Set the sweep timer
-                self.FromSweepStartTicId_=tic();
+                % Start the counter timer tasks, which will trigger the
+                % hardware-timed AI, AO, DI, and DO tasks.  But the counter
+                % timer tasks will not start running until they themselves
+                % are triggered by the master trigger.
+                self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::willPerformSweep?  Is there an ordering issue?
 
-                %% Start the timer that will poll for data and task doneness
-                %self.PollingTimer_.start();
-
-                % Any system waiting for an internal or external trigger was armed and waiting
-                % in the subsystem willPerformSweep() above.
-                %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
-                self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
-
-                % Now poll
-                [didCompleteSweep,didUserStop] = self.runPollingLoop_();
-
-                % When done, clean up after sweep
-                if didCompleteSweep ,
-                    self.cleanUpAfterCompletedSweep_();
-                else
-                    self.cleanUpAfterAbortedSweep_();
-                end
+                % At this point, all the hardware-timed tasks the looper is
+                % responsible for should be "started" (in the DAQmx sense)
+                % and simply waiting for their trigger to go high to truly
+                % start.                
                 
-                % No errors thrown, so set return values accordingly
-                didThrow = false ;  
-                exception = [] ;
+                self.PollingTicId_ = tic() ;
+                self.TimeOfLastPoll_ = toc(self.PollingTidId_) ;  % fake, but need to get things started
             catch me
-                self.cleanUpAfterAbortedSweep_();
-                didCompleteSweep = false ;
-                didUserStop = false ;
-                didThrow = true ;
-                exception = me ;
-                return
+                err = me ;
             end
         end  % function
 
-%         function cleanUpAfterSweepAndDaisyChainNextAction_(self)
-%             %fprintf('WavesurferModel::cleanUpAfterSweepAndDaisyChainNextAction_()\n');
-%             %dbstack
-% 
-%             % clean up after the sweep
-%             self.cleanUpAfterSweep_() ;
-%             
-%             % Daisy-chain another sweep, or wrap up the run,
-%             % depending
-%             self.daisyChainNextAction_();
-%         end  % function
+        function err = startSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+            % Start the sweep by pulsing the master trigger (a
+            % software-timed digital output).
+            
+            % Set the fallback err value, which gets returned if nothing
+            % goes wrong
+            err = [] ;
+
+            % Pulse the master trigger, dealing with any errors
+            try
+                self.IsSweepComplete_ = false ;
+                self.Triggering.pulseMasterTrigger();
+                self.IsPerformingSweep_ = true ;
+            catch me
+                err = me ;
+            end
+        end  % function
         
         function cleanUpAfterCompletedSweep_(self)
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');
             %dbstack
+            
+            self.IsPerformingSweep_ = false ;
             
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
@@ -766,107 +787,22 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             end
             
             % Bump the number of completed sweeps
-            self.NSweepsCompletedInThisRun = self.NSweepsCompletedInThisRun + 1;
+            self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
         
-            % Broadcast event
-            self.broadcast('DidCompleteSweep');
+%             % Broadcast event
+%             self.broadcast('DidCompleteSweep');
             
-            % Call user functions and broadcast
-            self.callUserFunctions_('sweepDidComplete');
+%             % Call user functions and broadcast
+%             self.callUserFunctions_('sweepDidComplete');
         end  % function
-        
-%         function daisyChainNextAction_(self)
-%             %fprintf('WavesurferModel::daisyChainNextAction_()\n');
-%             %dbstack
-%             
-%             % Daisy-chain another sweep, or wrap up the run,
-%             % depending
-%             if self.Stimulation.Enabled ,
-%                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
-%                     if self.Triggering.AcquisitionTriggerScheme.IsExternal ,
-%                         % stim, acq are both external
-%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-%                             % stim, acq are both external, and are
-%                             % identical
-%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                         else
-%                             % stim, acq are both external, but are distinct
-%                             % In this case, we never declare the exp done, but we
-%                             % might daisy chain another sweep.
-%                             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                                 self.performSweep_();
-%                             else
-%                                 % do nothing
-%                             end
-%                         end
-%                     else
-%                         % stim external, acq internal
-%                         % In this case, we never declare the exp done, but we
-%                         % might daisy chain another sweep.
-%                         if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                             self.performSweep_();
-%                         else
-%                             % do nothing
-%                         end
-%                     end                    
-%                 else
-%                     % Stim triggering is internal
-%                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-%                         % Stim and acq triggers are both internal
-%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
-%                             % acq and stim trig sources are internal and identical
-%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                         else
-%                             % acq and stim trig sources are internal, but distinct
-%                             if self.Stimulation.IsWithinRun ,
-%                                 if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                                     self.performSweep_();
-%                                 else
-%                                     % no more acq sweeps to do, but
-%                                     % have to wait for stim to finish
-%                                     % before run is done
-%                                 end                                
-%                             else
-%                                 % stim is done, so all depends on acq
-%                                 self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                             end
-%                         end
-%                     else
-%                         % stim trig internal, acq trig external
-%                         % therefore they're distinct
-%                         if self.Stimulation.IsWithinRun ,
-%                             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                                 self.performSweep_();
-%                             else
-%                                 % no more acq sweeps to do, but
-%                                 % have to wait for stim to finish
-%                                 % before run is done
-%                             end                                
-%                         else
-%                             % stim is done, so all depends on acq
-%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                         end
-%                     end
-%                 end
-%             else
-%                 % Stimulation subsystem is disabled
-%                 self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%             end            
-%         end  % function
-        
-%         function performSweepOrCleanupAfterRunDependingOnAcqOnly_(self)
-%             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                 self.performSweep_();
-%             else
-%                 self.cleanupAfterRun_();
-%             end
-%         end  % function
         
         function cleanUpAfterAbortedSweep_(self)
             % Command to abort the current sweep, and the current run.  reason should be either
             % 'user' (meaning a user caused the sweep to stop), or
             % 'problem', meaning some problem occured.
             
+            self.IsPerformingSweep_ = false ;
+
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.Enabled ,
                     try 
@@ -880,42 +816,15 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
                 end
             end
             
-            self.callUserFunctions_('sweepDidAbort');
+            %self.callUserFunctions_('sweepDidAbort');
             
             %self.abortRun_(reason);
         end  % function
         
-%         function abortSweepAndRun_(self, reason, highestIndexedSubsystemThatNeedsAbortion)
-%             % Command to abort the current sweep, and the current run.  reason should be either
-%             % 'user' (meaning a user caused the sweep to stop), or
-%             % 'problem', meaning some problem occured.
-%             
-%             if nargin < 3 ,
-%                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
-%             end
-%             
-%             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
-%                 if self.Subsystems_{idx}.Enabled ,
-%                     try 
-%                         self.Subsystems_{idx}.didAbortSweep();
-%                     catch me
-%                         % In theory, Subsystem::didAbortSweep() never
-%                         % throws an exception
-%                         % But just in case, we catch it here and ignore it
-%                         disp(me.getReport());
-%                     end
-%                 end
-%             end
-%             
-%             self.callUserFunctions_('sweepDidAbort');
-%             
-%             self.abortRun_(reason);
-%         end  % function
-        
         function cleanUpAfterCompletedRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
-            self.State = ws.ApplicationState.Idle;
+            self.IsPerformingRun_ = false ;
             
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.Enabled
@@ -927,7 +836,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
-            self.State = ws.ApplicationState.Idle;
+            self.IsPerformingRun_ = false ;
             
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.Enabled ,
@@ -975,51 +884,23 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
                 end
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
-                self.SweepAcqSampleCount_ = self.SweepAcqSampleCount_ + nScans;
-
-                self.broadcast('DataAvailable');
+                % Toss the data to the subscribers
+                self.IPCPublisher.send('dataAvailable',self.NScansAcquiredInSweepSoFar_, rawAnalogData, rawDigitalData) ;
                 
-                self.callUserFunctions_('dataIsAvailable');
+                % Update the number of scans acquired
+                self.NScansAcquiredInSweepSoFar_ = self.NScansAcquiredInSweepSoFar_ + nScans;
+
+                %self.broadcast('DataAvailable');
+                
+                %self.callUserFunctions_('dataIsAvailable');  
+                    % now called by UserFunctions dataIsAvailable() method
             end
         end  % function
         
     end % protected methods block
     
     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.most.app.Model(self);
-%             self.setPropertyAttributeFeatures('NSweepsPerRun', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-%             self.setPropertyAttributeFeatures('SweepDuration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('IsSweepBased', 'Classes', 'logical', 'Attributes', {'scalar'});
-%             self.setPropertyAttributeFeatures('IsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
-%         end  % function
-        
         function defineDefaultPropertyTags(self)
-%             % Mark all the subsystems since they are SetAccess protected which won't be picked
-%             % up by default.
-%             self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
-%             self.setPropertyTags('FastProtocols', 'ExcludeFromFileTypes', {'cfg','header'});
-%             self.setPropertyTags('Acquisition', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Stimulation', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Triggering', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Display', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr','header'});
-%             self.setPropertyTags('Logging', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('UserFunctions', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
-%             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('NSweepsCompletedInThisRun', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('NSweepsPerRun', 'IncludeInFileTypes', {'header'});
-%             self.setPropertyTags('NSweepsPerRun_', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('IsSweepBased', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('IsSweepBased', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('IsContinuous', 'ExcludeFromFileTypes', {'*'});
-            
             % Exclude all the subsystems except FastProtocols from usr
             % files
             defineDefaultPropertyTags@ws.Model(self);            
@@ -1061,13 +942,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             if isequal(name,'NSweepsPerRun_') ,
                 self.NSweepsPerRun=ws.most.util.Nonvalue.The;
             end                
-        end  % function
-        
-%         function syncFromElectrodes(self)
-%             self.Acquisition.syncFromElectrodes();
-%             self.Stimulation.syncFromElectrodes();            
-%         end
-
+        end  % function        
     end  % methods ( Access = protected )
     
     methods
@@ -1099,36 +974,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
         end  % function
     end  % methods block
         
-    methods (Access = protected)        
-%         % Allows ws.mixin.DependentProperties to initiate registered dependencies on
-%         % properties that are not otherwise publicly settable.
-%         function zprvPrivateSet(self, propertyName)
-%             self.(propertyName) = NaN;
-%         end
-        
-%         function AcquisitionTriggerSchemeSourceChanged_(self, ~)
-%             % Delete the listener on the old sweep trigger
-%             delete(self.TrigListener_);
-%             
-%             % Set up a new listener
-%             if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-%                 self.TrigListener_ = ...
-%                     self.Triggering.AcquisitionTriggerScheme.Source.addlistener({'RepeatCount', 'Interval'}, 'PostSet', @(src,evt)self.zprvSetRunalSweepCount);
-%             else
-%                 self.TrigListener_ = ...
-%                     self.Triggering.AcquisitionTriggerScheme.Source.addlistener('RepeatCount', 'PostSet', @(src,evt)self.zprvSetRunalSweepCount);
-%             end
-%             
-%             % Call the listener callback once to sync things up
-%             self.zprvSetRunalSweepCount();
-%         end  % function
-%         
-%         function zprvSetRunalSweepCount(self, ~)
-%             %fprintf('WavesurferModel.zprvSetRunalSweepCount()\n');
-%             %self.NSweepsPerRun = self.Triggering.SweepTrigger.Source.RepeatCount;
-%             %self.Triggering.SweepTrigger.Source.RepeatCount=1;  % Don't allow this to change
-%         end  % function
-        
+    methods (Access = protected)                
         function callUserFunctions_(self, eventName)
             % Handle user functions.  It would be possible to just make the UserFunctions
             % subsystem a regular listener of these events.  Handling it
@@ -1196,19 +1042,6 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             fileName='si_command.txt';
             absoluteFileName=fullfile(dirName,fileName);
             
-%             trigger=self.Triggering.AcquisitionTriggerScheme;
-%             if trigger.IsInternal ,
-%                 pfiLineId=nan;  % used by convention
-%                 edgeType=trigger.Edge;
-%             else
-%                 pfiLineId=trigger.PFIID;
-%                 edgeType=trigger.Edge;
-%             end
-%             if isempty(edgeType) ,
-%                 edgeTypeString='';
-%             else
-%                 edgeTypeString=edgeType.toString();  % 'rising' or 'falling'
-%             end
             nAcqsInSet=self.NSweepsPerRun;
             iFirstAcqInSet=self.Logging.NextSweepIndex;
             
@@ -1276,15 +1109,6 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
         end  % function
     
     end  % protected methods block
-    
-%     methods (Hidden)
-%         function out = debug_description(self)
-%             out = cell(size(self.Subsystems_));
-%             for idx = 1: numel(self.Subsystems_)
-%                 out{idx} = [out '\n' self.Subsystems_{idx}.debug_description()];
-%             end
-%         end
-%     end
     
     methods (Access=public)
         function commandScanImageToSaveProtocolFileIfYoked(self,absoluteProtocolFileName)
@@ -1406,18 +1230,10 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
         function s = propertyAttributes()
             s = struct();
             
-            %s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-            %s.SweepDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
         end  % function
     end  % class methods block
-    
-%     methods
-%         function nScopesMayHaveChanged(self)
-%             self.broadcast('NScopesMayHaveChanged');
-%         end
-%     end
     
     methods
         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
@@ -1481,8 +1297,6 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
 
-            %self.loadProperties(absoluteFileName);
-            
             self.changeReadiness(-1);
 
             if ws.most.util.isFileNameAbsolute(fileName) ,
@@ -1506,15 +1320,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
     end        
 
     methods
-        function saveUserFileForRealsSrsly(self, absoluteFileName)
-%             if exist(absoluteFileName,'file') ,
-%                 delete(absoluteFileName);  % Have to delete it if it exists, otherwise savePropertiesImpl() will append.
-%                 if exist(absoluteFileName,'file') ,
-%                     error('WavesurferController:UnableToOverwriteUserSettingsFile', ...
-%                           'Unable to overwrite existing user settings file');
-%                 end
-%             end
-            
+        function saveUserFileForRealsSrsly(self, absoluteFileName)            
             self.changeReadiness(-1);
 
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
@@ -1540,32 +1346,22 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
         end  % function
     end
     
-    methods
-        function set.AbsoluteProtocolFileName(self,newValue)
-            % SetAccess is protected, no need for checks here
-            self.AbsoluteProtocolFileName=newValue;
-            self.broadcast('DidSetAbsoluteProtocolFileName');
-        end
-    end
-
-    methods
-        function set.AbsoluteUserSettingsFileName(self,newValue)
-            % SetAccess is protected, no need for checks here
-            self.AbsoluteUserSettingsFileName=newValue;
-            self.broadcast('DidSetAbsoluteUserSettingsFileName');
-        end
-    end
-
 %     methods
-%         function triggeringSubsystemJustStartedFirstSweepInRun(self)
-%             % Called by the triggering subsystem just after first sweep
-%             % started.
-%             
-%             % This means we need to run the main polling loop.
-%             self.runPollingLoop_();
-%         end  % function
+%         function set.AbsoluteProtocolFileName(self,newValue)
+%             % SetAccess is protected, no need for checks here
+%             self.AbsoluteProtocolFileName=newValue;
+%             self.broadcast('DidSetAbsoluteProtocolFileName');
+%         end
 %     end
-    
+% 
+%     methods
+%         function set.AbsoluteUserSettingsFileName(self,newValue)
+%             % SetAccess is protected, no need for checks here
+%             self.AbsoluteUserSettingsFileName=newValue;
+%             self.broadcast('DidSetAbsoluteUserSettingsFileName');
+%         end
+%     end
+
     methods (Access=protected)
         function [isSweepComplete,wasStoppedByUser] = runPollingLoop_(self)
             % Runs the main polling loop.
@@ -1583,11 +1379,11 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
                     timeOfLastPoll = timeNow ;
                     timeSinceSweepStart = toc(self.FromSweepStartTicId_);
                     self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-                    self.Stimulation.poll(timeSinceSweepStart);
+                    %self.Stimulation.poll(timeSinceSweepStart);
                     %self.Triggering.poll(timeSinceSweepStart);
                     %self.Display.poll(timeSinceSweepStart);
                     %self.Logging.poll(timeSinceSweepStart);
-                    %self.UserFunctions.poll(timeSinceSweepStart);
+                    self.UserFunctions.poll(timeSinceSweepStart);
                     drawnow() ;  % update, and also process any user actions
                 else
                     pause(0.010);  % don't want this loop to completely peg the CPU
@@ -1595,30 +1391,7 @@ classdef Looper < ws.Model  %& ws.EventBroadcaster
             end    
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to
-        end  % function
-        
-%         function poll_(self)
-%             %fprintf('\n\n\nWavesurferModel::poll()\n');
-%             timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-%             self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-%             self.Stimulation.poll(timeSinceSweepStart);
-%             self.Triggering.poll(timeSinceSweepStart);
-%             %self.Display.poll(timeSinceSweepStart);
-%             %self.Logging.poll(timeSinceSweepStart);
-%             %self.UserFunctions.poll(timeSinceSweepStart);
-%             %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
-%         end
-        
-%         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
-%             %fprintf('WavesurferModel::pollTimerErrored()\n');
-%             %eventData
-%             %eventData.Data            
-%             self.abortSweepAndRun_('problem');  % Put an end to the run
-%             error('waversurfer:pollingTimerError',...
-%                   'The polling timer had a problem.  Acquisition aborted.');
-%         end        
+        end  % function        
     end
     
 end  % classdef
-
-

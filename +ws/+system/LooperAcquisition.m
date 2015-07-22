@@ -1086,7 +1086,7 @@ classdef LooperAcquisition < ws.system.Subsystem
                 %if areTasksDone ,
                 %    fprintf('Acquisition tasks are done.\n')
                 %end
-                    
+                
                 % Get data
                 %if areTasksDone ,
                 %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
@@ -1107,7 +1107,7 @@ classdef LooperAcquisition < ws.system.Subsystem
                     self.AnalogInputTask_.stop();
                     self.DigitalInputTask_.stop();
                     self.acquisitionSweepComplete_();
-                end                
+                end
             end
             
             % Prepare for next time            
