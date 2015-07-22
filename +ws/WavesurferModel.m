@@ -614,8 +614,6 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.NSweepsCompletedInThisRun = 0;
             
             self.callUserFunctions_('runWillStart');  
-                % no one listens for this, it seems, but it does directly
-                % lead to user function getting called --ALT, 2014-08-24
             
             % Tell all the subsystems to prepare for the run
             self.ClockAtRunStart_ = clock() ;
