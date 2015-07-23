@@ -30,7 +30,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         Ephys
     end
     
-    properties (Dependent = true, SetAccess = protected)  % SetObservable = true, 
+    properties (Dependent = true, SetAccess = protected) 
         State
     end
     
@@ -38,12 +38,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         SweepDuration  % the sweep duration, in s
     end
     
-    properties (Dependent = true)  % SetObservable = true, 
+    properties (Dependent = true)
         IsSweepBased  % boolean scalar, whether the current acquisition mode is sweep-based.
         IsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.IsContinuous == ~self.IsSweepBased
     end
     
-    properties (Dependent = true)  % SetObservable = true, 
+    properties (Dependent = true)
         NSweepsPerRun  
             % Number of sweeps to perform during run.  If in
             % sweep-based mode, this is a pass through to the repeat count
@@ -54,7 +54,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
     end
     
-    properties (Dependent=true)   %, SetObservable=true)
+    properties (Dependent=true)
         IsYokedToScanImage
     end
     
@@ -712,6 +712,9 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 me.rethrow();
             end
             
+            % Now tell the Looper to prepare for the run
+            self.RPC
+            
             self.State = ws.ApplicationState.Running ;
             
             % Handle timing stuff
@@ -788,7 +791,7 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
 
                 % Now poll
-                [didCompleteSweep,didUserStop] = self.runPollingLoop_();
+                [didCompleteSweep,didUserStop] = self.runWithinSweepPollingLoop_();
 
                 % When done, clean up after sweep
                 if didCompleteSweep ,
@@ -1465,21 +1468,20 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     end % methods
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.WavesurferModel.propertyAttributes();
-        
+        mdlPropAttributes = struct();   % ws.WavesurferModel.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            
-            %s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-            %s.SweepDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
-            s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             
+%             %s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+%             %s.SweepDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+%             s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
+%             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
+%         end  % function
+%     end  % class methods block
     
 %     methods
 %         function nScopesMayHaveChanged(self)
@@ -1630,12 +1632,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
 %             % started.
 %             
 %             % This means we need to run the main polling loop.
-%             self.runPollingLoop_();
+%             self.runWithinSweepPollingLoop_();
 %         end  % function
 %     end
     
     methods (Access=protected)
-        function [isSweepComplete,wasStoppedByUser] = runPollingLoop_(self)
+        function [isSweepComplete,wasStoppedByUser] = runWithinSweepPollingLoop_(self)
             % Runs the main polling loop.
             
             pollingTicId = tic() ;

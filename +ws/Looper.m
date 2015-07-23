@@ -11,7 +11,7 @@ classdef Looper < ws.Model
         %Ephys
     end
     
-    properties (Dependent = true, SetAccess = protected)  % SetObservable = true, 
+    properties (Dependent = true, SetAccess = protected)  
         %State
     end
     
@@ -19,12 +19,12 @@ classdef Looper < ws.Model
         SweepDuration  % the sweep duration, in s
     end
     
-    properties (Dependent = true)  % SetObservable = true, 
+    properties (Dependent = true)  
         IsSweepBased  % boolean scalar, whether the current acquisition mode is sweep-based.
         IsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.IsContinuous == ~self.IsSweepBased
     end
     
-    properties (Dependent = true)  % SetObservable = true, 
+    properties (Dependent = true)  
         NSweepsPerRun  
             % Number of sweeps to perform during run.  If in
             % sweep-based mode, this is a pass through to the repeat count
@@ -35,7 +35,7 @@ classdef Looper < ws.Model
         NSweepsCompletedInThisRun = 0   % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
     end
     
-%     properties (Dependent=true)   %, SetObservable=true)
+%     properties (Dependent=true)  
 %         IsYokedToScanImage
 %     end
     
@@ -54,8 +54,9 @@ classdef Looper < ws.Model
           % ClockAtRunStart_ transient, achieves this.
     end
     
-    properties (Access = protected)
+    properties (Access = protected)        
         RPCServer_
+        RPCClient_
         IPCPublisher_
     end
     
@@ -155,8 +156,12 @@ classdef Looper < ws.Model
             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
             self.RPCServer_.setDelegate(self) ;
             self.RPCServer_.bind();
+            
             self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.DataPubSubPortNumber) ;
             self.IPCPublisher_.bind() ;
+
+            self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendRPCPortNumber) ;
+            self.RPCClient_.connect() ;
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -210,15 +215,28 @@ classdef Looper < ws.Model
             self.DoKeepRunningMainLoop_ = true ;
             while self.DoKeepRunningMainLoop_ ,
                 %fprintf('\n\n\nLooper: At top of main loop\n');
-                if self.IsPerformingSweep_ ,
-                    % Check for messages, but don't wait for them
-                    self.RPCServer.processMessageIfAvailable() ;
-                    
-                    % Acquire data, update soft real-time outputs
-                    self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+                if self.IsPerformingRun_ && self.IsPerformingSweep_ ,
+                    if self.WasRunStoppedByUser_ ,
+                        % When done, clean up after sweep
+                        self.cleanUpAfterSweepStoppedByUser_();
+                        % Note that we clean up after the sweep, 
+                        % then tell the frontend that we have done so.
+                        % But we don't do the post-run cleanup until
+                        % after the frontend tells us to.
+                        % And in particular, IsPerformingRun_ doesn't
+                        % go false until the frontend tells us to do
+                        % the post-run cleanup.
+                        self.RPCClient_.call('looperStoppedSweep');
+                    else
+                        % Check for messages, but don't wait for them
+                        self.RPCServer.processMessageIfAvailable() ;
+
+                        % Acquire data, update soft real-time outputs
+                        self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
                         % This causes dataAcquired() to be fired for each
                         % subsystem, which should do the rest of the work.
-                    %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;                    
+                        %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;
+                    end
                 else
                     % Check for messages, blocking until we get one
                     self.RPCServer.processMessage() ;
@@ -251,9 +269,9 @@ classdef Looper < ws.Model
 %         end
 
         function err = willPerformSweep(self,indexOfSweepWithinRun)
-            % Sent by the wavesurferModel to 
-            % Make the looper settings look like the
-            % wavesurferModelSettings, set everything else up for a run.
+            % Sent by the wavesurferModel to prompt the Looper to prepare
+            % to run a sweep.  But the sweep doesn't start until the
+            % WavesurferModel calls startSweep().
             %
             % This is called via RPC, so must return exactly one return
             % value, and must not throw.
@@ -287,53 +305,24 @@ classdef Looper < ws.Model
             end
         end  % function
         
-        function err = stopSweepAndRun(self)
+        function err = stop(self)
             % Called when you press the "Stop" button in the UI, for
-            % instance.  Stops the current run, if any.
+            % instance.  Stops the current sweep and run, if any.
 
             % Set default return value, if nothing goes wrong
             err = [] ;
-            
-            if self.IsPerformingRun_ , 
-                % do nothing
-            else
-                % Actually stop the ongoing sweep
-                %self.abortSweepAndRun_('user');
-                self.WasRunStoppedByUser_ = true ;
+
+            % If not running, ignore
+            if ~self.IsPerformingRun_ , 
+                return
             end
             
+            % Actually stop the ongoing sweep
+            self.WasRunStoppedByUser_ = true ;
         end
     end  % methods
     
     methods
-%         function value=get.State(self)
-%             value=self.State_;
-%         end  % function
-%         
-%         function set.State(self,newValue)
-%             self.broadcast('WillSetState');
-%             if isa(newValue,'ws.ApplicationState') ,
-%                 if self.State_ ~= newValue ,
-%                     oldValue=self.State_;
-%                     self.State_ = newValue;
-%                     if oldValue==ws.ApplicationState.NoMDF && newValue~=ws.ApplicationState.NoMDF ,
-%                         self.broadcast('DidSetStateAwayFromNoMDF');
-%                     end
-%                 end
-%             end
-%             self.broadcast('DidSetState');
-%         end  % function
-        
-%         function value=get.NextSweepIndex(self)
-%             % This is a pass-through method to get the NextSweepIndex from
-%             % the Logging subsystem, where it is actually stored.
-%             if isempty(self.Logging) || ~isvalid(self.Logging),
-%                 value=[];
-%             else
-%                 value=self.Logging.NextSweepIndex;
-%             end
-%         end  % function
-        
         function out = get.Acquisition(self)
             out = self.Acquisition_ ;
         end
@@ -796,10 +785,9 @@ classdef Looper < ws.Model
 %             self.callUserFunctions_('sweepDidComplete');
         end  % function
         
-        function cleanUpAfterAbortedSweep_(self)
-            % Command to abort the current sweep, and the current run.  reason should be either
-            % 'user' (meaning a user caused the sweep to stop), or
-            % 'problem', meaning some problem occured.
+        function cleanUpAfterSweepStoppedByUser_(self)
+            % Stops the current sweep, when the run was stopped by the
+            % user.
             
             self.IsPerformingSweep_ = false ;
 
@@ -832,7 +820,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            self.callUserFunctions_('runDidComplete');
+            %self.callUserFunctions_('runDidComplete');
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
@@ -844,7 +832,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            self.callUserFunctions_('runDidAbort');
+            %self.callUserFunctions_('runDidAbort');
         end  % function
         
         function haveDataAvailable_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -923,7 +911,9 @@ classdef Looper < ws.Model
             self.setPropertyTags('IsSweepBased_', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
         end  % function
-        
+    end % protected methods block
+    
+    methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue(self, name)
             out = self.(name);
@@ -931,309 +921,298 @@ classdef Looper < ws.Model
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue(self, name, value)
-            if nargin < 3 ,
-                value = [];
-            end
-            
             self.(name) = value;
-            
-            % This is a hack to make sure the UI gets updated on loading
-            % the .cfg file.
-            if isequal(name,'NSweepsPerRun_') ,
-                self.NSweepsPerRun=ws.most.util.Nonvalue.The;
-            end                
         end  % function        
     end  % methods ( Access = protected )
     
-    methods
-        function initializeFromMDFFileName(self,mdfFileName)
-            self.changeReadiness(-1);
-            mdfStructure = ws.readMachineDataFile(mdfFileName);
-            ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
-            self.initializeFromMDFStructure_(mdfStructure);
-            self.changeReadiness(+1);
-        end
-    end  % methods block
-    
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            self.Display.initializeScopes();
-                        
-            % Change our state to reflect the presence of the MDF file
-            self.State = ws.ApplicationState.Idle;
-        end  % function
-    end  % methods block
+%     methods
+%         function initializeFromMDFFileName(self,mdfFileName)
+%             self.changeReadiness(-1);
+%             mdfStructure = ws.readMachineDataFile(mdfFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
+%             self.initializeFromMDFStructure_(mdfStructure);
+%             self.changeReadiness(+1);
+%         end
+%     end  % methods block
+%     
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)                        
+%             % Initialize the acquisition subsystem given the MDF data
+%             self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             self.Display.initializeScopes();
+%                         
+%             % Change our state to reflect the presence of the MDF file
+%             self.State = ws.ApplicationState.Idle;
+%         end  % function
+%     end  % methods block
         
     methods (Access = protected)                
-        function callUserFunctions_(self, eventName)
-            % Handle user functions.  It would be possible to just make the UserFunctions
-            % subsystem a regular listener of these events.  Handling it
-            % directly removes at 
-            % least one layer of function calls and allows for user functions for 'events'
-            % that are not formally events on the model.
-            self.UserFunctions.invoke(self, eventName);
-            
-            % Handle as standard event if applicable.
-            %self.broadcast(eventName);
-        end  % function
+%         function callUserFunctions_(self, eventName)
+%             % Handle user functions.  It would be possible to just make the UserFunctions
+%             % subsystem a regular listener of these events.  Handling it
+%             % directly removes at 
+%             % least one layer of function calls and allows for user functions for 'events'
+%             % that are not formally events on the model.
+%             self.UserFunctions.invoke(self, eventName);
+%             
+%             % Handle as standard event if applicable.
+%             %self.broadcast(eventName);
+%         end  % function
         
-        function [areFilesGone,errorMessage]=ensureYokingFilesAreGone_(self) %#ok<MANU>
-            % This deletes the command and response yoking files from the
-            % temp dir, if they exist.  On exit, areFilesGone will be true
-            % iff all files are gone.  If areFileGone is false,
-            % errorMessage will indicate what went wrong.
-            
-            dirName=tempdir();
-            
-            % Ensure the command file is gone
-            commandFileName='si_command.txt';
-            absoluteCommandFileName=fullfile(dirName,commandFileName);
-            if exist(absoluteCommandFileName,'file') ,
-                ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
-                if exist(absoluteCommandFileName,'file') , 
-                    isCommandFileGone=false;
-                    errorMessage1='Unable to delete pre-existing ScanImage command file';
-                else
-                    isCommandFileGone=true;
-                    errorMessage1='';
-                end
-            else
-                isCommandFileGone=true;
-                errorMessage1='';
-            end
-            
-            % Ensure the response file is gone
-            responseFileName='si_response.txt';
-            absoluteResponseFileName=fullfile(dirName,responseFileName);
-            if exist(absoluteResponseFileName,'file') ,
-                ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
-                if exist(absoluteResponseFileName,'file') , 
-                    isResponseFileGone=false;
-                    if isempty(errorMessage1) ,
-                        errorMessage='Unable to delete pre-existing ScanImage response file';
-                    else
-                        errorMessage='Unable to delete either pre-existing ScanImage yoking file';
-                    end
-                else
-                    isResponseFileGone=true;
-                    errorMessage=errorMessage1;
-                end
-            else
-                isResponseFileGone=true;
-                errorMessage=errorMessage1;
-            end
-            
-            % Compute whether both files are gone
-            areFilesGone=isCommandFileGone&&isResponseFileGone;
-        end  % function
+%         function [areFilesGone,errorMessage]=ensureYokingFilesAreGone_(self) %#ok<MANU>
+%             % This deletes the command and response yoking files from the
+%             % temp dir, if they exist.  On exit, areFilesGone will be true
+%             % iff all files are gone.  If areFileGone is false,
+%             % errorMessage will indicate what went wrong.
+%             
+%             dirName=tempdir();
+%             
+%             % Ensure the command file is gone
+%             commandFileName='si_command.txt';
+%             absoluteCommandFileName=fullfile(dirName,commandFileName);
+%             if exist(absoluteCommandFileName,'file') ,
+%                 ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
+%                 if exist(absoluteCommandFileName,'file') , 
+%                     isCommandFileGone=false;
+%                     errorMessage1='Unable to delete pre-existing ScanImage command file';
+%                 else
+%                     isCommandFileGone=true;
+%                     errorMessage1='';
+%                 end
+%             else
+%                 isCommandFileGone=true;
+%                 errorMessage1='';
+%             end
+%             
+%             % Ensure the response file is gone
+%             responseFileName='si_response.txt';
+%             absoluteResponseFileName=fullfile(dirName,responseFileName);
+%             if exist(absoluteResponseFileName,'file') ,
+%                 ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
+%                 if exist(absoluteResponseFileName,'file') , 
+%                     isResponseFileGone=false;
+%                     if isempty(errorMessage1) ,
+%                         errorMessage='Unable to delete pre-existing ScanImage response file';
+%                     else
+%                         errorMessage='Unable to delete either pre-existing ScanImage yoking file';
+%                     end
+%                 else
+%                     isResponseFileGone=true;
+%                     errorMessage=errorMessage1;
+%                 end
+%             else
+%                 isResponseFileGone=true;
+%                 errorMessage=errorMessage1;
+%             end
+%             
+%             % Compute whether both files are gone
+%             areFilesGone=isCommandFileGone&&isResponseFileGone;
+%         end  % function
         
-        function writeAcqSetParamsToScanImageCommandFile_(self)
-            dirName=tempdir();
-            fileName='si_command.txt';
-            absoluteFileName=fullfile(dirName,fileName);
-            
-            nAcqsInSet=self.NSweepsPerRun;
-            iFirstAcqInSet=self.Logging.NextSweepIndex;
-            
-            [fid,fopenErrorMessage]=fopen(absoluteFileName,'wt');
-            if fid<0 ,
-                error('WavesurferModel:UnableToOpenYokingFile', ...
-                      'Unable to open ScanImage command file: %s',fopenErrorMessage);
-            end
-            
-            fprintf(fid,'Arming\n');
-            %fprintf(fid,'Internally generated: %d\n',);
-            %fprintf(fid,'InputPFI| %d\n',pfiLineId);
-            %fprintf(fid,'Edge type| %s\n',edgeTypeString);
-            fprintf(fid,'Index of first acq in set| %d\n',iFirstAcqInSet);
-            fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
-            fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
-            fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextRunAbsoluteFileName);
-            fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
-            fclose(fid);
-        end  % function
+%         function writeAcqSetParamsToScanImageCommandFile_(self)
+%             dirName=tempdir();
+%             fileName='si_command.txt';
+%             absoluteFileName=fullfile(dirName,fileName);
+%             
+%             nAcqsInSet=self.NSweepsPerRun;
+%             iFirstAcqInSet=self.Logging.NextSweepIndex;
+%             
+%             [fid,fopenErrorMessage]=fopen(absoluteFileName,'wt');
+%             if fid<0 ,
+%                 error('WavesurferModel:UnableToOpenYokingFile', ...
+%                       'Unable to open ScanImage command file: %s',fopenErrorMessage);
+%             end
+%             
+%             fprintf(fid,'Arming\n');
+%             %fprintf(fid,'Internally generated: %d\n',);
+%             %fprintf(fid,'InputPFI| %d\n',pfiLineId);
+%             %fprintf(fid,'Edge type| %s\n',edgeTypeString);
+%             fprintf(fid,'Index of first acq in set| %d\n',iFirstAcqInSet);
+%             fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
+%             fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
+%             fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextRunAbsoluteFileName);
+%             fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
+%             fclose(fid);
+%         end  % function
 
-        function [isScanImageReady,errorMessage]=waitForScanImageResponse_(self) %#ok<MANU>
-            dirName=tempdir();
-            responseFileName='si_response.txt';
-            responseAbsoluteFileName=fullfile(dirName,responseFileName);
-            
-            maximumWaitTime=10;  % sec
-            dtBetweenChecks=0.1;  % sec
-            nChecks=round(maximumWaitTime/dtBetweenChecks);
-            
-            for iCheck=1:nChecks ,
-                % pause for dtBetweenChecks without relinquishing control
-                timerVal=tic();
-                while (toc(timerVal)<dtBetweenChecks)
-                    x=1+1; %#ok<NASGU>
-                end
-                
-                % Check for the response file
-                doesReponseFileExist=exist(responseAbsoluteFileName,'file');
-                if doesReponseFileExist ,
-                    [fid,fopenErrorMessage]=fopen(responseAbsoluteFileName,'rt');
-                    if fid>=0 ,                        
-                        response=fscanf(fid,'%s',1);
-                        fclose(fid);
-                        if isequal(response,'OK') ,
-                            ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
-                            isScanImageReady=true;
-                            errorMessage='';
-                            return
-                        end
-                    else
-                        isScanImageReady=false;
-                        errorMessage=sprintf('Unable to open response file: %s',fopenErrorMessage);
-                        return
-                    end
-                end
-            end
-            
-            % If get here, must have failed
-            if exist(responseAbsoluteFileName,'file') ,
-                ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
-            end
-            isScanImageReady=false;
-            errorMessage='ScanImage did not respond within the alloted time';
-        end  % function
+%         function [isScanImageReady,errorMessage]=waitForScanImageResponse_(self) %#ok<MANU>
+%             dirName=tempdir();
+%             responseFileName='si_response.txt';
+%             responseAbsoluteFileName=fullfile(dirName,responseFileName);
+%             
+%             maximumWaitTime=10;  % sec
+%             dtBetweenChecks=0.1;  % sec
+%             nChecks=round(maximumWaitTime/dtBetweenChecks);
+%             
+%             for iCheck=1:nChecks ,
+%                 % pause for dtBetweenChecks without relinquishing control
+%                 timerVal=tic();
+%                 while (toc(timerVal)<dtBetweenChecks)
+%                     x=1+1; %#ok<NASGU>
+%                 end
+%                 
+%                 % Check for the response file
+%                 doesReponseFileExist=exist(responseAbsoluteFileName,'file');
+%                 if doesReponseFileExist ,
+%                     [fid,fopenErrorMessage]=fopen(responseAbsoluteFileName,'rt');
+%                     if fid>=0 ,                        
+%                         response=fscanf(fid,'%s',1);
+%                         fclose(fid);
+%                         if isequal(response,'OK') ,
+%                             ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
+%                             isScanImageReady=true;
+%                             errorMessage='';
+%                             return
+%                         end
+%                     else
+%                         isScanImageReady=false;
+%                         errorMessage=sprintf('Unable to open response file: %s',fopenErrorMessage);
+%                         return
+%                     end
+%                 end
+%             end
+%             
+%             % If get here, must have failed
+%             if exist(responseAbsoluteFileName,'file') ,
+%                 ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
+%             end
+%             isScanImageReady=false;
+%             errorMessage='ScanImage did not respond within the alloted time';
+%         end  % function
     
     end  % protected methods block
     
-    methods (Access=public)
-        function commandScanImageToSaveProtocolFileIfYoked(self,absoluteProtocolFileName)
-            if ~self.IsYokedToScanImage_ ,
-                return
-            end
-            
-            dirName=tempdir();
-            fileName='si_command.txt';
-            absoluteCommandFileName=fullfile(dirName,fileName);
-            
-            [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
-            if fid<0 ,
-                error('WavesurferModel:UnableToOpenYokingFile', ...
-                      'Unable to open ScanImage command file: %s',fopenErrorMessage);
-            end
-            
-            fprintf(fid,'Saving protocol file\n');
-            fprintf(fid,'Protocol file name| %s\n',absoluteProtocolFileName);
-            fclose(fid);
-            
-            [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
-            if ~isScanImageReady ,
-                self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
-                      errorMessage);
-            end            
-        end  % function
-        
-        function commandScanImageToOpenProtocolFileIfYoked(self,absoluteProtocolFileName)
-            if ~self.IsYokedToScanImage_ ,
-                return
-            end
-            
-            dirName=tempdir();
-            fileName='si_command.txt';
-            absoluteCommandFileName=fullfile(dirName,fileName);
-            
-            [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
-            if fid<0 ,
-                error('WavesurferModel:UnableToOpenYokingFile', ...
-                      'Unable to open ScanImage command file: %s',fopenErrorMessage);
-            end
-            
-            fprintf(fid,'Opening protocol file\n');
-            fprintf(fid,'Protocol file name| %s\n',absoluteProtocolFileName);
-            fclose(fid);
-
-            [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
-            if ~isScanImageReady ,
-                self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
-                      errorMessage);
-            end            
-        end  % function
-        
-        function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            if ~self.IsYokedToScanImage_ ,
-                return
-            end
-            
-            dirName=tempdir();
-            fileName='si_command.txt';
-            absoluteCommandFileName=fullfile(dirName,fileName);
-                        
-            [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
-            if fid<0 ,
-                error('WavesurferModel:UnableToOpenYokingFile', ...
-                      'Unable to open ScanImage command file: %s',fopenErrorMessage);
-            end
-            
-            fprintf(fid,'Saving user settings file\n');
-            fprintf(fid,'User settings file name| %s\n',absoluteUserSettingsFileName);
-            fclose(fid);
-
-            [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
-            if ~isScanImageReady ,
-                self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToSaveUserSettingsFile', ...
-                      errorMessage);
-            end            
-        end  % function
-
-        function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            if ~self.IsYokedToScanImage_ ,
-                return
-            end
-            
-            dirName=tempdir();
-            fileName='si_command.txt';
-            absoluteCommandFileName=fullfile(dirName,fileName);
-            
-            [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
-            if fid<0 ,
-                error('WavesurferModel:UnableToOpenYokingFile', ...
-                      'Unable to open ScanImage command file: %s',fopenErrorMessage);
-            end
-            
-            fprintf(fid,'Opening user settings file\n');
-            fprintf(fid,'User settings file name| %s\n',absoluteUserSettingsFileName);
-            fclose(fid);
-
-            [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
-            if ~isScanImageReady ,
-                self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToOpenUserSettingsFile', ...
-                      errorMessage);
-            end            
-        end  % function
-    end % methods
+%     methods (Access=public)
+%         function commandScanImageToSaveProtocolFileIfYoked(self,absoluteProtocolFileName)
+%             if ~self.IsYokedToScanImage_ ,
+%                 return
+%             end
+%             
+%             dirName=tempdir();
+%             fileName='si_command.txt';
+%             absoluteCommandFileName=fullfile(dirName,fileName);
+%             
+%             [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
+%             if fid<0 ,
+%                 error('WavesurferModel:UnableToOpenYokingFile', ...
+%                       'Unable to open ScanImage command file: %s',fopenErrorMessage);
+%             end
+%             
+%             fprintf(fid,'Saving protocol file\n');
+%             fprintf(fid,'Protocol file name| %s\n',absoluteProtocolFileName);
+%             fclose(fid);
+%             
+%             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
+%             if ~isScanImageReady ,
+%                 self.ensureYokingFilesAreGone_();
+%                 error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
+%                       errorMessage);
+%             end            
+%         end  % function
+%         
+%         function commandScanImageToOpenProtocolFileIfYoked(self,absoluteProtocolFileName)
+%             if ~self.IsYokedToScanImage_ ,
+%                 return
+%             end
+%             
+%             dirName=tempdir();
+%             fileName='si_command.txt';
+%             absoluteCommandFileName=fullfile(dirName,fileName);
+%             
+%             [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
+%             if fid<0 ,
+%                 error('WavesurferModel:UnableToOpenYokingFile', ...
+%                       'Unable to open ScanImage command file: %s',fopenErrorMessage);
+%             end
+%             
+%             fprintf(fid,'Opening protocol file\n');
+%             fprintf(fid,'Protocol file name| %s\n',absoluteProtocolFileName);
+%             fclose(fid);
+% 
+%             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
+%             if ~isScanImageReady ,
+%                 self.ensureYokingFilesAreGone_();
+%                 error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
+%                       errorMessage);
+%             end            
+%         end  % function
+%         
+%         function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
+%             if ~self.IsYokedToScanImage_ ,
+%                 return
+%             end
+%             
+%             dirName=tempdir();
+%             fileName='si_command.txt';
+%             absoluteCommandFileName=fullfile(dirName,fileName);
+%                         
+%             [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
+%             if fid<0 ,
+%                 error('WavesurferModel:UnableToOpenYokingFile', ...
+%                       'Unable to open ScanImage command file: %s',fopenErrorMessage);
+%             end
+%             
+%             fprintf(fid,'Saving user settings file\n');
+%             fprintf(fid,'User settings file name| %s\n',absoluteUserSettingsFileName);
+%             fclose(fid);
+% 
+%             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
+%             if ~isScanImageReady ,
+%                 self.ensureYokingFilesAreGone_();
+%                 error('EphusModel:ProblemCommandingScanImageToSaveUserSettingsFile', ...
+%                       errorMessage);
+%             end            
+%         end  % function
+% 
+%         function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
+%             if ~self.IsYokedToScanImage_ ,
+%                 return
+%             end
+%             
+%             dirName=tempdir();
+%             fileName='si_command.txt';
+%             absoluteCommandFileName=fullfile(dirName,fileName);
+%             
+%             [fid,fopenErrorMessage]=fopen(absoluteCommandFileName,'wt');
+%             if fid<0 ,
+%                 error('WavesurferModel:UnableToOpenYokingFile', ...
+%                       'Unable to open ScanImage command file: %s',fopenErrorMessage);
+%             end
+%             
+%             fprintf(fid,'Opening user settings file\n');
+%             fprintf(fid,'User settings file name| %s\n',absoluteUserSettingsFileName);
+%             fclose(fid);
+% 
+%             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
+%             if ~isScanImageReady ,
+%                 self.ensureYokingFilesAreGone_();
+%                 error('EphusModel:ProblemCommandingScanImageToOpenUserSettingsFile', ...
+%                       errorMessage);
+%             end            
+%         end  % function
+%     end % methods
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.WavesurferModel.propertyAttributes();
-        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            
-            s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
-            s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             
+%             s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
+%             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
+%         end  % function
+%     end  % class methods block
     
     methods
         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
@@ -1247,104 +1226,104 @@ classdef Looper < ws.Model
         end
     end
     
-    methods
-        function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
-            % Actually loads the named config file.  fileName should be a
-            % file name referring to a file that is known to be
-            % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1);
-            if ws.most.util.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end
-            saveStruct=load('-mat',absoluteFileName);
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
-            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
-            self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
-            self.decodeProperties(wavesurferModelSettings);
-            self.AbsoluteProtocolFileName=absoluteFileName;
-            self.HasUserSpecifiedProtocolFileName=true;            
-            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
-            self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
-            self.broadcast('DidLoadProtocolFile');
-            self.changeReadiness(+1);       
-        end  % function
-    end
+%     methods
+%         function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+%             % Actually loads the named config file.  fileName should be a
+%             % file name referring to a file that is known to be
+%             % present, at least as of a few milliseconds ago.
+%             self.changeReadiness(-1);
+%             if ws.most.util.isFileNameAbsolute(fileName) ,
+%                 absoluteFileName = fileName ;
+%             else
+%                 absoluteFileName = fullfile(pwd(),fileName) ;
+%             end
+%             saveStruct=load('-mat',absoluteFileName);
+%             wavesurferModelSettingsVariableName=self.encodedVariableName();
+%             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
+%             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
+%             self.decodeProperties(wavesurferModelSettings);
+%             self.AbsoluteProtocolFileName=absoluteFileName;
+%             self.HasUserSpecifiedProtocolFileName=true;            
+%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
+%             self.broadcast('DidLoadProtocolFile');
+%             self.changeReadiness(+1);       
+%         end  % function
+%     end
+%     
+%     methods
+%         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+%             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
+%             self.changeReadiness(-1);            
+%             wavesurferModelSettings=self.encodeForFileType('cfg');
+%             wavesurferModelSettingsVariableName=self.encodedVariableName();
+%             versionString = ws.versionString() ;
+%             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
+%                               'layoutForAllWindows',layoutForAllWindows, ...
+%                               'versionString',versionString);  %#ok<NASGU>
+%             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
+%             self.AbsoluteProtocolFileName=absoluteFileName;
+%             self.HasUserSpecifiedProtocolFileName=true;
+%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
+%             self.changeReadiness(+1);            
+%         end
+%     end        
     
-    methods
-        function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
-            %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
-            self.changeReadiness(-1);            
-            wavesurferModelSettings=self.encodeForFileType('cfg');
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
-            versionString = ws.versionString() ;
-            saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-                              'layoutForAllWindows',layoutForAllWindows, ...
-                              'versionString',versionString);  %#ok<NASGU>
-            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
-            self.AbsoluteProtocolFileName=absoluteFileName;
-            self.HasUserSpecifiedProtocolFileName=true;
-            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
-            self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
-            self.changeReadiness(+1);            
-        end
-    end        
-    
-    methods
-        function loadUserFileForRealsSrsly(self, fileName)
-            % Actually loads the named user file.  fileName should be an
-            % file name referring to a file that is known to be
-            % present, at least as of a few milliseconds ago.
-
-            self.changeReadiness(-1);
-
-            if ws.most.util.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end            
-            
-            saveStruct=load('-mat',absoluteFileName);
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
-            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
-            self.decodeProperties(wavesurferModelSettings);
-            
-            self.AbsoluteUserSettingsFileName=absoluteFileName;
-            self.HasUserSpecifiedUserSettingsFileName=true;            
-            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
-            
-            self.changeReadiness(+1);            
-        end
-    end        
-
-    methods
-        function saveUserFileForRealsSrsly(self, absoluteFileName)            
-            self.changeReadiness(-1);
-
-            %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
-            userSettings=self.encodeForFileType('usr');
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
-            versionString = ws.versionString() ;
-            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
-                              'versionString',versionString);  %#ok<NASGU>
-            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
-            
-            %self.savePropertiesWithTag(absoluteFileName, 'usr');
-            
-            self.AbsoluteUserSettingsFileName=absoluteFileName;
-            self.HasUserSpecifiedUserSettingsFileName=true;            
-
-            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            %self.setUserFileNameInMenu(absoluteFileName);
-            %controller.updateUserFileNameInMenu();
-
-            self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
-            
-            self.changeReadiness(+1);            
-        end  % function
-    end
+%     methods
+%         function loadUserFileForRealsSrsly(self, fileName)
+%             % Actually loads the named user file.  fileName should be an
+%             % file name referring to a file that is known to be
+%             % present, at least as of a few milliseconds ago.
+% 
+%             self.changeReadiness(-1);
+% 
+%             if ws.most.util.isFileNameAbsolute(fileName) ,
+%                 absoluteFileName = fileName ;
+%             else
+%                 absoluteFileName = fullfile(pwd(),fileName) ;
+%             end            
+%             
+%             saveStruct=load('-mat',absoluteFileName);
+%             wavesurferModelSettingsVariableName=self.encodedVariableName();
+%             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
+%             self.decodeProperties(wavesurferModelSettings);
+%             
+%             self.AbsoluteUserSettingsFileName=absoluteFileName;
+%             self.HasUserSpecifiedUserSettingsFileName=true;            
+%             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
+%             self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
+%             
+%             self.changeReadiness(+1);            
+%         end
+%     end        
+% 
+%     methods
+%         function saveUserFileForRealsSrsly(self, absoluteFileName)            
+%             self.changeReadiness(-1);
+% 
+%             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
+%             userSettings=self.encodeForFileType('usr');
+%             wavesurferModelSettingsVariableName=self.encodedVariableName();
+%             versionString = ws.versionString() ;
+%             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
+%                               'versionString',versionString);  %#ok<NASGU>
+%             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
+%             
+%             %self.savePropertiesWithTag(absoluteFileName, 'usr');
+%             
+%             self.AbsoluteUserSettingsFileName=absoluteFileName;
+%             self.HasUserSpecifiedUserSettingsFileName=true;            
+% 
+%             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
+%             %self.setUserFileNameInMenu(absoluteFileName);
+%             %controller.updateUserFileNameInMenu();
+% 
+%             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
+%             
+%             self.changeReadiness(+1);            
+%         end  % function
+%     end
     
 %     methods
 %         function set.AbsoluteProtocolFileName(self,newValue)
@@ -1362,36 +1341,36 @@ classdef Looper < ws.Model
 %         end
 %     end
 
-    methods (Access=protected)
-        function [isSweepComplete,wasStoppedByUser] = runPollingLoop_(self)
-            % Runs the main polling loop.
-            
-            pollingTicId = tic() ;
-            pollingPeriod = 1/self.Display.UpdateRate ;
-            %self.DoContinuePolling_ = true ;
-            self.IsSweepComplete_ = false ;
-            self.WasRunStoppedByUser_ = false ;
-            timeOfLastPoll = toc(pollingTicId) ;
-            while ~(self.IsSweepComplete_ || self.WasRunStoppedByUser_) ,
-                timeNow =  toc(pollingTicId) ;
-                timeSinceLastPoll = timeNow - timeOfLastPoll ;
-                if timeSinceLastPoll >= pollingPeriod ,
-                    timeOfLastPoll = timeNow ;
-                    timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-                    self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-                    %self.Stimulation.poll(timeSinceSweepStart);
-                    %self.Triggering.poll(timeSinceSweepStart);
-                    %self.Display.poll(timeSinceSweepStart);
-                    %self.Logging.poll(timeSinceSweepStart);
-                    self.UserFunctions.poll(timeSinceSweepStart);
-                    drawnow() ;  % update, and also process any user actions
-                else
-                    pause(0.010);  % don't want this loop to completely peg the CPU
-                end                
-            end    
-            isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
-            wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to
-        end  % function        
-    end
+%     methods (Access=protected)
+%         function [isSweepComplete,wasStoppedByUser] = runPollingLoop_(self)
+%             % Runs the main polling loop.
+%             
+%             pollingTicId = tic() ;
+%             pollingPeriod = 1/self.Display.UpdateRate ;
+%             %self.DoContinuePolling_ = true ;
+%             self.IsSweepComplete_ = false ;
+%             self.WasRunStoppedByUser_ = false ;
+%             timeOfLastPoll = toc(pollingTicId) ;
+%             while ~(self.IsSweepComplete_ || self.WasRunStoppedByUser_) ,
+%                 timeNow =  toc(pollingTicId) ;
+%                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
+%                 if timeSinceLastPoll >= pollingPeriod ,
+%                     timeOfLastPoll = timeNow ;
+%                     timeSinceSweepStart = toc(self.FromSweepStartTicId_);
+%                     self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
+%                     %self.Stimulation.poll(timeSinceSweepStart);
+%                     %self.Triggering.poll(timeSinceSweepStart);
+%                     %self.Display.poll(timeSinceSweepStart);
+%                     %self.Logging.poll(timeSinceSweepStart);
+%                     self.UserFunctions.poll(timeSinceSweepStart);
+%                     drawnow() ;  % update, and also process any user actions
+%                 else
+%                     pause(0.010);  % don't want this loop to completely peg the CPU
+%                 end                
+%             end    
+%             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
+%             wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to
+%         end  % function        
+%     end
     
 end  % classdef
