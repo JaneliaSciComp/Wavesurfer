@@ -8,9 +8,7 @@ present, you must have a Matlab license to use it.
 PLEASE NOTE THAT WAVESURFER IS CURRENTLY PRE-RELEASE SOFTWARE.  THERE
 WILL ALMOST CERTAINLY BE BREAKING CHANGES TO FILE FORMATS, ETC. BEFORE
 VERSION 1.0 IS RELEASED, AND WE CAN MAKE NO PROMISES ABOUT BACKWARD
-COMPATIBILITY.  UNLESS YOU WORK AT HHMI JANELIA (WHERE WE CAN EASILY
-HELP YOU), WE DO NOT ADVISE YOU TO USE WAVESURFER FOR DOING ACTUAL
-SCIENCE.
+COMPATIBILITY.
 
 
 System Requirements
@@ -68,7 +66,8 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in Wavesurfer is copyright 2015 by the Howard Hughes Medical Institute.
+in Wavesurfer is copyright 2013-2015 by the Howard Hughes Medical 
+Institute.
 
 
 License
@@ -229,4 +228,6 @@ Version History
        user settings files from release 0.8+ will still work with this
        release.
 
+0.805: (July 23, 2015) Fixed bug that made it impossible to record if 
+       a user class was in use.
 
