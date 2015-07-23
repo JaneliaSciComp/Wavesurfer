@@ -1,4 +1,4 @@
-classdef UserClass < handle
+classdef UserClass < ws.mixin.Coding
 
     methods        
         sweepWillStart(self,wsModel,eventName)        
