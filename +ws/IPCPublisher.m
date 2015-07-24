@@ -1,4 +1,4 @@
-classdef IPCPublisher < ZMQBinder    
+classdef IPCPublisher < ws.ZMQBinder    
     methods
         function self = IPCPublisher(portNumber)
             self@ZMQBinder(portNumber,'ZMQ_PUB');

@@ -1,4 +1,4 @@
-classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster (was before EventSubscriber)
+classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't seem to subscribe to any events anymore)
     % This is something like a pointer to the union (in the sense of a C union) of a
     % trigger source and a trigger destination.  I.e. it can point to
     % either a trigger source or a trigger destination.  A trigger scheme with an
@@ -73,7 +73,7 @@ classdef TriggerScheme < ws.Model & ws.EventSubscriber  % & ws.EventBroadcaster 
     events
         WillSetTarget
         DidSetTarget
-        DidSetIsInternal
+        DidSetIsInternal  % this should likely be replaced with a call to a parent method, that then fires the event from the triggering subsystem
     end
     
     methods

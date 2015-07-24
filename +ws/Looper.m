@@ -126,6 +126,22 @@ classdef Looper < ws.Model
     
     methods
         function self = Looper()
+            % This is the main object that resides in the Looper process.
+            % It contains the main input tasks, and during a sweep is
+            % responsible for reading data and updating the on-demand
+            % outputs as far as possible.
+            
+            % Set up sockets
+            self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
+            self.RPCServer_.setDelegate(self) ;
+            self.RPCServer_.bind();
+            
+            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.DataPubSubPortNumber) ;
+            self.IPCPublisher_.bind() ;
+
+            self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendRPCPortNumber) ;
+            self.RPCClient_.connect() ;
+            
             %self.State_ = ws.ApplicationState.Uninitialized;
             %self.IsYokedToScanImage_ = false;
             %self.IsSweepBased_=true;
@@ -150,18 +166,7 @@ classdef Looper < ws.Model
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering, self.UserFunctions};
-            
-            % Set up sockets
-            self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
-            self.RPCServer_.setDelegate(self) ;
-            self.RPCServer_.bind();
-            
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.DataPubSubPortNumber) ;
-            self.IPCPublisher_.bind() ;
-
-            self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendRPCPortNumber) ;
-            self.RPCClient_.connect() ;
+            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering, self.UserFunctions};            
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -287,23 +292,23 @@ classdef Looper < ws.Model
             end
         end  % function
 
-        function err = startSweep(self,indexOfSweepWithinRun)
-            % Once everything is prepped, WSM calls this to actually start
-            % the sweep
-            %
-            % This is called via RPC, so must return exactly one return
-            % value, and must not throw.
-
-            % Set default return value, if nothing goes wrong
-            err = [] ;
-            
-            % Prepare for the run
-            try
-                self.startSweep_(indexOfSweepWithinRun) ;
-            catch me
-                err=me ;
-            end
-        end  % function
+%         function err = startSweep(self)
+%             % Once everything is prepped, WSM calls this to actually start
+%             % the sweep
+%             %
+%             % This is called via RPC, so must return exactly one return
+%             % value, and must not throw.
+% 
+%             % Set default return value, if nothing goes wrong
+%             err = [] ;
+%             
+%             % Prepare for the run
+%             try
+%                 self.startSweep_() ;
+%             catch me
+%                 err=me ;
+%             end
+%         end  % function
         
         function err = stop(self)
             % Called when you press the "Stop" button in the UI, for
@@ -742,25 +747,29 @@ classdef Looper < ws.Model
             catch me
                 err = me ;
             end
-        end  % function
-
-        function err = startSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
-            % Start the sweep by pulsing the master trigger (a
-            % software-timed digital output).
             
-            % Set the fallback err value, which gets returned if nothing
-            % goes wrong
-            err = [] ;
-
-            % Pulse the master trigger, dealing with any errors
-            try
-                self.IsSweepComplete_ = false ;
-                self.Triggering.pulseMasterTrigger();
-                self.IsPerformingSweep_ = true ;
-            catch me
-                err = me ;
-            end
+            % Final preparations...
+            self.IsSweepComplete_ = false ;
+            self.IsPerformingSweep_ = true ;
         end  % function
+
+%         function err = startSweep_(self)
+%             % Start the sweep by pulsing the master trigger (a
+%             % software-timed digital output).
+%             
+%             % Set the fallback err value, which gets returned if nothing
+%             % goes wrong
+%             err = [] ;
+% 
+%             % Pulse the master trigger, dealing with any errors
+%             try
+%                 self.IsSweepComplete_ = false ;
+%                 self.Triggering.pulseMasterTrigger();
+%                 self.IsPerformingSweep_ = true ;
+%             catch me
+%                 err = me ;
+%             end
+%         end  % function
         
         function cleanUpAfterCompletedSweep_(self)
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');

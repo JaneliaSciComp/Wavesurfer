@@ -1,4 +1,4 @@
-classdef IPCSubscriber < ZMQConnecter
+classdef IPCSubscriber < ws.ZMQConnecter
     
     properties
         Delegate
@@ -6,7 +6,7 @@ classdef IPCSubscriber < ZMQConnecter
     
     methods
         function self = IPCSubscriber(portNumber)
-            self@ZMQConnecter(portNumber,'ZMQ_SUB');
+            self@ws.ZMQConnecter(portNumber,'ZMQ_SUB');
         end  % function
 
         function delete(self)            
@@ -60,7 +60,7 @@ classdef IPCSubscriber < ZMQConnecter
         end  % function        
         
         function connect(self)
-            self.connect@ZMQConnecter();
+            self.connect@ws.ZMQConnecter();
             zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
         end  % function
 

@@ -1,4 +1,4 @@
-classdef RPCServer < ZMQBinder
+classdef RPCServer < ws.ZMQBinder
     
     properties
         Delegate                
@@ -6,7 +6,7 @@ classdef RPCServer < ZMQBinder
     
     methods
         function self = RPCServer(portNumber)
-            self@ZMQBinder(portNumber,'ZMQ_REP');
+            self@ws.ZMQBinder(portNumber,'ZMQ_REP');
         end  % function
 
         function delete(self)            

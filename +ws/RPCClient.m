@@ -1,8 +1,8 @@
-classdef RPCClient < ZMQConnecter
+classdef RPCClient < ws.ZMQConnecter
     
     methods
         function self = RPCClient(portNumber)
-            self@ZMQConnecter(portNumber,'ZMQ_REQ');
+            self@ws.ZMQConnecter(portNumber,'ZMQ_REQ');
         end  % function
 
         function value = call(self,methodName,varargin)

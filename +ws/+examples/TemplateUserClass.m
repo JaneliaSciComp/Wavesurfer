@@ -58,7 +58,7 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Oh noes!  A run aborted.\n');
         end
         
-        function dataIsAvailable(self,wsModel,eventName)
+        function dataIsAvailableInFrontend(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             analogData = wsModel.Acquisition.getLatestAnalogData();
@@ -67,6 +67,14 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         
+        function dataIsAvailableInLooper(self,wsModel,eventName)
+            % Called each time a "chunk" of data (typically 100 ms worth) 
+            % is read from the DAQ board.
+            analogData = wsModel.Acquisition.getLatestAnalogData();
+            digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
+            nScans = size(analogData,1);
+            fprintf('Just read %d scans of data.\n',nScans);                                    
+        end
     end  % methods
     
 end  % classdef

@@ -1,4 +1,4 @@
-classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
+classdef Triggering < ws.system.Subsystem & ws.EventSubscriber  % TODO: rework things to this doesn't have to be an event subscriber
     
     properties (Dependent = true, SetAccess = immutable)
         Sources  % this is an array of type ws.TriggerSource, not a cell array
@@ -95,14 +95,12 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
             
             % Need to monitor these guys to maintain higher-level
             % invariants
-%             self.AcquisitionTriggerScheme.addlistener('Target', 'PreSet', @(src,evt)self.willSetAcquisitionTriggerSchemeTarget_());
-%             self.AcquisitionTriggerScheme.addlistener('Target', 'PostSet', @(src,evt)self.didSetAcquisitionTriggerSchemeTarget_());
-%             self.ContinuousModeTriggerScheme.addlistener('Target', 'PreSet', @(src,evt)self.willSetContinuousModeTriggerSchemeTarget_());
-%             self.ContinuousModeTriggerScheme.addlistener('Target', 'PostSet', @(src,evt)self.didSetContinuousModeTriggerSchemeTarget_());            
+            % Note that these can now be replaced with simple calls of
+            % parent methods within TriggerScheme, with the Triggering
+            % subsystem doing nothing if the caller is the stim trigger
+            % scheme.
             self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
             self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
-%             self.ContinuousModeTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetContinuousModeTriggerSchemeTarget' );
-%             self.ContinuousModeTriggerScheme.subscribeMe(self, 'DidSetTarget' , '', 'didSetContinuousModeTriggerSchemeTarget'  );
         end  % function
         
         function initializeFromMDFStructure(self,mdfStructure)
@@ -410,38 +408,38 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
 %             end            
 %         end  % function
 
-        function startAllTriggerTasksAndPulseMasterTrigger(self)
-            % This gets called once per sweep, to start() all the relevant
-            % triggers.  But self.AcquisitionUsesASAPTriggering determines
-            % whether we start the triggers for each sweep, or only for the
-            % first sweep.
-            
-            % Start the acq & stim trigger tasks
-            self.startAllDistinctSweepBasedTriggerTasks_();
-                
-            % Pulse the master trigger
-            self.pulseMasterTrigger();
-            
-%             % Notify the WSM, which starts the polling timer
-%             if nSweepsCompletedInSet==0 ,
-%                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
-%             end            
-        end  % function
+%         function startAllTriggerTasksAndPulseMasterTrigger(self)
+%             % This gets called once per sweep, to start() all the relevant
+%             % triggers.  But self.AcquisitionUsesASAPTriggering determines
+%             % whether we start the triggers for each sweep, or only for the
+%             % first sweep.
+%             
+%             % Start the acq & stim trigger tasks
+%             self.startAllDistinctSweepBasedTriggerTasks_();
+%                 
+%             % Pulse the master trigger
+%             self.pulseMasterTrigger();
+%             
+% %             % Notify the WSM, which starts the polling timer
+% %             if nSweepsCompletedInSet==0 ,
+% %                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
+% %             end            
+%         end  % function
         
-        function startAllDistinctSweepBasedTriggerTasks_(self)
-            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-            for idx = 1:numel(triggerSchemes) ,
-                thisTriggerScheme=triggerSchemes{idx};
-                if thisTriggerScheme==self.StimulationTriggerScheme ,
-                    %fprintf('About to set self.IsStimulationCounterTriggerTaskRunning=true in location 3\n');
-                    self.IsStimulationCounterTriggerTaskRunning=true;
-                end                    
-                thisTriggerScheme.start();
-            end        
-%             % Now produce a pulse on the master trigger, which will truly start things
-%             self.MasterTriggerDABSTask_.writeDigitalData(true);
-%             self.MasterTriggerDABSTask_.writeDigitalData(false);            
-        end  % function
+%         function startAllDistinctSweepBasedTriggerTasks_(self)
+%             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
+%             for idx = 1:numel(triggerSchemes) ,
+%                 thisTriggerScheme=triggerSchemes{idx};
+%                 if thisTriggerScheme==self.StimulationTriggerScheme ,
+%                     %fprintf('About to set self.IsStimulationCounterTriggerTaskRunning=true in location 3\n');
+%                     self.IsStimulationCounterTriggerTaskRunning=true;
+%                 end                    
+%                 thisTriggerScheme.start();
+%             end        
+% %             % Now produce a pulse on the master trigger, which will truly start things
+% %             self.MasterTriggerDABSTask_.writeDigitalData(true);
+% %             self.MasterTriggerDABSTask_.writeDigitalData(false);            
+%         end  % function
 
         function pulseMasterTrigger(self)
             % Produce a pulse on the master trigger, which will truly start things
@@ -486,70 +484,58 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
         
         function willPerformRun(self)
             self.setupMasterTriggerTask();            
-%             if self.AcquisitionUsesASAPTriggering ,
-%                 % do nothing --- will arm for each sweep
-%             else
-%                 self.setupInternalSweepBasedTriggers();
-%             end
         end  % function
         
         function willPerformSweep(self)
-%             if self.AcquisitionUsesASAPTriggering ,
-%                 self.setupInternalSweepBasedTriggers();
-%             end
-            self.setupInternalSweepBasedTriggers();
+            %self.setupInternalSweepBasedTriggers();
         end  % function
 
         function didCompleteSweep(self)
-            %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
-%             if self.AcquisitionUsesASAPTriggering ,
-%                 self.teardownInternalSweepBasedTriggers();
-%             end
-            self.teardownInternalSweepBasedTriggers();            
+            %self.teardownInternalSweepBasedTriggers();            
         end  % function
         
         function didAbortSweep(self)
-            %if wavesurferModel.IsSweepBased && self.AcquisitionUsesASAPTriggering ,
-%             if self.AcquisitionUsesASAPTriggering ,
-%                 self.teardownInternalSweepBasedTriggers();
-%             end
-            self.teardownInternalSweepBasedTriggers();
+            %self.teardownInternalSweepBasedTriggers();
         end  % function
         
         function didCompleteRun(self)
-            self.teardownInternalSweepBasedTriggers();
+            %self.teardownInternalSweepBasedTriggers();
         end  % function
         
         function didAbortRun(self)
-            self.teardownInternalSweepBasedTriggers();
+            %self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function setupInternalSweepBasedTriggers(self)        
-            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-            for idx = 1:numel(triggerSchemes) ,
-                thisTriggerScheme=triggerSchemes{idx};
-                thisTriggerScheme.setup();
-%                 % Each trigger output is generated by a nidaqmx counter
-%                 % task.  These tasks can themselves be configured to start
-%                 % when they receive a trigger.  Here, we set the non-acq
-%                 % trigger outputs to start when they receive a trigger edge on the
-%                 % same PFI line that triggers the acquisition task.
-%                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
-%                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
-%                 end                
-                thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
-            end  % function            
-        end  % function
+%         function setupInternalSweepBasedTriggers(self)        
+%             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
+%             for idx = 1:numel(triggerSchemes) ,
+%                 thisTriggerScheme=triggerSchemes{idx};
+%                 thisTriggerScheme.setup();
+% %                 % Each trigger output is generated by a nidaqmx counter
+% %                 % task.  These tasks can themselves be configured to start
+% %                 % when they receive a trigger.  Here, we set the non-acq
+% %                 % trigger outputs to start when they receive a trigger edge on the
+% %                 % same PFI line that triggers the acquisition task.
+% %                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
+% %                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+% %                 end                
+%                 thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
+%             end  % function            
+%         end  % function
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if self.Parent.IsSweepBased ,
                     % overridden by IsSweepBased, do nothing
                 else
-                    self.validatePropArg(newValue,'StimulationUsesAcquisitionTriggerScheme');
-                    self.StimulationUsesAcquisitionTriggerScheme_ = newValue;
-                    %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-                    self.stimulusMapDurationPrecursorMayHaveChanged();            
+                    if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                        self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
+                        %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+                        self.stimulusMapDurationPrecursorMayHaveChanged();
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
+                    end
                 end
             end
             self.broadcast('Update');            
@@ -781,26 +767,15 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber
     end  % protected methods block
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Triggering.propertyAttributes();
-        
+        %mdlPropAttributes = ws.system.Subsystem.propertyAttributes();
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
-            s.StimulationUsesAcquisitionTriggerScheme = struct('Classes','binarylogical');
-            %s.AcquisitionUsesASAPTriggering = struct('Classes','binarylogical');
-
-        end  % function
-    end  % class methods block
-        
     methods
         function poll(self,timeSinceSweepStart)
-            % Call the task to do the real work
-            self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
-            self.StimulationTriggerScheme.poll(timeSinceSweepStart);
+%             % Call the task to do the real work
+%             self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
+%             self.StimulationTriggerScheme.poll(timeSinceSweepStart);
         end
     end    
 end

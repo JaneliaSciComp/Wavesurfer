@@ -76,10 +76,10 @@ classdef Acquisition < ws.system.Subsystem
         %ContinuousModeTriggerScheme
     end
 
-    properties (Access = protected, Transient=true)
-        AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
-        DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
-    end    
+%     properties (Access = protected, Transient=true)
+%         AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
+%         DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
+%     end    
     
     properties (Access = protected) 
         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
@@ -132,12 +132,8 @@ classdef Acquisition < ws.system.Subsystem
         
         function delete(self)
             %fprintf('Acquisition::delete()\n');
-            %delete(self.TriggerListener_);
-            %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-              % Don't need this above, b/c self.AnalogInputTask_ is a ws.ni.AnalogInputTask, *not* a DABS Task !!
-            self.AnalogInputTask_=[];
-            self.DigitalInputTask_=[];
-            %ws.utility.deleteIfValidHandle(self.AnalogInputTask_);
+            %self.AnalogInputTask_=[];
+            %self.DigitalInputTask_=[];
             self.Parent=[];
         end
         
@@ -212,21 +208,21 @@ classdef Acquisition < ws.system.Subsystem
             if islogical(newIsAnalogChannelActive) && isequal(size(newIsAnalogChannelActive),size(self.IsAnalogChannelActive)) ,
                 % For the current settings, break into analog and digital
                 % parts.
-                % We'll check these for changes later.
-                originalIsAnalogChannelActive = self.IsAnalogChannelActive ;
+%                 % We'll check these for changes later.
+%                 originalIsAnalogChannelActive = self.IsAnalogChannelActive ;
 
                 % Set the setting
                 self.IsAnalogChannelActive_ = newIsAnalogChannelActive;
 
-                % Now delete any tasks that have the wrong channel subsets,
-                % if needed
-                if ~isempty(self.AnalogInputTask_) ,
-                    if isequal(newIsAnalogChannelActive,originalIsAnalogChannelActive) ,
-                        % no need to do anything
-                    else
-                        self.AnalogInputTask_= [] ;  % need to clear, will re-create when needed 
-                    end
-                end
+%                 % Now delete any tasks that have the wrong channel subsets,
+%                 % if needed
+%                 if ~isempty(self.AnalogInputTask_) ,
+%                     if isequal(newIsAnalogChannelActive,originalIsAnalogChannelActive) ,
+%                         % no need to do anything
+%                     else
+%                         self.AnalogInputTask_= [] ;  % need to clear, will re-create when needed 
+%                     end
+%                 end
             end
             self.broadcast('DidSetIsChannelActive');
         end
@@ -498,12 +494,12 @@ classdef Acquisition < ws.system.Subsystem
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
                     self.Parent.willSetAcquisitionDuration();
-                    if ~isempty(self.AnalogInputTask_)
-                        self.AnalogInputTask_.AcquisitionDuration = valueToSet;
-                    end            
-                    if ~isempty(self.DigitalInputTask_)
-                        self.DigitalInputTask_.AcquisitionDuration = valueToSet;
-                    end            
+%                     if ~isempty(self.AnalogInputTask_)
+%                         self.AnalogInputTask_.AcquisitionDuration = valueToSet;
+%                     end            
+%                     if ~isempty(self.DigitalInputTask_)
+%                         self.DigitalInputTask_.AcquisitionDuration = valueToSet;
+%                     end            
                     self.Duration_ = valueToSet;
                     self.stimulusMapDurationPrecursorMayHaveChanged();
                     self.Parent.didSetAcquisitionDuration();
@@ -526,17 +522,17 @@ classdef Acquisition < ws.system.Subsystem
             if ws.utility.isASettableValue(newValue) ,
                 self.validatePropArg('SampleRate', newValue);  % will error if invalid
                 self.SampleRate_ = newValue;
-                if ~isempty(self.AnalogInputTask_) ,
-                    self.AnalogInputTask_.SampleRate = newValue;
-                end
+%                 if ~isempty(self.AnalogInputTask_) ,
+%                     self.AnalogInputTask_.SampleRate = newValue;
+%                 end
                 wsModel = self.Parent ;
                 if ~isempty(wsModel) ,
                     wsModel.didSetAcquisitionSampleRate(newValue);
                 end
             end
-            if ~isempty(self.DigitalInputTask_)
-                self.DigitalInputTask_.SampleRate = newValue;
-            end
+%             if ~isempty(self.DigitalInputTask_)
+%                 self.DigitalInputTask_.SampleRate = newValue;
+%             end
             self.broadcast('DidSetSampleRate');
         end  % function
         
@@ -603,106 +599,87 @@ classdef Acquisition < ws.system.Subsystem
             end
         end  % function
 
-        function acquireHardwareResources_(self)
-            % We create and analog InputTask and a digital InputTask, regardless
-            % of whether there are any channels of each type.  Within InputTask,
-            % it will create a DABS Task only if the number of channels is
-            % greater than zero.  But InputTask hides that detail from us.
-            if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
-                % Only hand the active channels to the AnalogInputTask
-                isAnalogChannelActive = self.IsAnalogChannelActive ;
-                activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;                
-                activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;                
-                self.AnalogInputTask_ = ...
-                    ws.ni.InputTask(self, 'analog', ...
-                                          'Wavesurfer Analog Acquisition Task', ...
-                                          activeAnalogPhysicalChannelNames, ...
-                                          activeAnalogChannelNames);
-                % Set other things in the Task object
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-                self.AnalogInputTask_.SampleRate = self.SampleRate;                
-                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
-            end
-            if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
-                isDigitalChannelActive = self.IsDigitalChannelActive ;
-                activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
-                activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
-                self.DigitalInputTask_ = ...
-                    ws.ni.InputTask(self, 'digital', ...
-                                          'Wavesurfer Digital Acquisition Task', ...
-                                          activeDigitalPhysicalChannelNames, ...
-                                          activeDigitalChannelNames);
-                % Set other things in the Task object
-                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-                self.DigitalInputTask_.SampleRate = self.SampleRate;                
-                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
-            end
-        end  % function
-
-        function releaseHardwareResources(self)
-            self.AnalogInputTask_=[];            
-            self.DigitalInputTask_=[];            
-        end
+%         function acquireHardwareResources_(self)
+%             % We create and analog InputTask and a digital InputTask, regardless
+%             % of whether there are any channels of each type.  Within InputTask,
+%             % it will create a DABS Task only if the number of channels is
+%             % greater than zero.  But InputTask hides that detail from us.
+%             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
+%                 % Only hand the active channels to the AnalogInputTask
+%                 isAnalogChannelActive = self.IsAnalogChannelActive ;
+%                 activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;                
+%                 activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;                
+%                 self.AnalogInputTask_ = ...
+%                     ws.ni.InputTask(self, 'analog', ...
+%                                           'Wavesurfer Analog Acquisition Task', ...
+%                                           activeAnalogPhysicalChannelNames, ...
+%                                           activeAnalogChannelNames);
+%                 % Set other things in the Task object
+%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+%                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
+%                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
+%                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+%             end
+%             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
+%                 isDigitalChannelActive = self.IsDigitalChannelActive ;
+%                 activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
+%                 activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
+%                 self.DigitalInputTask_ = ...
+%                     ws.ni.InputTask(self, 'digital', ...
+%                                           'Wavesurfer Digital Acquisition Task', ...
+%                                           activeDigitalPhysicalChannelNames, ...
+%                                           activeDigitalChannelNames);
+%                 % Set other things in the Task object
+%                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+%                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
+%                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
+%                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+%             end
+%         end  % function
+% 
+%         function releaseHardwareResources(self)
+%             self.AnalogInputTask_=[];            
+%             self.DigitalInputTask_=[];            
+%         end
         
         function willPerformRun(self)
             %fprintf('Acquisition::willPerformRun()\n');
             %errors = [];
             %abort = false;
-
-%             if all(~isnan(wavesurferObj.SweepDurations)) && any(wavesurferObj.SweepDurations < self.Duration)
-%                 errors = MException('wavesurfer:acqusitionsystem:invalidsweepduration',  ...
-%                                     'The specified sweep duration is less than the acquisition duration.');
-%                 return;
+            
+%             if isempty(self.TriggerScheme) ,
+%                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
+%                       'The acquisition trigger scheme can not be empty when the system is enabled.');
 %             end
-            
-            if isempty(self.TriggerScheme) ,
-                error('wavesurfer:acquisitionsystem:invalidtrigger', ...
-                      'The acquisition trigger scheme can not be empty when the system is enabled.');
-            end
-            
-            if isempty(self.TriggerScheme.Target) ,
-                error('wavesurfer:acquisitionsystem:invalidtrigger', ...
-                      'The acquisition trigger scheme target can not be empty when the system is enabled.');
-            end
+%             
+%             if isempty(self.TriggerScheme.Target) ,
+%                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
+%                       'The acquisition trigger scheme target can not be empty when the system is enabled.');
+%             end
             
             wavesurferModel = self.Parent ;
             
-            % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources_();
+%             % Make the NI daq task, if don't have it already
+%             self.acquireHardwareResources_();
 
-            % Set up the task triggering
-            self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            
-            % Set for finite vs. continous sampling
-            if wavesurferModel.IsContinuous ,
-                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
-                self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
-            else
-                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
-                self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
-                self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
-                self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
-            end
-            
-%             % Set the duration between data available callbacks
-%             displayDuration = 1/wavesurferModel.Display.UpdateRate;
-%             if self.Duration < displayDuration ,
-%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+%             % Set up the task triggering
+%             self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+%             self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+%             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             
+%             % Set for finite vs. continous sampling
+%             if wavesurferModel.IsContinuous ,
+%                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
+%                 self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
 %             else
-%                 numIncrements = floor(self.Duration/displayDuration);
-%                 assert(floor(self.Duration/numIncrements * self.AnalogInputTask_.SampleRate) == ...
-%                        self.Duration/numIncrements * self.AnalogInputTask_.SampleRate, ...
-%                        'The Display UpdateRate must result in an integer number of samples at the given sample rate and acquisition length.');
-%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration/numIncrements;
+%                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+%                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
+%                 self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+%                 self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
 %             end
-            
-            % Dimension the cache that will hold acquired data in main
-            % memory
+                        
+            % Dimension the cache that will hold acquired data in main memory
             if self.NDigitalChannels<=8
                 dataType = 'uint8';
             elseif self.NDigitalChannels<=16
@@ -725,9 +702,9 @@ classdef Acquisition < ws.system.Subsystem
                 self.RawDigitalDataCache_ = [];                
             end
             
-            % Arm the AI task
-            self.AnalogInputTask_.arm();
-            self.DigitalInputTask_.arm();
+%             % Arm the AI task
+%             self.AnalogInputTask_.arm();
+%             self.DigitalInputTask_.arm();
         end  % function
         
         function didCompleteRun(self)
@@ -747,8 +724,8 @@ classdef Acquisition < ws.system.Subsystem
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
             self.NScansReadThisSweep_ = 0 ;
-            self.AnalogInputTask_.start();
-            self.DigitalInputTask_.start();
+            %self.AnalogInputTask_.start();
+            %self.DigitalInputTask_.start();
         end  % function
         
         function didCompleteSweep(self) %#ok<MANU>
@@ -757,8 +734,8 @@ classdef Acquisition < ws.system.Subsystem
         
         function didAbortSweep(self)
             try
-                self.AnalogInputTask_.abort();
-                self.DigitalInputTask_.abort();
+                %self.AnalogInputTask_.abort();
+                %self.DigitalInputTask_.abort();
             catch me %#ok<NASGU>
                 % didAbortSweep() cannot throw an error, so we ignore any
                 % errors that arise here.
@@ -995,20 +972,20 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Access = protected)
         function didPerformOrAbortRun_(self)
-            if ~isempty(self.AnalogInputTask_) ,
-                if isvalid(self.AnalogInputTask_) ,
-                    self.AnalogInputTask_.disarm();
-                else
-                    self.AnalogInputTask_ = [] ;
-                end
-            end
-            if ~isempty(self.DigitalInputTask_) ,
-                if isvalid(self.DigitalInputTask_) ,
-                    self.DigitalInputTask_.disarm();
-                else
-                    self.DigitalInputTask_ = [] ;
-                end                    
-            end
+%             if ~isempty(self.AnalogInputTask_) ,
+%                 if isvalid(self.AnalogInputTask_) ,
+%                     self.AnalogInputTask_.disarm();
+%                 else
+%                     self.AnalogInputTask_ = [] ;
+%                 end
+%             end
+%             if ~isempty(self.DigitalInputTask_) ,
+%                 if isvalid(self.DigitalInputTask_) ,
+%                     self.DigitalInputTask_.disarm();
+%                 else
+%                     self.DigitalInputTask_ = [] ;
+%                 end                    
+%             end
             self.IsArmedOrAcquiring = false;            
         end  % function
         
@@ -1079,36 +1056,36 @@ classdef Acquisition < ws.system.Subsystem
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
-            % Call the task to do the real work
-            if self.IsArmedOrAcquiring ,
-                % Check for task doneness
-                areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
-                %if areTasksDone ,
-                %    fprintf('Acquisition tasks are done.\n')
-                %end
-                    
-                % Get data
-                %if areTasksDone ,
-                %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
-                %end
-                [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
-                    self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
-                %nScans = size(rawAnalogData,1) ;
-                %fprintf('Read acq data. nScans: %d\n',nScans)
-
-                % Notify the whole system that samples were acquired
-                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
-
-                % If we were done before reading the data, act accordingly
-                if areTasksDone ,
-                    %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisSweep_);
-                
-                    % Stop tasks, notify rest of system
-                    self.AnalogInputTask_.stop();
-                    self.DigitalInputTask_.stop();
-                    self.acquisitionSweepComplete_();
-                end                
-            end
+%             % Call the task to do the real work
+%             if self.IsArmedOrAcquiring ,
+%                 % Check for task doneness
+%                 areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
+%                 %if areTasksDone ,
+%                 %    fprintf('Acquisition tasks are done.\n')
+%                 %end
+%                     
+%                 % Get data
+%                 %if areTasksDone ,
+%                 %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
+%                 %end
+%                 [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+%                     self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
+%                 %nScans = size(rawAnalogData,1) ;
+%                 %fprintf('Read acq data. nScans: %d\n',nScans)
+% 
+%                 % Notify the whole system that samples were acquired
+%                 self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
+% 
+%                 % If we were done before reading the data, act accordingly
+%                 if areTasksDone ,
+%                     %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisSweep_);
+%                 
+%                     % Stop tasks, notify rest of system
+%                     self.AnalogInputTask_.stop();
+%                     self.DigitalInputTask_.stop();
+%                     self.acquisitionSweepComplete_();
+%                 end                
+%             end
             
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
@@ -1119,20 +1096,20 @@ classdef Acquisition < ws.system.Subsystem
         end        
     end
     
-    methods (Access=protected)
-        function [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
-                readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone) %#ok<INUSD>
-            % both analog and digital tasks are for-real
-            [rawAnalogData,timeSinceRunStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
-            nScans = size(rawAnalogData,1) ;
-            %if areTasksDone ,
-            %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
-            %end
-            rawDigitalData = ...
-                self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
-            self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
-        end  % function
-    end
+%     methods (Access=protected)
+%         function [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+%                 readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone) %#ok<INUSD>
+%             % both analog and digital tasks are for-real
+%             [rawAnalogData,timeSinceRunStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
+%             nScans = size(rawAnalogData,1) ;
+%             %if areTasksDone ,
+%             %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
+%             %end
+%             rawDigitalData = ...
+%                 self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+%             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
+%         end  % function
+%     end
     
 end  % classdef
 

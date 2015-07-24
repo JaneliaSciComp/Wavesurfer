@@ -35,9 +35,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end
     
     properties (Access = protected, Transient=true)
-        TheFiniteAnalogOutputTask_ = []
-        TheFiniteDigitalOutputTask_ = []
-        TheUntimedDigitalOutputTask_ = []
+%         TheFiniteAnalogOutputTask_ = []
+%         TheFiniteDigitalOutputTask_ = []
+%         TheUntimedDigitalOutputTask_ = []
         SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didCompleteRun())
         IsArmedOrStimulating_ = false
         IsWithinRun_ = false                       
@@ -92,17 +92,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function delete(self)
             %fprintf('Stimulation::delete()\n');            
-            %delete(self.TriggerListener_);
-            % Don't need to explicitly delete tasks, b/c they are ws.ni.OutputTask's, *not* DABS Tasks !!
-%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
-%                 delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-%             end
-            self.TheFiniteAnalogOutputTask_ = [] ;
-%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
-%                 delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-%             end
-            self.TheFiniteDigitalOutputTask_ = [] ;
-            self.TheUntimedDigitalOutputTask_ = [];
+%             self.TheFiniteAnalogOutputTask_ = [] ;
+%             self.TheFiniteDigitalOutputTask_ = [] ;
+%             self.TheUntimedDigitalOutputTask_ = [];
             self.Parent = [] ;
         end
         
@@ -142,10 +134,10 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function set.SampleRate(self, value)
             self.SampleRate_ = value;
-            if ~isempty(self.TheFiniteAnalogOutputTask_)
-                self.TheFiniteAnalogOutputTask_.SampleRate = value;
-                self.TheFiniteDigitalOutputTask_.SampleRate = value;
-            end
+%             if ~isempty(self.TheFiniteAnalogOutputTask_)
+%                 self.TheFiniteAnalogOutputTask_.SampleRate = value;
+%                 self.TheFiniteDigitalOutputTask_.SampleRate = value;
+%             end
             self.broadcast('DidSetSampleRate');
         end
         
@@ -390,76 +382,76 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             end
         end  % function
 
-        function acquireHardwareResources_(self)            
-            if isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteOutputTask(self, ...
-                                           'analog', ...
-                                           'Wavesurfer Finite Analog Output Task', ...
-                                           self.AnalogPhysicalChannelNames, ...
-                                           self.AnalogChannelNames) ;
-                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
-                %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
-            end
-            if isempty(self.TheFiniteDigitalOutputTask_) ,
-                self.TheFiniteDigitalOutputTask_ = ...
-                    ws.ni.FiniteOutputTask(self, ...
-                                           'digital', ...
-                                           'Wavesurfer Finite Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
-                                           self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
-                self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
-                %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
-            end
-            if isempty(self.TheUntimedDigitalOutputTask_) ,
-                 self.TheUntimedDigitalOutputTask_ = ...
-                    ws.ni.UntimedDigitalOutputTask(self, ...
-                                           'Wavesurfer Untimed Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
-                                           self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
-                 if ~all(self.IsDigitalChannelTimed)
-                     self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
-                 end
-           end
-        end
-        
-        function releaseHardwareResources(self)
-            self.TheFiniteAnalogOutputTask_ = [];            
-            self.TheFiniteDigitalOutputTask_ = [];            
-            self.TheUntimedDigitalOutputTask_ = [];            
-        end
+%         function acquireHardwareResources_(self)            
+%             if isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_ = ...
+%                     ws.ni.FiniteOutputTask(self, ...
+%                                            'analog', ...
+%                                            'Wavesurfer Finite Analog Output Task', ...
+%                                            self.AnalogPhysicalChannelNames, ...
+%                                            self.AnalogChannelNames) ;
+%                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
+%                 %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
+%             end
+%             if isempty(self.TheFiniteDigitalOutputTask_) ,
+%                 self.TheFiniteDigitalOutputTask_ = ...
+%                     ws.ni.FiniteOutputTask(self, ...
+%                                            'digital', ...
+%                                            'Wavesurfer Finite Digital Output Task', ...
+%                                            self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
+%                                            self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
+%                 self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
+%                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
+%             end
+%             if isempty(self.TheUntimedDigitalOutputTask_) ,
+%                  self.TheUntimedDigitalOutputTask_ = ...
+%                     ws.ni.UntimedDigitalOutputTask(self, ...
+%                                            'Wavesurfer Untimed Digital Output Task', ...
+%                                            self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
+%                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
+%                  if ~all(self.IsDigitalChannelTimed)
+%                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
+%                  end
+%            end
+%         end
+%         
+%         function releaseHardwareResources(self)
+%             self.TheFiniteAnalogOutputTask_ = [];            
+%             self.TheFiniteDigitalOutputTask_ = [];            
+%             self.TheUntimedDigitalOutputTask_ = [];            
+%         end
         
         function willPerformRun(self)
             %fprintf('Stimulation::willPerformRun()\n');
             %errors = [];
             %abort = false;
             
-            % Do a bunch of checks to make sure all is well for running an
-            % run
-            if isempty(self.TriggerScheme)
-                error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-            end            
-            if isempty(self.TriggerScheme.Target)
-                error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-            end            
-            %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-            %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
-            %end
+%             % Do a bunch of checks to make sure all is well for running an
+%             % run
+%             if isempty(self.TriggerScheme)
+%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
+%             end            
+%             if isempty(self.TriggerScheme.Target)
+%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
+%             end            
+%             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
+%             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
+%             %end
             
             wavesurferModel = self.Parent ;
             
-            % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources_();
-            
-            % Set up the task triggering
-            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            
-            % Clear out any pre-existing output waveforms
-            self.TheFiniteAnalogOutputTask_.clearChannelData();
-            self.TheFiniteDigitalOutputTask_.clearChannelData();
+%             % Make the NI daq task, if don't have it already
+%             self.acquireHardwareResources_();
+%             
+%             % Set up the task triggering
+%             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+%             self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+%             self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             
+%             % Clear out any pre-existing output waveforms
+%             self.TheFiniteAnalogOutputTask_.clearChannelData();
+%             self.TheFiniteDigitalOutputTask_.clearChannelData();
             
             % Determine how many episodes there will be, if possible
             if self.TriggerScheme.IsExternal ,
@@ -497,8 +489,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
         function didCompleteRun(self)
             %fprintf('Stimulation::didCompleteRun()\n');
-            self.TheFiniteAnalogOutputTask_.disarm();
-            self.TheFiniteDigitalOutputTask_.disarm();
+%             self.TheFiniteAnalogOutputTask_.disarm();
+%             self.TheFiniteDigitalOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
@@ -506,12 +498,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end  % function
         
         function didAbortRun(self)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_.disarm();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) ,
-                self.TheFiniteDigitalOutputTask_.disarm();
-            end
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_.disarm();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) ,
+%                 self.TheFiniteDigitalOutputTask_.disarm();
+%             end
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
@@ -600,15 +592,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
         function didAbortSweep(self)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
-                self.TheFiniteAnalogOutputTask_.abort();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
-                self.TheFiniteDigitalOutputTask_.abort();
-            end
-            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
-                self.TheUntimedDigitalOutputTask_.abort();            
-            end
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+%                 self.TheFiniteAnalogOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+%                 self.TheFiniteDigitalOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+%                 self.TheUntimedDigitalOutputTask_.abort();            
+%             end
             self.IsArmedOrStimulating_ = false ;
         end  % function
         
@@ -633,23 +625,23 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.setAnalogChannelData_(stimulusMap);
             self.setDigitalChannelData_(stimulusMap);
 
-            % Arm and start the analog task (which will then wait for a
-            % trigger)
-            if self.HasAnalogChannels_ ,
-                if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteAnalogOutputTask_.arm();
-                end
-                self.TheFiniteAnalogOutputTask_.start();                
-            end
-            
-            % Arm and start the digital task (which will then wait for a
-            % trigger)
-            if self.HasTimedDigitalChannels_ ,
-                if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteDigitalOutputTask_.arm();
-                end
-                self.TheFiniteDigitalOutputTask_.start(); 
-            end
+%             % Arm and start the analog task (which will then wait for a
+%             % trigger)
+%             if self.HasAnalogChannels_ ,
+%                 if self.EpisodesCompleted_ == 0 ,
+%                     self.TheFiniteAnalogOutputTask_.arm();
+%                 end
+%                 self.TheFiniteAnalogOutputTask_.start();                
+%             end
+%             
+%             % Arm and start the digital task (which will then wait for a
+%             % trigger)
+%             if self.HasTimedDigitalChannels_ ,
+%                 if self.EpisodesCompleted_ == 0 ,
+%                     self.TheFiniteDigitalOutputTask_.arm();
+%                 end
+%                 self.TheFiniteDigitalOutputTask_.start(); 
+%             end
             
             % If no samples at all, we just declare the episode done
             if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
@@ -663,7 +655,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
         end  % function
-        
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
@@ -1002,9 +993,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % limit the data to [-10 V, +10 V]
             aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
 
-            % Finally, assign the stimulation data to the the relevant part
-            % of the output task
-            self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
         end  % function
 
         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap)
@@ -1029,9 +1020,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % limit the data to {false,true}
             doDataLimited=logical(doData);
 
-            % Finally, assign the stimulation data to the the relevant part
-            % of the output task
-            self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
         end  % function
 
         function episodeCompleted_(self)
@@ -1097,33 +1088,30 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % protected methods
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Stimulation.propertyAttributes();
-        
+        mdlPropAttributes = ws.system.Stimulation.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
         function s = propertyAttributes()
             s = ws.system.Subsystem.propertyAttributes();
-
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
             s.DoRepeatSequence = struct('Classes','binarylogical');
-
         end  % function
     end  % class methods block
     
     methods
         function poll(self,timeSinceSweepStart)
-            % Call the task to do the real work
-            if self.IsArmedOrStimulating_ ,
-                if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                    self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
-                end
-                if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-                    self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
-                end
-            end
+%             % Call the task to do the real work
+%             if self.IsArmedOrStimulating_ ,
+%                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+%                     self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
+%                 end
+%                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
+%                     self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
+%                 end
+%             end
         end
     end
     

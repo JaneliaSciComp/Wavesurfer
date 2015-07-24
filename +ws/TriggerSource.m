@@ -56,6 +56,7 @@ classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDA
 
     properties (Access = protected, Transient=true)
         CounterTask_  % of type ws.ni.CounterTriggerSourceTask, or empty        
+          % if setup() method is never called, this will always be empty
     end
     
 %     events

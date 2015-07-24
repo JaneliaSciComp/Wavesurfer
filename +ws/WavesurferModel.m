@@ -1,8 +1,12 @@
-classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
+classdef WavesurferModel < ws.Model
     % The main Wavesurfer model object.
 
-    properties (Dependent = true, SetAccess=immutable)  % transient so doesn't get saved
-        NFastProtocols
+    properties (Constant = true)
+        NFastProtocols = 6        
+        LooperRPCPortNumber = 8081
+        FrontendRPCPortNumber = 8082
+        RefillerRPCPortNumber = 8083
+        DataPubSubPortNumber = 8084
     end
     
     properties (Dependent = true, SetAccess = protected)
@@ -73,8 +77,12 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     % Non-dependent props (i.e. those with storage) start here
     %
     
-    properties (Access=protected, Transient=true)  % transient so doesn't get saved
-        NFastProtocols_ = 6
+    properties (Access=protected, Transient=true)
+        RPCServer_
+        LooperRPCClient_
+        RefillerRPCClient_
+        DataSubscriber_
+        ExpectedNextScanIndex_
     end
     
     properties (Access = protected, Transient = true)
@@ -159,10 +167,25 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
     
     methods
         function self = WavesurferModel()
-            %self.State_ = ws.ApplicationState.Uninitialized;
-            %self.IsYokedToScanImage_ = false;
-            %self.IsSweepBased_=true;
-            %self.NSweepsPerRun_ = 1;
+            % Set up the communication sockets
+            self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
+            self.RPCServer_.setDelegate(self) ;
+            self.RPCServer_.bind();
+
+            self.LooperRPCClient_ = ws.RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ;
+            self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
+            
+            self.DataSubscriber_ = ws.IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
+            self.DataSubscriber_.setDelegate(self) ;
+            
+            % Start the other Matlab processes
+            system('start matlab -nojvm -minimize -r "looper=Looper(); looper.runMainLoop();"');
+            %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
+            
+            % Connect to the various sockets
+            self.LooperRPCClient_.connect() ;
+            self.RefillerRPCClient_.connect() ;
+            self.DataSubscriber_.connect() ;
             
             % Initialize the fast protocols
             self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
@@ -256,13 +279,13 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             % Start a run without recording data to disk.
             self.Logging.Enabled = false ;
             self.run_() ;
-        end
+        end  % function
         
         function record(self)
             % Start a run, recording data to disk.
             self.Logging.Enabled = true ;
             self.run_() ;
-        end
+        end  % function
 
         function stop(self)
             % Called when you press the "Stop" button in the UI, for
@@ -275,7 +298,11 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 %self.abortSweepAndRun_('user');
                 self.WasRunStoppedByUser_ = true ;
             end
-        end
+        end  % function
+        
+        function dataAvailable(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+            self.haveDataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+        end  % function
     end  % methods
     
     methods
@@ -637,10 +664,6 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.Ephys.releaseHardwareResources();
         end
         
-        function result=get.NFastProtocols(self)
-            result = self.NFastProtocols_ ;
-        end
-        
         function result=get.FastProtocols(self)
             result = self.FastProtocols_;
         end
@@ -712,9 +735,16 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 me.rethrow();
             end
             
-            % Now tell the Looper to prepare for the run
-            self.RPC
+            % Tell the Looper to prepare for the run
+            wavesurferModelSettings=self.encodeForFileType('cfg');
+            err = self.RPCClient('willPerformRun',wavesurferModelSettings) ;
+            if ~isempty(err) ,
+                self.cleanUpAfterAbortedRun_('problem');
+                self.changeReadiness(+1);
+                throw(err);                
+            end
             
+            % Change our own state to running
             self.State = ws.ApplicationState.Running ;
             
             % Handle timing stuff
@@ -779,6 +809,14 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                     end
                 end
 
+                % Tell the looper to ready itself
+                err = self.RPCClient('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
+                if ~isempty(err) ,
+                    self.cleanUpAfterAbortedRun_('problem');
+                    self.changeReadiness(+1);
+                    throw(err);                
+                end
+                
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
 
@@ -788,8 +826,18 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 % Any system waiting for an internal or external trigger was armed and waiting
                 % in the subsystem willPerformSweep() above.
                 %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
-                self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
+                %self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
 
+                % Pulse the master trigger to start the sweep!
+                self.Triggering.pulseMasterTrigger();
+                
+%                 err = self.RPCClient('startSweep') ;
+%                 if ~isempty(err) ,
+%                     self.cleanUpAfterAbortedRun_('problem');
+%                     self.changeReadiness(+1);
+%                     throw(err);                
+%                 end
+                
                 % Now poll
                 [didCompleteSweep,didUserStop] = self.runWithinSweepPollingLoop_();
 
@@ -1009,13 +1057,28 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
             self.callUserFunctions_('runDidAbort');
         end  % function
         
-        function haveDataAvailable_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
-            % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
+        function haveDataAvailable_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+            % The central method for handling incoming data.  Called by
+            % WavesurferModel::dataAvailable(), which is called in response
+            % to the 'dataAvailable' message coming in over a subscriber
+            % socker.
+            % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.
             nScans=size(rawAnalogData,1);
-            %nChannels=size(data,2);
-            %assert(nChannels == numel(expectedChannelNames));
-                        
+
+            % Check that we didn't miss any data
+            if isempty(self.ExpectedNextScanIndex_) ,
+                % This is the first data we've received, so initialize self.ExpectedNextScanIndex_
+                self.ExpectedNextScanIndex_ = scanIndex+nScans ;
+            elseif scanIndex>self.ExpectedNextScanIndex_ ,                
+                nScansMissed = scanIndex - self.ExpectedNextScanIndex_ ;
+                error('We apparently missed %d scans',nScansMissed);
+            elseif scanIndex<self.ExpectedNextScanIndex_ ,
+                error('Weird.  The data timestamp is earlier than expected.  Timestamp: %d, expected: %d.',scanIndex,self.ExpectedNextScanIndex_);
+            else
+                % All is well, so just update self.ExpectedNextScanIndex_
+                self.ExpectedNextScanIndex_ = self.ExpectedNextScanIndex_ + nScans ;
+            end
+
             if (nScans>0)
                 % update the current time
                 dt=1/self.Acquisition.SampleRate;
@@ -1651,9 +1714,10 @@ classdef WavesurferModel < ws.Model  %& ws.EventBroadcaster
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
                     timeOfLastPoll = timeNow ;
-                    timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-                    self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-                    self.Stimulation.poll(timeSinceSweepStart);
+                    self.DataSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                    %timeSinceSweepStart = toc(self.FromSweepStartTicId_);
+                    %self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
+                    %self.Stimulation.poll(timeSinceSweepStart);
                     %self.Triggering.poll(timeSinceSweepStart);
                     %self.Display.poll(timeSinceSweepStart);
                     %self.Logging.poll(timeSinceSweepStart);

@@ -112,6 +112,10 @@ classdef LooperUserFunctions < ws.system.Subsystem
             end
         end  % function
         
+        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+            % The data available callback 
+            self.invoke(self.Parent,'dataIsAvailableInLooper');
+        end        
     end  % methods
        
     methods (Access=protected)
