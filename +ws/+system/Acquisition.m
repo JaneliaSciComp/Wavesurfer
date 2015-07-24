@@ -1031,7 +1031,7 @@ classdef Acquisition < ws.system.Subsystem
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
+            s = struct();
 
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             %s.Duration = struct('Attributes',{{'positive' 'finite' 'scalar'}});

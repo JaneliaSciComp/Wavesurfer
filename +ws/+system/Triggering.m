@@ -767,7 +767,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber  % TODO: rework t
     end  % protected methods block
 
     properties (Hidden, SetAccess=protected)
-        %mdlPropAttributes = ws.system.Subsystem.propertyAttributes();
+        mdlPropAttributes = struct();
         mdlHeaderExcludeProps = {};
     end
     

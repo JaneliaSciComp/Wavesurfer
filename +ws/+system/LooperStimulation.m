@@ -1097,19 +1097,17 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
     end  % protected methods
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Stimulation.propertyAttributes();
+        mdlPropAttributes = ws.system.LooperStimulation.propertyAttributes();
         
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
+            s = struct();
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
             s.DoRepeatSequence = struct('Classes','binarylogical');
-
         end  % function
     end  % class methods block
     

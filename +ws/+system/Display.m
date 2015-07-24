@@ -488,7 +488,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
+            s = struct() ;
 
             s.UpdateRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.XOffset = struct('Attributes',{{'finite' 'scalar'}});

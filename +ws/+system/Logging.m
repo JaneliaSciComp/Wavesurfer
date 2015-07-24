@@ -652,15 +652,13 @@ classdef Logging < ws.system.Subsystem
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Logging.propertyAttributes();
-        
+        mdlPropAttributes = ws.system.Logging.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
+            s = struct();
             s.FileLocation = struct('Classes', 'string');
             s.FileBaseName = struct('Classes', 'string');
             s.NextSweepIndex = struct('Attributes', {{'scalar', 'finite', 'integer', '>=', 1}});

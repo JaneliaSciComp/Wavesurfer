@@ -789,20 +789,19 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
     end  % protected methods block
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Triggering.propertyAttributes();
-        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
-            s.StimulationUsesAcquisitionTriggerScheme = struct('Classes','binarylogical');
-            %s.AcquisitionUsesASAPTriggering = struct('Classes','binarylogical');
-
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = ws.system.Subsystem.propertyAttributes();
+% 
+%             s.StimulationUsesAcquisitionTriggerScheme = struct('Classes','binarylogical');
+%             %s.AcquisitionUsesASAPTriggering = struct('Classes','binarylogical');
+% 
+%         end  % function
+%     end  % class methods block
         
     methods
         function poll(self,timeSinceSweepStart)

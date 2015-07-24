@@ -1097,19 +1097,16 @@ classdef RefillerStimulation < ws.system.Subsystem   % & ws.mixin.DependentPrope
     end  % protected methods
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Stimulation.propertyAttributes();
-        
+        mdlPropAttributes = ws.system.RefillerStimulation.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
+            s = struct();
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
             s.DoRepeatSequence = struct('Classes','binarylogical');
-
         end  % function
     end  % class methods block
     

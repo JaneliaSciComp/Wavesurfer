@@ -179,7 +179,7 @@ classdef WavesurferModel < ws.Model
             self.DataSubscriber_.setDelegate(self) ;
             
             % Start the other Matlab processes
-            system('start matlab -nojvm -minimize -r "looper=Looper(); looper.runMainLoop();"');
+            system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
             %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
             
             % Connect to the various sockets
@@ -189,16 +189,16 @@ classdef WavesurferModel < ws.Model
             
             % Initialize the fast protocols
             self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
-            self.IndexOfSelectedFastProtocol=1;
+            self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems.
-            self.Acquisition = ws.system.Acquisition(self);
-            self.Stimulation = ws.system.Stimulation(self);
-            self.Display = ws.system.Display(self);
-            self.Triggering = ws.system.Triggering(self);
-            self.UserFunctions = ws.system.UserFunctions(self);
-            self.Logging = ws.system.Logging(self);
-            self.Ephys = ws.system.Ephys(self);
+            self.Acquisition_ = ws.system.Acquisition(self);
+            self.Stimulation_ = ws.system.Stimulation(self);
+            self.Display_ = ws.system.Display(self);
+            self.Triggering_ = ws.system.Triggering(self);
+            self.UserFunctions_ = ws.system.UserFunctions(self);
+            self.Logging_ = ws.system.Logging(self);
+            self.Ephys_ = ws.system.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property

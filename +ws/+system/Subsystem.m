@@ -108,30 +108,35 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
             out = self.Enabled_;
         end
         
-        function setEnabledImplementation_(self, value)
-            %self.validatePropArg('Enabled', value);
-            if isfloat(value) && isscalar(value) && isnan(value) ,
-                % do nothing
-            else
-                value = self.validatePropArg('Enabled',value);
-                % Shouldn't we check to make sure CanEnable is true before
-                % setting this to true?
+        function setEnabledImplementation_(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    % do nothing
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Enabled must be a scalar, and must be logical, 0, or 1');
+                end
                 if self.CanEnable_ ,                
-                    self.Enabled_ = value;
+                    self.Enabled_ = logical(newValue);
                 end
             end
             self.broadcast('DidSetEnabled');
         end
         
         function out = getCanEnableImplementation(self)
-            out = self.CanEnable_;
+            out = self.CanEnable_;            
         end
         
-        function setCanEnableImplementation(self, value)
-            %self.validatePropArg('CanEnable', value);
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
-            value = self.validatePropArg('CanEnable',value);
-            self.CanEnable_ = value;
+        function setCanEnableImplementation(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.CanEnable_ = logical(newValue);
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'CanEnable must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            % no broadcast needed in this case
         end
     end  % protected methods block
     
@@ -141,19 +146,18 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
 %     end
     
     properties (Hidden, SetAccess=protected)
-        %mdlPropAttributes = ws.system.Subsystem.propertyAttributes();
-        
+        %mdlPropAttributes = ws.system.Subsystem.propertyAttributes();        
         %mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-
-            s.Enabled = struct('Classes','binarylogical');
-            s.CanEnable = struct('Classes','binarylogical');            
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+% 
+%             s.Enabled = struct('Classes','binarylogical');
+%             s.CanEnable = struct('Classes','binarylogical');            
+%         end  % function
+%     end  % class methods block
     
     
 end

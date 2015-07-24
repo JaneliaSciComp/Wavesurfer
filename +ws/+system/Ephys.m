@@ -224,15 +224,14 @@ classdef Ephys < ws.system.Subsystem
     end % methods
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();
-        
+        mdlPropAttributes = struct() ;
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = ws.system.Subsystem.propertyAttributes();
+%         end  % function
+%     end  % class methods block
     
 end  % classdef

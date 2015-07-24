@@ -899,7 +899,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % Clear the timed digital output task, will be recreated when acq is
             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
             % And have to do it first to avoid a temporary collision.
-            self.TheFiniteDigitalOutputTask_ = [] ;
+            %self.TheFiniteDigitalOutputTask_ = [] ;
             % Set the untimed output task appropriately
             self.TheUntimedDigitalOutputTask_ = [] ;
             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
@@ -1094,7 +1094,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
+            s = struct();
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
             s.DoRepeatSequence = struct('Classes','binarylogical');

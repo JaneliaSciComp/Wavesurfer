@@ -31,9 +31,9 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
         Name
     end
     
-    properties (Dependent=true)  
-        IsExternalAllowed
-    end
+%     properties (Dependent=true)  
+%         IsExternalAllowed
+%     end
         
     properties (Dependent = true)
         Target  % can be empty, or a source, or a destination
@@ -65,7 +65,7 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
         SourceIndex_  % An index into the Sources array of the parent Triggering subsystem, or empty
         DestinationIndex_  % An index into the Destinations array of the parent Triggering subsystem, or empty
             % At most one of SourceIndex_ and DestinationIndex_ is nonempty.  
-        IsExternalAllowed_
+        %IsExternalAllowed_
         IsInternal_
         IsExternal_
     end
@@ -85,9 +85,9 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
             self.SourceIndex_ = [] ;
             self.DestinationIndex_ = [] ;
             %self.SupportedSourceTypes_ = [ws.SourceType.Internal ws.SourceType.External];  % any source type, by default
-            self.IsExternalAllowed_ = true;
+            %self.IsExternalAllowed_ = true;
             
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name', 'Target', 'IsExternalAllowed'}, {});
+            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name', 'Target'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -173,7 +173,8 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
 %         end  % function
         
         function setDestination_(self, value)
-            if self.IsExternalAllowed ,
+            %if self.IsExternalAllowed ,
+            if true ,
                 %self.Source_=ws.TriggerSource.empty();
                 %self.Destination_ = value;
                 
@@ -229,20 +230,20 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
 %             end                    
 %         end
         
-        function out = get.IsExternalAllowed(self)
-            out = self.IsExternalAllowed_;
-        end  % function
-        
-        function set.IsExternalAllowed(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('IsExternalAllowed', newValue);
-            % Don't want to set to false if the the current scheme is external.
-            if newValue==false && ~isempty(self.IsExternal) && self.IsExternal ,
-                % do nothing
-            else
-                self.IsExternalAllowed_ = newValue;
-            end                    
-        end  % function
+%         function out = get.IsExternalAllowed(self)
+%             out = self.IsExternalAllowed_;
+%         end  % function
+%         
+%         function set.IsExternalAllowed(self, newValue)
+%             if isa(newValue,'ws.most.util.Nonvalue'), return, end            
+%             self.validatePropArg('IsExternalAllowed', newValue);
+%             % Don't want to set to false if the the current scheme is external.
+%             if newValue==false && ~isempty(self.IsExternal) && self.IsExternal ,
+%                 % do nothing
+%             else
+%                 self.IsExternalAllowed_ = newValue;
+%             end                    
+%         end  % function
         
         function value=get.PFIID(self)
             % Get the id (the zero-based index used by NI) of the PFI line
@@ -375,37 +376,28 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
     
     methods (Access=protected)        
         function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+            defineDefaultPropertyTags@ws.Model(self) ;
+            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'}) ;
         end
     end    
        
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Triggering.propertyAttributes();
-        
-        mdlHeaderExcludeProps = {};
+        mdlPropAttributes = ws.TriggerScheme.propertyAttributes() ;        
+        mdlHeaderExcludeProps = {} ;
     end
     
     methods (Static)
         function s = propertyAttributes()
             s = struct();
-
             s.Name = struct('Classes', 'char', ....
                             'Attributes', {{'vector'}}, ...
                             'AllowEmpty', false);
             s.Target = struct('Classes', {'ws.TriggerSource' 'ws.TriggerDestination'}, ...
                               'Attributes', {{'scalar'}}, ...
                               'AllowEmpty', true);
-%             s.Source = struct('Classes', 'ws.TriggerSource', ...
-%                               'Attributes', {{'scalar'}}, ...
-%                               'AllowEmpty', true);
-%             s.Destination = struct('Classes', 'ws.TriggerDestination', ...
-%                                    'Attributes', {{'scalar'}}, ...
-%                                    'AllowEmpty', true);
-            s.IsExternalAllowed = struct('Classes', 'logical', ....
-                                         'Attributes', {{'scalar'}}, ...
-                                         'AllowEmpty', false);
-
+%             s.IsExternalAllowed = struct('Classes', 'logical', ....
+%                                          'Attributes', {{'scalar'}}, ...
+%                                          'AllowEmpty', false);
         end  % function
     end  % class methods block
         

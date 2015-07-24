@@ -1048,18 +1048,15 @@ classdef LooperAcquisition < ws.system.Subsystem
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();        
+        mdlPropAttributes = ws.system.LooperAcquisition.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
         function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
+            s = struct();
             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            %s.Duration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
-
         end  % function
     end  % class methods block
     
