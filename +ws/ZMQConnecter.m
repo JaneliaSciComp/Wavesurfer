@@ -51,7 +51,7 @@ classdef ZMQConnecter < handle
                     self.Socket =[] ;
                 end
                 if self.hasContext() ,
-                    zmq.core.ctx_destroy(self.Context);
+                    zmq.core.ctx_term(self.Context);
                     self.Context = [] ;
                 end
             catch me %#ok<NASGU>

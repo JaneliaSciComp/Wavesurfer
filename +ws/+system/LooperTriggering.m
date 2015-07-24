@@ -1,4 +1,4 @@
-classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
+classdef LooperTriggering < ws.system.Subsystem %& ws.EventSubscriber
     
     properties (Dependent = true, SetAccess = immutable)
         Sources  % this is an array of type ws.TriggerSource, not a cell array
@@ -65,7 +65,7 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
     end
     
     methods
-        function self = Triggering(parent)
+        function self = LooperTriggering(parent)
             self.CanEnable=true;
             self.Enabled=true;
 
@@ -99,87 +99,87 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
 %             self.AcquisitionTriggerScheme.addlistener('Target', 'PostSet', @(src,evt)self.didSetAcquisitionTriggerSchemeTarget_());
 %             self.ContinuousModeTriggerScheme.addlistener('Target', 'PreSet', @(src,evt)self.willSetContinuousModeTriggerSchemeTarget_());
 %             self.ContinuousModeTriggerScheme.addlistener('Target', 'PostSet', @(src,evt)self.didSetContinuousModeTriggerSchemeTarget_());            
-            self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
-            self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
+            %self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
+            %self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
 %             self.ContinuousModeTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetContinuousModeTriggerSchemeTarget' );
 %             self.ContinuousModeTriggerScheme.subscribeMe(self, 'DidSetTarget' , '', 'didSetContinuousModeTriggerSchemeTarget'  );
         end  % function
         
-        function initializeFromMDFStructure(self,mdfStructure)
-%             % Add a built-in internal trigger for use when running
-%             % sweep-based.  Can't do this in the constructor b/c we need
-%             % the device ID.
-%             builtinTriggerSource = ws.TriggerSource();
-%             builtinTriggerSource.Name='Built-in Sweep Trigger Scheme';
-%             builtinTriggerSource.DeviceName=mdfStructure.inputDeviceName;
-%             builtinTriggerSource.CounterID=0;
-%             builtinTriggerSource.RepeatCount=1;
-%             builtinTriggerSource.Interval=1;  % s
-%             %destination = ws.TriggerDestination();
-%             %destination.Type = ws.TriggerDestinationType.Auto;
-%             builtinTriggerSource.PFIID = builtinTriggerSource.CounterID + 12;  % the NI-specified default
-%             builtinTriggerSource.Edge = ws.ni.TriggerEdge.Rising;                                
-%             %builtinTriggerSource.PredefinedDestination = destination;
-%             self.addTriggerSource(builtinTriggerSource);
-
-            % Set up the trigger sources (i.e. internal triggers) specified
-            % in the MDF.
-            triggerSourceSpecs=mdfStructure.triggerSource;
-            for idx = 1:length(triggerSourceSpecs) ,
-                thisTriggerSourceSpec=triggerSourceSpecs(idx);
-                
-                % Create the trigger source, set params
-                source = ws.TriggerSource();                
-                source.Name=thisTriggerSourceSpec.Name;
-                source.DeviceName=thisTriggerSourceSpec.DeviceName;
-                source.CounterID=thisTriggerSourceSpec.CounterID;                
-                source.RepeatCount = 1;
-                source.Interval = 1;  % s
-                source.PFIID = thisTriggerSourceSpec.CounterID + 12;                
-                source.Edge = ws.ni.TriggerEdge.Rising;                                
-                
-                % add the trigger source to the subsystem
-                self.addTriggerSource(source);
-                
-                % If the first source, set things to point to it
-                if idx==1 ,
-                    self.AcquisitionTriggerScheme_.Target = source;
-                    self.StimulationTriggerScheme_.Target = source;  
-                    self.StimulationUsesAcquisitionTriggerScheme = true;
-                end                    
-            end  % for loop
-            
-            % Set up the trigger destinations (i.e. external triggers)
-            % specified in the MDF.
-            triggerDestinationSpecs=mdfStructure.triggerDestination;
-            for idx = 1:length(triggerDestinationSpecs) ,
-                thisTriggerDestinationSpec=triggerDestinationSpecs(idx);
-                
-                % Create the trigger destination, set params
-                destination = ws.TriggerDestination();
-                destination.Name = thisTriggerDestinationSpec.Name;
-                destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
-                destination.PFIID = thisTriggerDestinationSpec.PFIID;
-                destination.Edge = ws.ni.TriggerEdge.(thisTriggerDestinationSpec.Edge);
-                
-                % add the trigger destination to the subsystem
-                self.addTriggerDestination(destination);
-            end  % for loop
-            
-        end  % function
+%         function initializeFromMDFStructure(self,mdfStructure)
+% %             % Add a built-in internal trigger for use when running
+% %             % sweep-based.  Can't do this in the constructor b/c we need
+% %             % the device ID.
+% %             builtinTriggerSource = ws.TriggerSource();
+% %             builtinTriggerSource.Name='Built-in Sweep Trigger Scheme';
+% %             builtinTriggerSource.DeviceName=mdfStructure.inputDeviceName;
+% %             builtinTriggerSource.CounterID=0;
+% %             builtinTriggerSource.RepeatCount=1;
+% %             builtinTriggerSource.Interval=1;  % s
+% %             %destination = ws.TriggerDestination();
+% %             %destination.Type = ws.TriggerDestinationType.Auto;
+% %             builtinTriggerSource.PFIID = builtinTriggerSource.CounterID + 12;  % the NI-specified default
+% %             builtinTriggerSource.Edge = ws.ni.TriggerEdge.Rising;                                
+% %             %builtinTriggerSource.PredefinedDestination = destination;
+% %             self.addTriggerSource(builtinTriggerSource);
+% 
+%             % Set up the trigger sources (i.e. internal triggers) specified
+%             % in the MDF.
+%             triggerSourceSpecs=mdfStructure.triggerSource;
+%             for idx = 1:length(triggerSourceSpecs) ,
+%                 thisTriggerSourceSpec=triggerSourceSpecs(idx);
+%                 
+%                 % Create the trigger source, set params
+%                 source = ws.TriggerSource();                
+%                 source.Name=thisTriggerSourceSpec.Name;
+%                 source.DeviceName=thisTriggerSourceSpec.DeviceName;
+%                 source.CounterID=thisTriggerSourceSpec.CounterID;                
+%                 source.RepeatCount = 1;
+%                 source.Interval = 1;  % s
+%                 source.PFIID = thisTriggerSourceSpec.CounterID + 12;                
+%                 source.Edge = ws.ni.TriggerEdge.Rising;                                
+%                 
+%                 % add the trigger source to the subsystem
+%                 self.addTriggerSource(source);
+%                 
+%                 % If the first source, set things to point to it
+%                 if idx==1 ,
+%                     self.AcquisitionTriggerScheme_.Target = source;
+%                     self.StimulationTriggerScheme_.Target = source;  
+%                     self.StimulationUsesAcquisitionTriggerScheme = true;
+%                 end                    
+%             end  % for loop
+%             
+%             % Set up the trigger destinations (i.e. external triggers)
+%             % specified in the MDF.
+%             triggerDestinationSpecs=mdfStructure.triggerDestination;
+%             for idx = 1:length(triggerDestinationSpecs) ,
+%                 thisTriggerDestinationSpec=triggerDestinationSpecs(idx);
+%                 
+%                 % Create the trigger destination, set params
+%                 destination = ws.TriggerDestination();
+%                 destination.Name = thisTriggerDestinationSpec.Name;
+%                 destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
+%                 destination.PFIID = thisTriggerDestinationSpec.PFIID;
+%                 destination.Edge = ws.ni.TriggerEdge.(thisTriggerDestinationSpec.Edge);
+%                 
+%                 % add the trigger destination to the subsystem
+%                 self.addTriggerDestination(destination);
+%             end  % for loop
+%             
+%         end  % function
         
-        function setupMasterTriggerTask(self) 
-            if isempty(self.MasterTriggerDABSTask_) ,
-                self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('Wavesurfer Master Trigger Task');
-                self.MasterTriggerDABSTask_.createDOChan(self.Sources(1).DeviceName, self.MasterTriggerPhysicalChannelName_);
-                self.MasterTriggerDABSTask_.writeDigitalData(false);
-            end
-        end  % function
-
-        function teardownMasterTriggerTask(self) 
-            ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
-            self.MasterTriggerDABSTask_ = [] ;
-        end
+%         function setupMasterTriggerTask(self) 
+%             if isempty(self.MasterTriggerDABSTask_) ,
+%                 self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('Wavesurfer Master Trigger Task');
+%                 self.MasterTriggerDABSTask_.createDOChan(self.Sources(1).DeviceName, self.MasterTriggerPhysicalChannelName_);
+%                 self.MasterTriggerDABSTask_.writeDigitalData(false);
+%             end
+%         end  % function
+% 
+%         function teardownMasterTriggerTask(self) 
+%             ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
+%             self.MasterTriggerDABSTask_ = [] ;
+%         end
 
 %         function acquireHardwareResources(self)
 %             self.setupMasterTriggerTask();
@@ -188,7 +188,7 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
         
         function releaseHardwareResources(self)
             self.teardownInternalSweepBasedTriggers();
-            self.teardownMasterTriggerTask();
+            %self.teardownMasterTriggerTask();
         end
         
         function delete(self)
@@ -337,11 +337,11 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
         % todo: replace addTriggerSource() with
         % addNewTriggerSource(), which takes no arguments.  See comment
         % below for addTriggerDestination().
-        function addTriggerSource(self, source)
-            %source.DoneCallback = @self.triggerSourceDone;
-            source.Parent = self;
-            self.Sources_(end + 1) = source;
-        end  % function
+%         function addTriggerSource(self, source)
+%             %source.DoneCallback = @self.triggerSourceDone;
+%             source.Parent = self;
+%             self.Sources_(end + 1) = source;
+%         end  % function
         
         function out = indexOfTriggerSource(self, triggerScheme)
             if triggerScheme.IsInternal && ~isempty(self.Sources_)
@@ -355,10 +355,10 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
         % addNewTriggerDestination(), which takes no arguments.  Don't like
         % this business of building a destination outside of our control
         % and then endocytosing it.
-        function addTriggerDestination(self, destination)
-            %assert(destination.Type == ws.TriggerDestinationType.UserDefined, 'The Destination Type must be ''UserDefined''');
-            self.Destinations_(end + 1) = destination;
-        end  % function
+%         function addTriggerDestination(self, destination)
+%             %assert(destination.Type == ws.TriggerDestinationType.UserDefined, 'The Destination Type must be ''UserDefined''');
+%             self.Destinations_(end + 1) = destination;
+%         end  % function
         
         function out = indexOfTriggerDestination(self, triggerScheme)
             if triggerScheme.IsExternal && ~isempty(self.Destinations_)
@@ -451,11 +451,11 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
 %             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
 
-        function pulseMasterTrigger(self)
-            % Produce a pulse on the master trigger, which will truly start things
-            self.MasterTriggerDABSTask_.writeDigitalData(true);
-            self.MasterTriggerDABSTask_.writeDigitalData(false);            
-        end  % function
+%         function pulseMasterTrigger(self)
+%             % Produce a pulse on the master trigger, which will truly start things
+%             self.MasterTriggerDABSTask_.writeDigitalData(true);
+%             self.MasterTriggerDABSTask_.writeDigitalData(false);            
+%         end  % function
         
 %         function startStimulationSweepBasedTriggerIfDistinct(self)
 %             % Starts the stim sweep-based trigger if it's different from
@@ -493,7 +493,7 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
 %         end  % function        
         
         function willPerformRun(self)
-            self.setupMasterTriggerTask();            
+            %self.setupMasterTriggerTask();            
 %             if self.AcquisitionUsesASAPTriggering ,
 %                 % do nothing --- will arm for each sweep
 %             else
@@ -549,65 +549,66 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
             end  % function            
         end  % function
         
-        function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if self.Parent.IsSweepBased ,
-                    % overridden by IsSweepBased, do nothing
-                else
-                    self.validatePropArg(newValue,'StimulationUsesAcquisitionTriggerScheme');
-                    self.StimulationUsesAcquisitionTriggerScheme_ = newValue;
-                    %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-                    self.stimulusMapDurationPrecursorMayHaveChanged();            
-                end
-            end
-            self.broadcast('Update');            
-        end  % function
+%         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
+%             if ws.utility.isASettableValue(newValue) ,
+%                 if self.Parent.IsSweepBased ,
+%                     % overridden by IsSweepBased, do nothing
+%                 else
+%                     self.validatePropArg(newValue,'StimulationUsesAcquisitionTriggerScheme');
+%                     self.StimulationUsesAcquisitionTriggerScheme_ = newValue;
+%                     %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+%                     self.stimulusMapDurationPrecursorMayHaveChanged();            
+%                 end
+%             end
+%             self.broadcast('Update');            
+%         end  % function
         
         function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            if self.Parent.IsSweepBased ,
+            parent = self.Parent ;
+            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
                 value=true;
             else
                 value=self.StimulationUsesAcquisitionTriggerScheme_;
             end
         end  % function
         
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            wavesurferModel=self.Parent;
-            if ~isempty(wavesurferModel) ,
-                wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end  % function        
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             wavesurferModel=self.Parent;
+%             if ~isempty(wavesurferModel) ,
+%                 wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end  % function        
         
-        function willSetNSweepsPerRun(self)
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-
-        function didSetNSweepsPerRun(self)
-            self.syncTriggerSourcesFromTriggeringState_();            
-        end  % function        
-        
-        function willSetAcquisitionDuration(self)
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-
-        function didSetAcquisitionDuration(self)
-            self.syncTriggerSourcesFromTriggeringState_();            
-        end  % function        
-        
-        function willSetIsSweepBased(self)
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-        
-        function didSetIsSweepBased(self)
-            %fprintf('Triggering::didSetIsSweepBased()\n');
-            self.syncTriggerSourcesFromTriggeringState_();
-            %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-            self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-            %self.syncIntervalAndRepeatCountListeners_();
-        end  % function 
+%         function willSetNSweepsPerRun(self)
+%             % Have to release the relvant parts of the trigger scheme
+%             self.releaseCurrentTriggerSources_();
+%         end  % function
+% 
+%         function didSetNSweepsPerRun(self)
+%             self.syncTriggerSourcesFromTriggeringState_();            
+%         end  % function        
+%         
+%         function willSetAcquisitionDuration(self)
+%             % Have to release the relvant parts of the trigger scheme
+%             self.releaseCurrentTriggerSources_();
+%         end  % function
+% 
+%         function didSetAcquisitionDuration(self)
+%             self.syncTriggerSourcesFromTriggeringState_();            
+%         end  % function        
+%         
+%         function willSetIsSweepBased(self)
+%             % Have to release the relvant parts of the trigger scheme
+%             self.releaseCurrentTriggerSources_();
+%         end  % function
+%         
+%         function didSetIsSweepBased(self)
+%             %fprintf('Triggering::didSetIsSweepBased()\n');
+%             self.syncTriggerSourcesFromTriggeringState_();
+%             %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+%             self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
+%             %self.syncIntervalAndRepeatCountListeners_();
+%         end  % function 
         
         function triggerSourceDone(self,triggerSource)
             % Called "from below" when the counter trigger task finishes
@@ -667,7 +668,9 @@ classdef LooperTriggering < ws.system.Subsystem & ws.EventSubscriber
             % Just what it says on the tin.  For starting, want the acq
             % trigger last so that the stim trigger can trigger off it if
             % they're using the same source.  Result is a cell array.
-            triggerSchemes={self.StimulationTriggerScheme self.AcquisitionTriggerScheme};
+            triggerSchemes = {self.StimulationTriggerScheme self.AcquisitionTriggerScheme} ;
+            %self.StimulationTriggerScheme.IsInternal
+            %self.AcquisitionTriggerScheme.IsInternal            
             isInternal=cellfun(@(scheme)(scheme.IsInternal),triggerSchemes);
             internalTriggerSchemes=triggerSchemes(isInternal);
 

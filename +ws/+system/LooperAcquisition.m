@@ -126,7 +126,7 @@ classdef LooperAcquisition < ws.system.Subsystem
     % TODO - need to store sample rate and duration protectedly so can set on analog
     % intput channels when they are added (edit: duration is done).
     methods
-        function self = Acquisition(parent)
+        function self = LooperAcquisition(parent)
             self.Parent=parent;
         end
         

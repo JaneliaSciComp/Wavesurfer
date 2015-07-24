@@ -716,7 +716,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.NSweepsCompletedInThisRun = 0;
+            self.NSweepsCompletedInThisRun_ = 0;
             
             self.callUserFunctions_('runWillStart');  
             
@@ -737,7 +737,7 @@ classdef WavesurferModel < ws.Model
             
             % Tell the Looper to prepare for the run
             wavesurferModelSettings=self.encodeForFileType('cfg');
-            err = self.RPCClient('willPerformRun',wavesurferModelSettings) ;
+            err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
             if ~isempty(err) ,
                 self.cleanUpAfterAbortedRun_('problem');
                 self.changeReadiness(+1);
@@ -810,7 +810,7 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Tell the looper to ready itself
-                err = self.RPCClient('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
+                err = self.LooperRPCClient_.call('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
                 if ~isempty(err) ,
                     self.cleanUpAfterAbortedRun_('problem');
                     self.changeReadiness(+1);
@@ -831,7 +831,7 @@ classdef WavesurferModel < ws.Model
                 % Pulse the master trigger to start the sweep!
                 self.Triggering.pulseMasterTrigger();
                 
-%                 err = self.RPCClient('startSweep') ;
+%                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,
 %                     self.cleanUpAfterAbortedRun_('problem');
 %                     self.changeReadiness(+1);

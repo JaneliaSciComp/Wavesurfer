@@ -39,12 +39,9 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
         Target  % can be empty, or a source, or a destination
     end
     
-    properties (Dependent=true, SetAccess=protected)
+    properties (Dependent=true, SetAccess=immutable)
         IsInternal
         IsExternal
-    end
-    
-    properties (Dependent=true, SetAccess=immutable)
         PFIID
         Edge
     end
@@ -66,14 +63,14 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
         DestinationIndex_  % An index into the Destinations array of the parent Triggering subsystem, or empty
             % At most one of SourceIndex_ and DestinationIndex_ is nonempty.  
         %IsExternalAllowed_
-        IsInternal_
-        IsExternal_
+%         IsInternal_
+%         IsExternal_
     end
     
     events
-        WillSetTarget
-        DidSetTarget
-        DidSetIsInternal  % this should likely be replaced with a call to a parent method, that then fires the event from the triggering subsystem
+        %WillSetTarget
+        %DidSetTarget
+        %DidSetIsInternal  % this should likely be replaced with a call to a parent method, that then fires the event from the triggering subsystem
     end
     
     methods
@@ -105,10 +102,15 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
             out = self.Name_;
         end  % function
         
-        function set.Name(self, value)
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('Name', value);
-            self.Name_ = value;
+        function set.Name(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if ws.utility.isString(newValue) && ~isempty(newValue) ,
+                    self.Name_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Name must be a nonempty string');
+                end
+            end            
         end  % function
         
         function result = get.Target(self)
@@ -124,40 +126,37 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
         end  % function
         
         function set.Target(self, newValue)
-            self.broadcast('WillSetTarget');
-            if isfloat(newValue) && isscalar(newValue) && isnan(newValue) ,
-                % do nothing
-            else
-                self.validatePropArg('Target', newValue);
+            self.Parent.childTriggerSchemeWillSetTarget(self) ;
+            %self.broadcast('WillSetTarget');
+            if ws.utility.isASettableValue(newValue) ,
                 if isempty(newValue) ,
                     %self.Source_=ws.TriggerSource.empty();
                     %self.Destination_=ws.TriggerDestination.empty();
                     self.SourceIndex_=[];
                     self.DestinationIndex_=[];
-                    self.syncIsInternal_();
-                elseif isa(newValue,'ws.TriggerDestination') ,
+                    %self.syncIsInternal_();
+                elseif isscalar(newValue) && isa(newValue,'ws.TriggerDestination') ,
                     self.setDestination_(newValue);
-                    self.syncIsInternal_();
-                elseif isa(newValue,'ws.TriggerSource') ,
+                    %self.syncIsInternal_();
+                elseif isscalar(newValue) && isa(newValue,'ws.TriggerSource') ,
                     self.setSource_(newValue);
-                    self.syncIsInternal_();
+                    %self.syncIsInternal_();
                 else
-                    % do nothing
+                    error('most:Model:invalidPropVal', ...
+                          'Target must be a empty, or a scalar ws.TriggerSource, or a scalar ws.TriggerDestination');
                 end                
             end
-            self.broadcast('DidSetTarget');
+            self.Parent.childTriggerSchemeDidSetTarget(self) ;
+            %self.broadcast('DidSetTarget');
         end  % function
         
 %         function out = get.Source(self)
 %             out = self.Source_;
 %         end  % function
-    end        
+    end
 
     methods (Access=protected)
         function setSource_(self, value)
-            %self.Source_ = value;
-            %self.Destination_ = ws.TriggerDestination.empty();
-            
             % Find the matching source in the parent triggering system
             sources = self.Parent.Sources ;
             isMatch = (sources==value) ;
@@ -168,45 +167,37 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
             end
         end  % function
         
-%         function out = get.Destination(self)
-%             out = self.Destination_;
-%         end  % function
-        
         function setDestination_(self, value)
-            %if self.IsExternalAllowed ,
-            if true ,
-                %self.Source_=ws.TriggerSource.empty();
-                %self.Destination_ = value;
-                
-                % Find the matching destination in the parent triggering system
-                destinations = self.Parent.Destinations ;
-                isMatch = (destinations==value) ;
-                iMatch = find(isMatch,1) ;
-                if ~isempty(iMatch) ,
-                    self.SourceIndex_ = [] ;
-                    self.DestinationIndex_ = iMatch ;
-                end                
+            % Find the matching destination in the parent triggering system
+            destinations = self.Parent.Destinations ;
+            isMatch = (destinations==value) ;
+            iMatch = find(isMatch,1) ;
+            if ~isempty(iMatch) ,
+                self.SourceIndex_ = [] ;
+                self.DestinationIndex_ = iMatch ;
             end
         end  % function
     end
     
     methods    
         function value=get.IsInternal(self)
-            value=self.IsInternal_;
+            value = ~isempty(self.SourceIndex_) ;            
+            %value=self.IsInternal_;
         end  % function
 
-        function set.IsInternal(self,newValue)  % this prop has SetAccess==protected, so no need for checks
-            self.IsInternal_=newValue;
-            self.broadcast('DidSetIsInternal');
-        end  % function
+%         function set.IsInternal(self,newValue)  % this prop has SetAccess==protected, so no need for checks
+%             self.IsInternal_=newValue;
+%             %self.broadcast('DidSetIsInternal');
+%         end  % function
         
         function value=get.IsExternal(self)
-            value=self.IsExternal_;
+            value = ~isempty(self.DestinationIndex_);  % set the public property so that the change gets broadcast
+            %value=self.IsExternal_;
         end  % function
 
-        function set.IsExternal(self,newValue)  % this prop has SetAccess==protected, so no need for checks
-            self.IsExternal_=newValue;
-        end  % function
+%         function set.IsExternal(self,newValue)  % this prop has SetAccess==protected, so no need for checks
+%             self.IsExternal_=newValue;
+%         end  % function
         
 %         function out = get.UserDefinedDestination(self)
 %             out = self.Destination_;
@@ -354,12 +345,12 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
             end
         end
         
-        function syncIsInternal_(self)  % protected by convention
-            self.IsInternal = ~isempty(self.SourceIndex_);  % set the public property so that the change gets broadcast
-            self.IsExternal = isempty(self.SourceIndex_) && ~isempty(self.DestinationIndex_);  % set the public property so that the change gets broadcast
-              % Note: this implies that a scheme can be neither internal or
-              % external, if both Source_ and Destination_ are empty.
-        end  % function
+%         function syncIsInternal_(self)  % protected by convention
+%             self.IsInternal = ~isempty(self.SourceIndex_);  % set the public property so that the change gets broadcast
+%             self.IsExternal = isempty(self.SourceIndex_) && ~isempty(self.DestinationIndex_);  % set the public property so that the change gets broadcast
+%               % Note: this implies that a scheme can be neither internal or
+%               % external, if both Source_ and Destination_ are empty.
+%         end  % function
       
     end  % methods
     
@@ -382,24 +373,23 @@ classdef TriggerScheme < ws.Model  %& ws.EventSubscriber (this class doesn't see
     end    
        
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.TriggerScheme.propertyAttributes() ;        
+        mdlPropAttributes = struct() ;   %ws.TriggerScheme.propertyAttributes() ;        
         mdlHeaderExcludeProps = {} ;
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.Name = struct('Classes', 'char', ....
-                            'Attributes', {{'vector'}}, ...
-                            'AllowEmpty', false);
-            s.Target = struct('Classes', {'ws.TriggerSource' 'ws.TriggerDestination'}, ...
-                              'Attributes', {{'scalar'}}, ...
-                              'AllowEmpty', true);
-%             s.IsExternalAllowed = struct('Classes', 'logical', ....
-%                                          'Attributes', {{'scalar'}}, ...
-%                                          'AllowEmpty', false);
-        end  % function
-    end  % class methods block
-        
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.Name = struct('Classes', 'char', ....
+%                             'Attributes', {{'vector'}}, ...
+%                             'AllowEmpty', false);
+%             s.Target = struct('Classes', {'ws.TriggerSource' 'ws.TriggerDestination'}, ...
+%                               'Attributes', {{'scalar'}}, ...
+%                               'AllowEmpty', true);
+% %             s.IsExternalAllowed = struct('Classes', 'logical', ....
+% %                                          'Attributes', {{'scalar'}}, ...
+% %                                          'AllowEmpty', false);
+%         end  % function
+%     end  % class methods block
     
 end

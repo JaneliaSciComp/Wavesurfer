@@ -27,7 +27,7 @@ classdef LooperUserFunctions < ws.system.Subsystem
     end
     
     methods
-        function self = UserFunctions(parent)
+        function self = LooperUserFunctions(parent)
             self.CanEnable=true;
             self.Enabled=true;            
             self.Parent=parent;

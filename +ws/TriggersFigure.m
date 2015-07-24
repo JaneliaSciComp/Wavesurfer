@@ -597,28 +597,15 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             %self.unsubscribeFromAll();
             model=self.Model;
             if ~isempty(model) && isvalid(model) ,
-                % Sources and Destinations setters did nothing, and those
-                % are set in the MDF file, so don't think these are needed
-%                 model.subscribeMe(self, 'PostSet', 'Sources', 'updateTriggerSourcesTable');
-%                 model.subscribeMe(self, 'PostSet', 'Sources', 'updateSupscriptionsToSourceProperties_');
-%                 model.subscribeMe(self, 'PostSet', 'Destinations', 'updateTriggerDestinationsTable');
-                
-
-%                 model.AcquisitionTriggerScheme.subscribeMe(self,'PostSet','Target','updateSweepBasedAcquisitionControls');  
-%                 model.StimulationTriggerScheme.subscribeMe(self,'PostSet','Target','updateSweepBasedStimulationControls');  
-%                 model.ContinuousModeTriggerScheme.subscribeMe(self,'PostSet','Target','updateContinuousModeControls');  
-                model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedAcquisitionControls');
-                model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedStimulationControls');  
-                %model.ContinuousModeTriggerScheme.subscribeMe(self,'DidSetTarget','','updateContinuousModeControls');  
+                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedAcquisitionControls');
+                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedStimulationControls');  
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
                 model.Parent.subscribeMe(self,'DidSetIsSweepBasedContinuous','','update');
-%                 model.subscribeMe(self,'PostSet','AcquisitionUsesASAPTriggering','update');
-%                 model.subscribeMe(self,'PostSet','StimulationUsesAcquisitionTriggerScheme','update');
                 model.subscribeMe(self,'Update','','update');
-                model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
-                model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
+                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
+                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
 
                 % Add subscriptions for the changeable fields of each element
                 % of model.Sources

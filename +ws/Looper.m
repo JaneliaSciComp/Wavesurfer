@@ -234,7 +234,7 @@ classdef Looper < ws.Model
                         self.RPCClient_.call('looperStoppedSweep');
                     else
                         % Check for messages, but don't wait for them
-                        self.RPCServer.processMessageIfAvailable() ;
+                        self.RPCServer_.processMessageIfAvailable() ;
 
                         % Acquire data, update soft real-time outputs
                         self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
@@ -243,8 +243,10 @@ classdef Looper < ws.Model
                         %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;
                     end
                 else
+                    % We're not currently running a sweep
                     % Check for messages, blocking until we get one
-                    self.RPCServer.processMessage() ;
+                    self.RPCServer_.processMessageIfAvailable() ;
+                    pause(0.010);  % don't want to peg CPU when not acquiring
                 end
             end
         end  % function
@@ -623,7 +625,7 @@ classdef Looper < ws.Model
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
             self.Triggering.releaseHardwareResources();
-            self.Ephys.releaseHardwareResources();
+            %self.Ephys.releaseHardwareResources();
         end
         
 %         function result=get.FastProtocols(self)

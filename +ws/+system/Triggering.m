@@ -1,4 +1,4 @@
-classdef Triggering < ws.system.Subsystem & ws.EventSubscriber  % TODO: rework things to this doesn't have to be an event subscriber
+classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework things to this doesn't have to be an event subscriber
     
     properties (Dependent = true, SetAccess = immutable)
         Sources  % this is an array of type ws.TriggerSource, not a cell array
@@ -99,9 +99,22 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber  % TODO: rework t
             % parent methods within TriggerScheme, with the Triggering
             % subsystem doing nothing if the caller is the stim trigger
             % scheme.
-            self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
-            self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
+            %self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
+            %self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
         end  % function
+        
+        function childTriggerSchemeWillSetTarget(self,child)
+            if child==self.AcquisitionTriggerScheme ,
+                self.willSetAcquisitionTriggerSchemeTarget();
+            end
+        end
+        
+        function childTriggerSchemeDidSetTarget(self,child)
+            if child==self.AcquisitionTriggerScheme ,
+                self.didSetAcquisitionTriggerSchemeTarget();
+            end
+            self.broadcast('Update');
+        end
         
         function initializeFromMDFStructure(self,mdfStructure)
 %             % Add a built-in internal trigger for use when running
@@ -185,7 +198,7 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber  % TODO: rework t
 %         end
         
         function releaseHardwareResources(self)
-            self.teardownInternalSweepBasedTriggers();
+            %self.teardownInternalSweepBasedTriggers();
             self.teardownMasterTriggerTask();
         end
         
@@ -542,7 +555,8 @@ classdef Triggering < ws.system.Subsystem & ws.EventSubscriber  % TODO: rework t
         end  % function
         
         function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            if self.Parent.IsSweepBased ,
+            parent = self.Parent ;
+            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
                 value=true;
             else
                 value=self.StimulationUsesAcquisitionTriggerScheme_;

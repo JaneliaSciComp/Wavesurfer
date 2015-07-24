@@ -303,7 +303,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                     coercedNewValue = logical(newValue) ;
                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
                         self.IsDigitalChannelTimed_=coercedNewValue;
-                        self.syncTasksToChannelMembership_();
+                        %self.syncTasksToChannelMembership_();
                     end
                 else
                     error('most:Model:invalidPropVal', ...
@@ -313,26 +313,26 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.broadcast('DidSetIsDigitalChannelTimed');
         end  % function
         
-        function set.DigitalOutputStateIfUntimed(self,newValue)
-            if ws.utility.isASettableValue(newValue),
-                if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
-                        (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                    coercedNewValue = logical(newValue) ;
-                    self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
-                    if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-                        isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-                        untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
-                        if ~isempty(untimedDigitalChannelState) ,
-                            self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-                        end
-                    end
-                else
-                    error('most:Model:invalidPropVal', ...
-                          'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
-                end
-            end
-            self.broadcast('DidSetDigitalOutputStateIfUntimed');
-        end  % function
+%         function set.DigitalOutputStateIfUntimed(self,newValue)
+%             if ws.utility.isASettableValue(newValue),
+%                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
+%                         (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+%                     coercedNewValue = logical(newValue) ;
+%                     self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
+%                     if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+%                         isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+%                         untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
+%                         if ~isempty(untimedDigitalChannelState) ,
+%                             self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+%                         end
+%                     end
+%                 else
+%                     error('most:Model:invalidPropVal', ...
+%                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
+%                 end
+%             end
+%             self.broadcast('DidSetDigitalOutputStateIfUntimed');
+%         end  % function
         
         function initializeFromMDFStructure(self, mdfStructure)            
             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
@@ -373,8 +373,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % Intialized the stimulus library
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
-                % Set up the untimed channels
-                self.syncTasksToChannelMembership_();
+%                 % Set up the untimed channels
+%                 self.syncTasksToChannelMembership_();
                 
                 % Finally, mark outselves as enable-able
                 nChannels = length(mdfStructure.physicalOutputChannelNames) ;
@@ -895,27 +895,27 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % protected methods block
     
     methods (Access = protected)
-        function syncTasksToChannelMembership_(self)
-            % Clear the timed digital output task, will be recreated when acq is
-            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
-            % And have to do it first to avoid a temporary collision.
-            %self.TheFiniteDigitalOutputTask_ = [] ;
-            % Set the untimed output task appropriately
-            self.TheUntimedDigitalOutputTask_ = [] ;
-            isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-            untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
-            untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
-            self.TheUntimedDigitalOutputTask_ = ...
-                ws.ni.UntimedDigitalOutputTask(self, ...
-                                               'Wavesurfer Untimed Digital Output Task', ...
-                                               untimedDigitalPhysicalChannelNames, ...
-                                               untimedDigitalChannelNames) ;
-            % Set the outputs to the proper values, now that we have a task                               
-            if any(isDigitalChannelUntimed) ,
-                untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
-                self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-            end
-        end  % function
+%         function syncTasksToChannelMembership_(self)
+%             % Clear the timed digital output task, will be recreated when acq is
+%             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+%             % And have to do it first to avoid a temporary collision.
+%             %self.TheFiniteDigitalOutputTask_ = [] ;
+%             % Set the untimed output task appropriately
+%             self.TheUntimedDigitalOutputTask_ = [] ;
+%             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+%             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+%             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+%             self.TheUntimedDigitalOutputTask_ = ...
+%                 ws.ni.UntimedDigitalOutputTask(self, ...
+%                                                'Wavesurfer Untimed Digital Output Task', ...
+%                                                untimedDigitalPhysicalChannelNames, ...
+%                                                untimedDigitalChannelNames) ;
+%             % Set the outputs to the proper values, now that we have a task                               
+%             if any(isDigitalChannelUntimed) ,
+%                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
+%                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+%             end
+%         end  % function
         
         function stimulusMap = getCurrentStimulusMap_(self)
             % Calculate the episode index

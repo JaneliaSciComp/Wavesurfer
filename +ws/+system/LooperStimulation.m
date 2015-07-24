@@ -78,7 +78,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
     end
     
     methods
-        function self = Stimulation(parent)
+        function self = LooperStimulation(parent)
             if ~exist('parent','var') ,
                 parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
             end

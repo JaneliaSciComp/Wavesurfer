@@ -241,7 +241,8 @@ classdef Coding < handle
                 % dimensions represented in encoding match the dimensions
                 % of self.  Otherwise we're stuck, since we can't change
                 % either of those qualities of self from a method.
-                if isequal(encodingContainer.className,class(self)) ,
+                %if isequal(encodingContainer.className,class(self)) ,
+                if true ,
                     if isequal(size(encodingContainer.encoding),size(self)) ,
                         % All is well, to pass the unwrapped encoding to
                         % decodeProperties.

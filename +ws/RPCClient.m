@@ -20,7 +20,7 @@ classdef RPCClient < ws.ZMQConnecter
             zmq.core.send(self.Socket, serializedMessage);
 
             % Read a response (this will block)
-            serializedResponse=zmq.core.recv(self.Socket) ;
+            serializedResponse=zmq.core.recv(self.Socket, 262144) ;
             value = getArrayFromByteStream(serializedResponse) ;                        
         end  % function
 

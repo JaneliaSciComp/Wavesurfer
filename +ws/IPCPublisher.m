@@ -1,7 +1,7 @@
 classdef IPCPublisher < ws.ZMQBinder    
     methods
         function self = IPCPublisher(portNumber)
-            self@ZMQBinder(portNumber,'ZMQ_PUB');
+            self@ws.ZMQBinder(portNumber,'ZMQ_PUB');
         end  % function
 
         function send(self,methodName,varargin)
@@ -11,7 +11,5 @@ classdef IPCPublisher < ws.ZMQBinder
             %messageAsInt8 = typecast(serializedThing, 'int8') ;
             zmq.core.send(self.Socket, serializedMessage);
         end  % function
-    end  % methods
-    
-end
-
+    end  % methods    
+end  % classdef
