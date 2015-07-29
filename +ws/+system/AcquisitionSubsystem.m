@@ -58,8 +58,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     end
 
     properties (Access=protected, Constant=true)
-        CoreFieldNames_ = { 'SampleRate_' , 'Duration_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
-                            'StimulationTriggerSchemeIndex_' } ;
+        CoreFieldNames_ = { 'SampleRate_' , 'Duration_', 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
+                            'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
+                            'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
             % The "core" settings are the ones that get transferred to
             % other processes for running a sweep.
     end
@@ -396,111 +397,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.broadcast('DidSetSampleRate');
         end  % function
         
-%         function set.TriggerScheme(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
-%             self.validatePropArg('TriggerScheme', value);
-%             %self.TriggerScheme = value;
-%             self.Parent.Triggering.AcquisitionTriggerScheme = value ;
-%         end  % function
-
         function output = get.TriggerScheme(self)
             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
         end
-        
-%         function initializeFromMDFStructure(self, mdfStructure)
-%             if ~isempty(mdfStructure.physicalInputChannelNames) ,
-%                 physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
-%                 inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
-%                 uniqueInputDeviceNames=unique(inputDeviceNames);
-%                 if ~isscalar(uniqueInputDeviceNames) ,
-%                     error('ws:MoreThanOneDeviceName', ...
-%                           'Wavesurfer only supports a single NI card at present.');                      
-%                 end
-%                 self.DeviceNames_ = inputDeviceNames;
-%                 channelNames = mdfStructure.inputChannelNames;
-% 
-%                 % Figure out which are analog and which are digital
-%                 channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
-%                 isAnalog = strcmp(channelTypes,'ai');
-%                 isDigital = ~isAnalog;
-% 
-%                 % Sort the channel names
-%                 analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
-%                 digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
-%                 self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
-%                 self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
-%                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
-%                 self.DigitalChannelNames_ = channelNames(isDigital) ;
-%                 self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
-%                 
-% %                 self.AnalogInputTask_ = ...
-% %                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
-% %                                                 mdfStructure.inputChannelIDs, ...
-% %                                                 'Wavesurfer Analog Acquisition Task', ...
-% %                                                 mdfStructure.inputChannelNames);
-% %                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-% %                 self.AnalogInputTask_.SampleRate = self.SampleRate;
-%                 
-% %                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-%                 
-%                 nAnalogChannels = length(self.AnalogPhysicalChannelNames_);
-%                 nDigitalChannels = length(self.DigitalPhysicalChannelNames_);                
-%                 %nChannels=length(physicalInputChannelNames);
-%                 self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-%                 %self.ChannelScales(2)=0.1  % to test
-%                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
-%                 self.AnalogChannelUnits_=repmat(V,[1 nAnalogChannels]);
-%                 %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
-%                 self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
-%                 self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
-%                 
-%                 self.CanEnable = true;
-%                 self.Enabled = true;
-%             end
-%         end  % function
-
-%         function acquireHardwareResources_(self)
-%             % We create and analog InputTask and a digital InputTask, regardless
-%             % of whether there are any channels of each type.  Within InputTask,
-%             % it will create a DABS Task only if the number of channels is
-%             % greater than zero.  But InputTask hides that detail from us.
-%             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
-%                 % Only hand the active channels to the AnalogInputTask
-%                 isAnalogChannelActive = self.IsAnalogChannelActive ;
-%                 activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;                
-%                 activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;                
-%                 self.AnalogInputTask_ = ...
-%                     ws.ni.InputTask(self, 'analog', ...
-%                                           'Wavesurfer Analog Acquisition Task', ...
-%                                           activeAnalogPhysicalChannelNames, ...
-%                                           activeAnalogChannelNames);
-%                 % Set other things in the Task object
-%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-%                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
-%                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-%                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
-%             end
-%             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
-%                 isDigitalChannelActive = self.IsDigitalChannelActive ;
-%                 activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
-%                 activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
-%                 self.DigitalInputTask_ = ...
-%                     ws.ni.InputTask(self, 'digital', ...
-%                                           'Wavesurfer Digital Acquisition Task', ...
-%                                           activeDigitalPhysicalChannelNames, ...
-%                                           activeDigitalChannelNames);
-%                 % Set other things in the Task object
-%                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-%                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
-%                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-%                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
-%             end
-%         end  % function
-% 
-%         function releaseHardwareResources(self)
-%             self.AnalogInputTask_=[];            
-%             self.DigitalInputTask_=[];            
-%         end
         
         function willPerformRun(self)
             %fprintf('Acquisition::willPerformRun()\n');
@@ -529,7 +428,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
 %             
 %             % Set for finite vs. continous sampling
-%             if wavesurferModel.IsContinuous ,
+%             if wavesurferModel.AreSweepsContinuous ,
 %                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
 %                 self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
 %             else
@@ -549,11 +448,11 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             end
             NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
             NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
-            if wavesurferModel.IsContinuous ,
+            if wavesurferModel.AreSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
-            elseif wavesurferModel.IsSweepBased ,
+            elseif wavesurferModel.AreSweepsFiniteDuration ,
                 self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else

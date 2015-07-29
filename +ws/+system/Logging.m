@@ -62,7 +62,7 @@ classdef Logging < ws.system.Subsystem
     
     methods
         function self = Logging(parent)
-            self.CanEnable=true;            
+            self.CanEnable=true;
             self.Parent=parent;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
@@ -256,7 +256,7 @@ classdef Logging < ws.system.Subsystem
             
             % Set the chunk size for writing data to disk
             nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
-            if wavesurferModel.IsSweepBased ,
+            if wavesurferModel.AreSweepsFiniteDuration ,
                 self.ExpectedSweepSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
                 if any(isinf(self.ExpectedSweepSize_))
                     self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];

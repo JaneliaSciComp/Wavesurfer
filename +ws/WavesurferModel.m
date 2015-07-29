@@ -43,8 +43,8 @@ classdef WavesurferModel < ws.Model
     end
     
     properties (Dependent = true)
-        IsSweepBased  % boolean scalar, whether the current acquisition mode is sweep-based.
-        IsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.IsContinuous == ~self.IsSweepBased
+        AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
+        AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
     end
     
     properties (Dependent = true)
@@ -112,7 +112,7 @@ classdef WavesurferModel < ws.Model
     
     properties (Access = protected)
         IsYokedToScanImage_ = false
-        IsSweepBased_ = true
+        AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
     end
 
@@ -160,7 +160,7 @@ classdef WavesurferModel < ws.Model
         DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
-        DidSetIsSweepBasedContinuous
+        DidSetAreSweepsFiniteDurationOrContinuous
         DataAvailable
         DidCompleteSweep
     end
@@ -387,7 +387,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function val = get.NSweepsPerRun(self)
-            if self.IsContinuous ,
+            if self.AreSweepsContinuous ,
                 val = 1;
             else
                 %val = self.Triggering.SweepTrigger.Source.RepeatCount;
@@ -403,7 +403,7 @@ classdef WavesurferModel < ws.Model
                 %value=self.validatePropArg('NSweepsPerRun',value);
                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
-                    if self.IsSweepBased ,
+                    if self.AreSweepsFiniteDuration ,
                         self.Triggering.willSetNSweepsPerRun();
                         self.NSweepsPerRun_ = newValue;
                         self.Triggering.didSetNSweepsPerRun();
@@ -417,7 +417,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function value = get.SweepDuration(self)
-            if self.IsContinuous ,
+            if self.AreSweepsContinuous ,
                 value=inf;
             else
                 value=self.Acquisition.Duration;
@@ -428,7 +428,7 @@ classdef WavesurferModel < ws.Model
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
                 % Do nothing if in continuous mode
-                if self.IsSweepBased ,
+                if self.AreSweepsFiniteDuration ,
                     % Check value and set if valid
                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                         % If get here, newValue is a valid value for this prop
@@ -442,34 +442,34 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end  % function
         
-        function value=get.IsSweepBased(self)
-            value=self.IsSweepBased_;
+        function value=get.AreSweepsFiniteDuration(self)
+            value=self.AreSweepsFiniteDuration_;
         end
         
-        function set.IsSweepBased(self,newValue)
-            %fprintf('inside set.IsSweepBased.  self.IsSweepBased_: %d\n', self.IsSweepBased_);
+        function set.AreSweepsFiniteDuration(self,newValue)
+            %fprintf('inside set.AreSweepsFiniteDuration.  self.AreSweepsFiniteDuration_: %d\n', self.AreSweepsFiniteDuration_);
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                %fprintf('setting self.IsSweepBased_ to %d\n',logical(newValue));
-                self.Triggering.willSetIsSweepBased();
-                self.IsSweepBased_=logical(newValue);
-                self.IsContinuous=ws.most.util.Nonvalue.The;
+                %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
+                self.Triggering.willSetAreSweepsFiniteDuration();
+                self.AreSweepsFiniteDuration_=logical(newValue);
+                self.AreSweepsContinuous=ws.most.util.Nonvalue.The;
                 self.NSweepsPerRun=ws.most.util.Nonvalue.The;
                 self.SweepDuration=ws.most.util.Nonvalue.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetIsSweepBased();
+                self.Triggering.didSetAreSweepsFiniteDuration();
             end
-            self.broadcast('DidSetIsSweepBasedContinuous');            
+            self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
         end
         
-        function value=get.IsContinuous(self)
-            value=~self.IsSweepBased_;
+        function value=get.AreSweepsContinuous(self)
+            value=~self.AreSweepsFiniteDuration_;
         end
         
-        function set.IsContinuous(self,newValue)
+        function set.AreSweepsContinuous(self,newValue)
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                self.IsSweepBased=~logical(newValue);
+                self.AreSweepsFiniteDuration=~logical(newValue);
             end
         end
         
@@ -698,7 +698,7 @@ classdef WavesurferModel < ws.Model
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
-            if self.IsYokedToScanImage_ && self.IsSweepBased ,
+            if self.IsYokedToScanImage_ && self.AreSweepsFiniteDuration ,
                 try
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
@@ -1098,7 +1098,7 @@ classdef WavesurferModel < ws.Model
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
                 %state = self.State_ ;
-                isSweepBased = self.IsSweepBased_ ;
+                isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
@@ -1124,8 +1124,8 @@ classdef WavesurferModel < ws.Model
 %             defineDefaultPropertyAttributes@ws.most.app.Model(self);
 %             self.setPropertyAttributeFeatures('NSweepsPerRun', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
 %             self.setPropertyAttributeFeatures('SweepDuration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('IsSweepBased', 'Classes', 'logical', 'Attributes', {'scalar'});
-%             self.setPropertyAttributeFeatures('IsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
+%             self.setPropertyAttributeFeatures('AreSweepsFiniteDuration', 'Classes', 'logical', 'Attributes', {'scalar'});
+%             self.setPropertyAttributeFeatures('AreSweepsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
 %         end  % function
         
         function defineDefaultPropertyTags(self)
@@ -1150,9 +1150,9 @@ classdef WavesurferModel < ws.Model
 %             self.setPropertyTags('NSweepsPerRun_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
 %             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('IsSweepBased', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('IsSweepBased', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('IsContinuous', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('AreSweepsFiniteDuration', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('AreSweepsFiniteDuration', 'IncludeInFileTypes', {'cfg', 'header'});
+%             self.setPropertyTags('AreSweepsContinuous', 'ExcludeFromFileTypes', {'*'});
             
             % Exclude all the subsystems except FastProtocols from usr
             % files
@@ -1173,7 +1173,7 @@ classdef WavesurferModel < ws.Model
             
             % Exclude a few more things from .usr file
             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('IsSweepBased_', 'ExcludeFromFileTypes', {'usr'});
+            self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
         end  % function
         
@@ -1541,8 +1541,8 @@ classdef WavesurferModel < ws.Model
 %             
 %             %s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
 %             %s.SweepDuration = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-%             s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
-%             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
+%             s.AreSweepsFiniteDuration = struct('Classes','binarylogical');  % dependency on AreSweepsContinuous handled in the setter
+%             s.AreSweepsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
 %         end  % function
 %     end  % class methods block
     

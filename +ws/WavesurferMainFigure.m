@@ -1050,8 +1050,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             isIdle = (model.State==ws.ApplicationState.Idle);
 
-%             s.IsSweepBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
-%             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
+%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
+%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
 %             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
 %             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
@@ -1072,8 +1072,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
             
             % Acquisition panel
-            set(self.SweepBasedRadiobutton,'Value',model.IsSweepBased);
-            set(self.ContinuousRadiobutton,'Value',model.IsContinuous);
+            set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
+            set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
             set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
             set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
@@ -1180,7 +1180,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             isNoMDF=(model.State == ws.ApplicationState.NoMDF);
             isIdle=(model.State == ws.ApplicationState.Idle);
-            isSweepBased=model.IsSweepBased;
+            isSweepBased=model.AreSweepsFiniteDuration;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
             %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
             isAcquiring = (model.State == ws.ApplicationState.Running) ;
@@ -1438,7 +1438,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             model=self.Model;
             state=model.State;
             if state==ws.ApplicationState.Running ,
-                if model.IsSweepBased ,
+                if model.AreSweepsFiniteDuration ,
                     if isfinite(model.NSweepsPerRun) ,
                         nSweeps=model.NSweepsPerRun;
                         nSweepsCompleted=model.NSweepsCompletedInThisRun;
@@ -1501,7 +1501,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % Want this to be as fast as possible, so we just update the
             % bare minimum
             model=self.Model;
-            if model.IsContinuous ,
+            if model.AreSweepsContinuous ,
                 self.updateProgressBarProperties_();
             end
         end

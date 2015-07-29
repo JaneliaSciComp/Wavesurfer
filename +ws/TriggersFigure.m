@@ -477,7 +477,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             end            
             wsModel=triggeringModel.Parent;  % this is the WavesurferModel
             isIdle=(wsModel.State==ws.ApplicationState.Idle);
-            isSweepBased = wsModel.IsSweepBased;
+            isSweepBased = wsModel.AreSweepsFiniteDuration;
             
             import ws.utility.onIff
             
@@ -604,7 +604,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                model.Parent.subscribeMe(self,'DidSetIsSweepBasedContinuous','','update');
+                model.Parent.subscribeMe(self,'DidSetAreSweepsFiniteDurationOrContinuous','','update');
                 model.subscribeMe(self,'Update','','update');
                 %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
                 %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  

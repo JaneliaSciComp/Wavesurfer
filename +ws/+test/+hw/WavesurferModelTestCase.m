@@ -64,7 +64,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % Make it so the stim library map durations are not overridden
             % by the WavesurferModel sweep duration, which would mess things up.
             %em.Triggering.AcquisitionUsesASAPTriggering=false;
-            em.IsContinuous = true ;
+            em.AreSweepsContinuous = true ;
             em.Triggering.StimulationUsesAcquisitionTriggerScheme=false;
             
             % Clear the stim lib within the WavesurferModel
@@ -246,7 +246,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % A list of settings
             settings=cell(0,2);
-            settings(end+1,:)={'IsSweepBased' true};            
+            settings(end+1,:)={'AreSweepsFiniteDuration' true};            
             settings(end+1,:)={'NSweepsPerRun' 11};
 
             settings(end+1,:)={'Acquisition.SampleRate' 19979};

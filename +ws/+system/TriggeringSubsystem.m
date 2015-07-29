@@ -130,8 +130,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
-                if self.Parent.IsSweepBased ,
-                    % overridden by IsSweepBased, do nothing
+                if self.Parent.AreSweepsFiniteDuration ,
+                    % overridden by AreSweepsFiniteDuration, do nothing
                 else                    
                     if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                         self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
@@ -147,7 +147,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         
         function value=get.StimulationUsesAcquisitionTriggerScheme(self)
             parent = self.Parent ;
-            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
+            if ~isempty(parent) && isvalid(parent) && parent.AreSweepsFiniteDuration ,
                 value = true ;
             else
                 value = self.StimulationUsesAcquisitionTriggerScheme_ ;
@@ -186,13 +186,13 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
-        function willSetIsSweepBased(self)
+        function willSetAreSweepsFiniteDuration(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
         
-        function didSetIsSweepBased(self)
-            %fprintf('Triggering::didSetIsSweepBased()\n');
+        function didSetAreSweepsFiniteDuration(self)
+            %fprintf('Triggering::didSetAreSweepsFiniteDuration()\n');
             self.syncTriggerSourcesFromTriggeringState_();
             self.stimulusMapDurationPrecursorMayHaveChanged_();  
                 % Have to do b/c changing this can change

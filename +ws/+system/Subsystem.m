@@ -4,11 +4,8 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
     %   The Subsystem class defines the Wavesurfer subsystem API and defines default
     %   (no-op) implementations for each API method and property.
     
-    properties (SetAccess = protected, Transient=true)
-        Parent  % must be set in subclass constructor
-    end
-    
     properties (Dependent = true)
+        Parent  
         Enabled
     end
     
@@ -21,6 +18,7 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
     end
 
     properties (Access = protected, Transient=true)
+        Parent_  % must be set in subclass constructor
         CanEnable_ = false
     end
 
@@ -33,12 +31,13 @@ classdef Subsystem < ws.Model %& ws.EventBroadcaster
     end
     
     methods
-%         function unstring(self)
-%             % Called to eliminate all the child-to-parent references, so
-%             % that all the descendents will be properly deleted once the
-%             % last reference to the WavesurferModel goes away.
-%             self.Parent=[];
-%         end
+        function delete(self)
+            self.Parent_ = [] ;
+        end
+        
+        function out = get.Parent(self)
+            out = self.Parent_ ;
+        end
         
         function out = get.Enabled(self)
             out = self.getEnabledImplementation();

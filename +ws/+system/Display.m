@@ -268,7 +268,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         function willPerformRun(self)
             self.XOffset = 0;
             self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            self.XAutoScroll= (self.Parent.IsContinuous);
+            self.XAutoScroll= (self.Parent.AreSweepsContinuous);
         end  % function
         
         function didCompleteRun(self)

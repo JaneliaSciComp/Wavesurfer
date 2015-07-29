@@ -273,12 +273,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function SweepBasedRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model,'IsSweepBased',newValue);
+            ws.Controller.setWithBenefits(self.Model,'AreSweepsFiniteDuration',newValue);
         end
 
         function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model,'IsContinuous',newValue);
+            ws.Controller.setWithBenefits(self.Model,'AreSweepsContinuous',newValue);
         end
 
         function AcquisitionSampleRateEditActuated(self,source,event) %#ok<INUSD>
@@ -896,10 +896,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 % %                                                         'Target', 'WavesurferWindow.DurationLabel', ...
 % %                                                         'ValueTransformer', 'ws.app.SweepDurationTransformer', ...
 % %                                                         'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsSweepBased', ...
-%                                                          'Target', 'WavesurferWindow.IsSweepBased');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsContinuous', ...
-%                                                          'Target', 'WavesurferWindow.IsContinuous');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'AreSweepsFiniteDuration', ...
+%                                                          'Target', 'WavesurferWindow.AreSweepsFiniteDuration');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'AreSweepsContinuous', ...
+%                                                          'Target', 'WavesurferWindow.AreSweepsContinuous');
 % %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.Enabled', ...
 % %                                                          'Target', 'WavesurferWindow.AcqEnabled');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.SampleRate', ...
@@ -960,7 +960,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 self.updateEnablementAndVisibilityOfControls();                
 %                 self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
 %                 self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
-%                 self.Model.subscribeMe(self,'PostSet','IsSweepBased','updateEnablementAndVisibilityOfControls');
+%                 self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
 %                 self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
 %                 self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
 %                 self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
@@ -988,7 +988,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
                 self.Model.subscribeMe(self,'DidSetStateAwayFromNoMDF','','nukeAndRepaveScopeControllers');
                 %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-                %self.Model.subscribeMe(self,'PostSet','IsSweepBased','updateEnablementAndVisibilityOfControls');
+                %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
                 %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
                 %self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
                 %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
@@ -1342,7 +1342,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             
 %             isNoMDF=(model.State == ws.ApplicationState.NoMDF);
 %             isIdle=(model.State == ws.ApplicationState.Idle);
-%             isSweepBased=model.IsSweepBased;
+%             isSweepBased=model.AreSweepsFiniteDuration;
 %             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
 %             isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
 %             
@@ -2017,8 +2017,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %     methods (Static=true)
 %         function s=initialPropertyBindings()
 %             s = struct();
-%             s.IsSweepBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
-%             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
+%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
+%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
 %             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
 %             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});

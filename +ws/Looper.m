@@ -20,8 +20,8 @@ classdef Looper < ws.Model
     end
     
     properties (Dependent = true)  
-        IsSweepBased  % boolean scalar, whether the current acquisition mode is sweep-based.
-        IsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.IsContinuous == ~self.IsSweepBased
+        AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
+        AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
     end
     
     properties (Dependent = true)  
@@ -69,7 +69,7 @@ classdef Looper < ws.Model
         %Logging
         UserFunctions_
         %Ephys
-        IsSweepBased_ = true
+        AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
     end
 
@@ -119,7 +119,7 @@ classdef Looper < ws.Model
         %DidSetStateAwayFromNoMDF
         %WillSetState
         %DidSetState
-        %DidSetIsSweepBasedContinuous
+        %DidSetAreSweepsFiniteDurationOrContinuous
         %DataAvailable
         %DidCompleteSweep
     end
@@ -144,7 +144,7 @@ classdef Looper < ws.Model
             
             %self.State_ = ws.ApplicationState.Uninitialized;
             %self.IsYokedToScanImage_ = false;
-            %self.IsSweepBased_=true;
+            %self.AreSweepsFiniteDuration_=true;
             %self.NSweepsPerRun_ = 1;
             
 %             % Initialize the fast protocols
@@ -351,7 +351,7 @@ classdef Looper < ws.Model
         end
 
         function val = get.NSweepsPerRun(self)
-            if self.IsContinuous ,
+            if self.AreSweepsContinuous ,
                 val = 1;
             else
                 %val = self.Triggering.SweepTrigger.Source.RepeatCount;
@@ -367,7 +367,7 @@ classdef Looper < ws.Model
                 %value=self.validatePropArg('NSweepsPerRun',value);
                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
-                    if self.IsSweepBased ,
+                    if self.AreSweepsFiniteDuration ,
                         self.Triggering.willSetNSweepsPerRun();
                         self.NSweepsPerRun_ = newValue;
                         self.Triggering.didSetNSweepsPerRun();
@@ -381,7 +381,7 @@ classdef Looper < ws.Model
         end  % function
         
         function value = get.SweepDuration(self)
-            if self.IsContinuous ,
+            if self.AreSweepsContinuous ,
                 value=inf;
             else
                 value=self.Acquisition.Duration;
@@ -392,7 +392,7 @@ classdef Looper < ws.Model
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
                 % Do nothing if in continuous mode
-                if self.IsSweepBased ,
+                if self.AreSweepsFiniteDuration ,
                     % Check value and set if valid
                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                         % If get here, newValue is a valid value for this prop
@@ -406,34 +406,34 @@ classdef Looper < ws.Model
             self.broadcast('Update');
         end  % function
         
-        function value=get.IsSweepBased(self)
-            value=self.IsSweepBased_;
+        function value=get.AreSweepsFiniteDuration(self)
+            value=self.AreSweepsFiniteDuration_;
         end
         
-        function set.IsSweepBased(self,newValue)
-            %fprintf('inside set.IsSweepBased.  self.IsSweepBased_: %d\n', self.IsSweepBased_);
+        function set.AreSweepsFiniteDuration(self,newValue)
+            %fprintf('inside set.AreSweepsFiniteDuration.  self.AreSweepsFiniteDuration_: %d\n', self.AreSweepsFiniteDuration_);
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                %fprintf('setting self.IsSweepBased_ to %d\n',logical(newValue));
-                self.Triggering.willSetIsSweepBased();
-                self.IsSweepBased_=logical(newValue);
-                self.IsContinuous=ws.most.util.Nonvalue.The;
+                %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
+                self.Triggering.willSetAreSweepsFiniteDuration();
+                self.AreSweepsFiniteDuration_=logical(newValue);
+                self.AreSweepsContinuous=ws.most.util.Nonvalue.The;
                 self.NSweepsPerRun=ws.most.util.Nonvalue.The;
                 self.SweepDuration=ws.most.util.Nonvalue.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetIsSweepBased();
+                self.Triggering.didSetAreSweepsFiniteDuration();
             end
-            self.broadcast('DidSetIsSweepBasedContinuous');            
+            self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
         end
         
-        function value=get.IsContinuous(self)
-            value=~self.IsSweepBased_;
+        function value=get.AreSweepsContinuous(self)
+            value=~self.AreSweepsFiniteDuration_;
         end
         
-        function set.IsContinuous(self,newValue)
+        function set.AreSweepsContinuous(self,newValue)
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                self.IsSweepBased=~logical(newValue);
+                self.AreSweepsFiniteDuration=~logical(newValue);
             end
         end
         
@@ -714,7 +714,7 @@ classdef Looper < ws.Model
         end  % function
         
         function setCoreSettingsToMatchPackagedOnes(self,wavesurferModelSettings)
-            self.IsSweepBased_ = wavesurferModelSettings.IsSweepBased_ ;  % more like IsAcquisitionFinite...
+            self.AreSweepsFiniteDuration_ = wavesurferModelSettings.AreSweepsFiniteDuration_ ;  % more like IsAcquisitionFinite...
             self.Triggering.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Triggering) ;
             self.Acquisition.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Acquisition) ;
             self.Stimulation.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Stimulation) ;
@@ -880,7 +880,7 @@ classdef Looper < ws.Model
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
                 %state = self.State_ ;
-                isSweepBased = self.IsSweepBased_ ;
+                isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
@@ -927,7 +927,7 @@ classdef Looper < ws.Model
             
             % Exclude a few more things from .usr file
             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('IsSweepBased_', 'ExcludeFromFileTypes', {'usr'});
+            self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
         end  % function
     end % protected methods block
@@ -1228,8 +1228,8 @@ classdef Looper < ws.Model
 %         function s = propertyAttributes()
 %             s = struct();
 %             
-%             s.IsSweepBased = struct('Classes','binarylogical');  % dependency on IsContinuous handled in the setter
-%             s.IsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
+%             s.AreSweepsFiniteDuration = struct('Classes','binarylogical');  % dependency on AreSweepsContinuous handled in the setter
+%             s.AreSweepsContinuous = struct('Classes','binarylogical');  % dependency on IsTrailBased handled in the setter
 %         end  % function
 %     end  % class methods block
     

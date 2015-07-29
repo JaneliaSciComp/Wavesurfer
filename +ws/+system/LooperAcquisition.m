@@ -86,7 +86,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
             
             % Set for finite-duration vs. continous acquisition
-            if parent.IsContinuous ,
+            if parent.AreSweepsContinuous ,
                 self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
                 self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
             else
@@ -119,11 +119,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             end
             NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
             NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
-            if parent.IsContinuous ,
+            if parent.AreSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
-            elseif parent.IsSweepBased ,
+            elseif parent.AreSweepsFiniteDuration ,
                 self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else

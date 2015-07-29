@@ -332,7 +332,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             wavesurferModel=stimulationSubsystem.Parent;
             triggeringSubsystem=wavesurferModel.Triggering;
             acquisitionSubsystem=wavesurferModel.Acquisition;            
-            isSweepBased=wavesurferModel.IsSweepBased;
+            isSweepBased=wavesurferModel.AreSweepsFiniteDuration;
             doesStimulusUseAcquisitionTriggerScheme=triggeringSubsystem.StimulationUsesAcquisitionTriggerScheme;
             acquisitionDuration=acquisitionSubsystem.Duration;
         end   % function
