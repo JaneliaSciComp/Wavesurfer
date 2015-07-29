@@ -1,9 +1,13 @@
-classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDAndEdge
+classdef TriggerDestination < ws.Model & ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
     % A class that represents a trigger destination, i.e. a digital input
     % to the daq board that could potentially be used to trigger
     % acquisition, etc.  A trigger destination has a name, a device ID, 
     % a PFI identifier (the zero-based PFI index),
     % and an edge type (rising or falling).  ALT, 2014-05-24
+    
+    properties (Constant=true)
+        IsInternal = false
+    end
     
     properties (Dependent=true)
         Name

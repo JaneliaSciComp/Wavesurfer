@@ -596,7 +596,7 @@ classdef WavesurferModel < ws.Model
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
             if self.Stimulation.Enabled ,
-                if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
                     % acq and stim trig sources are identical
                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
@@ -736,7 +736,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Tell the Looper to prepare for the run
-            wavesurferModelSettings=self.encodeForFileType('cfg');
+            wavesurferModelSettings=self.encodeForFileType('header');
             err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
             if ~isempty(err) ,
                 self.cleanUpAfterAbortedRun_('problem');
@@ -904,7 +904,7 @@ classdef WavesurferModel < ws.Model
 %                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
 %                     if self.Triggering.AcquisitionTriggerScheme.IsExternal ,
 %                         % stim, acq are both external
-%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                         if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
 %                             % stim, acq are both external, and are
 %                             % identical
 %                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
@@ -932,7 +932,7 @@ classdef WavesurferModel < ws.Model
 %                     % Stim triggering is internal
 %                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
 %                         % Stim and acq triggers are both internal
-%                         if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+%                         if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
 %                             % acq and stim trig sources are internal and identical
 %                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
 %                         else

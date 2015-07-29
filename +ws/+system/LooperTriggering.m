@@ -286,6 +286,13 @@ classdef LooperTriggering < ws.system.Subsystem %& ws.EventSubscriber
 %             end
 %         end  % function
         
+        function syncToFrontendSettings_(self,wavesurferTriggeringSettings)
+            self.Sources = wavesurferTriggeringSettings.Sources ;
+            self.Destinations = wavesurferTriggeringSettings.Destinations ;
+            
+        end
+
+
         function out = get.Destinations(self)
             out = self.Destinations_;
         end  % function

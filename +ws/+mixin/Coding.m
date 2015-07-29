@@ -647,7 +647,12 @@ classdef Coding < handle
                 sz = size(subencoding.encoding) ;
                 nElements = numel(subencoding.encoding) ;
                 if ~isa(subtarget,className) ,
-                    subtarget = feval(className) ;  % must have a zero-arg constructor                    
+                    className
+                    try
+                        subtarget = feval(className) ;  % must have a zero-arg constructor
+                    catch me
+                        keyboard
+                    end                        
                     setPropertyValueOfTarget(self,target,propertyName,subtarget);
                     subtarget=getPropertyValueOfTarget(self,target,propertyName);
                 end

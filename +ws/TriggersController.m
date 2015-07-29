@@ -168,7 +168,9 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
 %         end  % function
 
         function SweepBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
-            acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
+            %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
+            selectionIndex = get(source,'Value');
+            self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
         end  % function
         
         function UseAcquisitionTriggerCheckboxActuated(self,source,event)  %#ok<INUSD>
@@ -177,7 +179,9 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
         end  % function
 
         function SweepBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
-            acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
+            %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
+            selectionIndex = get(source,'Value');
+            self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
         end
         
 %         function ContinuousSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
@@ -194,12 +198,12 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             if (columnIndex==4) ,
                 % this is the Repeats column
                 newValue=str2double(newString);
-                theSource=self.Model.Sources(sourceIndex);
+                theSource=self.Model.Sources{sourceIndex};
                 ws.Controller.setWithBenefits(theSource,'RepeatCount',newValue);
             elseif (columnIndex==5) ,
                 % this is the Interval column
                 newValue=str2double(newString);
-                theSource=self.Model.Sources(sourceIndex);
+                theSource=self.Model.Sources{sourceIndex};
                 ws.Controller.setWithBenefits(theSource,'Interval',newValue);
             end
         end  % function
@@ -208,22 +212,22 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
         % anything in that table
     end  % methods block    
 
-    methods (Access=protected)
-        function acquisitionSchemePopupmenuActuated_(self, source, triggerScheme)
-            % Called when the selection is changed in a listbox.  Causes the
-            % given triggerScheme (part of the model) to be updated appropriately.
-            selectionIndex = get(source,'Value');
-            
-            nSources=length(self.Model.Sources);
-            nDestinations=length(self.Model.Destinations);
-            if 1<=selectionIndex && selectionIndex<=nSources ,
-                triggerScheme.Target = self.Model.Sources(selectionIndex);
-            elseif nSources+1<=selectionIndex && selectionIndex<=nSources+nDestinations ,
-                destinationIndex = selectionIndex-nSources;
-                triggerScheme.Target = self.Model.Destinations(destinationIndex);
-            end
-        end  % function
-    end
+%     methods (Access=protected)
+%         function acquisitionSchemePopupmenuActuated_(self, source, triggerScheme)
+%             % Called when the selection is changed in a listbox.  Causes the
+%             % given triggerScheme (part of the model) to be updated appropriately.
+%             selectionIndex = get(source,'Value');
+%             
+%             nSources=length(self.Model.Sources);
+%             nDestinations=length(self.Model.Destinations);
+%             if 1<=selectionIndex && selectionIndex<=nSources ,
+%                 triggerScheme.Target = self.Model.Sources(selectionIndex);
+%             elseif nSources+1<=selectionIndex && selectionIndex<=nSources+nDestinations ,
+%                 destinationIndex = selectionIndex-nSources;
+%                 triggerScheme.Target = self.Model.Destinations(destinationIndex);
+%             end
+%         end  % function
+%     end
     
     properties (SetAccess=protected)
        propBindings = ws.TriggersController.initialPropertyBindings(); 

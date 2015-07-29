@@ -1,64 +1,10 @@
-classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework things to this doesn't have to be an event subscriber
+classdef Triggering < ws.system.TriggeringSubsystem 
     
-    properties (Dependent = true, SetAccess = immutable)
-        Sources  % this is an array of type ws.TriggerSource, not a cell array
-        Destinations  % this is an array of type ws.TriggerDestination, not a cell array
-    end
-    
-    properties (SetAccess=immutable, Dependent=true)
-        AcquisitionTriggerScheme
-        StimulationTriggerScheme
-    end
-
-    properties (Access=protected)
-        AcquisitionTriggerScheme_
-        StimulationTriggerScheme_
-    end
-    
-    properties (AbortSet = true, Dependent = true)
-        %AcquisitionUsesASAPTriggering  % bound to a checkbox
-        StimulationUsesAcquisitionTriggerScheme
-            % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
-    end
-    
-    properties (Transient=true)
-        IsStimulationCounterTriggerTaskRunning = false  % what it says on the tin.  if there is no stim trigger task (e.g. for an external stim), this is false
-            % note that the _task_ is running even if it's just sitting and
-            % waiting for something to trigger it.
-    end
-    
-%     properties (Dependent = true, Access = protected)  % these seem to only be used when saving/loading to/from the .cfg file
-%         prvAcquisitionTriggerSchemeSourceIndex
-%         prvAcquisitionTriggerSchemeDestinationIndex
-%         prvStimulationTriggerSchemeSourceIndex
-%         prvStimulationTriggerSchemeDestinationIndex
-%         prvSourceIntervals
-%         prvSourceRepeatCounts
-%     end
-    
-    properties (Access = protected)
-        Sources_  % this is an array of type ws.TriggerSource, not a cell array
-        Destinations_  % this is an array of type ws.TriggerDestination, not a cell array
-    end
-    
-    properties (GetAccess=public, SetAccess=immutable, Transient=true)
-        %MinDurationBetweenSweepsIfNotASAP = 0.25  % seconds
-    end
-    
-    properties (Access=protected, Transient=true)
-        %TriggerSchemeIntervalAndRepeatCountListeners_
-    end
-
-    properties (Access=protected)
-        %AcquisitionUsesASAPTriggering_ = true
-        StimulationUsesAcquisitionTriggerScheme_ = true
-    end
-
     properties (Access=protected, Transient=true)
         MasterTriggerDABSTask_
     end
     
-    properties (Constant=true, Access=protected)
+    properties (Access=protected, Constant=true)
         MasterTriggerPhysicalChannelName_ = 'pfi8'
         MasterTriggerPFIID_ = 8
         MasterTriggerEdge_ = ws.ni.TriggerEdge.Rising
@@ -66,73 +12,10 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
     
     methods
         function self = Triggering(parent)
-            self.CanEnable=true;
-            self.Enabled=true;
-
-            self.Parent=parent;
-            self.Sources_ = ws.TriggerSource.empty();
-            self.Destinations_ = ws.TriggerDestination.empty();
-            
-%             self.ContinuousModeTriggerScheme = ws.TriggerScheme('Name', 'ContinuousAcquisition', ...
-%                                                                 'IsExternalAllowed', false);
-            self.AcquisitionTriggerScheme_ = ws.TriggerScheme(self, 'Name', 'Acquisition');
-            self.StimulationTriggerScheme_ = ws.TriggerScheme(self, 'Name', 'Stimulus');
-            
-%             % Always include an external source.
-%             extSource = ws.Source();
-%             extSource.Name = 'External';
-%             self.addTriggerSource(extSource);
-%             self.AcquisitionTriggerScheme.Source = extSource;
-%             % This is why daddy drinks.  A "trigger source" is basically a
-%             % trigger output, i.e. it's something produced on the daq card
-%             % that can then be sent out into the world. Therefore you can't
-%             % have an "external" trigger source in any meaningful sense.
-%             % Pretty sure this is just a hack to get an item labelled
-%             % "External" into the dropdown list of trigger sources for the
-%             % sweep trigger "map", so that it is possible to specify
-%             % external triggering for the sweeps.  There really must be a
-%             % better way to organize this.  -- ALT, 2014-08-08           
-            
-            % Need to monitor these guys to maintain higher-level
-            % invariants
-            % Note that these can now be replaced with simple calls of
-            % parent methods within TriggerScheme, with the Triggering
-            % subsystem doing nothing if the caller is the stim trigger
-            % scheme.
-            %self.AcquisitionTriggerScheme.subscribeMe(self, 'WillSetTarget', '', 'willSetAcquisitionTriggerSchemeTarget');                        
-            %self.AcquisitionTriggerScheme.subscribeMe(self, 'DidSetTarget',  '', 'didSetAcquisitionTriggerSchemeTarget' );
+            self@ws.system.TriggeringSubsystem(parent);
         end  % function
         
-        function childTriggerSchemeWillSetTarget(self,child)
-            if child==self.AcquisitionTriggerScheme ,
-                self.willSetAcquisitionTriggerSchemeTarget();
-            end
-        end
-        
-        function childTriggerSchemeDidSetTarget(self,child)
-            if child==self.AcquisitionTriggerScheme ,
-                self.didSetAcquisitionTriggerSchemeTarget();
-            end
-            self.broadcast('Update');
-        end
-        
         function initializeFromMDFStructure(self,mdfStructure)
-%             % Add a built-in internal trigger for use when running
-%             % sweep-based.  Can't do this in the constructor b/c we need
-%             % the device ID.
-%             builtinTriggerSource = ws.TriggerSource();
-%             builtinTriggerSource.Name='Built-in Sweep Trigger Scheme';
-%             builtinTriggerSource.DeviceName=mdfStructure.inputDeviceName;
-%             builtinTriggerSource.CounterID=0;
-%             builtinTriggerSource.RepeatCount=1;
-%             builtinTriggerSource.Interval=1;  % s
-%             %destination = ws.TriggerDestination();
-%             %destination.Type = ws.TriggerDestinationType.Auto;
-%             builtinTriggerSource.PFIID = builtinTriggerSource.CounterID + 12;  % the NI-specified default
-%             builtinTriggerSource.Edge = ws.ni.TriggerEdge.Rising;                                
-%             %builtinTriggerSource.PredefinedDestination = destination;
-%             self.addTriggerSource(builtinTriggerSource);
-
             % Set up the trigger sources (i.e. internal triggers) specified
             % in the MDF.
             triggerSourceSpecs=mdfStructure.triggerSource;
@@ -140,7 +23,8 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
                 thisTriggerSourceSpec=triggerSourceSpecs(idx);
                 
                 % Create the trigger source, set params
-                source = ws.TriggerSource();                
+                source = self.addNewTriggerSource() ;
+                %source = ws.TriggerSource();                
                 source.Name=thisTriggerSourceSpec.Name;
                 source.DeviceName=thisTriggerSourceSpec.DeviceName;
                 source.CounterID=thisTriggerSourceSpec.CounterID;                
@@ -150,12 +34,12 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
                 source.Edge = ws.ni.TriggerEdge.Rising;                                
                 
                 % add the trigger source to the subsystem
-                self.addTriggerSource(source);
+                %self.addTriggerSource(source);
                 
                 % If the first source, set things to point to it
                 if idx==1 ,
-                    self.AcquisitionTriggerScheme_.Target = source;
-                    self.StimulationTriggerScheme_.Target = source;  
+                    self.AcquisitionTriggerSchemeIndex_ = 1 ;
+                    self.StimulationTriggerSchemeIndex_ = 1 ;  
                     self.StimulationUsesAcquisitionTriggerScheme = true;
                 end                    
             end  % for loop
@@ -167,14 +51,15 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
                 thisTriggerDestinationSpec=triggerDestinationSpecs(idx);
                 
                 % Create the trigger destination, set params
-                destination = ws.TriggerDestination();
+                %destination = ws.TriggerDestination();
+                destination = self.addNewTriggerDestination();
                 destination.Name = thisTriggerDestinationSpec.Name;
                 destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
                 destination.PFIID = thisTriggerDestinationSpec.PFIID;
                 destination.Edge = ws.ni.TriggerEdge.(thisTriggerDestinationSpec.Edge);
                 
                 % add the trigger destination to the subsystem
-                self.addTriggerDestination(destination);
+                %self.addTriggerDestination(destination);
             end  % for loop
             
         end  % function
@@ -191,16 +76,10 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
             ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
             self.MasterTriggerDABSTask_ = [] ;
         end
-
-%         function acquireHardwareResources(self)
-%             self.setupMasterTriggerTask();
-%             self.setupInternalSweepBasedTriggers();
-%         end
         
         function releaseHardwareResources(self)
-            %self.teardownInternalSweepBasedTriggers();
             self.teardownMasterTriggerTask();
-        end
+        end  % function
         
         function delete(self)
             try
@@ -208,135 +87,8 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
             catch me %#ok<NASGU>
                 % Can't throw in the delete() function
             end                
-            %ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
-            %self.MasterTriggerDABSTask_ = [] ;
-            self.Parent = [] ;
         end  % function
-        
-%         function out = get.prvAcquisitionTriggerSchemeSourceIndex(self)
-%             out = self.indexOfTriggerSource(self.AcquisitionTriggerScheme);
-%         end  % function
-%         
-%         function set.prvAcquisitionTriggerSchemeSourceIndex(self, value)
-%             if ~isempty(value) ,
-%                 self.AcquisitionTriggerScheme.Target = self.Sources_(value);
-%             end
-%         end  % function
-%         
-%         function out = get.prvAcquisitionTriggerSchemeDestinationIndex(self)
-%             out = self.indexOfTriggerDestination(self.AcquisitionTriggerScheme);
-%         end  % function
-%         
-%         function set.prvAcquisitionTriggerSchemeDestinationIndex(self, value)
-%             if ~isempty(value) ,
-%                 self.AcquisitionTriggerScheme.Target = self.Destinations_(value);
-%             end
-%         end  % function
-%         
-%         function out = get.prvStimulationTriggerSchemeSourceIndex(self)
-%             out = self.indexOfTriggerSource(self.StimulationTriggerScheme);
-%         end  % function
-%         
-%         function set.prvStimulationTriggerSchemeSourceIndex(self, value)
-%             if ~isempty(value) ,
-%                 self.StimulationTriggerScheme.Target = self.Sources_(value);
-%             end
-%         end  % function
-%         
-%         function out = get.prvStimulationTriggerSchemeDestinationIndex(self)
-%             out = self.indexOfTriggerDestination(self.StimulationTriggerScheme);
-%         end  % function
-%         
-%         function set.prvStimulationTriggerSchemeDestinationIndex(self, value)
-%             if ~isempty(value) ,
-%                 self.StimulationTriggerScheme.Target = self.Destinations_(value);
-%             end
-%         end  % function
-        
-%         function out = get.prvContinuousModeTriggerSchemeSourceIndex(self)
-%             out = self.indexOfTriggerSource(self.ContinuousModeTriggerScheme);
-%         end  % function
-%         
-%         function set.prvContinuousModeTriggerSchemeSourceIndex(self, value)
-%             if ~isempty(value) ,
-%                 self.ContinuousModeTriggerScheme.Target = self.Sources_(value);
-%             end
-%         end  % function
-        
-%         function out = get.prvContinuousModeTriggerSchemeDestinationIndex(self)
-%             out = self.indexOfTriggerDestination(self.ContinuousModeTriggerScheme);
-%         end  % function
-%         
-%         function set.prvContinuousModeTriggerSchemeDestinationIndex(self, value)
-%             if ~isempty(value)
-%                 self.ContinuousModeTriggerScheme.Target = self.Destinations_(value);
-%             end
-%         end  % function
-        
-%         function out = get.prvSourceIntervals(self)
-%             out = [self.Sources_(2:end).Interval];
-%         end  % function
-%         
-%         function set.prvSourceIntervals(self, value)
-%             count = min([numel(self.Sources_) (numel(value) + 1)]);
-%             
-%             for idx = 2:count
-%                 self.Sources_(idx).Interval = value(idx - 1);
-%             end
-%         end  % function
-%         
-%         function out = get.prvSourceRepeatCounts(self)
-%             out = [self.Sources_.RepeatCount];
-%         end  % function
-%         
-%         function set.prvSourceRepeatCounts(self, value)
-%             count = min([numel(self.Sources_) numel(value)]);
-%             
-%             for idx = 1:count
-%                 self.Sources_(idx).RepeatCount = value(idx);
-%             end
-%         end  % function
-        
-        function out = get.Destinations(self)
-            out = self.Destinations_;
-        end  % function
-        
-%         function set.Destinations(~, ~)
-%         end  % function
-        
-%         function set.Destinations_(self, value)
-%             if isempty(value) ,
-%                 value = ws.TriggerDestination.empty();
-%             end
-%             self.Destinations_ = value;
-%         end  % function
-        
-        function out = get.Sources(self)
-            out = self.Sources_;
-        end  % function
-        
-        function out = get.AcquisitionTriggerScheme(self)
-            out = self.AcquisitionTriggerScheme_ ;
-        end  % function
-        
-        function out = get.StimulationTriggerScheme(self)
-            if self.StimulationUsesAcquisitionTriggerScheme ,
-                out = self.AcquisitionTriggerScheme_ ;
-            else                
-                out = self.StimulationTriggerScheme_ ;
-            end
-        end  % function
-        
-%         function set.Sources(~, ~)
-%         end  % function
-        
-%         function set.Sources_(self, value)
-%             if isempty(value)
-%                 value = ws.TriggerSource.empty();
-%             end
-%             self.Sources_ = value;
-%         end  % function
-        
+                
         function debug(self) %#ok<MANU>
             % This is to make it easy to examine the internals of the
             % object
@@ -345,156 +97,12 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
     end  % methods block
     
     methods
-        % todo: replace addTriggerSource() with
-        % addNewTriggerSource(), which takes no arguments.  See comment
-        % below for addTriggerDestination().
-        function addTriggerSource(self, source)
-            %source.DoneCallback = @self.triggerSourceDone;
-            source.Parent = self;
-            self.Sources_(end + 1) = source;
-        end  % function
-        
-        function out = indexOfTriggerSource(self, triggerScheme)
-            if triggerScheme.IsInternal && ~isempty(self.Sources_)
-                out = find(self.Sources_ == triggerScheme.Target);
-            else
-                out = [];
-            end
-        end  % function
-        
-        % todo: replace addTriggerDestination() with
-        % addNewTriggerDestination(), which takes no arguments.  Don't like
-        % this business of building a destination outside of our control
-        % and then endocytosing it.
-        function addTriggerDestination(self, destination)
-            %assert(destination.Type == ws.TriggerDestinationType.UserDefined, 'The Destination Type must be ''UserDefined''');
-            self.Destinations_(end + 1) = destination;
-        end  % function
-        
-        function out = indexOfTriggerDestination(self, triggerScheme)
-            if triggerScheme.IsExternal && ~isempty(self.Destinations_)
-                out = find(self.Destinations_ == triggerScheme.Target);
-            else
-                out = [];
-            end
-        end  % function
-        
-%         function startMeMaybe(self, runMode, nSweepsInSet, nSweepsCompletedInSet) %#ok<INUSL>
-%             % This gets called once per sweep, to start() all the relevant
-%             % triggers.  But self.AcquisitionUsesASAPTriggering determines
-%             % whether we start the triggers for each sweep, or only for the
-%             % first sweep.
-%             
-%             % Start the trigger tasks, if appropriate
-%             if self.AcquisitionUsesASAPTriggering ,
-%                 % In this case, start the acq & stim trigger tasks on
-%                 % each sweep.
-%                 self.startAllDistinctSweepBasedTriggerTasks_();
-%             else
-%                 % Using "ballistic" triggering
-%                 if nSweepsCompletedInSet==0 ,
-%                     % For the first sweep in the set, need to start the
-%                     % acq task (if internal), and also the stim task,
-%                     % if it's internal but distinct.
-%                     self.startAllDistinctSweepBasedTriggerTasks_();
-%                 end
-%             end
-%                 
-%             % Pulse the master trigger, if appropriate
-%             if self.AcquisitionUsesASAPTriggering ,
-%                 % In this case, start the acq & stim trigger tasks on
-%                 % each sweep.
-%                 self.pulseMasterTrigger();
-%             else
-%                 % Using "ballistic" triggering
-%                 if nSweepsCompletedInSet==0 ,
-%                     % For the first sweep in the set, need to start the
-%                     % acq task (if internal), and also the stim task,
-%                     % if it's internal but distinct.
-%                     self.pulseMasterTrigger();
-%                 end
-%             end
-%             
-%             % Notify the WSM, which starts the polling timer
-%             if nSweepsCompletedInSet==0 ,
-%                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
-%             end            
-%         end  % function
-
-%         function startAllTriggerTasksAndPulseMasterTrigger(self)
-%             % This gets called once per sweep, to start() all the relevant
-%             % triggers.  But self.AcquisitionUsesASAPTriggering determines
-%             % whether we start the triggers for each sweep, or only for the
-%             % first sweep.
-%             
-%             % Start the acq & stim trigger tasks
-%             self.startAllDistinctSweepBasedTriggerTasks_();
-%                 
-%             % Pulse the master trigger
-%             self.pulseMasterTrigger();
-%             
-% %             % Notify the WSM, which starts the polling timer
-% %             if nSweepsCompletedInSet==0 ,
-% %                 self.Parent.triggeringSubsystemJustStartedFirstSweepInRun();
-% %             end            
-%         end  % function
-        
-%         function startAllDistinctSweepBasedTriggerTasks_(self)
-%             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-%             for idx = 1:numel(triggerSchemes) ,
-%                 thisTriggerScheme=triggerSchemes{idx};
-%                 if thisTriggerScheme==self.StimulationTriggerScheme ,
-%                     %fprintf('About to set self.IsStimulationCounterTriggerTaskRunning=true in location 3\n');
-%                     self.IsStimulationCounterTriggerTaskRunning=true;
-%                 end                    
-%                 thisTriggerScheme.start();
-%             end        
-% %             % Now produce a pulse on the master trigger, which will truly start things
-% %             self.MasterTriggerDABSTask_.writeDigitalData(true);
-% %             self.MasterTriggerDABSTask_.writeDigitalData(false);            
-%         end  % function
-
         function pulseMasterTrigger(self)
             % Produce a pulse on the master trigger, which will truly start things
             self.MasterTriggerDABSTask_.writeDigitalData(true);
             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
-        
-%         function startStimulationSweepBasedTriggerIfDistinct(self)
-%             % Starts the stim sweep-based trigger if it's different from
-%             % the acq sweep-based one.
-%             if self.isStimulationSweepBasedTriggerDistinct() ,
-%                 self.StimulationTriggerScheme.start()
-%             end
-%         end  % function
-        
-%         function result=isStimulationSweepBasedTriggerDistinct(self)
-%             % True iff the sweep-based acq and stim triggers are both
-%             % non-null, and they are distinct, i.e. not the same.
-%             if self.StimulationTriggerScheme.IsInternal ,
-%                 if self.AcquisitionTriggerScheme.IsInternal ,
-%                     result=(self.StimulationTriggerScheme.Source~=self.AcquisitionTriggerScheme.Source);                    
-%                 elseif self.AcquisitionTriggerScheme.IsExternal ,
-%                     result=true;
-%                 else
-%                     % acq trigger is null, so we call that distinct
-%                     result=true;
-%                 end               
-%             elseif self.StimulationTriggerScheme.IsExternal ,
-%                 if self.AcquisitionTriggerScheme.IsInternal ,
-%                     result=true;                    
-%                 elseif self.AcquisitionTriggerScheme.IsExternal ,
-%                     result=(self.AcquisitionTriggerScheme.Destination~=self.AcquisitionTriggerScheme.Destination);                    
-%                 else
-%                     % acq trigger is null, so we call that distinct
-%                     result=true;
-%                 end               
-%             else
-%                 % stim trigger is null, so we call that distinct
-%                 result=true;
-%             end
-%         end  % function        
-        
+                
         function willPerformRun(self)
             self.setupMasterTriggerTask();            
         end  % function
@@ -519,51 +127,7 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
             %self.teardownInternalSweepBasedTriggers();
         end  % function
         
-%         function setupInternalSweepBasedTriggers(self)        
-%             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-%             for idx = 1:numel(triggerSchemes) ,
-%                 thisTriggerScheme=triggerSchemes{idx};
-%                 thisTriggerScheme.setup();
-% %                 % Each trigger output is generated by a nidaqmx counter
-% %                 % task.  These tasks can themselves be configured to start
-% %                 % when they receive a trigger.  Here, we set the non-acq
-% %                 % trigger outputs to start when they receive a trigger edge on the
-% %                 % same PFI line that triggers the acquisition task.
-% %                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
-% %                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
-% %                 end                
-%                 thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
-%             end  % function            
-%         end  % function
-        
-        function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if self.Parent.IsSweepBased ,
-                    % overridden by IsSweepBased, do nothing
-                else
-                    if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                        self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
-                        %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-                        self.stimulusMapDurationPrecursorMayHaveChanged();
-                    else
-                        error('most:Model:invalidPropVal', ...
-                              'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
-                    end
-                end
-            end
-            self.broadcast('Update');            
-        end  % function
-        
-        function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            parent = self.Parent ;
-            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
-                value=true;
-            else
-                value=self.StimulationUsesAcquisitionTriggerScheme_;
-            end
-        end  % function
-        
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+        function stimulusMapDurationPrecursorMayHaveChanged(self)
             wavesurferModel=self.Parent;
             if ~isempty(wavesurferModel) ,
                 wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
@@ -605,8 +169,8 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
             % Called "from below" when the counter trigger task finishes
             %fprintf('Triggering::triggerSourceDone()\n');
             if self.StimulationTriggerScheme.IsInternal ,
-                if triggerSource==self.StimulationTriggerScheme.Target ,
-                    self.IsStimulationCounterTriggerTaskRunning=false;
+                if triggerSource==self.StimulationTriggerScheme ,
+                    %self.IsStimulationCounterTriggerTaskRunning=false;
                     self.Parent.internalStimulationCounterTriggerTaskComplete();
                 end
             end            
@@ -614,35 +178,6 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
     end  % methods block
     
     methods (Access = protected)
-        function defineDefaultPropertyAttributes(self)
-            defineDefaultPropertyAttributes@ws.system.Subsystem(self);            
-            %self.setPropertyAttributeFeatures('AcquisitionUsesSweepTrigger', 'Classes', 'logical', 'Attributes', {'scalar'});
-            self.setPropertyAttributeFeatures('StimulationUsesAcquisitionTriggerScheme', 'Classes', 'logical', 'Attributes', {'scalar'});
-            %self.setPropertyAttributeFeatures('AcquisitionUsesASAPTriggering', 'Classes', 'logical', 'Attributes', {'scalar'});
-        end  % function
-        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.system.Subsystem(self);            
-            
-%             % These have to be marked b/c they're all dependent props, so
-%             % they would not normally be saved in the config file.  But
-%             % they must be saved, because when they get set on restore is
-%             % what actually restores the various handles.
-%             self.setPropertyTags('prvAcquisitionTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('prvAcquisitionTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('prvStimulationTriggerSchemeSourceIndex', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('prvStimulationTriggerSchemeDestinationIndex', 'IncludeInFileTypes', {'cfg'});
-            
-%             % These are also dependent, but are also saved to the protocol
-%             % file so that they get restored on load.  (But why don't 
-%             % these just get restored automatically when the sources are
-%             % restored?  Why do we need a second cache?  I think I
-%             % understood this once, but am now drawing a blank...  ALT,
-%             % 2015-02-10)
-%             self.setPropertyTags('prvSourceIntervals',    'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('prvSourceRepeatCounts', 'IncludeInFileTypes', {'cfg'});            
-        end  % function
-        
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue(self, name)
             out = self.(name);
@@ -655,6 +190,33 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
     end  % protected methods block
     
     methods (Access = protected)
+        function setStimulationUsesAcquisitionTriggerScheme_(self,newValue)      
+            if ws.utility.isASettableValue(newValue) ,
+                if self.Parent.IsSweepBased ,
+                    % overridden by IsSweepBased, do nothing
+                else                    
+                    if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                        self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
+                        %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+                        self.stimulusMapDurationPrecursorMayHaveChanged();
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
+                    end
+                end
+            end
+            self.broadcast('Update');            
+        end  % function
+        
+        function value=getStimulationUsesAcquisitionTriggerScheme_(self)
+            parent = self.Parent ;
+            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
+                value = true ;
+            else
+                value = getStimulationUsesAcquisitionTriggerScheme_@ws.system.TriggeringSubsystem(self) ;
+            end
+        end  % function        
+        
         function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
             % Just what it says on the tin.  For starting, want the acq
             % trigger last so that the stim trigger can trigger off it if
@@ -667,7 +229,7 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
             % their sources are identical.  If so, only want to return one,
             % so we don't start an internal trigger twice.
             if length(internalTriggerSchemes)>1 ,
-                if self.StimulationTriggerScheme.Target==self.AcquisitionTriggerScheme.Target ,
+                if self.StimulationTriggerScheme==self.AcquisitionTriggerScheme ,
                     % We pick the acq one, even though it shouldn't matter 
                     result=internalTriggerSchemes(2);
                 else
@@ -691,15 +253,15 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
     end
     
     methods
-        function willSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            % Have to release the relevant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-
-        function didSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.syncTriggerSourcesFromTriggeringState_();
-            %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-        end  % function
+%         function willSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             % Have to release the relevant parts of the trigger scheme
+%             self.releaseCurrentTriggerSources_();
+%         end  % function
+% 
+%         function didSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.syncTriggerSourcesFromTriggeringState_();
+%             %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
+%         end  % function
         
 %         function willSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
 %             % Have to release the relvant parts of the trigger scheme
@@ -721,18 +283,18 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
 %             % are simply shadowed, not overwritten.
 %             
 % %             if self.StimulationUsesAcquisitionTriggerScheme ,
-% %                 self.StimulationTriggerScheme.Target = self.AcquisitionTriggerScheme.Target;
+% %                 self.StimulationTriggerScheme = self.AcquisitionTriggerScheme;
 % %             end
 %         end  % function
             
         function releaseCurrentTriggerSources_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
                 %if self.AcquisitionUsesASAPTriggering ,
-                    self.AcquisitionTriggerScheme.Target.releaseInterval();
-                    self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
+                    self.AcquisitionTriggerScheme.releaseInterval();
+                    self.AcquisitionTriggerScheme.releaseRepeatCount();
                 %else
-                %    self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
-                %    self.AcquisitionTriggerScheme.Target.releaseRepeatCount();
+                %    self.AcquisitionTriggerScheme.releaseLowerLimitOnInterval();
+                %    self.AcquisitionTriggerScheme.releaseRepeatCount();
                 %end
             end
         end  % function
@@ -740,14 +302,14 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
         function syncTriggerSourcesFromTriggeringState_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
                 %if self.AcquisitionUsesASAPTriggering ,
-                    %self.AcquisitionTriggerScheme.Target.releaseLowerLimitOnInterval();
-                    self.AcquisitionTriggerScheme.Target.overrideInterval(0.01);
-                    self.AcquisitionTriggerScheme.Target.overrideRepeatCount(1);
+                    %self.AcquisitionTriggerScheme.releaseLowerLimitOnInterval();
+                    self.AcquisitionTriggerScheme.overrideInterval(0.01);
+                    self.AcquisitionTriggerScheme.overrideRepeatCount(1);
                 %else
-                %    self.AcquisitionTriggerScheme.Target.releaseInterval();
-                %    self.AcquisitionTriggerScheme.Target.placeLowerLimitOnInterval( ...
+                %    self.AcquisitionTriggerScheme.releaseInterval();
+                %    self.AcquisitionTriggerScheme.placeLowerLimitOnInterval( ...
                 %        self.Parent.Acquisition.Duration+self.MinDurationBetweenSweepsIfNotASAP );
-                %    self.AcquisitionTriggerScheme.Target.overrideRepeatCount(self.Parent.NSweepsPerRun);
+                %    self.AcquisitionTriggerScheme.overrideRepeatCount(self.Parent.NSweepsPerRun);
                 %end
             end
         end  % function
@@ -783,7 +345,7 @@ classdef Triggering < ws.system.Subsystem % & ws.EventSubscriber  % TODO: rework
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = struct();
         mdlHeaderExcludeProps = {};
-    end
+    end  % function
     
     methods
         function poll(self,timeSinceSweepStart)

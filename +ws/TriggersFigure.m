@@ -506,8 +506,9 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             import ws.utility.setPopupMenuItemsAndSelectionBang
             import ws.utility.onIff
             %set(self.UseASAPTriggeringCheckbox,'Value',model.AcquisitionUsesASAPTriggering);
-            rawMenuItems={model.Sources.Name model.Destinations.Name};
-            rawCurrentItem=model.AcquisitionTriggerScheme.Target.Name;
+            schemes = model.Schemes ;
+            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
+            rawCurrentItem=model.AcquisitionTriggerScheme.Name;
             setPopupMenuItemsAndSelectionBang(self.SweepBasedAcquisitionSchemePopupmenu, ...
                                               rawMenuItems, ...
                                               rawCurrentItem);
@@ -523,8 +524,9 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             import ws.utility.setPopupMenuItemsAndSelectionBang
             import ws.utility.onIff
             set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
-            rawMenuItems={model.Sources.Name model.Destinations.Name};
-            rawCurrentItem=model.StimulationTriggerScheme.Target.Name;
+            schemes = model.Schemes ;
+            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
+            rawCurrentItem=model.StimulationTriggerScheme.Name;
             setPopupMenuItemsAndSelectionBang(self.SweepBasedStimulationSchemePopupmenu, ...
                                               rawMenuItems, ...
                                               rawCurrentItem);
@@ -557,7 +559,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             nColumns=7;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                source=model.Sources(i);
+                source=model.Sources{i};
                 data{i,1}=source.Name;
                 data{i,2}=source.DeviceName;
                 data{i,3}=source.CounterID;
@@ -580,7 +582,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             nColumns=4;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                destination=model.Destinations(i);
+                destination=model.Destinations{i};
                 data{i,1}=destination.Name;
                 data{i,2}=destination.DeviceName;
                 data{i,3}=destination.PFIID;
@@ -618,7 +620,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             model=self.Model;
             sources = model.Sources;            
             for i = 1:length(sources) ,
-                source=sources(i);
+                source=sources{i};
                 source.unsubscribeMeFromAll(self);
                 %source.subscribeMe(self, 'PostSet', 'Interval', 'updateTriggerSourcesTable');
                 %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateTriggerSourcesTable');

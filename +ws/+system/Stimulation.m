@@ -460,15 +460,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % stim trigger scheme is internal
                 if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal
                     % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == wavesurferModel.Triggering.AcquisitionTriggerScheme.Target ,
+                    if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
                         self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
                     else
-                        self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
+                        self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
                     end
                 elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme
-                    self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
+                    self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
                 else
                     % acq trigger scheme is null --- this run is
                     % stillborn, so doesn't matter
@@ -519,7 +519,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %fprintf('Stimulation::willPerformSweep()\n');
 
             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-            if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+            if self.TriggerScheme == acquisitionTriggerScheme ,
                 % Stim and acq are using same trigger source, so should arm
                 % stim system now.
                 self.armForEpisode();
@@ -553,7 +553,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
 %                 if acquisitionTriggerScheme.IsInternal ,
 %                     % acq trigger scheme is internal
-%                     if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+%                     if self.TriggerScheme == acquisitionTriggerScheme ,
 %                         % stim and acq are using same trigger source
 %                         self.armForEpisode();
 %                     else
@@ -1041,7 +1041,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
                 if acquisitionTriggerScheme.IsExternal ,
                     % both acq and stim are external
-                    if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+                    if self.TriggerScheme == acquisitionTriggerScheme ,
                         % stim and acq are using same trigger
                         self.Parent.stimulationEpisodeComplete();
                     else
@@ -1059,7 +1059,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
                 if acquisitionTriggerScheme.IsInternal ,
                     % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+                    if self.TriggerScheme == acquisitionTriggerScheme ,
                         % stim and acq are using same trigger source
                         self.Parent.stimulationEpisodeComplete();
                     else

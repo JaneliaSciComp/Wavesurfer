@@ -1,9 +1,13 @@
-classdef TriggerSource < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDAndEdge   % & ws.EventBroadcaster
+classdef TriggerSource < ws.Model & ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
     % This class represents a trigger source, i.e. an internally-generated
     % trigger output.  A trigger source has a device (e.g. 'Dev1'), a
     % counter (the index of the NI DAQmx counter), an inter-trigger
     % interval, a PFIID (the NI zero-based index of the PFI line used for
     % output), and an Edge (the edge polarity used).
+    
+    properties (Constant=true)
+        IsInternal = true
+    end
     
     properties (Transient=true)
         Parent  % the parent Triggering object
