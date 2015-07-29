@@ -342,11 +342,6 @@ classdef Triggering < ws.system.TriggeringSubsystem
 %         end  % function
     end  % protected methods block
 
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();
-        mdlHeaderExcludeProps = {};
-    end  % function
-    
     methods
         function poll(self,timeSinceSweepStart)
 %             % Call the task to do the real work

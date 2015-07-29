@@ -179,7 +179,7 @@ classdef WavesurferModel < ws.Model
             self.DataSubscriber_.setDelegate(self) ;
             
             % Start the other Matlab processes
-            system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+            %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
             %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
             
             % Connect to the various sockets
