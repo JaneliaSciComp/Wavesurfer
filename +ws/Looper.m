@@ -666,7 +666,7 @@ classdef Looper < ws.Model
             
             % Make our own settings mimic those of wavesurferModelSettings
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
-            self.syncToFrontendSettings_(wavesurferModelSettings);
+            self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             
             % Tell all the subsystems to prepare for the run
             try
@@ -713,14 +713,13 @@ classdef Looper < ws.Model
 %             end
         end  % function
         
-        function syncToFrontendSettings_(self,wavesurferModelSettings)
-            self.IsSweepBased = wavesurferModelSettings.IsSweepBased ;  % more like IsAcquisitionFinite...
-            self.Triggering.syncToFrontendSettings(wavesurferModelSettings.Triggering) ;
-            self.Acquisition.syncToFrontendSettings(wavesurferModelSettings.Acquisition) ;
-            self.Stimulation.syncToFrontendSettings(wavesurferModelSettings.Stimulation) ;
-            self.UserFunctions.syncToFrontendSettings(wavesurferModelSettings.UserFunctions) ;
+        function setCoreSettingsToMatchPackagedOnes(self,wavesurferModelSettings)
+            self.IsSweepBased_ = wavesurferModelSettings.IsSweepBased_ ;  % more like IsAcquisitionFinite...
+            self.Triggering.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Triggering) ;
+            self.Acquisition.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Acquisition) ;
+            self.Stimulation.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Stimulation) ;
+            self.UserFunctions.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.UserFunctions) ;
         end
-            
         
         function err = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
             % Get everything set up for the Looper to run a sweep, but

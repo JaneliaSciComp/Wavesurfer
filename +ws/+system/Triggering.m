@@ -3,13 +3,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
     properties (Access=protected, Transient=true)
         MasterTriggerDABSTask_
     end
-    
-    properties (Access=protected, Constant=true)
-        MasterTriggerPhysicalChannelName_ = 'pfi8'
-        MasterTriggerPFIID_ = 8
-        MasterTriggerEdge_ = ws.ni.TriggerEdge.Rising
-    end
-    
+        
     methods
         function self = Triggering(parent)
             self@ws.system.TriggeringSubsystem(parent);
@@ -64,10 +58,18 @@ classdef Triggering < ws.system.TriggeringSubsystem
             
         end  % function
         
+        function settings = packageCoreSettings(self)
+            settings=struct() ;
+            for i=1:length(self.CoreFieldNames_)
+                fieldName = self.CoreFieldNames_{i} ;
+                settings.(fieldName) = self.(fieldName) ;
+            end
+        end
+        
         function setupMasterTriggerTask(self) 
             if isempty(self.MasterTriggerDABSTask_) ,
                 self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('Wavesurfer Master Trigger Task');
-                self.MasterTriggerDABSTask_.createDOChan(self.Sources(1).DeviceName, self.MasterTriggerPhysicalChannelName_);
+                self.MasterTriggerDABSTask_.createDOChan(self.Sources{1}.DeviceName, self.MasterTriggerPhysicalChannelName_);
                 self.MasterTriggerDABSTask_.writeDigitalData(false);
             end
         end  % function
@@ -107,74 +109,36 @@ classdef Triggering < ws.system.TriggeringSubsystem
             self.setupMasterTriggerTask();            
         end  % function
         
-        function willPerformSweep(self)
+        function willPerformSweep(self) %#ok<MANU>
             %self.setupInternalSweepBasedTriggers();
         end  % function
 
-        function didCompleteSweep(self)
+        function didCompleteSweep(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();            
         end  % function
         
-        function didAbortSweep(self)
+        function didAbortSweep(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didCompleteRun(self)
+        function didCompleteRun(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didAbortRun(self)
+        function didAbortRun(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();
         end  % function
-        
-        function stimulusMapDurationPrecursorMayHaveChanged(self)
-            wavesurferModel=self.Parent;
-            if ~isempty(wavesurferModel) ,
-                wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end  % function        
-        
-        function willSetNSweepsPerRun(self)
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-
-        function didSetNSweepsPerRun(self)
-            self.syncTriggerSourcesFromTriggeringState_();            
-        end  % function        
-        
-        function willSetAcquisitionDuration(self)
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-
-        function didSetAcquisitionDuration(self)
-            self.syncTriggerSourcesFromTriggeringState_();            
-        end  % function        
-        
-        function willSetIsSweepBased(self)
-            % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
-        end  % function
-        
-        function didSetIsSweepBased(self)
-            %fprintf('Triggering::didSetIsSweepBased()\n');
-            self.syncTriggerSourcesFromTriggeringState_();
-            %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-            self.stimulusMapDurationPrecursorMayHaveChanged();  % Have to do b/c changing this can change StimulationUsesAcquisitionTriggerScheme
-            %self.syncIntervalAndRepeatCountListeners_();
-        end  % function 
-        
-        function triggerSourceDone(self,triggerSource)
-            % Called "from below" when the counter trigger task finishes
-            %fprintf('Triggering::triggerSourceDone()\n');
-            if self.StimulationTriggerScheme.IsInternal ,
-                if triggerSource==self.StimulationTriggerScheme ,
-                    %self.IsStimulationCounterTriggerTaskRunning=false;
-                    self.Parent.internalStimulationCounterTriggerTaskComplete();
-                end
-            end            
-        end  % function 
+                
+%         function triggerSourceDone(self,triggerSource)
+%             % Called "from below" when the counter trigger task finishes
+%             %fprintf('Triggering::triggerSourceDone()\n');
+%             if self.StimulationTriggerScheme.IsInternal ,
+%                 if triggerSource==self.StimulationTriggerScheme ,
+%                     %self.IsStimulationCounterTriggerTaskRunning=false;
+%                     self.Parent.internalStimulationCounterTriggerTaskComplete();
+%                 end
+%             end            
+%         end  % function 
     end  % methods block
     
     methods (Access = protected)
@@ -190,33 +154,6 @@ classdef Triggering < ws.system.TriggeringSubsystem
     end  % protected methods block
     
     methods (Access = protected)
-        function setStimulationUsesAcquisitionTriggerScheme_(self,newValue)      
-            if ws.utility.isASettableValue(newValue) ,
-                if self.Parent.IsSweepBased ,
-                    % overridden by IsSweepBased, do nothing
-                else                    
-                    if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                        self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
-                        %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-                        self.stimulusMapDurationPrecursorMayHaveChanged();
-                    else
-                        error('most:Model:invalidPropVal', ...
-                              'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
-                    end
-                end
-            end
-            self.broadcast('Update');            
-        end  % function
-        
-        function value=getStimulationUsesAcquisitionTriggerScheme_(self)
-            parent = self.Parent ;
-            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
-                value = true ;
-            else
-                value = getStimulationUsesAcquisitionTriggerScheme_@ws.system.TriggeringSubsystem(self) ;
-            end
-        end  % function        
-        
         function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
             % Just what it says on the tin.  For starting, want the acq
             % trigger last so that the stim trigger can trigger off it if
@@ -251,102 +188,12 @@ classdef Triggering < ws.system.TriggeringSubsystem
             end
         end  % function
     end
-    
-    methods
-%         function willSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Have to release the relevant parts of the trigger scheme
-%             self.releaseCurrentTriggerSources_();
-%         end  % function
-% 
-%         function didSetAcquisitionTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             self.syncTriggerSourcesFromTriggeringState_();
-%             %self.syncStimulationTriggerSchemeToAcquisitionTriggerScheme_();
-%         end  % function
-        
-%         function willSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Have to release the relvant parts of the trigger scheme
-%             self.releaseCurrentTriggerSources_();
-%         end  % function
-% 
-%         function didSetContinuousModeTriggerSchemeTarget(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             self.syncTriggerSourcesFromTriggeringState_();
-%         end  % function
-    end
-       
-    methods (Access=protected)
-%         function syncStimulationTriggerSchemeToAcquisitionTriggerScheme_(self) %#ok<MANU>
-%             % This does nothing now, b/c the getter for
-%             % StimulationTriggerScheme now simply returns the
-%             % AcquisitionTriggerScheme if
-%             % StimulationUsesAcquisitionTriggerScheme is true.
-%             % This has the advantage the that stim trigger scheme settings
-%             % are simply shadowed, not overwritten.
-%             
-% %             if self.StimulationUsesAcquisitionTriggerScheme ,
-% %                 self.StimulationTriggerScheme = self.AcquisitionTriggerScheme;
-% %             end
-%         end  % function
-            
-        function releaseCurrentTriggerSources_(self)
-            if self.AcquisitionTriggerScheme.IsInternal ,
-                %if self.AcquisitionUsesASAPTriggering ,
-                    self.AcquisitionTriggerScheme.releaseInterval();
-                    self.AcquisitionTriggerScheme.releaseRepeatCount();
-                %else
-                %    self.AcquisitionTriggerScheme.releaseLowerLimitOnInterval();
-                %    self.AcquisitionTriggerScheme.releaseRepeatCount();
-                %end
-            end
-        end  % function
-        
-        function syncTriggerSourcesFromTriggeringState_(self)
-            if self.AcquisitionTriggerScheme.IsInternal ,
-                %if self.AcquisitionUsesASAPTriggering ,
-                    %self.AcquisitionTriggerScheme.releaseLowerLimitOnInterval();
-                    self.AcquisitionTriggerScheme.overrideInterval(0.01);
-                    self.AcquisitionTriggerScheme.overrideRepeatCount(1);
-                %else
-                %    self.AcquisitionTriggerScheme.releaseInterval();
-                %    self.AcquisitionTriggerScheme.placeLowerLimitOnInterval( ...
-                %        self.Parent.Acquisition.Duration+self.MinDurationBetweenSweepsIfNotASAP );
-                %    self.AcquisitionTriggerScheme.overrideRepeatCount(self.Parent.NSweepsPerRun);
-                %end
-            end
-        end  % function
-        
-%         function syncIntervalAndRepeatCountListeners_(self)
-%             % Delete the listeners on the old acq trigger source props
-%             delete(self.TriggerSchemeIntervalAndRepeatCountListeners_);
-%             self.TriggerSchemeIntervalAndRepeatCountListeners_=event.listener.empty();
-%             
-%             % Set up new listeners
-%             if self.Parent.IsSweepBased ,
-%                 if self.AcquisitionTriggerScheme.IsInternal ,
-%                     self.TriggerSchemeIntervalAndRepeatCountListeners_(end+1) = ...
-%                         self.AcquisitionTriggerScheme.Source.addlistener('Interval', 'PostSet', ...
-%                                                                          @(src,evt)(self.syncTriggerSourcesFromTriggeringState_()));
-%                     self.TriggerSchemeIntervalAndRepeatCountListeners_(end+1) = ...
-%                         self.AcquisitionTriggerScheme.Source.addlistener('RepeatCount', 'PostSet', ...
-%                                                                          @(src,evt)(self.syncTriggerSourcesFromTriggeringState_()));
-%                 end
-%             elseif self.Parent.IsContinuous ,
-%                 if self.ContinuousModeTriggerScheme.IsInternal ,
-%                     self.TriggerSchemeIntervalAndRepeatCountListeners_(end+1) = ...
-%                         self.ContinuousModeTriggerScheme.Source.addlistener('Interval', 'PostSet', ...
-%                                                                             @(src,evt)(self.syncTriggerSourcesFromTriggeringState_()));
-%                     self.TriggerSchemeIntervalAndRepeatCountListeners_(end+1) = ...
-%                         self.ContinuousModeTriggerScheme.Source.addlistener('RepeatCount', 'PostSet', ...
-%                                                                             @(src,evt)(self.syncTriggerSourcesFromTriggeringState_()));
-%                 end
-%             end            
-%         end  % function
-    end  % protected methods block
-
-    methods
-        function poll(self,timeSinceSweepStart)
-%             % Call the task to do the real work
-%             self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
-%             self.StimulationTriggerScheme.poll(timeSinceSweepStart);
-        end
-    end    
+           
+%     methods
+%         function poll(self,timeSinceSweepStart)
+% %             % Call the task to do the real work
+% %             self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
+% %             self.StimulationTriggerScheme.poll(timeSinceSweepStart);
+%         end
+%     end    
 end

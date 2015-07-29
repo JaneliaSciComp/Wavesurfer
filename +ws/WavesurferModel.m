@@ -179,7 +179,7 @@ classdef WavesurferModel < ws.Model
             self.DataSubscriber_.setDelegate(self) ;
             
             % Start the other Matlab processes
-            %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+            system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
             %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
             
             % Connect to the various sockets
@@ -736,7 +736,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Tell the Looper to prepare for the run
-            wavesurferModelSettings=self.encodeForFileType('header');
+            wavesurferModelSettings=self.packageCoreSettings();
             err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
             if ~isempty(err) ,
                 self.cleanUpAfterAbortedRun_('problem');

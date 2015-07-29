@@ -592,12 +592,12 @@ classdef Logging < ws.system.Subsystem
     end  % static methods block
     
     methods (Access = protected)
-        function defineDefaultPropertyAttributes(self)
-            defineDefaultPropertyAttributes@ws.system.Subsystem(self);
-            self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
-            self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
-            self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-        end
+%         function defineDefaultPropertyAttributes(self)
+%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
+%             self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
+%             self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
+%             self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
+%         end
         
 %         function defineDefaultPropertyTags(self)
 %             defineDefaultPropertyTags@ws.system.Subsystem(self);            

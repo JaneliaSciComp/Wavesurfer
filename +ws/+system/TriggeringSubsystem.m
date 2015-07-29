@@ -13,18 +13,24 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access=protected, Constant=true)
-        CoreFieldNames_ = { 'Sources_' , 'Destinations_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
-                            'StimulationTriggerSchemeIndex_' } ;
-            % The "core" settings are the ones that get transferred to
-            % other processes for running a sweep.
+        MasterTriggerPhysicalChannelName_ = 'pfi8'
+        MasterTriggerPFIID_ = 8
+        MasterTriggerEdge_ = ws.ni.TriggerEdge.Rising
     end
-
+    
     properties (Access = protected)
         Sources_  % this is a cell array with all elements of type ws.TriggerSource
         Destinations_  % this is a cell array with all elements of type ws.TriggerDestination
         StimulationUsesAcquisitionTriggerScheme_
         AcquisitionTriggerSchemeIndex_
         StimulationTriggerSchemeIndex_
+    end
+
+    properties (Access=protected, Constant=true)
+        CoreFieldNames_ = { 'Sources_' , 'Destinations_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
+                            'StimulationTriggerSchemeIndex_' } ;
+            % The "core" settings are the ones that get transferred to
+            % other processes for running a sweep.
     end
     
     methods
@@ -65,7 +71,18 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
 
         function set.AcquisitionTriggerSchemeIndex(self, newValue)
-            self.setAcquisitionTriggerSchemeIndex_(newValue) ;  % subclasses override this, sometimes
+            if ws.utility.isASettableValue(newValue) ,
+                nSchemes = length(self.Sources_) + length(self.Destinations_) ;
+                if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
+                    self.releaseCurrentTriggerSources_() ;
+                    self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
+                    self.syncTriggerSourcesFromTriggeringState_() ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
+                end
+            end
+            self.broadcast('Update');                        
         end
         
         function out = get.StimulationTriggerSchemeIndex(self)
@@ -112,46 +129,33 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
                         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
-            self.setStimulationUsesAcquisitionTriggerScheme_(newValue) ;
-        end  % function
-        
-        function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            value = self.getStimulationUsesAcquisitionTriggerScheme_() ;
-        end  % function
-        
-        function settings = packageCoreSettings(self)
-            settings=struct() ;
-            for i=1:length(self.CoreFieldNames_)
-                fieldName = self.CoreFieldNames_{i} ;
-                settings.(fieldName) = self.(fieldName) ;
-            end
-        end
-        
-        function setCoreSettingsToMatchPackagedOnes(self,settings)
-            for i=1:length(self.CoreFieldNames_)
-                fieldName = self.CoreFieldNames_{i} ;
-                self.(fieldName) = settings.(fieldName) ;
-            end
-        end
-    end  % methods block
-    
-    methods (Access = protected)
-        function setStimulationUsesAcquisitionTriggerScheme_(self,newValue)   % this is overridable by subclasses, whereas a setter is not
             if ws.utility.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
-                else
-                    error('most:Model:invalidPropVal', ...
-                          'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
+                if self.Parent.IsSweepBased ,
+                    % overridden by IsSweepBased, do nothing
+                else                    
+                    if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                        self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
+                        self.stimulusMapDurationPrecursorMayHaveChanged_();  % why are we calling this, again?
+                    else
+                        error('most:Model:invalidPropVal', ...
+                              'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
+                    end
                 end
             end
             self.broadcast('Update');            
         end  % function
         
-        function value=getStimulationUsesAcquisitionTriggerScheme_(self)  % this is overridable by subclasses, whereas a getter is not
-            value = self.StimulationUsesAcquisitionTriggerScheme_ ;
-        end  % function                
-        
+        function value=get.StimulationUsesAcquisitionTriggerScheme(self)
+            parent = self.Parent ;
+            if ~isempty(parent) && isvalid(parent) && parent.IsSweepBased ,
+                value = true ;
+            else
+                value = self.StimulationUsesAcquisitionTriggerScheme_ ;
+            end
+        end  % function
+    end  % methods block
+    
+    methods (Access = protected)
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue(self, name)
             out = self.(name);
@@ -163,22 +167,49 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
     end  % protected methods block
     
-    methods (Access=protected)
-        function setAcquisitionTriggerSchemeIndex_(self, newValue)  % this is overridable by subclasses, whereas a setter is not
-            if ws.utility.isASettableValue(newValue) ,
-                nSchemes = length(self.Sources_) + length(self.Destinations_) ;
-                if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                    self.releaseCurrentTriggerSources_() ;
-                    self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
-                    self.syncTriggerSourcesFromTriggeringState_() ;
-                else
-                    error('most:Model:invalidPropVal', ...
-                          'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
-                end
-            end
-            self.broadcast('Update');                        
-        end
+    methods
+        function willSetNSweepsPerRun(self)
+            % Have to release the relvant parts of the trigger scheme
+            self.releaseCurrentTriggerSources_();
+        end  % function
+
+        function didSetNSweepsPerRun(self)
+            self.syncTriggerSourcesFromTriggeringState_();            
+        end  % function        
         
+        function willSetAcquisitionDuration(self)
+            % Have to release the relvant parts of the trigger scheme
+            self.releaseCurrentTriggerSources_();
+        end  % function
+
+        function didSetAcquisitionDuration(self)
+            self.syncTriggerSourcesFromTriggeringState_();            
+        end  % function        
+        
+        function willSetIsSweepBased(self)
+            % Have to release the relvant parts of the trigger scheme
+            self.releaseCurrentTriggerSources_();
+        end  % function
+        
+        function didSetIsSweepBased(self)
+            %fprintf('Triggering::didSetIsSweepBased()\n');
+            self.syncTriggerSourcesFromTriggeringState_();
+            self.stimulusMapDurationPrecursorMayHaveChanged_();  
+                % Have to do b/c changing this can change
+                % StimulationUsesAcquisitionTriggerScheme.  (But why does
+                % that matter?  That can't change the stim map duration
+                % any more, I don't think...)
+        end  % function         
+    end
+    
+    methods (Access=protected)
+        function stimulusMapDurationPrecursorMayHaveChanged_(self)
+            parent=self.Parent;
+            if ~isempty(parent) ,
+                parent.stimulusMapDurationPrecursorMayHaveChanged();
+            end
+        end  % function        
+
         function releaseCurrentTriggerSources_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
                 self.AcquisitionTriggerScheme.releaseInterval();
