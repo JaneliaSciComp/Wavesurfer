@@ -383,11 +383,11 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
                 if isequal(newThing,'(Unspecified)') ,
-                    stimulus=[];
+                    stimulusIndex=[];
                 else
-                    stimulus=model.stimulusWithName(newThing);
+                    stimulusIndex=model.indexOfStimulusWithName(newThing);
                 end
-                selectedMap.Stimuli{rowIndex}=stimulus;                                
+                selectedMap.StimulusIndices{rowIndex}=stimulusIndex;                                
             elseif (columnIndex==4) ,
                 % this is the Multiplier column
                 newValue=str2double(newThing);

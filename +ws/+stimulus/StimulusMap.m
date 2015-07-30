@@ -1,59 +1,28 @@
 classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
-    %STIMMAP Map Stimulus objects to analog or digital output channels.
-    %
-    %   S = STIMMAP() creates an empty stimulus map object.  Bindings for output
-    %   channels can be added with the addBinding() method.
-    %
-    %   S = STIMMAP(NAMES) creates a stimulus map with channel names, NAMES.
-    %   Bindings can be assigned with the assignBinding() method.  prvMapChannelsChangedListener may also
-    %   be added or removed with the addBinding() or removeChannel() methods.
-    %
-    %   See also ws.stimulus.Stimulus.
-    
-    % Note that StimulusMaps should only ever
-    % exist as an item in a StimulusLibrary!
-
-%     properties (SetAccess = protected, Hidden = true)
-%         UUID  % a unique id so that things can be re-linked after loading from disk
-%     end
-    
-%     properties
-%         Parent  % the parent StimulusLibrary.  Invariant: Must be a scalar ws.stimulus.StimulusLibrary.  (E.g. cannot be empty)
-%     end
     
     properties (Dependent=true)
         Name
-    end
-    
-    properties (Access=protected)
-        Name_ = ''
-    end
-    
-    properties (Dependent=true)
         Duration  % s
+        ChannelNames  % a cell array of strings
+        Stimuli  % a cell array, with [] for missing stimuli
+        Multipliers  % a double array
     end
-       
-    properties (Dependent=true, SetAccess=immutable)
-        IsDurationFree
+    
+    properties (Dependent = true, Transient=true)
+        IsMarkedForDeletion  % a logical array
     end
 
-    properties (Dependent=true, SetAccess=immutable)
+    properties (Dependent = true, SetAccess=immutable, Transient=true)
+        IsDurationFree
         IsLive
         NBindings
     end
     
-    properties (Dependent = true, Transient=true)  % Why transient?
-        ChannelNames  % a cell array of strings
-        Stimuli  % a cell array, with [] for missing stimuli
-        Multipliers  % a double array
-        IsMarkedForDeletion  % a logical array
-    end
-    
     properties (Access = protected)
+        Name_ = ''
         ChannelNames_ = {}
-        %StimulusUUIDs_ = {}
+        IndexOfEachStimulusInLibrary_ = {}  % for each binding, the index of the stimulus (in the library) for that binding, or empty if unspecified
         Multipliers_ = []
-        Stimuli_ = {}
         Duration_ = 1  % s, internal duration, can be overridden in some circumstances
         IsMarkedForDeletion_ = logical([])
     end
@@ -75,10 +44,6 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             %end
             
             %self.UUID = rand();
-        end
-        
-        function delete(self)
-            self.Parent=[];
         end
         
         function debug(self) %#ok<MANU>
@@ -179,23 +144,34 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end
 
         function set.Stimuli(self,newValue)
-            function value = isStimulusValid(stimulus)
-                value = (isempty(stimulus) && isa(stimulus,'double')) || (isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus));
-            end
-            
-%             function uuid=uuidFromItem(item)
-%                 if isempty(item)
-%                     uuid=[];
-%                 else
-%                     uuid=item.UUID;
-%                 end
-%             end
+            % newValue a cell array of length equal to the number of
+            % bindings.  Each element either [], or a stimulus
+            % in the library
             
             if iscell(newValue) && all(size(newValue)==size(self.ChannelNames_)) ,  % can't change number of bindings
-                isValid=cellfun(@isStimulusValid,newValue);
-                if all(isValid) ,
-                    self.Stimuli_ = newValue;
-                    %self.StimulusUUIDs_ = cellfun(@uuidFromItem,newValue,'UniformOutput',false);
+                areAllElementsOfNewValueOK = true ;
+                indexOfEachStimulusInLibrary = cell(size(self.ChannelNames_)) ;
+                for i=1:numel(newValue) ,
+                    stimulus = newValue{i} ;
+                    if (isempty(stimulus) && isa(stimulus,'double')) ,
+                        indexOfEachStimulusInLibrary{i} = [] ;
+                    elseif isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus) ,
+                        indexOfThisStimulusInLibrary = self.Parent.indexOfStimulusInLibrary(stimulus) ;
+                        if isempty(indexOfThisStimulusInLibrary)
+                            % This stim is not in library
+                            areAllElementsOfNewValueOK = false ;
+                            break
+                        else
+                            indexOfEachStimulusInLibrary{i} = indexOfThisStimulusInLibrary ;
+                        end
+                    else
+                        areAllElementsOfNewValueOK = false ;
+                        break
+                    end                        
+                end  % for
+                
+                if areAllElementsOfNewValueOK ,                    
+                    self.IndexOfEachStimulusInLibrary_ = indexOfEachStimulusInLibrary ;
                 end
             end
             
@@ -206,7 +182,16 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end
         
         function output = get.Stimuli(self)
-            output = self.Stimuli_ ;
+            nBindings = numel(self.IndexOfEachStimulusInLibrary_) ;            
+            output = cell(size(self.IndexOfEachStimulusInLibrary_)) ;
+            for i = 1:nBindings ,
+                indexOfThisStimulusInLibrary = self.IndexOfEachStimulusInLibrary_{i} ;
+                if isempty(indexOfThisStimulusInLibrary) ,
+                    output{i} = [] ;
+                else                    
+                    output{i} = self.Parent.Stimuli{indexOfThisStimulusInLibrary} ;
+                end
+            end
         end
         
         function set.Multipliers(self,newValue)
@@ -314,11 +299,11 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             value=~(isSweepBased && doesStimulusUseAcquisitionTriggerScheme);
         end   % function
         
-        function set.IsDurationFree(self, newValue) %#ok<INUSD>
-            % This does nothing, and is only present so we can cause the
-            % PostSet event on the property to fire when the precursors
-            % change.
-        end   % function
+%         function set.IsDurationFree(self, newValue) %#ok<INUSD>
+%             % This does nothing, and is only present so we can cause the
+%             % PostSet event on the property to fire when the precursors
+%             % change.
+%         end   % function
 
         function [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=collectExternalInformationAboutDuration(self)
             % Collect information that determines whether we use the
@@ -376,20 +361,25 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
             
             % Check the args
-            isChannelNameOK = ischar(channelName) && (isempty(channelName) || isrow(channelName));
-            isStimulusOK = (isa(stimulus,'double') && isempty(stimulus)) || ...
-                           (isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus));
+            if isa(stimulus,'double') && isempty(stimulus) ,
+                isStimulusOK = true ;
+                indexOfThisStimulusInLibrary = [] ;
+            else
+                if isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus) ,
+                    indexOfThisStimulusInLibrary = self.Parent.indexOfStimulusInLibrary(stimulus) ;
+                    isStimulusOK = ~isempty(indexOfThisStimulusInLibrary) ;
+                else
+                    isStimulusOK = false ;
+                    indexOfThisStimulusInLibrary = [] ;  % could leave un-set, but this *feels* better
+                end
+            end
             isMultiplierOK = isnumeric(multiplier) && isscalar(multiplier);           
+            isChannelNameOK = ischar(channelName) && (isempty(channelName) || isrow(channelName));
             
             % Create the binding
             if isChannelNameOK && isStimulusOK && isMultiplierOK ,
                 self.ChannelNames_{end+1}=channelName;
-                self.Stimuli_{end+1}=stimulus;            
-%                 if isempty(stimulus) ,
-%                     self.StimulusUUIDs_{end+1} = [];
-%                 else
-%                     self.StimulusUUIDs_{end+1} = stimulus.UUID;
-%                 end
+                self.IndexOfEachStimulusInLibrary_{end+1}=indexOfThisStimulusInLibrary;            
                 self.Multipliers_(end+1)=multiplier;
                 self.IsMarkedForDeletion_(end+1)=false;
             end            
@@ -402,7 +392,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             nBindingsOriginally=length(self.ChannelNames);
             if (1<=index) && (index<=nBindingsOriginally) ,
                 self.ChannelNames_(index)=[];
-                self.Stimuli_(index)=[];
+                self.IndexOfEachStimulusInLibrary_(index)=[];
                 self.Multipliers_(index)=[];                
                 self.IsMarkedForDeletion_(index)=[];                
             end
@@ -412,7 +402,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         function deleteMarkedBindings(self)            
             isMarkedForDeletion = self.IsMarkedForDeletion ;
             self.ChannelNames_(isMarkedForDeletion)=[];
-            self.Stimuli_(isMarkedForDeletion)=[];
+            self.IndexOfEachStimulusInLibrary_(isMarkedForDeletion)=[];
             self.Multipliers_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
             self.Parent.childMayHaveChanged(self);            
@@ -657,41 +647,42 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     end  % methods
     
     methods
-        function other=copyGivenStimuli(self,otherStimulusDictionary,selfStimulusDictionary)
+        function other=copyGivenParent(self,parent)
             % Makes a "copy" of self, but where other.Stimuli_ point to
             % elements of otherStimulusDictionary.  StimulusMaps are not
             % meant to be free-standing objects, and so are not subclassed
             % from matlab.mixin.Copyable.
             
             % Do the easy part
-            other=ws.stimulus.StimulusMap();
+            other=ws.stimulus.StimulusMap(parent);
             other.Name_ = self.Name_ ;
             other.ChannelNames_ = self.ChannelNames_ ;
+            other.IndexOfEachStimulusInLibrary_ = self.IndexOfEachStimulusInLibrary_ ;
             other.Multipliers_ = self.Multipliers_ ;
             other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
             other.Duration_ = self.Duration_ ;
 
-            % re-do the bindings so that they point to corresponding
-            % elements of otherStimuli
-            nStimuli=length(self.ChannelNames);
-            other.Stimuli_ = cell(1,nStimuli);
-            %uuids=ws.most.idioms.cellArrayPropertyAsArray(selfStimuli,'UUID');
-            for j=1:nStimuli ,
-                %uuidOfThisStimulusInSelf=self.StimulusUUIDs_{j};
-                thisStimulusInSelf=self.Stimuli_{j};
-                %indexOfThisStimulusInLibrary=find(uuidOfThisStimulusInSelf==uuids);
-                if isempty(thisStimulusInSelf) ,
-                    isMatch = false(size(selfStimulusDictionary));
-                else
-                    isMatch = cellfun(@(stimulus)(stimulus==thisStimulusInSelf),selfStimulusDictionary);
-                end
-                indexOfThisStimulusInDictionary=find(isMatch,1);
-                if isempty(indexOfThisStimulusInDictionary) ,
-                    other.Stimuli_{j}=[];
-                else
-                    other.Stimuli_{j}=otherStimulusDictionary{indexOfThisStimulusInDictionary};
-                end
-            end
+%             % re-do the bindings so that they point to corresponding
+%             % elements of otherStimuli
+%             nStimuli=length(self.ChannelNames);
+%             other.Stimuli_ = cell(1,nStimuli);
+%             %uuids=ws.most.idioms.cellArrayPropertyAsArray(selfStimuli,'UUID');
+%             for j=1:nStimuli ,
+%                 %uuidOfThisStimulusInSelf=self.StimulusUUIDs_{j};
+%                 thisStimulusInSelf=self.Stimuli_{j};
+%                 %indexOfThisStimulusInLibrary=find(uuidOfThisStimulusInSelf==uuids);
+%                 if isempty(thisStimulusInSelf) ,
+%                     isMatch = false(size(selfStimulusDictionary));
+%                 else
+%                     isMatch = cellfun(@(stimulus)(stimulus==thisStimulusInSelf),selfStimulusDictionary);
+%                 end
+%                 indexOfThisStimulusInDictionary=find(isMatch,1);
+%                 if isempty(indexOfThisStimulusInDictionary) ,
+%                     other.Stimuli_{j}=[];
+%                 else
+%                     other.Stimuli_{j}=otherStimulusDictionary{indexOfThisStimulusInDictionary};
+%                 end
+%             end
         end  % function
     end  % methods
     

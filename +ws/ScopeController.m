@@ -331,8 +331,8 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 
     end  % protected methods block
     
-    properties (SetAccess=protected)
-       propBindings = struct();
-    end
+%     properties (SetAccess=protected)
+%        propBindings = struct();
+%     end
     
 end  % classdef

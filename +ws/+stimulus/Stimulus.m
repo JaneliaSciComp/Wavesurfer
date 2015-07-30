@@ -318,24 +318,8 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = struct();    
-        %mdlPropAttributes = ws.stimulus.Stimulus.propertyAttributes();        
         mdlHeaderExcludeProps = {};
     end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-%             s.Name = struct('Classes', 'char');
-%             s.Delay = struct('Classes', 'numeric', ...
-%                              'Attributes', {{'scalar', 'real', 'finite'}});
-%             s.Duration = struct('Classes', 'numeric', ...
-%                                 'Attributes', {{'scalar', 'nonnegative', 'real', 'finite'}});
-%             s.Amplitude = struct('Classes', 'char', ...
-%                                  'Attributes', {{'row'}});
-%             s.DCOffset = struct('Classes', 'numeric', ...
-%                                 'Attributes', {{'scalar', 'real', 'finite'}});
-%         end  % function
-%     end  % class methods block
     
     methods (Static)
         function output = evaluateSweepExpression(expression,sweepIndex)

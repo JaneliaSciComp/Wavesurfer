@@ -1,7 +1,7 @@
 classdef WavesurferModel < ws.Model
     % The main Wavesurfer model object.
 
-    properties (Constant = true)
+    properties (Constant = true, Transient=true)
         NFastProtocols = 6        
         LooperRPCPortNumber = 8081
         FrontendRPCPortNumber = 8082
@@ -9,22 +9,13 @@ classdef WavesurferModel < ws.Model
         DataPubSubPortNumber = 8084
     end
     
-    properties (Dependent = true, SetAccess = protected)
+    properties (Dependent = true)
         HasUserSpecifiedProtocolFileName
         AbsoluteProtocolFileName
         HasUserSpecifiedUserSettingsFileName
         AbsoluteUserSettingsFileName
-    end
-    
-    properties (Dependent=true, SetAccess = immutable)
         FastProtocols
-    end
-
-    properties (Dependent = true)
         IndexOfSelectedFastProtocol
-    end
-    
-    properties (Dependent = true, SetAccess = protected)
         Acquisition
         Stimulation
         Triggering
@@ -32,75 +23,25 @@ classdef WavesurferModel < ws.Model
         Logging
         UserFunctions
         Ephys
-    end
-    
-    properties (Dependent = true, SetAccess = protected) 
-        State
-    end
-    
-    properties (Dependent = true)
         SweepDuration  % the sweep duration, in s
-    end
-    
-    properties (Dependent = true)
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
-    end
-    
-    properties (Dependent = true)
         NSweepsPerRun  
-            % Number of sweeps to perform during run.  If in
-            % sweep-based mode, this is a pass through to the repeat count
-            % of the start trigger.  If in continuous mode, it is always 1.
-    end
-    
-    properties (Dependent=true)
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
-    end
-    
-    properties (Dependent=true)
         IsYokedToScanImage
-    end
-    
-    properties (Dependent=true)
         NTimesSamplesAcquiredCalledSinceRunStart
-    end
-
-    properties (Dependent=true, SetAccess=immutable)
         ClockAtRunStart  
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+        State
     end
-
+    
     %
     % Non-dependent props (i.e. those with storage) start here
     %
     
-    properties (Access=protected, Transient=true)
-        RPCServer_
-        LooperRPCClient_
-        RefillerRPCClient_
-        DataSubscriber_
-        ExpectedNextScanIndex_
-    end
-    
-    properties (Access = protected, Transient = true)
-        HasUserSpecifiedProtocolFileName_ = false
-        AbsoluteProtocolFileName_ = ''
-        HasUserSpecifiedUserSettingsFileName_ = false
-        AbsoluteUserSettingsFileName_ = ''
-    end
-    
     properties (Access=protected)
-        FastProtocols_ = ws.fastprotocol.FastProtocol.empty()
-    end
-    
-    properties (Access=protected, Transient=true)
-        IndexOfSelectedFastProtocol_ = []
-    end
-    
-    properties (Access = protected)
         Acquisition_
         Stimulation_
         Triggering_
@@ -108,15 +49,23 @@ classdef WavesurferModel < ws.Model
         Logging_
         UserFunctions_
         Ephys_
-    end
-    
-    properties (Access = protected)
+        FastProtocols_ = ws.fastprotocol.FastProtocol.empty()
         IsYokedToScanImage_ = false
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
     end
 
     properties (Access=protected, Transient=true)
+        RPCServer_
+        LooperRPCClient_
+        RefillerRPCClient_
+        DataSubscriber_
+        ExpectedNextScanIndex_
+        HasUserSpecifiedProtocolFileName_ = false
+        AbsoluteProtocolFileName_ = ''
+        HasUserSpecifiedUserSettingsFileName_ = false
+        AbsoluteUserSettingsFileName_ = ''
+        IndexOfSelectedFastProtocol_ = []
         State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         t_
@@ -232,7 +181,7 @@ classdef WavesurferModel < ws.Model
             
             % The object is now initialized, but not very useful until an
             % MDF is specified.
-            self.State = ws.ApplicationState.NoMDF;
+            self.setState_(ws.ApplicationState.NoMDF);
         end
         
         function delete(self) %#ok<INUSD>
@@ -310,20 +259,6 @@ classdef WavesurferModel < ws.Model
     methods
         function value=get.State(self)
             value=self.State_;
-        end  % function
-        
-        function set.State(self,newValue)
-            self.broadcast('WillSetState');
-            if isa(newValue,'ws.ApplicationState') ,
-                if self.State_ ~= newValue ,
-                    oldValue=self.State_;
-                    self.State_ = newValue;
-                    if oldValue==ws.ApplicationState.NoMDF && newValue~=ws.ApplicationState.NoMDF ,
-                        self.broadcast('DidSetStateAwayFromNoMDF');
-                    end
-                end
-            end
-            self.broadcast('DidSetState');
         end  % function
         
 %         function value=get.NextSweepIndex(self)
@@ -546,7 +481,7 @@ classdef WavesurferModel < ws.Model
             % I think the main thing we want to do here is to change the
             % Wavesurfer mode to TestPulsing
             if self.State == ws.ApplicationState.Idle ,
-                self.State = ws.ApplicationState.TestPulsing;
+                self.setState_(ws.ApplicationState.TestPulsing);
             end
         end
         
@@ -555,7 +490,7 @@ classdef WavesurferModel < ws.Model
             % it has just finished test pulsing.
             
             if self.State == ws.ApplicationState.TestPulsing ,
-                self.State = ws.ApplicationState.Idle;
+                self.setState_(ws.ApplicationState.Idle);
             end
         end  % function
         
@@ -565,7 +500,7 @@ classdef WavesurferModel < ws.Model
             % gracefully recover from.
             
             if self.State == ws.ApplicationState.TestPulsing ,
-                self.State = ws.ApplicationState.Idle;
+                self.setState_(ws.ApplicationState.Idle);
             end
         end  % function
         
@@ -679,6 +614,20 @@ classdef WavesurferModel < ws.Model
     end  % methods
     
     methods (Access = protected)
+        function setState_(self,newValue)
+            self.broadcast('WillSetState');
+            if isa(newValue,'ws.ApplicationState') ,
+                if self.State_ ~= newValue ,
+                    oldValue=self.State_;
+                    self.State_ = newValue;
+                    if oldValue==ws.ApplicationState.NoMDF && newValue~=ws.ApplicationState.NoMDF ,
+                        self.broadcast('DidSetStateAwayFromNoMDF');
+                    end
+                end
+            end
+            self.broadcast('DidSetState');
+        end  % function
+        
 %         function runWithGuards_(self)
 %             % Start a run.
 %             
@@ -747,7 +696,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Change our own state to running
-            self.State = ws.ApplicationState.Running ;
+            self.setState_(ws.ApplicationState.Running) ;
             
             % Handle timing stuff
             self.TimeOfLastWillPerformSweep_=[];
@@ -1036,7 +985,7 @@ classdef WavesurferModel < ws.Model
         function cleanUpAfterCompletedRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
-            self.State = ws.ApplicationState.Idle;
+            self.setState_(ws.ApplicationState.Idle);
             
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
@@ -1048,7 +997,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
-            self.State = ws.ApplicationState.Idle;
+            self.setState_(ws.ApplicationState.Idle);
             
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
@@ -1231,7 +1180,7 @@ classdef WavesurferModel < ws.Model
             self.Display.initializeScopes();
                         
             % Change our state to reflect the presence of the MDF file
-            self.State = ws.ApplicationState.Idle;
+            self.setState_(ws.ApplicationState.Idle);
         end  % function
     end  % methods block
         
@@ -1582,8 +1531,9 @@ classdef WavesurferModel < ws.Model
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             self.decodeProperties(wavesurferModelSettings);
-            self.AbsoluteProtocolFileName=absoluteFileName;
-            self.HasUserSpecifiedProtocolFileName=true;            
+            self.AbsoluteProtocolFileName_ = absoluteFileName ;
+            self.HasUserSpecifiedProtocolFileName_ = true ; 
+            self.broadcast('DidSetAbsoluteProtocolFileName');            
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
@@ -1602,8 +1552,9 @@ classdef WavesurferModel < ws.Model
                               'layoutForAllWindows',layoutForAllWindows, ...
                               'versionString',versionString);  %#ok<NASGU>
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
-            self.AbsoluteProtocolFileName=absoluteFileName;
-            self.HasUserSpecifiedProtocolFileName=true;
+            self.AbsoluteProtocolFileName_ = absoluteFileName ;
+            self.broadcast('DidSetAbsoluteProtocolFileName');            
+            self.HasUserSpecifiedProtocolFileName_ = true ;
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
             self.changeReadiness(+1);            
@@ -1631,8 +1582,9 @@ classdef WavesurferModel < ws.Model
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.decodeProperties(wavesurferModelSettings);
             
-            self.AbsoluteUserSettingsFileName=absoluteFileName;
-            self.HasUserSpecifiedUserSettingsFileName=true;            
+            self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
+            self.HasUserSpecifiedUserSettingsFileName_ = true ;            
+            self.broadcast('DidSetAbsoluteUserSettingsFileName');
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
             
@@ -1662,8 +1614,9 @@ classdef WavesurferModel < ws.Model
             
             %self.savePropertiesWithTag(absoluteFileName, 'usr');
             
-            self.AbsoluteUserSettingsFileName=absoluteFileName;
-            self.HasUserSpecifiedUserSettingsFileName=true;            
+            self.AbsoluteUserSettingsFileName_ = absoluteFileName;
+            self.HasUserSpecifiedUserSettingsFileName_ = true ;            
+            self.broadcast('DidSetAbsoluteUserSettingsFileName');
 
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             %self.setUserFileNameInMenu(absoluteFileName);
@@ -1675,13 +1628,13 @@ classdef WavesurferModel < ws.Model
         end  % function
     end
     
-    methods
-        function set.AbsoluteProtocolFileName(self,newValue)
-            % SetAccess is protected, no need for checks here
-            self.AbsoluteProtocolFileName=newValue;
-            self.broadcast('DidSetAbsoluteProtocolFileName');
-        end
-    end
+%     methods
+%         function set.AbsoluteProtocolFileName(self,newValue)
+%             % SetAccess is protected, no need for checks here
+%             self.AbsoluteProtocolFileName=newValue;
+%             self.broadcast('DidSetAbsoluteProtocolFileName');
+%         end
+%     end
 
     methods
         function set.AbsoluteUserSettingsFileName(self,newValue)

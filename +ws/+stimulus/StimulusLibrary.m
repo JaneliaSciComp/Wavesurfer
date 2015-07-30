@@ -1,16 +1,9 @@
 classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
-%     properties (Transient=true)
-%         Parent  % the parent Stimulation subsystem, or empty
-%     end
-
-    properties (SetAccess = protected)
+    properties (Dependent = true)
         Stimuli  % these are all cell arrays
         Maps  
         Sequences
-    end
-
-    properties (Dependent = true)
         % We store the currently selected "outputable" in the stim library
         % itself.  This seems weird at first, but the big advantage is that
         % all the UUID consistency concerns are confined to the stim
@@ -18,9 +11,6 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         % desired.
         SelectedOutputable  % The thing currently selected for output.  Can be a sequence or a map.
         %SelectedOutputableUUID  % The UUID of the thing currently selected for output.
-    end
-    
-    properties (Dependent = true)
         % This is the item currently selected in the library.  This is
         % completely orthogonal to the selected outputable.  The selected
         % outputable represents the sequence or library that will be used
@@ -32,54 +22,51 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         % "CurrentOutputable", because these things are all orthogonal to
         % the SelectedOutputable.
         SelectedStimulus
-        %SelectedStimulusUUID
         SelectedMap
-        %SelectedMapUUID
         SelectedSequence
-        %SelectedSequenceUUID
         SelectedItem
-        %SelectedItemUUID
-    end
-    
-    properties (Dependent = true)
         SelectedItemClassName
-    end
-    
-    properties (Dependent=true, SetAccess=immutable)
         IsLive
         IsEmpty
     end
     
     properties (Access = protected)
-        SelectedOutputable_  % Underlying storage for SelectedOutputable
-        SelectedItemClassName_ = ''
-        SelectedStimulus_
-        SelectedMap_
-        SelectedSequence_
+        Stimuli_  % cell array
+        Maps_  % cell array
+        Sequences_  % cell array
+        SelectedItemClassName_
+        SelectedStimulusIndex_
+        SelectedMapIndex_
+        SelectedSequenceIndex_
+        SelectedOutputableClassName_
+        SelectedOutputableIndex_  % Underlying storage for SelectedOutputable
     end
-    
-%     events
-%         MayHaveChanged
-%     end
     
     methods
         function self=StimulusLibrary(parent)
             self@ws.Model(parent);
-            self.Stimuli = {};
-            self.Maps    = {};
-            self.Sequences  = {};
+            self.Stimuli_ = cell(1,0) ;
+            self.Maps_    = cell(1,0) ;
+            self.Sequences_  = cell(1,0) ;
+            self.SelectedOutputableClassName_ = '' ;            
+            self.SelectedOutputableIndex_ = [] ;
+            self.SelectedItemClassName_ = '' ;            
+            self.SelectedStimulusIndex_ = [] ;
+            self.SelectedMapIndex_ = [] ;
+            self.SelectedSequenceIndex_ = [] ;
         end
         
         function clear(self)
             self.disableBroadcasts();
-            self.SelectedOutputable_ = [];
+            self.SelectedOutputableClassName_ = '' ;            
+            self.SelectedOutputableIndex_ = [] ;
             self.SelectedItemClassName_ = '';
-            self.SelectedStimulus_ = [];
-            self.SelectedMap_ = [];
-            self.SelectedSequence_ = [];
-            self.Sequences  = {};            
-            self.Maps    = {};
-            self.Stimuli = {};
+            self.SelectedStimulusIndex_ = [];
+            self.SelectedMapIndex_ = [];
+            self.SelectedSequenceIndex_ = [];
+            self.Sequences_  = cell(1,0) ;            
+            self.Maps_    = cell(1,0) ;
+            self.Stimuli_ = cell(1,0) ;
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end
@@ -87,6 +74,18 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         function childMayHaveChanged(self,child) %#ok<INUSD>
             self.broadcast('Update');
         end
+
+        function out = get.Sequences(self)
+            out = self.Sequences_ ;
+        end  % function
+        
+        function out = get.Maps(self)
+            out = self.Maps_ ;
+        end  % function
+        
+        function out = get.Stimuli(self)
+            out = self.Stimuli_ ;
+        end  % function
         
         function value=get.IsEmpty(self)
             value=isempty(self.Sequences)&&isempty(self.Maps)&&isempty(self.Stimuli);
@@ -294,11 +293,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         function mimic(self, other)
             % Make self into something value-equal to other, in place
             self.disableBroadcasts();
-            self.SelectedOutputable_ =[];
+            self.SelectedOutputableClassName_ = '';
+            self.SelectedOutputableIndex_ =[];
             self.SelectedItemClassName_ = '';
-            self.SelectedSequence_=[];
-            self.SelectedMap_=[];
-            self.SelectedStimulus_=[];
+            self.SelectedSequenceIndex_=[];
+            self.SelectedMapIndex_=[];
+            self.SelectedStimulusIndex_=[];
             self.Sequences={};  % clear the sequences
             self.Maps={};  % clear the maps
             self.Stimuli={};  % clear the stimuli
@@ -311,10 +311,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             
             % Make a deep copy of the maps, which needs both the old & new
             % stimuli to work properly
-            self.Maps=cellfun(@(element)(element.copyGivenStimuli(self.Stimuli,other.Stimuli)),other.Maps,'UniformOutput',false);            
-            for i=1:length(self.Maps) ,
-                self.Maps{i}.Parent=self;  % make the Parent correct
-            end
+            self.Maps=cellfun(@(element)(element.copyGivenParent(self)),other.Maps,'UniformOutput',false);            
+            %for i=1:length(self.Maps) ,
+            %    self.Maps{i}.Parent=self;  % make the Parent correct
+            %end
             
             % Make a deep copy of the sequences, which needs both the old & new
             % maps to work properly            
@@ -326,13 +326,14 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
 
             % Copy over the selected outputable, making the needed UUID
             % translation
-            self.SelectedOutputable_=other.translate(other.SelectedOutputable_,other.getOutputables(),self.getOutputables());
+            self.SelectedOutputableIndex_ = other.SelectedOutputableIndex_ ;
+            self.SelectedOutputableClassName_ = other.SelectedOutputableClassName_ ;
             % Copy over the selected item, making the needed UUID
             % translations
-            self.SelectedStimulus_=other.translate(other.SelectedStimulus_,other.Stimuli,self.Stimuli);
-            self.SelectedMap_=other.translate(other.SelectedMap_,other.Maps,self.Maps);
-            self.SelectedSequence_=other.translate(other.SelectedSequence_,other.Sequences,self.Sequences);
-            self.SelectedItemClassName_ = other.SelectedItemClassName_;
+            self.SelectedStimulusIndex_ = other.SelectedStimulusIndex_ ;
+            self.SelectedMapIndex_ = other.SelectedMapIndex_ ;
+            self.SelectedSequenceIndex_ = other.SelectedSequenceIndex_ ;
+            self.SelectedItemClassName_ = other.SelectedItemClassName_ ;
             
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
@@ -353,34 +354,40 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
 %         end  % function
 
         function value = get.SelectedOutputable(self)
-            value= self.SelectedOutputable_ ;
-%             if isempty(self.SelectedOutputableUUID_) ,
-%                 value=[];
-%             else
-%                 value=self.findItemWithUUID(self.SelectedOutputableUUID_);
-%             end
+            if isempty(self.SelectedOutputableClassName_) ,
+                value=[];  % no item is currently selected
+            elseif isequal(self.SelectedOutputableClassName_,'ws.stimulus.StimulusSequence') ,
+                value=self.Sequences{self.SelectedOutputableIndex_};
+            elseif isequal(self.SelectedOutputableClassName_,'ws.stimulus.StimulusMap') ,                
+                value=self.Maps{self.SelectedOutputableIndex_};
+            else
+                value=[];  % this is an invariant violation, but still want to return something
+            end
         end  % function
         
-        function set.SelectedOutputable(self, newOutputable)
-            if isempty(newOutputable) ,
-                self.SelectedOutputable_=[];
-            elseif isscalar(newOutputable) ,
-                if isa(newOutputable, 'ws.stimulus.StimulusSequence') ,                    
-                    if self.isSequenceInLibrary(newOutputable), 
-                        self.SelectedOutputable_=newOutputable;
-                    end
-                elseif isa(newOutputable, 'ws.stimulus.StimulusMap') ,                    
-                    if self.isMapInLibrary(newOutputable), 
-                        self.SelectedOutputable_=newOutputable;
+        function set.SelectedOutputable(self, newSelection)
+            if ws.utility.isASettableValue(newSelection) ,
+                if isempty(newSelection) ,
+                    self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
+                elseif isscalar(newSelection) ,
+                    isMatch=cellfun(@(item)(item==newSelection),self.Sequences);
+                    iMatch = find(isMatch,1) ;
+                    if ~isempty(iMatch)                    
+                        self.SelectedOutputableIndex_ = iMatch ;
+                        self.SelectedOutputableClassName_ = 'ws.stimulus.StimulusSequence' ;
+                    else
+                        isMatch=cellfun(@(item)(item==newSelection),self.Maps);
+                        iMatch = find(isMatch,1) ;
+                        if ~isempty(iMatch)
+                            self.SelectedOutputableIndex_ = iMatch ;
+                            self.SelectedOutputableClassName_ = 'ws.stimulus.StimulusMap' ;
+                        end
                     end
                 end
             end
             self.broadcast('Update');
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.didSetSelectedOutputable();
-%             end
         end  % function
-
+        
         function setSelectedOutputableByIndex(self, index)
             outputables=self.getOutputables();
             if isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
@@ -423,70 +430,58 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         end  % function
         
         function value = get.SelectedSequence(self)
-            value=self.SelectedSequence_;
+            value = self.Sequences_{self.SelectedSequenceIndex_} ;
             %value=self.findSequenceWithUUID(self.SelectedSequenceUUID_);
         end  % function
         
         function value = get.SelectedMap(self)
-            value=self.SelectedMap_;
+            value = self.Maps_{self.SelectedMapIndex_} ;
             %value=self.findMapWithUUID(self.SelectedMapUUID_);
         end  % function
         
         function value = get.SelectedStimulus(self)
-            value=self.SelectedStimulus_;
+            value=self.Stimuli{self.SelectedStimulusIndex_} ;
             %value=self.findStimulusWithUUID(self.SelectedStimulusUUID_);
         end  % function
         
-%         function set.SelectedItemUUID(self, newValue)
-%             % This does its thing by setting SelectedItem, somewhat
-%             % couterituitively.
-%             if isempty(newValue) ,
-%                 self.SelectedItem=[];
-%             else                
-%                 item=self.findItemWithUUID(newValue);            
-%                 if ~isempty(item) ,
-%                     self.SelectedItem=item;
-%                 end
-%             end
-%         end
-        
-        function set.SelectedItem(self, newSelection)
-            if isempty(newSelection) ,
-                self.SelectedItemClassName = '';  % this makes it so that no item is currently selected
-            elseif isscalar(newSelection) ,
-                items=self.getItems();
-                isMatch=cellfun(@(item)(item==newSelection),items);
-                if any(isMatch) ,
-                    if isa(newSelection,'ws.stimulus.StimulusSequence') ,
-                        self.disableBroadcasts();
-                        self.SelectedSequence=newSelection;
-                        self.SelectedItemClassName = 'ws.stimulus.StimulusSequence';
-                        self.enableBroadcastsMaybe();
-                        self.broadcast('Update');                        
-                    elseif isa(newSelection,'ws.stimulus.StimulusMap') ,
-                        self.disableBroadcasts();
-                        self.SelectedMap=newSelection;
-                        self.SelectedItemClassName = 'ws.stimulus.StimulusMap';
-                        self.enableBroadcastsMaybe();
-                        self.broadcast('Update');
+        function set.SelectedItem(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isempty(newValue) ,
+                    self.SelectedItemClassName_ = '';  % this makes it so that no item is currently selected
+                elseif isscalar(newValue) ,
+                    isMatch=cellfun(@(item)(item==newValue),self.Sequences);
+                    iMatch = find(isMatch,1) ;
+                    if ~isempty(iMatch)                    
+                        self.SelectedItemIndex_ = iMatch ;
+                        self.SelectedItemClassName_ = 'ws.stimulus.StimulusSequence' ;
                     else
-                        self.disableBroadcasts();
-                        self.SelectedStimulus=newSelection;
-                        self.SelectedItemClassName = 'ws.stimulus.Stimulus';
-                        self.enableBroadcastsMaybe();
-                        self.broadcast('Update');
+                        isMatch=cellfun(@(item)(item==newValue),self.Maps);
+                        iMatch = find(isMatch,1) ;
+                        if ~isempty(iMatch)
+                            self.SelectedItemIndex_ = iMatch ;
+                            self.SelectedItemClassName_ = 'ws.stimulus.StimulusMap' ;
+                        else
+                            isMatch=cellfun(@(item)(item==newValue),self.Stimuli);
+                            iMatch = find(isMatch,1) ;
+                            if ~isempty(iMatch)
+                                self.SelectedItemIndex_ = iMatch ;
+                                self.SelectedItemClassName_ = 'ws.stimulus.Stimulus' ;
+                            end                            
+                        end
                     end
                 end
             end
+            self.broadcast('Update');
         end  % function
 
         function set.SelectedSequence(self, newSelection)
             if isempty(newSelection) ,
-                self.SelectedSequence_=[];                
+                self.SelectedSequenceIndex_=[];                
             elseif isscalar(newSelection) ,
                 isMatch=cellfun(@(item)(item==newSelection),self.Sequences);
-                if any(isMatch) ,
-                    self.SelectedSequence_=newSelection;
+                iMatch = find(isMatch,1);
+                if ~isempty(iMatch) ,
+                    self.SelectedSequenceIndex_ = iMatch ;
                 end
             end
             self.broadcast('Update');
@@ -494,11 +489,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
 
         function set.SelectedMap(self, newSelection)
             if isempty(newSelection) ,
-                self.SelectedMap_=[];                
+                self.SelectedMapIndex_=[];                
             elseif isscalar(newSelection) ,
                 isMatch=cellfun(@(item)(item==newSelection),self.Maps);
-                if any(isMatch) ,
-                    self.SelectedMap_=newSelection;
+                iMatch = find(isMatch,1);
+                if ~isempty(iMatch) ,
+                    self.SelectedMapIndex_ = iMatch ;
                 end
             end
             self.broadcast('Update');
@@ -506,11 +502,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
 
         function set.SelectedStimulus(self, newSelection)
             if isempty(newSelection) ,
-                self.SelectedStimulus_=[];                
+                self.SelectedStimulusIndex_=[];                
             elseif isscalar(newSelection) ,
                 isMatch=cellfun(@(item)(item==newSelection),self.Stimuli);
-                if any(isMatch) ,
-                    self.SelectedStimulus_ = newSelection;
+                iMatch = find(isMatch,1);
+                if ~isempty(iMatch) ,
+                    self.SelectedStimulusIndex_ = iMatch ;
                 end
             end
             self.broadcast('Update');
@@ -663,16 +660,26 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             end
         end  % function
         
-        function out = stimulusWithName(self, name)
-            validateattributes(name, {'char'}, {});
-            
+%         function out = stimulusWithName(self, name)
+%             validateattributes(name, {'char'}, {});
+%             
+%             stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli,'UniformOutput',false);
+%             idx = find(strcmp(name, stimulusNames), 1);
+%             
+%             if isempty(idx)
+%                 out = {};
+%             else
+%                 out = self.Stimuli{idx};
+%             end
+%         end  % function
+
+        function out = indexOfStimulusWithName(self, name)
             stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli,'UniformOutput',false);
-            idx = find(strcmp(name, stimulusNames), 1);
-            
+            idx = find(strcmp(name, stimulusNames), 1);            
             if isempty(idx)
-                out = {};
+                out = [] ;
             else
-                out = self.Stimuli{idx};
+                out = idx ;
             end
         end  % function
         

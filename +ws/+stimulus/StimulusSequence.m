@@ -11,10 +11,6 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         UUID  % a unique id so that things can be re-linked after loading from disk
 %     end
     
-    properties (Dependent = true, SetAccess = immutable)
-        MapDurations
-    end
-
     properties (Dependent=true)
         Name
         Maps  % the items in the sequence
@@ -22,6 +18,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     end      
     
     properties (Dependent=true, SetAccess=immutable)
+        MapDurations
         IsLive
     end      
     
