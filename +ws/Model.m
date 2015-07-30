@@ -1,9 +1,11 @@
-classdef Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
-    properties (Dependent=true, SetAccess=immutable, Transient=true)
+classdef (Abstract) Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
+    properties (Dependent = true, SetAccess=immutable, Transient=true)
+        Parent  
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
     end
     
-    properties (Access=protected, Transient=true)
+    properties (Access = protected, Transient=true)
+        Parent_
         DegreeOfReadiness_ = 1
     end
 
@@ -13,11 +15,22 @@ classdef Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
     end
     
     methods
-        function self = Model(varargin)
+        function self = Model(parent,varargin)
             self@ws.most.Model(varargin{:});
-            %self@ws.mixin.Coding();
-            %self@ws.EventBroadcaster();
+            self.Parent_ = parent ;
         end  % function
+        
+        function delete(self)
+            self.Parent_ = [] ;  % likely not needed
+        end
+        
+%         function out = get.Parent(self)
+%             out = self.Parent_ ;
+%         end
+
+%         function set.Parent(self, newValue)
+%             self.setParent_(newValue) ;
+%         end
         
         function isValid=isPropertyArgumentValid(self, propertyName, newValue)
             % Function to check if a property value is valid.  Differs from
@@ -70,6 +83,20 @@ classdef Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
     end  % methods block    
     
     methods (Access = protected)
+%         function setParent_(self, newValue)
+%             if ws.utility.isASettableValue(newValue) ,
+%                 if isempty(newValue) ,
+%                     self.Parent_ = [] ;
+%                 elseif isscalar(newValue) && isa(newValue,'ws.Model') ,
+%                     self.Parent_ = newValue ;
+%                 else
+%                     error('most:Model:invalidPropVal', ...
+%                           'Parent must be empty or be a scalar ws.Model') ;
+%                 end
+%             end
+%             self.broadcast('Update');                       
+%         end
+        
         function defineDefaultPropertyTags(self)
             % These are all hidden, but the way ws.Coding now works, they
             % would nevertheless be including in cfg & usr files.  So we

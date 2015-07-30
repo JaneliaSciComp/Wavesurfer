@@ -55,10 +55,9 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                 return
             end
             
-            display=self.Model.Parent;
-            display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=true;
-%             self.showFigureForReals();
-%             self.broadcast('ScopeVisibilitySetDirectlyByScopeController');
+            self.Model.IsVisibleWhenDisplayEnabled = true ;
+            %display=self.Model.Parent;
+            %display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=true;
         end
         
         function hideFigure(self)
@@ -79,10 +78,9 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                 return
             end
             
-            display=self.Model.Parent;
-            display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=false;
-%             self.hideFigureForReals();
-%             self.broadcast('ScopeVisibilitySetDirectlyByScopeController');
+            self.Model.IsVisibleWhenDisplayEnabled = false ;
+%             display=self.Model.Parent;
+%             display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=false;
         end
         
         function showFigureForReals_(self)
@@ -133,16 +131,24 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             if isempty(self.Model.Parent) || ~isvalid(self.Model.Parent) ,
                 return
             end
+%             display=self.Model.Parent;
+%             iScope=find(display.Scopes==self.Model);
+%             if isscalar(iScope) ,
+%                 shouldBeVisible=(display.IsEnabled && display.Scopes{iScope}.IsVisibleWhenDisplayEnabled);
+%                 if shouldBeVisible ,
+%                     self.showFigureForReals_();
+%                 else
+%                     self.hideFigureForReals_();
+%                 end
+%             end
+            
             display=self.Model.Parent;
-            iScope=find(display.Scopes==self.Model);
-            if isscalar(iScope) ,
-                shouldBeVisible=(display.IsEnabled && display.Scopes(iScope).IsVisibleWhenDisplayEnabled);
-                if shouldBeVisible ,
-                    self.showFigureForReals_();
-                else
-                    self.hideFigureForReals_();
-                end
-            end            
+            shouldBeVisible=(display.IsEnabled && self.Model.IsVisibleWhenDisplayEnabled);
+            if shouldBeVisible ,
+                self.showFigureForReals_();
+            else
+                self.hideFigureForReals_();
+            end
         end  % method
         
         function didSetXLimInView(self,varargin)

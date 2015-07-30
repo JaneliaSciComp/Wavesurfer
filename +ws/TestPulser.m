@@ -1,6 +1,6 @@
 classdef TestPulser < ws.Model 
     properties (Dependent=true)  % do we need *so* many public properties?
-        Parent
+        %Parent
         Electrode
         ElectrodeName
         Amplitude  % a DoubleString, in units of the electrode command channel
@@ -91,7 +91,7 @@ classdef TestPulser < ws.Model
     end
     
     properties  (Access=protected, Transient=true)
-        Parent_  % an Ephys object
+        %Parent_  % an Ephys object
         Electrode_  % the current electrode, or empty if there isn't one.  We persist ElectrodeName_, not this.  
         IsRunning_
         UpdateRate_
@@ -130,8 +130,9 @@ classdef TestPulser < ws.Model
     end
     
     methods
-        function self = TestPulser(varargin)
+        function self = TestPulser(parent,varargin)
             % Process args
+            self@ws.Model(parent);
             validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
             pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
@@ -230,15 +231,15 @@ classdef TestPulser < ws.Model
             self.Parent_=[];  % not necessary, but harmless
         end
         
-        function value=get.Parent(self)
-            value=self.Parent_;
-        end
-
-        function set.Parent(self,newValue)
-            if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
-                self.Parent_=newValue;
-            end
-        end
+%         function value=get.Parent(self)
+%             value=self.Parent_;
+%         end
+% 
+%         function set.Parent(self,newValue)
+%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%                 self.Parent_=newValue;
+%             end
+%         end
         
 %         function value = get.IsReady(self)
 %             value = self.IsReady_ ;

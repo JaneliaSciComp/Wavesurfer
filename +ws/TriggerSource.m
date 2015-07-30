@@ -1,4 +1,4 @@
-classdef TriggerSource < ws.Model & ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
+classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
     % This class represents a trigger source, i.e. an internally-generated
     % trigger output.  A trigger source has a device (e.g. 'Dev1'), a
     % counter (the index of the NI DAQmx counter), an inter-trigger
@@ -9,9 +9,9 @@ classdef TriggerSource < ws.Model & ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Het
         IsInternal = true
     end
     
-    properties (Transient=true)
-        Parent  % the parent Triggering object
-    end
+%     properties (Transient=true)
+%         Parent  % the parent Triggering object
+%     end
     
     properties (Dependent=true)
         Name
@@ -68,8 +68,8 @@ classdef TriggerSource < ws.Model & ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Het
 %     end
     
     methods
-        function self = TriggerSource()
-            %self=self@ws.Source([],[]);
+        function self = TriggerSource(parent)
+            self=self@ws.Model(parent);
             self.Name_='TriggerSource';
             self.RepeatCount_=1;
             self.DeviceName_ = 'Dev1';

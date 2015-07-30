@@ -1,8 +1,8 @@
 classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
-    properties (Transient=true)
-        Parent  % the parent Stimulation subsystem, or empty
-    end
+%     properties (Transient=true)
+%         Parent  % the parent Stimulation subsystem, or empty
+%     end
 
     properties (SetAccess = protected)
         Stimuli  % these are all cell arrays
@@ -64,10 +64,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
     
     methods
         function self=StimulusLibrary(parent)
-            if ~exist('parent','var') ,
-                parent=[];
-            end
-            self.Parent = parent;
+            self@ws.Model(parent);
             self.Stimuli = {};
             self.Maps    = {};
             self.Sequences  = {};

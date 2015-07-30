@@ -13,9 +13,9 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
 %         UUID  % a unique id so that things can be re-linked after loading from disk
 %     end
     
-    properties
-        Parent  % the parent StimulusLibrary, or empty
-    end
+%     properties
+%         Parent  % the parent StimulusLibrary, or empty
+%     end
     
     % Invariant: All the values in Delay, Duration, Amplitude, DCOffset and
     % the subclass parameter properties are s.t.
@@ -57,9 +57,10 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     end
     
     methods
-        function self = Stimulus(varargin)
+        function self = Stimulus(parent,varargin)
+            self@ws.Model(parent) ;
             self.Delegate_ = ws.stimulus.SquarePulseStimulusDelegate(self);  
-            pvArgs = ws.most.util.filterPVArgs(varargin, { 'Parent', 'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
+            pvArgs = ws.most.util.filterPVArgs(varargin, { 'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
             for idx = 1:length(vals)
@@ -69,10 +70,6 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             %    error('wavesurfer:stimulusMustHaveParent','A stimulus has to have a parent StimulusLibrary');
             %end
             %self.UUID = rand();
-        end
-        
-        function delete(self)
-            self.Parent=[];
         end
         
         function set.Name(self,newValue)
@@ -297,7 +294,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     
     methods 
         function other = copy(self)
-            other=ws.stimulus.Stimulus();
+            other=ws.stimulus.Stimulus([]);
             
             % leave Parent empty
             other.Name_ = self.Name_ ;

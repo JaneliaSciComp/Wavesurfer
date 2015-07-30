@@ -1,7 +1,7 @@
 classdef Electrode < ws.Model & ws.Mimic 
     
     properties (Access=protected)
-        Parent_   % the parent ElectrodeManager object, or empty
+        %Parent_   % the parent ElectrodeManager object, or empty
         Name_
         VoltageMonitorChannelName_
         CurrentMonitorChannelName_
@@ -21,8 +21,8 @@ classdef Electrode < ws.Model & ws.Mimic
         IsCommandEnabled_
     end
 
-    properties (Dependent=true)  % Hidden so not calc'ed on call to disp()
-        Parent
+    properties (Dependent=true)
+        %Parent
         Name
         VoltageMonitorChannelName
         CurrentMonitorChannelName
@@ -58,9 +58,9 @@ classdef Electrode < ws.Model & ws.Mimic
     end
     
     methods        
-        function self=Electrode(varargin)
+        function self=Electrode(parent,varargin)
             % Set the defaults
-            self.Parent_ = [];
+            self@ws.Model(parent);
             self.Name_ = '';
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';
@@ -98,9 +98,9 @@ classdef Electrode < ws.Model & ws.Mimic
             self.mayHaveChanged();
         end  % function
         
-        function out = get.Parent(self)
-            out=self.Parent_;
-        end  % function
+%         function out = get.Parent(self)
+%             out=self.Parent_;
+%         end  % function
         
         function out = get.Name(self)
             out=self.Name_;
@@ -126,12 +126,12 @@ classdef Electrode < ws.Model & ws.Mimic
             out=self.Mode_;
         end  % function
 
-        function set.Parent(self,newValue)
-            if isa(newValue,'ws.ElectrodeManager')
-                self.Parent_=newValue;
-            end
-            self.mayHaveChanged('Parent');
-        end  % function
+%         function set.Parent(self,newValue)
+%             if isa(newValue,'ws.ElectrodeManager')
+%                 self.Parent_=newValue;
+%             end
+%             self.mayHaveChanged('Parent');
+%         end  % function
         
         function set.Name(self,newValue)
             if ischar(newValue)

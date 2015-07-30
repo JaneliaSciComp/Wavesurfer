@@ -25,10 +25,10 @@ classdef Ephys < ws.system.Subsystem
     methods
         %%
         function self = Ephys(parent)
+            self@ws.system.Subsystem(parent);
             self.IsEnabled=true;            
-            self.Parent=parent;
-            self.ElectrodeManager_=ws.ElectrodeManager('Parent',self);
-            self.TestPulser_=ws.TestPulser('Parent',self);
+            self.ElectrodeManager_=ws.ElectrodeManager(self);
+            self.TestPulser_=ws.TestPulser(self);
         end
         
         %%

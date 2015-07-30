@@ -28,8 +28,8 @@ classdef UserFunctions < ws.system.Subsystem
     
     methods
         function self = UserFunctions(parent)
+            self@ws.system.Subsystem(parent) ;
             self.IsEnabled=true;            
-            self.Parent=parent;
         end  % function
 
         function result = get.ClassName(self)

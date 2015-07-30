@@ -1252,8 +1252,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
             
             % Make that change
-            originalState=self.Model.Display.Scopes(scopeIndex).IsVisibleWhenDisplayEnabled;
-            self.Model.Display.Scopes(scopeIndex).IsVisibleWhenDisplayEnabled=~originalState;
+            originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
+            self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
             % should automatically uopdate now
         end        
     end
@@ -1295,7 +1295,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             nScopes=self.Model.Display.NScopes;
             for iScope=1:nScopes ,
-                scopeModel=self.Model.Display.Scopes(iScope);
+                scopeModel=self.Model.Display.Scopes{iScope};
                 self.createChildControllerIfNonexistant('ScopeController',scopeModel);                
             end
         end

@@ -167,6 +167,8 @@ classdef WavesurferModel < ws.Model
     
     methods
         function self = WavesurferModel()
+            self@ws.Model([]);  % WavesurferModel has no parent
+            
             % Set up the communication sockets
             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
             self.RPCServer_.setDelegate(self) ;
@@ -188,7 +190,7 @@ classdef WavesurferModel < ws.Model
             self.DataSubscriber_.connect() ;
             
             % Initialize the fast protocols
-            self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
+            self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol(self);    
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems.

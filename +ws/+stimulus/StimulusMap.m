@@ -17,9 +17,9 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %         UUID  % a unique id so that things can be re-linked after loading from disk
 %     end
     
-    properties
-        Parent  % the parent StimulusLibrary.  Invariant: Must be a scalar ws.stimulus.StimulusLibrary.  (E.g. cannot be empty)
-    end
+%     properties
+%         Parent  % the parent StimulusLibrary.  Invariant: Must be a scalar ws.stimulus.StimulusLibrary.  (E.g. cannot be empty)
+%     end
     
     properties (Dependent=true)
         Name
@@ -59,8 +59,9 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     end
     
     methods
-        function self = StimulusMap(varargin)
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Parent', 'Name', 'Duration'}, {});
+        function self = StimulusMap(parent,varargin)
+            self@ws.Model(parent);
+            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name', 'Duration'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -84,17 +85,17 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             keyboard
         end
         
-        function set.Parent(self, newParent)
-            if isa(newParent,'ws.most.util.Nonvalue'), return, end            
-            %self.validatePropArg('Parent', newParent);
-            if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
-                if isempty(newParent) ,
-                    self.Parent=[];
-                else
-                    self.Parent=newParent;
-                end
-            end            
-        end  % function
+%         function set.Parent(self, newParent)
+%             if isa(newParent,'ws.most.util.Nonvalue'), return, end            
+%             %self.validatePropArg('Parent', newParent);
+%             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
+%                 if isempty(newParent) ,
+%                     self.Parent=[];
+%                 else
+%                     self.Parent=newParent;
+%                 end
+%             end            
+%         end  % function
         
         function set.Name(self,newValue)
             if ischar(newValue) && isrow(newValue) && ~isempty(newValue) ,

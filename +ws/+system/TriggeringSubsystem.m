@@ -114,12 +114,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     methods
         function source = addNewTriggerSource(self)
-            source = ws.TriggerSource();
+            source = ws.TriggerSource(self);
             self.Sources_{end + 1} = source;
         end  % function
                 
         function destination = addNewTriggerDestination(self)
-            destination = ws.TriggerDestination();
+            destination = ws.TriggerDestination(self);
             self.Destinations_{end + 1} = destination;
         end  % function
                         

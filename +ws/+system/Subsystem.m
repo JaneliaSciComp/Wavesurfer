@@ -5,14 +5,9 @@ classdef (Abstract) Subsystem < ws.Model
     %   (no-op) implementations for each API method and property.
     
     properties (Dependent = true)
-        Parent  
         IsEnabled
     end
     
-    properties (Access = protected, Transient=true)
-        Parent_  % must be set in subclass constructor
-    end
-
     properties (Access = protected)
         IsEnabled_ = false
     end
@@ -23,17 +18,9 @@ classdef (Abstract) Subsystem < ws.Model
     
     methods
         function self = Subsystem(parent)
-            self.Parent_ = parent ;
+            self@ws.Model(parent) ;
         end
-        
-        function delete(self)
-            self.Parent_ = [] ;  % likely not needed
-        end
-        
-        function out = get.Parent(self)
-            out = self.Parent_ ;
-        end
-        
+                
         function out = get.IsEnabled(self)
             out = self.getIsEnabledImplementation();
             % out = self.IsIsEnabled_ && self.CanEnable;

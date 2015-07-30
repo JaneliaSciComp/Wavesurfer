@@ -1,7 +1,7 @@
 classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
-    properties (Access = protected, Transient=true)
-        Parent_  % the parent Ephys object
-    end    
+%     properties (Access = protected, Transient=true)
+%         Parent_  % the parent Ephys object
+%     end    
     
     properties (Access = protected)
         Electrodes_ = cell(1,0);  % row vector of electrodes
@@ -35,7 +35,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
     end
     
     properties (Dependent=true)
-        Parent  % public access to parent property
+        %Parent  % public access to parent property
         IsElectrodeMarkedForTestPulse  % provides public access to IsElectrodeMarkedForTestPulse_; settable as long as you don't change its shape
         IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
         AreSoftpanelsEnabled
@@ -47,8 +47,9 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %     end
 
     methods
-        function self = ElectrodeManager(varargin)
+        function self = ElectrodeManager(parent,varargin)
             % General initialization
+            self@ws.Model(parent);
             self.EPCMasterSocket_=ws.EPCMasterSocket();
             self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket();
             self.AreSoftpanelsEnabled_=true;
@@ -133,15 +134,15 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             self.broadcast('Update');
         end
         
-        function out=get.Parent(self)
-            out=self.Parent_;
-        end
-        
-        function set.Parent(self,newValue)
-            if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
-                self.Parent_=newValue;
-            end
-        end
+%         function out=get.Parent(self)
+%             out=self.Parent_;
+%         end
+%         
+%         function set.Parent(self,newValue)
+%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%                 self.Parent_=newValue;
+%             end
+%         end
         
         function out=get.AreSoftpanelsEnabled(self)
             out=self.AreSoftpanelsEnabled_;

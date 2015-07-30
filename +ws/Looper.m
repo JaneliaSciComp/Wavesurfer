@@ -130,6 +130,7 @@ classdef Looper < ws.Model
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
+            self@ws.Model([]);  % no parent
             
             % Set up sockets
             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;

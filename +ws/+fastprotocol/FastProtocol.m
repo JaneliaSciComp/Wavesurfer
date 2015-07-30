@@ -16,7 +16,8 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
     end
     
     methods
-        function self=FastProtocol(protocolFileName,autoStartType)
+        function self=FastProtocol(parent,protocolFileName,autoStartType)
+            self@ws.Model(parent) ;
             if exist('protocolFileName','var') ,
                 self.ProtocolFileName=protocolFileName;
             end

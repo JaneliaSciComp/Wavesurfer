@@ -3,9 +3,9 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     % Note that StimulusSequences should only ever
     % exist as an item in a StimulusLibrary!
     
-    properties
-        Parent  % the parent StimulusLibrary, or empty
-    end
+%     properties
+%         Parent  % the parent StimulusLibrary, or empty
+%     end
     
 %     properties (SetAccess = protected, Hidden = true)
 %         UUID  % a unique id so that things can be re-linked after loading from disk
@@ -32,8 +32,9 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     end    
     
     methods
-        function self = StimulusSequence(varargin)
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Parent' 'Name'}, {});
+        function self = StimulusSequence(parent,varargin)
+            self@ws.Model(parent);
+            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -56,17 +57,17 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             val = numel(self.Maps);
 %         end  % function
         
-        function set.Parent(self, newParent)
-            if isa(newParent,'ws.most.util.Nonvalue'), return, end            
-            %self.validatePropArg('Parent', newParent);
-            if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
-                if isempty(newParent) ,
-                    self.Parent=[];
-                else
-                    self.Parent=newParent;
-                end
-            end            
-        end  % function
+%         function set.Parent(self, newParent)
+%             if isa(newParent,'ws.most.util.Nonvalue'), return, end            
+%             %self.validatePropArg('Parent', newParent);
+%             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
+%                 if isempty(newParent) ,
+%                     self.Parent=[];
+%                 else
+%                     self.Parent=newParent;
+%                 end
+%             end            
+%         end  % function
 
         function val = get.MapDurations(self)
             val=cellfun(@(map)(map.Duration),self.Maps);
@@ -387,7 +388,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     methods
         function other=copyGivenMaps(self,otherMapDictionary,selfMapDictionary)
-            other = ws.stimulus.StimulusSequence() ;
+            other = ws.stimulus.StimulusSequence([]) ;
             other.Name_ = self.Name_ ;
             other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
 

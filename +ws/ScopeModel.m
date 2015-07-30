@@ -1,32 +1,4 @@
 classdef ScopeModel < ws.Model     % & ws.EventBroadcaster 
-%     properties (Constant=true)
-%         BackgroundColor = [0 0 0];
-%         ForegroundColor = [.15 .9 .15];
-%         FontSize = 10;
-%         FontWeight = 'normal';
-%         LineStyle = '-';
-%         Marker = 'none';
-%         %GridOn = true
-%     end
-
-    properties (Dependent=true, SetAccess=protected)
-        Parent  % the parent Display object
-          % this is SetAccess=protected for historical reasons
-          % would be nice to change it to immutable at some point
-    end
-    
-    properties (Dependent=true, SetAccess=immutable)
-        Tag        % This should be a unique tag that identifies this ScopeModel.
-                   % This is used as the Tag for any ScopeFigure that uses
-                   % this ScopeModel as its model, and should be usable as
-                   % a field name in a structure, for saving/loading
-                   % purposes.
-        ChannelNames   % row vector, the channel names shown in this scope
-        ChannelColorIndex  
-        NChannels
-        XData
-        YData
-    end
     
     properties (Dependent=true)  %(SetObservable = true)
         Title        % This is the window title used by any ScopeFigures that use this
@@ -42,9 +14,6 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         IsGridOn
         AreColorsNormal        
         DoShowButtons
-    end
-
-    properties (Dependent=true, Transient=true)  % not sure this needs to be transient, since it's dependent...
         IsVisibleWhenDisplayEnabled
           % Indicates whether scope is visible when the Display subsystem
           % is enabled.  If display subsystem is disabled, the scopes are
@@ -58,20 +27,19 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
           % things are stored, not confuse them by having some aspects of
           % window visibilty stored in .usr, and some in .cfg.
     end
-    
-    properties (Access = protected, Transient=true)
-        Parent_
-        XData_  % a double array, holding x data for each channel
-        YData_ = cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
-          % Invariant: For all i,j length(YData{i})==length(YData{j})        
-        BufferFactor_ = 1
-        RunningMin_ = zeros(1,0)  % length == self.NChannels
-        RunningMax_ = zeros(1,0)
-        RunningMean_ = zeros(1,0)
-        IsVisibleWhenDisplayEnabled_  
-          % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
-          % "layout" part of the .cfg file.  Long-term, would be cleaner to
-          % store it here, it seems to me.
+
+    properties (Dependent=true, SetAccess=immutable)
+        %Parent  % the parent Display object
+        Tag        % This should be a unique tag that identifies this ScopeModel.
+                   % This is used as the Tag for any ScopeFigure that uses
+                   % this ScopeModel as its model, and should be usable as
+                   % a field name in a structure, for saving/loading
+                   % purposes.
+        ChannelNames   % row vector, the channel names shown in this scope
+        ChannelColorIndex  
+        NChannels
+        XData
+        YData
     end
     
     properties (Access = protected)
@@ -95,6 +63,21 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
         DoShowButtons_ = true % if false, don't show buttons in the figure
     end
+
+    properties (Access = protected, Transient=true)
+        %Parent_
+        XData_  % a double array, holding x data for each channel
+        YData_ = cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
+          % Invariant: For all i,j length(YData{i})==length(YData{j})        
+        BufferFactor_ = 1
+        RunningMin_ = zeros(1,0)  % length == self.NChannels
+        RunningMax_ = zeros(1,0)
+        RunningMean_ = zeros(1,0)
+        IsVisibleWhenDisplayEnabled_  
+          % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
+          % "layout" part of the .cfg file.  Long-term, would be cleaner to
+          % store it here, it seems to me.
+    end
     
     events
         ChannelAdded
@@ -107,11 +90,12 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
     end  % events
     
     methods
-        function self = ScopeModel(varargin)
+        function self = ScopeModel(parent,varargin)
             % Creates a ScopeModel object.  The 'Tag' property is
             % required.  In almost all cases, the 'WavesurferModel' property
             % should also be specified, although occasionally it is useful
             % to leave it out while debugging or testing.
+            self@ws.Model(parent);
             
             self.IsVisibleWhenDisplayEnabled_=true;
             %
@@ -149,13 +133,13 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
     end  % methods
     
     methods
-        function set.Parent(self, newValue)
-            self.Parent_ = newValue;
-        end
+%         function set.Parent(self, newValue)
+%             self.Parent_ = newValue;
+%         end
         
-        function result = get.Parent(self)
-            result = self.Parent_ ;
-        end
+%         function result = get.Parent(self)
+%             result = self.Parent_ ;
+%         end
         
         function set.Title(self, newValue)            
             self.Title_ = newValue ;
