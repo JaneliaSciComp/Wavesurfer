@@ -2,15 +2,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     % Represents a sequence of stimulus maps, to be used in sequence.
     % Note that StimulusSequences should only ever
     % exist as an item in a StimulusLibrary!
-    
-%     properties
-%         Parent  % the parent StimulusLibrary, or empty
-%     end
-    
-%     properties (SetAccess = protected, Hidden = true)
-%         UUID  % a unique id so that things can be re-linked after loading from disk
-%     end
-    
+        
     properties (Dependent=true)
         Name
         Maps  % the items in the sequence
@@ -24,7 +16,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     properties (Access = protected)
         Name_ = ''
-        Maps_ = {}
+        IndexOfEachMapInLibrary_ = {}
         IsMarkedForDeletion_ = logical([])
     end    
     
@@ -99,7 +91,17 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function out = get.Maps(self)
-            out = self.Maps_ ;
+            allMaps = self.Parent.Maps ;
+            indexOfEachMapInLibrary = self.IndexOfEachMapInLibrary_ ;
+            out = cell(size(indexOfEachMapInLibrary)) ;
+            for i=1:length(out)
+                indexOfThisMapInLibrary = indexOfEachMapInLibrary{i} ;
+                if isempty(indexOfThisMapInLibrary) ,
+                    out{i} = [] ;
+                else
+                    out{i} = allMaps{indexOfThisMapInLibrary} ;
+                end
+            end
         end   % function
         
 %         function set.Maps(self, newValue)
@@ -136,7 +138,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         end   % function
         
         function set.IsMarkedForDeletion(self,newValue)
-            if islogical(newValue) && isequal(size(newValue),size(self.Maps_)) ,  % can't change number of elements
+            if islogical(newValue) && isequal(size(newValue),size(self.IndexOfEachMapInLibrary_)) ,  % can't change number of elements
                 self.IsMarkedForDeletion_ = newValue;
             end
             % notify the powers that be
@@ -149,27 +151,37 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             output = self.IsMarkedForDeletion_ ;
         end
         
-        function out = containsMaps(self, mapOrMaps)
-            maps=ws.most.idioms.cellifyIfNeeded(mapOrMaps);
-            out = false(size(maps));
-            
-            if isempty(maps)
-                return
-            end
-            
-            validateattributes(maps, {'cell'}, {'vector'});
-            for i = 1:numel(maps) ,                
-                validateattributes(maps{i}, {'ws.stimulus.StimulusMap'}, {'scalar'});
-            end
-            
-            for index = 1:numel(maps)
-                thisElement=maps{index};
-                isMatch=cellfun(@(item)(item==thisElement),self.Maps_);
-                if any(isMatch) ,
-                    out(index) = true;
-                end
+        function out = containsMap(self, queryMap)
+            if isa(queryMap,'ws.stimulus.StimulusMap') && isscalar(queryMap) ,
+                maps = self.Maps ;
+                isMatch=cellfun(@(item)(item==queryMap),maps);
+                out = any(isMatch) ;
+            else
+                out = false ;
             end
         end   % function
+        
+%         function out = containsMaps(self, mapOrMaps)
+%             maps=ws.most.idioms.cellifyIfNeeded(mapOrMaps);
+%             out = false(size(maps));
+%             
+%             if isempty(maps)
+%                 return
+%             end
+%             
+%             validateattributes(maps, {'cell'}, {'vector'});
+%             for i = 1:numel(maps) ,                
+%                 validateattributes(maps{i}, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             end
+%             
+%             for index = 1:numel(maps)
+%                 thisElement=maps{index};
+%                 isMatch=cellfun(@(item)(item==thisElement),self.Maps_);
+%                 if any(isMatch) ,
+%                     out(index) = true;
+%                 end
+%             end
+%         end   % function
         
         function value=isLiveAndSelfConsistent(self)
             value=false(size(self));
@@ -179,9 +191,9 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end
 
         function addMap(self, map)
-            validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
-            if ~isempty(self.Parent) && ~isempty(map.Parent) && (map.Parent==self.Parent) ,  % map must be a member of same library
-                self.Maps_{end + 1} = map;
+            indexOfMapInLibrary = self.Parent.indexOfMapInLibrary(map) ;
+            if ~isempty(indexOfMapInLibrary) ,
+                self.IndexOfEachMapInLibrary_{end + 1} = indexOfMapInLibrary;
                 self.IsMarkedForDeletion_(end+1) = false ;
             end
             if ~isempty(self.Parent) ,
@@ -189,13 +201,12 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             end
         end   % function
 
-        function setMap(self, index, map)
-            nMaps = length(self.Maps_) ;            
-            if 1<=index && index<=nMaps && round(index)==index ,
-                if isa(map,'ws.stimulus.StimulusMap') && isscalar(map) ,
-                    if ~isempty(self.Parent) && ~isempty(map.Parent) && (map.Parent==self.Parent) ,  % map must be a member of same library
-                        self.Maps_{index} = map ;
-                    end
+        function setMap(self, indexWithinSequence, newMap)
+            nMaps = length(self.IndexOfEachMapInLibrary_) ;
+            if 1<=indexWithinSequence && indexWithinSequence<=nMaps && round(indexWithinSequence)==indexWithinSequence ,
+                indexOfNewMapInLibrary = self.Parent.indexOfMapInLibrary(newMap) ;
+                if ~isempty(indexOfNewMapInLibrary) ,
+                    self.IndexOfEachMapInLibrary_{indexWithinSequence} = indexOfNewMapInLibrary ;
                 end
             end
             if ~isempty(self.Parent) ,
@@ -217,11 +228,11 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             end
 %         end   % function
         
-        function deleteMap(self, index)
-            nMaps = numel(self.Maps_) ;
-            if 1<=index && index<=nMaps && index==round(index) ,
-                self.Maps_(index) = [];
-                self.IsMarkedForDeletion_(index) = [];
+        function deleteMap(self, indexOfMapInSequence)
+            nMaps = numel(self.IndexOfEachMapInLibrary_) ;
+            if 1<=indexOfMapInSequence && indexOfMapInSequence<=nMaps && indexOfMapInSequence==round(indexOfMapInSequence) ,
+                self.IndexOfEachMapInLibrary_(indexOfMapInSequence) = [];
+                self.IsMarkedForDeletion_(indexOfMapInSequence) = [];
             end
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
@@ -230,7 +241,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 
         function deleteMarkedMaps(self)
             isMarkedForDeletion = self.IsMarkedForDeletion ;
-            self.Maps_(isMarkedForDeletion)=[];
+            self.IndexOfEachMapInLibrary_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
@@ -384,24 +395,25 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     end  % methods
     
     methods
-        function other=copyGivenMaps(self,otherMapDictionary,selfMapDictionary)
-            other = ws.stimulus.StimulusSequence([]) ;
+        function other = copyGivenParent(self,parent)
+            other = ws.stimulus.StimulusSequence(parent) ;
             other.Name_ = self.Name_ ;
             other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
-
-            nMaps=length(self.Maps_);
-            other.Maps_ = cell(1,nMaps);
-            for j=1:nMaps ,
-                thisMapInSelf=self.Maps_{j};
-                isMatch=cellfun(@(map)(map==thisMapInSelf),selfMapDictionary);
-                indexOfThisMapInDictionary=find(isMatch,1);
-                if isempty(indexOfThisMapInDictionary) ,                    
-                    other.Maps_{j}=[];  % note that this doesn't delete the element, but sets the cell contents to []
-                else
-                    other.Maps_{j}=otherMapDictionary{indexOfThisMapInDictionary};
-                end
-            end
-        end
+            other.IndexOfEachMapInLibrary_ = self.IndexOfEachMapInLibrary_ ;            
+            
+%             nMaps=length(self.Maps_);
+%             other.Maps_ = cell(1,nMaps);
+%             for j=1:nMaps ,
+%                 thisMapInSelf=self.Maps_{j};
+%                 isMatch=cellfun(@(map)(map==thisMapInSelf),selfMapDictionary);
+%                 indexOfThisMapInDictionary=find(isMatch,1);
+%                 if isempty(indexOfThisMapInDictionary) ,                    
+%                     other.Maps_{j}=[];  % note that this doesn't delete the element, but sets the cell contents to []
+%                 else
+%                     other.Maps_{j}=otherMapDictionary{indexOfThisMapInDictionary};
+%                 end
+%             end
+        end  % function
     end
     
 %     methods (Access=protected)

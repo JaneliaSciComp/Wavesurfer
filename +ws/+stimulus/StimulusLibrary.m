@@ -319,10 +319,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             % Make a deep copy of the sequences, which needs both the old & new
             % maps to work properly            
             %self.Sequences=other.Sequences.copyGivenMaps(self.Maps,other.Maps);
-            self.Sequences=cellfun(@(element)(element.copyGivenMaps(self.Maps,other.Maps)),other.Sequences,'UniformOutput',false);                        
-            for i=1:length(self.Sequences) ,
-                self.Sequences{i}.Parent=self;  % make the Parent correct
-            end
+            self.Sequences=cellfun(@(element)(element.copyGivenParent(self)),other.Sequences,'UniformOutput',false);                        
+            %for i=1:length(self.Sequences) ,
+            %    self.Sequences{i}.Parent=self;  % make the Parent correct
+            %end
 
             % Copy over the selected outputable, making the needed UUID
             % translation
@@ -1085,7 +1085,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                     % as it is one of them.
                     for cdx = 1:numel(self.Sequences)
                         sequence=self.Sequences{cdx};
-                        if any(sequence.containsMaps(item))
+                        if sequence.containsMap(item) ,
                             out(idx) = true;
                             break;
                         end
