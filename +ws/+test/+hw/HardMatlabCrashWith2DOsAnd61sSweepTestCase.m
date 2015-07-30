@@ -25,10 +25,10 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            %wsModel.Logging.Enabled=false;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=1;

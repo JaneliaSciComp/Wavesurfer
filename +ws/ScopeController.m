@@ -19,7 +19,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             %self.Figure.subscribeMe(self,'XLim','PostSet','didSetXLimInView');
             display=scopeModel.Parent;
             if ~isempty(display) ,
-                display.subscribeMe(self,'DidSetEnabled','','displayEnablementMayHaveChanged');
+                display.subscribeMe(self,'DidSetIsEnabled','','displayEnablementMayHaveChanged');
             end
             scopeFigure=self.Figure;
 %             scopeFigure.subscribeMe(self,'PostSet','XLim','didSetXLimInView');           
@@ -136,7 +136,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             display=self.Model.Parent;
             iScope=find(display.Scopes==self.Model);
             if isscalar(iScope) ,
-                shouldBeVisible=(display.Enabled && display.Scopes(iScope).IsVisibleWhenDisplayEnabled);
+                shouldBeVisible=(display.IsEnabled && display.Scopes(iScope).IsVisibleWhenDisplayEnabled);
                 if shouldBeVisible ,
                     self.showFigureForReals_();
                 else

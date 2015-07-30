@@ -25,10 +25,10 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            %wsModel.Logging.Enabled=true;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
             nSweeps=10;
             wsModel.NSweepsPerRun=nSweeps;
@@ -72,10 +72,10 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %                                               isCommandLineOnly);
 % 
 %             wsModel.Acquisition.SampleRate=20000;  % Hz
-%             wsModel.Stimulation.Enabled=true;
+%             wsModel.Stimulation.IsEnabled=true;
 %             wsModel.Stimulation.SampleRate=20000;  % Hz
-%             wsModel.Display.Enabled=true;
-%             wsModel.Logging.Enabled=true;
+%             wsModel.Display.IsEnabled=true;
+%             wsModel.Logging.IsEnabled=true;
 % 
 %             nSweeps=10;
 %             wsModel.NSweepsPerRun=nSweeps;

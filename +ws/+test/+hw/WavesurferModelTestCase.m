@@ -25,7 +25,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Enable stimulation subsystem
-            model.Stimulation.Enabled=true;
+            model.Stimulation.IsEnabled=true;
 
             % Make a too-large pulse stimulus, add to the stimulus library
             pulse=model.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -121,7 +121,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
-            em.Stimulation.Enabled=true;
+            em.Stimulation.IsEnabled=true;
             
             % Set the Stimulation source
             em.Stimulation.StimulusLibrary.SelectedOutputable=em.Stimulation.StimulusLibrary.Sequences{2};
@@ -153,7 +153,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             
             % Set the Stimulation source
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=wsModel.Stimulation.StimulusLibrary.Sequences{2};
@@ -252,10 +252,10 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'Acquisition.SampleRate' 19979};
             settings(end+1,:)={'Acquisition.Duration' 2.17};
             
-            settings(end+1,:)={'Stimulation.Enabled' true};
+            settings(end+1,:)={'Stimulation.IsEnabled' true};
             settings(end+1,:)={'Stimulation.SampleRate' 18979};
             
-            settings(end+1,:)={'Display.Enabled' true};
+            settings(end+1,:)={'Display.IsEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
             settings(end+1,:)={'Display.UpdateRate' 9};
             settings(end+1,:)={'Display.IsXSpanSlavedToAcquistionDuration' false};

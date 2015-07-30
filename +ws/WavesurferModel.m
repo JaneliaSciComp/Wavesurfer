@@ -277,13 +277,13 @@ classdef WavesurferModel < ws.Model
         
         function play(self)
             % Start a run without recording data to disk.
-            self.Logging.Enabled = false ;
+            self.Logging.IsEnabled = false ;
             self.run_() ;
         end  % function
         
         function record(self)
             % Start a run, recording data to disk.
-            self.Logging.Enabled = true ;
+            self.Logging.IsEnabled = true ;
             self.run_() ;
         end  % function
 
@@ -595,7 +595,7 @@ classdef WavesurferModel < ws.Model
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            if self.Stimulation.Enabled ,
+            if self.Stimulation.IsEnabled ,
                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
                     % acq and stim trig sources are identical
                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
@@ -725,7 +725,7 @@ classdef WavesurferModel < ws.Model
               % do this now so that the data file header has the right value
             try
                 for idx = 1: numel(self.Subsystems_) ,
-                    if self.Subsystems_{idx}.Enabled ,
+                    if self.Subsystems_{idx}.IsEnabled ,
                         self.Subsystems_{idx}.willPerformRun();
                     end
                 end
@@ -804,7 +804,7 @@ classdef WavesurferModel < ws.Model
             % Call willPerformSweep() on all the enabled subsystems
             try
                 for idx = 1:numel(self.Subsystems_)
-                    if self.Subsystems_{idx}.Enabled ,
+                    if self.Subsystems_{idx}.IsEnabled ,
                         self.Subsystems_{idx}.willPerformSweep();
                     end
                 end
@@ -879,7 +879,7 @@ classdef WavesurferModel < ws.Model
             
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.Enabled
+                if self.Subsystems_{idx}.IsEnabled
                     self.Subsystems_{idx}.didCompleteSweep();
                 end
             end
@@ -900,7 +900,7 @@ classdef WavesurferModel < ws.Model
 %             
 %             % Daisy-chain another sweep, or wrap up the run,
 %             % depending
-%             if self.Stimulation.Enabled ,
+%             if self.Stimulation.IsEnabled ,
 %                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
 %                     if self.Triggering.AcquisitionTriggerScheme.IsExternal ,
 %                         % stim, acq are both external
@@ -987,7 +987,7 @@ classdef WavesurferModel < ws.Model
             % 'problem', meaning some problem occured.
             
             for i = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{i}.Enabled ,
+                if self.Subsystems_{i}.IsEnabled ,
                     try 
                         self.Subsystems_{i}.didAbortSweep();
                     catch me
@@ -1014,7 +1014,7 @@ classdef WavesurferModel < ws.Model
 %             end
 %             
 %             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
-%                 if self.Subsystems_{idx}.Enabled ,
+%                 if self.Subsystems_{idx}.IsEnabled ,
 %                     try 
 %                         self.Subsystems_{idx}.didAbortSweep();
 %                     catch me
@@ -1037,7 +1037,7 @@ classdef WavesurferModel < ws.Model
             self.State = ws.ApplicationState.Idle;
             
             for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.Enabled
+                if self.Subsystems_{idx}.IsEnabled
                     self.Subsystems_{idx}.didCompleteRun();
                 end
             end
@@ -1049,7 +1049,7 @@ classdef WavesurferModel < ws.Model
             self.State = ws.ApplicationState.Idle;
             
             for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.Enabled ,
+                if self.Subsystems_{idx}.IsEnabled ,
                     self.Subsystems_{idx}.didAbortRun() ;
                 end
             end
@@ -1102,7 +1102,7 @@ classdef WavesurferModel < ws.Model
                 t = self.t_;
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
-                    if self.Subsystems_{idx}.Enabled ,
+                    if self.Subsystems_{idx}.IsEnabled ,
                         self.Subsystems_{idx}.dataIsAvailable(isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
                     end
                     %T(idx)=toc;
@@ -1358,7 +1358,7 @@ classdef WavesurferModel < ws.Model
             %fprintf(fid,'Edge type| %s\n',edgeTypeString);
             fprintf(fid,'Index of first acq in set| %d\n',iFirstAcqInSet);
             fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
-            fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
+            fprintf(fid,'Logging enabled| %d\n',self.Logging.IsEnabled);
             fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextRunAbsoluteFileName);
             fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
             fclose(fid);

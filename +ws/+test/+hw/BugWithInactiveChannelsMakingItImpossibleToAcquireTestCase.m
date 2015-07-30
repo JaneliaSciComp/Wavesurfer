@@ -26,10 +26,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Acquisition.IsAnalogChannelActive = [true true false true true true true false];
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            %wsModel.Logging.Enabled=false;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -60,10 +60,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %                                               isCommandLineOnly);
 % 
 %             wsModel.Acquisition.SampleRate=20000;  % Hz
-%             wsModel.Stimulation.Enabled=true;
+%             wsModel.Stimulation.IsEnabled=true;
 %             wsModel.Stimulation.SampleRate=20000;  % Hz
-%             wsModel.Display.Enabled=true;
-%             wsModel.Logging.Enabled=true;
+%             wsModel.Display.IsEnabled=true;
+%             wsModel.Logging.IsEnabled=true;
 % 
 %             nSweeps=10;
 %             wsModel.NSweepsPerRun=nSweeps;

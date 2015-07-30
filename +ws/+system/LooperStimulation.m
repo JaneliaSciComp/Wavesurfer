@@ -79,10 +79,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
     
     methods
         function self = LooperStimulation(parent)
-            if ~exist('parent','var') ,
-                parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
-            end
-            self.Parent=parent;
+            self@ws.StimulationSubsystem(parent) ;
 %             nChannels=length(self.AnalogChannelNames);
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
@@ -382,11 +379,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
                 % Set up the untimed channels
-                self.syncTasksToChannelMembership_();
-                
-                % Finally, mark outselves as enable-able
-                nChannels = length(mdfStructure.physicalOutputChannelNames) ;
-                self.CanEnable = (nChannels>0);
+                self.syncTasksToChannelMembership_();                
             end
         end  % function
 

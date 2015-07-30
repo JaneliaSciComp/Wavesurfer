@@ -28,8 +28,7 @@ classdef UserFunctions < ws.system.Subsystem
     
     methods
         function self = UserFunctions(parent)
-            self.CanEnable=true;
-            self.Enabled=true;            
+            self.IsEnabled=true;            
             self.Parent=parent;
         end  % function
 

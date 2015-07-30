@@ -62,7 +62,6 @@ classdef Logging < ws.system.Subsystem
     
     methods
         function self = Logging(parent)
-            self.CanEnable=true;
             self.Parent=parent;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
@@ -633,7 +632,7 @@ classdef Logging < ws.system.Subsystem
 %             % blank slate, so that we're sure no aspects of the old
 %             % protocol get carried over when loading a new .cfg file.
 %             
-%             self.Enabled=true;
+%             self.IsEnabled=true;
 %             self.FileBaseName='untitled';
 %             self.FileLocation='C:\Data';
 %             self.NextSweepIndex=1;

@@ -35,9 +35,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     methods
         function self = TriggeringSubsystem(parent)
-            self.CanEnable = true ;
-            self.Enabled = true ;
-            self.Parent = parent ;
+            self@ws.system.Subsystem(parent) ;            
+            self.IsEnabled = true ;
             self.Sources_ = cell(0,1) ;
             self.Destinations_ = cell(0,1) ;       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
@@ -45,10 +44,6 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.StimulationTriggerSchemeIndex_ = [] ;
         end  % function
                         
-        function delete(self)
-            self.Parent = [] ;
-        end  % function
-                
         function out = get.Destinations(self)
             out = self.Destinations_;
         end  % function

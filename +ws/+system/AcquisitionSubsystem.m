@@ -87,11 +87,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     
     methods
         function self = AcquisitionSubsystem(parent)
-            self.Parent=parent;
-        end
-        
-        function delete(self)
-            self.Parent=[];
+            self@ws.system.Subsystem(parent) ;
         end
         
         function result = get.AnalogPhysicalChannelNames(self)

@@ -382,11 +382,7 @@ classdef RefillerStimulation < ws.system.Subsystem   % & ws.mixin.DependentPrope
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
                 % Set up the untimed channels
-                self.syncTasksToChannelMembership_();
-                
-                % Finally, mark outselves as enable-able
-                nChannels = length(mdfStructure.physicalOutputChannelNames) ;
-                self.CanEnable = (nChannels>0);
+                self.syncTasksToChannelMembership_();                
             end
         end  % function
 

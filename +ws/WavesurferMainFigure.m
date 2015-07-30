@@ -140,19 +140,19 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 
                model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
                
-               model.Stimulation.subscribeMe(self,'DidSetEnabled','','update');               
+               model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
                model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
                
                model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
-               model.Display.subscribeMe(self,'DidSetEnabled','','update');
+               model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
                model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'DidSetIsXSpanSlavedToAcquistionDuration','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
-               model.Logging.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');
+               model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
                %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
@@ -1057,11 +1057,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 %             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             
 %             % Need to handle stim.CanEnable
-%             s.Stimulation.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
+%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
 %             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
 %             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
 %             
-%             s.Display.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
+%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
 %             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
@@ -1079,12 +1079,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
             
             % Stimulation panel (most of it)
-            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.Enabled);
+            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
             set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
             set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
             
             % Display panel
-            set(self.DisplayEnabledCheckbox, 'Value', model.Display.Enabled);
+            set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
@@ -1095,11 +1095,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));            
-            set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Sweep:','Next Sweep:'));
+            set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
             %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
             %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
-            if ~isIdle&&model.Logging.Enabled ,
+            if ~isIdle&&model.Logging.IsEnabled ,
                 set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
             else
                 set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
@@ -1203,7 +1203,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-            set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.Enabled));
+            set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             set(self.ChannelsMenuItem,'Enable',onIff(isIdle));
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
@@ -1234,8 +1234,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
             
             % Stimulation controls
-            isStimulationEnableable = model.Stimulation.CanEnable ;
-            isStimulusEnabled=model.Stimulation.Enabled;
+            %isStimulationEnableable = model.Stimulation.CanEnable ;
+            isStimulationEnableable = true ;
+            isStimulusEnabled=model.Stimulation.IsEnabled;
             stimulusLibrary=model.Stimulation.StimulusLibrary;            
             isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
             set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
@@ -1308,7 +1309,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Set the enablement of the Scopes menu item
             isIdle=(model.State == ws.ApplicationState.Idle);
-            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.Enabled));
+            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             
             % Set the Visibility of the Remove item in the Scope submenu
             set(removeItem,'Visible',onIff(model.Display.NScopes>0));
@@ -1359,7 +1360,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             isIdle=(model.State == ws.ApplicationState.Idle);            
 
-            isDisplayEnabled=model.Display.Enabled;
+            isDisplayEnabled=model.Display.IsEnabled;
             set(self.DisplayEnabledCheckbox,'Enable',onIff(isIdle));
             set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~model.Display.IsAutoRate));
             %set(self.AutomaticRate,'Enable',onIff(isIdle && isDisplayEnabled));
@@ -1386,7 +1387,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
             isIdle=(model.State == ws.ApplicationState.Idle);
 
-            %isLoggingEnabled=model.Logging.Enabled;
+            %isLoggingEnabled=model.Logging.IsEnabled;
             %isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',onIff(isIdle));
             doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;

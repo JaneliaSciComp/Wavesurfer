@@ -559,7 +559,7 @@ classdef Looper < ws.Model
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            if self.Stimulation.Enabled ,
+            if self.Stimulation.IsEnabled ,
                 if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
                     % acq and stim trig sources are identical
                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
@@ -671,7 +671,7 @@ classdef Looper < ws.Model
             % Tell all the subsystems to prepare for the run
             try
                 for idx = 1:numel(self.Subsystems_) ,
-                    if self.Subsystems_{idx}.Enabled ,
+                    if self.Subsystems_{idx}.IsEnabled ,
                         self.Subsystems_{idx}.willPerformRun();
                     end
                 end
@@ -736,7 +736,7 @@ classdef Looper < ws.Model
             % start the counter timer tasks
             try
                 for i = 1:numel(self.Subsystems_) ,
-                    if self.Subsystems_{i}.Enabled ,
+                    if self.Subsystems_{i}.IsEnabled ,
                         self.Subsystems_{i}.willPerformSweep();
                     end
                 end
@@ -789,7 +789,7 @@ classdef Looper < ws.Model
             
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.Enabled
+                if self.Subsystems_{idx}.IsEnabled
                     self.Subsystems_{idx}.didCompleteSweep();
                 end
             end
@@ -811,7 +811,7 @@ classdef Looper < ws.Model
             self.IsPerformingSweep_ = false ;
 
             for i = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{i}.Enabled ,
+                if self.Subsystems_{i}.IsEnabled ,
                     try 
                         self.Subsystems_{i}.didAbortSweep();
                     catch me
@@ -834,7 +834,7 @@ classdef Looper < ws.Model
             self.IsPerformingRun_ = false ;
             
             for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.Enabled
+                if self.Subsystems_{idx}.IsEnabled
                     self.Subsystems_{idx}.didCompleteRun();
                 end
             end
@@ -846,7 +846,7 @@ classdef Looper < ws.Model
             self.IsPerformingRun_ = false ;
             
             for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.Enabled ,
+                if self.Subsystems_{idx}.IsEnabled ,
                     self.Subsystems_{idx}.didAbortRun() ;
                 end
             end
@@ -884,7 +884,7 @@ classdef Looper < ws.Model
                 t = self.t_;
                 for idx = 1: numel(self.Subsystems_) ,
                     %tic
-                    if self.Subsystems_{idx}.Enabled ,
+                    if self.Subsystems_{idx}.IsEnabled ,
                         self.Subsystems_{idx}.dataIsAvailable(isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
                     end
                     %T(idx)=toc;
@@ -1056,7 +1056,7 @@ classdef Looper < ws.Model
 %             %fprintf(fid,'Edge type| %s\n',edgeTypeString);
 %             fprintf(fid,'Index of first acq in set| %d\n',iFirstAcqInSet);
 %             fprintf(fid,'Number of acqs in set| %d\n',nAcqsInSet);
-%             fprintf(fid,'Logging enabled| %d\n',self.Logging.Enabled);
+%             fprintf(fid,'Logging enabled| %d\n',self.Logging.IsEnabled);
 %             fprintf(fid,'Wavesurfer data file name| %s\n',self.Logging.NextRunAbsoluteFileName);
 %             fprintf(fid,'Wavesurfer data file base name| %s\n',self.Logging.AugmentedBaseName);
 %             fclose(fid);

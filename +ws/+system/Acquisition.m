@@ -52,8 +52,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
                 self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
                 
-                self.CanEnable = true;
-                self.Enabled = true;
+                self.IsEnabled = true;
             end
         end  % function
         

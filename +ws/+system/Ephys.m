@@ -25,8 +25,7 @@ classdef Ephys < ws.system.Subsystem
     methods
         %%
         function self = Ephys(parent)
-            self.CanEnable=true;
-            self.Enabled=true;            
+            self.IsEnabled=true;            
             self.Parent=parent;
             self.ElectrodeManager_=ws.ElectrodeManager('Parent',self);
             self.TestPulser_=ws.TestPulser('Parent',self);
@@ -217,7 +216,7 @@ classdef Ephys < ws.system.Subsystem
 %             % to return the protocol properties stored in the model to a
 %             % blank slate, so that we're sure no aspects of the old
 %             % protocol get carried over when loading a new .cfg file.            
-% %             self.Enabled=false;  % this doesn't seem right...
+% %             self.IsEnabled=false;  % this doesn't seem right...
 % %             self.TestPulser_=ws.TestPulser('Parent',self);
 % %             self.ElectrodeManager_.resetProtocol();
 %         end  % function

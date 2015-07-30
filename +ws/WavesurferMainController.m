@@ -427,7 +427,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             if isempty(self.Model.Display) || ~isvalid(self.Model.Display),
 %                 return
 %             end
-%             if self.Model.Display.Enabled ,
+%             if self.Model.Display.IsEnabled ,
 %                 nScopes=length(self.ScopeControllers);
 %                 if self.Model.Display.NScopes ~= nScopes ,
 %                     % something's not right...
@@ -900,7 +900,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                                                          'Target', 'WavesurferWindow.AreSweepsFiniteDuration');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'AreSweepsContinuous', ...
 %                                                          'Target', 'WavesurferWindow.AreSweepsContinuous');
-% %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.Enabled', ...
+% %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.IsEnabled', ...
 % %                                                          'Target', 'WavesurferWindow.AcqEnabled');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.SampleRate', ...
 %                                                          'Target', 'WavesurferWindow.AcqSampleRate');
@@ -910,16 +910,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                                                          'Target', 'WavesurferWindow.StimEnabled', ...
 %                                                          'TargetProperty', 'IsEnabled', ...
 %                                                          'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.Enabled', 'Target', 'WavesurferWindow.StimEnabled');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.IsEnabled', 'Target', 'WavesurferWindow.StimEnabled');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.SampleRate', 'Target', 'WavesurferWindow.StimSampleRate');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.DoRepeatSequence', 'Target', 'WavesurferWindow.StimRepeat');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.Enabled', 'Target', 'WavesurferWindow.DisplayEnabled');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.IsEnabled', 'Target', 'WavesurferWindow.DisplayEnabled');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.UpdateRate', 'Target', 'WavesurferWindow.DisplayUpdateRate');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.XSpan', 'Target', 'WavesurferWindow.DisplayWindow');
 %             %bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.IsAutoRate', 'Target', 'WavesurferWindow.AutomaticRate');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.IsXSpanSlavedToAcquistionDuration', ...
 %                                                          'Target', 'WavesurferWindow.AutomaticWindow');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.Enabled', 'Target', 'WavesurferWindow.LoggingEnabled');
+%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.IsEnabled', 'Target', 'WavesurferWindow.LoggingEnabled');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.FileBaseName', 'Target', 'WavesurferWindow.LogFileName');
 %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.FileLocation', ...
 %                                                          'Target', 'WavesurferWindow.LogFileLocation', ...
@@ -1190,7 +1190,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %             
 %             % Set the enablement of the Scopes submenu            
-%             scopesMenu.IsEnabled = (self.Model.Display.NScopes>0) && self.Model.Display.Enabled;
+%             scopesMenu.IsEnabled = (self.Model.Display.NScopes>0) && self.Model.Display.IsEnabled;
 %             
 %             % Set the Visibility of the Remove item in the Scope submenu
 %             if self.Model.Display.NScopes>0 ,
@@ -1364,7 +1364,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             
 %             % Tools Menu
 %             set(figureObject.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-%             set(figureObject.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.Enabled));
+%             set(figureObject.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
 %             set(figureObject.ChannelsMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.TriggersMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
@@ -1395,7 +1395,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             set(figureObject.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
 %             
 %             % Stimulation controls
-%             isStimulusEnabled=model.Stimulation.Enabled;
+%             isStimulusEnabled=model.Stimulation.IsEnabled;
 %             stimulusLibrary=model.Stimulation.StimulusLibrary;            
 %             isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
 %             set(figureObject.StimulationEnabledCheckbox,'Enable',onIff(isIdle));
@@ -1449,7 +1449,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
 %         function tellScopeControllersThatDisplayEnablementWasSet(self)
 %             % This has to be done in a well-defined order, so we don't
-%             % just have the scope controllers listen on Display.Enabled
+%             % just have the scope controllers listen on Display.IsEnabled
 %             % directly.
 %             for i=1:length(self.ScopeControllers) ,
 %                 scopeController=self.ScopeControllers{i};
@@ -2024,11 +2024,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             
 %             % Need to handle stim.CanEnable
-%             s.Stimulation.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
+%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
 %             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
 %             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
 %             
-%             s.Display.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
+%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
 %             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});

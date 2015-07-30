@@ -82,12 +82,11 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
 
     methods
         function self = Display(parent)
-            self.CanEnable=true;
             self.Parent=parent;  % the parent WavesurferModel object
-            %self.Enabled=false;
+            %self.IsEnabled=false;
             %self.addlistener('Enabled', 'PostSet', @self.enabledWasSet);
                 % We now handle this by overriding the implementation of
-                % set.Enabled
+                % set.IsEnabled
             self.XOffset_ = 0;  % s
             self.XSpan_ = 1;  % s
             self.UpdateRate_ = 10;  % Hz
