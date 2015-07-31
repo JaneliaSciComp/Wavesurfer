@@ -270,7 +270,7 @@ classdef ScopeModel < ws.Model
         function set.XOffset(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.XOffset_ = newValue;
-                %self.XLim=ws.most.util.Nonvalue.The;
+                %self.XLim=nan.The;
             end
             self.broadcast('Update');
         end
@@ -282,7 +282,7 @@ classdef ScopeModel < ws.Model
         function set.XSpan(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                 self.XSpan_ = newValue ;
-                %self.XLim=ws.most.util.Nonvalue.The;
+                %self.XLim=nan.The;
             end
             self.broadcast('Update');
         end

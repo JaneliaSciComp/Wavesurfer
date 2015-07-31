@@ -414,9 +414,9 @@ classdef Looper < ws.Model
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
                 self.Triggering.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
-                self.AreSweepsContinuous=ws.most.util.Nonvalue.The;
-                self.NSweepsPerRun=ws.most.util.Nonvalue.The;
-                self.SweepDuration=ws.most.util.Nonvalue.The;
+                self.AreSweepsContinuous=nan.The;
+                self.NSweepsPerRun=nan.The;
+                self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
                 self.Triggering.didSetAreSweepsFiniteDuration();
             end
@@ -613,7 +613,7 @@ classdef Looper < ws.Model
         end
         
         function didSetAcquisitionDuration(self)
-            self.SweepDuration=ws.most.util.Nonvalue.The;  % this will cause the WavesurferMainFigure to update
+            self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
             self.Triggering.didSetAcquisitionDuration();
             self.Display.didSetAcquisitionDuration();
         end        

@@ -236,7 +236,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         end
         
 %         function set.TriggerScheme(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('TriggerScheme', value);
 %             self.TriggerScheme_ = value;
 %         end
@@ -246,7 +246,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %         end
 
         function set.TriggerScheme(self, value)
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
+            if ~ws.utility.isASettableValue(value), return, end            
             self.validatePropArg('TriggerScheme', value);
             %self.TriggerScheme = value;
             self.Parent.Triggering.StimulationTriggerScheme = value ;

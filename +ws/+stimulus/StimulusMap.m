@@ -51,7 +51,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end
         
 %         function set.Parent(self, newParent)
-%             if isa(newParent,'ws.most.util.Nonvalue'), return, end            
+%             if isa(newParent,'nan'), return, end            
 %             %self.validatePropArg('Parent', newParent);
 %             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
 %                 if isempty(newParent) ,
@@ -88,8 +88,8 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end   % function
 
 %         function durationPrecursorMayHaveChanged(self,varargin)
-%             self.Duration=ws.most.util.Nonvalue.The;  % a code to do no setting, but cause the post-set event to fire
-%             self.IsDurationFree=ws.most.util.Nonvalue.The;  % cause the post-set event to fire
+%             self.Duration=nan.The;  % a code to do no setting, but cause the post-set event to fire
+%             self.IsDurationFree=nan.The;  % cause the post-set event to fire
 %         end
         
         function set.ChannelNames(self,newValue)
@@ -246,7 +246,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function set.Duration(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
+            if ws.utility.isASettableValue(newValue), return, end            
             self.validatePropArg('Duration', newValue);
             try
                 % See if we can collect all the information we need to make

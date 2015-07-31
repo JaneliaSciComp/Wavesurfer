@@ -89,7 +89,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         end
         
         function set.Name(self, value)
-            if isa(value,'ws.most.util.Nonvalue') , 
+            if ~ws.utility.isASettableValue(value) , 
                 return
             end
             self.validatePropArg('Name', value);
@@ -130,7 +130,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             ws.TriggerSource.validateRepeatCount(newValue);
             self.RepeatCountOverride_ = newValue;
             self.IsRepeatCountOverridden_=true;
-            self.RepeatCount=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+            self.RepeatCount=nan.The;  % just to cause set listeners to fire
         end
         
         function releaseRepeatCount(self)
@@ -138,7 +138,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             %dbstack
             self.IsRepeatCountOverridden_=false;
             self.RepeatCountOverride_ = [];  % for tidiness
-            self.RepeatCount=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+            self.RepeatCount=nan.The;  % just to cause set listeners to fire
         end
         
     end
@@ -179,7 +179,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             self.validatePropArg('Interval', newValue);            
             self.IntervalOverride_ = newValue;
             self.IsIntervalOverridden_=true;
-            self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+            self.Interval=nan.The;  % just to cause set listeners to fire
         end
         
         function releaseInterval(self)
@@ -187,20 +187,20 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             %dbstack
             self.IsIntervalOverridden_=false;
             self.IntervalOverride_ = [];  % for tidiness
-            self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+            self.Interval=nan.The;  % just to cause set listeners to fire
         end
 
 %         function placeLowerLimitOnInterval(self,newValue)
 %             self.validatePropArg('Interval', newValue);            
 %             self.IntervalLowerLimit_ = newValue;
 %             self.IsIntervalLimited_=true;
-%             self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+%             self.Interval=nan.The;  % just to cause set listeners to fire
 %         end
 %         
 %         function releaseLowerLimitOnInterval(self)
 %             self.IsIntervalLimited_=false;
 %             self.IntervalLowerLimit_ = [];  % for tidiness
-%             self.Interval=ws.most.util.Nonvalue.The;  % just to cause set listeners to fire
+%             self.Interval=nan.The;  % just to cause set listeners to fire
 %         end        
     end  % public methods block
     
@@ -232,7 +232,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         end
         
         function set.DeviceName(self, value)
-            if isa(value,'ws.most.util.Nonvalue') , 
+            if ~ws.utility.isASettableValue(value) , 
                 return
             end
             self.validatePropArg('DeviceName', value);
@@ -240,7 +240,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         end
         
         function set.CounterID(self, value)
-            if isa(value,'ws.most.util.Nonvalue') , 
+            if ~ws.utility.isASettableValue(value) , 
                 return
             end
             self.validatePropArg('CounterID', value);
@@ -263,7 +263,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %         end  % function
         
         function set.PFIID(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue') ,
+            if ~ws.utility.isASettableValue(newValue) ,
                 return
             end
             self.validatePropArg('PFIID', newValue);
@@ -279,7 +279,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %         end  % function
         
         function set.Edge(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue') ,
+            if ~ws.utility.isASettableValue(newValue) ,
                 return
             end
             self.validatePropArg('Edge', newValue);

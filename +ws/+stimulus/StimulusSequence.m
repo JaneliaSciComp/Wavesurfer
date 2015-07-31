@@ -47,7 +47,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         end  % function
         
 %         function set.Parent(self, newParent)
-%             if isa(newParent,'ws.most.util.Nonvalue'), return, end            
+%             if isa(newParent,'nan'), return, end            
 %             %self.validatePropArg('Parent', newParent);
 %             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
 %                 if isempty(newParent) ,

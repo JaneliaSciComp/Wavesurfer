@@ -40,7 +40,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
 %         function set.Period(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('Period', value);
 %             self.Period = value;
 %             %self.notify('DurationChanged');
@@ -58,7 +58,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
 
 %         function set.PulseDuration(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('PulseDuration', value);
 %             self.PulseDuration = value;
 %             %self.notify('DurationChanged');

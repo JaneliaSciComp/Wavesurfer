@@ -241,7 +241,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
         end
         
 %         function set.TriggerScheme(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('TriggerScheme', value);
 %             self.TriggerScheme_ = value;
 %         end
@@ -251,7 +251,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
 %         end
 
         function set.TriggerScheme(self, value)
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
+            if ~ws.utility.isASettableValue(value), return, end            
             self.validatePropArg('TriggerScheme', value);
             %self.TriggerScheme = value;
             self.Parent.Triggering.StimulationTriggerScheme = value ;

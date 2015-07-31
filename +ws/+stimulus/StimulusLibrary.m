@@ -393,7 +393,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             if isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
                 outputable=outputables{index};
             else
-                outputable=ws.most.util.Nonvalue.The;
+                outputable=nan.The;
             end
             self.SelectedOutputable=outputable;
         end  % function

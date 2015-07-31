@@ -41,7 +41,7 @@ classdef SineStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
 %         function set.Frequency(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('Frequency', value);
 %             self.Frequency = value;
 %         end

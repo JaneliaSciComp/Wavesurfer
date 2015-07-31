@@ -336,7 +336,7 @@ classdef Controller < ws.most.Controller
             % Do object.(propertyName)=newValue, but catch any
             % most:Model:invalidPropVal exception generated.  If that
             % exception is generated, set the property to
-            % ws.most.util.Nonvalue.The, which will (if the model is as it
+            % nan.The, which will (if the model is as it
             % should be) fire whatever events are normally fired when the
             % property is changed, without actually changing the model.
             % This should cause any dependent views to be updated to
@@ -347,7 +347,7 @@ classdef Controller < ws.most.Controller
                 if isequal(exception.identifier,'most:Model:invalidPropVal') ,
                     % Do a set to the special value designed only to cause
                     % the model to broadcast an Update event.
-                    object.(propertyName)=ws.most.util.Nonvalue.The;
+                    object.(propertyName)=nan.The;
                 else
                     rethrow(exception);
                 end
