@@ -880,9 +880,9 @@ classdef Coding < handle
                 else
                     encoding=thing;
                 end
-            elseif isa(thing,'ws.utility.DoubleString') && isequal(fileType,'header') ,
-                % For header, just convert DoubleStrings to doubles
-                encoding=double(thing);
+%             elseif isa(thing,'ws.utility.DoubleString') && isequal(fileType,'header') ,
+%                 % For header, just convert DoubleStrings to doubles
+%                 encoding=double(thing);
             elseif isa(thing, 'ws.mixin.Coding') ,
                 encoding = thing.encodeForFileType(fileType);
             elseif iscell(thing) ,

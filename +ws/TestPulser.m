@@ -3,7 +3,7 @@ classdef TestPulser < ws.Model
         %Parent
         Electrode
         ElectrodeName
-        Amplitude  % a DoubleString, in units of the electrode command channel
+        Amplitude  % a double, in units of the electrode command channel
         PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline
         IsAutoY
@@ -385,7 +385,8 @@ classdef TestPulser < ws.Model
         
         function value=get.Amplitude(self)
             if isempty(self.Electrode_)
-                value=ws.utility.DoubleString('');
+                %value=ws.utility.DoubleString('');
+                value=nan;
             else
                 value=self.Electrode_.TestPulseAmplitude;
             end

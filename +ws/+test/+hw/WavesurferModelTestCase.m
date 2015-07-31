@@ -324,8 +324,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'VoltageCommandChannelName' 'oof'};
             settings(end+1,:)={'CurrentCommandChannelName' 'rab'};
             settings(end+1,:)={'Mode' ws.ElectrodeMode.CC};
-            settings(end+1,:)={'TestPulseAmplitudeInVC' ws.utility.DoubleString(3)};
-            settings(end+1,:)={'TestPulseAmplitudeInCC' ws.utility.DoubleString(7)};
+            settings(end+1,:)={'TestPulseAmplitudeInVC' 3};
+            settings(end+1,:)={'TestPulseAmplitudeInCC' 7};
             settings(end+1,:)={'VoltageMonitorScaling' 2};
             settings(end+1,:)={'CurrentMonitorScaling' 5};
             settings(end+1,:)={'VoltageCommandScaling' 8};

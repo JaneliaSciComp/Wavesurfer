@@ -67,8 +67,8 @@ classdef Electrode < ws.Model & ws.Mimic
             self.VoltageCommandChannelName_ = '';
             self.CurrentCommandChannelName_ = '';
             self.Mode_ = ws.ElectrodeMode.VC;  % ws.ElectrodeMode.VC or ws.ElectrodeMode.CC
-            self.TestPulseAmplitudeInVC_ = ws.utility.DoubleString('10');
-            self.TestPulseAmplitudeInCC_ = ws.utility.DoubleString('10');
+            self.TestPulseAmplitudeInVC_ = 10 ;
+            self.TestPulseAmplitudeInCC_ = 10 ;
             self.VoltageCommandScaling_ = 10;  % mV/V
             self.CurrentMonitorScaling_ = 0.01;  % V/pA
             self.CurrentCommandScaling_ = 100;  % pA/V
@@ -480,8 +480,8 @@ classdef Electrode < ws.Model & ws.Mimic
             self.CurrentMonitorChannelName=other.CurrentMonitorChannelName;
             self.CurrentCommandChannelName=other.CurrentCommandChannelName;
             self.VoltageMonitorChannelName=other.VoltageMonitorChannelName;
-            self.TestPulseAmplitudeInVC=ws.utility.DoubleString(other.TestPulseAmplitudeInVC);
-            self.TestPulseAmplitudeInCC=ws.utility.DoubleString(other.TestPulseAmplitudeInCC);
+            self.TestPulseAmplitudeInVC=other.TestPulseAmplitudeInVC;
+            self.TestPulseAmplitudeInCC=other.TestPulseAmplitudeInCC;
             self.VoltageCommandScaling=other.VoltageCommandScaling;
             self.CurrentMonitorScaling=other.CurrentMonitorScaling;
             self.CurrentCommandScaling=other.CurrentCommandScaling;
