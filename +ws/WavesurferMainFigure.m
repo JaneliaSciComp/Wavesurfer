@@ -166,7 +166,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
                  % no longer publicly settable
                for i = 1:numel(model.FastProtocols) ,
-                   thisFastProtocol=model.FastProtocols(i);
+                   thisFastProtocol=model.FastProtocols{i};
                    %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','updateControlEnablement');
                    %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','updateControlEnablement');
                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
@@ -1223,7 +1223,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols(i).IsNonempty));
+                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols{i}.IsNonempty));
             end
 
             % Acquisition controls

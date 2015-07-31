@@ -12,8 +12,8 @@ classdef FastProtocolsController < ws.Controller
             if isempty(selectedIndex) ,
                 return
             end
-            self.Model.FastProtocols(selectedIndex).ProtocolFileName = '';
-            self.Model.FastProtocols(selectedIndex).AutoStartType = ws.fastprotocol.StartType.DoNothing;
+            self.Model.FastProtocols{selectedIndex}.ProtocolFileName = '';
+            self.Model.FastProtocols{selectedIndex}.AutoStartType = ws.fastprotocol.StartType.DoNothing;
         end  % function
         
         function SelectFileButtonActuated(self, varargin)
@@ -24,7 +24,7 @@ classdef FastProtocolsController < ws.Controller
             
             % By default start in the location of the current file.  If it is empty it will
             % just start in the current directory.
-            originalFileName = self.Model.FastProtocols(selectedIndex).ProtocolFileName;
+            originalFileName = self.Model.FastProtocols{selectedIndex}.ProtocolFileName;
             [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', originalFileName);
             
             % If the user cancels, just exit.
@@ -33,7 +33,7 @@ classdef FastProtocolsController < ws.Controller
             end
             
             newFileName=fullfile(dirName, filename);
-            theFastProtocol=self.Model.FastProtocols(selectedIndex);
+            theFastProtocol=self.Model.FastProtocols{selectedIndex};
             ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newFileName);
         end  % function
         
@@ -54,13 +54,13 @@ classdef FastProtocolsController < ws.Controller
             if (columnIndex==1) ,
                 % this is the Protocol File column
                 if isempty(newString) || exist(newString,'file') ,
-                    theFastProtocol=self.Model.FastProtocols(fastProtocolIndex);
+                    theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
                     ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newString);
                 end
             elseif (columnIndex==2) ,
                 % this is the Action column
                 newValue=ws.fastprotocol.StartType.str2num(newString);
-                theFastProtocol=self.Model.FastProtocols(fastProtocolIndex);
+                theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
             end            
         end  % function        

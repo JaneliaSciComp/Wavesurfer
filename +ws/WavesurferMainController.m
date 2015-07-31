@@ -979,7 +979,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(-1);
             %self.Window.Cursor=System.Windows.Input.Cursors.Wait;
             try
-                fastProtocol = self.Model.FastProtocols(index);
+                fastProtocol = self.Model.FastProtocols{index};
                 fileName=fastProtocol.ProtocolFileName;
                 if ~isempty(fileName) , ...                        
                     if exist(fileName, 'file') ,

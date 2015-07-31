@@ -49,7 +49,7 @@ classdef WavesurferModel < ws.Model
         Logging_
         UserFunctions_
         Ephys_
-        FastProtocols_ = ws.fastprotocol.FastProtocol.empty()
+        FastProtocols_ = cell(1,0)
         IsYokedToScanImage_ = false
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
@@ -139,7 +139,10 @@ classdef WavesurferModel < ws.Model
             self.DataSubscriber_.connect() ;
             
             % Initialize the fast protocols
-            self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol(self);    
+            self.FastProtocols_ = cell(1,self.NFastProtocols) ;
+            for i=1:self.NFastProtocols ,
+                self.FastProtocols_{i} = ws.fastprotocol.FastProtocol(self);
+            end
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems.
@@ -602,7 +605,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function result=get.FastProtocols(self)
-            result = self.FastProtocols_;
+            result = self.FastProtocols_ ;
         end
         
         function didSetAcquisitionSampleRate(self,newValue)
