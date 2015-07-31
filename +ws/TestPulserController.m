@@ -135,7 +135,7 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
 
             % Change the setting
-            self.Model.ElectrodeMode=ws.ElectrodeMode.VC;
+            self.Model.ElectrodeMode='vc';
         end  % function
         
         function ccTogglePressed(self)
@@ -144,7 +144,7 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
             
             % Change the setting           
-            self.Model.ElectrodeMode=ws.ElectrodeMode.CC;
+            self.Model.ElectrodeMode='cc';
         end  % function
     end  % methods
     

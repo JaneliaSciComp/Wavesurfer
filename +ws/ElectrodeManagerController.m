@@ -197,7 +197,7 @@ classdef ElectrodeManagerController < ws.Controller
             electrodeIndex=find(isTheElectrode);
             electrode=self.Model.Electrodes{electrodeIndex};
             allowedModes=electrode.getAllowedModes();
-            allowedModesAsStrings=cellfun(@(mode)(toTitleString(mode)),allowedModes,'UniformOutput',false);
+            allowedModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false);
             modeAsString=ws.utility.getPopupMenuSelection(source,allowedModesAsStrings);
             modeIndex=find(strcmp(modeAsString,allowedModesAsStrings),1);
             if ~isempty(modeIndex) ,

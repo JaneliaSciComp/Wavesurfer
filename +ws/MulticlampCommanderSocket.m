@@ -4,7 +4,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
     
     %%
     properties (SetAccess=protected, Hidden=true)
-        %ModeDetents={ws.ElectrodeMode.VC ws.ElectrodeMode.CC ws.ElectrodeMode.IEqualsZero}';
+        %ModeDetents={'vc' 'cc' 'i_equals_zero'}';
 %         CurrentMonitorNominalGainDetents= 1e-3*[ ...
 %             0.005 ...
 %             0.010 ...
@@ -164,7 +164,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
-%             if ~(isequal(newMode,ws.ElectrodeMode.VC) || isequal(newMode,ws.ElectrodeMode.CC)) ,
+%             if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
 %                 return
 %             end
 %             if ~self.IsOpen ,
@@ -178,7 +178,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %               % least wait long enough for it to emerge before giving
 %               % another command
 % 
-%             newModeIndex=fif(isequal(newMode,ws.ElectrodeMode.CC),4,3);
+%             newModeIndex=fif(isequal(newMode,'cc'),4,3);
 %               % 4 == Current clamp
 %               % 3 == Whole cell
 %             commandString2=sprintf('Set E Mode %d',newModeIndex);
@@ -754,7 +754,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
                         [voltageCommandGains(i),voltageCommandError] = ws.MulticlampCommanderSocket.voltageCommandGainFromElectrodeState(electrodeState);
                         %isCommandEnabled{i} = (electrodeState.ExtCmdSens~=0);  
                         thisMode=modes{i};
-                        isCommandEnabled{i} = ~isequal(thisMode,ws.ElectrodeMode.IEqualsZero) ; 
+                        isCommandEnabled{i} = ~isequal(thisMode,'i_equals_zero') ; 
                             % This should always be true, b/c it's
                             % not really an independent parameter for an
                             % Axon amp (actually, it should be false for
@@ -797,16 +797,16 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %         function mode=parseModeResponse(responseString)
 %             % The response should look like 'V-Clamp', 'I-Clamp', or 
 %             % 'I = 0'
-%             % Returns either ws.ElectrodeMode.VC,ws.ElectrodeMode.CC, or ws.ElectrodeMode.IEqualsZero
+%             % Returns either 'vc','cc', or 'i_equals_zero'
 %             switch responseString ,
 %                 case 'V-Clamp' ,
-%                     mode=ws.ElectrodeMode.VC;
+%                     mode='vc';
 %                 case 'I-Clamp' ,
-%                     mode=ws.ElectrodeMode.CC;
+%                     mode='cc';
 %                 case 'I = 0' ,
-%                     mode=ws.ElectrodeMode.IEqualsZero;
+%                     mode='i_equals_zero';
 %                 otherwise
-%                     mode=ws.ElectrodeMode.VC;  % fallback
+%                     mode='vc';  % fallback
 % %                     errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
 % %                     errorMessage='Unable to parse mode response string';
 % %                     error(errorId,errorMessage);
@@ -1028,16 +1028,16 @@ classdef MulticlampCommanderSocket < ws.Mimic
             operatingModeString=electrodeState.OperatingMode;
             switch operatingModeString ,
                 case 'V-Clamp' ,
-                    value=ws.ElectrodeMode.VC;
+                    value='vc';
                     err=[];
                 case 'I-Clamp' ,
-                    value=ws.ElectrodeMode.CC;
+                    value='cc';
                     err=[];
                 case 'I = 0' ,
-                    value=ws.ElectrodeMode.IEqualsZero;
+                    value='i_equals_zero';
                     err=[];
                 otherwise
-                    %value=ws.ElectrodeMode.VC;  % fallback
+                    %value='vc';  % fallback
                     value=[];
                     errorId='MulticlampCommanderSocket:electrodeInUnknownMode';
                     errorMessage='Electrode is in an unknown mode.';

@@ -248,10 +248,10 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
 
                 % Update the mode popup
                 listOfModes=thisElectrode.getAllowedModes();
-                listOfModesAsStrings=cellfun(@(mode)(toTitleString(mode)),listOfModes,'UniformOutput',false);
+                listOfModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),listOfModes,'UniformOutput',false);
                 setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
                                                   listOfModesAsStrings, ...
-                                                  toTitleString(thisElectrode.Mode));
+                                                  ws.titleStringFromElectrodeMode(thisElectrode.Mode));
                 %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
                 set(self.ModePopups(i),'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
@@ -299,7 +299,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
     %                 isVoltageCommandScaleEnabled=isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains);
                     % Add a special case for the Heka EPC voltage command scale in CC
                     % mode, b/c it is not changeable when in CC mode
-    %                 if ~areSoftpanelsEnabled && isequal(thisElectrode.Type,'Heka EPC') && isequal(thisElectrode.Mode,ws.ElectrodeMode.CC) ,
+    %                 if ~areSoftpanelsEnabled && isequal(thisElectrode.Type,'Heka EPC') && isequal(thisElectrode.Mode,'cc') ,
     %                     isVoltageCommandScaleEnabled=false;
     %                 end
                     set(self.CommandScaleEdits(i), ...
@@ -348,7 +348,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
     %                 isCurrentCommandScaleEnabled=isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains);
                     % Add a special case for the Heka EPC current command scale in CC
                     % mode, b/c it is not changeable when in CC mode
-    %                 if ~areSoftpanelsEnabled && isequal(thisElectrode.Type,'Heka EPC') && isequal(thisElectrode.Mode,ws.ElectrodeMode.CC) ,
+    %                 if ~areSoftpanelsEnabled && isequal(thisElectrode.Type,'Heka EPC') && isequal(thisElectrode.Mode,'cc') ,
     %                     isCurrentCommandScaleEnabled=false;
     %                 end
                     set(self.CommandScaleEdits(i), ...
@@ -526,7 +526,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
                     isVoltageCommandScaleEnabled = isWavesurferIdle && ...
                                                    (isThisElectrodeManual || ...
                                                     (isInControlOfSoftpanelModeAndGains && ...
-                                                     isThisElectrodeHeka && ~isequal(thisElectrode.Mode,ws.ElectrodeMode.CC))) ;
+                                                     isThisElectrodeHeka && ~isequal(thisElectrode.Mode,'cc'))) ;
                     set(self.CommandScaleEdits(i), ...
                         'Enable',onIff(isVoltageCommandScaleEnabled));
 
@@ -568,7 +568,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
                     % Update the current command scale
                     isCurrentCommandScaleEnabled=isWavesurferIdle && ...
                                                    (isThisElectrodeManual || ...
-                                                    (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka && ~isequal(thisElectrode.Mode,ws.ElectrodeMode.CC))) ;
+                                                    (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka && ~isequal(thisElectrode.Mode,'cc'))) ;
                     set(self.CommandScaleEdits(i), ...
                         'Enable',onIff(isCurrentCommandScaleEnabled));
 

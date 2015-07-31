@@ -90,7 +90,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1};
             electrode.VoltageMonitorChannelName = 'V1' ;
             electrode.CurrentCommandChannelName = 'Cmd1' ;
-            electrode.Mode = ws.ElectrodeMode.CC ;
+            electrode.Mode = 'cc' ;
             
             % Start test pulsing
             wsModel.Ephys.TestPulser.start();
