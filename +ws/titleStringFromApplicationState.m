@@ -11,6 +11,6 @@ function out = titleStringFromApplicationState(state)
         case 'test_pulsing'
             out = 'Test Pulsing';
         otherwise
-            out = '';
+            out = 'Messed Up';
     end
 end

@@ -15,7 +15,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     properties (Access=protected, Constant=true)
         MasterTriggerPhysicalChannelName_ = 'pfi8'
         MasterTriggerPFIID_ = 8
-        MasterTriggerEdge_ = ws.ni.TriggerEdge.Rising
+        MasterTriggerEdge_ = 'DAQmx_Val_Rising'
     end
     
     properties (Access = protected)

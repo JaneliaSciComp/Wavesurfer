@@ -76,7 +76,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             self.CounterID_ = 0;
             self.Interval_ = 1; % s
             self.PFIID_ = 12;
-            self.Edge_ = ws.ni.TriggerEdge.Rising;
+            self.Edge_ = 'DAQmx_Val_Rising';
             %self.PredefinedDestination_ = ws.TriggerDestination.empty();            
             self.CounterTask_=[];  % set in setup() method
             %self.DoneCallback=[];
@@ -279,12 +279,12 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %         end  % function
         
         function set.Edge(self, newValue)
-            if ~ws.utility.isASettableValue(newValue) ,
-                return
+            if ws.utility.isASettableValue(newValue) ,
+                if ws.isAnEdgeType(newValue) ,
+                    self.Edge_ = newValue;
+                end
             end
-            self.validatePropArg('Edge', newValue);
-            self.Edge_ = newValue;
-        end  % function
+        end        
 
         function setup(self)
             % fetch params
@@ -403,9 +403,9 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             s.PFIID=struct('Classes', 'numeric', ...
                            'Attributes', {{'scalar', 'integer'}}, ...
                            'AllowEmpty', false);
-            s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
-                          'Attributes', 'scalar', ...
-                          'AllowEmpty', false);
+%             s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
+%                           'Attributes', 'scalar', ...
+%                           'AllowEmpty', false);
         end  % function
         
         function validateRepeatCount(newValue)

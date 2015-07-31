@@ -256,11 +256,11 @@ classdef FiniteOutputTask < handle
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
                 self.TriggerEdge_ = [];
-            elseif isa(newValue,'ws.ni.TriggerEdge') && isscalar(newValue) ,
+            elseif isAnEdgeType(newValue') ,
                 self.TriggerEdge_ = newValue;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerEdge must be empty or a scalar ws.ni.TriggerEdge');       
+                      'TriggerEdge must be empty, or ''DAQmx_Val_Rising'', or ''DAQmx_Val_Falling''');       
             end            
         end  % function
         
@@ -284,7 +284,7 @@ classdef FiniteOutputTask < handle
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge);
                 else
                     self.DabsDaqTask_.disableStartTrig();
                 end

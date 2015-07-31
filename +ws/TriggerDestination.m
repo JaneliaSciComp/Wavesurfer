@@ -34,7 +34,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
-            self.Edge_ = ws.ni.TriggerEdge.Rising;            
+            self.Edge_ = 'DAQmx_Val_Rising';            
         end
         
         function value=get.Name(self)
@@ -72,9 +72,11 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
         end
         
         function set.Edge(self, value)
-            if isnan(value), return, end            
-            self.validatePropArg('Edge', value);
-            self.Edge_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if ws.isAnEdgeType(value) ,
+                    self.Edge_ = value;
+                end
+            end
         end        
     end
     
@@ -107,9 +109,6 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
             s.PFIID=struct('Classes', 'numeric', ...
                            'Attributes', {{'scalar', 'integer'}}, ...
                            'AllowEmpty', false);
-            s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
-                          'Attributes', 'scalar', ...
-                          'AllowEmpty', false);
         end  % function
     end  % class methods block
     

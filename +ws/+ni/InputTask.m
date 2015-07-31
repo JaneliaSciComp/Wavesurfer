@@ -413,11 +413,11 @@ classdef InputTask < handle
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
                 self.TriggerEdge_ = [];
-            elseif isa(newValue,'ws.ni.TriggerEdge') && isscalar(newValue) ,
+            elseif isAnEdgeType(newValue) && isscalar(newValue) ,
                 self.TriggerEdge_ = newValue;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerEdge must be empty or a scalar ws.ni.TriggerEdge');       
+                      'TriggerEdge must be empty, or ''DAQmx_Val_Rising'', or ''DAQmx_Val_Falling''');       
             end            
         end  % function
         
@@ -474,7 +474,7 @@ classdef InputTask < handle
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge);
                 else
                     self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
                 end        
@@ -560,7 +560,7 @@ classdef InputTask < handle
 %                 % Use hardware retriggering, if possible.  For boards that do support this
 %                 % property, a start trigger must be defined in order to query the value without
 %                 % error.
-%                 self.DabsDaqTask_.cfgDigEdgeStartTrig('PFI1', ws.ni.TriggerEdge.Rising.daqmxName());
+%                 self.DabsDaqTask_.cfgDigEdgeStartTrig('PFI1', 'DAQmx_Val_Rising'.daqmxName());
 %                 self.isRetriggerable = ~isempty(get(self.DabsDaqTask_, 'startTrigRetriggerable'));
 %                 self.DabsDaqTask_.disableStartTrig();
 %             else

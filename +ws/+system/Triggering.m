@@ -25,7 +25,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
                 source.RepeatCount = 1;
                 source.Interval = 1;  % s
                 source.PFIID = thisTriggerSourceSpec.CounterID + 12;                
-                source.Edge = ws.ni.TriggerEdge.Rising;                                
+                source.Edge = 'DAQmx_Val_Rising';                                
                 
                 % add the trigger source to the subsystem
                 %self.addTriggerSource(source);
