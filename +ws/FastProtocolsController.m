@@ -13,7 +13,7 @@ classdef FastProtocolsController < ws.Controller
                 return
             end
             self.Model.FastProtocols{selectedIndex}.ProtocolFileName = '';
-            self.Model.FastProtocols{selectedIndex}.AutoStartType = ws.fastprotocol.StartType.DoNothing;
+            self.Model.FastProtocols{selectedIndex}.AutoStartType = 'do_nothing';
         end  % function
         
         function SelectFileButtonActuated(self, varargin)
@@ -59,7 +59,8 @@ classdef FastProtocolsController < ws.Controller
                 end
             elseif (columnIndex==2) ,
                 % this is the Action column
-                newValue=ws.fastprotocol.StartType.str2num(newString);
+                newValue=ws.startTypeFromTitleString(newString);  
+                % newValue=ws.fastprotocol.StartType.str2num(newString);
                 theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
             end            

@@ -12,7 +12,7 @@ classdef FastProtocol < ws.Model
     
     properties (Access=protected)
         ProtocolFileName_ = ''
-        AutoStartType_ = ws.fastprotocol.StartType.DoNothing
+        AutoStartType_ = 'do_nothing'
     end
     
     methods
@@ -40,8 +40,12 @@ classdef FastProtocol < ws.Model
         
         function set.AutoStartType(self, value)
             if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('AutoStartType', value);
-                self.AutoStartType_ = value;
+                if ws.isAStartType(value) ,
+                    self.AutoStartType_ = value;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'AutoStartType must be ''do_nothing'', ''play'', or ''record''.');
+                end
             end
             self.broadcast('Update');
         end
@@ -87,7 +91,7 @@ classdef FastProtocol < ws.Model
         function s = propertyAttributes()
             s = struct();
             s.ProtocolFileName = struct('Classes', 'char', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.AutoStartType = struct('Classes','ws.fastprotocol.StartType', 'Attributes', {{'scalar'}});
+            %s.AutoStartType = struct('Classes','ws.fastprotocol.StartType', 'Attributes', {{'scalar'}});
         end  % function
     end  % class methods block
     

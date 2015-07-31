@@ -187,7 +187,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
             for i=1:nRows ,
                 fastProtocol=model.FastProtocols{i};
                 data{i,1}=fastProtocol.ProtocolFileName;
-                data{i,2}=char(fastProtocol.AutoStartType);
+                data{i,2}=ws.titleStringFromStartType(fastProtocol.AutoStartType);
             end
             set(self.Table,'Data',data);
         end  % function

@@ -997,9 +997,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 end
                 %self.Figure.changeReadiness(+1);
                 %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;  % go to normal cursor before starting sweep
-                if isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Play) ,
+                if isequal(fastProtocol.AutoStartType,'play') ,
                     self.play();
-                elseif isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Record) ,
+                elseif isequal(fastProtocol.AutoStartType,'record') ,
                     self.record();
                 end
             catch me
