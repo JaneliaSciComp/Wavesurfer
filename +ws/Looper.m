@@ -11,10 +11,6 @@ classdef Looper < ws.Model
         %Ephys
     end
     
-    properties (Dependent = true, SetAccess = protected)  
-        %State
-    end
-    
     properties (Dependent = true, Transient=true)  % transient b/c actually stored in Acquisition subsystem  % SetObservable = true, 
         SweepDuration  % the sweep duration, in s
     end
@@ -31,8 +27,8 @@ classdef Looper < ws.Model
             % of the start trigger.  If in continuous mode, it is always 1.
     end
     
-    properties (Dependent = true, SetAccess = protected)  % SetObservable = true, 
-        NSweepsCompletedInThisRun = 0   % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
+    properties (Dependent = true)
+        NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
     end
     
 %     properties (Dependent=true)  

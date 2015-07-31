@@ -1,7 +1,29 @@
 classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
-%     properties (Access = protected, Transient=true)
-%         Parent_  % the parent Ephys object
-%     end    
+    
+    properties (Dependent=true)
+        %Parent  % public access to parent property
+        IsElectrodeMarkedForTestPulse  % provides public access to IsElectrodeMarkedForTestPulse_; settable as long as you don't change its shape
+        IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
+        AreSoftpanelsEnabled
+        IsInControlOfSoftpanelModeAndGains
+    end
+
+    properties (Dependent=true, SetAccess=immutable)
+        NElectrodes
+        TestPulseElectrodes  % the electrodes that are marked for test pulsing.
+        TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
+        Electrodes
+        DidLastElectrodeUpdateWork
+    end
+
+    % TODO: Consider getting rid of public Electrodes, TestPulseElectrodes
+    % properties.  These return handle arrays, so they allow for direct
+    % manipulation of Electrodes.  Might be a better design to require all
+    % electrode changes to go through the ElectrodeManager, because in some
+    % cases the ElectrodeManager has to make sure electrode changes get
+    % propagated through the whole WavesurferModel, and get propagated to the
+    % EPCMasterSocket in some cases.  This would be a good deal of work,
+    % though.
     
     properties (Access = protected)
         Electrodes_ = cell(1,0);  % row vector of electrodes
@@ -16,35 +38,6 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
     end
-    
-    % TODO: Consider getting rid of public Electrodes, TestPulseElectrodes
-    % properties.  These return handle arrays, so they allow for direct
-    % manipulation of Electrodes.  Might be a better design to require all
-    % electrode changes to go through the ElectrodeManager, because in some
-    % cases the ElectrodeManager has to make sure electrode changes get
-    % propagated through the whole WavesurferModel, and get propagated to the
-    % EPCMasterSocket in some cases.  This would be a good deal of work,
-    % though.
-    
-    properties (Dependent=true, SetAccess=immutable)
-        NElectrodes
-        TestPulseElectrodes  % the electrodes that are marked for test pulsing.
-        TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
-        Electrodes
-        DidLastElectrodeUpdateWork
-    end
-    
-    properties (Dependent=true)
-        %Parent  % public access to parent property
-        IsElectrodeMarkedForTestPulse  % provides public access to IsElectrodeMarkedForTestPulse_; settable as long as you don't change its shape
-        IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
-        AreSoftpanelsEnabled
-        IsInControlOfSoftpanelModeAndGains
-    end
-    
-%     events
-%         MayHaveChanged
-%     end
 
     methods
         function self = ElectrodeManager(parent,varargin)

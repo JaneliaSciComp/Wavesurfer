@@ -1,4 +1,4 @@
-classdef ScopeModel < ws.Model     % & ws.EventBroadcaster 
+classdef ScopeModel < ws.Model
     
     properties (Dependent=true)  %(SetObservable = true)
         Title        % This is the window title used by any ScopeFigures that use this
@@ -711,15 +711,15 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
     end    
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.ScopeModel.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.Parent = struct('Classes', 'ws.system.Display', 'AllowEmpty', true);
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.Parent = struct('Classes', 'ws.system.Display', 'AllowEmpty', true);
+%         end  % function
+%     end  % class methods block
 
 end

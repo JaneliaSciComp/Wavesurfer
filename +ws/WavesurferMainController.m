@@ -3,17 +3,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     % main wavesurfer window.  You get a handle to the singleton by calling the
     % class method sharedController().
     
-%     properties (SetAccess = protected, GetAccess = public, Transient = true)
-%         HasUserSpecifiedProtocolFileName = false
-%         AbsoluteProtocolFileName = ''
-%         HasUserSpecifiedUserSettingsFileName = false
-%         AbsoluteUserSettingsFileName = ''
-%     end
-     
-%     properties (Access=protected, Transient=true)
-%         OriginalModelState_  % used to store the previous model state when model state is being set
-%     end
-    
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
         TriggersController = [];
@@ -32,27 +21,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         % etc.  See createControllerSpecs() method
         ControllerSpecs
         
-        % Data view model for the current stimulus library.
-        %LibraryViewModel;
-        
-        % Command bindings for dynamic menu items.
-        %ScopeCommandBindings = {};
-        %FastProtocolCommandBindings = {};
-        
         % Keeps track of where we are in the exit process.
         IsExitingMATLAB = false
-        
-        %Listeners = event.listener.empty();
-        % EnableListeners = event.listener.empty();
-        % DisplayListener = event.listener.empty();
-        %ScopeVisibleListeners = event.listener.empty();
-%         IsSelectedOutputableBeingFutzedWithInternally_ = false
     end
-    
-%     properties (SetAccess=immutable, Dependent=true)
-%         Figure  % the associated WavesurferMainFigure instance (i.e. a handle handle, not a hande graphics handle)
-%     end
-    
+        
     methods
         function self = WavesurferMainController(model)
             parentController=[];
@@ -468,7 +440,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % save the user settings, whatever else happens
             %self.saveUser();
             
-            if ~self.IsExitingMATLAB
+            if ~self.IsExitingMATLAB ,
                 % First verify that the user really meant to exit, and whether to just exit
                 % Wavesurfer or MATLAB.
                 %exitDialog = Wavesurfer.ExitDialog;

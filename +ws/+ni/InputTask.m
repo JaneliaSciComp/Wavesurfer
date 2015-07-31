@@ -529,15 +529,6 @@ classdef InputTask < handle
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-%             % Read the data
-%             if self.IsAnalog_ ,
-%                 rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
-%             else
-%                 rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
-%             end
-%             % Generate an event to tell all and sundy about the new data
-%             eventData = ws.ni.SamplesAvailableEventData(rawData) ;
-%             self.notify('SamplesAvailable', eventData);
             self.notify('SamplesAvailable');
         end  % function
         

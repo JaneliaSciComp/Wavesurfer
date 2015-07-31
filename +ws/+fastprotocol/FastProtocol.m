@@ -1,4 +1,4 @@
-classdef FastProtocol < ws.Model % & ws.EventBroadcaster
+classdef FastProtocol < ws.Model
     % Each instance of this class represents a single fast protocol
     
     properties (Dependent=true)
@@ -6,7 +6,7 @@ classdef FastProtocol < ws.Model % & ws.EventBroadcaster
         AutoStartType
     end
     
-    properties (SetAccess=immutable, Dependent=true)
+    properties (Dependent=true, SetAccess=immutable)
         IsNonempty  % true iff ProtocolFileName is nonempty
     end
     

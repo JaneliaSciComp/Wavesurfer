@@ -230,13 +230,13 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
 %     end
     
     properties (SetAccess=protected)
-       propBindings = ws.TriggersController.initialPropertyBindings(); 
+       propBindings = struct()
     end
     
-    methods (Static=true)
-        function s=initialPropertyBindings()
-            s = struct();
-        end
-    end  % class methods
+%     methods (Static=true)
+%         function s=initialPropertyBindings()
+%             s = struct();
+%         end
+%     end  % class methods
     
 end

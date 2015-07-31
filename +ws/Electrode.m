@@ -1,24 +1,8 @@
 classdef Electrode < ws.Model & ws.Mimic 
     
-    properties (Access=protected)
-        %Parent_   % the parent ElectrodeManager object, or empty
-        Name_
-        VoltageMonitorChannelName_
-        CurrentMonitorChannelName_
-        VoltageCommandChannelName_
-        CurrentCommandChannelName_
-        Mode_  % ws.ElectrodeMode.VC or ws.ElectrodeMode.CC
-        TestPulseAmplitudeInVC_
-        TestPulseAmplitudeInCC_
-        VoltageCommandScaling_
-        CurrentMonitorScaling_
-        CurrentCommandScaling_
-        VoltageMonitorScaling_
-        VoltageUnits_  % constant for now, may change in future
-        CurrentUnits_  % constant for now, may change in future
-        TypeIndex_  % the index of the type within Types
-        IndexWithinType_
-        IsCommandEnabled_
+    properties (Constant=true)
+        Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
+        %Modes = {ws.ElectrodeMode.VC ws.ElectrodeMode.CC};
     end
 
     properties (Dependent=true)
@@ -52,9 +36,25 @@ classdef Electrode < ws.Model & ws.Mimic
         MonitorUnits
     end
     
-    properties (Access=public, Constant=true)
-        Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
-        %Modes = {ws.ElectrodeMode.VC ws.ElectrodeMode.CC};
+    properties (Access=protected)
+        %Parent_   % the parent ElectrodeManager object, or empty
+        Name_
+        VoltageMonitorChannelName_
+        CurrentMonitorChannelName_
+        VoltageCommandChannelName_
+        CurrentCommandChannelName_
+        Mode_  % ws.ElectrodeMode.VC or ws.ElectrodeMode.CC
+        TestPulseAmplitudeInVC_
+        TestPulseAmplitudeInCC_
+        VoltageCommandScaling_
+        CurrentMonitorScaling_
+        CurrentCommandScaling_
+        VoltageMonitorScaling_
+        VoltageUnits_  % constant for now, may change in future
+        CurrentUnits_  % constant for now, may change in future
+        TypeIndex_  % the index of the type within Types
+        IndexWithinType_
+        IsCommandEnabled_
     end
     
     methods        

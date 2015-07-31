@@ -9,14 +9,6 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Ramp','Sine','Chirp','Expression','File'}
     end
     
-%     properties (SetAccess = protected, Hidden = true)
-%         UUID  % a unique id so that things can be re-linked after loading from disk
-%     end
-    
-%     properties
-%         Parent  % the parent StimulusLibrary, or empty
-%     end
-    
     % Invariant: All the values in Delay, Duration, Amplitude, DCOffset and
     % the subclass parameter properties are s.t.
     % ~isempty(evaluateSweepExpression(self.(propertyName),1)).  That is,

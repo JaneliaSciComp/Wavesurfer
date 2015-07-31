@@ -308,12 +308,6 @@ classdef ElectrodeManagerController < ws.Controller
     end % protected methods block
     
     properties (SetAccess=protected)
-       propBindings = ws.ElectrodeManagerController.initialPropertyBindings(); 
-    end
-    
-    methods (Static=true)
-        function s=initialPropertyBindings()
-            s = struct();
-        end
-    end  % class methods
+       propBindings = struct()
+    end    
 end  % classdef
