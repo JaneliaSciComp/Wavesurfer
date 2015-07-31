@@ -87,12 +87,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             
             % Set for finite-duration vs. continous acquisition
             if parent.AreSweepsContinuous ,
-                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
-                self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.ContinuousSamples;
+                self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
+                self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
             else
-                self.AnalogInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+                self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
-                self.DigitalInputTask_.ClockTiming = ws.ni.SampleClockTiming.FiniteSamples;
+                self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
                 self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
             end
             

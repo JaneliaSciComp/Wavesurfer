@@ -9,9 +9,9 @@ classdef SampleClockTiming < int32
         function out = daqmxName(obj)
             %DAQMXNAME Return the DAQmx-appropriate string for this enumeration value.
             switch obj
-                case ws.ni.SampleClockTiming.FiniteSamples
+                case 'DAQmx_Val_FiniteSamps'
                     out = 'DAQmx_Val_FiniteSamps';
-                case ws.ni.SampleClockTiming.ContinuousSamples
+                case 'DAQmx_Val_ContSamps'
                     out = 'DAQmx_Val_ContSamps';
                 case ws.ni.SampleClockTiming.HardwareTimedSinglePoint
                     out = 'DAQmx_Val_HWTimedSinglePoint';

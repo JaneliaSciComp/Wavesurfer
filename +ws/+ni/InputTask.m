@@ -38,7 +38,7 @@ classdef InputTask < handle
         SampleRate_ = 20000
         AcquisitionDuration_ = 1     % Seconds
         DurationPerDataAvailableCallback_ = 0.1  % Seconds
-        ClockTiming_ = ws.ni.SampleClockTiming.FiniteSamples
+        ClockTiming_ = 'DAQmx_Val_FiniteSamps'
         TriggerPFIID_
         TriggerEdge_
         IsArmed_ = false
@@ -426,11 +426,12 @@ classdef InputTask < handle
         end  % function                
         
         function set.ClockTiming(self,value)
-            if ~( isscalar(value) && isa(value,'ws.ni.SampleClockTiming') ) ,
+            if isequal(value,'DAQmx_Val_FiniteSamps') || isequal(value,'DAQmx_Val_ContSamps') || isequal(value,'DAQmx_Val_HWTimedSinglePoint') ,
+                self.ClockTiming_ = value;
+            else
                 error('most:Model:invalidPropVal', ...
-                      'ClockTiming must be a scalar ws.ni.SampleClockTiming');       
+                      'ClockTiming must be ''DAQmx_Val_FiniteSamps'', ''DAQmx_Val_ContSamps'', or ''DAQmx_Val_HWTimedSinglePoint''');       
             end            
-            self.ClockTiming_ = value;
         end  % function           
         
         function value = get.ClockTiming(self)
@@ -458,9 +459,9 @@ classdef InputTask < handle
 
                 % Set up timing
                 switch self.ClockTiming ,
-                    case ws.ni.SampleClockTiming.FiniteSamples
+                    case 'DAQmx_Val_FiniteSamps'
                         self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
-                    case ws.ni.SampleClockTiming.ContinuousSamples
+                    case 'DAQmx_Val_ContSamps'
                         if isinf(self.ExpectedScanCount)
                             bufferSize = self.SampleRate_; % Default to 1 second of data as the buffer.
                         else
