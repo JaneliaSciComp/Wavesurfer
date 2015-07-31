@@ -1313,7 +1313,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             %window=self.hGUIData.WavesurferWindow;
 %             
 %             isNoMDF=(model.State == ws.ApplicationState.NoMDF);
-%             isIdle=(model.State == ws.ApplicationState.Idle);
+%             isIdle=isequal(model.State,'idle');
 %             isSweepBased=model.AreSweepsFiniteDuration;
 %             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
 %             isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
@@ -1719,7 +1719,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if ~isIdle ,
                     isOKToQuit=false;
                     return

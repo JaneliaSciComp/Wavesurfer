@@ -200,7 +200,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end            
             import ws.utility.onIff
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             selectedIndex = wavesurferModel.IndexOfSelectedFastProtocol;
             isARowSelected= ~isempty(selectedIndex);
 

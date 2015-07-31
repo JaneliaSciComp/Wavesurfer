@@ -260,7 +260,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             % If acquisition is happening, ignore the close window request
             wavesurferModel = ws.utility.getSubproperty(self,'Model','Parent','Parent') ;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if isIdle ,
                     shouldStayPut=false;
                 else                 

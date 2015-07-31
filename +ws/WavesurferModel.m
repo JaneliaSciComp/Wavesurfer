@@ -66,7 +66,7 @@ classdef WavesurferModel < ws.Model
         HasUserSpecifiedUserSettingsFileName_ = false
         AbsoluteUserSettingsFileName_ = ''
         IndexOfSelectedFastProtocol_ = []
-        State_ = ws.ApplicationState.Uninitialized
+        State_ = 'uninitialized' ;
         Subsystems_
         t_
         SweepAcqSampleCount_
@@ -184,7 +184,7 @@ classdef WavesurferModel < ws.Model
             
             % The object is now initialized, but not very useful until an
             % MDF is specified.
-            self.setState_(ws.ApplicationState.NoMDF);
+            self.setState_('no_mdf');
         end
         
         function delete(self) %#ok<INUSD>
@@ -245,7 +245,7 @@ classdef WavesurferModel < ws.Model
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current run, if any.
 
-            if self.State == ws.ApplicationState.Idle , 
+            if isequal(self.State,'idle') , 
                 % do nothing
             else
                 % Actually stop the ongoing sweep
@@ -482,9 +482,9 @@ classdef WavesurferModel < ws.Model
             % it is about to start test pulsing.
             
             % I think the main thing we want to do here is to change the
-            % Wavesurfer mode to TestPulsing
-            if self.State == ws.ApplicationState.Idle ,
-                self.setState_(ws.ApplicationState.TestPulsing);
+            % Wavesurfer mode to TestPulsing.
+            if isequal(self.State,'idle') ,
+                self.setState_('test_pulsing');
             end
         end
         
@@ -492,8 +492,8 @@ classdef WavesurferModel < ws.Model
             % Called by the TestPulserModel to inform the WavesurferModel that
             % it has just finished test pulsing.
             
-            if self.State == ws.ApplicationState.TestPulsing ,
-                self.setState_(ws.ApplicationState.Idle);
+            if isequal(self.State,'test_pulsing') ,
+                self.setState_('idle');
             end
         end  % function
         
@@ -502,8 +502,8 @@ classdef WavesurferModel < ws.Model
             % pulsing, that (hopefully) the TestPulseModel has been able to
             % gracefully recover from.
             
-            if self.State == ws.ApplicationState.TestPulsing ,
-                self.setState_(ws.ApplicationState.Idle);
+            if isequal(self.State,'test_pulsing') ,
+                self.setState_('idle');
             end
         end  % function
         
@@ -619,11 +619,11 @@ classdef WavesurferModel < ws.Model
     methods (Access = protected)
         function setState_(self,newValue)
             self.broadcast('WillSetState');
-            if isa(newValue,'ws.ApplicationState') ,
+            if ws.isAnApplicationState(newValue) ,
                 if self.State_ ~= newValue ,
-                    oldValue=self.State_;
-                    self.State_ = newValue;
-                    if oldValue==ws.ApplicationState.NoMDF && newValue~=ws.ApplicationState.NoMDF ,
+                    oldValue = self.State_ ;
+                    self.State_ = newValue ;
+                    if isequal(oldValue,'no_mdf') && ~isequal(newValue,'no_mdf') ,
                         self.broadcast('DidSetStateAwayFromNoMDF');
                     end
                 end
@@ -634,7 +634,7 @@ classdef WavesurferModel < ws.Model
 %         function runWithGuards_(self)
 %             % Start a run.
 %             
-%             if self.State == ws.ApplicationState.Idle ,
+%             if isequal(self.State,'idle') ,
 %                 self.run_();
 %             else
 %                 % ignore
@@ -644,7 +644,7 @@ classdef WavesurferModel < ws.Model
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
 
-            if self.State ~= ws.ApplicationState.Idle ,
+            if isequal(self.State,'idle') ,
                 return
             end
 
@@ -699,7 +699,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Change our own state to running
-            self.setState_(ws.ApplicationState.Running) ;
+            self.setState_('running') ;
             
             % Handle timing stuff
             self.TimeOfLastWillPerformSweep_=[];
@@ -988,7 +988,7 @@ classdef WavesurferModel < ws.Model
         function cleanUpAfterCompletedRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
-            self.setState_(ws.ApplicationState.Idle);
+            self.setState_('idle');
             
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
@@ -1000,7 +1000,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
-            self.setState_(ws.ApplicationState.Idle);
+            self.setState_('idle');
             
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
@@ -1183,7 +1183,7 @@ classdef WavesurferModel < ws.Model
             self.Display.initializeScopes();
                         
             % Change our state to reflect the presence of the MDF file
-            self.setState_(ws.ApplicationState.Idle);
+            self.setState_('idle');
         end  % function
     end  % methods block
         

@@ -255,7 +255,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % Define some useful booleans
             isElectrodeManual=isempty(electrode)||isequal(electrode.Type,'Manual');
             isElectrodeManagerInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
-            isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isWavesurferIdle=isequal(wavesurferModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
             isWavesurferTestPulsing=self.Model.IsRunning;
             isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;

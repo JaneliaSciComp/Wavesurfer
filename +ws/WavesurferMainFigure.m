@@ -1048,7 +1048,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             import ws.utility.onIff
             import ws.utility.fif
             
-            isIdle = (model.State==ws.ApplicationState.Idle);
+            isIdle = isequal(model.State,'idle');
 
 %             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
 %             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
@@ -1107,7 +1107,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
-            statusString = model.State.toTitleString() ;
+            statusString = ws.titleStringFromApplicationState(model.State) ;
             set(self.StatusText,'String',statusString);
             
             % Progress bar
@@ -1178,12 +1178,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %figureObject=self.Figure; 
             %window=self.hGUIData.WavesurferWindow;
             
-            isNoMDF=(model.State == ws.ApplicationState.NoMDF);
-            isIdle=(model.State == ws.ApplicationState.Idle);
+            isNoMDF = isequal(model.State,'no_mdf') ;
+            isIdle=isequal(model.State,'idle');
             isSweepBased=model.AreSweepsFiniteDuration;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
             %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
-            isAcquiring = (model.State == ws.ApplicationState.Running) ;
+            isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
             set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
@@ -1308,7 +1308,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             removeItem=self.RemoveMenuItem;
             
             % Set the enablement of the Scopes menu item
-            isIdle=(model.State == ws.ApplicationState.Idle);
+            isIdle=isequal(model.State,'idle');
             set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             
             % Set the Visibility of the Remove item in the Scope submenu
@@ -1358,7 +1358,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             
-            isIdle=(model.State == ws.ApplicationState.Idle);            
+            isIdle=isequal(model.State,'idle');            
 
             isDisplayEnabled=model.Display.IsEnabled;
             set(self.DisplayEnabledCheckbox,'Enable',onIff(isIdle));
@@ -1385,7 +1385,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             
-            isIdle=(model.State == ws.ApplicationState.Idle);
+            isIdle=isequal(model.State,'idle');
 
             %isLoggingEnabled=model.Logging.IsEnabled;
             %isLoggingEnabled=true;            
@@ -1423,7 +1423,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.OriginalModelState_=[];
             
             % If we're switching out of the "no MDF" mode, update the scope menu            
-            if originalModelState==ws.ApplicationState.NoMDF && self.Model.State~=ws.ApplicationState.NoMDF ,
+            if isequal(originalModelState,'no_mdf') && ~isequal(self.Model.State,'no_mdf') ,
                 self.update();
             else
                 % More limited update is sufficient
@@ -1438,7 +1438,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
             model=self.Model;
             state=model.State;
-            if state==ws.ApplicationState.Running ,
+            if isequal(state,'running') ,
                 if model.AreSweepsFiniteDuration ,
                     if isfinite(model.NSweepsPerRun) ,
                         nSweeps=model.NSweepsPerRun;

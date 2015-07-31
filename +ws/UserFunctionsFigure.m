@@ -214,7 +214,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             import ws.utility.onIff
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             set(self.ClassNameEdit,'Enable',onIff(isIdle));            
             set(self.AbortCallsCompleteCheckbox,'Enable',onIff(isIdle));
         end

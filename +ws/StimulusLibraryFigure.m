@@ -943,7 +943,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');   
-            isIdle=fif(isempty(wavesurferModel),true,(wavesurferModel.State==ws.ApplicationState.Idle));
+            isIdle=fif(isempty(wavesurferModel),true,isequal(wavesurferModel.State,'idle'));
             isSelection=~isempty(model.SelectedItem);
             isLibraryEmpty=model.IsEmpty;
             

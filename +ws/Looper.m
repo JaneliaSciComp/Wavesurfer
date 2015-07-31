@@ -504,8 +504,8 @@ classdef Looper < ws.Model
             
             % I think the main thing we want to do here is to change the
             % Wavesurfer mode to TestPulsing
-            if self.State == ws.ApplicationState.Idle ,
-                self.State = ws.ApplicationState.TestPulsing;
+            if isequal(self.State,'idle') ,
+                self.State = 'test_pulsing' ;
             end
         end
         
@@ -513,8 +513,8 @@ classdef Looper < ws.Model
             % Called by the TestPulserModel to inform the WavesurferModel that
             % it has just finished test pulsing.
             
-            if self.State == ws.ApplicationState.TestPulsing ,
-                self.State = ws.ApplicationState.Idle;
+            if isequal(self.State,'test_pulsing') ,
+                self.State = 'idle' ;
             end
         end  % function
         
@@ -523,8 +523,8 @@ classdef Looper < ws.Model
             % pulsing, that (hopefully) the TestPulseModel has been able to
             % gracefully recover from.
             
-            if self.State == ws.ApplicationState.TestPulsing ,
-                self.State = ws.ApplicationState.Idle;
+            if isequal(self.State,'test_pulsing') ,
+                self.State = 'idle' ;
             end
         end  % function
         
@@ -641,7 +641,7 @@ classdef Looper < ws.Model
 %         function runWithGuards_(self)
 %             % Start a run.
 %             
-%             if self.State == ws.ApplicationState.Idle ,
+%             if isequal(self.State,'idle') ,
 %                 self.run_();
 %             else
 %                 % ignore

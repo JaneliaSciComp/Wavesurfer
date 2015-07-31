@@ -168,7 +168,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             isWavesurferIdle=[];
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isWavesurferIdle=isequal(wavesurferModel.State,'idle');
             end
             if isempty(isWavesurferIdle)
                 return
@@ -406,7 +406,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
             end
             isWavesurferIdle=[];
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isWavesurferIdle = isequal(wavesurferModel.State,'idle') ;
             end
             if isempty(isWavesurferIdle)
                 return

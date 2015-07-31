@@ -552,7 +552,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 out=false;
                 return
             end            
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             out=~isIdle;  % if doing something, window should stay put
         end        
     end  % protected methods block

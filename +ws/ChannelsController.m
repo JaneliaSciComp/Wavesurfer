@@ -145,7 +145,7 @@ classdef ChannelsController < ws.Controller
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if ~isIdle ,
                     shouldStayPut=true;
                     return

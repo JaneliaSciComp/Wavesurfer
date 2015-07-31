@@ -162,7 +162,7 @@ classdef TestPulserController < ws.Controller
                 if ~isempty(ephys) && isvalid(ephys) ,
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                        isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                        isIdle=isequal(wavesurferModel.State,'idle');
                         if ~isIdle ,
                             shouldStayPut=true;
                             return

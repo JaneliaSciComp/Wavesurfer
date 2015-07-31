@@ -79,7 +79,7 @@ classdef FastProtocolsController < ws.Controller
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end            
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             if ~isIdle ,
                 shouldStayPut=true;
             end

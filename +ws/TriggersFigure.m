@@ -476,7 +476,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end            
             wsModel=triggeringModel.Parent;  % this is the WavesurferModel
-            isIdle=(wsModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wsModel.State,'idle');
             isSweepBased = wsModel.AreSweepsFiniteDuration;
             
             import ws.utility.onIff

@@ -694,7 +694,7 @@ classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
             nAOs=length(self.AOScaleEdits);
             nDIs=length(self.DILabelTexts);
             nDOs=length(self.DOLabelTexts);
-            isWavesurferIdle=(model.State==ws.ApplicationState.Idle);
+            isWavesurferIdle=isequal(model.State,'idle');
             
             % update the AIs
             normalBackgroundColor=[1 1 1];

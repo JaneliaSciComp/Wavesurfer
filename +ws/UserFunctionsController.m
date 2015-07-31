@@ -41,7 +41,7 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
             if ~isempty(model) && isvalid(model) ,            
                 wavesurferModel=model.Parent;
                 if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                    isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                    isIdle=isequal(wavesurferModel.State,'idle');
                     if ~isIdle ,
                         shouldStayPut=true;
                         return
