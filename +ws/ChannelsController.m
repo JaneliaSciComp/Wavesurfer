@@ -28,16 +28,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.AIUnitsEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AIUnitsEdits(i),'String');
-            try
-                newValue=ws.utility.SIUnit(newString);
-                self.Model.Acquisition.setSingleAnalogChannelUnits(i,newValue);
-            catch excp, 
-                if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
-                    self.Figure.update();
-                else
-                    rethrow(excp);
-                end
-            end
+            self.Model.Acquisition.setSingleAnalogChannelUnits(i,newString);
         end
         
         function aiIsActiveCheckboxActuated(self,source)
@@ -74,16 +65,8 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.AOUnitsEdits);
             i=find(isTheChannel);            
             newString=get(self.Figure.AOUnitsEdits(i),'String');
-            try
-                newValue=ws.utility.SIUnit(newString);
-                self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
-            catch excp, 
-                if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
-                    self.Figure.update();
-                else
-                    rethrow(excp);
-                end
-            end
+            newValue=strtrim(newString);
+            self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
         end
         
         function doTimedCheckboxActuated(self,source)

@@ -56,7 +56,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = cell(1,0)  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         %AnalogChannelNames_ = cell(1,0)
 
         StimulusLibrary_ 
@@ -339,49 +339,49 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
             self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
         
-        function initializeFromMDFStructure(self, mdfStructure)            
-            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
-                % Get the list of physical channel names
-                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
-                channelNames = mdfStructure.outputChannelNames ;                                
-                
-                % Check that they're all on the same device (for now)
-                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
-                uniqueDeviceNames = unique(deviceNames);
-                if ~isscalar(uniqueDeviceNames) ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'Wavesurfer only supports a single NI card at present.');                      
-                end
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
-                isAnalog = strcmp(channelTypes,'ao');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names
-                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
-                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
-                self.AnalogChannelNames_ = channelNames(isAnalog) ;
-                self.DigitalChannelNames_ = channelNames(isDigital) ;
-                
-                % Set the analog channel scales, units
-                nAnalogChannels = sum(isAnalog) ;
-                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
-                
-                % Set defaults for digital channels
-                nDigitalChannels = sum(isDigital) ;
-                self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
-                self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
-
-                % Intialized the stimulus library
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
-                
-                % Set up the untimed channels
-                self.syncTasksToChannelMembership_();                
-            end
-        end  % function
+%         function initializeFromMDFStructure(self, mdfStructure)            
+%             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
+%                 % Get the list of physical channel names
+%                 physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+%                 channelNames = mdfStructure.outputChannelNames ;                                
+%                 
+%                 % Check that they're all on the same device (for now)
+%                 deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+%                 uniqueDeviceNames = unique(deviceNames);
+%                 if ~isscalar(uniqueDeviceNames) ,
+%                     error('ws:MoreThanOneDeviceName', ...
+%                           'Wavesurfer only supports a single NI card at present.');                      
+%                 end
+%                 
+%                 % Figure out which are analog and which are digital
+%                 channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+%                 isAnalog = strcmp(channelTypes,'ao');
+%                 isDigital = ~isAnalog;
+% 
+%                 % Sort the channel names
+%                 self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
+%                 self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
+%                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
+%                 self.DigitalChannelNames_ = channelNames(isDigital) ;
+%                 
+%                 % Set the analog channel scales, units
+%                 nAnalogChannels = sum(isAnalog) ;
+%                 self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
+%                 V=ws.utility.SIUnit('V');  % by default, the units are volts                
+%                 self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
+%                 
+%                 % Set defaults for digital channels
+%                 nDigitalChannels = sum(isDigital) ;
+%                 self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
+%                 self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
+% 
+%                 % Intialized the stimulus library
+%                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
+%                 
+%                 % Set up the untimed channels
+%                 self.syncTasksToChannelMembership_();                
+%             end
+%         end  % function
 
         function acquireHardwareResources_(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
@@ -690,11 +690,11 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
-                result=ws.utility.SIUnit.empty();
+                result='';
             else
                 iChannel=self.indexOfAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
-                    result=ws.utility.SIUnit.empty();
+                    result='';
                 else
                     result=self.AnalogChannelUnits(iChannel);
                 end

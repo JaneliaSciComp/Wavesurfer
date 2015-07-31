@@ -46,8 +46,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 %nChannels=length(physicalInputChannelNames);
                 self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
                 %self.ChannelScales(2)=0.1  % to test
-                V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_=repmat(V,[1 nAnalogChannels]);
+                self.AnalogChannelUnits_=repmat({'V'},[1 nAnalogChannels]);  % by default, the units are volts                
                 %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
                 self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
                 self.IsDigitalChannelActive_ = true(1,nDigitalChannels);

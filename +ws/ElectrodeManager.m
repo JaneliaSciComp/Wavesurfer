@@ -566,7 +566,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
             isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
             nQueryChannels=length(queryChannelNames);
-            queryChannelUnits=repmat(ws.utility.SIUnit(),[1 nQueryChannels]);
+            queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
@@ -647,7 +647,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             isMatchBig = self.getMatrixOfMatchesToMonitorChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
             isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
             nQueryChannels=length(queryChannelNames);
-            queryChannelUnits=repmat(ws.utility.SIUnit(),[1 nQueryChannels]);
+            queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);

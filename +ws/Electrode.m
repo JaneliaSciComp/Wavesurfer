@@ -73,8 +73,8 @@ classdef Electrode < ws.Model & ws.Mimic
             self.CurrentMonitorScaling_ = 0.01;  % V/pA
             self.CurrentCommandScaling_ = 100;  % pA/V
             self.VoltageMonitorScaling_ = 0.01;  % V/mV
-            self.VoltageUnits_ = ws.utility.SIUnit('mV');  % constant for now, may change in future
-            self.CurrentUnits_ = ws.utility.SIUnit('pA');  % constant for now, may change in future
+            self.VoltageUnits_ = 'mV' ;  % constant for now, may change in future
+            self.CurrentUnits_ = 'pA' ;  % constant for now, may change in future
             self.TypeIndex_ = 1;  % default amplifier type
             self.IndexWithinType_=[];  % e.g. 2 means this is the second electrode of the current type
             self.IsCommandEnabled=true;

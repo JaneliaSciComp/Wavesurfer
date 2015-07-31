@@ -56,7 +56,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+        %AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         %AnalogChannelNames_ = cell(1,0)
 
         StimulusLibrary_ 
@@ -362,8 +362,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % Set the analog channel scales, units
                 nAnalogChannels = sum(isAnalog) ;
                 self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
+                %V=ws.utility.SIUnit('V');  % by default, the units are volts                
+                self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
                 
                 % Set defaults for digital channels
                 nDigitalChannels = sum(isDigital) ;
@@ -685,11 +685,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
-                result=ws.utility.SIUnit.empty();
+                result='';
             else
                 iChannel=self.indexOfAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
-                    result=ws.utility.SIUnit.empty();
+                    result='';
                 else
                     result=self.AnalogChannelUnits(iChannel);
                 end

@@ -562,12 +562,14 @@ classdef TestPulser < ws.Model
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
             stimulus=wavesurferModel.Stimulation;
-            result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            %result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            result = cell(1,n) ;
             for i=1:n ,
                 unit=stimulus.channelUnitsFromName(commandChannelNames{i});
-                if ~isempty(unit) ,
-                    result(i)=unit;
-                end
+                result{i} = unit ;
+%                 if ~isempty(unit) ,
+%                     result(i)=unit;
+%                 end
             end
         end  % function
         
@@ -587,12 +589,14 @@ classdef TestPulser < ws.Model
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
             acquisition=wavesurferModel.Acquisition;
-            result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            %result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            result = cell(1,n) ;
             for i=1:n ,
-                unit=acquisition.analogChannelUnitsFromName(monitorChannelNames{i});
-                if ~isempty(unit) ,
-                    result(i)=unit;
-                end
+                unit = acquisition.analogChannelUnitsFromName(monitorChannelNames{i}) ;
+                result{i} = unit ;
+%                 if ~isempty(unit) ,
+%                     result(i)=unit;
+%                 end
             end
         end  % function
         
@@ -611,12 +615,21 @@ classdef TestPulser < ws.Model
             n=length(commandUnitsPerElectrode);
             result=false(1,n);
             for i=1:n ,
-                if i==1 , 
-                    volts=ws.utility.SIUnit('V');
-                    amps=ws.utility.SIUnit('A');
+                commandUnits = commandUnitsPerElectrode(i) ;
+                monitorUnits = monitorUnitsPerElectrode(i) ;
+                areCommandUnitsCommensurateWithVolts = ~isempty(commandUnits) && isequal(commandUnits(end),'V') ;
+                if areCommandUnitsCommensurateWithVolts ,
+                    areMonitorUnitsCommensurateWithAmps = ~isempty(monitorUnits) && isequal(monitorUnits(end),'A') ;
+                    result(i) = areMonitorUnitsCommensurateWithAmps ;
+                else
+                    result(i) = false ;
                 end
-                result(i)=areSummable(commandUnitsPerElectrode(i),volts) && ...
-                          areSummable(monitorUnitsPerElectrode(i),amps) ;
+%                 if i==1 , 
+%                     volts=ws.utility.SIUnit('V');
+%                     amps=ws.utility.SIUnit('A');
+%                 end
+%                 result(i)=areSummable(commandUnitsPerElectrode(i),volts) && ...
+%                           areSummable(monitorUnitsPerElectrode(i),amps) ;
             end
         end  % function
 
@@ -635,12 +648,21 @@ classdef TestPulser < ws.Model
             n=length(commandUnitsPerElectrode);
             result=false(1,n);
             for i=1:n ,
-                if i==1 , 
-                    volts=ws.utility.SIUnit('V');
-                    amps=ws.utility.SIUnit('A');
-                end
-                result(i)=areSummable(commandUnitsPerElectrode(i),amps) && ...
-                          areSummable(monitorUnitsPerElectrode(i),volts) ;
+                commandUnits = commandUnitsPerElectrode(i) ;
+                monitorUnits = monitorUnitsPerElectrode(i) ;
+                areCommandUnitsCommensurateWithAmps = ~isempty(commandUnits) && isequal(commandUnits(end),'A') ;
+                if areCommandUnitsCommensurateWithAmps ,
+                    areMonitorUnitsCommensurateWithVolts = ~isempty(monitorUnits) && isequal(monitorUnits(end),'V') ;
+                    result(i) = areMonitorUnitsCommensurateWithVolts ;
+                else
+                    result(i) = false ;
+                end                
+%                 if i==1 , 
+%                     volts=ws.utility.SIUnit('V');
+%                     amps=ws.utility.SIUnit('A');
+%                 end
+%                 result(i)=areSummable(commandUnitsPerElectrode(i),amps) && ...
+%                           areSummable(monitorUnitsPerElectrode(i),volts) ;
             end
         end  % function
 
@@ -650,8 +672,9 @@ classdef TestPulser < ws.Model
             if isempty(commandUnits) || isempty(monitorUnits) ,
                 value=false;
             else
-                value=areSummable(commandUnits,ws.utility.SIUnit('V')) && ...
-                      areSummable(monitorUnits,ws.utility.SIUnit('A')) ;
+                value = isequal(commandUnits(end),'V') && isequal(monitorUnits(end),'A') ;
+%                 areSummable(commandUnits,ws.utility.SIUnit('V')) && ...
+%                       areSummable(monitorUnits,ws.utility.SIUnit('A')) ;
             end
         end  % function
 
@@ -661,8 +684,9 @@ classdef TestPulser < ws.Model
             if isempty(commandUnits) || isempty(monitorUnits) ,
                 value=false;
             else
-                value=areSummable(commandUnits,ws.utility.SIUnit('A')) && ...
-                      areSummable(monitorUnits,ws.utility.SIUnit('V')) ;
+                value = isequal(commandUnits(end),'A') && isequal(monitorUnits(end),'V') ;
+%                 value=areSummable(commandUnits,ws.utility.SIUnit('A')) && ...
+%                       areSummable(monitorUnits,ws.utility.SIUnit('V')) ;
             end
         end
 

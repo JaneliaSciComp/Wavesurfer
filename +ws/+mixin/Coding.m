@@ -871,15 +871,15 @@ classdef Coding < handle
                 % In the value is of an enumerated type, and we're
                 % encoding for a header, convert to a string
                 encoding=thing.toCodeString();
-            elseif isa(thing,'ws.utility.SIUnit') ,
-                % In the value is of an SIUnit, and we're
-                % encoding for a header, convert to a string.
-                % Otherwise, no conversion
-                if isequal(fileType,'header') ,
-                    encoding=thing.toString();
-                else
-                    encoding=thing;
-                end
+%             elseif isa(thing,'ws.utility.SIUnit') ,
+%                 % In the value is of an SIUnit, and we're
+%                 % encoding for a header, convert to a string.
+%                 % Otherwise, no conversion
+%                 if isequal(fileType,'header') ,
+%                     encoding=thing.toString();
+%                 else
+%                     encoding=thing;
+%                 end
 %             elseif isa(thing,'ws.utility.DoubleString') && isequal(fileType,'header') ,
 %                 % For header, just convert DoubleStrings to doubles
 %                 encoding=double(thing);

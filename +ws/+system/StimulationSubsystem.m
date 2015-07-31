@@ -40,7 +40,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
         %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+        AnalogChannelUnits_ = cell(1,0)  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         %AnalogChannelNames_ = cell(1,0)
         StimulusLibrary_ 
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
@@ -276,11 +276,11 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
-                result=ws.utility.SIUnit.empty();
+                result='';
             else
                 iChannel=self.indexOfAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
-                    result=ws.utility.SIUnit.empty();
+                    result='';
                 else
                     result=self.AnalogChannelUnits(iChannel);
                 end
@@ -337,6 +337,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
         
         function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
+            newValue = cellfun(@strtrim,newValue,'UniformOutput',false);
             oldValue=self.AnalogChannelUnits_;
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
@@ -357,6 +358,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
         
         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
             import ws.utility.*
+            newUnits = cellfun(@strtrim,newUnits,'UniformOutput',false);
             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
             oldUnits=self.AnalogChannelUnits_;
             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
@@ -372,7 +374,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
-                self.AnalogChannelUnits_(i)=newValue;
+                self.AnalogChannelUnits_(i)=strtrim(newValue);
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
             self.broadcast('DidSetAnalogChannelUnitsOrScales');

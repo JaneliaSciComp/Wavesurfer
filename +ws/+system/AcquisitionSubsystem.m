@@ -51,7 +51,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
         AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  
+        AnalogChannelUnits_ = cell(1,0)
             % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         IsAnalogChannelActive_ = true(1,0)
         IsDigitalChannelActive_ = true(1,0)
@@ -288,19 +288,21 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
+        function setAnalogChannelUnitsAndScales(self,newUnitsRaw,newScales)
             import ws.utility.*            
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+            newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
             self.AnalogChannelUnits_=fif(isChangeable,newUnits,self.AnalogChannelUnits_);
             self.AnalogChannelScales_=fif(isChangeable,newScales,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function setSingleAnalogChannelUnits(self,i,newValue)
+        function setSingleAnalogChannelUnits(self,i,newValueRaw)
             import ws.utility.*
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
+            newValue = strtrim(newValueRaw) ;
             self.AnalogChannelUnits_(i)=fif(isChangeable,newValue,self.AnalogChannelUnits_(i));
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
@@ -321,26 +323,26 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 
         function result=analogChannelUnitsFromName(self,channelName)
             if isempty(channelName) ,
-                result=ws.utility.SIUnit.empty();
+                result='';
             else
                 iChannel=self.iAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
-                    result=ws.utility.SIUnit.empty();
+                    result='';
                 else
-                    result=self.AnalogChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits{iChannel};
                 end
             end
         end
         
         function result=analogChannelScaleFromName(self,channelName)
             if isempty(channelName) ,
-                result=ws.utility.SIUnit.empty();
+                result='';
             else
                 iChannel=self.iAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
-                    result=ws.utility.SIUnit.empty();
+                    result='';
                 else
-                    result=self.AnalogChannelScales(iChannel);
+                    result=self.AnalogChannelScales{iChannel};
                 end
             end
         end  % function
