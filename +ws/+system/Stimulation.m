@@ -306,6 +306,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                         %self.syncTasksToChannelMembership_();
                     end
                 else
+                    self.broadcast('DidSetIsDigitalChannelTimed');
                     error('most:Model:invalidPropVal', ...
                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
                 end

@@ -361,6 +361,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                     self.stimulusMapDurationPrecursorMayHaveChanged();
                     self.Parent.didSetAcquisitionDuration();
                 else
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.Parent.didSetAcquisitionDuration();
                     error('most:Model:invalidPropVal', ...
                           'Duration must be a (scalar) positive finite value');
                 end
@@ -388,6 +390,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                         wsModel.didSetAcquisitionSampleRate(newValue);
                     end
                 else
+                    if ~isempty(self.Parent) ,
+                        self.Parent.didSetAcquisitionSampleRate(newValue);
+                    end
+                    self.broadcast('DidSetSampleRate');
                     error('most:Model:invalidPropVal', ...
                           'SampleRate must be a positive scalar');                  
                 end                    

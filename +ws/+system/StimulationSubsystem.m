@@ -104,6 +104,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
                         wsModel.didSetAcquisitionSampleRate(newValue);
                     end
                 else
+                    self.broadcast('DidSetSampleRate');
                     error('most:Model:invalidPropVal', ...
                           'SampleRate must be a positive scalar');                  
                 end                    
@@ -237,6 +238,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
                         %self.syncTasksToChannelMembership_();
                     end
                 else
+                    self.broadcast('DidSetIsDigitalChannelTimed');
                     error('most:Model:invalidPropVal', ...
                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
                 end

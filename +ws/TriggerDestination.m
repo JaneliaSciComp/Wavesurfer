@@ -58,6 +58,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
                 if ws.utility.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Name must be a nonempty string');                  
                 end                    
@@ -70,12 +71,12 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
                 if ws.utility.isString(value) ,
                     self.DeviceName_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'DeviceName must be a string');                  
                 end                    
             end
-            self.broadcast('Update');
-            
+            self.broadcast('Update');            
         end
         
         function set.PFIID(self, value)
@@ -84,6 +85,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
                     value = double(value) ;
                     self.PFIID_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'PFIID must be a (scalar) nonnegative integer');                  
                 end                    
@@ -96,6 +98,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
                 end                                        

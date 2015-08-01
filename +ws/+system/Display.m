@@ -65,6 +65,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                     newValue = max(0.1,min(newValue,10)) ;
                     self.UpdateRate_ = newValue;
                 else
+                    self.broadcast('DidSetUpdateRate');
                     error('most:Model:invalidPropVal', ...
                           'UpdateRate must be a scalar finite positive number') ;
                 end
@@ -102,6 +103,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                             self.Scopes{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                         end
                     else
+                        self.broadcast('UpdateXSpan');
                         error('most:Model:invalidPropVal', ...
                               'XSpan must be a scalar finite positive number') ;
                     end
@@ -122,11 +124,12 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                         self.Scopes{idx}.XOffset = newValue;
                     end
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'XOffset must be a scalar finite number') ;
                 end
             end
-            self.broadcast('DidSetUpdateRate');
+            self.broadcast('Update');
         end
         
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
@@ -141,6 +144,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                         self.Scopes{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                     end
                 else
+                    self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
                     error('most:Model:invalidPropVal', ...
                           'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
                 end

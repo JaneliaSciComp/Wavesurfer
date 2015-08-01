@@ -392,10 +392,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             outputables=self.getOutputables();
             if isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
                 outputable=outputables{index};
+                self.SelectedOutputable=outputable;  % this will broadcast Update
             else
-                outputable=nan.The;
+                self.broadcast('Update');
             end
-            self.SelectedOutputable=outputable;
         end  % function
         
         function output = get.SelectedItemClassName(self)

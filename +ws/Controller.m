@@ -345,9 +345,7 @@ classdef Controller < ws.most.Controller
                 object.(propertyName)=newValue;
             catch exception
                 if isequal(exception.identifier,'most:Model:invalidPropVal') ,
-                    % Do a set to the special value designed only to cause
-                    % the model to broadcast an Update event.
-                    object.(propertyName)=nan.The;
+                    % Ignore it
                 else
                     rethrow(exception);
                 end

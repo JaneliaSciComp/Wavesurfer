@@ -224,6 +224,7 @@ classdef ScopeModel < ws.Model
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.IsGridOn_ = logical(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'IsGridOn must be a scalar, and must be logical, 0, or 1');
                 end
@@ -240,6 +241,7 @@ classdef ScopeModel < ws.Model
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.AreColorsNormal_ = logical(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
                 end
@@ -256,6 +258,7 @@ classdef ScopeModel < ws.Model
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.DoShowButtons_ = logical(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'DoShowButtons must be a scalar, and must be logical, 0, or 1');
                 end
@@ -270,7 +273,6 @@ classdef ScopeModel < ws.Model
         function set.XOffset(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.XOffset_ = newValue;
-                %self.XLim=nan.The;
             end
             self.broadcast('Update');
         end
@@ -282,7 +284,6 @@ classdef ScopeModel < ws.Model
         function set.XSpan(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                 self.XSpan_ = newValue ;
-                %self.XLim=nan.The;
             end
             self.broadcast('Update');
         end

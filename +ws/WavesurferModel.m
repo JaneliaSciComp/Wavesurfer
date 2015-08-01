@@ -349,6 +349,7 @@ classdef WavesurferModel < ws.Model
                         self.Triggering.didSetNSweepsPerRun();
                     end
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'NSweepsPerRun must be a (scalar) positive integer, or inf');       
                 end
@@ -374,6 +375,7 @@ classdef WavesurferModel < ws.Model
                         % If get here, newValue is a valid value for this prop
                         self.Acquisition.Duration = newValue;
                     else
+                        self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'SweepDuration must be a (scalar) positive finite value');
                     end
@@ -393,9 +395,9 @@ classdef WavesurferModel < ws.Model
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
                 self.Triggering.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
-                self.AreSweepsContinuous=nan.The;
-                self.NSweepsPerRun=nan.The;
-                self.SweepDuration=nan.The;
+                %self.AreSweepsContinuous=nan.The;
+                %self.NSweepsPerRun=nan.The;
+                %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
                 self.Triggering.didSetAreSweepsFiniteDuration();
             end
@@ -592,7 +594,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function didSetAcquisitionDuration(self)
-            self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
+            self.broadcast('Update');
+            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
             self.Triggering.didSetAcquisitionDuration();
             self.Display.didSetAcquisitionDuration();
         end        
@@ -1138,17 +1141,13 @@ classdef WavesurferModel < ws.Model
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue(self, name, value)
-            if nargin < 3 ,
-                value = [];
-            end
-            
             self.(name) = value;
             
-            % This is a hack to make sure the UI gets updated on loading
-            % the .cfg file.
-            if isequal(name,'NSweepsPerRun_') ,
-                self.NSweepsPerRun=nan.The;
-            end                
+%             % This is a hack to make sure the UI gets updated on loading
+%             % the .cfg file.
+%             if isequal(name,'NSweepsPerRun_') ,
+%                 self.NSweepsPerRun=nan.The;
+%             end                
         end  % function
         
 %         function syncFromElectrodes(self)

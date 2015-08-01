@@ -49,12 +49,14 @@ classdef UserFunctions < ws.system.Subsystem
                 if ischar(value) && (isempty(value) || isrow(value)) ,
                     [newObject,exception] = self.tryToInstantiateObject_(value) ;
                     if ~isempty(exception) ,
+                        self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'Invalid value for property ''ClassName'' supplied: Unable to instantiate object.');
                     end
                     self.ClassName_ = value;
                     self.TheObject_ = newObject;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Invalid value for property ''ClassName'' supplied.');
                 end
@@ -64,14 +66,11 @@ classdef UserFunctions < ws.system.Subsystem
         
         function set.AbortCallsComplete(self, value)
             if ws.utility.isASettableValue(value) ,
-                try
-                    valueAsLogical = logical(value) ;
-                    if isscalar(valueAsLogical) ,
-                        self.AbortCallsComplete_ = value;
-                    else
-                        error('bad');  % won't actually percolate up
-                    end
-                catch me
+                if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value)) ,
+                    valueAsLogical = logical(value>0) ;
+                    self.AbortCallsComplete_ = value;
+                else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Invalid value for property ''AbortCallsComplete'' supplied.');
                 end

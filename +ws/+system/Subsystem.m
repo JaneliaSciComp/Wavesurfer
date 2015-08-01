@@ -75,12 +75,12 @@ classdef (Abstract) Subsystem < ws.Model
         function setIsEnabledImplementation_(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    % do nothing
+                    self.IsEnabled_ = logical(newValue);
                 else
+                    self.broadcast('DidSetIsEnabled');
                     error('most:Model:invalidPropVal', ...
                           'IsEnabled must be a scalar, and must be logical, 0, or 1');
                 end
-                self.IsEnabled_ = logical(newValue);
             end
             self.broadcast('DidSetIsEnabled');
         end

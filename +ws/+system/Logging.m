@@ -92,6 +92,7 @@ classdef Logging < ws.system.Subsystem
                         end
                     end
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'FileLocation must be a string');                    
                 end
@@ -117,6 +118,7 @@ classdef Logging < ws.system.Subsystem
                         self.NextSweepIndex = 1;
                     end
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'FileBaseName must be a string');                    
                 end
@@ -134,11 +136,11 @@ classdef Logging < ws.system.Subsystem
                     newValue=double(newValue) ;
                     self.NextSweepIndex_ = newValue;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'NextSweepIndex must be a (scalar) nonnegative integer');
                 end
             end
-            self.broadcast('Update');            
         end
         
         function result=get.NextSweepIndex(self)
@@ -154,6 +156,7 @@ classdef Logging < ws.system.Subsystem
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
                 end
@@ -170,6 +173,7 @@ classdef Logging < ws.system.Subsystem
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
                     self.DoIncludeDate_ = logical(newValue);
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'DoIncludeDate must be a logical scalar, or convertable to one');                  
                 end
@@ -192,6 +196,7 @@ classdef Logging < ws.system.Subsystem
                         %self.FirstSweepIndexInNextFile_ = 1 ;
                     end
                 else
+                    self.broadcast('UpdateDoIncludeSessionIndex');
                     error('most:Model:invalidPropVal', ...
                           'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
                 end
@@ -214,10 +219,12 @@ classdef Logging < ws.system.Subsystem
                             %self.FirstSweepIndexInNextFile_ = 1 ;
                         end
                     else
+                        self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'SessionIndex must be an integer greater than or equal to one');
                     end
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Can''t set SessionIndex when DoIncludeSessionIndex is false');
                     

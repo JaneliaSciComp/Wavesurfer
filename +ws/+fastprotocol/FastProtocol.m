@@ -31,6 +31,7 @@ classdef FastProtocol < ws.Model
                 if ws.utility.isString(value) ,
                     self.ProtocolFileName_ = value;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'ProtocolFileName must be a string');
                 end                    
@@ -47,6 +48,7 @@ classdef FastProtocol < ws.Model
                 if ws.isAStartType(value) ,
                     self.AutoStartType_ = value;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'AutoStartType must be ''do_nothing'', ''play'', or ''record''.');
                 end
@@ -87,17 +89,17 @@ classdef FastProtocol < ws.Model
 %     end    
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.fastprotocol.FastProtocol.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.ProtocolFileName = struct('Classes', 'char', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            %s.AutoStartType = struct('Classes','ws.fastprotocol.StartType', 'Attributes', {{'scalar'}});
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.ProtocolFileName = struct('Classes', 'char', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             %s.AutoStartType = struct('Classes','ws.fastprotocol.StartType', 'Attributes', {{'scalar'}});
+%         end  % function
+%     end  % class methods block
     
     methods (Access=protected)
         function out = getPropertyValue(self, name)

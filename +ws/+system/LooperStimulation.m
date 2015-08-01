@@ -311,6 +311,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                         self.syncTasksToChannelMembership_();
                     end
                 else
+                    self.broadcast('DidSetIsDigitalChannelTimed');
                     error('most:Model:invalidPropVal', ...
                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
                 end
@@ -332,6 +333,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                         end
                     end
                 else
+                    self.broadcast('DidSetDigitalOutputStateIfUntimed');
                     error('most:Model:invalidPropVal', ...
                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
                 end

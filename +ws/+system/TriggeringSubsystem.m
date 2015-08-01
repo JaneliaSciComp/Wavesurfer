@@ -73,6 +73,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                     self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
                     self.syncTriggerSourcesFromTriggeringState_() ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
                 end
@@ -90,6 +91,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
                     self.StimulationTriggerSchemeIndex_ = double(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
                 end
@@ -132,6 +134,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                         self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
                         self.stimulusMapDurationPrecursorMayHaveChanged_();  % why are we calling this, again?
                     else
+                        self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
                     end

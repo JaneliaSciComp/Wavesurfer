@@ -75,7 +75,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             %fprintf('set.RepeatCount()\n');
             %dbstack
             if ws.utility.isASettableValue(newValue) ,
-                ws.TriggerSource.validateRepeatCount(newValue);
+                self.validateRepeatCount_(newValue);
                 if self.IsRepeatCountOverridden_ ,
                     % do nothing
                 else
@@ -88,7 +88,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         function overrideRepeatCount(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 % self.validatePropArg('RepeatCount', newValue);            
-                ws.TriggerSource.validateRepeatCount(newValue);
+                self.validateRepeatCount_(newValue);
                 self.RepeatCountOverride_ = newValue;
                 self.IsRepeatCountOverridden_=true;
             end
@@ -118,7 +118,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         
         function set.Interval(self, value)
             if ws.utility.isASettableValue(value) ,
-                ws.TriggerSource.validateInterval(newValue);
+                self.validateInterval_(newValue);
                 if self.IsIntervalOverridden_ ,
                     % do nothing
                 else
@@ -131,7 +131,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         function overrideInterval(self,newValue)
             %fprintf('overrideInterval()\n');
             %dbstack
-            ws.TriggerSource.validateInterval(newValue);
+            self.validateInterval_(newValue);
             self.IntervalOverride_ = newValue;
             self.IsIntervalOverridden_=true;
             %self.Interval=nan.The;  % just to cause set listeners to fire
@@ -193,6 +193,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                 if ws.utility.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Name must be a nonempty string');                  
                 end                    
@@ -205,12 +206,12 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                 if ws.utility.isString(value) ,
                     self.DeviceName_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'DeviceName must be a string');                  
                 end                    
             end
-            self.broadcast('Update');
-            
+            self.broadcast('Update');            
         end
         
         function set.PFIID(self, value)
@@ -219,6 +220,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                     value = double(value) ;
                     self.PFIID_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'PFIID must be a (scalar) nonnegative integer');                  
                 end                    
@@ -231,6 +233,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
                 end                                        
@@ -244,6 +247,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                     value = double(value) ;
                     self.CounterID_ = value ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'CounterID must be a (scalar) nonnegative integer');                  
                 end                    
@@ -346,7 +350,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
+    methods (Access=protected)
 %         function s = propertyAttributes()
 %             s = struct();
 % 
@@ -373,21 +377,23 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 % %                           'AllowEmpty', false);
 %         end  % function
         
-        function validateRepeatCount(newValue)
+        function validateRepeatCount_(self,newValue)
             % If returns, it's valid.  If throws, it's not.
             if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
                 % all is well---do nothing
             else
+                self.broadcast('Update');
                 error('most:Model:invalidPropVal', ...
                       'RepeatCount must be a (scalar) positive integer, or inf');       
             end
         end
         
-        function validateInterval(newValue)
+        function validateInterval_(self,newValue)
             % If returns, it's valid.  If throws, it's not.
             if isnumeric(newValue) && isscalar(newValue) && newValue>0 ,
                 % all is well---do nothing
             else
+                self.broadcast('Update');
                 error('most:Model:invalidPropVal', ...
                       'Interval must be a (scalar) positive integer');       
             end
