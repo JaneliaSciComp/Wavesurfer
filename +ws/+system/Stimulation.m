@@ -245,12 +245,12 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             value=self.TriggerScheme_;
 %         end
 
-        function set.TriggerScheme(self, value)
-            if ~ws.utility.isASettableValue(value), return, end            
-            self.validatePropArg('TriggerScheme', value);
-            %self.TriggerScheme = value;
-            self.Parent.Triggering.StimulationTriggerScheme = value ;
-        end  % function
+%         function set.TriggerScheme(self, value)
+%             if ~ws.utility.isASettableValue(value), return, end            
+%             self.validatePropArg('TriggerScheme', value);
+%             %self.TriggerScheme = value;
+%             self.Parent.Triggering.StimulationTriggerScheme = value ;
+%         end  % function
 
         function output = get.TriggerScheme(self)
             output = self.Parent.Triggering.StimulationTriggerScheme ;
@@ -1085,18 +1085,18 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % protected methods
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Stimulation.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
-            s.DoRepeatSequence = struct('Classes','binarylogical');
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+%             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
+%             s.DoRepeatSequence = struct('Classes','binarylogical');
+%         end  % function
+%     end  % class methods block
     
     methods
         function poll(self,timeSinceSweepStart)

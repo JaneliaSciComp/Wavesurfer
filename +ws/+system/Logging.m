@@ -79,20 +79,23 @@ classdef Logging < ws.system.Subsystem
         end
         
         function set.FileLocation(self, newValue)
-            if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('FileLocation', newValue);
-                if exist(newValue,'dir') ,
-                    originalValue=self.FileLocation_;
-                    self.FileLocation_ = newValue;
-                    % If file name has changed, reset the sweep index
-                    originalFullName=fullfile(originalValue,self.FileBaseName);
-                    newFullName=fullfile(newValue,self.FileBaseName);
-                    if ~isequal(originalFullName,newFullName) ,
-                        self.NextSweepIndex = 1;
+            if ws.utility.isASettableValue(newValue) ,
+                if ws.utility.isString(newValue) ,
+                    if exist(newValue,'dir') ,
+                        originalValue=self.FileLocation_;
+                        self.FileLocation_ = newValue;
+                        % If file name has changed, reset the sweep index
+                        originalFullName=fullfile(originalValue,self.FileBaseName);
+                        newFullName=fullfile(newValue,self.FileBaseName);
+                        if ~isequal(originalFullName,newFullName) ,
+                            self.NextSweepIndex = 1;
+                        end
                     end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'FileLocation must be a string');                    
                 end
             end
-            %self.broadcast('DidSetFileLocation');
             self.broadcast('Update');            
         end
         
@@ -103,18 +106,21 @@ classdef Logging < ws.system.Subsystem
         function set.FileBaseName(self, newValue)
             %fprintf('Entered set.FileBaseName()\n');            
             if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('FileBaseName', newValue);
-                originalValue=self.FileBaseName_;
-                self.FileBaseName_ = newValue;
-                % If file name has changed, reset the sweep index
-                originalFullName=fullfile(self.FileLocation,originalValue);
-                newFullName=fullfile(self.FileLocation,newValue);
-                if ~isequal(originalFullName,newFullName) ,
-                    %fprintf('About to reset NextSweepIndex...\n');
-                    self.NextSweepIndex = 1;
+                if ws.utility.isString(newValue) ,
+                    originalValue=self.FileBaseName_;
+                    self.FileBaseName_ = newValue;
+                    % If file name has changed, reset the sweep index
+                    originalFullName=fullfile(self.FileLocation,originalValue);
+                    newFullName=fullfile(self.FileLocation,newValue);
+                    if ~isequal(originalFullName,newFullName) ,
+                        %fprintf('About to reset NextSweepIndex...\n');
+                        self.NextSweepIndex = 1;
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'FileBaseName must be a string');                    
                 end
             end
-            %self.broadcast('DidSetFileBaseName');            
             self.broadcast('Update');            
         end
         
@@ -123,14 +129,15 @@ classdef Logging < ws.system.Subsystem
         end
         
         function set.NextSweepIndex(self, newValue)
-            %fprintf('set.NextSweepIndex\n');
-            %dbstack
             if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('NextSweepIndex', newValue);
-                self.NextSweepIndex_ = newValue;
-                %self.FirstSweepIndexInNextFile_ = newValue_ ;
+                if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
+                    newValue=double(newValue) ;
+                    self.NextSweepIndex_ = newValue;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'NextSweepIndex must be a (scalar) nonnegative integer');
+                end
             end
-            %self.broadcast('DidSetNextSweepIndex');            
             self.broadcast('Update');            
         end
         
@@ -144,7 +151,7 @@ classdef Logging < ws.system.Subsystem
 
         function set.IsOKToOverwrite(self, newValue)
             if ws.utility.isASettableValue(newValue), 
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
                     error('most:Model:invalidPropVal', ...
@@ -651,19 +658,8 @@ classdef Logging < ws.system.Subsystem
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Logging.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
-    end
-    
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.FileLocation = struct('Classes', 'string');
-            s.FileBaseName = struct('Classes', 'string');
-            s.NextSweepIndex = struct('Attributes', {{'scalar', 'finite', 'integer', '>=', 1}});
-            s.IsOKToOverwrite = struct('Classes','binarylogical', 'Attributes', {{'scalar'}} );            
-        end  % function
-    end  % class methods block
-    
+    end        
     
 end

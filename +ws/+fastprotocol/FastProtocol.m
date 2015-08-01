@@ -28,8 +28,12 @@ classdef FastProtocol < ws.Model
         
         function set.ProtocolFileName(self, value)
             if ws.utility.isASettableValue(value) ,
-                self.validatePropArg('ProtocolFileName', value);
-                self.ProtocolFileName_ = value;
+                if ws.utility.isString(value) ,
+                    self.ProtocolFileName_ = value;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'ProtocolFileName must be a string');
+                end                    
             end
             self.broadcast('Update');            
         end

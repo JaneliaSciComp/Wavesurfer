@@ -1,4 +1,4 @@
-classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
+classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentProperties
     % Stimulation subsystem
     
     properties (Dependent = true)
@@ -79,7 +79,7 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
     
     methods
         function self = LooperStimulation(parent)
-            self@ws.StimulationSubsystem(parent) ;
+            self@ws.system.StimulationSubsystem(parent) ;
 %             nChannels=length(self.AnalogChannelNames);
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
@@ -250,12 +250,12 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
 %             value=self.TriggerScheme_;
 %         end
 
-        function set.TriggerScheme(self, value)
-            if ~ws.utility.isASettableValue(value), return, end            
-            self.validatePropArg('TriggerScheme', value);
-            %self.TriggerScheme = value;
-            self.Parent.Triggering.StimulationTriggerScheme = value ;
-        end  % function
+%         function set.TriggerScheme(self, value)
+%             if ~ws.utility.isASettableValue(value), return, end            
+%             self.validatePropArg('TriggerScheme', value);
+%             %self.TriggerScheme = value;
+%             self.Parent.Triggering.StimulationTriggerScheme = value ;
+%         end  % function
 
         function output = get.TriggerScheme(self)
             output = self.Parent.Triggering.StimulationTriggerScheme ;
@@ -1090,19 +1090,18 @@ classdef LooperStimulation < ws.system.Subsystem   % & ws.mixin.DependentPropert
     end  % protected methods
 
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.LooperStimulation.propertyAttributes();
-        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
-            s.DoRepeatSequence = struct('Classes','binarylogical');
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+%             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
+%             s.DoRepeatSequence = struct('Classes','binarylogical');
+%         end  % function
+%     end  % class methods block
     
     methods
         function poll(self,timeSinceSweepStart)

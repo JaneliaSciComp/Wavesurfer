@@ -9,51 +9,26 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         IsInternal = true
     end
     
-%     properties (Transient=true)
-%         Parent  % the parent Triggering object
-%     end
-    
     properties (Dependent=true)
         Name
-    end
-    
-    properties (Dependent=true)
         RepeatCount
+        DeviceName  % the NI device ID string, e.g. 'Dev1'
+        CounterID  % the index of the DAQmx Counter device (zero-based)
+        Interval  % the inter-trigger interval, in seconds
+        PFIID
+        Edge
     end
     
     properties (Access=protected)
         Name_
-        %Type_
         RepeatCount_  % our internal RepeatCount value, which can be overridden
         IsRepeatCountOverridden_ = false  % boolean, true iff RepeatCount is overridden
         RepeatCountOverride_  % the value of RepeatCount if IsRepeatCountOverridden_
         Interval_  % our internal Interval value, which can be overridden
         IsIntervalOverridden_ = false  % boolean, true iff Interval is overridden
         IntervalOverride_  % the value of Interval if IsIntervalOverridden_
-        %IsIntervalLimited_ = false  % boolean
-        %IntervalLowerLimit_
-    end
-    
-    properties (Dependent=true)
-        DeviceName  % the NI device ID string, e.g. 'Dev1'
-        CounterID  % the index of the DAQmx Counter device (zero-based)
-        Interval  % the inter-trigger interval, in seconds
-        %PredefinedDestination  % a trigger destination that (I guess) is associated with this source by default
-    end
-
-    properties (Dependent=true)
-        PFIID
-        Edge
-    end
-    
-%     properties
-%         DoneCallback  % function to be called when the counter task finishes, or empty
-%     end
-    
-    properties (Access = protected)
         DeviceName_
         CounterID_
-        %PredefinedDestination_
         PFIID_
         Edge_
     end
@@ -69,31 +44,21 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     
     methods
         function self = TriggerSource(parent)
-            self=self@ws.Model(parent);
-            self.Name_='TriggerSource';
-            self.RepeatCount_=1;
-            self.DeviceName_ = 'Dev1';
-            self.CounterID_ = 0;
-            self.Interval_ = 1; % s
-            self.PFIID_ = 12;
-            self.Edge_ = 'DAQmx_Val_Rising';
-            %self.PredefinedDestination_ = ws.TriggerDestination.empty();            
+            self = self@ws.Model(parent) ;
+            self.Name_ = 'TriggerSource' ;
+            self.RepeatCount_ = 1 ;
+            self.DeviceName_ = 'Dev1' ;
+            self.CounterID_ = 0 ;
+            self.Interval_ = 1 ; % s
+            self.PFIID_ = 12 ;
+            self.Edge_ = 'DAQmx_Val_Rising' ;
             self.CounterTask_=[];  % set in setup() method
-            %self.DoneCallback=[];
         end
     end
     
     methods
         function value=get.Name(self)
             value=self.Name_;
-        end
-        
-        function set.Name(self, value)
-            if ~ws.utility.isASettableValue(value) , 
-                return
-            end
-            self.validatePropArg('Name', value);
-            self.Name_ = value;
         end
     end
     
@@ -109,9 +74,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         function set.RepeatCount(self, newValue)
             %fprintf('set.RepeatCount()\n');
             %dbstack
-            if isnumeric(newValue) && isscalar(newValue) && isnan(newValue) , 
-                % do nothing
-            else
+            if ws.utility.isASettableValue(newValue) ,
                 ws.TriggerSource.validateRepeatCount(newValue);
                 if self.IsRepeatCountOverridden_ ,
                     % do nothing
@@ -123,14 +86,14 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         end
         
         function overrideRepeatCount(self,newValue)
-            if isnumeric(newValue) && isscalar(newValue) && isnan(newValue) , 
-                return
+            if ws.utility.isASettableValue(newValue) ,
+                % self.validatePropArg('RepeatCount', newValue);            
+                ws.TriggerSource.validateRepeatCount(newValue);
+                self.RepeatCountOverride_ = newValue;
+                self.IsRepeatCountOverridden_=true;
             end
-            % self.validatePropArg('RepeatCount', newValue);            
-            ws.TriggerSource.validateRepeatCount(newValue);
-            self.RepeatCountOverride_ = newValue;
-            self.IsRepeatCountOverridden_=true;
-            self.RepeatCount=nan.The;  % just to cause set listeners to fire
+            %self.RepeatCount=nan.The;  % just to cause set listeners to fire
+            self.broadcast('Update');
         end
         
         function releaseRepeatCount(self)
@@ -138,7 +101,8 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             %dbstack
             self.IsRepeatCountOverridden_=false;
             self.RepeatCountOverride_ = [];  % for tidiness
-            self.RepeatCount=nan.The;  % just to cause set listeners to fire
+            %self.RepeatCount=nan.The;  % just to cause set listeners to fire
+            self.broadcast('Update');
         end
         
     end
@@ -146,29 +110,20 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     methods
         function value=get.Interval(self)
             if self.IsIntervalOverridden_ ,
-                rawValue=self.IntervalOverride_;
+                value=self.IntervalOverride_;
             else
-                rawValue=self.Interval_;
+                value=self.Interval_;
             end
-%             if self.IsIntervalLimited_ ,
-%                 value=max(self.IntervalLowerLimit_,rawValue);
-%             else
-            value=rawValue;
-            %end            
         end
         
         function set.Interval(self, value)
-            %fprintf('set.Interval()\n');
-            %dbstack
-            if isnan(value) ,
-                % do nothing
-            else
-                self.validatePropArg('Interval', value);
+            if ws.utility.isASettableValue(value) ,
+                ws.TriggerSource.validateInterval(newValue);
                 if self.IsIntervalOverridden_ ,
                     % do nothing
                 else
                     self.Interval_ = value;
-                end
+                end                
             end
             self.broadcast('Update');                
         end
@@ -176,10 +131,11 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         function overrideInterval(self,newValue)
             %fprintf('overrideInterval()\n');
             %dbstack
-            self.validatePropArg('Interval', newValue);            
+            ws.TriggerSource.validateInterval(newValue);
             self.IntervalOverride_ = newValue;
             self.IsIntervalOverridden_=true;
-            self.Interval=nan.The;  % just to cause set listeners to fire
+            %self.Interval=nan.The;  % just to cause set listeners to fire
+            self.broadcast('Update');                
         end
         
         function releaseInterval(self)
@@ -187,7 +143,8 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             %dbstack
             self.IsIntervalOverridden_=false;
             self.IntervalOverride_ = [];  % for tidiness
-            self.Interval=nan.The;  % just to cause set listeners to fire
+            %self.Interval=nan.The;  % just to cause set listeners to fire
+            self.broadcast('Update');                
         end
 
 %         function placeLowerLimitOnInterval(self,newValue)
@@ -231,61 +188,69 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             value=self.Edge_;
         end
         
-        function set.DeviceName(self, value)
-            if ~ws.utility.isASettableValue(value) , 
-                return
+        function set.Name(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if ws.utility.isString(value) && ~isempty(value) ,
+                    self.Name_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Name must be a nonempty string');                  
+                end                    
             end
-            self.validatePropArg('DeviceName', value);
-            self.DeviceName_ = value;
+            self.broadcast('Update');            
         end
+        
+        function set.DeviceName(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if ws.utility.isString(value) ,
+                    self.DeviceName_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DeviceName must be a string');                  
+                end                    
+            end
+            self.broadcast('Update');
+            
+        end
+        
+        function set.PFIID(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                    value = double(value) ;
+                    self.PFIID_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'PFIID must be a (scalar) nonnegative integer');                  
+                end                    
+            end
+            self.broadcast('Update');            
+        end
+        
+        function set.Edge(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if ws.isAnEdgeType(value) ,
+                    self.Edge_ = value;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                end                                        
+            end
+            self.broadcast('Update');            
+        end  % function 
         
         function set.CounterID(self, value)
-            if ~ws.utility.isASettableValue(value) , 
-                return
+            if ws.utility.isASettableValue(value) ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                    value = double(value) ;
+                    self.CounterID_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'CounterID must be a (scalar) nonnegative integer');                  
+                end                    
             end
-            self.validatePropArg('CounterID', value);
-            self.CounterID_ = value;
+            self.broadcast('Update');            
         end
                 
-%         function set.PredefinedDestination(self, value)
-%             self.validatePropArg('PredefinedDestination', value);
-%             %assert(value.Type == ws.TriggerDestinationType.Auto, ...
-%             %       'The DestinationType of a predefined destination for an internal source must be ''Auto''');
-%             self.PredefinedDestination_ = value;
-%         end
-        
-%         function result = get.PFIID(self)
-%             if isempty(self.PredefinedDestination_) ,
-%                 result=[];
-%             else
-%                 result = self.PredefinedDestination_.PFIID;
-%             end
-%         end  % function
-        
-        function set.PFIID(self, newValue)
-            if ~ws.utility.isASettableValue(newValue) ,
-                return
-            end
-            self.validatePropArg('PFIID', newValue);
-            self.PFIID_=newValue;
-        end  % function
-
-%         function result = get.Edge(self)
-%             if isempty(self.PredefinedDestination_) ,
-%                 result=ws.ni.TriggerEdge.empty();
-%             else
-%                 result = self.PredefinedDestination_.Edge;
-%             end
-%         end  % function
-        
-        function set.Edge(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if ws.isAnEdgeType(newValue) ,
-                    self.Edge_ = newValue;
-                end
-            end
-        end        
-
         function setup(self)
             % fetch params
             interval=self.Interval;
@@ -377,36 +342,36 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     end    
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.TriggerSource.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
     methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-
-            s.Name=struct('Classes', 'char', ...
-                          'Attributes', {{'vector'}}, ...
-                          'AllowEmpty', false);
-            s.RepeatCount=struct('Classes', 'numeric', ...
-                                 'Attributes', {{'scalar', 'integer', 'positive'}}, ...
-                                 'AllowEmpty', false);
-            s.DeviceName=struct('Classes', 'char', ...
-                            'Attributes', {{'vector'}}, ...
-                            'AllowEmpty', true);
-            s.CounterID=struct('Classes', 'numeric', ...
-                             'Attributes', {{'scalar', 'integer', 'nonnegative'}}, ...
-                             'AllowEmpty', false);
-            s.Interval=struct('Classes', 'numeric', ...
-                              'Attributes', {{'scalar', 'positive'}}, ...
-                              'AllowEmpty', false);
-            s.PFIID=struct('Classes', 'numeric', ...
-                           'Attributes', {{'scalar', 'integer'}}, ...
-                           'AllowEmpty', false);
-%             s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
-%                           'Attributes', 'scalar', ...
+%         function s = propertyAttributes()
+%             s = struct();
+% 
+%             s.Name=struct('Classes', 'char', ...
+%                           'Attributes', {{'vector'}}, ...
 %                           'AllowEmpty', false);
-        end  % function
+%             s.RepeatCount=struct('Classes', 'numeric', ...
+%                                  'Attributes', {{'scalar', 'integer', 'positive'}}, ...
+%                                  'AllowEmpty', false);
+%             s.DeviceName=struct('Classes', 'char', ...
+%                             'Attributes', {{'vector'}}, ...
+%                             'AllowEmpty', true);
+%             s.CounterID=struct('Classes', 'numeric', ...
+%                              'Attributes', {{'scalar', 'integer', 'nonnegative'}}, ...
+%                              'AllowEmpty', false);
+%             s.Interval=struct('Classes', 'numeric', ...
+%                               'Attributes', {{'scalar', 'positive'}}, ...
+%                               'AllowEmpty', false);
+%             s.PFIID=struct('Classes', 'numeric', ...
+%                            'Attributes', {{'scalar', 'integer'}}, ...
+%                            'AllowEmpty', false);
+% %             s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
+% %                           'Attributes', 'scalar', ...
+% %                           'AllowEmpty', false);
+%         end  % function
         
         function validateRepeatCount(newValue)
             % If returns, it's valid.  If throws, it's not.
@@ -417,5 +382,16 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                       'RepeatCount must be a (scalar) positive integer, or inf');       
             end
         end
+        
+        function validateInterval(newValue)
+            % If returns, it's valid.  If throws, it's not.
+            if isnumeric(newValue) && isscalar(newValue) && newValue>0 ,
+                % all is well---do nothing
+            else
+                error('most:Model:invalidPropVal', ...
+                      'Interval must be a (scalar) positive integer');       
+            end
+        end
+        
     end  % static methods
 end

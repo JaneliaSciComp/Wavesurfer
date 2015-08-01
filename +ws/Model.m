@@ -32,28 +32,28 @@ classdef (Abstract) Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaste
 %             self.setParent_(newValue) ;
 %         end
         
-        function isValid=isPropertyArgumentValid(self, propertyName, newValue)
-            % Function to check if a property value is valid.  Differs from
-            % ws.most.Model::validatePropArg() in that it simply returns false
-            % if the value is invalid, rather than throwing an exception.
-            % This is often useful in controllers, when I typically just
-            % want to silently reject invalid values.  Using this method allows the
-            % PostSet event to fire even after a rejected change, so that the view can 
-            % be updated to reflect the original value, not the invalid one the user 
-            % just entered.
-            try
-                self.validatePropArg(propertyName,newValue);
-            catch exception
-                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
-                    isValid=false;
-                    return
-                else
-                    rethrow(exception);
-                end
-            end
-            % If we get here, no exception was raised
-            isValid=true;
-        end  % function
+%         function isValid=isPropertyArgumentValid(self, propertyName, newValue)
+%             % Function to check if a property value is valid.  Differs from
+%             % ws.most.Model::validatePropArg() in that it simply returns false
+%             % if the value is invalid, rather than throwing an exception.
+%             % This is often useful in controllers, when I typically just
+%             % want to silently reject invalid values.  Using this method allows the
+%             % PostSet event to fire even after a rejected change, so that the view can 
+%             % be updated to reflect the original value, not the invalid one the user 
+%             % just entered.
+%             try
+%                 self.validatePropArg(propertyName,newValue);
+%             catch exception
+%                 if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+%                     isValid=false;
+%                     return
+%                 else
+%                     rethrow(exception);
+%                 end
+%             end
+%             % If we get here, no exception was raised
+%             isValid=true;
+%         end  % function
         
         function changeReadiness(self,delta)
             import ws.utility.*

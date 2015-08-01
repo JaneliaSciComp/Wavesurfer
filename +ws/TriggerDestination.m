@@ -54,31 +54,55 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
         end
         
         function set.Name(self, value)
-            if isnan(value), return, end            
-            self.validatePropArg('Name', value);
-            self.Name_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if ws.utility.isString(value) && ~isempty(value) ,
+                    self.Name_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Name must be a nonempty string');                  
+                end                    
+            end
+            self.broadcast('Update');            
         end
         
         function set.DeviceName(self, value)
-            if isnan(value), return, end
-            self.validatePropArg('DeviceName', value);
-            self.DeviceName_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if ws.utility.isString(value) ,
+                    self.DeviceName_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DeviceName must be a string');                  
+                end                    
+            end
+            self.broadcast('Update');
+            
         end
         
         function set.PFIID(self, value)
-            if isnan(value), return, end            
-            self.validatePropArg('PFIID', value);
-            self.PFIID_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                    value = double(value) ;
+                    self.PFIID_ = value ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'PFIID must be a (scalar) nonnegative integer');                  
+                end                    
+            end
+            self.broadcast('Update');            
         end
         
         function set.Edge(self, value)
             if ws.utility.isASettableValue(value) ,
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
-                end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                end                                        
             end
-        end        
-    end
+            self.broadcast('Update');            
+        end  % function 
+    end  % methods
     
     methods (Access=protected)        
         function out = getPropertyValue(self, name)
@@ -92,24 +116,24 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.TriggerSource.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-
-            s.Name=struct('Classes', 'char', ...
-                          'Attributes', {{'vector'}}, ...
-                          'AllowEmpty', false);
-            s.DeviceName=struct('Classes', 'char', ...
-                            'Attributes', {{'vector'}}, ...
-                            'AllowEmpty', true);
-            s.PFIID=struct('Classes', 'numeric', ...
-                           'Attributes', {{'scalar', 'integer'}}, ...
-                           'AllowEmpty', false);
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+% 
+%             s.Name=struct('Classes', 'char', ...
+%                           'Attributes', {{'vector'}}, ...
+%                           'AllowEmpty', false);
+%             s.DeviceName=struct('Classes', 'char', ...
+%                             'Attributes', {{'vector'}}, ...
+%                             'AllowEmpty', true);
+%             s.PFIID=struct('Classes', 'numeric', ...
+%                            'Attributes', {{'scalar', 'integer'}}, ...
+%                            'AllowEmpty', false);
+%         end  % function
+%     end  % class methods block
     
-end
+end  % classdef

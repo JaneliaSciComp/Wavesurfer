@@ -246,38 +246,45 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function set.Duration(self, newValue)
-            if ws.utility.isASettableValue(newValue), return, end            
-            self.validatePropArg('Duration', newValue);
-            try
-                % See if we can collect all the information we need to make
-                % an informed decision about whether to use the acquisition
-                % duration or our own internal duration
-                % (This is essentially a way to test whether the
-                % parent-child relationships that enable us to determine
-                % the duration from external object are set up.  If this
-                % throws, we know that they're _not_ set up, and so we are
-                % free to set the internal duration to the given value.)
-                [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
-            catch 
-                self.Duration_ = newValue;
-                if ~isempty(self.Parent) ,
-                    self.Parent.childMayHaveChanged(self);
-                end                
-                return
-            end
-            
-            % Return the acquisition duration or the internal duration,
-            % depending
-            if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
-               % internal duration is overridden, so don't set it.
-               % Note that even though we 'do nothing', the PostSet event
-               % will still occur.
-            else
-                self.Duration_ = newValue;
+            if ws.utility.isASettableValue(newValue) ,                
+                if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>=0 ,            
+                    newValue = double(newValue) ;
+                    didThrow=false ;
+                    try
+                        % See if we can collect all the information we need to make
+                        % an informed decision about whether to use the acquisition
+                        % duration or our own internal duration
+                        % (This is essentially a way to test whether the
+                        % parent-child relationships that enable us to determine
+                        % the duration from external object are set up.  If this
+                        % throws, we know that they're _not_ set up, and so we are
+                        % free to set the internal duration to the given value.)
+                        [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
+                    catch 
+                        didThrow=true ;
+                    end
+                    if didThrow ,
+                        self.Duration_ = newValue;
+                    else
+                        % If get here, we were able to collect the
+                        % external information we wanted.
+                        
+                        % Return the acquisition duration or the internal duration,
+                        % depending
+                        if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
+                           % Internal duration is overridden, so don't set it.
+                        else
+                            self.Duration_ = newValue;
+                        end
+                    end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Duration must be numeric, real, scalar, nonnegative, and finite.');                
+                end
             end
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
-            end
+            end            
         end   % function
         
         function value = get.IsDurationFree(self)
@@ -706,26 +713,26 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.stimulus.StimulusMap.propertyAttributes();        
+        mdlPropAttributes = struct() ;
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            
-            s.Name = struct('Classes', 'char');
-            s.Duration = struct('Classes', 'numeric', ...
-                                'Attributes', {{'scalar', 'nonnegative', 'real', 'finite'}});
-            s.ChannelNames = struct('Classes', 'string');
-            s.Multipliers = struct('Classes', 'numeric', 'Attributes', {{'row', 'real', 'finite'}});
-            s.Stimuli = struct('Classes', 'ws.stimulus.StimulusMap');                            
-        end  % function
-        
-%         function self = loadobj(self)
-%             self.IsMarkedForDeletion_ = false(size(self.ChannelNames_));
-%               % Is MarkedForDeletion_ is transient
-%         end
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             
+%             s.Name = struct('Classes', 'char');
+%             s.Duration = struct('Classes', 'numeric', ...
+%                                 'Attributes', {{'scalar', 'nonnegative', 'real', 'finite'}});
+%             s.ChannelNames = struct('Classes', 'string');
+%             s.Multipliers = struct('Classes', 'numeric', 'Attributes', {{'row', 'real', 'finite'}});
+%             s.Stimuli = struct('Classes', 'ws.stimulus.StimulusMap');                            
+%         end  % function
+%         
+% %         function self = loadobj(self)
+% %             self.IsMarkedForDeletion_ = false(size(self.ChannelNames_));
+% %               % Is MarkedForDeletion_ is transient
+% %         end
+%     end  % class methods block
     
 end
