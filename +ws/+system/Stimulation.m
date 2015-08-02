@@ -79,10 +79,11 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     
     methods
         function self = Stimulation(parent)
-            if ~exist('parent','var') ,
-                parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
-            end
-            self.Parent=parent;
+            self@ws.system.Subsystem(parent);
+%             if ~exist('parent','var') ,
+%                 parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
+%             end
+%             self.Parent=parent;
 %             nChannels=length(self.AnalogChannelNames);
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
@@ -95,7 +96,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             self.TheFiniteAnalogOutputTask_ = [] ;
 %             self.TheFiniteDigitalOutputTask_ = [] ;
 %             self.TheUntimedDigitalOutputTask_ = [];
-            self.Parent = [] ;
+            %self.Parent = [] ;
         end
         
 %         function unstring(self)

@@ -24,11 +24,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         % Keeps track of where we are in the exit process.
         IsExitingMATLAB = false
     end
-        
+    
     methods
         function self = WavesurferMainController(model)
-            parentController=[];
-            self = self@ws.Controller(parentController,model,{'wavesurferMainFigureWrapper'});
+            self = self@ws.Controller([],model,{'wavesurferMainFigureWrapper'});  % this controller has no parent
                         
             %self.HideWindowOnClose = false;
             
@@ -1416,7 +1415,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % upper-right close button.
             %figureObject=self.Figure;
             %figureObject.delete();
-            self.delete();
+            self.tellFigureToDeleteFigureGH_() ;
+            %self.delete();
         end  % function
         
 %         function tellScopeControllersThatDisplayEnablementWasSet(self)

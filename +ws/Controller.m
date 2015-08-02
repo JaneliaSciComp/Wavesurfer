@@ -44,7 +44,10 @@ classdef Controller < ws.most.Controller
         
         function delete(self)
             %fprintf('ws.Controller::delete()\n');
-            self.deleteFigure_();
+            if ~isempty(self.Figure) && isvalid(self.Figure) ,
+                self.Figure.deleteFigureGH_() ;
+            end
+            %self.deleteFigure_();
             self.Parent_=[];            
         end
         
@@ -101,6 +104,14 @@ classdef Controller < ws.most.Controller
                 figure.delete();
             end
         end
+        
+        function tellFigureToDeleteFigureGH_(self)
+            figure=self.Figure;
+            if ~isempty(figure) && isvalid(figure) ,
+                figure.deleteFigureGH_();
+            end
+        end
+            
     end  % methods
     
     methods (Access = protected, Sealed = true)

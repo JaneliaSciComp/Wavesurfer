@@ -33,9 +33,9 @@ classdef Ephys < ws.system.Subsystem
         
         %%
         function delete(self)
-            self.Parent=[];  % eliminate reference to host WavesurferModel object
-            delete(self.TestPulser_);  % do i need this?
-            delete(self.ElectrodeManager_);  % do i need this?
+            %self.Parent=[];  % eliminate reference to host WavesurferModel object
+            %delete(self.TestPulser_);  % do i need this?  No.
+            %delete(self.ElectrodeManager_);  % do i need this?  No.
         end
         
         %%

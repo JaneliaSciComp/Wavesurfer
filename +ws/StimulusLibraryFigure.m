@@ -1,4 +1,4 @@
-classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef StimulusLibraryFigure < ws.MCOSFigure
     properties  % these are protected by gentleman's agreement
         FileMenu
         %ImportLibraryMenuItem

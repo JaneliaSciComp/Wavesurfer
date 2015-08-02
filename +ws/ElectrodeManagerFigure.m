@@ -1,4 +1,4 @@
-classdef ElectrodeManagerFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef ElectrodeManagerFigure < ws.MCOSFigure
     properties  % these are protected by gentleman's agreement
         % GH Handles of controls that persist for the lifetime of the
         % window

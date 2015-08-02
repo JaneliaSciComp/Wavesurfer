@@ -1,4 +1,4 @@
-classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef UserFunctionsFigure < ws.MCOSFigure
     properties
         ClassNameText
         ClassNameEdit        

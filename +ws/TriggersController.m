@@ -1,4 +1,4 @@
-classdef TriggersController < ws.Controller & ws.EventSubscriber
+classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     
     properties (Access = protected, Transient = true)
         %SourcesDataGridDataTable_    % Only internal sources for display/configuration.

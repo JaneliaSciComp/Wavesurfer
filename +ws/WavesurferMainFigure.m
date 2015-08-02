@@ -1,4 +1,4 @@
-classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef WavesurferMainFigure < ws.MCOSFigure
     properties
         FileMenu
         LoadMachineDataFileMenuItem

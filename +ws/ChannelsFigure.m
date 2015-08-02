@@ -1,4 +1,4 @@
-classdef ChannelsFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef ChannelsFigure < ws.MCOSFigure
     properties  % protected by gentleman's agreement
         %Model  % an Wavesurfer object
         %Controller  % a ChannelsController

@@ -1,4 +1,4 @@
-classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef TriggersFigure < ws.MCOSFigure
     properties
         SweepBasedAcquisitionPanel
         %UseASAPTriggeringCheckbox

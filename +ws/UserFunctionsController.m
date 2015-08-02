@@ -1,4 +1,4 @@
-classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
+classdef UserFunctionsController < ws.Controller     %& ws.EventSubscriber
     
     methods
         function self = UserFunctionsController(wavesurferController,wavesurferModel)

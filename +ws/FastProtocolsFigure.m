@@ -1,4 +1,4 @@
-classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef FastProtocolsFigure < ws.MCOSFigure
     properties
         Table        
         ClearRowButton

@@ -1,4 +1,4 @@
-classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
+classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     properties  (Access = protected)
         % Figure window for showing plots.
         PlotFigureGH_

@@ -1,4 +1,4 @@
-classdef (Abstract) MCOSFigure < handle
+classdef (Abstract) MCOSFigure < ws.EventSubscriber
     % This is a base class that wraps a handle graphics figure in a proper
     % MCOS object.
     
@@ -45,13 +45,19 @@ classdef (Abstract) MCOSFigure < handle
         end
         
         function delete(self)
-            if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
-              delete(self.FigureGH);  % delete the HG figure 
-            end
-            self.FigureGH=[];
+            keyboard
+            self.deleteFigureGH_();
             self.Controller=[];
             self.Model=[];
+            fprintf('here i am doing something\n');
         end
+
+%         function deleteFigureGH(self)
+%             if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
+%               delete(self.FigureGH);  % delete the HG figure 
+%             end
+%             self.FigureGH=[];
+%         end
         
         function set.Model(self,newValue)
             self.willSetModel_();
@@ -410,6 +416,17 @@ classdef (Abstract) MCOSFigure < handle
             else
                 self.Controller.windowCloseRequested(source,event);
             end
+        end  % function       
+    end  % methods    
+    
+    methods
+        function deleteFigureGH_(self)   
+            % This causes the figure HG object to be deleted, with no ifs
+            % ands or buts
+            if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
+                delete(self.FigureGH);
+            end
+            self.FigureGH = [] ;
         end  % function       
     end  % methods    
     

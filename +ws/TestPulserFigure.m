@@ -1,4 +1,4 @@
-classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef TestPulserFigure < ws.MCOSFigure
     properties  (SetAccess=protected)
         StartStopButton
         ElectrodePopupMenuLabelText

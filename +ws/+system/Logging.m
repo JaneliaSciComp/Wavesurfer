@@ -62,7 +62,7 @@ classdef Logging < ws.system.Subsystem
     
     methods
         function self = Logging(parent)
-            self.Parent=parent;
+            self@ws.system.Subsystem(parent) ;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
@@ -72,10 +72,6 @@ classdef Logging < ws.system.Subsystem
             %self.FirstSweepIndexInNextFile_ = 1 ; % Number of sweeps acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
             self.IsOKToOverwrite_ = false ;
             self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-run
-        end
-        
-        function delete(self)
-            self.Parent=[];
         end
         
         function set.FileLocation(self, newValue)

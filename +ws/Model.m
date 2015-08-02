@@ -24,9 +24,9 @@ classdef (Abstract) Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaste
             self.Parent_ = [] ;  % likely not needed
         end
         
-%         function out = get.Parent(self)
-%             out = self.Parent_ ;
-%         end
+        function out = get.Parent(self)
+            out = self.Parent_ ;
+        end
 
 %         function set.Parent(self, newValue)
 %             self.setParent_(newValue) ;

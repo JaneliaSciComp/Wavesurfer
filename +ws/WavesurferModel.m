@@ -130,7 +130,7 @@ classdef WavesurferModel < ws.Model
             self.DataSubscriber_.setDelegate(self) ;
             
             % Start the other Matlab processes
-            system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+            %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
             %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
             
             % Connect to the various sockets
@@ -623,7 +623,7 @@ classdef WavesurferModel < ws.Model
         function setState_(self,newValue)
             self.broadcast('WillSetState');
             if ws.isAnApplicationState(newValue) ,
-                if self.State_ ~= newValue ,
+                if ~isequal(self.State_,newValue) ,
                     oldValue = self.State_ ;
                     self.State_ = newValue ;
                     if isequal(oldValue,'no_mdf') && ~isequal(newValue,'no_mdf') ,

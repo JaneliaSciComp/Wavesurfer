@@ -66,9 +66,9 @@ classdef UserFunctions < ws.system.Subsystem
         
         function set.AbortCallsComplete(self, value)
             if ws.utility.isASettableValue(value) ,
-                if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value)) ,
+                if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
                     valueAsLogical = logical(value>0) ;
-                    self.AbortCallsComplete_ = value;
+                    self.AbortCallsComplete_ = valueAsLogical ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...

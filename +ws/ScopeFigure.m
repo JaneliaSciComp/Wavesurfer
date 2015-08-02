@@ -1,4 +1,4 @@
-classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
+classdef ScopeFigure < ws.MCOSFigure
     % This is an EventBroadcaster only so that changes to it via the
     % default Matlab figure controls can be communicated to the model (via
     % the controller)
@@ -225,7 +225,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.XLim_=newValue;
                 set(self.AxesGH_,'XLim',newValue);
             end
-            self.broadcast('DidSetXLim');
+            %self.broadcast('DidSetXLim');
         end  % function
         
         function value=get.XLim(self)
@@ -238,7 +238,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.YLim_=newValue;
                 set(self.AxesGH_,'YLim',newValue);
             end
-            self.broadcast('DidSetYLim');
+            %self.broadcast('DidSetYLim');
         end  % function
             
         function value=get.YLim(self)
