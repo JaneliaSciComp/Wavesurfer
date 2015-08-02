@@ -1,11 +1,11 @@
 function titleString = titleStringFromEdgeType(edgeType)
     switch edgeType ,
         case 'DAQmx_Val_Rising' ,
-            titleString = 'Rising' ;
+            titleString = 'rising' ;
         case 'DAQmx_Val_Falling' ,
-            titleString = 'Falling' ;
+            titleString = 'falling' ;
         otherwise
             % fallback
-            titleString = 'Rising' ;            
+            titleString = 'rising' ;            
     end
 end

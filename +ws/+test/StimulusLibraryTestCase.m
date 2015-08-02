@@ -2,7 +2,7 @@ classdef StimulusLibraryTestCase < matlab.unittest.TestCase
     
     methods
         function stimulusLibrary=createPopulatedStimulusLibrary(self)
-            stimulusLibrary=ws.stimulus.StimulusLibrary();            
+            stimulusLibrary=ws.stimulus.StimulusLibrary([]);  % no parent
             
             stimulus1=stimulusLibrary.addNewStimulus('Chirp');
             %stimulus1=ws.stimulus.ChirpStimulus('InitialFrequency',1.4545, ...

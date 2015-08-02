@@ -191,7 +191,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end
 
         function addMap(self, map)
-            indexOfMapInLibrary = self.Parent.indexOfMapInLibrary(map) ;
+            indexOfMapInLibrary = self.Parent.getMapIndex(map) ;
             if ~isempty(indexOfMapInLibrary) ,
                 self.IndexOfEachMapInLibrary_{end + 1} = indexOfMapInLibrary;
                 self.IsMarkedForDeletion_(end+1) = false ;

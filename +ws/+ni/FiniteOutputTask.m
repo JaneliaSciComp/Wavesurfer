@@ -256,7 +256,7 @@ classdef FiniteOutputTask < handle
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
                 self.TriggerEdge_ = [];
-            elseif isAnEdgeType(newValue') ,
+            elseif ws.isAnEdgeType(newValue') ,
                 self.TriggerEdge_ = newValue;
             else
                 error('most:Model:invalidPropVal', ...

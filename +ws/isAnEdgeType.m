@@ -1,4 +1,4 @@
 function result = isAnEdgeType(thing)
-    result = isequal(thing,'DAQmx_Val_Rising') || ...
-             isequal(thing,'DAQmx_Val_Falling') ;
+    result = isequal(thing,'rising') || ...
+             isequal(thing,'falling') ;
 end

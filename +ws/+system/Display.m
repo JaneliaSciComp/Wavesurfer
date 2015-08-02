@@ -195,7 +195,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             end
             
             % Add the new scope to Scopes
-            self.Scopes{end + 1} = scopeModel;
+            self.Scopes_{end + 1} = scopeModel;
             %self.IsScopeVisibleWhenDisplayEnabled(end+1) = true;
 
             % We want to know if the visibility of the scope changes
@@ -335,7 +335,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             % Want any listeners on XSpan set to get called
             if self.IsXSpanSlavedToAcquistionDuration ,
                 for idx = 1:numel(self.Scopes) ,
-                    self.Scopes{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                    self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                 end
                 self.broadcast('UpdateXSpan');
             end    

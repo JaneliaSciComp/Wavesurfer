@@ -156,7 +156,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                     if (isempty(stimulus) && isa(stimulus,'double')) ,
                         indexOfEachStimulusInLibrary{i} = [] ;
                     elseif isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus) ,
-                        indexOfThisStimulusInLibrary = self.Parent.indexOfStimulusInLibrary(stimulus) ;
+                        indexOfThisStimulusInLibrary = self.Parent.getStimulusIndex(stimulus) ;
                         if isempty(indexOfThisStimulusInLibrary)
                             % This stim is not in library
                             areAllElementsOfNewValueOK = false ;
@@ -376,7 +376,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 indexOfThisStimulusInLibrary = [] ;
             else
                 if isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus) ,
-                    indexOfThisStimulusInLibrary = self.Parent.indexOfStimulusInLibrary(stimulus) ;
+                    indexOfThisStimulusInLibrary = self.Parent.getStimulusIndex(stimulus) ;
                     isStimulusOK = ~isempty(indexOfThisStimulusInLibrary) ;
                 else
                     isStimulusOK = false ;

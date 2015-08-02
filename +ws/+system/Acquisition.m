@@ -14,7 +14,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                     error('ws:MoreThanOneDeviceName', ...
                           'Wavesurfer only supports a single NI card at present.');                      
                 end
-                self.DeviceNames = inputDeviceNames;
+                self.DeviceNames_ = inputDeviceNames;
                 channelNames = mdfStructure.inputChannelNames;
 
                 % Figure out which are analog and which are digital

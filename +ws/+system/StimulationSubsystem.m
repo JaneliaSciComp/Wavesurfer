@@ -1,4 +1,4 @@
-classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProperties
+classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProperties
     % Stimulation subsystem
     
     properties (Dependent = true)
@@ -68,7 +68,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
     methods
         function self = StimulationSubsystem(parent)
             self@ws.system.Subsystem(parent) ;            
-            self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
+            %self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
         function value=get.StimulusLibrary(self)
@@ -189,7 +189,7 @@ classdef StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProp
         end
         
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
-            % Called by the parent WavesurferModel to notify that the electrode
+            % Called by the parent to notify that the electrode
             % may have changed.
             
             % If the changed property is a monitor property, we can safely

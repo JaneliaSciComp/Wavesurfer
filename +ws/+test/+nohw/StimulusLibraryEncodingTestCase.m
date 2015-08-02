@@ -199,7 +199,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %stimulusLibrary.add(sequences);
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
             
-            stimulusLibraryCheck=ws.stimulus.StimulusLibrary();
+            stimulusLibraryCheck=ws.stimulus.StimulusLibrary([]);
             stimulusLibraryCheck.mimic(stimulusLibrary);
             
             self.verifyTrue(stimulusLibraryCheck.isLiveAndSelfConsistent());  % test soundness of the restored one            

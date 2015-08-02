@@ -118,7 +118,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         
         function set.Interval(self, value)
             if ws.utility.isASettableValue(value) ,
-                self.validateInterval_(newValue);
+                self.validateInterval_(value);
                 if self.IsIntervalOverridden_ ,
                     % do nothing
                 else
@@ -162,11 +162,11 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     end  % public methods block
     
     methods
-        function delete(self)
-            %delete(self.CounterTask_);
-            %self.DoneCallback=[];            
-            self.Parent=[];            
-        end
+%         function delete(self)
+%             %delete(self.CounterTask_);
+%             %self.DoneCallback=[];            
+%             %self.Parent=[];            
+%         end
         
         function value=get.DeviceName(self)
             value=self.DeviceName_;

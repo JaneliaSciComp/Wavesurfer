@@ -25,7 +25,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
                 source.RepeatCount = 1;
                 source.Interval = 1;  % s
                 source.PFIID = thisTriggerSourceSpec.CounterID + 12;                
-                source.Edge = 'DAQmx_Val_Rising';                                
+                source.Edge = 'rising';                                
                 
                 % add the trigger source to the subsystem
                 %self.addTriggerSource(source);
@@ -50,7 +50,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
                 destination.Name = thisTriggerDestinationSpec.Name;
                 destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
                 destination.PFIID = thisTriggerDestinationSpec.PFIID;
-                destination.Edge = ws.ni.TriggerEdge.(thisTriggerDestinationSpec.Edge);
+                destination.Edge = lower(thisTriggerDestinationSpec.Edge);
                 
                 % add the trigger destination to the subsystem
                 %self.addTriggerDestination(destination);
