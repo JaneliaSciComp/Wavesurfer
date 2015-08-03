@@ -808,12 +808,12 @@ classdef Electrode < ws.Model & ws.Mimic
         end        
     end  % static methods
 
-    methods (Access=protected)        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)        
+%         function defineDefaultPropertyTags(self)
+%             defineDefaultPropertyTags@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = struct();        

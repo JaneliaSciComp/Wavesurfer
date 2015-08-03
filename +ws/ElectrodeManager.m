@@ -1090,12 +1090,12 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
         end  % function
     end
     
-    methods (Access=protected)        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)        
+%         function defineDefaultPropertyTags(self)
+%             defineDefaultPropertyTags@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = ws.ElectrodeManager.propertyAttributes();        

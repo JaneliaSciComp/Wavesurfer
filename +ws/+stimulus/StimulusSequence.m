@@ -452,24 +452,24 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         end
 %     end
 
-    methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags(self)
+%             defineDefaultPropertyTags@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.stimulus.StimulusSequence.propertyAttributes();        
+        mdlPropAttributes = struct();        
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.Name = struct('Classes', 'string');
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.Name = struct('Classes', 'string');
+%         end  % function
+%     end  % class methods block
     
     methods
         function result=areAllMapsInDictionary(self,mapDictionary)

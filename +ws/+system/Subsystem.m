@@ -63,10 +63,10 @@ classdef (Abstract) Subsystem < ws.Model
     end  % methods block
     
     methods (Access = protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
+%         function defineDefaultPropertyTags(self)
+%             defineDefaultPropertyTags@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
         
         function out = getIsEnabledImplementation(self)
             out = self.IsEnabled_;

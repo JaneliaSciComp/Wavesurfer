@@ -1146,7 +1146,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             self.setPropertyTags('SelectedStimulus', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('SelectedItem', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('SelectedItemClassName', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('IsLive', 'ExcludeFromFileTypes', {'header'});
+            %self.setPropertyTags('IsLive', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('IsEmpty', 'ExcludeFromFileTypes', {'header'});            
         end
     end    

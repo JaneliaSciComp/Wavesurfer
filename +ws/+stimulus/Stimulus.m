@@ -412,7 +412,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     methods (Access=protected)
         function defineDefaultPropertyTags(self)
             defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+            %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
         end

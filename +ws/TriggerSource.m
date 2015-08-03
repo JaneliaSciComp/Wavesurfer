@@ -335,15 +335,15 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
         end  % function
     end
     
-    methods (Access=protected)        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('CanEnable', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});            
-%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'*'});            
-        end
-    end    
+%     methods (Access=protected)        
+%         function defineDefaultPropertyTags(self)
+%             defineDefaultPropertyTags@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+% %             self.setPropertyTags('CanEnable', 'ExcludeFromFileTypes', {'*'});
+% %             self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});            
+% %             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'*'});            
+%         end
+%     end    
     
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = struct();        
