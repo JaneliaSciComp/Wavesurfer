@@ -1545,11 +1545,11 @@ classdef TestPulser < ws.Model
     
     % These next two methods allow access to private and protected variables from ws.mixin.Coding. 
     methods (Access=protected)
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end

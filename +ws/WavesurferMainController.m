@@ -906,11 +906,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             self.expose_bindings(bindings);
 %         end  % function
         
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  
         
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end
         

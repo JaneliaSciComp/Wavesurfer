@@ -884,12 +884,12 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         end
 
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             if nargin < 3
                 value = [];
             end

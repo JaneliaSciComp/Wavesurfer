@@ -416,11 +416,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end        
     end  % protected methods block

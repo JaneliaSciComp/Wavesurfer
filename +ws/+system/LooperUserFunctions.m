@@ -136,12 +136,12 @@ classdef LooperUserFunctions < ws.system.Subsystem
     end    
     
     methods (Access=protected)
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end

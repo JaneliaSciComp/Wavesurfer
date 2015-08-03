@@ -390,17 +390,17 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function out = getPropertyValue(self, name)            
+        function out = getPropertyValue_(self, name)            
             out = self.(name);
         end
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
 %             if isequal(name,'Scopes') ,
 %                 % Make sure they back-reference to the right Display (i.e. self)
 %                 for i=1:length(self.Scopes)
-%                     setPropertyValue(self.Scopes(i),'Parent',self);
+%                     setPropertyValue_(self.Scopes(i),'Parent',self);
 %                 end                
 %             end                
         end  % function

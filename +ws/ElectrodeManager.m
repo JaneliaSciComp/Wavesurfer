@@ -954,19 +954,15 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %             
 %         end
 %         
-%         % Allows access to protected and protected variables from ws.mixin.Coding.
-%         function out = getPropertyValue(self, name)
-%             out = self.(name);
-%         end
-%         
-%         % Allows access to protected and protected variables from ws.mixin.Coding.
-%         function setPropertyValue(self, name, value)
-%             if nargin < 3
-%                 value = [];
-%             end
-%             self.(name) = value;
-%             self.broadcast('Update');
-%         end
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end
     end  % protected methods block
         
     methods (Access=public)        
