@@ -100,7 +100,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                         self.XSpan_ = double(newValue);
                         for idx = 1:numel(self.Scopes) ,
-                            self.Scopes{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                            self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                         end
                     else
                         self.broadcast('UpdateXSpan');
@@ -121,7 +121,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                     self.XOffset_ = double(newValue);
                     for idx = 1:numel(self.Scopes)
-                        self.Scopes{idx}.XOffset = newValue;
+                        self.Scopes_{idx}.XOffset = newValue;
                     end
                 else
                     self.broadcast('Update');
@@ -141,7 +141,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
                     for idx = 1:numel(self.Scopes) ,
-                        self.Scopes{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                        self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                     end
                 else
                     self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
@@ -155,7 +155,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         function self=didSetAnalogChannelUnitsOrScales(self)
             scopes=self.Scopes;
             for i=1:length(scopes) ,
-                scopes(i).didSetAnalogChannelUnitsOrScales();
+                scopes{i}.didSetAnalogChannelUnitsOrScales();
             end
         end       
         

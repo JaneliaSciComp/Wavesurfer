@@ -113,6 +113,8 @@ classdef (Abstract) Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaste
             self.setPropertyTags('mdlHParent', 'ExcludeFromFileTypes', {'*'});
             self.setPropertyTags('mdlDependsOnListeners', 'ExcludeFromFileTypes', {'*'});
             self.setPropertyTags('mdlSubModelClasses', 'ExcludeFromFileTypes', {'*'});
+            self.setPropertyTags('Parent_', 'ExcludeFromFileTypes', {'*'});
+            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'*'});
         end  % function
     end    
     

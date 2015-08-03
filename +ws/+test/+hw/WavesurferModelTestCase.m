@@ -49,7 +49,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.play();
             
             % wait for task to finish
-            pause(3);
+            %pause(3);
             
             % this is successful if no exceptions are thrown            
             self.verifyTrue(true);                        
@@ -81,7 +81,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             clear stimulusLibrary;
             
             % Make a copy of it in the populated state
-            stimulusLibraryCopy=em.Stimulation.StimulusLibrary.clone();
+            stimulusLibraryCopy=em.Stimulation.StimulusLibrary.cloneGivenParent([]);
             
             % Save the protocol to disk
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>

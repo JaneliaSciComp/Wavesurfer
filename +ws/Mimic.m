@@ -14,16 +14,22 @@ classdef Mimic < handle
     methods
         % We call this clone so it's clear to a reader we're not
         % inhieriting from ws.mixin.Copyable
-        function other=clone(self)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%         function other=clone(self)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%             className=class(self);
+%             other=feval(className);
+%             other.mimic(self);
+%         end  % function
+
+        function other=cloneGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
             className=class(self);
-            other=feval(className);
+            other=feval(className,parent);
             other.mimic(self);
         end  % function
         
         function s=encodeSettings(self)
             % Return a something representing the current object settings,
             % suitable for saving to disk 
-            s=self.clone();  % easiest thing is just to save a clone of the object to disk
+            s=self.cloneGivenParent([]);  % easiest thing is just to save a clone of the object to disk
         end  % function
 
         %function cloneOfOriginal=restoreSettingsAndReturnCopyOfOriginal(self, other)
