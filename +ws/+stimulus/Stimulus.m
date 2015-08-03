@@ -52,7 +52,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         function self = Stimulus(parent,varargin)
             self@ws.Model(parent) ;
             self.Delegate_ = ws.stimulus.SquarePulseStimulusDelegate(self);  
-            pvArgs = ws.most.util.filterPVArgs(varargin, { 'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
+            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
             for idx = 1:length(vals)
@@ -285,10 +285,9 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     end
     
     methods 
-        function other = copy(self)
-            other=ws.stimulus.Stimulus([]);
+        function other = copyGivenParent(self,parent)
+            other=ws.stimulus.Stimulus(parent);
             
-            % leave Parent empty
             other.Name_ = self.Name_ ;
             other.Delay_ = self.Delay_ ;
             other.Duration_ = self.Duration_ ;

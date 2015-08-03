@@ -26,7 +26,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
         SelectedSequence
         SelectedItem
         SelectedItemClassName
-        IsLive
+        SelectedStimulusIndex
+        SelectedMapIndex
+        SelectedSequenceIndex
+        SelectedOutputableClassName
+        SelectedOutputableIndex
+        %IsLive
         IsEmpty
     end
     
@@ -94,40 +99,40 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             value=isempty(self.Sequences)&&isempty(self.Maps)&&isempty(self.Stimuli);
         end  % function
         
-        function value=get.IsLive(self)
-            value=true;  % fallback return value
-
-            % Check the maps
-            maps=self.Maps;
-            nMaps=length(maps);
-            for i=1:nMaps
-                map=maps{i};
-                if ~map.IsLive ,
-                    value=false;
-                    return
-                end
-            end
-            
-            % Check the sequences
-            sequences=self.Sequences;
-            nSequences=length(sequences);
-            for i=1:nSequences
-                sequence=sequences{i};
-                if ~sequence.IsLive ,
-                    value=false;
-                    return
-                end
-            end
-                        
-            % A more thorough implementation of this would check that all
-            % the pointed-to stimuli, maps are in the self, and would check
-            % that the listener arrays are at least the right type and the
-            % right length.
-        end  % function
+%         function value=get.IsLive(self)
+%             value=true;  % fallback return value
+% 
+%             % Check the maps
+%             maps=self.Maps;
+%             nMaps=length(maps);
+%             for i=1:nMaps
+%                 map=maps{i};
+%                 if ~map.IsLive ,
+%                     value=false;
+%                     return
+%                 end
+%             end
+%             
+%             % Check the sequences
+%             sequences=self.Sequences;
+%             nSequences=length(sequences);
+%             for i=1:nSequences
+%                 sequence=sequences{i};
+%                 if ~sequence.IsLive ,
+%                     value=false;
+%                     return
+%                 end
+%             end
+%                         
+%             % A more thorough implementation of this would check that all
+%             % the pointed-to stimuli, maps are in the self, and would check
+%             % that the listener arrays are at least the right type and the
+%             % right length.
+%         end  % function
         
-        function value=isLiveAndSelfConsistent(self)            
-            value = self.IsLive && self.isSelfConsistent();
-        end
+%         function value=isLiveAndSelfConsistent(self)            
+%             value = self.IsLive && self.isSelfConsistent();
+%         end
         
         function value=isSelfConsistent(self)                        
             % Make sure the Parent of all Sequences is self
@@ -151,6 +156,17 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                     return
                 end
             end
+
+            % Make sure the Parent of all Stimuli is self
+            nStimuli=length(self.Stimuli);
+            for i=1:nStimuli ,
+                thing=self.Stimuli{i};
+                parent=thing.Parent;
+                if isempty(parent) || (parent~=self) ,
+                    value=false;
+                    return
+                end
+            end
             
             % For all maps, make sure all the stimuli in the map are in
             % self.Stimuli
@@ -160,7 +176,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                 if isempty(map)
                     % this is fine
                 else
-                    if map.areAllStimuliInDictionary(self.Stimuli) ,
+                    if map.areAllStimuliInDictionary(length(self.Stimuli)) ,
                         % excellent.  excellent.
                     else
                         value=false;
@@ -168,75 +184,6 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                     end
                 end
             end            
-            
-            % For all sequences, make sure all the maps in the seqeunce are in
-            % self.Maps
-            nSequences=length(self.Sequences);
-            for i=1:nSequences ,
-                sequence=self.Sequences{i};
-                if isempty(sequence)
-                    % this is fine
-                else
-                    if sequence.areAllMapsInDictionary(self.Maps) ,
-                        % excellent.  excellent.
-                    else
-                        value=false;
-                        return
-                    end
-                end
-            end            
-            
-            % Check that the selected outputable is in the library
-            selectedOutputable=self.SelectedOutputable;
-            if ~isempty(selectedOutputable) ,
-                outputables=self.getOutputables();
-                isMatch=ws.most.idioms.ismemberOfCellArray(outputables,{selectedOutputable});
-                if ~any(isMatch) ,
-                    value=false;
-                    return
-                end
-            end
-            
-            % Check that the selected sequence is in the library            
-            selectedSequence=self.SelectedSequence;
-            if ~isempty(selectedSequence) ,
-                isMatch=ws.most.idioms.ismemberOfCellArray(self.Sequences,{selectedSequence});
-                if ~any(isMatch) ,
-                    value=false;
-                    return
-                end
-            end
-            
-            % Check that the selected map is in the library
-            selectedMap=self.SelectedMap;
-            if ~isempty(selectedMap) ,
-                isMatch=ws.most.idioms.ismemberOfCellArray(self.Maps,{selectedMap});
-                if ~any(isMatch) ,
-                    value=false;
-                    return
-                end
-            end
-            
-            % Check that the selected stimulus is in the library
-            selectedStimulus=self.SelectedStimulus;
-            if ~isempty(selectedStimulus) ,
-                isMatch=ws.most.idioms.ismemberOfCellArray(self.Stimuli,{selectedStimulus});
-                if ~any(isMatch) ,
-                    value=false;
-                    return
-                end
-            end
-            
-            % Check that the selected item is in the library
-            items=self.getItems();            
-            selectedItem=self.SelectedItem;
-            if ~isempty(selectedItem) ,
-                isMatch=ws.most.idioms.ismemberOfCellArray(items,{selectedItem});
-                if ~any(isMatch) ,
-                    value=false;
-                    return
-                end
-            end
             
             value=true;
         end  % function
@@ -307,10 +254,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             self.Stimuli_=cell(1,0);  % clear the stimuli
             
             % Make a deep copy of the stimuli
-            self.Stimuli_ = cellfun(@(element)(element.copy()),other.Stimuli,'UniformOutput',false);
-            for i=1:length(self.Stimuli) ,
-                self.Stimuli_{i}.Parent=self;  % make the Parent correct
-            end
+            self.Stimuli_ = cellfun(@(element)(element.copyGivenParent(self)),other.Stimuli,'UniformOutput',false);
+%             for i=1:length(self.Stimuli) ,
+%                 self.Stimuli_{i}.Parent=self;  % make the Parent correct
+%             end
             
             % Make a deep copy of the maps, which needs both the old & new
             % stimuli to work properly
@@ -356,6 +303,14 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
 %             self.mimic(other);
 %         end  % function
 
+        function output = get.SelectedOutputableClassName(self)
+            output=self.SelectedOutputableClassName_ ;
+        end  % function
+
+        function output = get.SelectedOutputableIndex(self)
+            output=self.SelectedOutputableIndex_ ;
+        end  % function
+        
         function value = get.SelectedOutputable(self)
             if isempty(self.SelectedOutputableClassName_) ,
                 value=[];  % no item is currently selected
@@ -367,6 +322,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
                 value=[];  % this is an invariant violation, but still want to return something
             end
         end  % function
+        
         
         function set.SelectedOutputable(self, newSelection)
             if ws.utility.isASettableValue(newSelection) ,
@@ -441,6 +397,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             %value=self.findSequenceWithUUID(self.SelectedSequenceUUID_);
         end  % function
         
+        function value = get.SelectedSequenceIndex(self)
+            value = self.SelectedSequenceIndex_ ;
+        end  % function
+
         function value = get.SelectedMap(self)
             if isempty(self.Maps_) || isempty(self.SelectedMapIndex_) ,
                 value = [] ;
@@ -450,6 +410,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             %value=self.findMapWithUUID(self.SelectedMapUUID_);
         end  % function
         
+        function value = get.SelectedMapIndex(self)
+            value = self.SelectedMapIndex_ ;
+        end  % function
+
         function value = get.SelectedStimulus(self)
             if isempty(self.Stimuli_) || isempty(self.SelectedStimulusIndex_) ,
                 value = [] ;
@@ -459,6 +423,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             %value=self.findStimulusWithUUID(self.SelectedStimulusUUID_);
         end  % function
         
+        function value = get.SelectedStimulusIndex(self)
+            value = self.SelectedStimulusIndex_ ;
+        end  % function
+
         function set.SelectedItem(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if isempty(newValue) ,
@@ -675,18 +643,18 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             end
         end  % function
         
-%         function out = stimulusWithName(self, name)
-%             validateattributes(name, {'char'}, {});
-%             
-%             stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli,'UniformOutput',false);
-%             idx = find(strcmp(name, stimulusNames), 1);
-%             
-%             if isempty(idx)
-%                 out = {};
-%             else
-%                 out = self.Stimuli{idx};
-%             end
-%         end  % function
+        function out = stimulusWithName(self, name)
+            validateattributes(name, {'char'}, {});
+            
+            stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli,'UniformOutput',false);
+            idx = find(strcmp(name, stimulusNames), 1);
+            
+            if isempty(idx)
+                out = {};
+            else
+                out = self.Stimuli{idx};
+            end
+        end  % function
 
         function out = indexOfStimulusWithName(self, name)
             stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli,'UniformOutput',false);
@@ -1158,8 +1126,8 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
        function value=isequalElement(self,other)
             % Test for "value equality" of two scalar StimulusMap's
             propertyNamesToCompare = ...
-                {'Stimuli_' 'Maps_' 'Sequences_' 'SelectedItemClassName_' 'SelectedSequenceIndex_' 'SelectedMapIndex_' 'SelectedStimulusIndex_' ...
-                 'SelectedOutputableClassName_' 'SelectedOutputableIndex_'};
+                {'Stimuli' 'Maps' 'Sequences' 'SelectedItemClassName' 'SelectedSequenceIndex' 'SelectedMapIndex' 'SelectedStimulusIndex' ...
+                 'SelectedOutputableClassName' 'SelectedOutputableIndex'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function       
     end  % methods

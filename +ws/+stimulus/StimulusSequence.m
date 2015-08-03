@@ -183,12 +183,12 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             end
 %         end   % function
         
-        function value=isLiveAndSelfConsistent(self)
-            value=false(size(self));
-            for i=1:numel(self) ,
-                value(i)=self(i).isLiveAndSelfConsistentElement();
-            end
-        end
+%         function value=isLiveAndSelfConsistent(self)
+%             value=false(size(self));
+%             for i=1:numel(self) ,
+%                 value(i)=self(i).isLiveAndSelfConsistentElement();
+%             end
+%         end
 
         function addMap(self, map)
             indexOfMapInLibrary = self.Parent.getMapIndex(map) ;
@@ -292,26 +292,26 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             map = obj.Maps{index};
 %         end  % function
         
-        function value=get.IsLive(self) %#ok<MANU>
-            value=true;
-%             items=self.Maps_;
-%             itemUUIDs=self.MapUUIDs_;
-%             nMaps=length(items);
-%             nMapUUIDs=length(itemUUIDs);
-%             if (nMaps~=nMapUUIDs)
-%                 value=false;
-%                 return
-%             end
+%         function value=get.IsLive(self) %#ok<MANU>
 %             value=true;
-%             for i=1:nMaps ,
-%                 item=items{i};
-%                 itemUUID=itemUUIDs(i);
-%                 if isfinite(itemUUID) && ~(item.isvalid() && isa(item,'ws.stimulus.StimulusMap')) , 
-%                     value=false;
-%                     break
-%                 end
-%             end
-        end
+% %             items=self.Maps_;
+% %             itemUUIDs=self.MapUUIDs_;
+% %             nMaps=length(items);
+% %             nMapUUIDs=length(itemUUIDs);
+% %             if (nMaps~=nMapUUIDs)
+% %                 value=false;
+% %                 return
+% %             end
+% %             value=true;
+% %             for i=1:nMaps ,
+% %                 item=items{i};
+% %                 itemUUID=itemUUIDs(i);
+% %                 if isfinite(itemUUID) && ~(item.isvalid() && isa(item,'ws.stimulus.StimulusMap')) , 
+% %                     value=false;
+% %                     break
+% %                 end
+% %             end
+%         end
         
 %         function revive(self,maps)
 %             for i=1:numel(self) ,
@@ -360,15 +360,15 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 % %             end
 %         end  % function
                 
-        function value=isLiveAndSelfConsistentElement(self)
-            if ~self.IsLive ,
-                value=false;
-                return
-            end
-%             uuidsAsInMaps=ws.most.idioms.cellArrayPropertyAsArray(self.Maps,'UUID');
-%             value=all(uuidsAsInMaps==self.MapUUIDs_);
-            value=true;
-        end
+%         function value=isLiveAndSelfConsistentElement(self)
+%             if ~self.IsLive ,
+%                 value=false;
+%                 return
+%             end
+% %             uuidsAsInMaps=ws.most.idioms.cellArrayPropertyAsArray(self.Maps,'UUID');
+% %             value=all(uuidsAsInMaps==self.MapUUIDs_);
+%             value=true;
+%         end
         
 %         function defineDefaultPropertyAttributes(self)
 %             defineDefaultPropertyAttributes@ws.mixin.AttributableProperties(self);

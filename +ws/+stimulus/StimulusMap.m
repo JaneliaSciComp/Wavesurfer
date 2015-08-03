@@ -566,44 +566,43 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             %set(ax, 'NextPlot', 'Replace');
         end        
         
-        function value=isLiveAndSelfConsistent(self)
-            value=false(size(self));
-            for i=1:numel(self) ,
-                value(i)=self(i).isLiveAndSelfConsistentElement();
-            end
-        end
-        
-        function value=isLiveAndSelfConsistentElement(self) %#ok<MANU>
-            value=true;
-%             nBindings=length(self.ChannelNames);
-%             value=true;
-%             for i=1:nBindings ,
-%                 % A binding is broken when there's a stimulus UUID but no
-%                 % stimulus handle.  It's sound iff it's not broken.
-%                 % It's self-consistent if the locally-stored UUID aggrees
-%                 % with the one in the stimulus object itself.
-%                 thisStimulus=self.Stimuli_{i};
-%                 thisStimulusUUID=self.StimulusUUIDs_{i};
-%                 isThisOneLive= ~(isempty(thisStimulus) && ~isempty(thisStimulusUUID)) ;                
-%                 if isThisOneLive ,
-%                     isThisOneSelfConsistent=(thisStimulus.UUID==thisStimulusUUID);
-%                     if ~isThisOneSelfConsistent ,
-%                         value=false;
-%                         break
-%                     end                    
-%                 else 
-%                     value=false;
-%                     break
-%                 end
+%         function value=isLiveAndSelfConsistent(self)
+%             value=false(size(self));
+%             for i=1:numel(self) ,
+%                 value(i)=self(i).isLiveAndSelfConsistentElement();
 %             end
-        end  % function        
+%         end
+%         
+%         function value=isLiveAndSelfConsistentElement(self) %#ok<MANU>
+%             value=true;
+% %             nBindings=length(self.ChannelNames);
+% %             value=true;
+% %             for i=1:nBindings ,
+% %                 % A binding is broken when there's a stimulus UUID but no
+% %                 % stimulus handle.  It's sound iff it's not broken.
+% %                 % It's self-consistent if the locally-stored UUID aggrees
+% %                 % with the one in the stimulus object itself.
+% %                 thisStimulus=self.Stimuli_{i};
+% %                 thisStimulusUUID=self.StimulusUUIDs_{i};
+% %                 isThisOneLive= ~(isempty(thisStimulus) && ~isempty(thisStimulusUUID)) ;                
+% %                 if isThisOneLive ,
+% %                     isThisOneSelfConsistent=(thisStimulus.UUID==thisStimulusUUID);
+% %                     if ~isThisOneSelfConsistent ,
+% %                         value=false;
+% %                         break
+% %                     end                    
+% %                 else 
+% %                     value=false;
+% %                     break
+% %                 end
+% %             end
+%         end  % function        
 
-        function result=areAllStimuliInDictionary(self,stimulusDictionary)
+        function result=areAllStimuliInDictionary(self,nStimuliInLibrary)
             nStimuli=self.NBindings;
             for i=1:nStimuli ,
-                thisStimulus=self.Stimuli{i};
-                isMatch=cellfun(@(stimulus)(thisStimulus==stimulus),stimulusDictionary);
-                if ~any(isMatch) ,
+                thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i};
+                if thisStimulusIndex<1 || thisStimulusIndex>nStimuliInLibrary ,
                     result=false;
                     return
                 end

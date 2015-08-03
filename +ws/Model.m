@@ -4,8 +4,11 @@ classdef (Abstract) Model < ws.most.Model & ws.mixin.Coding & ws.EventBroadcaste
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
     end
     
-    properties (Access = protected, Transient=true)
+    properties (Access = protected)
         Parent_
+    end
+    
+    properties (Access = protected, Transient=true)
         DegreeOfReadiness_ = 1
     end
 
