@@ -486,6 +486,17 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end
     end  
     
+    methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
+    
 %     methods (Static)
 %         function self = loadobj(self)
 %             self.IsMarkedForDeletion_ = false(size(self.Maps_));

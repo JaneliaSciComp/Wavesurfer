@@ -1,4 +1,4 @@
-classdef MulticlampCommanderSocket < ws.Mimic
+classdef MulticlampCommanderSocket < ws.Model & ws.Mimic
     % Represents a "socket" for talking to one or more Axon Multiclamp
     % Commander instances.
     
@@ -32,11 +32,6 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %             0 10 20]';  % mV/V (the hardware allows for a (largely) arbitrary setting, but these are convenient values for testing)
     end
     
-    %%
-    properties  (Access=protected)
-        ElectrodeIDs_ = zeros(0,1)
-    end
-
     properties (Dependent=true, SetAccess=immutable)
         IsOpen  % true iff a connection to the Multiclamp Commander program(s) have been established, and hasn't failed yet       
     end
@@ -45,6 +40,11 @@ classdef MulticlampCommanderSocket < ws.Mimic
     properties (Dependent=true, SetAccess=immutable)
         %IsOpen  % true iff a connection to the EpcMaster program has been established, and hasn't failed yet        
         NElectrodes
+    end
+
+    %%
+    properties  (Access=protected)
+        ElectrodeIDs_ = zeros(0,1)
     end
     
     methods

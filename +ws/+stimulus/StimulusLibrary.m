@@ -1133,6 +1133,17 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
     end  % methods
     
     methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
+    
+    methods (Access=protected)
         function defineDefaultPropertyTags(self)
             % In the header file, only thing we really want is the
             % SelectedOutputable

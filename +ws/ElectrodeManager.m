@@ -30,13 +30,13 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
         IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
         IsElectrodeMarkedForRemoval_ = false(1,0)  % boolean row vector, same length as Electrodes_
         LargestElectrodeIndexUsed_ = -inf
-        %IdleHeartbeatTimer_  
-           % A timer that runs at ~1 Hz when WS is idle, does stuff that
-           % needs doing regularly.
-        EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
-        MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
+        MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
+    end
+
+    properties (Access = protected, Transient = true)
+        EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
     end
 
     methods

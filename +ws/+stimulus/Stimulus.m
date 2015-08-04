@@ -410,6 +410,17 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
 %     end  % static methods    
 
     methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
+
+    methods (Access=protected)
         function defineDefaultPropertyTags(self)
             defineDefaultPropertyTags@ws.Model(self);
             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});

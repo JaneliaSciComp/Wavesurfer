@@ -269,30 +269,9 @@ classdef Coding < handle
     
     methods (Access = protected)                        
         function decodePropertyValue_(self, encoding, propertyName)
-            % In the target object, set the single property named by properyName to the
+            % In self, set the single property named by properyName to the
             % value for propertyName given in the property settings structure
             % encoding.
-            
-%             % Define a couple of useful utility functions
-%             function value=getPropertyValueOfTarget(self,target,propertyName)
-%                 % Gets the value of propertyName from target, taking
-%                 % advantage of self.getPropertyValue_() if self==target
-%                 if self == target
-%                     value = self.getPropertyValue_(propertyName);
-%                 else
-%                     value = target.(propertyName);
-%                 end
-%             end                
-
-%             function setPropertyValueOfTarget(self,target,propertyName,newValue)
-%                 % Sets the value of propertyName in target, taking
-%                 % advantage of self.setPropertyValue_() if self==target
-%                 if self == target
-%                     self.setPropertyValue_(propertyName, newValue);
-%                 else
-%                     target.(propertyName) = newValue;
-%                 end
-%             end
             
             % Get the current value of the property to be set (which might
             % be a handle, and thus suitable as a LHS)
@@ -404,27 +383,6 @@ classdef Coding < handle
             % In the target object, set the single property named by properyName to the
             % value for propertyName given in the property settings structure
             % encoding.
-            
-%             % Define a couple of useful utility functions
-%             function value=getPropertyValueOfTarget(self,target,propertyName)
-%                 % Gets the value of propertyName from target, taking
-%                 % advantage of self.getPropertyValue_() if self==target
-%                 if self == target
-%                     value = self.getPropertyValue_(propertyName);
-%                 else
-%                     value = target.(propertyName);
-%                 end
-%             end                
-% 
-%             function setPropertyValueOfTarget(self,target,propertyName,newValue)
-%                 % Sets the value of propertyName in target, taking
-%                 % advantage of self.setPropertyValue_() if self==target
-%                 if self == target
-%                     self.setPropertyValue_(propertyName, newValue);
-%                 else
-%                     target.(propertyName) = newValue;
-%                 end
-%             end
             
             % Get the current value of the property to be set (which might
             % be a handle, and thus suitable as a LHS)
@@ -635,8 +593,72 @@ classdef Coding < handle
             end
         end  % function                
 
-        function decodeAnything(target, encoding)
+        function result = decodeAnythingGivenParent(encodingContainer,parent)
+            if ~ws.mixin.Coding.isAnEncodingContainer(encodingContainer) ,                        
+                error('Coding:errSettingProp', ...
+                      'decodeAnything() requires an encoding container.');
+            end
             
+            % Unpack the fields of the encodingContainer
+            className = encodingContainer.className ;
+            encoding = encodingContainer.encoding ;
+            
+            % Create the object to be returned
+            if isequal(className,'double') ,
+                result = encoding ;
+            elseif isequal(className,'cell') ,
+                result = cell(size(encoding)) ;
+                for i=1:numel(result) ,
+                    result{i} = decodeAnyGivenParent(encoding{i},result) ;
+                end
+            elseif isequal(className,'struct') ,
+                fieldNames = fieldnames(encoding) ;
+                result = ws.utility.structWithDims(size(encoding),fieldNames);
+                for i=1:numel(self) ,
+                    encoding(i) = self(i).encodeScalarForFileType_(fileType, propertyNames);
+                end                
+            else                                
+                result = feval(className,parent) ;
+            end
+            
+            % Get the property names from the encoding
+            propertyNames = fieldnames(encoding);
+
+            % Set each property name in self
+            for i = 1:numel(propertyNames) ,
+                propertyName = propertyNames{i};
+                %originalValue = self.decodePropertyValue(self, propSet, propName);
+                if isprop(self,propertyName) ,  % Only decode if there's a property to receive it
+                    self.decodePropertyValue_(encoding, propertyName);
+                else
+                    warning('Coding:errSettingProp', ...
+                            'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
+                            propertyName, ...
+                            class(self));
+                end
+            end  % for            
+            
+                
+            % This can only work if the className specified in encoding
+            % matches the class of self, and also that the object
+            % dimensions represented in encoding match the dimensions
+            % of self.  Otherwise we're stuck, since we can't change
+            % either of those qualities of self from a method.
+            if isequal(encodingContainer.className,class(self)) ,
+                if isequal(size(encodingContainer.encoding),size(self)) ,
+                    % All is well, to pass the unwrapped encoding to
+                    % decodeProperties.
+                    self.decodeUnwrappedEncoding_(encodingContainer.encoding) ;
+                else
+                    warning('Coding:errSettingProp', ...
+                            'Unable to decode an encoding specifiying one size onto an object array of a different size.');
+                end
+            else
+                warning('Coding:errSettingProp', ...
+                        'Unable to decode an encoding specifiying class %s onto an object of class %s.', ...
+                        encodingContainer.className, ...
+                        class(self));
+            end
         end
         
         function result = isAnEncodingContainer(thing)
