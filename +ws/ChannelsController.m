@@ -1,12 +1,18 @@
 classdef ChannelsController < ws.Controller
     methods
         function self=ChannelsController(wavesurferController,wavesurferModel)
-            %self = self@ws.Controller(parent,model,figureClassNames,[],[],[]);            
-            self = self@ws.Controller(wavesurferController,wavesurferModel, {'channelsFigureWrapper'});
-            figureObject=self.Figure;
-            figureGH=figureObject.FigureGH;
-            set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));
-            self.initialize();
+%             self = self@ws.Controller(wavesurferController,wavesurferModel, {'channelsFigureWrapper'});
+%             figureObject=self.Figure;
+%             figureGH=figureObject.FigureGH;
+%             set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));
+%             self.initialize();
+
+            % Call superclass constructor
+            self = self@ws.Controller(wavesurferController,wavesurferModel);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.ChannelsFigure(wavesurferModel,self) ;
+            self.Figure_ = fig ;
         end
         
         function aiScaleEditActuated(self,source)

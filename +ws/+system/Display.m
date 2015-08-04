@@ -48,7 +48,8 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         end
         
         function delete(self)
-            self.removeScopes();
+            %self.removeScopes();
+            self.Scopes_ = cell(1,0) ;
         end
         
         function value = get.UpdateRate(self)
@@ -212,7 +213,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
 %          end
 
         function removeScope(self, index)
-            self.Scopes(index) = [];
+            self.Scopes_(index) = [];
             self.broadcast('NScopesMayHaveChanged');
         end
         
@@ -221,6 +222,19 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 self.Scopes_ = cell(1,0);
                 self.broadcast('NScopesMayHaveChanged');
             end
+        end
+        
+        function toggleIsVisibleWhenDisplayEnabled(self,scopeIndex)
+            originalState = self.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled ;
+            % self.Scopes_{scopeIndex}.IsVisibleWhenDisplayEnabled = ~originalState ;  
+            %   Doing things with the single line above doesn't work, b/c
+            %   self.Scopes_{scopeIndex} is set to empty for a time, and
+            %   that causes havoc for the some of the event handlers that
+            %   fire when IsVisibleWhenDisplayEnabled is set.  I don't
+            %   understand why that element is briefly set to empty, but
+            %   doing things as below fixes it.  -- ALT, 2015-08-04
+            theScopeModel = self.Scopes_{scopeIndex} ;
+            theScopeModel.IsVisibleWhenDisplayEnabled = ~originalState ;
         end
         
         function willPerformRun(self)

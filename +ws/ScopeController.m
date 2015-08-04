@@ -7,7 +7,11 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
     methods
         function self=ScopeController(wavesurferController,scopeModel)
             %self = self@ws.Controller(wavesurferController,scopeModel,{},figureClassNames);  % as third arg, should start out hidden
-            self = self@ws.Controller(wavesurferController, scopeModel, {'scopeFigureWrapper'});
+            self = self@ws.Controller(wavesurferController, scopeModel);
+
+            % Create the figure, store a pointer to it
+            fig = ws.ScopeFigure(scopeModel,self) ;
+            self.Figure_ = fig ;
 
             %scopeModel.Parent.subscribeMe(self,'PostSet','Enabled','displayEnablementMayHaveChanged');
             %  We want the scopes to be made visible in a well-defined
@@ -24,9 +28,9 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             scopeFigure=self.Figure;
 %             scopeFigure.subscribeMe(self,'PostSet','XLim','didSetXLimInView');           
 %             scopeFigure.subscribeMe(self,'PostSet','YLim','didSetYLimInView');           
-            scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
-            scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
-            self.IsSuiGeneris=false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
+            %scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
+            %scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
+            %self.IsSuiGeneris_ = false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
             scopeFigure.syncTitleAndTagsToModel();  % Shouldn't this happen somewhere else?
             self.updateWindowVisibility();
               % Need to update the window visibility to match Display

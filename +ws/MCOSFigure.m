@@ -35,6 +35,9 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     
     methods
         function self=MCOSFigure(model,controller)
+            % Note that when this is called, the controller is in a
+            % not-completely-initialized state, so it's not safe to do much
+            % of anything with it except copy a pointer to it.
             self.FigureGH_=figure('Units','Pixels', ...
                                  'Color',get(0,'defaultUIControlBackgroundColor'), ...
                                  'Visible','off', ...
@@ -53,9 +56,10 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         
         function delete(self)
             %keyboard
-            self.deleteFigureGH_();
+            self.deleteFigureGH();
             self.Controller_=[];
-            self.setModel_([]);
+            %self.setModel_([]);
+            self.Model_ = [] ;
             %fprintf('here i am doing something\n');
         end
 
@@ -429,9 +433,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     methods
         function closeRequested(self,source,event)            
             if isempty(self.Controller_) ,
-                if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
-                    delete(self.FigureGH_);
-                end
+                self.deleteFigureGH_();
             else
                 self.Controller_.windowCloseRequested(source,event);
             end
@@ -439,7 +441,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     end  % methods    
     
     methods
-        function deleteFigureGH_(self)   
+        function deleteFigureGH(self)   
             % This causes the figure HG object to be deleted, with no ifs
             % ands or buts
             if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,

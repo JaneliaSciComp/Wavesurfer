@@ -1,68 +1,68 @@
-classdef Controller < ws.most.Controller
+classdef Controller < handle   %< ws.most.Controller
 
     properties (Dependent=true, SetAccess=immutable)
         Parent
-    end
-    
-    properties (Access=protected)
-        Parent_
-    end
-    
-    properties (SetAccess=immutable, Dependent=true)
         Model
         Figure  % the associated figure object (i.e. a handle handle, not a hande graphics handle)
     end
     
-    properties (Access = protected)
-        HideFigureOnClose = true  % By default do not destroy the window when closed, just hide
+    properties (Access=protected)
+        Parent_
+        Model_
+        Figure_
+        HideFigureOnClose_ = true  % By default do not destroy the window when closed, just hide
+%         IsSuiGeneris_ = true  
+%             % Whether or not multiple instances of the controller class can
+%             % exist at a time. If true, only one instance of the controller
+%             % class can exist at a time.  If false, multiple instances of
+%             % the controller class can exist at a time. Currently, Most of
+%             % our controllers are sui generis, so true is a good default.
+%             % (Making this abstract creates headaches.  Ditto making
+%             % SetAccess=immutable, or Constant=true, all of which would
+%             % arguably make sense.)  You should only set this in the
+%             % constructor, and not change it for the lifetime of the
+%             % object.  Also, it should have the same value for all
+%             % instances of the class.
     end
-    
-    properties (GetAccess=public, SetAccess=protected)
-        IsSuiGeneris=true  
-            % Whether or not multiple instances of the controller class can
-            % exist at a time. If true, only one instance of the controller
-            % class can exist at a time.  If false, multiple instances of
-            % the controller class can exist at a time. Currently, Most of
-            % our controllers are sui generis, so true is a good default.
-            % (Making this abstract creates headaches.  Ditto making
-            % SetAccess=immutable, or Constant=true, all of which would
-            % arguably make sense.)  You should only set this in the
-            % constructor, and not change it for the lifetime of the
-            % object.  Also, it should have the same value for all
-            % instances of the class.
-    end
-    
+        
     methods
-        function self = Controller(parent,model,varargin)        
-            self = self@ws.most.Controller(model,varargin{:});
-            self.Parent_=parent;
-            figureObject=self.Figure;
-            figureGH=figureObject.FigureGH;
-            set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));            
-            self.initialize();            
+        function self = Controller(parent,model)        
+            %self = self@ws.most.Controller(model,varargin{:});
+            self.Parent_ = parent ;
+            self.Model_ = model ;
+            %self.Figure_ = figureObject ;
+            %figureObject=self.Figure;
+            %figureGH=figureObject.FigureGH;
+            %set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));            
+            %self.initialize();            
         end  % function
+        
+%         function initialize(self)  %#ok<MANU>
+%         end
         
         function delete(self)
             %fprintf('ws.Controller::delete()\n');
             if ~isempty(self.Figure) && isvalid(self.Figure) ,
-                self.Figure.deleteFigureGH_() ;
+                self.Figure.deleteFigureGH() ;
             end
             %self.deleteFigure_();
+            self.Model_ = [] ;
             self.Parent_=[];            
         end
         
         function output=get.Figure(self)
-            figureGH=self.hGUIsArray;  % should be a scalar
-            if isscalar(figureGH) && ishghandle(figureGH) ,
-                handles=guidata(figureGH);
-                if ~isempty(handles) && isfield(handles,'FigureObject') ,
-                    output=handles.FigureObject;
-                else
-                    output=[];                    
-                end
-            else
-                output=[];
-            end
+            output = self.Figure_ ;
+%             figureGH=self.hGUIsArray;  % should be a scalar
+%             if isscalar(figureGH) && ishghandle(figureGH) ,
+%                 handles=guidata(figureGH);
+%                 if ~isempty(handles) && isfield(handles,'FigureObject') ,
+%                     output=handles.FigureObject;
+%                 else
+%                     output=[];                    
+%                 end
+%             else
+%                 output=[];
+%             end
         end  % function        
 
         function output=get.Parent(self)
@@ -70,7 +70,8 @@ classdef Controller < ws.most.Controller
         end
         
         function output=get.Model(self)
-            output=self.hModel;
+%             output=self.hModel;
+            output = self.Model_ ;
         end
         
         function self=setAreUpdatesEnabledForFigure(self,newValue)
@@ -94,24 +95,27 @@ classdef Controller < ws.most.Controller
             % controller classes, like ws.ScopeController
             self.Figure.hide();
         end
-    end
-    
+        
+        function deleteFigureGH(self)   
+            self.tellFigureToDeleteFigureGH_();
+        end  % function       
+    end  % methods    
+            
     methods (Access = protected)
-        function deleteFigure_(self)
-            % Destroy the window rather than just hide it.
-            figure=self.Figure;
-            if ~isempty(figure) && isvalid(figure) ,
-                figure.delete();
-            end
-        end
+%         function deleteFigure_(self)
+%             % Destroy the window rather than just hide it.
+%             figure=self.Figure;
+%             if ~isempty(figure) && isvalid(figure) ,
+%                 figure.delete();
+%             end
+%         end
         
         function tellFigureToDeleteFigureGH_(self)
             figure=self.Figure;
             if ~isempty(figure) && isvalid(figure) ,
-                figure.deleteFigureGH_();
+                figure.deleteFigureGH();
             end
-        end
-            
+        end            
     end  % methods
     
     methods (Access = protected, Sealed = true)
@@ -245,7 +249,7 @@ classdef Controller < ws.most.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                if self.HideFigureOnClose ,
+                if self.HideFigureOnClose_ ,
                     % This is not simply a call to hide() because some frameworks will require
                     % modification to the evt object, other actions to actually cancel an
                     % in-progress close event.
@@ -254,7 +258,7 @@ classdef Controller < ws.most.Controller
                     % Actually release the window.  This may actual result in
                     % active deletion of the controller so care should be taken in adding any code
                     % to this method after this call.
-                    self.deleteFigure_();
+                    self.deleteFigureGH();
                 end
             end
         end

@@ -6,8 +6,16 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     
     methods
         function self = StimulusLibraryController(wavesurferController,wavesurferModel)
+%             stimulusLibraryModel=wavesurferModel.Stimulation.StimulusLibrary;
+%             self = self@ws.Controller(wavesurferController, stimulusLibraryModel, {'stimulusLibraryFigureWrapper'});
+
+            % Call the superclass constructor
             stimulusLibraryModel=wavesurferModel.Stimulation.StimulusLibrary;
-            self = self@ws.Controller(wavesurferController, stimulusLibraryModel, {'stimulusLibraryFigureWrapper'});
+            self = self@ws.Controller(wavesurferController,stimulusLibraryModel);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.StimulusLibraryFigure(stimulusLibraryModel,self) ;
+            self.Figure_ = fig ;
         end  % constructor
                 
         function debug(self) %#ok<MANU>

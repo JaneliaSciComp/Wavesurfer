@@ -280,7 +280,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
                     % Update the current monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
-                        'String',sprintf('V/%s',thisElectrode.CurrentUnits.toString()));
+                        'String',sprintf('V/%s',thisElectrode.CurrentUnits));
 
 
                     %
@@ -308,7 +308,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
                     % Update the voltage command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
-                        'String',sprintf('%s/V',thisElectrode.VoltageUnits.toString()));
+                        'String',sprintf('%s/V',thisElectrode.VoltageUnits));
                 else                                
                     %
                     % Update the voltage monitor popup
@@ -329,7 +329,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
                     % Update the voltage monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
-                        'String',sprintf('V/%s',thisElectrode.VoltageUnits.toString()));
+                        'String',sprintf('V/%s',thisElectrode.VoltageUnits));
 
 
                     %
@@ -357,7 +357,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
                     % Update the current command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
-                        'String',sprintf('%s/V',thisElectrode.CurrentUnits.toString()));
+                        'String',sprintf('%s/V',thisElectrode.CurrentUnits));
                 end                
                 
                 %

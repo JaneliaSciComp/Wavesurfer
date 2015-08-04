@@ -9,8 +9,16 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     
     methods
         function self = TriggersController(wavesurferController,wavesurferModel)
+            %triggeringModel=wavesurferModel.Triggering;
+            %self = self@ws.Controller(wavesurferController, triggeringModel, {'triggersFigureWrapper'});
+            
+            % Call superclass constructor
             triggeringModel=wavesurferModel.Triggering;
-            self = self@ws.Controller(wavesurferController, triggeringModel, {'triggersFigureWrapper'});
+            self = self@ws.Controller(wavesurferController,triggeringModel);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.TriggersFigure(triggeringModel,self) ;
+            self.Figure_ = fig ;            
         end  % constructor
     end  % methods block
     

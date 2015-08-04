@@ -1,9 +1,21 @@
 classdef YLimDialogController < ws.Controller
     methods
         function self=YLimDialogController(scopeController,scopeModel,scopeFigurePosition)
-            self = self@ws.Controller(scopeController, scopeModel, {}, {'yLimDialogFigureWrapper'});  % want the figure to start out invisible
-            self.IsSuiGeneris=false;  % Multiple instances of this controller can coexist in the same Wavesurfer session            
-            self.HideFigureOnClose = false;                        
+%             self = self@ws.Controller(scopeController, scopeModel, {}, {'yLimDialogFigureWrapper'});  % want the figure to start out invisible
+%             %self.IsSuiGeneris_ = false;  % Multiple instances of this controller can coexist in the same Wavesurfer session            
+%             self.HideFigureOnClose_ = false;                        
+%             self.Figure.centerOnParentPosition(scopeFigurePosition);
+%             self.showFigure();
+            
+            % Call the superclass constructor
+            self = self@ws.Controller(scopeController,scopeModel);
+
+            % Create the figure, store a pointer to it
+            fig = ws.YLimDialogFigureFigure(wavesurferModel,self) ;
+            self.Figure_ = fig ;                                    
+            
+            % Do stuff specific to dialog boxes
+            self.HideFigureOnClose_ = false;
             self.Figure.centerOnParentPosition(scopeFigurePosition);
             self.showFigure();
         end

@@ -1,8 +1,16 @@
 classdef ElectrodeManagerController < ws.Controller
     methods
         function self=ElectrodeManagerController(wavesurferController,wavesurferModel)
+%             electrodeManager=wavesurferModel.Ephys.ElectrodeManager;
+%             self = self@ws.Controller(wavesurferController, electrodeManager, {'electrodeManagerFigureWrapper'});            
+            
+            % Call superclass constructor
             electrodeManager=wavesurferModel.Ephys.ElectrodeManager;
-            self = self@ws.Controller(wavesurferController, electrodeManager, {'electrodeManagerFigureWrapper'});            
+            self = self@ws.Controller(wavesurferController,electrodeManager); 
+
+            % Create the figure, store a pointer to it
+            fig = ws.ElectrodeManagerFigure(electrodeManager,self) ;
+            self.Figure_ = fig ;
         end
         
         function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>

@@ -326,6 +326,17 @@ classdef WavesurferModel < ws.Model
             out = self.IndexOfSelectedFastProtocol_ ;
         end
         
+        function set.IndexOfSelectedFastProtocol(self, newValue)
+            if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && newValue<=self.NFastProtocols && (round(newValue)==newValue) ,
+                self.IndexOfSelectedFastProtocol_ = double(newValue) ;
+            else
+                %self.broadcast('Update');
+                error('most:Model:invalidPropVal', ...
+                      'IndexOfSelectedFastProtocol (scalar) positive integer between 1 and NFastProtocols, inclusive');
+            end
+            %self.broadcast('Update');              
+        end
+        
         function val = get.NSweepsPerRun(self)
             if self.AreSweepsContinuous ,
                 val = 1;

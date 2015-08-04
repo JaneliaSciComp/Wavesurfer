@@ -27,8 +27,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     
     methods
         function self = WavesurferMainController(model)
-            self = self@ws.Controller([],model,{'wavesurferMainFigureWrapper'});  % this controller has no parent
-                        
+            % Call superclass constructor
+            %self = self@ws.Controller([],model,{'wavesurferMainFigureWrapper'});  % this controller has no parent
+            self = self@ws.Controller([],model);  % this controller has no parent
+
+            % Create the figure, store a pointer to it
+            fig = ws.WavesurferMainFigure(model,self) ;
+            self.Figure_ = fig ;
+            
             %self.HideWindowOnClose = false;
             
             self.ControllerSpecs = self.createControllerSpecs();
@@ -101,9 +107,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     methods
         function delete(self)
             % Delete all child controllers.
-            for i=1:length(self.ChildControllers) ,
-                ws.utility.deleteIfValidHandle(self.ChildControllers{i});
-            end
+%             for i=1:length(self.ChildControllers) ,
+%                 ws.utility.deleteIfValidHandle(self.ChildControllers{i});
+%             end
             self.ChildControllers={};
             self.ScopeControllers={};
         end
@@ -272,7 +278,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model.Stimulation,'Enabled',newValue);
+            ws.Controller.setWithBenefits(self.Model.Stimulation,'IsEnabled',newValue);
         end
         
         function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
@@ -288,7 +294,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model.Display,'Enabled',newValue);
+            ws.Controller.setWithBenefits(self.Model.Display,'IsEnabled',newValue);
         end
         
         function UpdateRateEditActuated(self,source,event) %#ok<INUSD>
@@ -1223,8 +1229,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
             
             % Make that change
-            originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
-            self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
+            self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
+            %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
+            %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
             % should automatically uopdate now
         end        
     end
@@ -1271,7 +1278,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end
     end
-       
+
     methods (Access = protected)    
         function deleteAllScopeControllers(self)
             % Deletes all the scope controllers/views, leaving the models alone.
@@ -1415,6 +1422,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % upper-right close button.
             %figureObject=self.Figure;
             %figureObject.delete();
+
+            % Delete the figure GHs for all the child controllers
+            for i=1:length(self.ChildControllers) ,
+                thisChildController = self.ChildControllers{i} ;
+                if isvalid(thisChildController) ,
+                    thisChildController.deleteFigureGH();
+                end
+            end
+
             self.tellFigureToDeleteFigureGH_() ;
             %self.delete();
         end  % function

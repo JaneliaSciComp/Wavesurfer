@@ -44,7 +44,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             % General initialization
             self@ws.Model(parent);
             self.EPCMasterSocket_=ws.EPCMasterSocket();
-            self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket();
+            self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket(self);
             self.AreSoftpanelsEnabled_=true;
 
             % Create the heartbeat timer
@@ -188,8 +188,8 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             
             % Make an electrode
             electrode= ...
-                ws.Electrode('Parent',self, ...
-                                'Name',name);
+                ws.Electrode(self, ...
+                             'Name',name);
             
             % We now leave the channel names blank until the user selects them.                      
 %             % Get initial values for the channel names, set them in the

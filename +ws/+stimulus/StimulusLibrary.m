@@ -767,7 +767,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             sequence.Name = self.generateUntitledSequenceName_();
             self.Sequences_{end + 1} = sequence;
             self.SelectedItemClassName_ = 'ws.stimulus.StimulusSequence' ;
-            self.SelectedStimulusIndex_ = length(self.Sequences_) ;
+            self.SelectedSequenceIndex_ = length(self.Sequences_) ;
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function
@@ -778,7 +778,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             map.Name = self.generateUntitledMapName_();
             self.Maps_{end + 1} = map;
             self.SelectedItemClassName_ = 'ws.stimulus.StimulusMap' ;
-            self.SelectedStimulusIndex_ = length(self.Maps_) ;
+            self.SelectedMapIndex_ = length(self.Maps_) ;
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function

@@ -38,9 +38,9 @@ function varargout = wavesurfer(mdfFileName,isCommandLineOnly)
         controller=[];
     else
         controller = ws.WavesurferMainController(model);    
-        controller.initialize();
-          % prompts it to sync the view with the model
-          % Why does this not happen automatically when you create the controller?
+%         controller.initialize();
+%           % prompts it to sync the view with the model
+%           % Why does this not happen automatically when you create the controller?
     end
 
     % Load the MDF file, maybe

@@ -2,7 +2,14 @@ classdef FastProtocolsController < ws.Controller
     
     methods
         function self = FastProtocolsController(wavesurferController,wavesurferModel)
-            self = self@ws.Controller(wavesurferController, wavesurferModel, {'fastProtocolsFigureWrapper'});
+%             self = self@ws.Controller(wavesurferController, wavesurferModel, {'fastProtocolsFigureWrapper'});
+            
+            % Call the superclass constructor
+            self = self@ws.Controller(wavesurferController,wavesurferModel); 
+
+            % Create the figure, store a pointer to it
+            fig = ws.FastProtocolsFigure(wavesurferModel,self) ;
+            self.Figure_ = fig ;
         end  % function        
     end  % public methods block
 
@@ -12,8 +19,9 @@ classdef FastProtocolsController < ws.Controller
             if isempty(selectedIndex) ,
                 return
             end
-            self.Model.FastProtocols{selectedIndex}.ProtocolFileName = '';
-            self.Model.FastProtocols{selectedIndex}.AutoStartType = 'do_nothing';
+            theFastProtocol = self.Model.FastProtocols{selectedIndex} ;
+            theFastProtocol.ProtocolFileName = '';
+            theFastProtocol.AutoStartType = 'do_nothing';
         end  % function
         
         function SelectFileButtonActuated(self, varargin)

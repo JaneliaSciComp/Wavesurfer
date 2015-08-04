@@ -127,9 +127,10 @@ classdef ScopeModel < ws.Model
             end
         end  % constructor
         
-%         function delete(self)
-%             %self.Parent=[];  % get rid of ref to WavesurferModel
-%         end
+        function delete(self) %#ok<INUSD>
+            %self.Parent=[];  % get rid of ref to WavesurferModel
+            %fprintf('ScopeModel delete() called\n') ;
+        end
     end  % methods
     
     methods

@@ -161,9 +161,9 @@ classdef ScopeFigure < ws.MCOSFigure
 
                 % Unsubsribe from events in the master model
                 display=model.Parent;
-                if ~isempty(display) ,
+                if ~isempty(display) && isvalid(display) ,
                     wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) ,
+                    if ~isempty(wavesurferModel) && isvalid(display) ,
                         wavesurferModel.unsubscribeMeFromAll(self);
                     end
                 end
@@ -987,10 +987,10 @@ classdef ScopeFigure < ws.MCOSFigure
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
                 units=self.Model.YUnits;
-                if units.isPure() ,
+                if isempty(units) ,
                     unitsString = 'pure' ;
                 else
-                    unitsString = string(units) ;
+                    unitsString = units ;
                 end
                 ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color,'FontSize',10);
             end

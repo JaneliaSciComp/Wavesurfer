@@ -731,9 +731,11 @@ classdef TestPulser < ws.Model
             if self.IsRunning_ ,
                 value = self.GainOrResistanceUnitsPerElectrodeCached_ ;
             else
-                value=(self.MonitorUnitsPerElectrode./self.CommandUnitsPerElectrode);
+                valueIfCC = ws.utility.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
+                valueIfVC = ws.utility.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
                 isVCPerElectrode=self.IsVCPerElectrode;
-                value(isVCPerElectrode)=1./value(isVCPerElectrode);
+                value = ws.utility.fif(isVCPerElectrode,valueIfVC,valueIfCC);
+                %value(isVCPerElectrode)=1./value(isVCPerElectrode);
                 % for elements that are not convertible to resistance, just
                 % leave as gain
             end

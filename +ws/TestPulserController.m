@@ -1,8 +1,16 @@
 classdef TestPulserController < ws.Controller
     methods            
         function self=TestPulserController(wavesurferController,wavesurferModel)
+%             testPulser=wavesurferModel.Ephys.TestPulser;
+%             self = self@ws.Controller(wavesurferController, testPulser, {'testPulserFigureWrapper'});            
+            
+            % Call the superclass constructor
             testPulser=wavesurferModel.Ephys.TestPulser;
-            self = self@ws.Controller(wavesurferController, testPulser, {'testPulserFigureWrapper'});            
+            self = self@ws.Controller(wavesurferController,testPulser);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.TestPulserFigure(testPulser,self) ;
+            self.Figure_ = fig ;            
         end
         
         function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>
