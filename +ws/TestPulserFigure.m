@@ -315,7 +315,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
-            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',string(self.Model.MonitorUnits)));
+            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));

@@ -574,7 +574,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1); 
                         electrode=self.Electrodes{iElectrode};
-                        queryChannelUnits(i)=electrode.getCommandUnitsByName(queryChannelNames{i});
+                        queryChannelUnits{i}=electrode.getCommandUnitsByName(queryChannelNames{i});
                     end                    
                 end                    
             end
@@ -655,7 +655,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
-                        queryChannelUnits(i)=electrode.getMonitorUnitsByName(queryChannelNames{i});
+                        queryChannelUnits{i}=electrode.getMonitorUnitsByName(queryChannelNames{i});
                     else
                         % do nothing, thus falling back to dimensionless
                     end                    

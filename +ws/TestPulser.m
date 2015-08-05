@@ -748,7 +748,9 @@ classdef TestPulser < ws.Model
         function [gainOrResistance,gainOrResistanceUnits] = getGainOrResistancePerElectrodeWithNiceUnits(self)
             rawGainOrResistance = self.GainOrResistancePerElectrode;
             rawGainOrResistanceUnits = self.GainOrResistanceUnitsPerElectrode ;
-            [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;            
+            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+            [gainOrResistanceUnits,gainOrResistance] = ...
+                ws.utility.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
         
         function value=get.UpdateRate(self)

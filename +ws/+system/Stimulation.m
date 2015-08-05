@@ -693,7 +693,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
                 if isempty(iChannel) ,
                     result='';
                 else
-                    result=self.AnalogChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits{iChannel};
                 end
             end
         end  % function

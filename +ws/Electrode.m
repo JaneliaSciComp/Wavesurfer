@@ -631,17 +631,17 @@ classdef Electrode < ws.Model & ws.Mimic
             managedChannelNames=[{self.CurrentMonitorChannelName_} ...
                                  {self.VoltageMonitorChannelName_}];
             isMatch=strcmp(channelName,managedChannelNames);
-            units=[self.CurrentUnits_ ...
-                    self.VoltageUnits_];
+            units={self.CurrentUnits_ ...
+                   self.VoltageUnits_};
             matchingUnits=units(isMatch);
             if length(matchingUnits)>1 ,
                 if isequal(self.Mode_,'vc') ,
-                    result=matchingUnits(1);
+                    result=matchingUnits{1};
                 else
-                    result=matchingUnits(2);
+                    result=matchingUnits{2};
                 end
             else
-                result=matchingUnits;
+                result=matchingUnits{1};
             end
         end
         
@@ -652,17 +652,17 @@ classdef Electrode < ws.Model & ws.Mimic
             managedChannelNames=[{self.CurrentCommandChannelName_} ...
                                  {self.VoltageCommandChannelName_}];
             isMatch=strcmp(channelName,managedChannelNames);
-            units=[self.CurrentUnits_ ...
-                   self.VoltageUnits_];
+            units={self.CurrentUnits_ ...
+                   self.VoltageUnits_};
             matchingUnits=units(isMatch);
             if length(matchingUnits)>1 ,
                 if isequal(self.Mode_,'vc') ,
-                    result=matchingUnits(2);
+                    result=matchingUnits{2};
                 else
-                    result=matchingUnits(1);
+                    result=matchingUnits{1};
                 end
             else
-                result=matchingUnits;
+                result=matchingUnits{1};
             end
         end
         
@@ -691,7 +691,7 @@ classdef Electrode < ws.Model & ws.Mimic
             end
             if ~isempty(newValue) ,  % empty sometimes used to signal that mode is unknown
                 allowedModes=self.getAllowedModes();
-                isMatch=cellfun(@(mode)(mode==newValue),allowedModes);            
+                isMatch=cellfun(@(mode)(isequal(mode,newValue)),allowedModes);            
                 if any(isMatch) ,
                     self.Mode_ = newValue;
                 end
