@@ -1096,7 +1096,7 @@ classdef WavesurferModel < ws.Model
 %             self.setPropertyAttributeFeatures('AreSweepsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
 %         end  % function
         
-        function defineDefaultPropertyTags(self)
+        function defineDefaultPropertyTags_(self)
 %             % Mark all the subsystems since they are SetAccess protected which won't be picked
 %             % up by default.
 %             self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
@@ -1124,7 +1124,7 @@ classdef WavesurferModel < ws.Model
             
             % Exclude all the subsystems except FastProtocols from usr
             % files
-            defineDefaultPropertyTags@ws.Model(self);            
+            defineDefaultPropertyTags_@ws.Model(self);            
             self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});

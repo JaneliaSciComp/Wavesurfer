@@ -612,7 +612,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     end  % public methods block
     
     methods (Access = protected)
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 %             % self.setPropertyTags('Name', 'IncludeInFileTypes', {'*'});
 %             % self.setPropertyTags('Bindings', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Duration_', 'IncludeInFileTypes', {'*'});            
@@ -708,8 +708,8 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %     end
     
 %     methods (Access=protected)
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.Model(self);
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
 %             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
 %         end
 %     end

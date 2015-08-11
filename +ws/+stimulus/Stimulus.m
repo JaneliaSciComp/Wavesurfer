@@ -251,7 +251,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             data = zeros(size(t));
         end
         
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 %             self.setPropertyTags('Name', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Delay', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Duration', 'IncludeInFileTypes', {'*'});
@@ -421,8 +421,8 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     end
 
     methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
+        function defineDefaultPropertyTags_(self)
+            defineDefaultPropertyTags_@ws.Model(self);
             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});

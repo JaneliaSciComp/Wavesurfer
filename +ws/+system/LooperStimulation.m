@@ -862,8 +862,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             self.setPropertyAttributeFeatures('DoRepeatSequence', 'Classes', 'logical', 'Attributes', {'scalar'}, 'AllowEmpty', false);
 %         end
         
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);
 %             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('AnalogChannelUnits_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('AnalogChannelScales_', 'IncludeInFileTypes', {'cfg'});            
@@ -878,8 +878,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             %self.setPropertyTags('SelectedOutputableUUID', 'ExcludeFromFileTypes', {'*'});
 %         end
         
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.system.Subsystem(self);            
+        function defineDefaultPropertyTags_(self)
+            defineDefaultPropertyTags_@ws.system.Subsystem(self);            
             %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
         end
 

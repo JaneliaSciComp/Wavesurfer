@@ -187,8 +187,8 @@ classdef Ephys < ws.system.Subsystem
 %         end
         
         %%
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.system.Subsystem(self);            
+        function defineDefaultPropertyTags_(self)
+            defineDefaultPropertyTags_@ws.system.Subsystem(self);            
             
             self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
         end

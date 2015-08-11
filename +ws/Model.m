@@ -100,7 +100,7 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster   % ws.most.Mo
 %             self.broadcast('Update');                       
 %         end
         
-        function defineDefaultPropertyTags(self)
+        function defineDefaultPropertyTags_(self)
             % These are all hidden, but the way ws.Coding now works, they
             % would nevertheless be including in cfg & usr files.  So we
             % explicitly exclude them.

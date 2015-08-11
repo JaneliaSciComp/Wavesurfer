@@ -375,7 +375,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             self.setPropertyAttributeFeatures('Name', 'Classes', 'char', 'Attributes', {'vector'});
 %         end  % function
         
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 %             self.setPropertyTags('Maps', 'IncludeInFileTypes', {'*'});
 %         end  % function
     end  % methods
@@ -453,8 +453,8 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %     end
 
 %     methods (Access=protected)
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.Model(self);
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
 %             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
 %         end
 %     end

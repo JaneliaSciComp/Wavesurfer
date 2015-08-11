@@ -906,10 +906,10 @@ classdef Looper < ws.Model
     end % protected methods block
     
     methods (Access = protected)
-        function defineDefaultPropertyTags(self)
+        function defineDefaultPropertyTags_(self)
             % Exclude all the subsystems except FastProtocols from usr
             % files
-            defineDefaultPropertyTags@ws.Model(self);            
+            defineDefaultPropertyTags_@ws.Model(self);            
             self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});

@@ -36,7 +36,7 @@ classdef Coding < handle
         
     methods
         function self = Coding()
-            self.defineDefaultPropertyTags();  % subclasses override this method to tag properties
+            self.defineDefaultPropertyTags_();  % subclasses override this method to tag properties
         end
         
         function setPropertyTags(self, propertyName, varargin)
@@ -258,7 +258,7 @@ classdef Coding < handle
             self.(name) = value;
         end
         
-        function defineDefaultPropertyTags(~)
+        function defineDefaultPropertyTags_(~)
             % This method is called by the Coding constructor.  The intent
             % is that subclasses override this method to set the tags for
             % the object properties.  But if subclasses don't want to

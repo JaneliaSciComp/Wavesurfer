@@ -915,7 +915,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %         function defineDefaultPropertyAttributes(self) %#ok<MANU>
 %         end  % function
         
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 % %             self.setPropertyTags('Electrodes', 'ExcludeFromFileTypes', {'*'});
 % %             self.setPropertyTags('Electrodes_', 'IncludeInFileTypes', {'cfg'});
 % %             self.setPropertyTags('Electrodes_', 'ExcludeFromFileTypes', {'usr','header'});            
@@ -1087,8 +1087,8 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
     end
     
 %     methods (Access=protected)        
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.Model(self);
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
 %             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
 %         end
 %     end

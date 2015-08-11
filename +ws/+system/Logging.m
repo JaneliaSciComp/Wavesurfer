@@ -608,8 +608,8 @@ classdef Logging < ws.system.Subsystem
 %             self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
 %         end
         
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
 %             % self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'*'});  
 %             %self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'});
 %             %self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'usr'});            

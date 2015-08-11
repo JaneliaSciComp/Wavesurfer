@@ -76,8 +76,8 @@ classdef SineStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.stimulus.StimulusDelegate(self);
+        function defineDefaultPropertyTags_(self)
+            defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});

@@ -652,8 +652,8 @@ classdef ScopeModel < ws.Model
     end  % methods
     
     methods (Access = protected)        
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
 %             self.setPropertyTags('XOffset', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('XSpan', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('YLim', 'IncludeInFileTypes', {'cfg'});
@@ -703,8 +703,8 @@ classdef ScopeModel < ws.Model
     end
     
 %     methods (Access=protected)        
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.Model(self);
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
 %             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
 % %             self.setPropertyTags('CanEnable', 'ExcludeFromFileTypes', {'*'});
 % %             self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});            

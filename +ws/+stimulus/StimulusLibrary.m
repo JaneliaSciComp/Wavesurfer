@@ -753,7 +753,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
     end  % public methods
     
 %     methods (Access = protected)
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 %             self.setPropertyTags('Stimuli', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Maps', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Sequences', 'IncludeInFileTypes', {'*'});
@@ -1144,10 +1144,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
     end
     
     methods (Access=protected)
-        function defineDefaultPropertyTags(self)
+        function defineDefaultPropertyTags_(self)
             % In the header file, only thing we really want is the
             % SelectedOutputable
-            defineDefaultPropertyTags@ws.Model(self);           
+            defineDefaultPropertyTags_@ws.Model(self);           
             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('Sequences', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('Maps', 'ExcludeFromFileTypes', {'header'});

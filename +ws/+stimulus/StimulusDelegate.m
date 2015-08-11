@@ -33,8 +33,8 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
     end
     
     methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
+        function defineDefaultPropertyTags_(self)
+            defineDefaultPropertyTags_@ws.Model(self);
             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
         end
     end
