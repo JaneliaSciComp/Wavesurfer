@@ -1,4 +1,4 @@
-classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
+classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
     properties (Dependent = true)
         Stimuli  % these are all cell arrays
@@ -140,7 +140,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             for i=1:nSequences ,
                 sequence=self.Sequences{i};
                 parent=sequence.Parent;
-                if isempty(parent) || (parent~=self) ,
+                if ~(isscalar(parent) && parent==self) ,
                     value=false;
                     return
                 end
@@ -151,7 +151,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             for i=1:nMaps ,
                 map=self.Maps{i};
                 parent=map.Parent;
-                if isempty(parent) || (parent~=self) ,
+                if ~(isscalar(parent) && parent==self) ,
                     value=false;
                     return
                 end
@@ -162,7 +162,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             for i=1:nStimuli ,
                 thing=self.Stimuli{i};
                 parent=thing.Parent;
-                if isempty(parent) || (parent~=self) ,
+                if ~(isscalar(parent) && parent==self) ,
                     value=false;
                     return
                 end
@@ -287,6 +287,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable & ws.Mimic  % & w
             
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
+        end  % function
+        
+        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+            className=class(self);
+            other=feval(className,parent);
+            other.mimic(self);
         end  % function
         
 %         function doppelganger=clone(self)

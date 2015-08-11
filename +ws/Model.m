@@ -20,6 +20,13 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster   % ws.most.Mo
     methods
         function self = Model(parent,varargin)
             %self@ws.most.Model(varargin{:});
+            if isempty(parent) ,
+                parent = [] ;
+            elseif ~(isscalar(parent) && isa(parent,'ws.Model')) ,
+                error('ws:parentMustBeAWSModel', ...
+                      'Parent must be a scalar ws.Model') ;
+            end
+            
             self.Parent_ = parent ;
         end  % function
         

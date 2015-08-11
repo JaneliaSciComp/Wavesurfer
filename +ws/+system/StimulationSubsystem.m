@@ -80,12 +80,12 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 if isempty(self.StimulusLibrary_) ,
                     % do nothing
                 else
-                    self.StimulusLibrary_=[];
+                    self.StimulusLibrary_ = [] ;
                 end
             elseif isa(newValue, 'ws.stimulus.StimulusLibrary') && isscalar(newValue) ,
                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
-                    self.StimulusLibrary_=newValue;
-                    self.StimulusLibrary_.Parent=self;
+                    self.StimulusLibrary_ = newValue.copyGivenParent(self) ;
+                    %self.StimulusLibrary_.Parent = self ;
                 end
             end
             self.broadcast('DidSetStimulusLibrary');

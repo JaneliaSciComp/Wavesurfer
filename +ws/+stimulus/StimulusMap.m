@@ -4,6 +4,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         Name
         Duration  % s
         ChannelNames  % a cell array of strings
+        IndexOfEachStimulusInLibrary
         Stimuli  % a cell array, with [] for missing stimuli
         Multipliers  % a double array
     end
@@ -85,6 +86,10 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         
         function out = get.Name(self)
             out = self.Name_;
+        end   % function
+
+        function out = get.IndexOfEachStimulusInLibrary(self)
+            out = self.IndexOfEachStimulusInLibrary_ ;
         end   % function
 
 %         function durationPrecursorMayHaveChanged(self,varargin)
@@ -650,7 +655,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     methods (Access=protected)
        function value=isequalElement(self,other)
             % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'Duration' 'ChannelNames' 'Stimuli' 'Multipliers'};
+            propertyNamesToCompare={'Name' 'Duration' 'ChannelNames' 'IndexOfEachStimulusInLibrary' 'Multipliers'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function
     end  % methods

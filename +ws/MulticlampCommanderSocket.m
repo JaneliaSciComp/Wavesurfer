@@ -1,4 +1,4 @@
-classdef MulticlampCommanderSocket < ws.Model & ws.Mimic
+classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     % Represents a "socket" for talking to one or more Axon Multiclamp
     % Commander instances.
     
@@ -1255,6 +1255,22 @@ classdef MulticlampCommanderSocket < ws.Model & ws.Mimic
             end
         end  % function
     end
+    
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to encode private/protected variables, or do
+            % some other kind of transformation on encoding, this method can be overridden.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to decode private/protected variables, or do
+            % some other kind of transformation on decoding, this method can be overridden.
+            self.(name) = value;
+        end        
+    end  % protected methods
     
     methods (Static=true, Access=protected)  % protected class methods
         %%

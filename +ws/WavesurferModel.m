@@ -115,28 +115,31 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function self = WavesurferModel()
-            self@ws.Model([]);  % WavesurferModel has no parent
+        function self = WavesurferModel(parent)
+            if ~exist('parent','var') || isempty(parent) ,
+                parent = [] ;
+            end
+            self@ws.Model(parent);
             
-            % Set up the communication sockets
-            self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
-            self.RPCServer_.setDelegate(self) ;
-            self.RPCServer_.bind();
-
-            self.LooperRPCClient_ = ws.RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ;
-            self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
-            
-            self.DataSubscriber_ = ws.IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
-            self.DataSubscriber_.setDelegate(self) ;
-            
-            % Start the other Matlab processes
-            %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
-            %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
-            
-            % Connect to the various sockets
-            self.LooperRPCClient_.connect() ;
-            self.RefillerRPCClient_.connect() ;
-            self.DataSubscriber_.connect() ;
+%             % Set up the communication sockets
+%             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
+%             self.RPCServer_.setDelegate(self) ;
+%             self.RPCServer_.bind();
+% 
+%             self.LooperRPCClient_ = ws.RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ;
+%             self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
+%             
+%             self.DataSubscriber_ = ws.IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
+%             self.DataSubscriber_.setDelegate(self) ;
+%             
+%             % Start the other Matlab processes
+%             %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+%             %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
+%             
+%             % Connect to the various sockets
+%             self.LooperRPCClient_.connect() ;
+%             self.RefillerRPCClient_.connect() ;
+%             self.DataSubscriber_.connect() ;
             
             % Initialize the fast protocols
             self.FastProtocols_ = cell(1,self.NFastProtocols) ;
@@ -1540,7 +1543,7 @@ classdef WavesurferModel < ws.Model
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end
             saveStruct=load('-mat',absoluteFileName);
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
+            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             self.decodeProperties(wavesurferModelSettings);
@@ -1559,7 +1562,7 @@ classdef WavesurferModel < ws.Model
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForFileType('cfg');
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
+            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
                               'layoutForAllWindows',layoutForAllWindows, ...
@@ -1591,7 +1594,7 @@ classdef WavesurferModel < ws.Model
             end            
             
             saveStruct=load('-mat',absoluteFileName);
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
+            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.decodeProperties(wavesurferModelSettings);
             
@@ -1619,7 +1622,7 @@ classdef WavesurferModel < ws.Model
 
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
             userSettings=self.encodeForFileType('usr');
-            wavesurferModelSettingsVariableName=self.encodedVariableName();
+            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
                               'versionString',versionString);  %#ok<NASGU>

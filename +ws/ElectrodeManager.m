@@ -1,4 +1,4 @@
-classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
+classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
     
     properties (Dependent=true)
         %Parent  % public access to parent property
@@ -1027,6 +1027,12 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             self.EPCMasterSocket_.mimic(other.EPCMasterSocket_);
             self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_);
         end  % function
+        
+%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%             className=class(self);
+%             other=feval(className,parent);
+%             other.mimic(self);
+%         end  % function
         
     end % methods
     

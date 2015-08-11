@@ -1,4 +1,4 @@
-classdef Electrode < ws.Model & ws.Mimic 
+classdef Electrode < ws.Model % & ws.Mimic 
     
     properties (Constant=true)
         Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
@@ -341,16 +341,16 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function set.TestPulseAmplitudeInVC(self,newThang)
-            % self.TestPulseAmplitudeInVC_ is a DoubleString
-            self.TestPulseAmplitudeInVC_= ...
-                self.TestPulseAmplitudeInVC_.filter(newThang);
+            if isnumeric(newThang) && isscalar(newThang) ,
+                self.TestPulseAmplitudeInVC_= double(newThang);
+            end
             self.mayHaveChanged('TestPulseAmplitudeInVC');
         end
         
         function set.TestPulseAmplitudeInCC(self,newThang)
-            % self.TestPulseAmplitudeInCC_ is a DoubleString
-            self.TestPulseAmplitudeInCC_= ...
-                self.TestPulseAmplitudeInCC_.filter(newThang);
+            if isnumeric(newThang) && isscalar(newThang) ,
+                self.TestPulseAmplitudeInCC_= double(newThang);
+            end
             self.mayHaveChanged('TestPulseAmplitudeInCC');
         end  % function
         
@@ -489,6 +489,12 @@ classdef Electrode < ws.Model & ws.Mimic
             self.IsCommandEnabled=other.IsCommandEnabled;            
         end  % function
 
+%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%             className=class(self);
+%             other=feval(className,parent);
+%             other.mimic(self);
+%         end  % function
+        
         function set.Type(self,newValue)
             isMatch=strcmp(newValue,self.Types);
             newTypeIndex=find(isMatch,1);
@@ -778,6 +784,22 @@ classdef Electrode < ws.Model & ws.Mimic
             electrodeManager.electrodeMayHaveChanged(self,propertyName);
         end
     end
+    
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to encode private/protected variables, or do
+            % some other kind of transformation on encoding, this method can be overridden.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to decode private/protected variables, or do
+            % some other kind of transformation on decoding, this method can be overridden.
+            self.(name) = value;
+        end
+    end  % protected methods
     
     methods (Static)
         function modes=allowedModesForType(type)

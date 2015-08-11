@@ -6,6 +6,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     properties (Dependent=true)
         Name
         Maps  % the items in the sequence
+        IndexOfEachMapInLibrary
         IsMarkedForDeletion  % logical, one element per element in Maps
     end      
     
@@ -88,6 +89,10 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 
         function out = get.Name(self)
             out = self.Name_ ;
+        end   % function
+        
+        function out = get.IndexOfEachMapInLibrary(self)
+            out = self.IndexOfEachMapInLibrary_ ;
         end   % function
         
         function out = get.Maps(self)
@@ -389,7 +394,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     methods (Access=protected)
        function value=isequalElement(self,other)
             % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'Maps'};
+            propertyNamesToCompare={'Name' 'IndexOfEachMapInLibrary'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function       
     end  % methods

@@ -227,7 +227,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
             
             % copy
-            stimulusLibraryCopy=stimulusLibrary.cloneGivenParent([]);
+            stimulusLibraryCopy=stimulusLibrary.copyGivenParent([]);
             
             % check
             self.verifyTrue(stimulusLibraryCopy.isSelfConsistent());
@@ -235,7 +235,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             self.verifyTrue(all(stimulusLibrary~=stimulusLibraryCopy));  % test (lack of) identity
             
             % another copy, to make sure no aliasing is going on
-            stimulusLibraryCopyCopy=stimulusLibraryCopy.cloneGivenParent([]);
+            stimulusLibraryCopyCopy=stimulusLibraryCopy.copyGivenParent([]);
             stimulus1=stimulusLibraryCopyCopy.Stimuli{1};  % should be an alias
             stimulus1.Delegate.InitialFrequency='45.44323';  % should modify stimulusLibraryCopyCopy
             
