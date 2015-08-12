@@ -13,6 +13,6 @@ function installWavesurferForNow()
 
     wavesurferParentFolder=fileparts(wavesurferPath);
     addpath(wavesurferParentFolder);
-    addpath(fullfile(wavesurferParentFolder,'wavesurfer_guis'));
+    %addpath(fullfile(wavesurferParentFolder,'wavesurfer_guis'));
     addpath(fullfile(wavesurferParentFolder,'matlab-zmq','lib'));
 end

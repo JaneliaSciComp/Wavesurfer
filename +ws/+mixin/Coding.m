@@ -95,22 +95,23 @@ classdef Coding < handle
 
     methods         
         function propNames = listPropertiesForFileType(self, fileType)
-            % List properties that satisfy the given predicate function,
-            % or are explicitly tagged for inclusion in the given file type, but are not tagged for
-            % exclusion in the given file type.  I.e. exclusion overrides
-            % all.  If fileType is empty, encodes all properties satisfying
-            % the predicate.  Properties are listed in the order they occur
-            % in the classdef.
+            % List properties that satisfy the given predicate function, or
+            % are explicitly tagged for inclusion in the given file type,
+            % but are not tagged for exclusion in the given file type.
+            % I.e. exclusion overrides all.  If fileType is empty, encodes
+            % all properties satisfying the predicate.  Properties are
+            % listed in the order they occur in the classdef.
             
             % This right here defines the defaults for what gets stored in
             % different file types.  .cfg and .usr files capture all the
-            % properties that have storage asscoiated with them, and are not
-            % markes as transient.  The header captures all the
+            % properties that have storage asscoiated with them, and are
+            % not markes as transient.  The header captures all the
             % publicly-gettable properties, regardless of whether they're
-            % dependent, independent, or whatever.  (But note that, in actual
-            % use, things are special-cased such that the .usr file only
-            % captures a very small part of the WavesurferModel state.  Whereas
-            % the .cfg file captures most of the WavesurferModel state.)
+            % dependent, independent, or whatever.  (But note that, in
+            % actual use, things are special-cased such that the .usr file
+            % only captures a very small part of the WavesurferModel state.
+            % Whereas the .cfg file captures most of the WavesurferModel
+            % state.)
             if isequal(fileType,'cfg') || isequal(fileType,'usr') ,
                 predicateFunction = @(x)(~x.Dependent && ~x.Transient && ~x.Constant) ;
             elseif isequal(fileType,'header') ,
@@ -121,7 +122,7 @@ classdef Coding < handle
             end                    
 
             % Actually get the prop names that satisfy the predicate
-            propNamesSatisfyingPredicate = ws.mixin.Coding.classPropertyNamesSatisfyingPredicate_(class(self), predicateFunction);
+            propNamesSatisfyingPredicate = self.propertyNamesSatisfyingPredicate_(predicateFunction);
             
             % Filter out or in any properies with the specified fileType.
             if isempty(fileType) ,
@@ -260,8 +261,13 @@ classdef Coding < handle
         function value=propertyNames_(self)
             % Get the property names of self, in the same order as they are
             % specified in the classdef.
-            className=class(self);
-            value=ws.mixin.Coding.classPropertyNames_(className);
+            
+            %className=class(self);
+            %value=ws.mixin.Coding.classPropertyNames_(className);
+            
+            mc = metaclass(self);
+            allClassProperties = mc.Properties;
+            value = cellfun(@(x)x.Name, allClassProperties, 'UniformOutput', false);
         end        
     end  % public methods
     
@@ -545,28 +551,42 @@ classdef Coding < handle
                 propertyNameList = {};
             end
         end
-    end  % protected methods
-    
-    methods (Static = true, Access = protected)
-        % PredicateFcn is a function that returns a logical when given a
-        % meta.Property object
-        function propertyNames = classPropertyNamesSatisfyingPredicate_(className, predicateFunction)
-            % Return a list of all the property names for the class that satisfy the predicate, in the
-            % order they were defined in the classdef.
-            mc = meta.class.fromName(className);
+        
+        function propertyNames = propertyNamesSatisfyingPredicate_(self, predicateFunction)
+            % Return a list of all the property names for the class that
+            % satisfy the predicate, in the order they were defined in the
+            % classdef.  predicateFunction should be a function that
+            % returns a logical when given a meta.Property object.
+            mc = metaclass(self);
             allClassProperties = mc.Properties;
             isMatch = cellfun(predicateFunction, allClassProperties);
             matchingClassProperties = allClassProperties(isMatch);
             propertyNames = cellfun(@(x)x.Name, matchingClassProperties, 'UniformOutput', false);
         end
+        
+    end  % protected methods
     
-        function propertyNames = classPropertyNames_(className)
-            % Return a list of all the property names for the class, in the
-            % order they were defined in the classdef.
-            mc = meta.class.fromName(className);
-            allClassProperties = mc.Properties;
-            propertyNames = cellfun(@(x)x.Name, allClassProperties, 'UniformOutput', false);
-        end        
+    methods (Static = true, Access = protected)
+%         function propertyNames = classPropertyNamesSatisfyingPredicate_(className, predicateFunction)
+%             % Return a list of all the property names for the class that
+%             % satisfy the predicate, in the order they were defined in the
+%             % classdef.  predicateFunction should be a function that
+%             % returns a logical when given a meta.Property object.
+% 
+%             mc = meta.class.fromName(className);
+%             allClassProperties = mc.Properties;
+%             isMatch = cellfun(predicateFunction, allClassProperties);
+%             matchingClassProperties = allClassProperties(isMatch);
+%             propertyNames = cellfun(@(x)x.Name, matchingClassProperties, 'UniformOutput', false);
+%         end
+    
+%         function propertyNames = classPropertyNames_(className)
+%             % Return a list of all the property names for the class, in the
+%             % order they were defined in the classdef.
+%             mc = meta.class.fromName(className);
+%             allClassProperties = mc.Properties;
+%             propertyNames = cellfun(@(x)x.Name, allClassProperties, 'UniformOutput', false);
+%         end        
     end  % class methods
     
     methods (Static = true, Access = protected)

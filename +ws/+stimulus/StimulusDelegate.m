@@ -32,12 +32,12 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
         mdlHeaderExcludeProps = {};
     end
     
-    methods (Access=protected)
-        function defineDefaultPropertyTags_(self)
-            defineDefaultPropertyTags_@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
+%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
 
     %
     % Implementations of methods needed to be a ws.mixin.ValueComparable

@@ -878,10 +878,10 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             %self.setPropertyTags('SelectedOutputableUUID', 'ExcludeFromFileTypes', {'*'});
 %         end
         
-        function defineDefaultPropertyTags_(self)
-            defineDefaultPropertyTags_@ws.system.Subsystem(self);            
-            %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
-        end
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
+%             %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
+%         end
 
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue_(self, name)

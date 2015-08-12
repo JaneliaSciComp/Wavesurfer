@@ -111,15 +111,15 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster   % ws.most.Mo
             % These are all hidden, but the way ws.Coding now works, they
             % would nevertheless be including in cfg & usr files.  So we
             % explicitly exclude them.
-            self.setPropertyTags('mdlPropAttributes', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlHeaderExcludeProps', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlVerbose', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlInitialized', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlApplyingPropSet', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('hController', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlHParent', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlDependsOnListeners', 'ExcludeFromFileTypes', {'*'});
-            self.setPropertyTags('mdlSubModelClasses', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlPropAttributes', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlHeaderExcludeProps', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlVerbose', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlInitialized', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlApplyingPropSet', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('hController', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlHParent', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlDependsOnListeners', 'ExcludeFromFileTypes', {'*'});
+%             self.setPropertyTags('mdlSubModelClasses', 'ExcludeFromFileTypes', {'*'});
             self.setPropertyTags('Parent_', 'ExcludeFromFileTypes', {'*'});
             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'*'});
         end  % function

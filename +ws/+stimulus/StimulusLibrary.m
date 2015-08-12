@@ -1154,7 +1154,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
             % In the header file, only thing we really want is the
             % SelectedOutputable
             defineDefaultPropertyTags_@ws.Model(self);           
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+            %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('Sequences', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('Maps', 'ExcludeFromFileTypes', {'header'});
             self.setPropertyTags('Stimuli', 'ExcludeFromFileTypes', {'header'});
