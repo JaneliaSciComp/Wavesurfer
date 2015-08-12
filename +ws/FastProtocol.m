@@ -88,10 +88,10 @@ classdef FastProtocol < ws.Model
 %         end
 %     end    
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 %     methods (Static)
 %         function s = propertyAttributes()

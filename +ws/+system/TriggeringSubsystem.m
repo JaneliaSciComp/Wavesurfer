@@ -223,9 +223,9 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function        
     end  % protected methods block
 
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();
-        mdlHeaderExcludeProps = {};
-    end  % function    
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();
+%         mdlHeaderExcludeProps = {};
+%     end  % function    
     
 end

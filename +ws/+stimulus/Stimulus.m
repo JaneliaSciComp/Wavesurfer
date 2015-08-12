@@ -307,10 +307,10 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();    
+%         mdlHeaderExcludeProps = {};
+%     end
     
     methods (Static)
         function output = evaluateSweepExpression(expression,sweepIndex)

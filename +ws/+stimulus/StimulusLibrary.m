@@ -1192,10 +1192,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
 %         end
 %     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 %     methods (Static)
 %         function s = propertyAttributes()

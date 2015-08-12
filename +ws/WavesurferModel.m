@@ -144,7 +144,7 @@ classdef WavesurferModel < ws.Model
             % Initialize the fast protocols
             self.FastProtocols_ = cell(1,self.NFastProtocols) ;
             for i=1:self.NFastProtocols ,
-                self.FastProtocols_{i} = ws.fastprotocol.FastProtocol(self);
+                self.FastProtocols_{i} = ws.FastProtocol(self);
             end
             self.IndexOfSelectedFastProtocol_ = 1;
             
@@ -1518,10 +1518,10 @@ classdef WavesurferModel < ws.Model
         end  % function
     end % methods
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();   % ws.WavesurferModel.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();   % ws.WavesurferModel.propertyAttributes();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 %     methods (Static)
 %         function s = propertyAttributes()

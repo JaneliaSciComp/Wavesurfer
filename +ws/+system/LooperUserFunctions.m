@@ -146,9 +146,9 @@ classdef LooperUserFunctions < ws.system.Subsystem
         end  % function
     end
         
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.UserFunctions.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = ws.system.UserFunctions.propertyAttributes();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 end  % classdef

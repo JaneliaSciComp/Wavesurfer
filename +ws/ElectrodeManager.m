@@ -1099,23 +1099,23 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end
 %     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.ElectrodeManager.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = ws.ElectrodeManager.propertyAttributes();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            
-            s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
-            s.Electrodes = struct('Classes', 'cell', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.IsElectrodeMarkedForTestPulse = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.IsElectrodeMarkedForRemoval = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.AreSoftpanelsEnabled = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
-            s.IsInControlOfSoftpanelModeAndGains = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
-        end  % function
-    end
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             
+%             s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
+%             s.Electrodes = struct('Classes', 'cell', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             s.IsElectrodeMarkedForTestPulse = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             s.IsElectrodeMarkedForRemoval = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             s.AreSoftpanelsEnabled = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
+%             s.IsInControlOfSoftpanelModeAndGains = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
+%         end  % function
+%     end
 
     methods (Static, Access=protected)
         function socketPropertyName=socketPropertyNameFromElectrodeType_(electrodeType)

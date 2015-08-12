@@ -448,9 +448,9 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         end  % function
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct() ;
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct() ;
+%         mdlHeaderExcludeProps = {};
+%     end
         
 end

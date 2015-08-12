@@ -1542,10 +1542,10 @@ classdef TestPulser < ws.Model
         end
     end  % protected methods block
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();
-        mdlHeaderExcludeProps = {};
-    end    
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();
+%         mdlHeaderExcludeProps = {};
+%     end    
     
     % These next two methods allow access to private and protected variables from ws.mixin.Coding. 
     methods (Access=protected)

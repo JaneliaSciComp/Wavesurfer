@@ -1091,10 +1091,10 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         
     end  % protected methods
 
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 %     methods (Static)
 %         function s = propertyAttributes()

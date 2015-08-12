@@ -345,10 +345,10 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %         end
 %     end    
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
     methods (Access=protected)
 %         function s = propertyAttributes()

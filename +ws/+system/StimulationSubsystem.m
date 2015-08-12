@@ -426,9 +426,9 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     end  % protected methods block
     
 
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct() ;        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct() ;        
+%         mdlHeaderExcludeProps = {};
+%     end
             
 end  % classdef

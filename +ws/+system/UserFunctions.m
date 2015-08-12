@@ -146,9 +146,9 @@ classdef UserFunctions < ws.system.Subsystem
         end  % function
     end
         
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 end  % classdef

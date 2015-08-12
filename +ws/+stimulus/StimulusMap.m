@@ -719,10 +719,10 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %         end
 %     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct() ;
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct() ;
+%         mdlHeaderExcludeProps = {};
+%     end
     
     methods (Access=protected)
         function out = getPropertyValue_(self, name)

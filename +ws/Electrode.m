@@ -837,9 +837,9 @@ classdef Electrode < ws.Model % & ws.Mimic
 %         end
 %     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 end  % classdef

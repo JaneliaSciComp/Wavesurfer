@@ -118,10 +118,10 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
         end  % function
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 %     methods (Static)
 %         function s = propertyAttributes()

@@ -41,10 +41,10 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
         end  % function 
     end  % public methods block    
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();    
+%         mdlHeaderExcludeProps = {};
+%     end
     
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
