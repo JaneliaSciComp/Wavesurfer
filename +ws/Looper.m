@@ -1250,7 +1250,7 @@ classdef Looper < ws.Model
 %             % file name referring to a file that is known to be
 %             % present, at least as of a few milliseconds ago.
 %             self.changeReadiness(-1);
-%             if ws.most.util.isFileNameAbsolute(fileName) ,
+%             if ws.utility.isFileNameAbsolute(fileName) ,
 %                 absoluteFileName = fileName ;
 %             else
 %                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -1296,7 +1296,7 @@ classdef Looper < ws.Model
 % 
 %             self.changeReadiness(-1);
 % 
-%             if ws.most.util.isFileNameAbsolute(fileName) ,
+%             if ws.utility.isFileNameAbsolute(fileName) ,
 %                 absoluteFileName = fileName ;
 %             else
 %                 absoluteFileName = fullfile(pwd(),fileName) ;

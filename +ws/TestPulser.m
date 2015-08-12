@@ -133,9 +133,9 @@ classdef TestPulser < ws.Model
         function self = TestPulser(parent,varargin)
             % Process args
             self@ws.Model(parent);
-            validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd

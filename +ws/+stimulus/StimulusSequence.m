@@ -24,7 +24,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     methods
         function self = StimulusSequence(parent,varargin)
             self@ws.Model(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'Name'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -127,7 +127,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %                 if isGoodSoFar ,
 %                     if ~isempty(self.Parent) ,
 %                         mapsInLibrary=self.Parent.Maps;
-%                         if all(ws.most.idioms.ismemberOfCellArray(newValue,mapsInLibrary)) ,
+%                         if all(ws.utility.ismemberOfCellArray(newValue,mapsInLibrary)) ,
 %                             % If get here, everything checks out, ok to
 %                             % mutate our state
 %                             self.Maps_ = newValue;
@@ -167,7 +167,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end   % function
         
 %         function out = containsMaps(self, mapOrMaps)
-%             maps=ws.most.idioms.cellifyIfNeeded(mapOrMaps);
+%             maps=ws.utility.cellifyIfNeeded(mapOrMaps);
 %             out = false(size(maps));
 %             
 %             if isempty(maps)
@@ -349,7 +349,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 % %             % The maps argument should be an array of sound (non-broken) maps
 % %             
 % %             % Now repair the items
-% %             mapUUIDs=ws.most.idioms.cellArrayPropertyAsArray(maps,'UUID');
+% %             mapUUIDs=ws.utility.cellArrayPropertyAsArray(maps,'UUID');
 % %             itemUUIDs=self.MapUUIDs_;
 % %             nMaps=length(itemUUIDs);
 % %             self.Maps_={};
@@ -370,7 +370,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %                 value=false;
 %                 return
 %             end
-% %             uuidsAsInMaps=ws.most.idioms.cellArrayPropertyAsArray(self.Maps,'UUID');
+% %             uuidsAsInMaps=ws.utility.cellArrayPropertyAsArray(self.Maps,'UUID');
 % %             value=all(uuidsAsInMaps==self.MapUUIDs_);
 %             value=true;
 %         end
@@ -432,7 +432,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             % Get the index within sourceMaps of source.Stimulus, then link
 %             % up the new binding with the corresponding element of
 %             % selfMaps
-%             sourceUUIDs=ws.most.idioms.cellArrayPropertyAsArray(sourceMaps,'UUID');
+%             sourceUUIDs=ws.utility.cellArrayPropertyAsArray(sourceMaps,'UUID');
 %             nMaps=length(self.Maps);
 %             for i=1:nMaps
 %                 itemUUID=self.MapUUIDs_(i);                

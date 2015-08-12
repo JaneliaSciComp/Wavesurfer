@@ -1578,7 +1578,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             end
             obj.stop();
             
-            ws.most.idioms.pauseTight(.01); %This seems to be necessary to gurantee that registration takes effect before subsequent start command (if it happens right away)
+            ws.utility.pauseTight(.01); %This seems to be necessary to gurantee that registration takes effect before subsequent start command (if it happens right away)
         end
         
         % Before unregistration, the task must be *stopped*. 

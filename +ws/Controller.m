@@ -1,4 +1,4 @@
-classdef Controller < handle   %< ws.most.Controller
+classdef Controller < handle
 
     properties (Dependent=true, SetAccess=immutable)
         Parent
@@ -125,7 +125,7 @@ classdef Controller < handle   %< ws.most.Controller
             % session.
            
             % Framework specific transformation.
-            thisWindowLayout = self.encode_window_layout();
+            thisWindowLayout = self.encodeWindowLayout_();
             
             layoutVarNameForClass = self.getLayoutVariableNameForClass();
             if isfield(layoutForAllWindows,layoutVarNameForClass)
@@ -158,7 +158,7 @@ classdef Controller < handle   %< ws.most.Controller
     end    
     
 %     methods (Access = protected)
-%         function out = encode_window_layout(self) %#ok<MANU>
+%         function out = encodeWindowLayout_(self) %#ok<MANU>
 %             % Subclasses can encode size, position, visibility, and other features.  Current
 %             % implementations use a struct, but the variable returned from this function can
 %             % be anything, as long as it can be saved and loaded from a MAT file. Subclasses
@@ -170,7 +170,7 @@ classdef Controller < handle   %< ws.most.Controller
 %     end
         
     methods (Access = protected)
-        function layoutOfWindowsInClassButOnlyForThisWindow = encode_window_layout(self)
+        function layoutOfWindowsInClassButOnlyForThisWindow = encodeWindowLayout_(self)
             window = self.Figure;
             layoutOfWindowsInClassButOnlyForThisWindow = struct();
             tag = get(window, 'Tag');
@@ -182,45 +182,46 @@ classdef Controller < handle   %< ws.most.Controller
                 isVisible=visible;
             end
             layoutOfWindowsInClassButOnlyForThisWindow.(tag).Visible = isVisible;
-            if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
-                layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
-            else
-                layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
-            end
+%             if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
+%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
+%             else
+%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
+%             end
         end
     end
     
     methods (Access = protected)
-        function decode_window_layout(self, layoutOfWindowsInClass)
+        function decodeWindowLayout(self, layoutOfWindowsInClass)
             figureObject = self.Figure;
             %figureGH=figureObject.FigureGH;
             tag = get(figureObject, 'Tag');
             if isfield(layoutOfWindowsInClass, tag)
                 layoutOfThisWindow = layoutOfWindowsInClass.(tag);
 
-                if isfield(layoutOfThisWindow, 'Toggle')
-                    toggleState = layoutOfThisWindow.Toggle;
-                else
-                    % This branch is only to support legacy .usr files that
-                    % don't have up-to-date layout info.
-                    toggleState = [];
-                end
+%                 if isfield(layoutOfThisWindow, 'Toggle')
+%                     toggleState = layoutOfThisWindow.Toggle;
+%                 else
+%                     % This branch is only to support legacy .usr files that
+%                     % don't have up-to-date layout info.
+%                     toggleState = [];
+%                 end
 
-                if ~isempty(toggleState)
-                    assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(figureObject));
-
-                    ws.most.gui.AdvancedPanelToggler.loadToggleState(figureObject,toggleState);
-
-                    % gui is toggleable; for position, only set x- and
-                    % y-pos, not width and height, as those are controlled
-                    % by toggle-state.
-                    pos = get(figureObject,'Position');
-                    pos(1:2) = layoutOfThisWindow.Position(1:2);
-                    set(figureObject,'Position',pos);
-                else
+%                 if ~isempty(toggleState)
+%                 if false ,
+%                     assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(figureObject));
+% 
+%                     ws.most.gui.AdvancedPanelToggler.loadToggleState(figureObject,toggleState);
+% 
+%                     % gui is toggleable; for position, only set x- and
+%                     % y-pos, not width and height, as those are controlled
+%                     % by toggle-state.
+%                     pos = get(figureObject,'Position');
+%                     pos(1:2) = layoutOfThisWindow.Position(1:2);
+%                     set(figureObject,'Position',pos);
+%                 else
                     % Not a toggleable GUI.
-                    set(figureObject, 'Position', layoutOfThisWindow.Position);
-                end
+                set(figureObject, 'Position', layoutOfThisWindow.Position);
+%                 end
 
                 if isfield(layoutOfThisWindow,'Visible') ,
                     set(figureObject, 'Visible', layoutOfThisWindow.Visible);
@@ -282,37 +283,37 @@ classdef Controller < handle   %< ws.most.Controller
         % should generally me marked as (Sealed = true) in the framework specific
         % controllers such as the HG controller.
         
-        function create_windows(self, guiNames, guiNamesInvisible, model) %#ok<INUSD>
-            % Framework specific implementations should load a fig file or create a WPF
-            % window or whatever is appropriate.  A controller base class that does not use
-            % windows (e.g., one specifically for WPF user controls rather than windows -
-            % though it does not exist currently) may do nothing here.
-        end
+%         function createWindows(self, guiNames, guiNamesInvisible, model) %#ok<INUSD>
+%             % Framework specific implementations should load a fig file or create a WPF
+%             % window or whatever is appropriate.  A controller base class that does not use
+%             % windows (e.g., one specifically for WPF user controls rather than windows -
+%             % though it does not exist currently) may do nothing here.
+%         end
         
-        function out = get_main_window(self) %#ok<MANU>
-            % Framework specific subclasses can implement this method to return a "primary"
-            % window. This may simply be the first window or the only window.  The reason it
-            % is left to the framework specific subclasses is that they may store references
-            % to their list of windows differently, such as array vs. cell array, depending
-            % on their requirements.
-            out = [];
-        end
+%         function out = get_main_window(self) %#ok<MANU>
+%             % Framework specific subclasses can implement this method to return a "primary"
+%             % window. This may simply be the first window or the only window.  The reason it
+%             % is left to the framework specific subclasses is that they may store references
+%             % to their list of windows differently, such as array vs. cell array, depending
+%             % on their requirements.
+%             out = [];
+%         end
         
-        function modifyEventIfNeededToCancelClose(self, src, evt) %#ok<INUSD>
-            % Perform any action required to cancel a window close event.  May be a no-op
-            % (e.g., for an HG controller) or require modification of the event object (see
-            % the WPF controller for an example).
-        end
+%         function modifyEventIfNeededToCancelClose(self, src, evt) %#ok<INUSD>
+%             % Perform any action required to cancel a window close event.  May be a no-op
+%             % (e.g., for an HG controller) or require modification of the event object (see
+%             % the WPF controller for an example).
+%         end
         
-        function modifyEventIfNeededAndHideWindow(self, src, evt) %#ok<INUSD>
-            % Perform any action required to hide a window rather than close it.
-        end
+%         function modifyEventIfNeededAndHideWindow(self, src, evt) %#ok<INUSD>
+%             % Perform any action required to hide a window rather than close it.
+%         end
         
-        function deleteWindows(self) %#ok<MANU>
-            % Should actually release/delete any handles or objects that define the window
-            % object.  This is essentially for the framework specific delete() method code
-            % for windows and associated resources.
-        end
+%         function deleteWindows(self) %#ok<MANU>
+%             % Should actually release/delete any handles or objects that define the window
+%             % object.  This is essentially for the framework specific delete() method code
+%             % for windows and associated resources.
+%         end
     end  % protected methods that are designed to be optionally overridden
     
     methods
@@ -380,15 +381,15 @@ classdef Controller < handle   %< ws.most.Controller
             
             if isfield(multiWindowLayout, layoutVarNameForThisClass) ,
                 layoutForThisClass=multiWindowLayout.(layoutVarNameForThisClass);
-                self.decode_window_layout(layoutForThisClass);
+                self.decodeWindowLayout(layoutForThisClass);
 %                 if self.IsSuiGeneris ,
 %                     windowLayout = layoutForThisClass;
-%                     self.decode_window_layout(windowLayout);
+%                     self.decodeWindowLayout(windowLayout);
 %                 else
 %                     tag=get(self.Window,'Tag');
 %                     if isfield(layoutForAllWindows.(layoutVarNameForThisClass),tag)
 %                         windowLayout=layoutForAllWindows.(layoutVarNameForThisClass).(tag);
-%                         self.decode_window_layout(windowLayout);
+%                         self.decodeWindowLayout(windowLayout);
 %                     end
 %                 end
             end

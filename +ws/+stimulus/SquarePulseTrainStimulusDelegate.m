@@ -20,7 +20,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function self = SquarePulseTrainStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)

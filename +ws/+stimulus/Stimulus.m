@@ -52,7 +52,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         function self = Stimulus(parent,varargin)
             self@ws.Model(parent) ;
             self.Delegate_ = ws.stimulus.SquarePulseStimulusDelegate(self);  
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
             for idx = 1:length(vals)
@@ -279,7 +279,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             % Don't need to compare as StimLibraryItem's, b/c only property
             % of that is UUID, which we want to ignore
             propertyNamesToCompare={'Name' 'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Delegate'};
-            %propertyNamesToCompare=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            %propertyNamesToCompare=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end

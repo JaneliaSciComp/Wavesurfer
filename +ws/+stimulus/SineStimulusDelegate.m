@@ -17,7 +17,7 @@ classdef SineStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function self = SineStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Frequency'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'Frequency'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)

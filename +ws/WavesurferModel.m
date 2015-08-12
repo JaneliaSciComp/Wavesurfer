@@ -707,7 +707,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Tell the Looper to prepare for the run
-            wavesurferModelSettings=self.packageCoreSettings();
+            wavesurferModelSettings=self.encodeForFileType('cfg');
             err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
             if ~isempty(err) ,
                 self.cleanUpAfterAbortedRun_('problem');
@@ -1558,7 +1558,7 @@ classdef WavesurferModel < ws.Model
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             self.changeReadiness(-1);
-            if ws.most.util.isFileNameAbsolute(fileName) ,
+            if ws.utility.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -1610,7 +1610,7 @@ classdef WavesurferModel < ws.Model
             
             self.changeReadiness(-1);
 
-            if ws.most.util.isFileNameAbsolute(fileName) ,
+            if ws.utility.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;

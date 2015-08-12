@@ -345,7 +345,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     
     methods
         function raise(self)
-            figureGHs=allchild(0);  % ws.most.Controller likes to make things with HandleVisibility=='off'
+            figureGHs=allchild(0);  % the old MOST Controller superclass liked to make things with HandleVisibility=='off'
             isMe=(figureGHs==self.FigureGH_);
             i=find(isMe,1);
             if isempty(i) ,

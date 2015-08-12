@@ -55,9 +55,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                                            'ErrorFcn',@(object,event,varargin)(self.heartbeatError(object,event)));            
             
             % Process args
-            validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -935,7 +935,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 % %             self.setPropertyTags('Parent_', 'ExcludeFromFileTypes', {'*'});
 %             
 %             % First: Exclude everything from all file types.
-%             propertyNames=ws.most.util.findPropertiesSuchThat(self);
+%             propertyNames=ws.utility.findPropertiesSuchThat(self);
 %             for i=1:length(propertyNames)
 %                 propertyName=propertyNames{i};
 %                 self.setPropertyTags(propertyName, 'ExcludeFromFileTypes', {'*'});

@@ -1,6 +1,6 @@
 function [doesExist,modificationDate,nBytes,isDirectory,serialDateNumber]=fileStatus(fileName)
     % Find out whether the named file exists, its mod date, etc.
-    if ws.most.util.isFileNameAbsolute(fileName) ,
+    if ws.utility.isFileNameAbsolute(fileName) ,
         absoluteFileName=fileName;
     else
         absoluteFileName=fullfile(pwd(),fileName);

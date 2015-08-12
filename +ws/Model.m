@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster   % ws.most.Model & ws.mixin.Coding & ws.EventBroadcaster
+classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         Parent  
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor

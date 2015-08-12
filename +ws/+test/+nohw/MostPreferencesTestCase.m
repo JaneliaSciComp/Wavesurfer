@@ -2,7 +2,7 @@ classdef MostPreferencesTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function testZeroArgConstructor(self)
-            prefs=ws.most.fileutil.Preferences();
+            prefs=ws.UrPreferences();
             self.verifyEmpty(prefs.Location, 'The ''Location'' property should be empty.');
             self.verifyEmpty(prefs.Name, 'The ''Name'' property should be empty.');
             prefs.purge();
@@ -10,7 +10,7 @@ classdef MostPreferencesTestCase < matlab.unittest.TestCase
         
         function testOneArgConstructor(self)
             name='GorgonzolaTheApp.mat';
-            prefs=ws.most.fileutil.Preferences(name);
+            prefs=ws.UrPreferences(name);
             self.verifyEqual(prefs.Name,name);
             prefs.purge();
         end  % method
@@ -18,7 +18,7 @@ classdef MostPreferencesTestCase < matlab.unittest.TestCase
         function testTwoArgConstructor(self)
             name='GorgonzolaTheApp.mat';
             location='Janelia';
-            prefs=ws.most.fileutil.Preferences(location,name);
+            prefs=ws.UrPreferences(location,name);
             self.verifyEqual(prefs.Location,location);
             self.verifyEqual(prefs.Name,name);
             prefs.purge();
@@ -27,7 +27,7 @@ classdef MostPreferencesTestCase < matlab.unittest.TestCase
         function testSaveThenLoad(self)
             name='GorgonzolaTheApp.mat';
             location='Janelia';
-            prefs=ws.most.fileutil.Preferences(location,name);
+            prefs=ws.UrPreferences(location,name);
             mouseSpeed=10;
             prefs.savePref('mouseSpeed',mouseSpeed);
             mouseSpeedCheck=prefs.loadPref('mouseSpeed');
@@ -38,7 +38,7 @@ classdef MostPreferencesTestCase < matlab.unittest.TestCase
         function testRegisterDefaults(self)
             name='GorgonzolaTheApp.mat';
             location='Janelia';
-            prefs=ws.most.fileutil.Preferences(location,name);
+            prefs=ws.UrPreferences(location,name);
             mouseSpeed=10;
             prefs.savePref('mouseSpeed',mouseSpeed);
             keyboardRepeatRate=20;
@@ -55,7 +55,7 @@ classdef MostPreferencesTestCase < matlab.unittest.TestCase
         function testFileCreationAndPurge(self)
             name='GorgonzolaTheApp.mat';
             location='Janelia';
-            prefs=ws.most.fileutil.Preferences(location,name);
+            prefs=ws.UrPreferences(location,name);
             mouseSpeed=10;
             prefs.savePref('mouseSpeed',mouseSpeed);
             % there should now be a prefs file in the filesystem

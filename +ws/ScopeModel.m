@@ -103,10 +103,10 @@ classdef ScopeModel < ws.Model
             %
             
             % Filter out not-publically-settable props
-            validPropNames=[ws.most.util.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
+            validPropNames=[ws.utility.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
             %mandatoryPropNames={'Tag'};
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
 
             % Make sure there's the same number of props as vals
             propNamesRaw = pvArgs(1:2:end);

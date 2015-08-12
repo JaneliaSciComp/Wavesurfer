@@ -31,7 +31,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     methods
         function self = StimulusMap(parent,varargin)
             self@ws.Model(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Name', 'Duration'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'Name', 'Duration'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -339,7 +339,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function out = containsStimulus(self, stimuliOrStimulus)
-            stimuli=ws.most.idioms.cellifyIfNeeded(stimuliOrStimulus);
+            stimuli=ws.utility.cellifyIfNeeded(stimuliOrStimulus);
             out = false(size(stimuli));
             
             for index = 1:numel(stimuli)
@@ -635,7 +635,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %             % loading from a file.  Tries to find a stimulus in stimuli
 %             % with a UUID matching the binding's stored stimulus UUID.            
 %             stimulusUUID=self.StimulusUUIDs_{i};
-%             uuids=ws.most.idioms.cellArrayPropertyAsArray(stimuli,'UUID');
+%             uuids=ws.utility.cellArrayPropertyAsArray(stimuli,'UUID');
 %             isMatch=(uuids==stimulusUUID);
 %             iMatch=find(isMatch,1);
 %             if isempty(iMatch) ,
@@ -680,7 +680,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %             % elements of otherStimuli
 %             nStimuli=length(self.ChannelNames);
 %             other.Stimuli_ = cell(1,nStimuli);
-%             %uuids=ws.most.idioms.cellArrayPropertyAsArray(selfStimuli,'UUID');
+%             %uuids=ws.utility.cellArrayPropertyAsArray(selfStimuli,'UUID');
 %             for j=1:nStimuli ,
 %                 %uuidOfThisStimulusInSelf=self.StimulusUUIDs_{j};
 %                 thisStimulusInSelf=self.Stimuli_{j};

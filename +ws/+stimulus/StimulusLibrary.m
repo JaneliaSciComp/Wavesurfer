@@ -528,7 +528,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
         function result = isInUse(self, itemOrItems)
             % Note that this doesn't check if the items are selected.  This
             % is by design.
-            items=ws.most.idioms.cellifyIfNeeded(itemOrItems);
+            items=ws.utility.cellifyIfNeeded(itemOrItems);
             validateattributes(items, {'cell'}, {'vector'});
             for i=1:numel(items) ,
                 validateattributes(items{i}, {'ws.stimulus.Stimulus' 'ws.stimulus.StimulusMap' 'ws.stimulus.StimulusSequence'}, {'scalar'});
@@ -802,7 +802,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
         end  % function
         
 %         function addMapToSequence(self,sequence,map)
-%             if ws.most.idioms.ismemberOfCellArray({sequence},self.Sequences) && ws.most.idioms.ismemberOfCellArray({map},self.Maps) ,
+%             if ws.utility.ismemberOfCellArray({sequence},self.Sequences) && ws.utility.ismemberOfCellArray({map},self.Maps) ,
 %                 sequence.addMap(map);
 %             end
 %             self.broadcast('Update');
@@ -835,7 +835,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
         end  % function
         
         function deleteStimulus_(self, stimulus)
-            isMatch=ws.most.idioms.ismemberOfCellArray(self.Stimuli,{stimulus});
+            isMatch=ws.utility.ismemberOfCellArray(self.Stimuli,{stimulus});
             self.Stimuli_(isMatch) = [];
         end  % function
         

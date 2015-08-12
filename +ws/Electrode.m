@@ -80,9 +80,9 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.IsCommandEnabled=true;
             
             % Process args
-            validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd

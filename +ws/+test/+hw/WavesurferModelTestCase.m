@@ -213,7 +213,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
            
             % All map durations should be not free
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.most.idioms.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
+            isDurationOverridden= ~ws.utility.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
             self.verifyTrue(all(isDurationOverridden));
             
             % Save the protocol to disk
@@ -233,7 +233,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % All map durations should be not free, again
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.most.idioms.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
+            isDurationOverridden= ~ws.utility.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
             self.verifyTrue(all(isDurationOverridden));
             %keyboard
         end  % function      

@@ -19,7 +19,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function self = ChirpStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
