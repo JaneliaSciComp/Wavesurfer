@@ -420,14 +420,28 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
     end
 
-    methods (Access=protected)
-        function defineDefaultPropertyTags_(self)
-            defineDefaultPropertyTags_@ws.Model(self);
-            %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
+%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
+    
+    methods         
+        function propNames = listPropertiesForFileType(self, fileType)
+            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
+            if isequal(fileType,'header') ,
+                % delete some property names that are defined in subclasses
+                % that don't need to go into the header file
+                propNames=setdiff(propNamesRaw, ...
+                                  {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
+            else
+                propNames=propNamesRaw;
+            end
+        end  % function 
+    end  % public methods block    
     
 end
 

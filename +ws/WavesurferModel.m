@@ -1090,6 +1090,27 @@ classdef WavesurferModel < ws.Model
         
     end % protected methods block
     
+    methods         
+        function propNames = listPropertiesForFileType(self, fileType)
+            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
+            if isequal(fileType,'cfg') ,
+                % The .cfg file holds most things, but not the
+                % FastProtocols (those get saved to the .usr file), and we
+                % don't save the Logging settings to any file.
+                propNames=setdiff(propNamesRaw, ...
+                                  {'Logging_', 'FastProtocols_'}) ;
+            elseif isequal(fileType,'usr') ,
+                % The .usr file holds basically just the 
+                % FastProtocols, so we eliminate all else.
+                propNames=setdiff(propNamesRaw, ...
+                                  { 'Logging_', 'Acquisition_', 'Stimulation_', 'Triggering_', 'Display_', 'UserFunctions_', 'Ephys_', ...
+                                   'IsYokedToScanImage_', 'AreSweepsFiniteDuration_', 'NSweepsPerRun_'}) ;
+            else
+                propNames=propNamesRaw;
+            end
+        end  % function 
+    end  % public methods block    
+    
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
 %             defineDefaultPropertyAttributes@ws.most.app.Model(self);
@@ -1099,54 +1120,54 @@ classdef WavesurferModel < ws.Model
 %             self.setPropertyAttributeFeatures('AreSweepsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
 %         end  % function
         
-        function defineDefaultPropertyTags_(self)
-%             % Mark all the subsystems since they are SetAccess protected which won't be picked
-%             % up by default.
-%             self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
-%             self.setPropertyTags('FastProtocols', 'ExcludeFromFileTypes', {'cfg','header'});
-%             self.setPropertyTags('Acquisition', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Stimulation', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Triggering', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Display', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr','header'});
-%             self.setPropertyTags('Logging', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('UserFunctions', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
-%             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('NSweepsCompletedInThisRun', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('NSweepsPerRun', 'IncludeInFileTypes', {'header'});
-%             self.setPropertyTags('NSweepsPerRun_', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('AreSweepsFiniteDuration', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('AreSweepsFiniteDuration', 'IncludeInFileTypes', {'cfg', 'header'});
-%             self.setPropertyTags('AreSweepsContinuous', 'ExcludeFromFileTypes', {'*'});
-            
-            % Exclude all the subsystems except FastProtocols from usr
-            % files
-            defineDefaultPropertyTags_@ws.Model(self);            
-            self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
-            % Exclude Logging from .cfg (aka protocol) file
-            % This is because we want to maintain e.g. serial sweep indices even if
-            % user switches protocols.
-            self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
-            self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
-
-            % Exclude FastProtocols from cfg file
-            self.setPropertyTags('FastProtocols_', 'ExcludeFromFileTypes', {'cfg'});
-            
-            % Exclude a few more things from .usr file
-            self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
-        end  % function
+%         function defineDefaultPropertyTags_(self)
+% %             % Mark all the subsystems since they are SetAccess protected which won't be picked
+% %             % up by default.
+% %             self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
+% %             self.setPropertyTags('FastProtocols', 'ExcludeFromFileTypes', {'cfg','header'});
+% %             self.setPropertyTags('Acquisition', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('Stimulation', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('Triggering', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'header'});
+% %             self.setPropertyTags('Display', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr','header'});
+% %             self.setPropertyTags('Logging', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('UserFunctions', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'header'});
+% %             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
+% %             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
+% %             self.setPropertyTags('NSweepsCompletedInThisRun', 'ExcludeFromFileTypes', {'*'});
+% %             self.setPropertyTags('NSweepsPerRun', 'IncludeInFileTypes', {'header'});
+% %             self.setPropertyTags('NSweepsPerRun_', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
+% %             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
+% %             self.setPropertyTags('AreSweepsFiniteDuration', 'ExcludeFromFileTypes', {'usr'});
+% %             self.setPropertyTags('AreSweepsFiniteDuration', 'IncludeInFileTypes', {'cfg', 'header'});
+% %             self.setPropertyTags('AreSweepsContinuous', 'ExcludeFromFileTypes', {'*'});
+%             
+%             % Exclude all the subsystems except FastProtocols from usr
+%             % files
+%             defineDefaultPropertyTags_@ws.Model(self);            
+%             self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
+%             % Exclude Logging from .cfg (aka protocol) file
+%             % This is because we want to maintain e.g. serial sweep indices even if
+%             % user switches protocols.
+%             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
+%             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
+% 
+%             % Exclude FastProtocols from cfg file
+%             self.setPropertyTags('FastProtocols_', 'ExcludeFromFileTypes', {'cfg'});
+%             
+%             % Exclude a few more things from .usr file
+%             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
+%         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue_(self, name)
@@ -1543,7 +1564,8 @@ classdef WavesurferModel < ws.Model
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end
             saveStruct=load('-mat',absoluteFileName);
-            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             self.decodeProperties(wavesurferModelSettings);
@@ -1562,7 +1584,8 @@ classdef WavesurferModel < ws.Model
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForFileType('cfg');
-            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
                               'layoutForAllWindows',layoutForAllWindows, ...
@@ -1594,7 +1617,8 @@ classdef WavesurferModel < ws.Model
             end            
             
             saveStruct=load('-mat',absoluteFileName);
-            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.decodeProperties(wavesurferModelSettings);
             
@@ -1622,7 +1646,8 @@ classdef WavesurferModel < ws.Model
 
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
             userSettings=self.encodeForFileType('usr');
-            wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
+            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
                               'versionString',versionString);  %#ok<NASGU>

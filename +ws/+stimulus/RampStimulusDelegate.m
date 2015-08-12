@@ -29,14 +29,14 @@ classdef RampStimulusDelegate < ws.stimulus.StimulusDelegate
         end        
     end
     
-    methods (Access=protected)
-        function defineDefaultPropertyTags_(self)
-            defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
-            self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     methods (Access=protected)
         function out = getPropertyValue_(self, name)

@@ -67,14 +67,14 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function        
     end  % public methods block
 
-    methods (Access=protected)
-        function defineDefaultPropertyTags_(self)
-            defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
-            self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     %
     % Implementations of methods needed to be a ws.mixin.ValueComparable

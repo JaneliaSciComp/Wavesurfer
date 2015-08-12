@@ -905,31 +905,31 @@ classdef Looper < ws.Model
         
     end % protected methods block
     
-    methods (Access = protected)
-        function defineDefaultPropertyTags_(self)
-            % Exclude all the subsystems except FastProtocols from usr
-            % files
-            defineDefaultPropertyTags_@ws.Model(self);            
-            self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
-            % Exclude Logging from .cfg (aka protocol) file
-            % This is because we want to maintain e.g. serial sweep indices even if
-            % user switches protocols.
-            self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
-            self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
-
-            % Exclude FastProtocols from cfg file
-            self.setPropertyTags('FastProtocols_', 'ExcludeFromFileTypes', {'cfg'});
-            
-            % Exclude a few more things from .usr file
-            self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
-            self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
-        end  % function
-    end % protected methods block
+%     methods (Access = protected)
+%         function defineDefaultPropertyTags_(self)
+%             % Exclude all the subsystems except FastProtocols from usr
+%             % files
+%             defineDefaultPropertyTags_@ws.Model(self);            
+%             self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
+%             % Exclude Logging from .cfg (aka protocol) file
+%             % This is because we want to maintain e.g. serial sweep indices even if
+%             % user switches protocols.
+%             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
+%             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
+% 
+%             % Exclude FastProtocols from cfg file
+%             self.setPropertyTags('FastProtocols_', 'ExcludeFromFileTypes', {'cfg'});
+%             
+%             % Exclude a few more things from .usr file
+%             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
+%         end  % function
+%     end % protected methods block
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.

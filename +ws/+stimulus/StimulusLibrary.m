@@ -31,7 +31,6 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
         SelectedSequenceIndex
         SelectedOutputableClassName
         SelectedOutputableIndex
-        %IsLive
         IsEmpty
     end
     
@@ -1149,24 +1148,42 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
         end  % function
     end
     
-    methods (Access=protected)
-        function defineDefaultPropertyTags_(self)
-            % In the header file, only thing we really want is the
-            % SelectedOutputable
-            defineDefaultPropertyTags_@ws.Model(self);           
-            %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('Sequences', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('Maps', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('Stimuli', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('SelectedSequence', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('SelectedMap', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('SelectedStimulus', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('SelectedItem', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('SelectedItemClassName', 'ExcludeFromFileTypes', {'header'});
-            %self.setPropertyTags('IsLive', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('IsEmpty', 'ExcludeFromFileTypes', {'header'});            
-        end
-    end    
+    methods         
+        function propNames = listPropertiesForFileType(self, fileType)
+            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
+            if isequal(fileType,'header') ,
+                % delete some property names 
+                % that don't need to go into the header file
+                propNames=setdiff(propNamesRaw, ...
+                                  {'Stimuli', 'Maps', 'Sequences', ...
+                                   'SelectedStimulus', 'SelectedMap', 'SelectedSequence', 'SelectedItem', ...
+                                   'SelectedItemClassName', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex', ...
+                                   'SelectedOutputableClassName', 'SelectedOutputableIndex', ...
+                                   'IsEmpty'}) ;
+            else
+                propNames=propNamesRaw;
+            end
+        end  % function 
+    end  % public methods block    
+    
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             % In the header file, only thing we really want is the
+%             % SelectedOutputable
+%             defineDefaultPropertyTags_@ws.Model(self);           
+%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('Sequences', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('Maps', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('Stimuli', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('SelectedSequence', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('SelectedMap', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('SelectedStimulus', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('SelectedItem', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('SelectedItemClassName', 'ExcludeFromFileTypes', {'header'});
+%             %self.setPropertyTags('IsLive', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('IsEmpty', 'ExcludeFromFileTypes', {'header'});            
+%         end
+%     end    
     
 %     methods
 %         function other=copy(self)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable

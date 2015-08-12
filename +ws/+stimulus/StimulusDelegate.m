@@ -26,7 +26,21 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
         
         y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  % abstract        
     end
-       
+    
+    methods         
+        function propNames = listPropertiesForFileType(self, fileType)
+            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
+            if isequal(fileType,'header') ,
+                % delete some property names that are defined in subclasses
+                % that don't need to go into the header file
+                propNames=setdiff(propNamesRaw, ...
+                                  {'AdditionalParameterNames', 'AdditionalParameterDisplayNames', 'AdditionalParameterDisplayUnitses'}) ;
+            else
+                propNames=propNamesRaw;
+            end
+        end  % function 
+    end  % public methods block    
+    
     properties (Hidden, SetAccess=protected)
         mdlPropAttributes = struct();    
         mdlHeaderExcludeProps = {};
@@ -47,6 +61,9 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
             value=isequalHelper(self,other,'ws.stimulus.StimulusDelegate');
         end                            
+    end
+    
+    methods
     end
     
     methods (Access=protected)

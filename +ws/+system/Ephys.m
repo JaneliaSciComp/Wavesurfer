@@ -178,6 +178,19 @@ classdef Ephys < ws.system.Subsystem
         end        
     end  % methods block
     
+    methods         
+        function propNames = listPropertiesForFileType(self, fileType)
+            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
+            if isequal(fileType,'header') ,
+                % delete some property names that are defined in subclasses
+                % that don't need to go into the header file
+                propNames=setdiff(propNamesRaw, ...
+                                  {'TestPulser'}) ;
+            else
+                propNames=propNamesRaw;
+            end
+        end  % function 
+    end  % public methods block    
     
     %%
     methods (Access = protected)
@@ -186,12 +199,11 @@ classdef Ephys < ws.system.Subsystem
 %             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
 %         end
         
-        %%
-        function defineDefaultPropertyTags_(self)
-            defineDefaultPropertyTags_@ws.system.Subsystem(self);            
-            
-            self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
-        end
+%         %%
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);                        
+%             self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
+%         end
         
         %% Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue_(self, name)
@@ -200,9 +212,6 @@ classdef Ephys < ws.system.Subsystem
         
         %% Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue_(self, name, value)
-            if nargin < 3
-                value = [];
-            end
             self.(name) = value;
         end
     end  % protected methods block

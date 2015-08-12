@@ -1,60 +1,60 @@
-classdef Coding < handle
+classdef (Abstract) Coding < handle
 
-    properties (Access = protected, Transient=true)
-        TaggedProperties_ = struct([]);
-            % A struct with each field representing the set of tags
-            % associated with a single property.  The name of each field is
-            % a sanitized version of the property name, and the "tag set"
-            % (the contents of the field) is itself a struct with at least three
-            % fields:
-            %
-            %     PropertyName : the property name
-            %     IncludeInFileTypes : a cellstring containing the list of
-            %                          all file types into which this
-            %                          property should be encoded.  (Can
-            %                          also be a singleton cellstring with
-            %                          the string '*', meaning include this
-            %                          property in all file types.)
-            %     ExcludeFromFileTypes : a cellstring containing the list of
-            %                            all file types into which this
-            %                            property should _not_ be encoded.  (Can
-            %                            also be a singleton cellstring with
-            %                            the string '*', meaning exclude this
-            %                            property from all file types.)
-            %                            Exlusion overrides inclusion,
-            %                            although having a file type in both
-            %                            should probably generally be
-            %                            avoided.
-            %
-            % (I'm not sure what's up with using a sanitized version of the
-            % property name as the tag set field name.  The sanitization
-            % replaces '.'s with '___'s [sic], so it seems to be intended
-            % to supporting the tagging of subproperties.  But none of the
-            % existing Wavesurfer code seems to take advantage of this.  So
-            % it is likely vestigial. ---ALT, 2014-07-20)
-    end
-        
+%     properties (Access = protected, Transient=true)
+%         TaggedProperties_ = struct([]);
+%             % A struct with each field representing the set of tags
+%             % associated with a single property.  The name of each field is
+%             % a sanitized version of the property name, and the "tag set"
+%             % (the contents of the field) is itself a struct with at least three
+%             % fields:
+%             %
+%             %     PropertyName : the property name
+%             %     IncludeInFileTypes : a cellstring containing the list of
+%             %                          all file types into which this
+%             %                          property should be encoded.  (Can
+%             %                          also be a singleton cellstring with
+%             %                          the string '*', meaning include this
+%             %                          property in all file types.)
+%             %     ExcludeFromFileTypes : a cellstring containing the list of
+%             %                            all file types into which this
+%             %                            property should _not_ be encoded.  (Can
+%             %                            also be a singleton cellstring with
+%             %                            the string '*', meaning exclude this
+%             %                            property from all file types.)
+%             %                            Exlusion overrides inclusion,
+%             %                            although having a file type in both
+%             %                            should probably generally be
+%             %                            avoided.
+%             %
+%             % (I'm not sure what's up with using a sanitized version of the
+%             % property name as the tag set field name.  The sanitization
+%             % replaces '.'s with '___'s [sic], so it seems to be intended
+%             % to supporting the tagging of subproperties.  But none of the
+%             % existing Wavesurfer code seems to take advantage of this.  So
+%             % it is likely vestigial. ---ALT, 2014-07-20)
+%     end
+
     methods
-        function self = Coding()
-            self.defineDefaultPropertyTags_();  % subclasses override this method to tag properties
-        end
+%         function self = Coding()
+%             self.defineDefaultPropertyTags_();  % subclasses override this method to tag properties
+%         end
         
-        function setPropertyTags(self, propertyName, varargin)
-            tagSetName = ws.mixin.Coding.tagSetNameFromPropertyName_(propertyName);
-            
-            if isempty(self.TaggedProperties_) || ~isfield(self.TaggedProperties_, tagSetName)
-                self.TaggedProperties_(1).(tagSetName) = ws.mixin.Coding.defaultTagSetFromPropertyName_(propertyName);
-            end
-            
-            for idx = 1:2:(nargin-2)
-                value = varargin{idx + 1};
-                assert(isfield(self.TaggedProperties_.(tagSetName), varargin{idx}), ...
-                       'Coding:invalidfeature', ...
-                       '%s is not a recognized property attribute feature.', ...
-                       varargin{idx});
-                self.TaggedProperties_.(tagSetName).(varargin{idx}) = value;
-            end
-        end
+%         function setPropertyTags(self, propertyName, varargin)
+%             tagSetName = ws.mixin.Coding.tagSetNameFromPropertyName_(propertyName);
+%             
+%             if isempty(self.TaggedProperties_) || ~isfield(self.TaggedProperties_, tagSetName)
+%                 self.TaggedProperties_(1).(tagSetName) = ws.mixin.Coding.defaultTagSetFromPropertyName_(propertyName);
+%             end
+%             
+%             for idx = 1:2:(nargin-2)
+%                 value = varargin{idx + 1};
+%                 assert(isfield(self.TaggedProperties_.(tagSetName), varargin{idx}), ...
+%                        'Coding:invalidfeature', ...
+%                        '%s is not a recognized property attribute feature.', ...
+%                        varargin{idx});
+%                 self.TaggedProperties_.(tagSetName).(varargin{idx}) = value;
+%             end
+%         end
         
 %         function decodeProperties(self, encodingContainer)
 %             % Sets the properties in self to the values encoded in encoding.
@@ -88,12 +88,12 @@ classdef Coding < handle
 %             end
 %         end  % function
         
-        function out = getEncodedVariableName(self)
-            out = self.getDefaultEncodedVariableName_();
-        end  % function
+%         function out = getEncodedVariableName(self)
+%             out = self.getDefaultEncodedVariableName_();
+%         end  % function
     end  % public methods
 
-    methods         
+    methods
         function propNames = listPropertiesForFileType(self, fileType)
             % List properties that satisfy the given predicate function, or
             % are explicitly tagged for inclusion in the given file type,
@@ -122,21 +122,24 @@ classdef Coding < handle
             end                    
 
             % Actually get the prop names that satisfy the predicate
-            propNamesSatisfyingPredicate = self.propertyNamesSatisfyingPredicate_(predicateFunction);
+            propNames = self.propertyNamesSatisfyingPredicate_(predicateFunction);
             
-            % Filter out or in any properies with the specified fileType.
-            if isempty(fileType) ,
-                propNames=propNamesSatisfyingPredicate;
-            else
-                includes = self.propertyNamesForFileType_('IncludeInFileTypes',fileType);
-                excludes = self.propertyNamesForFileType_('ExcludeFromFileTypes',fileType);
-                propNames = setdiff(union(propNamesSatisfyingPredicate, includes, 'stable'), excludes, 'stable');
-                  % Note that properties satisfying the predicate AND
-                  % properties that were explicitly tagged as included are
-                  % encoded, unless they are explicitly excluded.  Hence,
-                  % explicit inclusion overrides the predicate, and 
-                  % exclusion overrides all.
-            end
+            % We now do class-specific filtering by overriding the
+            % listPropertiesForFileType() method.
+            
+%             % Filter out or in any properies with the specified fileType.
+%             if isempty(fileType) ,
+%                 propNames=propNamesSatisfyingPredicate;
+%             else
+%                 includes = self.propertyNamesForFileType_('IncludeInFileTypes',fileType);
+%                 excludes = self.propertyNamesForFileType_('ExcludeFromFileTypes',fileType);
+%                 propNames = setdiff(union(propNamesSatisfyingPredicate, includes, 'stable'), excludes, 'stable');
+%                   % Note that properties satisfying the predicate AND
+%                   % properties that were explicitly tagged as included are
+%                   % encoded, unless they are explicitly excluded.  Hence,
+%                   % explicit inclusion overrides the predicate, and 
+%                   % exclusion overrides all.
+%             end
         end
     end    
     
@@ -272,16 +275,16 @@ classdef Coding < handle
     end  % public methods
     
     methods (Access = protected)
-        function out = getDefaultEncodedVariableName_(self)
-            out = regexprep(class(self), '\.', '_');
-        end
+%         function out = getDefaultEncodedVariableName_(self)
+%             out = regexprep(class(self), '\.', '_');
+%         end
         
-        function defineDefaultPropertyTags_(~)
-            % This method is called by the Coding constructor.  The intent
-            % is that subclasses override this method to set the tags for
-            % the object properties.  But if subclasses don't want to
-            % bother to do that, then this do-nothing method gets called.
-        end
+%         function defineDefaultPropertyTags_(~)
+%             % This method is called by the Coding constructor.  The intent
+%             % is that subclasses override this method to set the tags for
+%             % the object properties.  But if subclasses don't want to
+%             % bother to do that, then this do-nothing method gets called.
+%         end
     end  % protected methods    
     
     methods (Access = protected)
@@ -520,37 +523,37 @@ classdef Coding < handle
 %             end
 %         end  % function
         
-        function propertyNameList = propertyNamesForFileType_(self, tagName, fileType)
-            % Get the object properties that are tagged, and have the given
-            % fileType listed in the given tagName.  tagName must be either
-            % 'IncludeInFileTypes' or 'ExcludeFromFileTypes'.  E.g.
-            % the tagName might be 'ExcludeFromFileTypes', and the fileType
-            % might be 'cfg'.  The property names are in same order as
-            % declared in the classdefs.
-            function result=isFileTypeOnTheListForTagSetName(tagSetName)
-                listOfFileTypesForThisTagName=self.TaggedProperties_.(tagSetName).(tagName);
-                result=any(ismember(fileType, listOfFileTypesForThisTagName)) || ...
-                       any(ismember('*', listOfFileTypesForThisTagName));
-            end
-                
-            function result=propertyNameFromTagSetName(fieldName)
-                result=self.TaggedProperties_.(fieldName).PropertyName;
-            end
-            
-            if ~isempty(self.TaggedProperties_)
-                %allPropertyNames=self.propertyNames_();                
-                tagSetNames = fieldnames(self.TaggedProperties_);
-                includeIndex = cellfun(@isFileTypeOnTheListForTagSetName,tagSetNames);
-                tagSetNameList = tagSetNames(includeIndex);
-                propertyNameListInBadOrder = cellfun(@propertyNameFromTagSetName, tagSetNameList, 'UniformOutput', false);
-                % Want propertyNameList to be in an order determined by the
-                % order in which props were declared in the classdefs
-                allPropertyNames=self.propertyNames_();
-                propertyNameList=intersect(allPropertyNames,propertyNameListInBadOrder,'stable');
-            else
-                propertyNameList = {};
-            end
-        end
+%         function propertyNameList = propertyNamesForFileType_(self, tagName, fileType)
+%             % Get the object properties that are tagged, and have the given
+%             % fileType listed in the given tagName.  tagName must be either
+%             % 'IncludeInFileTypes' or 'ExcludeFromFileTypes'.  E.g.
+%             % the tagName might be 'ExcludeFromFileTypes', and the fileType
+%             % might be 'cfg'.  The property names are in same order as
+%             % declared in the classdefs.
+%             function result=isFileTypeOnTheListForTagSetName(tagSetName)
+%                 listOfFileTypesForThisTagName=self.TaggedProperties_.(tagSetName).(tagName);
+%                 result=any(ismember(fileType, listOfFileTypesForThisTagName)) || ...
+%                        any(ismember('*', listOfFileTypesForThisTagName));
+%             end
+%                 
+%             function result=propertyNameFromTagSetName(fieldName)
+%                 result=self.TaggedProperties_.(fieldName).PropertyName;
+%             end
+%             
+%             if ~isempty(self.TaggedProperties_)
+%                 %allPropertyNames=self.propertyNames_();                
+%                 tagSetNames = fieldnames(self.TaggedProperties_);
+%                 includeIndex = cellfun(@isFileTypeOnTheListForTagSetName,tagSetNames);
+%                 tagSetNameList = tagSetNames(includeIndex);
+%                 propertyNameListInBadOrder = cellfun(@propertyNameFromTagSetName, tagSetNameList, 'UniformOutput', false);
+%                 % Want propertyNameList to be in an order determined by the
+%                 % order in which props were declared in the classdefs
+%                 allPropertyNames=self.propertyNames_();
+%                 propertyNameList=intersect(allPropertyNames,propertyNameListInBadOrder,'stable');
+%             else
+%                 propertyNameList = {};
+%             end
+%         end
         
         function propertyNames = propertyNamesSatisfyingPredicate_(self, predicateFunction)
             % Return a list of all the property names for the class that
@@ -589,23 +592,23 @@ classdef Coding < handle
 %         end        
     end  % class methods
     
-    methods (Static = true, Access = protected)
-        function out = tagSetNameFromPropertyName_(propertyName)
-            % Sanitizes compound property names by replacing '.' with
-            % '___'.
-            if isempty(strfind(propertyName, '.'))
-                out = propertyName;
-            else
-                out = strrep(propertyName, '.', '___');
-            end
-        end
-        
-        function tagSet = defaultTagSetFromPropertyName_(propertyName)            
-            tagSet.PropertyName = propertyName;
-            tagSet.IncludeInFileTypes = {};
-            tagSet.ExcludeFromFileTypes = {};
-        end
-    end
+%     methods (Static = true, Access = protected)
+%         function out = tagSetNameFromPropertyName_(propertyName)
+%             % Sanitizes compound property names by replacing '.' with
+%             % '___'.
+%             if isempty(strfind(propertyName, '.'))
+%                 out = propertyName;
+%             else
+%                 out = strrep(propertyName, '.', '___');
+%             end
+%         end
+%         
+%         function tagSet = defaultTagSetFromPropertyName_(propertyName)            
+%             tagSet.PropertyName = propertyName;
+%             tagSet.IncludeInFileTypes = {};
+%             tagSet.ExcludeFromFileTypes = {};
+%         end
+%     end
     
     methods (Static = true)
         function encodingContainer = encodeAnythingForFileType(thing, fileType)
