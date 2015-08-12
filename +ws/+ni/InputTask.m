@@ -44,10 +44,10 @@ classdef InputTask < handle
         IsArmed_ = false
     end
     
-    events
-        AcquisitionComplete
-        SamplesAvailable
-    end
+%     events
+%         AcquisitionComplete
+%         SamplesAvailable
+%     end
     
     methods
         function self = InputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
@@ -530,7 +530,7 @@ classdef InputTask < handle
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
             %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-            self.notify('SamplesAvailable');
+            %self.notify('SamplesAvailable');
         end  % function
         
         function taskDone_(self, source, event) %#ok<INUSD>
@@ -542,7 +542,7 @@ classdef InputTask < handle
             % Fire the event before unregistering the callback functions.  At the end of a
             % script the DAQmx callbacks may be the only references preventing the object
             % from deleting before the events are sent/complete.
-            self.notify('AcquisitionComplete');
+            %self.notify('AcquisitionComplete');
         end  % function
         
 %         function ziniPrepareAcquisitionDAQ(self, device, availableChannels, taskName, channelNames)
