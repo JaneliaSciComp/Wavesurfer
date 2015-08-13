@@ -221,13 +221,12 @@ classdef FastProtocolsFigure < ws.MCOSFigure
                 return
             end
 
-            fastProtocols = model.FastProtocols;            
-            for i = 1:numel(fastProtocols) ,
-                thisFastProtocol=fastProtocols{i};
-                %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','update');
-                %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','update');
-                thisFastProtocol.subscribeMe(self,'Update','','update');
-            end
+            %fastProtocols = model.FastProtocols;            
+            %for i = 1:numel(fastProtocols) ,
+            %    thisFastProtocol=fastProtocols{i};
+            %    thisFastProtocol.subscribeMe(self,'Update','','update');
+            %end
+            model.subscribeMe(self,'UpdateFastProtocols','','update');
                         
             model.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % function                

@@ -36,7 +36,8 @@ classdef FastProtocol < ws.Model
                           'ProtocolFileName must be a string');
                 end                    
             end
-            self.broadcast('Update');            
+            %self.broadcast('Update');            
+            self.Parent.updateFastProtocol();
         end
         
         function value=get.ProtocolFileName(self)
@@ -53,7 +54,8 @@ classdef FastProtocol < ws.Model
                           'AutoStartType must be ''do_nothing'', ''play'', or ''record''.');
                 end
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
+            self.Parent.updateFastProtocol();
         end
 
         function value=get.AutoStartType(self)
@@ -109,7 +111,6 @@ classdef FastProtocol < ws.Model
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
-            self.broadcast('Update');  % Even if it's a non-public property, want to generate an Update event
         end  % function
     end
     

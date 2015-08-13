@@ -42,17 +42,22 @@ classdef WavesurferModel < ws.Model
     %
     
     properties (Access=protected)
+        % Saved to protocol file
+        Triggering_
         Acquisition_
         Stimulation_
-        Triggering_
         Display_
-        Logging_
-        UserFunctions_
         Ephys_
-        FastProtocols_ = cell(1,0)
+        UserFunctions_
         IsYokedToScanImage_ = false
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
+
+        % Saved to .usr file
+        FastProtocols_ = cell(1,0)
+        
+        % Not saved to either protocol or .usr file
+        Logging_
     end
 
     properties (Access=protected, Transient=true)
@@ -102,6 +107,7 @@ classdef WavesurferModel < ws.Model
     
     events
         % These events _are_ used by WS itself.
+        UpdateFastProtocols
         UpdateIsYokedToScanImage
         DidSetAbsoluteProtocolFileName
         DidSetAbsoluteUserSettingsFileName        
@@ -615,8 +621,8 @@ classdef WavesurferModel < ws.Model
         end        
         
         function releaseHardwareResources(self)
-            self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseHardwareResources();
+            %self.Acquisition.releaseHardwareResources();
+            %self.Stimulation.releaseHardwareResources();
             self.Triggering.releaseHardwareResources();
             self.Ephys.releaseHardwareResources();
         end
@@ -1569,6 +1575,7 @@ classdef WavesurferModel < ws.Model
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             self.decodeProperties(wavesurferModelSettings);
+            
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.broadcast('DidSetAbsoluteProtocolFileName');            
@@ -1682,6 +1689,13 @@ classdef WavesurferModel < ws.Model
             % SetAccess is protected, no need for checks here
             self.AbsoluteUserSettingsFileName=newValue;
             self.broadcast('DidSetAbsoluteUserSettingsFileName');
+        end
+    end
+
+    methods
+        function updateFastProtocol(self)
+            % Called by one of the child FastProtocol's when it is changed
+            self.broadcast('UpdateFastProtocols');
         end
     end
 
