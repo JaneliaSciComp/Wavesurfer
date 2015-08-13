@@ -112,7 +112,7 @@ classdef (Abstract) Coding < handle
             % only captures a very small part of the WavesurferModel state.
             % Whereas the .cfg file captures most of the WavesurferModel
             % state.)
-            if isequal(fileType,'cfg') || isequal(fileType,'usr') ,
+            if isequal(fileType,'restorable') ,
                 predicateFunction = @(x)(~x.Dependent && ~x.Transient && ~x.Constant) ;
             elseif isequal(fileType,'header') ,
                 predicateFunction = @(x)(strcmpi(x.GetAccess,'public') && ~x.Hidden) ;
@@ -179,7 +179,7 @@ classdef (Abstract) Coding < handle
             % override this method.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('cfg');
+            propertyNames = self.listPropertiesForFileType('restorable');
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,

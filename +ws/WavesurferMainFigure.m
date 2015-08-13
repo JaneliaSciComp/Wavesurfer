@@ -172,8 +172,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
                end               
                
-               model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
-               model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
+               %model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
+               %model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
            end
            
            % Make the figure visible

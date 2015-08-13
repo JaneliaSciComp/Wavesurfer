@@ -249,7 +249,7 @@ classdef Ephys < ws.system.Subsystem
             % Cause self to resemble other.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('cfg');
+            propertyNames = self.listPropertiesForFileType('restorable');
             
             % Set each property to the corresponding one
             % all the "configurable" props in this class hold scalar

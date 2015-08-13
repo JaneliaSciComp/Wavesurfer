@@ -109,8 +109,8 @@ classdef WavesurferModel < ws.Model
         % These events _are_ used by WS itself.
         UpdateFastProtocols
         UpdateIsYokedToScanImage
-        DidSetAbsoluteProtocolFileName
-        DidSetAbsoluteUserSettingsFileName        
+        %DidSetAbsoluteProtocolFileName
+        %DidSetAbsoluteUserSettingsFileName        
         DidLoadProtocolFile
         DidSetStateAwayFromNoMDF
         WillSetState
@@ -713,7 +713,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Tell the Looper to prepare for the run
-            wavesurferModelSettings=self.encodeForFileType('cfg');
+            wavesurferModelSettings=self.encodeForFileType('restorable');
             err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
             if ~isempty(err) ,
                 self.cleanUpAfterAbortedRun_('problem');
@@ -1096,26 +1096,20 @@ classdef WavesurferModel < ws.Model
         
     end % protected methods block
     
-    methods         
-        function propNames = listPropertiesForFileType(self, fileType)
-            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
-            if isequal(fileType,'cfg') ,
-                % The .cfg file holds most things, but not the
-                % FastProtocols (those get saved to the .usr file), and we
-                % don't save the Logging settings to any file.
-                propNames=setdiff(propNamesRaw, ...
-                                  {'Logging_', 'FastProtocols_'}) ;
-            elseif isequal(fileType,'usr') ,
-                % The .usr file holds basically just the 
-                % FastProtocols, so we eliminate all else.
-                propNames=setdiff(propNamesRaw, ...
-                                  { 'Logging_', 'Acquisition_', 'Stimulation_', 'Triggering_', 'Display_', 'UserFunctions_', 'Ephys_', ...
-                                   'IsYokedToScanImage_', 'AreSweepsFiniteDuration_', 'NSweepsPerRun_'}) ;
-            else
-                propNames=propNamesRaw;
-            end
-        end  % function 
-    end  % public methods block    
+%     methods         
+%         function propNames = listPropertiesForFileType(self, fileType)
+%             propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
+%             if isequal(fileType,'restorable') ,
+%                 % The .cfg file holds most things, but not the
+%                 % FastProtocols (those get saved to the .usr file), and we
+%                 % don't save the Logging settings to any file.
+%                 propNames=setdiff(propNamesRaw, ...
+%                                   {'Logging_'}) ;
+%             else
+%                 propNames=propNamesRaw;
+%             end
+%         end  % function 
+%     end  % public methods block    
     
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
@@ -1576,14 +1570,15 @@ classdef WavesurferModel < ws.Model
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             %self.decodeProperties(wavesurferModelSettings);
             newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimic(newModel) ;
+            self.mimicProtocol_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
-            self.broadcast('DidSetAbsoluteProtocolFileName');            
+            %self.broadcast('DidSetAbsoluteProtocolFileName');            
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);       
+            self.broadcast('Update');
         end  % function
     end
     
@@ -1591,7 +1586,7 @@ classdef WavesurferModel < ws.Model
         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
-            wavesurferModelSettings=self.encodeForFileType('cfg');
+            wavesurferModelSettings=self.encodeForFileType('restorable');
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -1600,11 +1595,12 @@ classdef WavesurferModel < ws.Model
                               'versionString',versionString);  %#ok<NASGU>
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
-            self.broadcast('DidSetAbsoluteProtocolFileName');            
+            %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
             self.changeReadiness(+1);            
+            self.broadcast('Update');
         end
     end        
     
@@ -1628,15 +1624,21 @@ classdef WavesurferModel < ws.Model
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
-            self.decodeProperties(wavesurferModelSettings);
+            
+            %self.decodeProperties(wavesurferModelSettings);
+            newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.mimicUserSettings_(newModel) ;
             
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            self.broadcast('DidSetAbsoluteUserSettingsFileName');
+            %self.broadcast('DidSetAbsoluteUserSettingsFileName');
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
             
             self.changeReadiness(+1);            
+            
+            self.broadcast('UpdateFastProtocols');
+            self.broadcast('Update');
         end
     end        
 
@@ -1653,7 +1655,7 @@ classdef WavesurferModel < ws.Model
             self.changeReadiness(-1);
 
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
-            userSettings=self.encodeForFileType('usr');
+            userSettings=self.encodeForFileType('restorable');
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -1665,15 +1667,17 @@ classdef WavesurferModel < ws.Model
             
             self.AbsoluteUserSettingsFileName_ = absoluteFileName;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            self.broadcast('DidSetAbsoluteUserSettingsFileName');
+            %self.broadcast('DidSetAbsoluteUserSettingsFileName');
 
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             %self.setUserFileNameInMenu(absoluteFileName);
             %controller.updateUserFileNameInMenu();
 
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
-            
+
             self.changeReadiness(+1);            
+
+            self.broadcast('Update');            
         end  % function
     end
     
@@ -1685,18 +1689,19 @@ classdef WavesurferModel < ws.Model
 %         end
 %     end
 
-    methods
-        function set.AbsoluteUserSettingsFileName(self,newValue)
-            % SetAccess is protected, no need for checks here
-            self.AbsoluteUserSettingsFileName=newValue;
-            self.broadcast('DidSetAbsoluteUserSettingsFileName');
-        end
-    end
+%     methods
+%         function set.AbsoluteUserSettingsFileName(self,newValue)
+%             % SetAccess is protected, no need for checks here
+%             self.AbsoluteUserSettingsFileName=newValue;
+%             self.broadcast('DidSetAbsoluteUserSettingsFileName');
+%         end
+%     end
 
     methods
         function updateFastProtocol(self)
             % Called by one of the child FastProtocol's when it is changed
             self.broadcast('UpdateFastProtocols');
+            self.broadcast('Update');  % need to update main window also
         end
     end
 
@@ -1769,7 +1774,7 @@ classdef WavesurferModel < ws.Model
             % Cause self to resemble other.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('cfg');
+            propertyNames = self.listPropertiesForFileType('restorable');
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -1783,6 +1788,38 @@ classdef WavesurferModel < ws.Model
                     end
                 end
             end
+        end  % function
+    end  % public methods block
+
+    methods (Access=protected) 
+        function mimicProtocol_(self, other)
+            % Cause self to resemble other, but only w.r.t. the protocol.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForFileType('restorable');
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+                    self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
+                    % do nothing                   
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+        end  % function
+    end  % public methods block
+    
+    methods (Access=protected) 
+        function mimicUserSettings_(self, other)
+            % Cause self to resemble other, but only w.r.t. the user settings            
+            source = other.getPropertyValue_('FastProtocols_') ;
+            self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
     end  % public methods block
     
