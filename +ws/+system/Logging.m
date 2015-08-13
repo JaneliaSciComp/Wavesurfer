@@ -18,10 +18,6 @@ classdef Logging < ws.system.Subsystem
         %CurrentSweepIndex
     end
 
-    properties (Access = protected, Transient = true)
-        DateAsString_
-    end
-    
     properties (Access = protected)
         FileLocation_
         FileBaseName_
@@ -31,7 +27,11 @@ classdef Logging < ws.system.Subsystem
         NextSweepIndex_
         IsOKToOverwrite_
     end
-    
+
+    properties (Access = protected, Transient = true)
+        DateAsString_
+    end
+
     % These are all properties that are only used when acquisition is
     % ongoing.  They are set in willPerformRun(), and are nulled in
     % didCompleteRun() and didAbortRun()

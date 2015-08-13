@@ -169,7 +169,34 @@ classdef (Abstract) Coding < handle
                 encodingContainer=struct('className',{class(self)},'encoding',{encoding}) ;
             end
         end
+
+        function mimic(self, other)
+            % Cause self to resemble other.  This implementation sets all
+            % the properties that would get stored to the .cfg file to the
+            % values in other, if that property is present in other.  This
+            % works as long as all the properties store value (non-handle)
+            % arrays.  But classes not meeting this constraint will have to
+            % override this method.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForFileType('cfg');
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if isprop(other,thisPropertyName)
+                    source = other.getPropertyValue_(thisPropertyName) ;
+                    self.setPropertyValue_(thisPropertyName, source) ;
+                end
+            end
+        end  % function
         
+        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+            className=class(self);
+            other=feval(className,parent);
+            other.mimic(self);
+        end  % function
+                
 %         function encoding = encodeForFileType(self, fileType)
 %             % This if really shouldn't be necessary---we currently store
 %             % the tag information in an instance var, when it should be in
@@ -730,6 +757,17 @@ classdef (Abstract) Coding < handle
         function result = isAnEncodingContainer(thing)
             result = isstruct(thing) && isscalar(thing) && isfield(thing,'className') && isfield(thing,'encoding') ;
         end  % function
+        
+        function target = copyCellArrayOfHandlesGivenParent(source,parent)
+            % Utility function for copying a cell array of ws.mixin.Coding
+            % entities, given a parent.
+            nElements = length(source) ;
+            target = cell(nElements,1) ;
+            for j=1:nElements ,
+                target{j} = source{j}.copyGivenParent(parent);
+            end
+        end  % function
+        
         
     end  % public static methods block
     

@@ -492,7 +492,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end            
-            saveStruct=self.Model.loadConfigFileForRealsSrsly(absoluteFileName);
+            saveStruct = self.Model.loadConfigFileForRealsSrsly(absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
             %wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);

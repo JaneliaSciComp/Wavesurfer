@@ -36,6 +36,8 @@ classdef Ephys < ws.system.Subsystem
             %self.Parent=[];  % eliminate reference to host WavesurferModel object
             %delete(self.TestPulser_);  % do i need this?  No.
             %delete(self.ElectrodeManager_);  % do i need this?  No.
+            self.TestPulser_ = [] ;
+            self.ElectrodeManager_ = [] ;
         end
         
         %%
@@ -242,4 +244,30 @@ classdef Ephys < ws.system.Subsystem
 %         end  % function
 %     end  % class methods block
     
+    methods
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForFileType('cfg');
+            
+            % Set each property to the corresponding one
+            % all the "configurable" props in this class hold scalar
+            % ws.Model objects, so this is simple
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'ElectrodeManager_', 'TestPulser_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = self.(thisPropertyName) ;
+                    target.mimic(source);  % all the props in this class hold scalar ws.Model objects
+                else
+                    if isprop(other,thisPropertyName)
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end                    
+                end
+            end
+        end  % function
+    end  % public methods block
+
 end  % classdef

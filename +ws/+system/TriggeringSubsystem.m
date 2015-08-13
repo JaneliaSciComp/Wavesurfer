@@ -223,6 +223,30 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function        
     end  % protected methods block
 
+    methods
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForFileType('cfg');
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'Sources_', 'Destinations_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+                    self.(thisPropertyName) = target ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+        end  % function
+    end  % public methods block
+    
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct();
 %         mdlHeaderExcludeProps = {};

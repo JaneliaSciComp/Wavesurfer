@@ -1559,7 +1559,7 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+        function saveStruct = loadConfigFileForRealsSrsly(self, fileName)
             % Actually loads the named config file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -1569,13 +1569,14 @@ classdef WavesurferModel < ws.Model
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end
-            saveStruct=load('-mat',absoluteFileName);
+            saveStruct = load('-mat',absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
-            self.decodeProperties(wavesurferModelSettings);
-            
+            %self.decodeProperties(wavesurferModelSettings);
+            newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.mimic(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.broadcast('DidSetAbsoluteProtocolFileName');            
@@ -1762,6 +1763,28 @@ classdef WavesurferModel < ws.Model
 %                   'The polling timer had a problem.  Acquisition aborted.');
 %         end        
     end
+    
+    methods
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForFileType('cfg');
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+                    self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+        end  % function
+    end  % public methods block
     
 end  % classdef
 

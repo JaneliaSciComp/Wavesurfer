@@ -288,12 +288,6 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
             self.broadcast('Update');
         end  % function
         
-        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
-            className=class(self);
-            other=feval(className,parent);
-            other.mimic(self);
-        end  % function
-        
 %         function doppelganger=clone(self)
 %             % Make a clone of self.  This is another
 %             % instance with the same settings.
