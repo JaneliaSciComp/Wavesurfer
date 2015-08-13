@@ -1,19 +1,19 @@
-classdef MostPreferencesTestCase < matlab.unittest.TestCase
+classdef UrPreferencesTestCase < matlab.unittest.TestCase
     
     methods (Test)
-        function testZeroArgConstructor(self)
-            prefs=ws.UrPreferences();
-            self.verifyEmpty(prefs.Location, 'The ''Location'' property should be empty.');
-            self.verifyEmpty(prefs.Name, 'The ''Name'' property should be empty.');
-            prefs.purge();
-        end  % method
+%         function testZeroArgConstructor(self)
+%             prefs=ws.UrPreferences();
+%             self.verifyEmpty(prefs.Location, 'The ''Location'' property should be empty.');
+%             self.verifyEmpty(prefs.Name, 'The ''Name'' property should be empty.');
+%             prefs.purge();
+%         end  % method
         
-        function testOneArgConstructor(self)
-            name='GorgonzolaTheApp.mat';
-            prefs=ws.UrPreferences(name);
-            self.verifyEqual(prefs.Name,name);
-            prefs.purge();
-        end  % method
+%         function testOneArgConstructor(self)
+%             name='GorgonzolaTheApp.mat';
+%             prefs=ws.UrPreferences(name);
+%             self.verifyEqual(prefs.Name,name);
+%             prefs.purge();
+%         end  % method
 
         function testTwoArgConstructor(self)
             name='GorgonzolaTheApp.mat';
