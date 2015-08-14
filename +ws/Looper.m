@@ -1,7 +1,7 @@
 classdef Looper < ws.Model
     % The main Looper model object.
     
-    properties (Dependent = true, SetAccess = immutable)
+    properties (Dependent = true)
         Acquisition
         Stimulation
         Triggering
@@ -9,41 +9,15 @@ classdef Looper < ws.Model
         %Logging
         UserFunctions
         %Ephys
-    end
-    
-    properties (Dependent = true, Transient=true)  % transient b/c actually stored in Acquisition subsystem  % SetObservable = true, 
         SweepDuration  % the sweep duration, in s
-    end
-    
-    properties (Dependent = true)  
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
-    end
-    
-    properties (Dependent = true)  
         NSweepsPerRun  
             % Number of sweeps to perform during run.  If in
             % sweep-based mode, this is a pass through to the repeat count
             % of the start trigger.  If in continuous mode, it is always 1.
-    end
-    
-    properties (Dependent = true)
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
-    end
-    
-%     properties (Dependent=true)  
-%         IsYokedToScanImage
-%     end
-    
-%     properties (Dependent=true, Hidden=true)
-%         NextSweepIndex
-%     end
-
-    properties (Dependent=true)
         NTimesSamplesAcquiredCalledSinceRunStart
-    end
-
-    properties (Dependent=true, SetAccess=immutable)
         ClockAtRunStart  
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
@@ -54,17 +28,14 @@ classdef Looper < ws.Model
         RPCServer_
         RPCClient_
         IPCPublisher_
-    end
-    
-    properties (Access = protected)
         %IsYokedToScanImage_ = false
         Acquisition_
         Stimulation_
         Triggering_
-        %Display
-        %Logging
+        %Display_
+        %Logging_
         UserFunctions_
-        %Ephys
+        %Ephys_
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
     end

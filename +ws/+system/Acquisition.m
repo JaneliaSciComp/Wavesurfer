@@ -55,12 +55,12 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
             end
         end  % function
         
-        function settings = packageCoreSettings(self)
-            settings=struct() ;
-            for i=1:length(self.CoreFieldNames_)
-                fieldName = self.CoreFieldNames_{i} ;
-                settings.(fieldName) = self.(fieldName) ;
-            end
-        end        
+%         function settings = packageCoreSettings(self)
+%             settings=struct() ;
+%             for i=1:length(self.CoreFieldNames_)
+%                 fieldName = self.CoreFieldNames_{i} ;
+%                 settings.(fieldName) = self.(fieldName) ;
+%             end
+%         end        
     end  % methods block    
 end  % classdef

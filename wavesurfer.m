@@ -30,7 +30,8 @@ function varargout = wavesurfer(mdfFileName,isCommandLineOnly)
     end
 
     % Create the application (model) object.
-    model = ws.WavesurferModel();
+    model = ws.WavesurferModel([],true);
+      % 1st arg is parent, 2nd is isITheOneTrueWavesurferModel
 
     % Start the controller, if desired
     if isCommandLineOnly ,

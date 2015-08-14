@@ -71,7 +71,7 @@ classdef WavesurferModel < ws.Model
         HasUserSpecifiedUserSettingsFileName_ = false
         AbsoluteUserSettingsFileName_ = ''
         IndexOfSelectedFastProtocol_ = []
-        State_ = 'uninitialized' ;
+        State_ = 'uninitialized'
         Subsystems_
         t_
         SweepAcqSampleCount_
@@ -90,6 +90,7 @@ classdef WavesurferModel < ws.Model
         WasExceptionThrown_
         ThrownException_
         NSweepsCompletedInThisRun_ = 0
+        IsITheOneTrueWavesurferModel_
     end
     
 %     events
@@ -121,31 +122,42 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function self = WavesurferModel(parent)
+        function self = WavesurferModel(parent,isITheOneTrueWavesurferModel)
             if ~exist('parent','var') || isempty(parent) ,
                 parent = [] ;
             end
+            if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
+                isITheOneTrueWavesurferModel = false ;
+            end                       
             self@ws.Model(parent);
             
-%             % Set up the communication sockets
-%             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
-%             self.RPCServer_.setDelegate(self) ;
-%             self.RPCServer_.bind();
-% 
-%             self.LooperRPCClient_ = ws.RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ;
-%             self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
-%             
-%             self.DataSubscriber_ = ws.IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
-%             self.DataSubscriber_.setDelegate(self) ;
-%             
-%             % Start the other Matlab processes
-%             %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
-%             %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
-%             
-%             % Connect to the various sockets
-%             self.LooperRPCClient_.connect() ;
-%             self.RefillerRPCClient_.connect() ;
-%             self.DataSubscriber_.connect() ;
+            self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
+            
+            % We only set up the sockets if we are the one true
+            % WavesurferModel, and not some blasted pretender!
+            % ("Pretenders" are created when we load a protocol from disk,
+            % for instance.)
+            if isITheOneTrueWavesurferModel ,
+                % Set up the communication sockets            
+                self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
+                self.RPCServer_.setDelegate(self) ;
+                self.RPCServer_.bind();
+
+                self.LooperRPCClient_ = ws.RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ;
+                self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
+
+                self.DataSubscriber_ = ws.IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
+                self.DataSubscriber_.setDelegate(self) ;
+
+                % Start the other Matlab processes
+                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+                %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
+
+                % Connect to the various sockets
+                self.LooperRPCClient_.connect() ;
+                self.RefillerRPCClient_.connect() ;
+                self.DataSubscriber_.connect() ;
+            end
             
             % Initialize the fast protocols
             self.FastProtocols_ = cell(1,self.NFastProtocols) ;
