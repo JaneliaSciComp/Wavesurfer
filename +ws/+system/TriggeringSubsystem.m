@@ -53,12 +53,16 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.Schemes(self)
-            out = [ self.Sources_ self.Destinations ] ;
+            out = [ self.Sources self.Destinations ] ;
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)
             index = self.AcquisitionTriggerSchemeIndex_ ;
-            out = self.Schemes{index} ;
+            if ~isscalar(index) ,
+                keyboard
+            else
+                out = self.Schemes{index} ;
+            end
         end  % function
         
         function out = get.AcquisitionTriggerSchemeIndex(self)

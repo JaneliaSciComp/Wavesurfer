@@ -48,13 +48,13 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         DigitalOutputStateIfUntimed_ = false(1,0)
     end
         
-    properties (Access=protected, Constant=true)
-        CoreFieldNames_ = { 'SampleRate_' , 'Duration_', 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
-                            'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
-                            'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
-            % The "core" settings are the ones that get transferred to
-            % other processes for running a sweep.
-    end
+%     properties (Access=protected, Constant=true)
+%         CoreFieldNames_ = { 'SampleRate_' , 'Duration_', 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
+%                             'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
+%                             'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
+%             % The "core" settings are the ones that get transferred to
+%             % other processes for running a sweep.
+%     end
     
     events 
         DidSetAnalogChannelUnitsOrScales
@@ -449,6 +449,55 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end  % function
     end  % public methods block
 
+    methods
+%         function set.IsDigitalChannelTimed(self,newValue)
+%             if ws.utility.isASettableValue(newValue),
+%                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+%                     coercedNewValue = logical(newValue) ;
+%                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
+%                         self.IsDigitalChannelTimed_=coercedNewValue;
+%                         %self.syncTasksToChannelMembership_();
+%                     end
+%                 else
+%                     self.broadcast('DidSetIsDigitalChannelTimed');
+%                     error('most:Model:invalidPropVal', ...
+%                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
+%                 end
+%             end
+%             self.broadcast('DidSetIsDigitalChannelTimed');
+%         end  % function
+        
+        function set.DigitalOutputStateIfUntimed(self,newValue)
+            self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter
+        end  % function
+    end
+
+    methods (Access=protected)
+        function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
+            if ws.utility.isASettableValue(newValue),
+                if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
+                        (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                    coercedNewValue = logical(newValue) ;
+                    self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
+                    wasSet = true ;
+%                     if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+%                         isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+%                         untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
+%                         if ~isempty(untimedDigitalChannelState) ,
+%                             self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+%                         end
+%                     end
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
+                end
+            else
+                wasSet = false ;
+            end
+            self.broadcast('DidSetDigitalOutputStateIfUntimed');
+        end  % function
+    end
+    
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct() ;        
 %         mdlHeaderExcludeProps = {};

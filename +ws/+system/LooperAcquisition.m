@@ -148,7 +148,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
 
         function willPerformSweep(self)
             %fprintf('Acquisition::willPerformSweep()\n');
-            self.IsArmedOrAcquiring_ = true;
+            %self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;

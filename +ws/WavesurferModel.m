@@ -150,7 +150,7 @@ classdef WavesurferModel < ws.Model
                 self.DataSubscriber_.setDelegate(self) ;
 
                 % Start the other Matlab processes
-                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
                 %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
 
                 % Connect to the various sockets
@@ -679,7 +679,7 @@ classdef WavesurferModel < ws.Model
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
 
-            if isequal(self.State,'idle') ,
+            if ~isequal(self.State,'idle') ,
                 return
             end
 

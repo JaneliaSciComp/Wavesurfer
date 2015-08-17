@@ -92,12 +92,19 @@ classdef Looper < ws.Model
     end
     
     methods
-        function self = Looper()
+        function self = Looper(parent)
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
-            self@ws.Model([]);  % no parent
+            
+            % Deal with arguments
+            if ~exist('parent','var') || isempty(parent) ,
+                parent = [] ;  % no parent by default
+            end
+            
+            % Call the superclass constructor
+            self@ws.Model(parent);
             
             % Set up sockets
             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
@@ -185,6 +192,7 @@ classdef Looper < ws.Model
         
         function runMainLoop(self)
             % Main loop
+            timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
             while self.DoKeepRunningMainLoop_ ,
                 %fprintf('\n\n\nLooper: At top of main loop\n');
@@ -636,7 +644,9 @@ classdef Looper < ws.Model
             
             % Make our own settings mimic those of wavesurferModelSettings
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
-            self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
+            %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
+            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.mimic(wsModel) ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1362,4 +1372,26 @@ classdef Looper < ws.Model
 %         end  % function        
 %     end
     
+    methods
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForFileType('restorable');
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+                    self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+        end  % function
+    end  % public methods block
+
 end  % classdef

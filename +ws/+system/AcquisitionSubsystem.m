@@ -481,7 +481,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 
         function willPerformSweep(self)
             %fprintf('Acquisition::willPerformSweep()\n');
-            self.IsArmedOrAcquiring_ = true;
+            %self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
@@ -503,7 +503,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 % didAbortSweep() cannot throw an error, so we ignore any
                 % errors that arise here.
             end
-            self.IsArmedOrAcquiring_ = false;
+            %self.IsArmedOrAcquiring_ = false;
         end  % function
                 
         function iChannel=iActiveChannelFromName(self,channelName)
@@ -749,12 +749,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %                     self.DigitalInputTask_ = [] ;
 %                 end                    
 %             end
-            self.IsArmedOrAcquiring_ = false;
+            %self.IsArmedOrAcquiring_ = false;
         end  % function
         
         function acquisitionSweepComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
-            self.IsArmedOrAcquiring_ = false;
+            %self.IsArmedOrAcquiring_ = false;
             % TODO If there are multiple acquisition boards, notify only when all are complete.
 %             if ~isempty(self.DelegateDoneFcn_)
 %                 feval(self.DelegateDoneFcn_, source, event);

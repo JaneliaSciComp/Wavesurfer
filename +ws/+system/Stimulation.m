@@ -314,7 +314,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             end
 %             self.broadcast('DidSetIsDigitalChannelTimed');
 %         end  % function
-        
+%         
 %         function set.DigitalOutputStateIfUntimed(self,newValue)
 %             if ws.utility.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
