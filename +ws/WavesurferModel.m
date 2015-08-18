@@ -150,7 +150,8 @@ classdef WavesurferModel < ws.Model
                 self.DataSubscriber_.setDelegate(self) ;
 
                 % Start the other Matlab processes
-                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
+                system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop();"');
                 %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
 
                 % Connect to the various sockets
@@ -1792,7 +1793,8 @@ classdef WavesurferModel < ws.Model
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
-                    self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -1814,7 +1816,8 @@ classdef WavesurferModel < ws.Model
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
-                    self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
                     % do nothing                   
                 else

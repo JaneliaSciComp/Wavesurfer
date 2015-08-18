@@ -18,7 +18,7 @@ classdef Looper < ws.Model
             % of the start trigger.  If in continuous mode, it is always 1.
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
         NTimesSamplesAcquiredCalledSinceRunStart
-        ClockAtRunStart  
+        %ClockAtRunStart  
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
@@ -109,7 +109,7 @@ classdef Looper < ws.Model
             % Set up sockets
             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
             self.RPCServer_.setDelegate(self) ;
-            self.RPCServer_.bind();
+            self.RPCServer_.bind() ;
             
             self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.DataPubSubPortNumber) ;
             self.IPCPublisher_.bind() ;
@@ -195,9 +195,11 @@ classdef Looper < ws.Model
             timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
             while self.DoKeepRunningMainLoop_ ,
-                %fprintf('\n\n\nLooper: At top of main loop\n');
+                fprintf('\n\n\nLooper: At top of main loop\n');
                 if self.IsPerformingRun_ && self.IsPerformingSweep_ ,
+                    fprintf('Looper: In a sweep\n');
                     if self.WasRunStoppedByUser_ ,
+                        fprintf('Looper: self.WasRunStoppedByUser_\n');
                         % When done, clean up after sweep
                         self.cleanUpAfterSweepStoppedByUser_();
                         % Note that we clean up after the sweep, 
@@ -209,6 +211,7 @@ classdef Looper < ws.Model
                         % the post-run cleanup.
                         self.RPCClient_.call('looperStoppedSweep');
                     else
+                        fprintf('Looper: ~self.WasRunStoppedByUser_\n');
                         % Check for messages, but don't wait for them
                         self.RPCServer_.processMessageIfAvailable() ;
 
@@ -219,8 +222,10 @@ classdef Looper < ws.Model
                         %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;
                     end
                 else
+                    fprintf('Looper: Not in a sweep\n');
                     % We're not currently running a sweep
-                    % Check for messages, blocking until we get one
+                    % Check for messages, but don't block
+                    self.RPCServer_
                     self.RPCServer_.processMessageIfAvailable() ;
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end
@@ -538,7 +543,7 @@ classdef Looper < ws.Model
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
             if self.Stimulation.IsEnabled ,
-                if self.Triggering.StimulationTriggerScheme.Target == self.Triggering.AcquisitionTriggerScheme.Target ,
+                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
                     % acq and stim trig sources are identical
                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
                         % do nothing
@@ -646,6 +651,7 @@ classdef Looper < ws.Model
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            keyboard
             self.mimic(wsModel) ;
             
             % Tell all the subsystems to prepare for the run
@@ -1219,11 +1225,11 @@ classdef Looper < ws.Model
         end
     end
 
-    methods
-        function value = get.ClockAtRunStart(self)
-            value = self.ClockAtRunStart_ ;
-        end
-    end
+%     methods
+%         function value = get.ClockAtRunStart(self)
+%             value = self.ClockAtRunStart_ ;
+%         end
+%     end
     
 %     methods
 %         function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
@@ -1383,7 +1389,8 @@ classdef Looper < ws.Model
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
-                    self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;

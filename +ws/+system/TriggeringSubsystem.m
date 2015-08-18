@@ -15,7 +15,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     properties (Access=protected, Constant=true)
         MasterTriggerPhysicalChannelName_ = 'pfi8'
         MasterTriggerPFIID_ = 8
-        MasterTriggerEdge_ = 'DAQmx_Val_Rising'
+        MasterTriggerEdge_ = 'rising'
     end
     
     properties (Access = protected)
@@ -26,12 +26,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         StimulationTriggerSchemeIndex_
     end
 
-    properties (Access=protected, Constant=true)
-        CoreFieldNames_ = { 'Sources_' , 'Destinations_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
-                            'StimulationTriggerSchemeIndex_' } ;
-            % The "core" settings are the ones that get transferred to
-            % other processes for running a sweep.
-    end
+%     properties (Access=protected, Constant=true)
+%         CoreFieldNames_ = { 'Sources_' , 'Destinations_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
+%                             'StimulationTriggerSchemeIndex_' } ;
+%             % The "core" settings are the ones that get transferred to
+%             % other processes for running a sweep.
+%     end
     
     methods
         function self = TriggeringSubsystem(parent)
@@ -58,8 +58,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         
         function out = get.AcquisitionTriggerScheme(self)
             index = self.AcquisitionTriggerSchemeIndex_ ;
-            if ~isscalar(index) ,
-                keyboard
+            if isempty(index) ,
+                out = [] ;
             else
                 out = self.Schemes{index} ;
             end
@@ -107,7 +107,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             if self.StimulationUsesAcquisitionTriggerScheme ,
                 out = self.AcquisitionTriggerScheme ;
             else                
-                out = self.Schemes{self.StimulationTriggerSchemeIndex_} ;
+                index = self.StimulationTriggerSchemeIndex_ ;
+                if isempty(index) ,
+                    out = [] ;
+                else
+                    out = self.Schemes{index} ;
+                end
             end
         end  % function
         

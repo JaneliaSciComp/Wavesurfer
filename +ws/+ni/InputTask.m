@@ -412,12 +412,12 @@ classdef InputTask < handle
 
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
-                self.TriggerEdge_ = [];
-            elseif isAnEdgeType(newValue) && isscalar(newValue) ,
-                self.TriggerEdge_ = newValue;
+                self.TriggerEdge_ = [] ;
+            elseif ws.isAnEdgeType(newValue) ,
+                self.TriggerEdge_ = newValue ;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerEdge must be empty, or ''DAQmx_Val_Rising'', or ''DAQmx_Val_Falling''');       
+                      'TriggerEdge must be empty, or ''rising'', or ''falling''');       
             end            
         end  % function
         
@@ -474,7 +474,8 @@ classdef InputTask < handle
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge);
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;                    
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), dabsTriggerEdge);
                 else
                     self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
                 end        

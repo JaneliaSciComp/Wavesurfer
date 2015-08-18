@@ -438,7 +438,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 if any(strcmp(thisPropertyName,{'StimulusLibrary_'})) ,                    
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
                     target = self.(thisPropertyName) ;
-                    target.mimic(source);
+                    if isempty(target) ,
+                        self.setPropertyValue_(thisPropertyName, source.copyGivenParent(self)) ;
+                    else
+                        target.mimic(source);
+                    end
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;

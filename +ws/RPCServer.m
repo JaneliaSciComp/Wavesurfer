@@ -38,7 +38,7 @@ classdef RPCServer < ws.ZMQBinder
             % Now send the reply
             serializedValue = getByteStreamFromArray(value) ;  % uint8 array
             zmq.core.send(self.Socket, serializedValue);            
-        end  % function        
+        end  % function
         
         function isMessageAvailable=processMessageIfAvailable(self)
             try
@@ -52,11 +52,12 @@ classdef RPCServer < ws.ZMQBinder
                 else
                     rethrow(me);
                 end
-            end            
+            end
             isMessageAvailable = true;
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
+            fprintf('RPCServer: We got a message: %s !\n',methodName) ;
             if isempty(self.Delegate) ,
                 value = MException('RPCServer:noDelegate', ...
                                    'Couldn''t call the method because Delegate is empty or invalid');

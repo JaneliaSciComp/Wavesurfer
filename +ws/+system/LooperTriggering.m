@@ -128,19 +128,21 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             % Just what it says on the tin.  For starting, want the acq
             % trigger last so that the stim trigger can trigger off it if
             % they're using the same source.  Result is a cell array.
-            triggerSchemes = {self.StimulationTriggerScheme self.AcquisitionTriggerScheme} ;
+            rawTriggerSchemes = {self.StimulationTriggerScheme self.AcquisitionTriggerScheme} ;
+            isSchemeEmpty=cellfun(@(scheme)(isempty(scheme)),rawTriggerSchemes);
+            triggerSchemes=rawTriggerSchemes(~isSchemeEmpty);
             %self.StimulationTriggerScheme.IsInternal
             %self.AcquisitionTriggerScheme.IsInternal            
             isInternal=cellfun(@(scheme)(scheme.IsInternal),triggerSchemes);
-            internalTriggerSchemes=triggerSchemes(isInternal);
+            internalTriggerSchemes=triggerSchemes(isInternal);  % cell array
 
             % If more than one internal trigger, need to check whether
             % their sources are identical.  If so, only want to return one,
             % so we don't start an internal trigger twice.
             if length(internalTriggerSchemes)>1 ,
-                if self.StimulationTriggerScheme.Target==self.AcquisitionTriggerScheme.Target ,
+                if self.StimulationTriggerScheme == self.AcquisitionTriggerScheme ,
                     % We pick the acq one, even though it shouldn't matter 
-                    result=internalTriggerSchemes(2);
+                    result=internalTriggerSchemes(2);  % singleton cell array
                 else
                     result=internalTriggerSchemes;
                 end

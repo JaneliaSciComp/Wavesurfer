@@ -141,9 +141,6 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             if isempty(self.TriggerScheme)
                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
             end            
-            if isempty(self.TriggerScheme.Target)
-                error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-            end            
             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
             %end
@@ -154,35 +151,40 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.acquireHardwareResources_();
             
             % Set up the task triggering
-            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.PFIID ;
+            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.PFIID ;
+            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
             
             % Clear out any pre-existing output waveforms
-            self.TheFiniteAnalogOutputTask_.clearChannelData();
-            self.TheFiniteDigitalOutputTask_.clearChannelData();
+            self.TheFiniteAnalogOutputTask_.clearChannelData() ;
+            self.TheFiniteDigitalOutputTask_.clearChannelData() ;
             
             % Determine how many episodes there will be, if possible
+            % TODO: This seems like it works fine, but it might be overly
+            % general given that we now force ASAP triggering for
+            % trial-based acq.
             if self.TriggerScheme.IsExternal ,
-                self.EpisodesPerRun_ = [];
+                self.EpisodesPerRun_ = [] ;
             else
                 % stim trigger scheme is internal
-                if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal
+                if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal ,
                     % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == wavesurferModel.Triggering.AcquisitionTriggerScheme.Target ,
-                        self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
+                    if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
+                        self.EpisodesPerRun_ = self.Parent.NSweepsPerRun ;
                     else
-                        self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
+                        self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount ;
+                        % TODO: This part in particular seems maybe
+                        % unnecessary...
                     end
                 elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme
-                    self.EpisodesPerRun_ = self.TriggerScheme.Target.RepeatCount;
+                    self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount ;
                 else
                     % acq trigger scheme is null --- this run is
                     % stillborn, so doesn't matter
-                    self.EpisodesPerRun_ = [];
+                    self.EpisodesPerRun_ = [] ;
                 end
             end
 

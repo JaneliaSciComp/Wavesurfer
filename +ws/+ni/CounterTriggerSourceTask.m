@@ -84,7 +84,8 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         
         function configureStartTrigger(self, pfiId, edge)
             %fprintf('CounterTriggerSourceTask::configureStartTrigger()\n');
-            self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), edge);
+            dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(edge) ;
+            self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), dabsTriggerEdge);
         end        
         
         function value = get.Parent(self)

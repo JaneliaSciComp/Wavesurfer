@@ -80,10 +80,10 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.acquireHardwareResources_();
 
             % Set up the task triggering
-            self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+            self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.PFIID;
+            self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Edge;
+            self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.PFIID;
+            self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Edge;
             
             % Set for finite-duration vs. continous acquisition
             if parent.AreSweepsContinuous ,
