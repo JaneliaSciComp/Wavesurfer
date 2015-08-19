@@ -261,17 +261,11 @@ classdef Looper < ws.Model
             % WavesurferModel calls startSweep().
             %
             % This is called via RPC, so must return exactly one return
-            % value, and must not throw.
+            % value.  If a runtime error occurs, it will cause the frontend
+            % process to hang.
 
-            % Set default return value, if nothing goes wrong
-            err = [] ;
-            
             % Prepare for the run
-            try
-                self.prepareForSweep_(indexOfSweepWithinRun) ;
-            catch me
-                err=me ;
-            end
+            err = self.prepareForSweep_(indexOfSweepWithinRun) ;
         end  % function
 
 %         function err = startSweep(self)
@@ -719,7 +713,7 @@ classdef Looper < ws.Model
                         
             % Call willPerformSweep() on all the enabled subsystems, and
             % start the counter timer tasks
-            try
+%             try
                 for i = 1:numel(self.Subsystems_) ,
                     if self.Subsystems_{i}.IsEnabled ,
                         self.Subsystems_{i}.willPerformSweep();
@@ -737,11 +731,13 @@ classdef Looper < ws.Model
                 % and simply waiting for their trigger to go high to truly
                 % start.                
                 
-                self.PollingTicId_ = tic() ;
-                self.TimeOfLastPoll_ = toc(self.PollingTidId_) ;  % fake, but need to get things started
-            catch me
-                err = me ;
-            end
+                %self.PollingTicId_ = tic() ;
+                %self.TimeOfLastPoll_ = toc(self.PollingTidId_) ;  % fake, but need to get things started
+%             catch me
+%                 err = me ;
+%                 dbstack
+%                 keyboard
+%             end
             
             % Final preparations...
             self.IsSweepComplete_ = false ;
@@ -877,7 +873,7 @@ classdef Looper < ws.Model
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
                 % Toss the data to the subscribers
-                self.IPCPublisher.send('dataAvailable',self.NScansAcquiredInSweepSoFar_, rawAnalogData, rawDigitalData) ;
+                self.IPCPublisher_.send('dataAvailable', self.NScansAcquiredInSweepSoFar_, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData ) ;
                 
                 % Update the number of scans acquired
                 self.NScansAcquiredInSweepSoFar_ = self.NScansAcquiredInSweepSoFar_ + nScans;

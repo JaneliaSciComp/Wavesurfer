@@ -154,41 +154,41 @@ classdef Triggering < ws.system.TriggeringSubsystem
         end  % function
     end  % protected methods block
     
-    methods (Access = protected)
-        function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
-            % Just what it says on the tin.  For starting, want the acq
-            % trigger last so that the stim trigger can trigger off it if
-            % they're using the same source.  Result is a cell array.
-            triggerSchemes={self.StimulationTriggerScheme self.AcquisitionTriggerScheme};
-            isInternal=cellfun(@(scheme)(scheme.IsInternal),triggerSchemes);
-            internalTriggerSchemes=triggerSchemes(isInternal);
-
-            % If more than one internal trigger, need to check whether
-            % their sources are identical.  If so, only want to return one,
-            % so we don't start an internal trigger twice.
-            if length(internalTriggerSchemes)>1 ,
-                if self.StimulationTriggerScheme==self.AcquisitionTriggerScheme ,
-                    % We pick the acq one, even though it shouldn't matter 
-                    result=internalTriggerSchemes(2);
-                else
-                    result=internalTriggerSchemes;
-                end
-            else
-                result=internalTriggerSchemes;
-            end
-        end  % function
-        
-        function teardownInternalSweepBasedTriggers(self)
-%             if self.ContinuousModeTriggerScheme.IsInternal ,
-%                 self.ContinuousModeTriggerScheme.clear();
+%     methods (Access = protected)
+%         function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
+%             % Just what it says on the tin.  For starting, want the acq
+%             % trigger last so that the stim trigger can trigger off it if
+%             % they're using the same source.  Result is a cell array.
+%             triggerSchemes={self.StimulationTriggerScheme self.AcquisitionTriggerScheme};
+%             isInternal=cellfun(@(scheme)(scheme.IsInternal),triggerSchemes);
+%             internalTriggerSchemes=triggerSchemes(isInternal);
+% 
+%             % If more than one internal trigger, need to check whether
+%             % their sources are identical.  If so, only want to return one,
+%             % so we don't start an internal trigger twice.
+%             if length(internalTriggerSchemes)>1 ,
+%                 if self.StimulationTriggerScheme==self.AcquisitionTriggerScheme ,
+%                     % We pick the acq one, even though it shouldn't matter 
+%                     result=internalTriggerSchemes(2);
+%                 else
+%                     result=internalTriggerSchemes;
+%                 end
+%             else
+%                 result=internalTriggerSchemes;
 %             end
-            
-            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-            for idx = 1:numel(triggerSchemes)
-                triggerSchemes{idx}.teardown();
-            end
-        end  % function
-    end
+%         end  % function
+%         
+%         function teardownInternalSweepBasedTriggers(self)
+% %             if self.ContinuousModeTriggerScheme.IsInternal ,
+% %                 self.ContinuousModeTriggerScheme.clear();
+% %             end
+%             
+%             triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
+%             for idx = 1:numel(triggerSchemes)
+%                 triggerSchemes{idx}.teardown();
+%             end
+%         end  % function
+%     end
            
 %     methods
 %         function poll(self,timeSinceSweepStart)

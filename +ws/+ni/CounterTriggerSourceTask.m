@@ -58,7 +58,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         
         function start(self)
             %fprintf('CounterTriggerSourceTask::start(), CTR %d\n',self.CounterID_);
-            if ~isempty(self.DabsDaqTask_)
+            if ~isempty(self.DabsDaqTask_) ,
                 %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
                 self.DabsDaqTask_.start();
             end
@@ -66,15 +66,13 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         
         function stop(self)
             %fprintf('CounterTriggerSourceTask::stop(), CTR %d\n', self.CounterID_);
-            %dbstack            
-            %stop@ws.ni.TriggerSourceTask(self);
             if ~isempty(self.DabsDaqTask_) && isvalid(self.DabsDaqTask_) ,
-                if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                    self.DabsDaqTask_.stop();
-                else
-                    self.DabsDaqTask_.abort();
-                end
-                %self.DabsDaqTask_.doneEventCallbacks = {};
+                self.DabsDaqTask_.stop();
+%                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
+%                     self.DabsDaqTask_.stop();
+%                 else
+%                     self.DabsDaqTask_.abort();
+%                 end
             end
         end
         
@@ -115,16 +113,16 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
             self.DabsDaqTask_.channels(1).set('pulseFreq', newValue);
         end        
         
-        function poll(self,timeSinceSweepStart) %#ok<INUSD>
-            if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                self.stop();  % probably better to do self.DabsDaqTask_.stop() here...
-                %self.DabsDaqTask_.doneEventCallbacks = {};
-                if ~isempty(self.Parent) && isvalid(self.Parent) ,
-                    %feval(self.DoneCallback_,self);
-                    self.Parent.counterTriggerSourceTaskDone();
-                end
-            end
-        end  % function
+%         function poll(self,timeSinceSweepStart) %#ok<INUSD>
+%             if self.DabsDaqTask_.isTaskDoneQuiet() ,
+%                 self.stop();  % probably better to do self.DabsDaqTask_.stop() here...
+%                 %self.DabsDaqTask_.doneEventCallbacks = {};
+%                 if ~isempty(self.Parent) && isvalid(self.Parent) ,
+%                     %feval(self.DoneCallback_,self);
+%                     self.Parent.counterTriggerSourceTaskDone();
+%                 end
+%             end
+%         end  % function
     end  % public methods
 
 end

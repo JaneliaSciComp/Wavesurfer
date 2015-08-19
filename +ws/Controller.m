@@ -341,6 +341,7 @@ classdef Controller < handle
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
+                    me.getReport()
                     errordlg(me.message,'Error','modal');
 %                end
             end

@@ -225,28 +225,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end
         
         function value = get.AnalogChannelScales(self)
-            import ws.utility.*
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                value=self.AnalogChannelScales_;
-            else
-                analogChannelNames=self.AnalogChannelNames;
-                [channelScalesFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getMonitorScalingsByName(analogChannelNames);
-                value=fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
-            end
-        end
+            value = self.getAnalogChannelScales_() ;
+        end  % function
         
         function value = get.AnalogChannelUnits(self)            
             import ws.utility.*
@@ -778,6 +758,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             %profile off
         end  % function
 
+        function value = getAnalogChannelScales_(self)
+            value = self.AnalogChannelScales_ ;
+        end  % function
+         
     end  % protected methods block
     
 %     methods (Static=true)

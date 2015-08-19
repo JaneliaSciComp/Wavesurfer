@@ -1,12 +1,17 @@
 classdef LooperTriggering < ws.system.TriggeringSubsystem 
-           
+
+    properties (Access=protected, Transient=true)
+        AcquisitionCounterTask_  % a ws.ni.CounterTriggerSourceTask, or []
+        StimulationCounterTask_  % a ws.ni.CounterTriggerSourceTask, or []
+    end
+    
     methods
         function self = LooperTriggering(parent)
             self@ws.system.TriggeringSubsystem(parent);
         end  % function        
         
 %         function acquireHardwareResources(self)
-%             self.setupInternalSweepBasedTriggers();
+%             self.setupInternalTriggers();
 %         end
         
         function setCoreSettingsToMatchPackagedOnes(self,settings)
@@ -17,7 +22,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
         end
         
         function releaseHardwareResources(self)
-            self.teardownInternalSweepBasedTriggers();
+            self.teardownInternalTriggers_();
         end
         
         function delete(self)
@@ -41,63 +46,69 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             % counter trigger tasks.
             
             % Start the acq & stim trigger tasks
-            self.startAllDistinctSweepBasedTriggerTasks_();                
+            self.startAllDistinctTriggerTasks_();                
         end  % function
         
-        function startAllDistinctSweepBasedTriggerTasks_(self)
-            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-            for idx = 1:numel(triggerSchemes) ,
-                thisTriggerScheme=triggerSchemes{idx};
-                if thisTriggerScheme==self.StimulationTriggerScheme ,
-                    %fprintf('About to set self.IsStimulationCounterTriggerTaskRunning=true in location 3\n');
-                    self.IsStimulationCounterTriggerTaskRunning=true;
-                end                    
-                thisTriggerScheme.start();
-            end        
-%             % Now produce a pulse on the master trigger, which will truly start things
-%             self.MasterTriggerDABSTask_.writeDigitalData(true);
-%             self.MasterTriggerDABSTask_.writeDigitalData(false);            
+        function startAllDistinctTriggerTasks_(self)
+            fprintf('LooperTriggering::startAllDistinctTriggerTasks_()\n');
+%             triggerSchemes = self.getUniqueInternalTriggersInOrderForStarting_();
+%             for idx = 1:numel(triggerSchemes) ,
+%                 thisTriggerScheme=triggerSchemes{idx};
+%                 if thisTriggerScheme==self.StimulationTriggerScheme ,
+%                     %fprintf('About to set self.IsStimulationCounterTriggerTaskRunning=true in location 3\n');
+%                     self.IsStimulationCounterTriggerTaskRunning=true;
+%                 end                    
+%                 thisTriggerScheme.start();
+%             end        
+            acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
+            stimulationTriggerScheme = self.StimulationTriggerScheme ;
+            if isa(acquisitionTriggerScheme,'ws.TriggerSource') ,
+                % There's an internal acq trigger scheme
+                self.AcquisitionCounterTask_.start() ;
+                if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+                    % There's an internal stim trigger scheme
+                    if stimulationTriggerScheme==acquisitionTriggerScheme ,
+                        % acq and stim share a trigger, so no need to do
+                        % anything else
+                    else
+                        self.StimulationCounterTask_.start() ;
+                    end
+                else
+                    % stim trigger scheme is external, so nothing to do
+                end                        
+            else
+                % acq trigger scheme is external
+                if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+                    self.StimulationCounterTask_.start() ;
+                else
+                    % both acq & stim trigger schemes are external, so nothing to do
+                end                                                        
+            end            
         end  % function
         
         function willPerformRun(self) %#ok<MANU>
         end  % function
         
         function willPerformSweep(self)
-            self.setupInternalSweepBasedTriggers();
+            self.setupInternalTriggers_();
         end  % function
 
         function didCompleteSweep(self)
-            self.teardownInternalSweepBasedTriggers();            
+            self.teardownInternalTriggers_();            
         end  % function
         
         function didAbortSweep(self)
-            self.teardownInternalSweepBasedTriggers();
+            self.teardownInternalTriggers_();
         end  % function
         
         function didCompleteRun(self)
-            self.teardownInternalSweepBasedTriggers();
+            self.teardownInternalTriggers_();
         end  % function
         
         function didAbortRun(self)
-            self.teardownInternalSweepBasedTriggers();
+            self.teardownInternalTriggers_();
         end  % function
         
-        function setupInternalSweepBasedTriggers(self)        
-            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-            for idx = 1:numel(triggerSchemes) ,
-                thisTriggerScheme=triggerSchemes{idx};
-                thisTriggerScheme.setup();
-%                 % Each trigger output is generated by a nidaqmx counter
-%                 % task.  These tasks can themselves be configured to start
-%                 % when they receive a trigger.  Here, we set the non-acq
-%                 % trigger outputs to start when they receive a trigger edge on the
-%                 % same PFI line that triggers the acquisition task.
-%                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
-%                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
-%                 end                
-                thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
-            end  % function            
-        end  % function
         
 %         function triggerSourceDone(self,triggerSource)
 %             % Called "from below" when the counter trigger task finishes
@@ -110,7 +121,111 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
 %             end            
 %         end  % function 
     end  % methods block
+
+    methods (Access = protected)
+        function setupInternalTriggers_(self)        
+            acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
+            stimulationTriggerScheme = self.StimulationTriggerScheme ;
+            if isa(acquisitionTriggerScheme,'ws.TriggerSource') ,
+                % There's an internal acq trigger scheme
+                self.teardownAcquisitionCounterTask_() ;
+                self.AcquisitionCounterTask_ = self.createCounterTask_(acquisitionTriggerScheme) ;
+                if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+                    % There's an internal stim trigger scheme
+                    if stimulationTriggerScheme==acquisitionTriggerScheme ,
+                        % acq and stim share a trigger, so no need to do
+                        % anything else
+                    else
+                        self.teardownStimulationCounterTask_() ;
+                        self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
+                    end
+                else
+                    % stim trigger scheme is external, so nothing to do
+                end                        
+            else
+                % acq trigger scheme is external
+                if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+                    self.teardownStimulationCounterTask_() ;
+                    self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
+                else
+                    % stim trigger scheme is external, so nothing to do
+                end                                                        
+            end
+%             
+%             triggerSchemes = self.getUniqueInternalTriggersInOrderForStarting_();
+%             for idx = 1:numel(triggerSchemes) ,
+%                 thisTriggerScheme=triggerSchemes{idx};
+%                 thisTriggerScheme.setup();
+% %                 % Each trigger output is generated by a nidaqmx counter
+% %                 % task.  These tasks can themselves be configured to start
+% %                 % when they receive a trigger.  Here, we set the non-acq
+% %                 % trigger outputs to start when they receive a trigger edge on the
+% %                 % same PFI line that triggers the acquisition task.
+% %                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
+% %                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+% %                 end                
+%                 thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
+%             end  % function            
+        end  % function
+        
+        function task = createCounterTask_(self,triggerSource)
+            % Create the counter task
+            counterID = triggerSource.CounterID ;
+            taskName = sprintf('Wavesurfer Counter Trigger Task %d',triggerSource.CounterID) ;
+            task = ...
+                ws.ni.CounterTriggerSourceTask(triggerSource, ...
+                                               triggerSource.DeviceName, ...
+                                               counterID, ...
+                                               taskName);
             
+            % Set freq, repeat count                               
+            interval=triggerSource.Interval;
+            task.RepeatFrequency = 1/interval;
+            repeatCount=triggerSource.RepeatCount;
+            task.RepeatCount = repeatCount;
+            
+            % If using a non-default PFI, set that
+            pfiID = triggerSource.PFIID ;
+            if pfiID ~= counterID + 12 ,
+                task.exportSignal(sprintf('PFI%d', pfiID));
+            end
+            
+            % TODO: Need to set the edge polarity!!!
+            
+            % Set it up to trigger off the master trigger
+            task.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);
+        end
+        
+%         function configureStartTrigger(self, pfiID, edge)
+%             self.CounterTask_.configureStartTrigger(pfiID, edge);
+%         end
+        
+        function teardownAcquisitionCounterTask_(self)
+            if ~isempty(self.AcquisitionCounterTask_) ,
+                try
+                    self.AcquisitionCounterTask_.stop();
+                catch me  %#ok<NASGU>
+                    % if there's a problem, can't really do much about
+                    % it...
+                end
+            end
+            self.AcquisitionCounterTask_ = [];
+        end
+    
+        function teardownStimulationCounterTask_(self)
+            if ~isempty(self.StimulationCounterTask_) ,
+                try
+                    self.StimulationCounterTask_.stop();
+                catch me  %#ok<NASGU>
+                    % if there's a problem, can't really do much about
+                    % it...
+                end
+            end
+            self.StimulationCounterTask_ = [];
+        end
+        
+    end  % protected methods block
+
     methods (Access = protected)
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue_(self, name)
@@ -124,50 +239,49 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
     end  % protected methods block
     
     methods (Access = protected)
-        function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
-            % Just what it says on the tin.  For starting, want the acq
-            % trigger last so that the stim trigger can trigger off it if
-            % they're using the same source.  Result is a cell array.
-            rawTriggerSchemes = {self.StimulationTriggerScheme self.AcquisitionTriggerScheme} ;
-            isSchemeEmpty=cellfun(@(scheme)(isempty(scheme)),rawTriggerSchemes);
-            triggerSchemes=rawTriggerSchemes(~isSchemeEmpty);
-            %self.StimulationTriggerScheme.IsInternal
-            %self.AcquisitionTriggerScheme.IsInternal            
-            isInternal=cellfun(@(scheme)(scheme.IsInternal),triggerSchemes);
-            internalTriggerSchemes=triggerSchemes(isInternal);  % cell array
-
-            % If more than one internal trigger, need to check whether
-            % their sources are identical.  If so, only want to return one,
-            % so we don't start an internal trigger twice.
-            if length(internalTriggerSchemes)>1 ,
-                if self.StimulationTriggerScheme == self.AcquisitionTriggerScheme ,
-                    % We pick the acq one, even though it shouldn't matter 
-                    result=internalTriggerSchemes(2);  % singleton cell array
-                else
-                    result=internalTriggerSchemes;
-                end
-            else
-                result=internalTriggerSchemes;
-            end
-        end  % function
-        
-        function teardownInternalSweepBasedTriggers(self)
-%             if self.ContinuousModeTriggerScheme.IsInternal ,
-%                 self.ContinuousModeTriggerScheme.clear();
+%         function result = getUniqueInternalTriggersInOrderForStarting_(self)
+%             % Just what it says on the tin.  For starting, want the acq
+%             % trigger last so that the stim trigger can trigger off it if
+%             % they're using the same source.  Result is a cell array.
+%             rawTriggerSchemes = {self.StimulationTriggerScheme self.AcquisitionTriggerScheme} ;
+%             isSchemeEmpty=cellfun(@(scheme)(isempty(scheme)),rawTriggerSchemes);
+%             triggerSchemes=rawTriggerSchemes(~isSchemeEmpty);
+%             %self.StimulationTriggerScheme.IsInternal
+%             %self.AcquisitionTriggerScheme.IsInternal            
+%             isInternal=cellfun(@(scheme)(scheme.IsInternal),triggerSchemes);
+%             internalTriggerSchemes=triggerSchemes(isInternal);  % cell array
+% 
+%             % If more than one internal trigger, need to check whether
+%             % their sources are identical.  If so, only want to return one,
+%             % so we don't start an internal trigger twice.
+%             if length(internalTriggerSchemes)>1 ,
+%                 if self.StimulationTriggerScheme == self.AcquisitionTriggerScheme ,
+%                     % We pick the acq one, even though it shouldn't matter 
+%                     result=internalTriggerSchemes(2);  % singleton cell array
+%                 else
+%                     result=internalTriggerSchemes;
+%                 end
+%             else
+%                 result=internalTriggerSchemes;
 %             end
-            
-            triggerSchemes = self.getUniqueInternalSweepBasedTriggersInOrderForStarting_();
-            for idx = 1:numel(triggerSchemes)
-                triggerSchemes{idx}.teardown();
-            end
+%         end  % function
+        
+        function teardownInternalTriggers_(self)
+%             triggerSchemes = self.getUniqueInternalTriggersInOrderForStarting_();
+%             for idx = 1:numel(triggerSchemes)
+%                 triggerSchemes{idx}.teardown();
+%             end            
+            self.teardownAcquisitionCounterTask_() ;
+            self.teardownStimulationCounterTask_() ;            
         end  % function
-    end
+    end  % protected methods block
             
-    methods
-        function poll(self,timeSinceSweepStart)
-            % Call the task to do the real work
-            self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
-            self.StimulationTriggerScheme.poll(timeSinceSweepStart);
-        end
-    end    
+% No need to poll the trigger tasks in current regime    
+%     methods
+%         function poll(self,timeSinceSweepStart)
+%             % Call the task to do the real work
+%             self.AcquisitionTriggerScheme.poll(timeSinceSweepStart);
+%             self.StimulationTriggerScheme.poll(timeSinceSweepStart);
+%         end
+%     end    
 end

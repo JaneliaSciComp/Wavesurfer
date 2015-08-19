@@ -277,6 +277,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function dataAvailable(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+            fprintf('got data.  scanIndex: %d\n',scanIndex);
             self.haveDataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
         end  % function
     end  % methods
