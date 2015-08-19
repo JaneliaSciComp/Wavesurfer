@@ -55,7 +55,7 @@ classdef Looper < ws.Model
         TimeOfLastPollInSweep_
         %ClockAtRunStart_
         %DoContinuePolling_
-        IsSweepComplete_
+        %IsSweepComplete_
         WasRunStoppedByUser_        
         WasExceptionThrown_
         ThrownException_
@@ -510,7 +510,7 @@ classdef Looper < ws.Model
         function acquisitionSweepComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % sweep.
-            fprintf('WavesurferModel::acquisitionSweepComplete()\n');
+            fprintf('Looper::acquisitionSweepComplete()\n');
             self.checkIfSweepIsComplete_();            
         end  % function
         
@@ -518,7 +518,7 @@ classdef Looper < ws.Model
             % Called by the stimulation subsystem when it is done outputting
             % the sweep
             
-            fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
+            fprintf('Looper::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
             self.checkIfSweepIsComplete_();
         end  % function
@@ -535,6 +535,7 @@ classdef Looper < ws.Model
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
+            keyboard
             if self.Stimulation.IsEnabled ,
                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
                     % acq and stim trig sources are identical
@@ -542,7 +543,7 @@ classdef Looper < ws.Model
                         % do nothing
                     else
                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.IsSweepComplete_ = true ;
+                        self.cleanUpAfterCompletedSweep_();
                     end
                 else
                     % acq and stim trig sources are distinct
@@ -552,7 +553,7 @@ classdef Looper < ws.Model
                         % do nothing
                     else
                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.IsSweepComplete_ = true ;
+                        self.cleanUpAfterCompletedSweep_();
                     end
                 end
             else
@@ -561,7 +562,7 @@ classdef Looper < ws.Model
                     % do nothing
                 else
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.IsSweepComplete_ = true ;
+                    self.cleanUpAfterCompletedSweep_();
                 end
             end            
         end  % function
@@ -740,7 +741,7 @@ classdef Looper < ws.Model
 %             end
             
             % Final preparations...
-            self.IsSweepComplete_ = false ;
+            %self.IsSweepComplete_ = false ;
             self.IsPerformingSweep_ = true ;
         end  % function
 

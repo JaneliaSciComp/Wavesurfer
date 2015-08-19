@@ -255,10 +255,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end  % function
         
         function acquisitionSweepComplete_(self)
-            self.IsArmedOrAcquiring_ = false;
-            parent=self.Parent;
+            fprintf('LooperAcquisition::acquisitionSweepComplete_()\n');
+            self.IsArmedOrAcquiring_ = false ;
+            parent = self.Parent ;
             if ~isempty(parent) && isvalid(parent) ,
-                parent.acquisitionSweepComplete();
+                parent.acquisitionSweepComplete() ;
             end
         end  % function
         
@@ -295,9 +296,9 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 fprintf('IsArmedOrAcquiring\n') ;
                 % Check for task doneness
                 areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
-                %if areTasksDone ,
-                %    fprintf('Acquisition tasks are done.\n')
-                %end
+                if areTasksDone ,
+                    fprintf('Acquisition tasks are done.\n')
+                end
                 
                 % Get data
                 %if areTasksDone ,
