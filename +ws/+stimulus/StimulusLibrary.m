@@ -1,4 +1,4 @@
-classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
+classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
     properties (Dependent = true)
         Stimuli  % these are all cell arrays
@@ -1143,20 +1143,16 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable % & ws.Mimic  % &
     end
     
     methods         
-        function propNames = listPropertiesForFileType(self, fileType)
-            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
-            if isequal(fileType,'header') ,
-                % delete some property names 
-                % that don't need to go into the header file
-                propNames=setdiff(propNamesRaw, ...
-                                  {'Stimuli', 'Maps', 'Sequences', ...
-                                   'SelectedStimulus', 'SelectedMap', 'SelectedSequence', 'SelectedItem', ...
-                                   'SelectedItemClassName', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex', ...
-                                   'SelectedOutputableClassName', 'SelectedOutputableIndex', ...
-                                   'IsEmpty'}) ;
-            else
-                propNames=propNamesRaw;
-            end
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            % delete some property names 
+            % that don't need to go into the header file
+            propNames=setdiff(propNamesRaw, ...
+                              {'Stimuli', 'Maps', 'Sequences', ...
+                               'SelectedStimulus', 'SelectedMap', 'SelectedSequence', 'SelectedItem', ...
+                               'SelectedItemClassName', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex', ...
+                               'SelectedOutputableClassName', 'SelectedOutputableIndex', ...
+                               'IsEmpty'}) ;
         end  % function 
     end  % public methods block    
     

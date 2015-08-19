@@ -453,7 +453,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             % Cause self to resemble other.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('restorable');
+            propertyNames = self.listPropertiesForPersistence();
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,

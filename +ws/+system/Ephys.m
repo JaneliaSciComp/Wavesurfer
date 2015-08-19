@@ -181,16 +181,12 @@ classdef Ephys < ws.system.Subsystem
     end  % methods block
     
     methods         
-        function propNames = listPropertiesForFileType(self, fileType)
-            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
-            if isequal(fileType,'header') ,
-                % delete some property names that are defined in subclasses
-                % that don't need to go into the header file
-                propNames=setdiff(propNamesRaw, ...
-                                  {'TestPulser'}) ;
-            else
-                propNames=propNamesRaw;
-            end
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            % delete some property names that are defined in subclasses
+            % that don't need to go into the header file
+            propNames=setdiff(propNamesRaw, ...
+                              {'TestPulser'}) ;
         end  % function 
     end  % public methods block    
     
@@ -249,7 +245,7 @@ classdef Ephys < ws.system.Subsystem
             % Cause self to resemble other.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('restorable');
+            propertyNames = self.listPropertiesForPersistence();
             
             % Set each property to the corresponding one
             % all the "configurable" props in this class hold scalar

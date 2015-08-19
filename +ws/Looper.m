@@ -25,13 +25,10 @@ classdef Looper < ws.Model
     end
     
     properties (Access = protected)        
-        RPCServer_
-        RPCClient_
-        IPCPublisher_
         %IsYokedToScanImage_ = false
+        Triggering_
         Acquisition_
         Stimulation_
-        Triggering_
         %Display_
         %Logging_
         UserFunctions_
@@ -41,6 +38,9 @@ classdef Looper < ws.Model
     end
 
     properties (Access=protected, Transient=true)
+        RPCServer_
+        RPCClient_
+        IPCPublisher_
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
@@ -195,13 +195,13 @@ classdef Looper < ws.Model
             timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
             while self.DoKeepRunningMainLoop_ ,
-                fprintf('\n\n\nLooper: At top of main loop\n');
+                %fprintf('\n\n\nLooper: At top of main loop\n');
                 if self.IsPerformingRun_ && self.IsPerformingSweep_ ,
                     fprintf('Looper: In a sweep\n');
                     if self.WasRunStoppedByUser_ ,
-                        fprintf('Looper: self.WasRunStoppedByUser_\n');
+                        %fprintf('Looper: self.WasRunStoppedByUser_\n');
                         % When done, clean up after sweep
-                        self.cleanUpAfterSweepStoppedByUser_();
+                        self.cleanUpAfterSweepStoppedByUser_() ;
                         % Note that we clean up after the sweep, 
                         % then tell the frontend that we have done so.
                         % But we don't do the post-run cleanup until
@@ -209,9 +209,9 @@ classdef Looper < ws.Model
                         % And in particular, IsPerformingRun_ doesn't
                         % go false until the frontend tells us to do
                         % the post-run cleanup.
-                        self.RPCClient_.call('looperStoppedSweep');
+                        self.RPCClient_.call('looperStoppedSweep') ;
                     else
-                        fprintf('Looper: ~self.WasRunStoppedByUser_\n');
+                        %fprintf('Looper: ~self.WasRunStoppedByUser_\n');
                         % Check for messages, but don't wait for them
                         self.RPCServer_.processMessageIfAvailable() ;
 
@@ -222,10 +222,9 @@ classdef Looper < ws.Model
                         %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;
                     end
                 else
-                    fprintf('Looper: Not in a sweep\n');
+                    %fprintf('Looper: Not in a sweep\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
-                    self.RPCServer_
                     self.RPCServer_.processMessageIfAvailable() ;
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end
@@ -651,8 +650,8 @@ classdef Looper < ws.Model
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            keyboard
-            self.mimic(wsModel) ;
+            %keyboard
+            self.mimicWavesurferModel_(wsModel) ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1378,27 +1377,52 @@ classdef Looper < ws.Model
 %         end  % function        
 %     end
     
-    methods
-        function mimic(self, other)
-            % Cause self to resemble other.
+%     methods
+%         function mimic(self, other)
+%             % Cause self to resemble other.
+%             
+%             % Get the list of property names for this file type
+%             propertyNames = self.listPropertiesForPersistence();
+%             
+%             % Set each property to the corresponding one
+%             for i = 1:length(propertyNames) ,
+%                 thisPropertyName=propertyNames{i};
+%                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+%                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+%                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+%                 else
+%                     if isprop(other,thisPropertyName) ,
+%                         source = other.getPropertyValue_(thisPropertyName) ;
+%                         self.setPropertyValue_(thisPropertyName, source) ;
+%                     end
+%                 end
+%             end
+%         end  % function
+%     end  % public methods block
+
+    methods (Access=protected) 
+        function mimicWavesurferModel_(self, wsModel)
+            % Cause self to resemble other, for the purposes of running an
+            % experiment with the settings defined in wsModel.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('restorable');
+            propertyNames = self.listPropertiesForPersistence();
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserFunctions_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(wsModel.getPropertyValue_(thisPropertyName)) ;
+                elseif any(strcmp(thisPropertyName,{'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
+                    % do nothing                   
                 else
-                    if isprop(other,thisPropertyName) ,
-                        source = other.getPropertyValue_(thisPropertyName) ;
+                    if isprop(wsModel,thisPropertyName) ,
+                        source = wsModel.getPropertyValue_(thisPropertyName) ;
                         self.setPropertyValue_(thisPropertyName, source) ;
                     end
                 end
             end
         end  % function
     end  % public methods block
-
 end  % classdef

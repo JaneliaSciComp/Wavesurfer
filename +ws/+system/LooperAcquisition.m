@@ -1,13 +1,17 @@
 classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     
-    properties (Transient=true)
-        IsArmedOrAcquiring = false  
+    properties (Dependent=true)
+        IsArmedOrAcquiring
             % This goes true during self.willPerformSweep() and goes false
             % after a single finite acquisition has completed.  Then the
             % cycle may repeat, depending...
     end
     
     properties (Access = protected, Transient=true)
+        IsArmedOrAcquiring_ = false
+            % This goes true during self.willPerformSweep() and goes false
+            % after a single finite acquisition has completed.  Then the
+            % cycle may repeat, depending...
         AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
         DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
     end    
@@ -23,6 +27,10 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.DigitalInputTask_=[];
         end
         
+        function output = get.IsArmedOrAcquiring(self)
+            output = self.IsArmedOrAcquiring_ ;
+        end
+        
         function setCoreSettingsToMatchPackagedOnes(self,settings)
             for i=1:length(self.CoreFieldNames_)
                 fieldName = self.CoreFieldNames_{i} ;
@@ -35,6 +43,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % of whether there are any channels of each type.  Within InputTask,
             % it will create a DABS Task only if the number of channels is
             % greater than zero.  But InputTask hides that detail from us.
+            %keyboard
             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
                 isAnalogChannelActive = self.IsAnalogChannelActive ;
@@ -148,7 +157,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
 
         function willPerformSweep(self)
             %fprintf('Acquisition::willPerformSweep()\n');
-            %self.IsArmedOrAcquiring_ = true;
+            self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
@@ -170,7 +179,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 % didAbortSweep() cannot throw an error, so we ignore any
                 % errors that arise here.
             end
-            self.IsArmedOrAcquiring = false;
+            self.IsArmedOrAcquiring_ = false;
         end  % function
                         
         function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
@@ -242,11 +251,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     self.DigitalInputTask_ = [] ;
                 end                    
             end
-            self.IsArmedOrAcquiring = false;            
+            self.IsArmedOrAcquiring_ = false;            
         end  % function
         
         function acquisitionSweepComplete_(self)
-            self.IsArmedOrAcquiring = false;
+            self.IsArmedOrAcquiring_ = false;
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
                 parent.acquisitionSweepComplete();
@@ -277,11 +286,13 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 
     methods
         function poll(self, timeSinceSweepStart, fromRunStartTicId)
+            fprintf('LooperAcquisition::poll()\n') ;
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
+                fprintf('IsArmedOrAcquiring\n') ;
                 % Check for task doneness
                 areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
                 %if areTasksDone ,
@@ -294,8 +305,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 %end
                 [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
                     self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
-                %nScans = size(rawAnalogData,1) ;
-                %fprintf('Read acq data. nScans: %d\n',nScans)
+                nScans = size(rawAnalogData,1) ;
+                fprintf('Read acq data. nScans: %d\n',nScans)
 
                 % Notify the whole system that samples were acquired
                 self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
@@ -309,6 +320,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     self.DigitalInputTask_.stop();
                     self.acquisitionSweepComplete_();
                 end
+            else
+                fprintf('~IsArmedOrAcquiring\n') ;
             end
             
             % Prepare for next time            

@@ -81,7 +81,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Save the protocol to disk
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=em.encodeForFileType('restorable');  %#ok<NASGU>
+            protocolSettings=em.encodeForPersistence();  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
 
@@ -125,7 +125,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Get the thing we'll save to disk
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');
-            protocolSettings=em.encodeForFileType('restorable'); %#ok<NASGU>
+            protocolSettings=em.encodeForPersistence(); %#ok<NASGU>
 
             % Check that the stimulusLibrary in protocolSettings is self-consistent
             %self.verifyTrue(protocolSettings.encoding.Stimulation_.encoding.StimulusLibrary_.isSelfConsistent());
@@ -161,7 +161,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Save the protocol to disk
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=wsModel.encodeForFileType('restorable');  %#ok<NASGU>
+            protocolSettings=wsModel.encodeForPersistence();  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
 
@@ -218,7 +218,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Save the protocol to disk
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=em.encodeForFileType('restorable');  %#ok<NASGU>
+            protocolSettings=em.encodeForPersistence();  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
 
@@ -273,7 +273,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % Save the protocol to disk, very similar to how
             % WavesurferController does it
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=wsModel.encodeForFileType('restorable');  %#ok<NASGU>
+            protocolSettings=wsModel.encodeForPersistence();  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
             
@@ -348,7 +348,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % Save the protocol to disk, very similar to how
             % WavesurferController does it
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=em.encodeForFileType('restorable');  %#ok<NASGU>
+            protocolSettings=em.encodeForPersistence();  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
             

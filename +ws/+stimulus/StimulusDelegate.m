@@ -28,16 +28,12 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
     end
     
     methods         
-        function propNames = listPropertiesForFileType(self, fileType)
-            propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
-            if isequal(fileType,'header') ,
-                % delete some property names that are defined in subclasses
-                % that don't need to go into the header file
-                propNames=setdiff(propNamesRaw, ...
-                                  {'AdditionalParameterNames', 'AdditionalParameterDisplayNames', 'AdditionalParameterDisplayUnitses'}) ;
-            else
-                propNames=propNamesRaw;
-            end
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            % delete some property names that are defined in subclasses
+            % that don't need to go into the header file
+            propNames=setdiff(propNamesRaw, ...
+                              {'AdditionalParameterNames', 'AdditionalParameterDisplayNames', 'AdditionalParameterDisplayUnitses'}) ;
         end  % function 
     end  % public methods block    
     

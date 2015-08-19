@@ -315,7 +315,7 @@ classdef Logging < ws.system.Subsystem
 
             % Extract all the "headerable" info in the WS model into a
             % structure
-            headerStruct = wavesurferModel.encodeForFileType('header');
+            headerStruct = wavesurferModel.encodeForHeader();
             
             % Put the header into into the log file header
             %numericPrecision=4;

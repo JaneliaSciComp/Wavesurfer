@@ -93,11 +93,17 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
     end  % methods block    
     
     methods         
-        function propNames = listPropertiesForFileType(self, fileType)
-            propNamesRaw = listPropertiesForFileType@ws.mixin.Coding(self,fileType) ;            
+        function propNames = listPropertiesForPersistence(self)
+            propNamesRaw = listPropertiesForPersistence@ws.mixin.Coding(self) ;            
             propNames=setdiff(propNamesRaw, ...
-                              {'Parent', 'Parent_'}) ;
+                              {'Parent_'}) ;
         end  % function 
+
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.mixin.Coding(self) ;            
+            propNames=setdiff(propNamesRaw, ...
+                              {'Parent'}) ;
+        end  % function         
     end  % public methods block    
     
     methods (Access = protected)

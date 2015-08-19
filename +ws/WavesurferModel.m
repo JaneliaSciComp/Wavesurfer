@@ -726,7 +726,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Tell the Looper to prepare for the run
-            wavesurferModelSettings=self.encodeForFileType('restorable');
+            wavesurferModelSettings=self.encodeForPersistence();
             err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
             if ~isempty(err) ,
                 self.cleanUpAfterAbortedRun_('problem');
@@ -819,6 +819,7 @@ classdef WavesurferModel < ws.Model
                 %self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
 
                 % Pulse the master trigger to start the sweep!
+                fprintf('About to pulse the master trigger!\n');
                 self.Triggering.pulseMasterTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
@@ -1108,22 +1109,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
     end % protected methods block
-    
-%     methods         
-%         function propNames = listPropertiesForFileType(self, fileType)
-%             propNamesRaw = listPropertiesForFileType@ws.Model(self,fileType) ;            
-%             if isequal(fileType,'restorable') ,
-%                 % The .cfg file holds most things, but not the
-%                 % FastProtocols (those get saved to the .usr file), and we
-%                 % don't save the Logging settings to any file.
-%                 propNames=setdiff(propNamesRaw, ...
-%                                   {'Logging_'}) ;
-%             else
-%                 propNames=propNamesRaw;
-%             end
-%         end  % function 
-%     end  % public methods block    
-    
+        
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
 %             defineDefaultPropertyAttributes@ws.most.app.Model(self);
@@ -1579,8 +1565,8 @@ classdef WavesurferModel < ws.Model
             saveStruct = load('-mat',absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
-            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
-            self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
+            wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
+            self.releaseHardwareResources() ;  % Have to do this before decoding properties, or bad things will happen
             %self.decodeProperties(wavesurferModelSettings);
             newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicProtocol_(newModel) ;
@@ -1599,7 +1585,7 @@ classdef WavesurferModel < ws.Model
         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
-            wavesurferModelSettings=self.encodeForFileType('restorable');
+            wavesurferModelSettings=self.encodeForPersistence();
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -1668,7 +1654,7 @@ classdef WavesurferModel < ws.Model
             self.changeReadiness(-1);
 
             %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
-            userSettings=self.encodeForFileType('restorable');
+            userSettings=self.encodeForPersistence();
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -1787,7 +1773,7 @@ classdef WavesurferModel < ws.Model
             % Cause self to resemble other.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('restorable');
+            propertyNames = self.listPropertiesForPersistence();
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -1810,7 +1796,7 @@ classdef WavesurferModel < ws.Model
             % Cause self to resemble other, but only w.r.t. the protocol.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForFileType('restorable');
+            propertyNames = self.listPropertiesForPersistence();
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
