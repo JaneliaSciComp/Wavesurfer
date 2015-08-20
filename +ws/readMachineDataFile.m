@@ -86,7 +86,7 @@ function verifyProperty(structure, index, fieldName, validAttributes)
     end
     try
         if ~isempty(validAttributes)
-            ws.most.mimics.validateAttributes(value, validAttributes{:});
+            ws.utility.validateAttributes(value, validAttributes{:});
         end
     catch me
         error('wavesurfer:InvalidMDFVariableValue', 'Invalid value for machine data file variable ''%s''.', fieldName);

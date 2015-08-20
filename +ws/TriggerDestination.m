@@ -1,9 +1,13 @@
-classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasPFIIDAndEdge
+classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
     % A class that represents a trigger destination, i.e. a digital input
     % to the daq board that could potentially be used to trigger
     % acquisition, etc.  A trigger destination has a name, a device ID, 
     % a PFI identifier (the zero-based PFI index),
     % and an edge type (rising or falling).  ALT, 2014-05-24
+    
+    properties (Constant=true)
+        IsInternal = false
+    end
     
     properties (Dependent=true)
         Name
@@ -25,11 +29,12 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
     end
     
     methods
-        function self=TriggerDestination()
+        function self=TriggerDestination(parent)
+            self@ws.Model(parent) ;
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
-            self.Edge_ = ws.ni.TriggerEdge.Rising;            
+            self.Edge_ = 'DAQmx_Val_Rising';            
         end
         
         function value=get.Name(self)
@@ -49,63 +54,89 @@ classdef TriggerDestination < ws.Model & matlab.mixin.Heterogeneous & ws.ni.HasP
         end
         
         function set.Name(self, value)
-            if isnan(value), return, end            
-            self.validatePropArg('Name', value);
-            self.Name_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if ws.utility.isString(value) && ~isempty(value) ,
+                    self.Name_ = value ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'Name must be a nonempty string');                  
+                end                    
+            end
+            self.broadcast('Update');            
         end
         
         function set.DeviceName(self, value)
-            if isnan(value), return, end
-            self.validatePropArg('DeviceName', value);
-            self.DeviceName_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if ws.utility.isString(value) ,
+                    self.DeviceName_ = value ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DeviceName must be a string');                  
+                end                    
+            end
+            self.broadcast('Update');            
         end
         
         function set.PFIID(self, value)
-            if isnan(value), return, end            
-            self.validatePropArg('PFIID', value);
-            self.PFIID_ = value;
+            if ws.utility.isASettableValue(value) ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                    value = double(value) ;
+                    self.PFIID_ = value ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'PFIID must be a (scalar) nonnegative integer');                  
+                end                    
+            end
+            self.broadcast('Update');            
         end
         
         function set.Edge(self, value)
-            if isnan(value), return, end            
-            self.validatePropArg('Edge', value);
-            self.Edge_ = value;
-        end        
-    end
+            if ws.utility.isASettableValue(value) ,
+                if ws.isAnEdgeType(value) ,
+                    self.Edge_ = value;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                end                                        
+            end
+            self.broadcast('Update');            
+        end  % function 
+    end  % methods
     
     methods (Access=protected)        
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.TriggerSource.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-
-            s.Name=struct('Classes', 'char', ...
-                          'Attributes', {{'vector'}}, ...
-                          'AllowEmpty', false);
-            s.DeviceName=struct('Classes', 'char', ...
-                            'Attributes', {{'vector'}}, ...
-                            'AllowEmpty', true);
-            s.PFIID=struct('Classes', 'numeric', ...
-                           'Attributes', {{'scalar', 'integer'}}, ...
-                           'AllowEmpty', false);
-            s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
-                          'Attributes', 'scalar', ...
-                          'AllowEmpty', false);
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+% 
+%             s.Name=struct('Classes', 'char', ...
+%                           'Attributes', {{'vector'}}, ...
+%                           'AllowEmpty', false);
+%             s.DeviceName=struct('Classes', 'char', ...
+%                             'Attributes', {{'vector'}}, ...
+%                             'AllowEmpty', true);
+%             s.PFIID=struct('Classes', 'numeric', ...
+%                            'Attributes', {{'scalar', 'integer'}}, ...
+%                            'AllowEmpty', false);
+%         end  % function
+%     end  % class methods block
     
-end
+end  % classdef

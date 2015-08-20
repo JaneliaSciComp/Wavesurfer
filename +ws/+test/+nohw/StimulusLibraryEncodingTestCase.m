@@ -3,12 +3,13 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         function testGenerationOfStimulusLibraryParts(self)
             stimulusLibrary=self.createPopulatedStimulusLibrary();            
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts(); %#ok<ASGLU>
-            maps=stimulusLibrary.Maps;
-            mapIsLiveAndSelfConsistent= cellfun(@isLiveAndSelfConsistent,maps);
-            self.verifyTrue(all(mapIsLiveAndSelfConsistent));
-            sequences=stimulusLibrary.Sequences;            
-            sequenceIsLiveAndSelfConsistent= cellfun(@isLiveAndSelfConsistent,sequences);            
-            self.verifyTrue(all(sequenceIsLiveAndSelfConsistent));
+            self.verifyTrue(stimulusLibrary.isSelfConsistent());
+%             maps=stimulusLibrary.Maps;
+%             mapIsLiveAndSelfConsistent= cellfun(@isLiveAndSelfConsistent,maps);
+%             self.verifyTrue(all(mapIsLiveAndSelfConsistent));
+%             sequences=stimulusLibrary.Sequences;            
+%             sequenceIsLiveAndSelfConsistent= cellfun(@isLiveAndSelfConsistent,sequences);            
+%             self.verifyTrue(all(sequenceIsLiveAndSelfConsistent));
         end
         
         function testSavingOfTestPulseStimulus(self)
@@ -17,17 +18,20 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimuli=stimulusLibrary.Stimuli;
             stimulus=stimuli{2};  % a test pulse
 
+            % make an orpan copy
+            orphanStimulus = stimulus.copyGivenParent([]);
+            
             % save to disk
             fileName=[tempname() '.mat'];
-            save(fileName,'stimulus');
+            save(fileName,'orphanStimulus');
             
             % load back from disk
             s=load(fileName);
-            stimulusCheck=s.stimulus;
+            stimulusCheck=s.orphanStimulus;
             
             % check
-            self.verifyEqual(stimulus,stimulusCheck);  % test value equality
-            self.verifyFalse(stimulus==stimulusCheck);  % test (lack of) identity
+            self.verifyEqual(orphanStimulus,stimulusCheck);  % test value equality
+            self.verifyFalse(orphanStimulus==stimulusCheck);  % test (lack of) identity
         end  % function
         
         function testSavingOfChirpStimulus(self)
@@ -35,7 +39,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             %stimuli=self.makeExampleStimulusParts();
-            stimulus=stimulusLibrary.Stimuli{1};  % this is a chirp
+            stimulus=stimulusLibrary.Stimuli{1}.copyGivenParent([]);  % this is a chirp
 
             % save to disk
             fileName=[tempname() '.mat'];
@@ -51,17 +55,17 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         end  % function
         
         function testCopyingOfStimuli(self)
-            import ws.most.idioms.cellisequal
-            import ws.most.idioms.cellisequaln
-            import ws.most.idioms.cellne
+            import ws.utility.cellisequal
+            import ws.utility.cellisequaln
+            import ws.utility.cellne
             
             % create some stimuli, etc.
             %stimuli=self.makeExampleStimulusParts();
             stimulusLibrary=self.createPopulatedStimulusLibrary();
-            stimuli=stimulusLibrary.Stimuli;  % this is a chirp
+            stimuli=stimulusLibrary.Stimuli; 
 
             % copy
-            stimuliCopy=cellfun(@copy,stimuli,'UniformOutput',false);
+            stimuliCopy=cellfun(@(stimulus)(stimulus.copyGivenParent([])),stimuli,'UniformOutput',false);
             
             % check value quality
             isEqualInValue=cellisequal(stimuli,stimuliCopy);
@@ -72,7 +76,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             self.verifyTrue(all(isDistinct));
             
             % another copy, to make sure no aliasing is going on
-            stimuliCopyCopyModded=cellfun(@copy,stimuliCopy,'UniformOutput',false);
+            stimuliCopyCopyModded=cellfun(@(stimulus)(stimulus.copyGivenParent([])),stimuliCopy,'UniformOutput',false);
             stimuliCopyCopyModded{1}.Delegate.InitialFrequency='45.44323';
             
             % 2nd copy should be different from original and 1st copy
@@ -123,7 +127,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             mapCheck=s.map;
             %mapCheck.revive(stimulusLibrary.Stimuli);
             
-            self.verifyTrue(mapCheck.isLiveAndSelfConsistent());  % test soundness of the restored one
+            %self.verifyTrue(mapCheck.isLiveAndSelfConsistent());  % test soundness of the restored one
             self.verifyEqual(map,mapCheck);  % test value equality
             self.verifyTrue(all(map~=mapCheck));  % test (lack of) identity
         end  % function
@@ -141,10 +145,10 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %cellfun(@(map)(map.revive(stimulusLibrary.Stimuli)),mapsCheck);
             %mapsCheck.revive(stimuli);
             
-            isMapLiveAndConsistent=cellfun(@isLiveAndSelfConsistent,mapsCheck);
-            self.verifyTrue(all(isMapLiveAndConsistent));  % test soundness of the restored ones
-            self.verifyTrue(all(ws.most.idioms.cellisequal(maps,mapsCheck)));  % test value equality
-            self.verifyTrue(all(ws.most.idioms.cellne(maps,mapsCheck)));  % test (lack of) identity
+            %isMapLiveAndConsistent=cellfun(@isLiveAndSelfConsistent,mapsCheck);
+            %self.verifyTrue(all(isMapLiveAndConsistent));  % test soundness of the restored ones
+            self.verifyTrue(all(ws.utility.cellisequal(maps,mapsCheck)));  % test value equality
+            self.verifyTrue(all(ws.utility.cellne(maps,mapsCheck)));  % test (lack of) identity
         end  % function
         
         function testSavingOfStimulusSequences(self)
@@ -159,9 +163,9 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             sequencesCheck=s.sequences;
             %cellfun(@(seq)(seq.revive(stimulusLibrary.Maps)),sequencesCheck);
             
-            self.verifyTrue(all(cellfun(@isLiveAndSelfConsistent,sequencesCheck)));  % test soundness of the restored one
-            self.verifyTrue(all(ws.most.idioms.cellisequal(sequences,sequencesCheck)));  % test value equality
-            self.verifyTrue(all(ws.most.idioms.cellne(sequences,sequencesCheck)));  % test (lack of) identity
+            %self.verifyTrue(all(cellfun(@isLiveAndSelfConsistent,sequencesCheck)));  % test soundness of the restored one
+            self.verifyTrue(all(ws.utility.cellisequal(sequences,sequencesCheck)));  % test value equality
+            self.verifyTrue(all(ws.utility.cellne(sequences,sequencesCheck)));  % test (lack of) identity
         end  % function
         
         function testSavingOfStimulusLibrary(self)
@@ -173,7 +177,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);            
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
-            self.verifyTrue(stimulusLibrary.isLiveAndSelfConsistent());
+            self.verifyTrue(stimulusLibrary.isSelfConsistent());
             
             fileName=[tempname() '.mat'];
             save(fileName,'stimulusLibrary');
@@ -181,7 +185,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             stimulusLibraryCheck=s.stimulusLibrary;
             
-            self.verifyTrue(stimulusLibraryCheck.isLiveAndSelfConsistent());  % test soundness of the restored one            
+            self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
             self.verifyEqual(stimulusLibrary.Stimuli,stimulusLibraryCheck.Stimuli);  % test value equality
             self.verifyEqual(stimulusLibrary.Maps,stimulusLibraryCheck.Maps);  % test value equality
             self.verifyEqual(stimulusLibrary.Sequences,stimulusLibraryCheck.Sequences);  % test value equality
@@ -199,10 +203,10 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %stimulusLibrary.add(sequences);
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
             
-            stimulusLibraryCheck=ws.stimulus.StimulusLibrary();
+            stimulusLibraryCheck=ws.stimulus.StimulusLibrary([]);
             stimulusLibraryCheck.mimic(stimulusLibrary);
             
-            self.verifyTrue(stimulusLibraryCheck.isLiveAndSelfConsistent());  % test soundness of the restored one            
+            self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
             %self.verifyEqual(stimulusLibrary.Stimuli,stimulusLibraryCheck.Stimuli);  % test value equality
             %self.verifyEqual(stimulusLibrary.Maps,stimulusLibraryCheck.Maps);  % test value equality
             %self.verifyEqual(stimulusLibrary.Cycles,stimulusLibraryCheck.Cycles);  % test value equality
@@ -223,20 +227,20 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
             
             % copy
-            stimulusLibraryCopy=stimulusLibrary.clone();
+            stimulusLibraryCopy=stimulusLibrary.copyGivenParent([]);
             
             % check
-            self.verifyTrue(stimulusLibraryCopy.isLiveAndSelfConsistent());
+            self.verifyTrue(stimulusLibraryCopy.isSelfConsistent());
             self.verifyEqual(stimulusLibrary,stimulusLibraryCopy);  % test value equality
             self.verifyTrue(all(stimulusLibrary~=stimulusLibraryCopy));  % test (lack of) identity
             
             % another copy, to make sure no aliasing is going on
-            stimulusLibraryCopyCopy=stimulusLibraryCopy.clone();
+            stimulusLibraryCopyCopy=stimulusLibraryCopy.copyGivenParent([]);
             stimulus1=stimulusLibraryCopyCopy.Stimuli{1};  % should be an alias
             stimulus1.Delegate.InitialFrequency='45.44323';  % should modify stimulusLibraryCopyCopy
             
             % 2nd copy should be different from original and 1st copy
-            self.verifyTrue(stimulusLibraryCopyCopy.isLiveAndSelfConsistent());
+            self.verifyTrue(stimulusLibraryCopyCopy.isSelfConsistent());
             self.verifyEqual(stimulusLibrary,stimulusLibraryCopy);  % test value equality
             self.verifyNotEqual(stimulusLibrary,stimulusLibraryCopyCopy);  % test value equality
             self.verifyNotEqual(stimulusLibraryCopy,stimulusLibraryCopyCopy);  % test value equality

@@ -2,7 +2,7 @@ classdef Ephys < ws.system.Subsystem
     %Ephys  Wavesurfer subsystem responsible for most Ephys-related behaviors.
     %
     %    The Ephys subsystem manages electrode configuration and settings
-    %    communication for Wavesurfer electrophysiology experiments.
+    %    communication for Wavesurfer electrophysiology runs.
     
     %%
     properties (Access = protected)
@@ -25,18 +25,19 @@ classdef Ephys < ws.system.Subsystem
     methods
         %%
         function self = Ephys(parent)
-            self.CanEnable=true;
-            self.Enabled=true;            
-            self.Parent=parent;
-            self.ElectrodeManager_=ws.ElectrodeManager('Parent',self);
-            self.TestPulser_=ws.TestPulser('Parent',self);
+            self@ws.system.Subsystem(parent);
+            self.IsEnabled=true;            
+            self.ElectrodeManager_=ws.ElectrodeManager(self);
+            self.TestPulser_=ws.TestPulser(self);
         end
         
         %%
         function delete(self)
-            self.Parent=[];  % eliminate reference to host WavesurferModel object
-            delete(self.TestPulser_);  % do i need this?
-            delete(self.ElectrodeManager_);  % do i need this?
+            %self.Parent=[];  % eliminate reference to host WavesurferModel object
+            %delete(self.TestPulser_);  % do i need this?  No.
+            %delete(self.ElectrodeManager_);  % do i need this?  No.
+            self.TestPulser_ = [] ;
+            self.ElectrodeManager_ = [] ;
         end
         
         %%
@@ -157,18 +158,18 @@ classdef Ephys < ws.system.Subsystem
         end
                 
         %%
-        function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
+        function willPerformRun(self)
             % Update all the gains and modes that are associated with smart
             % electrodes
             self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();
         end
         
         %%
-        function didPerformExperiment(self, wavesurferModel) %#ok<INUSD>
+        function didCompleteRun(self) %#ok<MANU>
         end
         
         %%
-        function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
+        function didAbortRun(self) %#ok<MANU>
         end
         
         function didSetAcquisitionSampleRate(self,newValue)
@@ -179,6 +180,15 @@ classdef Ephys < ws.system.Subsystem
         end        
     end  % methods block
     
+    methods         
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            % delete some property names that are defined in subclasses
+            % that don't need to go into the header file
+            propNames=setdiff(propNamesRaw, ...
+                              {'TestPulser'}) ;
+        end  % function 
+    end  % public methods block    
     
     %%
     methods (Access = protected)
@@ -187,23 +197,19 @@ classdef Ephys < ws.system.Subsystem
 %             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
 %         end
         
-        %%
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.system.Subsystem(self);            
-            
-            self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
-        end
+%         %%
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);                        
+%             self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
+%         end
         
         %% Allows access to protected and protected variables from ws.mixin.Coding.
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
         %% Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
-            if nargin < 3
-                value = [];
-            end
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end
     end  % protected methods block
@@ -217,22 +223,47 @@ classdef Ephys < ws.system.Subsystem
 %             % to return the protocol properties stored in the model to a
 %             % blank slate, so that we're sure no aspects of the old
 %             % protocol get carried over when loading a new .cfg file.            
-% %             self.Enabled=false;  % this doesn't seem right...
+% %             self.IsEnabled=false;  % this doesn't seem right...
 % %             self.TestPulser_=ws.TestPulser('Parent',self);
 % %             self.ElectrodeManager_.resetProtocol();
 %         end  % function
     end % methods
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Acquisition.propertyAttributes();
-        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct() ;
+%         mdlHeaderExcludeProps = {};
+%     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = ws.system.Subsystem.propertyAttributes();
+%         end  % function
+%     end  % class methods block
+    
+    methods
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            % all the "configurable" props in this class hold scalar
+            % ws.Model objects, so this is simple
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'ElectrodeManager_', 'TestPulser_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = self.(thisPropertyName) ;
+                    target.mimic(source);  % all the props in this class hold scalar ws.Model objects
+                else
+                    if isprop(other,thisPropertyName)
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end                    
+                end
+            end
         end  % function
-    end  % class methods block
-    
+    end  % public methods block
+
 end  % classdef

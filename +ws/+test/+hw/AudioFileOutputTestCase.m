@@ -25,14 +25,14 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=false;
 
-            nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
-            wsModel.TrialDuration = 4 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerRun=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
@@ -55,19 +55,19 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
         function testWithNonexistantFile(self)
@@ -77,14 +77,14 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=false;
 
-            nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
-            wsModel.TrialDuration = 4 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerRun=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
@@ -107,19 +107,19 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();  % this should *not* throw an error
+            wsModel.play();  % this should *not* throw an error
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
         function testWithTemplateFileName(self)
@@ -129,14 +129,14 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=false;
 
-            nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
-            wsModel.TrialDuration = 4 ;  % s
+            nSweeps=1;
+            wsModel.NSweepsPerRun=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
 
             % Make a pulse stimulus, add to the stimulus library
             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
@@ -159,19 +159,19 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.TrialDuration;  % s
+            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
     end  % test methods

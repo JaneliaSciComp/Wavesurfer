@@ -1,13 +1,14 @@
-classdef UserClass < handle
+classdef UserClass < ws.mixin.Coding
 
     methods        
-        trialWillStart(self,wsModel,eventName)        
-        trialDidComplete(self,wsModel,eventName)      
-        trialDidAbort(self,wsModel,eventName)
-        experimentWillStart(self,wsModel,eventName)
-        experimentDidComplete(self,wsModel,eventName)
-        experimentDidAbort(self,wsModel,eventName)
-        dataIsAvailable(self,wsModel,eventName)
+        sweepWillStart(self,wsModel,eventName)        
+        sweepDidComplete(self,wsModel,eventName)      
+        sweepDidAbort(self,wsModel,eventName)
+        runWillStart(self,wsModel,eventName)
+        runDidComplete(self,wsModel,eventName)
+        runDidAbort(self,wsModel,eventName)
+        dataIsAvailableInFrontend(self,wsModel,eventName)
+        dataIsAvailableInLooper(self,wsModel,eventName)
     end
     
 end

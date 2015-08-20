@@ -8,9 +8,7 @@ present, you must have a Matlab license to use it.
 PLEASE NOTE THAT WAVESURFER IS CURRENTLY PRE-RELEASE SOFTWARE.  THERE
 WILL ALMOST CERTAINLY BE BREAKING CHANGES TO FILE FORMATS, ETC. BEFORE
 VERSION 1.0 IS RELEASED, AND WE CAN MAKE NO PROMISES ABOUT BACKWARD
-COMPATIBILITY.  UNLESS YOU WORK AT HHMI JANELIA (WHERE WE CAN EASILY
-HELP YOU), WE DO NOT ADVISE YOU TO USE WAVESURFER FOR DOING ACTUAL
-SCIENCE.
+COMPATIBILITY.
 
 
 System Requirements
@@ -20,7 +18,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver 9.8.x (more recent ones will not work)
+National Instruments DAQmx driver, version 9.8.x or 14.5.x
 
 Matlab R2013b or later (64-bit)
 
@@ -68,7 +66,8 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in Wavesurfer is copyright 2015 by the Howard Hughes Medical Institute.
+in Wavesurfer is copyright 2013-2015 by the Howard Hughes Medical 
+Institute.
 
 
 License
@@ -207,8 +206,28 @@ Version History
 
 0.801: (June 4, 2015) Made electrodes window narrower, so that it fits
        on a 1280x1024 screen.  Added zoom in/out, scroll up/down
-       buttons to scope windows, got rid of green-on-black color scheme.  
-       Test pulser now shows resistance in units tailored to the scale 
-       of the resistance value.  Protocol and user settings file formats 
-       were not changed from release 0.8.
+       buttons to scope windows, got rid of green-on-black color
+       scheme.  Test pulser now shows resistance in units tailored to
+       the scale of the resistance value.  Protocol and user settings
+       file formats were not changed from release 0.8.
+
+0.802: (June 12, 2015) Fixed error on MDF load under R2013b.  Added
+       ability to turn on/off scope grids.  Protocol and user settings
+       files from release 0.8+ will still work with this release.
+
+0.803: (June 29, 2015) Fixed bug in ws.loadDataFile() that made it
+       error if any channels were not active.  Protocol and user
+       settings files from release 0.8+ will still work with this
+       release.
+
+0.804: (July 3, 2015) Fixed bug that caused warnings on .cfg load if
+       the acquisition sample rate had been changed.  Restored
+       green-on-black theme for scope windows as an option.  Scope
+       window buttons are now hidden if the window is not tall enough.
+       Added option to always hide scope window buttons.  Protocol and
+       user settings files from release 0.8+ will still work with this
+       release.
+
+0.805: (July 23, 2015) Fixed bug that made it impossible to record if 
+       a user class was in use.
 

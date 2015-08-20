@@ -1,9 +1,17 @@
-classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
+classdef UserFunctionsController < ws.Controller     %& ws.EventSubscriber
     
     methods
         function self = UserFunctionsController(wavesurferController,wavesurferModel)
+%             userFunctionsModel=wavesurferModel.UserFunctions;
+%             self = self@ws.Controller(wavesurferController, userFunctionsModel, {'userFunctionsFigureWrapper'});
+            
+            % Call the superclass constructor
             userFunctionsModel=wavesurferModel.UserFunctions;
-            self = self@ws.Controller(wavesurferController, userFunctionsModel, {'userFunctionsFigureWrapper'});
+            self = self@ws.Controller(wavesurferController,userFunctionsModel);
+
+            % Create the figure, store a pointer to it
+            fig = ws.UserFunctionsFigure(userFunctionsModel,self) ;
+            self.Figure_ = fig ;                        
         end  % constructor
     end  % methods block
     
@@ -41,7 +49,7 @@ classdef UserFunctionsController < ws.Controller & ws.EventSubscriber
             if ~isempty(model) && isvalid(model) ,            
                 wavesurferModel=model.Parent;
                 if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                    isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                    isIdle=isequal(wavesurferModel.State,'idle');
                     if ~isIdle ,
                         shouldStayPut=true;
                         return

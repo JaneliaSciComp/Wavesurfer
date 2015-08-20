@@ -26,28 +26,28 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Acquisition.IsAnalogChannelActive = [true true false true true true true false];
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=false;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=false;
 
-            nTrials=1;
-            wsModel.ExperimentTrialCount=nTrials;
+            nSweeps=1;
+            wsModel.NSweepsPerRun=nSweeps;
 
             pause(0.1);
-            wsModel.start();
+            wsModel.play();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
 
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -60,13 +60,13 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %                                               isCommandLineOnly);
 % 
 %             wsModel.Acquisition.SampleRate=20000;  % Hz
-%             wsModel.Stimulation.Enabled=true;
+%             wsModel.Stimulation.IsEnabled=true;
 %             wsModel.Stimulation.SampleRate=20000;  % Hz
-%             wsModel.Display.Enabled=true;
-%             wsModel.Logging.Enabled=true;
+%             wsModel.Display.IsEnabled=true;
+%             wsModel.Logging.IsEnabled=true;
 % 
-%             nTrials=10;
-%             wsModel.ExperimentTrialCount=nTrials;
+%             nSweeps=10;
+%             wsModel.NSweepsPerRun=nSweeps;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -82,16 +82,16 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             wsModel.start();
 % 
 %             dtBetweenChecks=1;  % s
-%             maxTimeToWait=2.5*nTrials;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+%             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

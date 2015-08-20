@@ -47,7 +47,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
         end
         
         function testRemovalOfSelectedOutputable(self)
-            stimLib = ws.stimulus.StimulusLibrary();
+            stimLib = ws.stimulus.StimulusLibrary([]);
             outputChannelNames={'ao0' 'ao1'};
             stimLib.setToSimpleLibraryWithUnitPulse(outputChannelNames);
             stimLib.addNewSequence();  % the simple lib has no sequences in it

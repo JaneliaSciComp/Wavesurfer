@@ -38,16 +38,16 @@ classdef RasterVirtualReality < ws.UserClass
         function self = RasterVirtualReality(wsModel) %#ok<INUSD>
         end  % function
         
-        function trialWillStart(self,wsModel,eventName) %#ok<INUSD>
+        function sweepWillStart(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function trialDidComplete(self,wsModel,eventName) %#ok<INUSD>
+        function sweepDidComplete(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function trialDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        function sweepDidAbort(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function experimentWillStart(self,wsModel,eventName) %#ok<INUSD>
+        function runWillStart(self,wsModel,eventName) %#ok<INUSD>
 
             eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayProcess &');            
             self.TcpReceive = ws.jtcp.jtcp('ACCEPT',2000,'TIMEOUT',60000);
@@ -90,13 +90,13 @@ classdef RasterVirtualReality < ws.UserClass
             end
         end  % function
         
-        function experimentDidComplete(self,wsModel,eventName) %#ok<INUSD>
+        function runDidComplete(self,wsModel,eventName) %#ok<INUSD>
             ws.jtcp.jtcp('WRITE',self.TcpSend,'quit');
             self.TcpSend = JTCP('CLOSE',self.TcpSend);
             self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
         end  % function
         
-        function experimentDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        function runDidAbort(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
         function dataIsAvailable(self,wsModel,eventName) %#ok<INUSD>

@@ -1,4 +1,4 @@
-classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef TestPulserFigure < ws.MCOSFigure
     properties  (SetAccess=protected)
         StartStopButton
         ElectrodePopupMenuLabelText
@@ -255,7 +255,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % Define some useful booleans
             isElectrodeManual=isempty(electrode)||isequal(electrode.Type,'Manual');
             isElectrodeManagerInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
-            isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isWavesurferIdle=isequal(wavesurferModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
             isWavesurferTestPulsing=self.Model.IsRunning;
             isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;
@@ -288,16 +288,16 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.VCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
                                              ~isempty(electrode) && ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
-                              'Value',~isempty(electrode)&&isequal(electrode.Mode,ws.ElectrodeMode.VC));
+                              'Value',~isempty(electrode)&&isequal(electrode.Mode,'vc'));
             set(self.CCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
                                              ~isempty(electrode)&& ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
                               'Value',~isempty(electrode)&& ...
-                                      (isequal(electrode.Mode,ws.ElectrodeMode.CC)||isequal(electrode.Mode,ws.ElectrodeMode.IEqualsZero)));
+                                      (isequal(electrode.Mode,'cc')||isequal(electrode.Mode,'i_equals_zero')));
                         
-            set(self.AmplitudeEdit,'String',self.Model.Amplitude.toString(), ...
+            set(self.AmplitudeEdit,'String',sprintf('%g',self.Model.Amplitude), ...
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
-            set(self.AmplitudeEditUnitsText,'String',string(self.Model.CommandUnits), ...
+            set(self.AmplitudeEditUnitsText,'String',self.Model.CommandUnits, ...
                                             'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
             set(self.DurationEdit,'String',self.Model.PulseDurationInMsAsString, ...
                                   'Enable',onIff(isWavesurferIdleOrTestPulsing));
@@ -315,7 +315,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
-            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',string(self.Model.MonitorUnits)));
+            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));
@@ -458,9 +458,9 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Axis labels
             self.XAxisLabel= ...
-                xlabel(self.TraceAxes,'Time (ms)');
+                xlabel(self.TraceAxes,'Time (ms)','FontSize',10);
             self.YAxisLabel= ...
-                ylabel(self.TraceAxes,'Monitor (pA)');
+                ylabel(self.TraceAxes,'Monitor (pA)','FontSize',10);
             
             % Trace line
             self.TraceLine= ...

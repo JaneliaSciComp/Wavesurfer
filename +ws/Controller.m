@@ -1,65 +1,68 @@
-classdef Controller < ws.most.Controller
+classdef Controller < handle
 
     properties (Dependent=true, SetAccess=immutable)
         Parent
-    end
-    
-    properties (Access=protected)
-        Parent_
-    end
-    
-    properties (SetAccess=immutable, Dependent=true)
         Model
         Figure  % the associated figure object (i.e. a handle handle, not a hande graphics handle)
     end
     
-    properties (Access = protected)
-        HideFigureOnClose = true  % By default do not destroy the window when closed, just hide
+    properties (Access=protected)
+        Parent_
+        Model_
+        Figure_
+        HideFigureOnClose_ = true  % By default do not destroy the window when closed, just hide
+%         IsSuiGeneris_ = true  
+%             % Whether or not multiple instances of the controller class can
+%             % exist at a time. If true, only one instance of the controller
+%             % class can exist at a time.  If false, multiple instances of
+%             % the controller class can exist at a time. Currently, Most of
+%             % our controllers are sui generis, so true is a good default.
+%             % (Making this abstract creates headaches.  Ditto making
+%             % SetAccess=immutable, or Constant=true, all of which would
+%             % arguably make sense.)  You should only set this in the
+%             % constructor, and not change it for the lifetime of the
+%             % object.  Also, it should have the same value for all
+%             % instances of the class.
     end
-    
-    properties (GetAccess=public, SetAccess=protected)
-        IsSuiGeneris=true  
-            % Whether or not multiple instances of the controller class can
-            % exist at a time. If true, only one instance of the controller
-            % class can exist at a time.  If false, multiple instances of
-            % the controller class can exist at a time. Currently, Most of
-            % our controllers are sui generis, so true is a good default.
-            % (Making this abstract creates headaches.  Ditto making
-            % SetAccess=immutable, or Constant=true, all of which would
-            % arguably make sense.)  You should only set this in the
-            % constructor, and not change it for the lifetime of the
-            % object.  Also, it should have the same value for all
-            % instances of the class.
-    end
-    
+        
     methods
-        function self = Controller(parent,model,varargin)        
-            self = self@ws.most.Controller(model,varargin{:});
-            self.Parent_=parent;
-            figureObject=self.Figure;
-            figureGH=figureObject.FigureGH;
-            set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));            
-            self.initialize();            
+        function self = Controller(parent,model)        
+            %self = self@ws.most.Controller(model,varargin{:});
+            self.Parent_ = parent ;
+            self.Model_ = model ;
+            %self.Figure_ = figureObject ;
+            %figureObject=self.Figure;
+            %figureGH=figureObject.FigureGH;
+            %set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));            
+            %self.initialize();            
         end  % function
+        
+%         function initialize(self)  %#ok<MANU>
+%         end
         
         function delete(self)
             %fprintf('ws.Controller::delete()\n');
-            self.deleteFigure_();
+            if ~isempty(self.Figure) && isvalid(self.Figure) ,
+                self.Figure.deleteFigureGH() ;
+            end
+            %self.deleteFigure_();
+            self.Model_ = [] ;
             self.Parent_=[];            
         end
         
         function output=get.Figure(self)
-            figureGH=self.hGUIsArray;  % should be a scalar
-            if isscalar(figureGH) && ishghandle(figureGH) ,
-                handles=guidata(figureGH);
-                if ~isempty(handles) && isfield(handles,'FigureObject') ,
-                    output=handles.FigureObject;
-                else
-                    output=[];                    
-                end
-            else
-                output=[];
-            end
+            output = self.Figure_ ;
+%             figureGH=self.hGUIsArray;  % should be a scalar
+%             if isscalar(figureGH) && ishghandle(figureGH) ,
+%                 handles=guidata(figureGH);
+%                 if ~isempty(handles) && isfield(handles,'FigureObject') ,
+%                     output=handles.FigureObject;
+%                 else
+%                     output=[];                    
+%                 end
+%             else
+%                 output=[];
+%             end
         end  % function        
 
         function output=get.Parent(self)
@@ -67,7 +70,8 @@ classdef Controller < ws.most.Controller
         end
         
         function output=get.Model(self)
-            output=self.hModel;
+%             output=self.hModel;
+            output = self.Model_ ;
         end
         
         function self=setAreUpdatesEnabledForFigure(self,newValue)
@@ -91,16 +95,27 @@ classdef Controller < ws.most.Controller
             % controller classes, like ws.ScopeController
             self.Figure.hide();
         end
-    end
-    
+        
+        function deleteFigureGH(self)   
+            self.tellFigureToDeleteFigureGH_();
+        end  % function       
+    end  % methods    
+            
     methods (Access = protected)
-        function deleteFigure_(self)
-            % Destroy the window rather than just hide it.
+%         function deleteFigure_(self)
+%             % Destroy the window rather than just hide it.
+%             figure=self.Figure;
+%             if ~isempty(figure) && isvalid(figure) ,
+%                 figure.delete();
+%             end
+%         end
+        
+        function tellFigureToDeleteFigureGH_(self)
             figure=self.Figure;
             if ~isempty(figure) && isvalid(figure) ,
-                figure.delete();
+                figure.deleteFigureGH();
             end
-        end
+        end            
     end  % methods
     
     methods (Access = protected, Sealed = true)
@@ -110,7 +125,7 @@ classdef Controller < ws.most.Controller
             % session.
            
             % Framework specific transformation.
-            thisWindowLayout = self.encode_window_layout();
+            thisWindowLayout = self.encodeWindowLayout_();
             
             layoutVarNameForClass = self.getLayoutVariableNameForClass();
             if isfield(layoutForAllWindows,layoutVarNameForClass)
@@ -143,7 +158,7 @@ classdef Controller < ws.most.Controller
     end    
     
 %     methods (Access = protected)
-%         function out = encode_window_layout(self) %#ok<MANU>
+%         function out = encodeWindowLayout_(self) %#ok<MANU>
 %             % Subclasses can encode size, position, visibility, and other features.  Current
 %             % implementations use a struct, but the variable returned from this function can
 %             % be anything, as long as it can be saved and loaded from a MAT file. Subclasses
@@ -155,7 +170,7 @@ classdef Controller < ws.most.Controller
 %     end
         
     methods (Access = protected)
-        function layoutOfWindowsInClassButOnlyForThisWindow = encode_window_layout(self)
+        function layoutOfWindowsInClassButOnlyForThisWindow = encodeWindowLayout_(self)
             window = self.Figure;
             layoutOfWindowsInClassButOnlyForThisWindow = struct();
             tag = get(window, 'Tag');
@@ -167,45 +182,46 @@ classdef Controller < ws.most.Controller
                 isVisible=visible;
             end
             layoutOfWindowsInClassButOnlyForThisWindow.(tag).Visible = isVisible;
-            if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
-                layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
-            else
-                layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
-            end
+%             if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
+%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
+%             else
+%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
+%             end
         end
     end
     
     methods (Access = protected)
-        function decode_window_layout(self, layoutOfWindowsInClass)
+        function decodeWindowLayout(self, layoutOfWindowsInClass)
             figureObject = self.Figure;
             %figureGH=figureObject.FigureGH;
             tag = get(figureObject, 'Tag');
             if isfield(layoutOfWindowsInClass, tag)
                 layoutOfThisWindow = layoutOfWindowsInClass.(tag);
 
-                if isfield(layoutOfThisWindow, 'Toggle')
-                    toggleState = layoutOfThisWindow.Toggle;
-                else
-                    % This branch is only to support legacy .usr files that
-                    % don't have up-to-date layout info.
-                    toggleState = [];
-                end
+%                 if isfield(layoutOfThisWindow, 'Toggle')
+%                     toggleState = layoutOfThisWindow.Toggle;
+%                 else
+%                     % This branch is only to support legacy .usr files that
+%                     % don't have up-to-date layout info.
+%                     toggleState = [];
+%                 end
 
-                if ~isempty(toggleState)
-                    assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(figureObject));
-
-                    ws.most.gui.AdvancedPanelToggler.loadToggleState(figureObject,toggleState);
-
-                    % gui is toggleable; for position, only set x- and
-                    % y-pos, not width and height, as those are controlled
-                    % by toggle-state.
-                    pos = get(figureObject,'Position');
-                    pos(1:2) = layoutOfThisWindow.Position(1:2);
-                    set(figureObject,'Position',pos);
-                else
+%                 if ~isempty(toggleState)
+%                 if false ,
+%                     assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(figureObject));
+% 
+%                     ws.most.gui.AdvancedPanelToggler.loadToggleState(figureObject,toggleState);
+% 
+%                     % gui is toggleable; for position, only set x- and
+%                     % y-pos, not width and height, as those are controlled
+%                     % by toggle-state.
+%                     pos = get(figureObject,'Position');
+%                     pos(1:2) = layoutOfThisWindow.Position(1:2);
+%                     set(figureObject,'Position',pos);
+%                 else
                     % Not a toggleable GUI.
-                    set(figureObject, 'Position', layoutOfThisWindow.Position);
-                end
+                set(figureObject, 'Position', layoutOfThisWindow.Position);
+%                 end
 
                 if isfield(layoutOfThisWindow,'Visible') ,
                     set(figureObject, 'Visible', layoutOfThisWindow.Visible);
@@ -234,7 +250,7 @@ classdef Controller < ws.most.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                if self.HideFigureOnClose ,
+                if self.HideFigureOnClose_ ,
                     % This is not simply a call to hide() because some frameworks will require
                     % modification to the evt object, other actions to actually cancel an
                     % in-progress close event.
@@ -243,7 +259,7 @@ classdef Controller < ws.most.Controller
                     % Actually release the window.  This may actual result in
                     % active deletion of the controller so care should be taken in adding any code
                     % to this method after this call.
-                    self.deleteFigure_();
+                    self.deleteFigureGH();
                 end
             end
         end
@@ -267,37 +283,37 @@ classdef Controller < ws.most.Controller
         % should generally me marked as (Sealed = true) in the framework specific
         % controllers such as the HG controller.
         
-        function create_windows(self, guiNames, guiNamesInvisible, model) %#ok<INUSD>
-            % Framework specific implementations should load a fig file or create a WPF
-            % window or whatever is appropriate.  A controller base class that does not use
-            % windows (e.g., one specifically for WPF user controls rather than windows -
-            % though it does not exist currently) may do nothing here.
-        end
+%         function createWindows(self, guiNames, guiNamesInvisible, model) %#ok<INUSD>
+%             % Framework specific implementations should load a fig file or create a WPF
+%             % window or whatever is appropriate.  A controller base class that does not use
+%             % windows (e.g., one specifically for WPF user controls rather than windows -
+%             % though it does not exist currently) may do nothing here.
+%         end
         
-        function out = get_main_window(self) %#ok<MANU>
-            % Framework specific subclasses can implement this method to return a "primary"
-            % window. This may simply be the first window or the only window.  The reason it
-            % is left to the framework specific subclasses is that they may store references
-            % to their list of windows differently, such as array vs. cell array, depending
-            % on their requirements.
-            out = [];
-        end
+%         function out = get_main_window(self) %#ok<MANU>
+%             % Framework specific subclasses can implement this method to return a "primary"
+%             % window. This may simply be the first window or the only window.  The reason it
+%             % is left to the framework specific subclasses is that they may store references
+%             % to their list of windows differently, such as array vs. cell array, depending
+%             % on their requirements.
+%             out = [];
+%         end
         
-        function modifyEventIfNeededToCancelClose(self, src, evt) %#ok<INUSD>
-            % Perform any action required to cancel a window close event.  May be a no-op
-            % (e.g., for an HG controller) or require modification of the event object (see
-            % the WPF controller for an example).
-        end
+%         function modifyEventIfNeededToCancelClose(self, src, evt) %#ok<INUSD>
+%             % Perform any action required to cancel a window close event.  May be a no-op
+%             % (e.g., for an HG controller) or require modification of the event object (see
+%             % the WPF controller for an example).
+%         end
         
-        function modifyEventIfNeededAndHideWindow(self, src, evt) %#ok<INUSD>
-            % Perform any action required to hide a window rather than close it.
-        end
+%         function modifyEventIfNeededAndHideWindow(self, src, evt) %#ok<INUSD>
+%             % Perform any action required to hide a window rather than close it.
+%         end
         
-        function deleteWindows(self) %#ok<MANU>
-            % Should actually release/delete any handles or objects that define the window
-            % object.  This is essentially for the framework specific delete() method code
-            % for windows and associated resources.
-        end
+%         function deleteWindows(self) %#ok<MANU>
+%             % Should actually release/delete any handles or objects that define the window
+%             % object.  This is essentially for the framework specific delete() method code
+%             % for windows and associated resources.
+%         end
     end  % protected methods that are designed to be optionally overridden
     
     methods
@@ -325,6 +341,7 @@ classdef Controller < ws.most.Controller
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
+                    me.getReport()
                     errordlg(me.message,'Error','modal');
 %                end
             end
@@ -336,7 +353,7 @@ classdef Controller < ws.most.Controller
             % Do object.(propertyName)=newValue, but catch any
             % most:Model:invalidPropVal exception generated.  If that
             % exception is generated, set the property to
-            % ws.most.util.Nonvalue.The, which will (if the model is as it
+            % nan.The, which will (if the model is as it
             % should be) fire whatever events are normally fired when the
             % property is changed, without actually changing the model.
             % This should cause any dependent views to be updated to
@@ -345,9 +362,7 @@ classdef Controller < ws.most.Controller
                 object.(propertyName)=newValue;
             catch exception
                 if isequal(exception.identifier,'most:Model:invalidPropVal') ,
-                    % Do a set to the special value designed only to cause
-                    % the model to broadcast an Update event.
-                    object.(propertyName)=ws.most.util.Nonvalue.The;
+                    % Ignore it
                 else
                     rethrow(exception);
                 end
@@ -367,15 +382,15 @@ classdef Controller < ws.most.Controller
             
             if isfield(multiWindowLayout, layoutVarNameForThisClass) ,
                 layoutForThisClass=multiWindowLayout.(layoutVarNameForThisClass);
-                self.decode_window_layout(layoutForThisClass);
+                self.decodeWindowLayout(layoutForThisClass);
 %                 if self.IsSuiGeneris ,
 %                     windowLayout = layoutForThisClass;
-%                     self.decode_window_layout(windowLayout);
+%                     self.decodeWindowLayout(windowLayout);
 %                 else
 %                     tag=get(self.Window,'Tag');
 %                     if isfield(layoutForAllWindows.(layoutVarNameForThisClass),tag)
 %                         windowLayout=layoutForAllWindows.(layoutVarNameForThisClass).(tag);
-%                         self.decode_window_layout(windowLayout);
+%                         self.decodeWindowLayout(windowLayout);
 %                     end
 %                 end
             end

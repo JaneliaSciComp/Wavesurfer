@@ -20,7 +20,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function self = SquarePulseTrainStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -29,7 +29,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.Period(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.Period_ = value;
@@ -40,14 +40,14 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
 %         function set.Period(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('Period', value);
 %             self.Period = value;
 %             %self.notify('DurationChanged');
 %         end
         
         function set.PulseDuration(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.PulseDuration_ = value;
@@ -58,7 +58,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
 
 %         function set.PulseDuration(self, value)
-%             if isa(value,'ws.most.util.Nonvalue'), return, end            
+%             if ~ws.utility.isASettableValue(value), return, end            
 %             self.validatePropArg('PulseDuration', value);
 %             self.PulseDuration = value;
 %             %self.notify('DurationChanged');
@@ -86,15 +86,15 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
 %     end
     
     methods
-        function data = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet) %#ok<INUSL>
+        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
             % Compute the period from the expression for it
-            period = ws.stimulus.Stimulus.evaluateTrialExpression(self.Period,trialIndexWithinSet) ;
+            period = ws.stimulus.Stimulus.evaluateSweepExpression(self.Period,sweepIndexWithinSet) ;
             if isempty(period) || ~isnumeric(period) || ~isscalar(period) || ~isreal(period) || ~isfinite(period) || period<=0 ,
                 period=nan;  % s
             end
             
             % Compute the period from the expression for it
-            pulseDuration = ws.stimulus.Stimulus.evaluateTrialExpression(self.PulseDuration,trialIndexWithinSet) ;
+            pulseDuration = ws.stimulus.Stimulus.evaluateSweepExpression(self.PulseDuration,sweepIndexWithinSet) ;
             if isempty(pulseDuration) || ~isnumeric(pulseDuration) || ~isscalar(pulseDuration) || ~isreal(pulseDuration) || ~isfinite(pulseDuration) || ...
                pulseDuration<=0 ,
                 pulseDuration=nan;  % s
@@ -117,14 +117,14 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
 %         end
     end
     
-    methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.stimulus.StimulusDelegate(self);
-            self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     %
     % Implementations of methods needed to be a ws.mixin.ValueComparable
@@ -141,6 +141,17 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
             propertyNamesToCompare={'Period' 'PulseDuration'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
+    end
+    
+    methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
     end
     
 end

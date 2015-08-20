@@ -1,4 +1,4 @@
-classdef TriggersController < ws.Controller & ws.EventSubscriber
+classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     
     properties (Access = protected, Transient = true)
         %SourcesDataGridDataTable_    % Only internal sources for display/configuration.
@@ -9,8 +9,16 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
     
     methods
         function self = TriggersController(wavesurferController,wavesurferModel)
+            %triggeringModel=wavesurferModel.Triggering;
+            %self = self@ws.Controller(wavesurferController, triggeringModel, {'triggersFigureWrapper'});
+            
+            % Call superclass constructor
             triggeringModel=wavesurferModel.Triggering;
-            self = self@ws.Controller(wavesurferController, triggeringModel, {'triggersFigureWrapper'});
+            self = self@ws.Controller(wavesurferController,triggeringModel);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.TriggersFigure(triggeringModel,self) ;
+            self.Figure_ = fig ;            
         end  % constructor
     end  % methods block
     
@@ -19,7 +27,7 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model.Parent;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if ~isIdle ,
                     out=true;
                     return
@@ -162,13 +170,15 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             end
         end  % function       
 
-        function UseASAPTriggeringCheckboxActuated(self,source,event)  %#ok<INUSD>
-            value=logical(get(source,'Value'));
-            self.Model.AcquisitionUsesASAPTriggering=value;
-        end  % function
+%         function UseASAPTriggeringCheckboxActuated(self,source,event)  %#ok<INUSD>
+%             value=logical(get(source,'Value'));
+%             self.Model.AcquisitionUsesASAPTriggering=value;
+%         end  % function
 
-        function TrialBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
-            acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
+        function SweepBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+            %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
+            selectionIndex = get(source,'Value');
+            self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
         end  % function
         
         function UseAcquisitionTriggerCheckboxActuated(self,source,event)  %#ok<INUSD>
@@ -176,8 +186,10 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             self.Model.StimulationUsesAcquisitionTriggerScheme=value;
         end  % function
 
-        function TrialBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
-            acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
+        function SweepBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+            %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
+            selectionIndex = get(source,'Value');
+            self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
         end
         
 %         function ContinuousSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
@@ -194,12 +206,12 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
             if (columnIndex==4) ,
                 % this is the Repeats column
                 newValue=str2double(newString);
-                theSource=self.Model.Sources(sourceIndex);
+                theSource=self.Model.Sources{sourceIndex};
                 ws.Controller.setWithBenefits(theSource,'RepeatCount',newValue);
             elseif (columnIndex==5) ,
                 % this is the Interval column
                 newValue=str2double(newString);
-                theSource=self.Model.Sources(sourceIndex);
+                theSource=self.Model.Sources{sourceIndex};
                 ws.Controller.setWithBenefits(theSource,'Interval',newValue);
             end
         end  % function
@@ -208,31 +220,31 @@ classdef TriggersController < ws.Controller & ws.EventSubscriber
         % anything in that table
     end  % methods block    
 
-    methods (Access=protected)
-        function acquisitionSchemePopupmenuActuated_(self, source, triggerScheme)
-            % Called when the selection is changed in a listbox.  Causes the
-            % given triggerScheme (part of the model) to be updated appropriately.
-            selectionIndex = get(source,'Value');
-            
-            nSources=length(self.Model.Sources);
-            nDestinations=length(self.Model.Destinations);
-            if 1<=selectionIndex && selectionIndex<=nSources ,
-                triggerScheme.Target = self.Model.Sources(selectionIndex);
-            elseif nSources+1<=selectionIndex && selectionIndex<=nSources+nDestinations ,
-                destinationIndex = selectionIndex-nSources;
-                triggerScheme.Target = self.Model.Destinations(destinationIndex);
-            end
-        end  % function
-    end
+%     methods (Access=protected)
+%         function acquisitionSchemePopupmenuActuated_(self, source, triggerScheme)
+%             % Called when the selection is changed in a listbox.  Causes the
+%             % given triggerScheme (part of the model) to be updated appropriately.
+%             selectionIndex = get(source,'Value');
+%             
+%             nSources=length(self.Model.Sources);
+%             nDestinations=length(self.Model.Destinations);
+%             if 1<=selectionIndex && selectionIndex<=nSources ,
+%                 triggerScheme.Target = self.Model.Sources(selectionIndex);
+%             elseif nSources+1<=selectionIndex && selectionIndex<=nSources+nDestinations ,
+%                 destinationIndex = selectionIndex-nSources;
+%                 triggerScheme.Target = self.Model.Destinations(destinationIndex);
+%             end
+%         end  % function
+%     end
     
     properties (SetAccess=protected)
-       propBindings = ws.TriggersController.initialPropertyBindings(); 
+       propBindings = struct()
     end
     
-    methods (Static=true)
-        function s=initialPropertyBindings()
-            s = struct();
-        end
-    end  % class methods
+%     methods (Static=true)
+%         function s=initialPropertyBindings()
+%             s = struct();
+%         end
+%     end  % class methods
     
 end

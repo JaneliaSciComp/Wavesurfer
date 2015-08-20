@@ -1,4 +1,4 @@
-classdef Preferences < ws.most.fileutil.Preferences
+classdef Preferences < ws.UrPreferences
     % ws.Preferences  Wavesurfer-specific preferences file, a subclass of
     %                    ws.most.fileutil.preferences.
     %
@@ -39,7 +39,7 @@ classdef Preferences < ws.most.fileutil.Preferences
     
     methods (Access = protected)
         function self = Preferences(versionString)
-            self = self@ws.most.fileutil.Preferences(['wavesurfer' versionString], 'app-controller');
+            self = self@ws.UrPreferences(['wavesurfer' versionString], 'app-controller');
         end
     end
 end

@@ -1,4 +1,4 @@
-classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef UserFunctionsFigure < ws.MCOSFigure
     properties
         ClassNameText
         ClassNameEdit        
@@ -178,12 +178,12 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
 %                 return
 %             end
 % 
-%             set(self.TrialStartEdit,'String',model.TrialWillStart);
-%             set(self.TrialCompleteEdit,'String',model.TrialDidComplete);
-%             set(self.TrialAbortEdit,'String',model.TrialDidAbort);            
-%             set(self.TrialSetStartEdit,'String',model.ExperimentWillStart);
-%             set(self.TrialSetCompleteEdit,'String',model.ExperimentDidComplete);
-%             set(self.TrialSetAbortEdit,'String',model.ExperimentDidAbort);            
+%             set(self.SweepStartEdit,'String',model.SweepWillStart);
+%             set(self.SweepCompleteEdit,'String',model.SweepDidComplete);
+%             set(self.SweepAbortEdit,'String',model.SweepDidAbort);            
+%             set(self.RunStartEdit,'String',model.RunWillStart);
+%             set(self.RunCompleteEdit,'String',model.RunDidComplete);
+%             set(self.RunAbortEdit,'String',model.RunDidAbort);            
 %             set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
 %             
 %             updateControlEnablementImplementation_();
@@ -214,7 +214,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             import ws.utility.onIff
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             set(self.ClassNameEdit,'Enable',onIff(isIdle));            
             set(self.AbortCallsCompleteCheckbox,'Enable',onIff(isIdle));
         end
@@ -236,12 +236,12 @@ classdef UserFunctionsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             
-%             model.subscribeMe(self,'PostSet','TrialWillStart','update');
-%             model.subscribeMe(self,'PostSet','TrialDidComplete','update');
-%             model.subscribeMe(self,'PostSet','TrialDidAbort','update');   
-%             model.subscribeMe(self,'PostSet','ExperimentWillStart','update');
-%             model.subscribeMe(self,'PostSet','ExperimentDidComplete','update');
-%             model.subscribeMe(self,'PostSet','ExperimentDidAbort','update');           
+%             model.subscribeMe(self,'PostSet','SweepWillStart','update');
+%             model.subscribeMe(self,'PostSet','SweepDidComplete','update');
+%             model.subscribeMe(self,'PostSet','SweepDidAbort','update');   
+%             model.subscribeMe(self,'PostSet','RunWillStart','update');
+%             model.subscribeMe(self,'PostSet','RunDidComplete','update');
+%             model.subscribeMe(self,'PostSet','RunDidAbort','update');           
 %             model.subscribeMe(self,'PostSet','AbortCallsComplete','update');
             model.subscribeMe(self,'Update','','update');
             

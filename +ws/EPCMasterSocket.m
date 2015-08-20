@@ -3,7 +3,7 @@ classdef EPCMasterSocket < handle
     
     %%
     properties (SetAccess=protected, Hidden=true)
-        %ModeDetents={ws.ElectrodeMode.VC ws.ElectrodeMode.CC}';
+        %ModeDetents={'vc' 'cc'}';
         CurrentMonitorNominalGainDetents= 1e-3*[ ...
             0.005 ...
             0.010 ...
@@ -220,7 +220,7 @@ classdef EPCMasterSocket < handle
             import ws.utility.*
             
             err=[]; %#ok<NASGU>
-            if ~(isequal(newMode,ws.ElectrodeMode.VC) || isequal(newMode,ws.ElectrodeMode.CC)) ,
+            if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
                 errorId='EPCMasterSocket:InvalidMode';
                 errorMessage='Couldn''t set mode because given value is not valid.';
                 err=MException(errorId,errorMessage);
@@ -241,7 +241,7 @@ classdef EPCMasterSocket < handle
             if ~isempty(err) ,
                 return
             end              
-            newModeIndex=fif(isequal(newMode,ws.ElectrodeMode.CC),4,3);
+            newModeIndex=fif(isequal(newMode,'cc'),4,3);
               % 4 == Current clamp
               % 3 == Whole cell
             commandString2=sprintf('Set E Mode %d',newModeIndex);
@@ -1241,7 +1241,7 @@ classdef EPCMasterSocket < handle
             % there is a problem during parsing
             responseStringTokens=strsplit(responseString);
             if length(responseStringTokens)>=2 && any(strcmp(responseStringTokens(2),{'VC' 'CC'})) ,
-                mode=ws.ElectrodeMode.fromTitleString(responseStringTokens{2});
+                mode=ws.electrodeModeFromTitleString(responseStringTokens{2});
                 err=[];
             else
                 mode=[];

@@ -256,11 +256,11 @@ classdef FiniteOutputTask < handle
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
                 self.TriggerEdge_ = [];
-            elseif isa(newValue,'ws.ni.TriggerEdge') && isscalar(newValue) ,
+            elseif ws.isAnEdgeType(newValue') ,
                 self.TriggerEdge_ = newValue;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerEdge must be empty or a scalar ws.ni.TriggerEdge');       
+                      'TriggerEdge must be empty, or ''rising'', or ''falling''');       
             end            
         end  % function
         
@@ -284,7 +284,8 @@ classdef FiniteOutputTask < handle
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), dabsTriggerEdge);
                 else
                     self.DabsDaqTask_.disableStartTrig();
                 end
@@ -314,8 +315,8 @@ classdef FiniteOutputTask < handle
             end
         end  % function   
         
-        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
-            %fprintf('FiniteOutputTask::pollingTimerFired()\n');
+        function poll(self,timeSinceSweepStart) %#ok<INUSD>
+            %fprintf('FiniteOutputTask::poll()\n');
             if isempty(self.DabsDaqTask_)
                 % This means there are no channels, so nothing to do
             else

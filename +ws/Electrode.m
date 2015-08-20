@@ -1,34 +1,18 @@
-classdef Electrode < ws.Model & ws.Mimic 
+classdef Electrode < ws.Model % & ws.Mimic 
     
-    properties (Access=protected)
-        Parent_   % the parent ElectrodeManager object, or empty
-        Name_
-        VoltageMonitorChannelName_
-        CurrentMonitorChannelName_
-        VoltageCommandChannelName_
-        CurrentCommandChannelName_
-        Mode_  % ws.ElectrodeMode.VC or ws.ElectrodeMode.CC
-        TestPulseAmplitudeInVC_
-        TestPulseAmplitudeInCC_
-        VoltageCommandScaling_
-        CurrentMonitorScaling_
-        CurrentCommandScaling_
-        VoltageMonitorScaling_
-        VoltageUnits_  % constant for now, may change in future
-        CurrentUnits_  % constant for now, may change in future
-        TypeIndex_  % the index of the type within Types
-        IndexWithinType_
-        IsCommandEnabled_
+    properties (Constant=true)
+        Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
+        %Modes = {'vc' 'cc'};
     end
 
-    properties (Dependent=true)  % Hidden so not calc'ed on call to disp()
-        Parent
+    properties (Dependent=true)
+        %Parent
         Name
         VoltageMonitorChannelName
         CurrentMonitorChannelName
         VoltageCommandChannelName
         CurrentCommandChannelName
-        Mode  % ws.ElectrodeMode.VC or ws.ElectrodeMode.CC
+        Mode  % 'vc' or 'cc'
         TestPulseAmplitudeInVC
         TestPulseAmplitudeInCC
         VoltageCommandScaling  % scalar, typically in mV/V
@@ -52,37 +36,53 @@ classdef Electrode < ws.Model & ws.Mimic
         MonitorUnits
     end
     
-    properties (Access=public, Constant=true)
-        Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
-        %Modes = {ws.ElectrodeMode.VC ws.ElectrodeMode.CC};
+    properties (Access=protected)
+        %Parent_   % the parent ElectrodeManager object, or empty
+        Name_
+        VoltageMonitorChannelName_
+        CurrentMonitorChannelName_
+        VoltageCommandChannelName_
+        CurrentCommandChannelName_
+        Mode_  % 'vc' or 'cc'
+        TestPulseAmplitudeInVC_
+        TestPulseAmplitudeInCC_
+        VoltageCommandScaling_
+        CurrentMonitorScaling_
+        CurrentCommandScaling_
+        VoltageMonitorScaling_
+        VoltageUnits_  % constant for now, may change in future
+        CurrentUnits_  % constant for now, may change in future
+        TypeIndex_  % the index of the type within Types
+        IndexWithinType_
+        IsCommandEnabled_
     end
     
     methods        
-        function self=Electrode(varargin)
+        function self=Electrode(parent,varargin)
             % Set the defaults
-            self.Parent_ = [];
+            self@ws.Model(parent);
             self.Name_ = '';
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';
             self.VoltageCommandChannelName_ = '';
             self.CurrentCommandChannelName_ = '';
-            self.Mode_ = ws.ElectrodeMode.VC;  % ws.ElectrodeMode.VC or ws.ElectrodeMode.CC
-            self.TestPulseAmplitudeInVC_ = ws.utility.DoubleString('10');
-            self.TestPulseAmplitudeInCC_ = ws.utility.DoubleString('10');
+            self.Mode_ = 'vc';  % 'vc' or 'cc'
+            self.TestPulseAmplitudeInVC_ = 10 ;
+            self.TestPulseAmplitudeInCC_ = 10 ;
             self.VoltageCommandScaling_ = 10;  % mV/V
             self.CurrentMonitorScaling_ = 0.01;  % V/pA
             self.CurrentCommandScaling_ = 100;  % pA/V
             self.VoltageMonitorScaling_ = 0.01;  % V/mV
-            self.VoltageUnits_ = ws.utility.SIUnit('mV');  % constant for now, may change in future
-            self.CurrentUnits_ = ws.utility.SIUnit('pA');  % constant for now, may change in future
+            self.VoltageUnits_ = 'mV' ;  % constant for now, may change in future
+            self.CurrentUnits_ = 'pA' ;  % constant for now, may change in future
             self.TypeIndex_ = 1;  % default amplifier type
             self.IndexWithinType_=[];  % e.g. 2 means this is the second electrode of the current type
             self.IsCommandEnabled=true;
             
             % Process args
-            validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -98,9 +98,9 @@ classdef Electrode < ws.Model & ws.Mimic
             self.mayHaveChanged();
         end  % function
         
-        function out = get.Parent(self)
-            out=self.Parent_;
-        end  % function
+%         function out = get.Parent(self)
+%             out=self.Parent_;
+%         end  % function
         
         function out = get.Name(self)
             out=self.Name_;
@@ -126,12 +126,12 @@ classdef Electrode < ws.Model & ws.Mimic
             out=self.Mode_;
         end  % function
 
-        function set.Parent(self,newValue)
-            if isa(newValue,'ws.ElectrodeManager')
-                self.Parent_=newValue;
-            end
-            self.mayHaveChanged('Parent');
-        end  % function
+%         function set.Parent(self,newValue)
+%             if isa(newValue,'ws.ElectrodeManager')
+%                 self.Parent_=newValue;
+%             end
+%             self.mayHaveChanged('Parent');
+%         end  % function
         
         function set.Name(self,newValue)
             if ischar(newValue)
@@ -175,7 +175,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
         
         function out = get.CommandChannelName(self)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 out = self.VoltageCommandChannelName;
             else
                 out = self.CurrentCommandChannelName;
@@ -183,7 +183,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
         
         function set.CommandChannelName(self,newValue)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 self.VoltageCommandChannelName=newValue;
             else
                 self.CurrentCommandChannelName=newValue;
@@ -192,7 +192,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
         
         function out = get.MonitorChannelName(self)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 out = self.CurrentMonitorChannelName;
             else
                 out = self.VoltageMonitorChannelName;
@@ -200,7 +200,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
         
         function set.MonitorChannelName(self,newValue)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 self.CurrentMonitorChannelName=newValue;
             else
                 self.VoltageMonitorChannelName=newValue;
@@ -217,7 +217,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
 
         function out = get.CommandUnits(self) 
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 out = self.VoltageUnits;
             else
                 out = self.CurrentUnits;
@@ -225,7 +225,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
         
         function out = get.MonitorUnits(self)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 out = self.CurrentUnits;
             else
                 out = self.VoltageUnits;
@@ -233,7 +233,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function out = get.CommandScaling(self)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 out = self.VoltageCommandScaling;
             else
                 out = self.CurrentCommandScaling;
@@ -241,7 +241,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function set.CommandScaling(self, newValue)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 self.VoltageCommandScaling=newValue;
             else
                 self.CurrentCommandScaling=newValue;
@@ -249,7 +249,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function out = get.MonitorScaling(self)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 out = self.CurrentMonitorScaling;
             else
                 out = self.VoltageMonitorScaling;
@@ -257,7 +257,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function set.MonitorScaling(self, newValue)
-            if isequal(self.Mode,ws.ElectrodeMode.VC) ,
+            if isequal(self.Mode,'vc') ,
                 self.CurrentMonitorScaling=newValue;
             else
                 self.VoltageMonitorScaling=newValue;
@@ -341,21 +341,21 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function set.TestPulseAmplitudeInVC(self,newThang)
-            % self.TestPulseAmplitudeInVC_ is a DoubleString
-            self.TestPulseAmplitudeInVC_= ...
-                self.TestPulseAmplitudeInVC_.filter(newThang);
+            if isnumeric(newThang) && isscalar(newThang) ,
+                self.TestPulseAmplitudeInVC_= double(newThang);
+            end
             self.mayHaveChanged('TestPulseAmplitudeInVC');
         end
         
         function set.TestPulseAmplitudeInCC(self,newThang)
-            % self.TestPulseAmplitudeInCC_ is a DoubleString
-            self.TestPulseAmplitudeInCC_= ...
-                self.TestPulseAmplitudeInCC_.filter(newThang);
+            if isnumeric(newThang) && isscalar(newThang) ,
+                self.TestPulseAmplitudeInCC_= double(newThang);
+            end
             self.mayHaveChanged('TestPulseAmplitudeInCC');
         end  % function
         
         function result = get.TestPulseAmplitude(self)
-            if isequal(self.Mode,ws.ElectrodeMode.CC)
+            if isequal(self.Mode,'cc')
                 result=self.TestPulseAmplitudeInCC;
             else
                 result=self.TestPulseAmplitudeInVC;
@@ -363,7 +363,7 @@ classdef Electrode < ws.Model & ws.Mimic
         end  % function
         
         function set.TestPulseAmplitude(self,newValue)
-            if isequal(self.Mode,ws.ElectrodeMode.CC)
+            if isequal(self.Mode,'cc')
                 self.TestPulseAmplitudeInCC=newValue;
             else
                 self.TestPulseAmplitudeInVC=newValue;
@@ -480,8 +480,8 @@ classdef Electrode < ws.Model & ws.Mimic
             self.CurrentMonitorChannelName=other.CurrentMonitorChannelName;
             self.CurrentCommandChannelName=other.CurrentCommandChannelName;
             self.VoltageMonitorChannelName=other.VoltageMonitorChannelName;
-            self.TestPulseAmplitudeInVC=ws.utility.DoubleString(other.TestPulseAmplitudeInVC);
-            self.TestPulseAmplitudeInCC=ws.utility.DoubleString(other.TestPulseAmplitudeInCC);
+            self.TestPulseAmplitudeInVC=other.TestPulseAmplitudeInVC;
+            self.TestPulseAmplitudeInCC=other.TestPulseAmplitudeInCC;
             self.VoltageCommandScaling=other.VoltageCommandScaling;
             self.CurrentMonitorScaling=other.CurrentMonitorScaling;
             self.CurrentCommandScaling=other.CurrentCommandScaling;
@@ -489,12 +489,18 @@ classdef Electrode < ws.Model & ws.Mimic
             self.IsCommandEnabled=other.IsCommandEnabled;            
         end  % function
 
+%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%             className=class(self);
+%             other=feval(className,parent);
+%             other.mimic(self);
+%         end  % function
+        
         function set.Type(self,newValue)
             isMatch=strcmp(newValue,self.Types);
             newTypeIndex=find(isMatch,1);
             if ~isempty(newTypeIndex) ,
-                % Some trode types can't do ws.ElectrodeMode.IEqualsZero mode, so check for that
-                % and change to ws.ElectrodeMode.CC if needed
+                % Some trode types can't do 'i_equals_zero' mode, so check for that
+                % and change to 'cc' if needed
                 newType=self.Types{newTypeIndex};
                 mode=self.Mode;
                 if ~ws.Electrode.isModeAllowedForType(mode,newType) ,
@@ -545,9 +551,9 @@ classdef Electrode < ws.Model & ws.Mimic
         function result=whichCommandOrMonitor(self,commandOrMonitor)
             % commandOrMonitor should be either 'Command' or 'Monitor'.
             % If commandOrMonitor is 'Monitor', and the current electrode
-            % is ws.ElectrodeMode.VC, then the result is 'CurrentMonitor', for example.
+            % is 'vc', then the result is 'CurrentMonitor', for example.
             mode=self.Mode;
-            if isequal(mode,ws.ElectrodeMode.CC) ,
+            if isequal(mode,'cc') ,
                 if isequal(commandOrMonitor,'Command') ,                                    
                     result='CurrentCommand';
                 else
@@ -593,7 +599,7 @@ classdef Electrode < ws.Model & ws.Mimic
                     self.VoltageMonitorScaling_];
             matchingScales=scales(isMatch);
             if length(matchingScales)>1 ,
-                if isequal(self.Mode_,ws.ElectrodeMode.VC) ,
+                if isequal(self.Mode_,'vc') ,
                     result=matchingScales(1);
                 else
                     result=matchingScales(2);
@@ -614,7 +620,7 @@ classdef Electrode < ws.Model & ws.Mimic
                     self.VoltageCommandScaling_];
             matchingScales=scales(isMatch);
             if length(matchingScales)>1 ,
-                if isequal(self.Mode_,ws.ElectrodeMode.VC) ,
+                if isequal(self.Mode_,'vc') ,
                     result=matchingScales(2);
                 else
                     result=matchingScales(1);
@@ -631,17 +637,17 @@ classdef Electrode < ws.Model & ws.Mimic
             managedChannelNames=[{self.CurrentMonitorChannelName_} ...
                                  {self.VoltageMonitorChannelName_}];
             isMatch=strcmp(channelName,managedChannelNames);
-            units=[self.CurrentUnits_ ...
-                    self.VoltageUnits_];
+            units={self.CurrentUnits_ ...
+                   self.VoltageUnits_};
             matchingUnits=units(isMatch);
             if length(matchingUnits)>1 ,
-                if isequal(self.Mode_,ws.ElectrodeMode.VC) ,
-                    result=matchingUnits(1);
+                if isequal(self.Mode_,'vc') ,
+                    result=matchingUnits{1};
                 else
-                    result=matchingUnits(2);
+                    result=matchingUnits{2};
                 end
             else
-                result=matchingUnits;
+                result=matchingUnits{1};
             end
         end
         
@@ -652,17 +658,17 @@ classdef Electrode < ws.Model & ws.Mimic
             managedChannelNames=[{self.CurrentCommandChannelName_} ...
                                  {self.VoltageCommandChannelName_}];
             isMatch=strcmp(channelName,managedChannelNames);
-            units=[self.CurrentUnits_ ...
-                   self.VoltageUnits_];
+            units={self.CurrentUnits_ ...
+                   self.VoltageUnits_};
             matchingUnits=units(isMatch);
             if length(matchingUnits)>1 ,
-                if isequal(self.Mode_,ws.ElectrodeMode.VC) ,
-                    result=matchingUnits(2);
+                if isequal(self.Mode_,'vc') ,
+                    result=matchingUnits{2};
                 else
-                    result=matchingUnits(1);
+                    result=matchingUnits{1};
                 end
             else
-                result=matchingUnits;
+                result=matchingUnits{1};
             end
         end
         
@@ -675,11 +681,11 @@ classdef Electrode < ws.Model & ws.Mimic
         end
         
         function result = getIsInACCMode(self)
-            result = isequal(self.Mode_,ws.ElectrodeMode.CC) || isequal(self.Mode_,ws.ElectrodeMode.IEqualsZero) ;
+            result = isequal(self.Mode_,'cc') || isequal(self.Mode_,'i_equals_zero') ;
         end
 
         function result = getIsInAVCMode(self)
-            result = isequal(self.Mode_,ws.ElectrodeMode.VC) ;
+            result = isequal(self.Mode_,'vc') ;
         end
         
     end  % public methods block
@@ -691,7 +697,7 @@ classdef Electrode < ws.Model & ws.Mimic
             end
             if ~isempty(newValue) ,  % empty sometimes used to signal that mode is unknown
                 allowedModes=self.getAllowedModes();
-                isMatch=cellfun(@(mode)(mode==newValue),allowedModes);            
+                isMatch=cellfun(@(mode)(isequal(mode,newValue)),allowedModes);            
                 if any(isMatch) ,
                     self.Mode_ = newValue;
                 end
@@ -779,13 +785,29 @@ classdef Electrode < ws.Model & ws.Mimic
         end
     end
     
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to encode private/protected variables, or do
+            % some other kind of transformation on encoding, this method can be overridden.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to decode private/protected variables, or do
+            % some other kind of transformation on decoding, this method can be overridden.
+            self.(name) = value;
+        end
+    end  % protected methods
+    
     methods (Static)
         function modes=allowedModesForType(type)
             switch type ,
                 case 'Axon Multiclamp' ,
-                    modes={ws.ElectrodeMode.VC ws.ElectrodeMode.CC ws.ElectrodeMode.IEqualsZero};
+                    modes={'vc' 'cc' 'i_equals_zero'};
                 otherwise
-                    modes={ws.ElectrodeMode.VC ws.ElectrodeMode.CC};
+                    modes={'vc' 'cc'};
             end
         end
         
@@ -799,8 +821,8 @@ classdef Electrode < ws.Model & ws.Mimic
                 case 'Axon Multiclamp' ,
                     mode=desiredMode;
                 otherwise
-                    if isequal(desiredMode,ws.ElectrodeMode.IEqualsZero) ,
-                        mode=ws.ElectrodeMode.CC;
+                    if isequal(desiredMode,'i_equals_zero') ,
+                        mode='cc';
                     else
                         mode=desiredMode;
                     end
@@ -808,16 +830,16 @@ classdef Electrode < ws.Model & ws.Mimic
         end        
     end  % static methods
 
-    methods (Access=protected)        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)        
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 end  % classdef

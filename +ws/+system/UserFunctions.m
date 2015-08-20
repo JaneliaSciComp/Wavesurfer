@@ -28,9 +28,8 @@ classdef UserFunctions < ws.system.Subsystem
     
     methods
         function self = UserFunctions(parent)
-            self.CanEnable=true;
-            self.Enabled=true;            
-            self.Parent=parent;
+            self@ws.system.Subsystem(parent) ;
+            self.IsEnabled=true;            
         end  % function
 
         function result = get.ClassName(self)
@@ -50,12 +49,14 @@ classdef UserFunctions < ws.system.Subsystem
                 if ischar(value) && (isempty(value) || isrow(value)) ,
                     [newObject,exception] = self.tryToInstantiateObject_(value) ;
                     if ~isempty(exception) ,
+                        self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'Invalid value for property ''ClassName'' supplied: Unable to instantiate object.');
                     end
                     self.ClassName_ = value;
                     self.TheObject_ = newObject;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Invalid value for property ''ClassName'' supplied.');
                 end
@@ -65,14 +66,11 @@ classdef UserFunctions < ws.system.Subsystem
         
         function set.AbortCallsComplete(self, value)
             if ws.utility.isASettableValue(value) ,
-                try
-                    valueAsLogical = logical(value) ;
-                    if isscalar(valueAsLogical) ,
-                        self.AbortCallsComplete_ = value;
-                    else
-                        error('bad');  % won't actually percolate up
-                    end
-                catch me
+                if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
+                    valueAsLogical = logical(value>0) ;
+                    self.AbortCallsComplete_ = valueAsLogical ;
+                else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Invalid value for property ''AbortCallsComplete'' supplied.');
                 end
@@ -95,13 +93,13 @@ classdef UserFunctions < ws.system.Subsystem
                     self.TheObject_.(eventName)(wavesurferModel, eventName);
                 end
 
-                if self.AbortCallsComplete && strcmp(eventName, 'TrialDidAbort') && ~isempty(self.TheObject_) ,
-                    self.TheObject_.TrialDidComplete(wavesurferModel, eventName); % Calls trial completion user function, but still passes TrialDidAbort
+                if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
+                    self.TheObject_.SweepDidComplete(wavesurferModel, eventName); % Calls sweep completion user function, but still passes SweepDidAbort
                 end
 
-                if self.AbortCallsComplete && strcmp(eventName, 'ExperimentDidAbort') && ~isempty(self.TheObject_) ,
-                    self.TheObject_.ExperimentDidComplete(wavesurferModel, eventName); 
-                      % Calls trial set completion user function, but still passes TrialDidAbort
+                if self.AbortCallsComplete && strcmp(eventName, 'RunDidAbort') && ~isempty(self.TheObject_) ,
+                    self.TheObject_.RunDidComplete(wavesurferModel, eventName); 
+                      % Calls run completion user function, but still passes SweepDidAbort
                 end
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
@@ -112,6 +110,10 @@ classdef UserFunctions < ws.system.Subsystem
             end
         end  % function
         
+        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+            % The data available callback 
+            self.invoke(self.Parent,'dataIsAvailableInFrontend');
+        end
     end  % methods
        
     methods (Access=protected)
@@ -134,19 +136,19 @@ classdef UserFunctions < ws.system.Subsystem
     end    
     
     methods (Access=protected)
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
         
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.UserFunctions.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
 end  % classdef

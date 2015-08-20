@@ -1,8 +1,16 @@
 classdef ElectrodeManagerController < ws.Controller
     methods
         function self=ElectrodeManagerController(wavesurferController,wavesurferModel)
+%             electrodeManager=wavesurferModel.Ephys.ElectrodeManager;
+%             self = self@ws.Controller(wavesurferController, electrodeManager, {'electrodeManagerFigureWrapper'});            
+            
+            % Call superclass constructor
             electrodeManager=wavesurferModel.Ephys.ElectrodeManager;
-            self = self@ws.Controller(wavesurferController, electrodeManager, {'electrodeManagerFigureWrapper'});            
+            self = self@ws.Controller(wavesurferController,electrodeManager); 
+
+            % Create the figure, store a pointer to it
+            fig = ws.ElectrodeManagerFigure(electrodeManager,self) ;
+            self.Figure_ = fig ;
         end
         
         function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>
@@ -197,7 +205,7 @@ classdef ElectrodeManagerController < ws.Controller
             electrodeIndex=find(isTheElectrode);
             electrode=self.Model.Electrodes{electrodeIndex};
             allowedModes=electrode.getAllowedModes();
-            allowedModesAsStrings=cellfun(@(mode)(toTitleString(mode)),allowedModes,'UniformOutput',false);
+            allowedModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false);
             modeAsString=ws.utility.getPopupMenuSelection(source,allowedModesAsStrings);
             modeIndex=find(strcmp(modeAsString,allowedModesAsStrings),1);
             if ~isempty(modeIndex) ,
@@ -296,7 +304,7 @@ classdef ElectrodeManagerController < ws.Controller
                 if ~isempty(ephys) && isvalid(ephys) ,                
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                        isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                        isIdle=isequal(wavesurferModel.State,'idle');
                         if ~isIdle ,
                             shouldStayPut=true;
                             return
@@ -308,12 +316,6 @@ classdef ElectrodeManagerController < ws.Controller
     end % protected methods block
     
     properties (SetAccess=protected)
-       propBindings = ws.ElectrodeManagerController.initialPropertyBindings(); 
-    end
-    
-    methods (Static=true)
-        function s=initialPropertyBindings()
-            s = struct();
-        end
-    end  % class methods
+       propBindings = struct()
+    end    
 end  % classdef

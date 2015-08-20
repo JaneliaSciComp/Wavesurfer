@@ -1,88 +1,89 @@
-classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
+classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentProperties
     % Stimulation subsystem
     
-    properties (Dependent = true)
-        SampleRate  % Hz
-        DoRepeatSequence 
-        StimulusLibrary
-        AnalogChannelScales
-          % A row vector of scale factors to convert each channel from native units to volts on the coax.
-          % This is implicitly in units of ChannelUnits per volt (see below)
-        AnalogChannelUnits
-          % An SIUnit row vector that describes the real-world units 
-          % for each stimulus channel.
-        TriggerScheme
-        IsDigitalChannelTimed
-        DigitalOutputStateIfUntimed
-    end
-    
-    properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        AnalogPhysicalChannelNames % the physical channel name for each analog channel
-        DigitalPhysicalChannelNames  % the physical channel name for each digital channel
-        PhysicalChannelNames
-        AnalogChannelNames
-        DigitalChannelNames
-        ChannelNames
-        NAnalogChannels
-        NDigitalChannels
-        NTimedDigitalChannels        
-        NChannels
-        DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
-        %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
-        IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
-        IsWithinExperiment
-        IsChannelAnalog
-    end
-    
-    properties (Access = protected, Transient=true)
-        TheFiniteAnalogOutputTask_ = []
-        TheFiniteDigitalOutputTask_ = []
-        TheUntimedDigitalOutputTask_ = []
-        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformExperiment(), set to [] in didPerformExperiment())
-        IsArmedOrStimulating_ = false
-        IsWithinExperiment_ = false                       
-        TriggerScheme_ = ws.TriggerScheme.empty()
-        HasAnalogChannels_
-        HasTimedDigitalChannels_
-        DidAnalogEpisodeComplete_
-        DidDigitalEpisodeComplete_
-    end
-
-    properties (Access = protected)
-        AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
-        DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
-        AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
-        DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
-        %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
-        %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
-        AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-        AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
-        %AnalogChannelNames_ = cell(1,0)
-
-        StimulusLibrary_ 
-        DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
-        SampleRate_ = 20000  % Hz
-        EpisodesPerExperiment_
-        EpisodesCompleted_
-        IsDigitalChannelTimed_ = false(1,0)
-        DigitalOutputStateIfUntimed_ = false(1,0)
-    end
-    
-    events 
-        DidSetAnalogChannelUnitsOrScales
-        DidSetStimulusLibrary
-        DidSetSampleRate
-        DidSetDoRepeatSequence
-        DidSetIsDigitalChannelTimed
-        DidSetDigitalOutputStateIfUntimed
-    end
+%     properties (Dependent = true)
+%         SampleRate  % Hz
+%         DoRepeatSequence 
+%         StimulusLibrary
+%         AnalogChannelScales
+%           % A row vector of scale factors to convert each channel from native units to volts on the coax.
+%           % This is implicitly in units of ChannelUnits per volt (see below)
+%         AnalogChannelUnits
+%           % An SIUnit row vector that describes the real-world units 
+%           % for each stimulus channel.
+%         TriggerScheme
+%         IsDigitalChannelTimed
+%         DigitalOutputStateIfUntimed
+%     end
+%     
+%     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
+%         AnalogPhysicalChannelNames % the physical channel name for each analog channel
+%         DigitalPhysicalChannelNames  % the physical channel name for each digital channel
+%         PhysicalChannelNames
+%         AnalogChannelNames
+%         DigitalChannelNames
+%         ChannelNames
+%         NAnalogChannels
+%         NDigitalChannels
+%         NTimedDigitalChannels        
+%         NChannels
+%         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
+%         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
+%         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
+%         IsWithinRun
+%         IsChannelAnalog
+%     end
+%     
+%     properties (Access = protected, Transient=true)
+% %         TheFiniteAnalogOutputTask_ = []
+% %         TheFiniteDigitalOutputTask_ = []
+% %         TheUntimedDigitalOutputTask_ = []
+%         SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didCompleteRun())
+%         IsArmedOrStimulating_ = false
+%         IsWithinRun_ = false                       
+%         %TriggerScheme_ = ws.TriggerScheme.empty()
+%         HasAnalogChannels_
+%         HasTimedDigitalChannels_
+%         DidAnalogEpisodeComplete_
+%         DidDigitalEpisodeComplete_
+%     end
+% 
+%     properties (Access = protected)
+%         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
+%         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+%         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
+%         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
+%         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
+%         %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+%         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
+%         %AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+%         %AnalogChannelNames_ = cell(1,0)
+% 
+%         StimulusLibrary_ 
+%         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
+%         SampleRate_ = 20000  % Hz
+%         EpisodesPerRun_
+%         EpisodesCompleted_
+%         IsDigitalChannelTimed_ = false(1,0)
+%         DigitalOutputStateIfUntimed_ = false(1,0)
+%     end
+%     
+%     events 
+%         DidSetAnalogChannelUnitsOrScales
+%         DidSetStimulusLibrary
+%         DidSetSampleRate
+%         DidSetDoRepeatSequence
+%         DidSetIsDigitalChannelTimed
+%         DidSetDigitalOutputStateIfUntimed
+%     end
     
     methods
         function self = Stimulation(parent)
-            if ~exist('parent','var') ,
-                parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
-            end
-            self.Parent=parent;
+            self@ws.system.StimulationSubsystem(parent);
+%             if ~exist('parent','var') ,
+%                 parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
+%             end
+%             self.Parent=parent;
 %             nChannels=length(self.AnalogChannelNames);
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
@@ -90,21 +91,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
-        function delete(self)
-            %fprintf('Stimulation::delete()\n');            
-            %delete(self.TriggerListener_);
-            % Don't need to explicitly delete tasks, b/c they are ws.ni.OutputTask's, *not* DABS Tasks !!
-%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
-%                 delete(self.TheFiniteAnalogOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-%             end
-            self.TheFiniteAnalogOutputTask_ = [] ;
-%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
-%                 delete(self.TheFiniteDigitalOutputTask_);  % this causes it to get deleted from ws.dabs.ni.daqmx.System()
-%             end
-            self.TheFiniteDigitalOutputTask_ = [] ;
-            self.TheUntimedDigitalOutputTask_ = [];
-            self.Parent = [] ;
-        end
+%         function delete(self)
+%             %fprintf('Stimulation::delete()\n');            
+% %             self.TheFiniteAnalogOutputTask_ = [] ;
+% %             self.TheFiniteDigitalOutputTask_ = [] ;
+% %             self.TheUntimedDigitalOutputTask_ = [];
+%             %self.Parent = [] ;
+%         end
         
 %         function unstring(self)
 %             % Called to eliminate all the child-to-parent references, so
@@ -116,217 +109,179 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             unstring@ws.system.Subsystem(self);
 %         end
         
-        function value=get.StimulusLibrary(self)
-            value=self.StimulusLibrary_;
-        end
-        
-        function set.StimulusLibrary(self,newValue)
-            if isempty(newValue) ,
-                if isempty(self.StimulusLibrary_) ,
-                    % do nothing
-                else
-                    self.StimulusLibrary_=[];
-                end
-            elseif isa(newValue, 'ws.stimulus.StimulusLibrary') && isscalar(newValue) ,
-                if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
-                    self.StimulusLibrary_=newValue;
-                    self.StimulusLibrary_.Parent=self;
-                end
-            end
-            self.broadcast('DidSetStimulusLibrary');
-        end
-        
-        function out = get.SampleRate(self)
-            out= self.SampleRate_ ;
-        end
-        
-        function set.SampleRate(self, value)
-            self.SampleRate_ = value;
-            if ~isempty(self.TheFiniteAnalogOutputTask_)
-                self.TheFiniteAnalogOutputTask_.SampleRate = value;
-                self.TheFiniteDigitalOutputTask_.SampleRate = value;
-            end
-            self.broadcast('DidSetSampleRate');
-        end
-        
-        function out = get.IsDigitalChannelTimed(self)
-            out= self.IsDigitalChannelTimed_ ;
-        end
-        
-        function out = get.DigitalOutputStateIfUntimed(self)
-            out= self.DigitalOutputStateIfUntimed_ ;
-        end
-        
-        function out = get.DoRepeatSequence(self)
-            out= self.DoRepeatSequence_ ;
-        end
-        
-        function set.DoRepeatSequence(self, value)
-            if (islogical(value) || isnumeric(value)) && isscalar(value) ,
-                self.DoRepeatSequence_ = logical(value);
-            end
-            self.broadcast('DidSetDoRepeatSequence');
-        end
-        
-        function result = get.IsWithinExperiment(self)
-            result = self.IsWithinExperiment_ ;
-        end
-        
-        function result = get.IsArmedOrStimulating(self)
-            result = self.IsArmedOrStimulating_ ;
-        end
-    
-        function result = get.AnalogPhysicalChannelNames(self)
-            result = self.AnalogPhysicalChannelNames_ ;
-        end
-    
-        function result = get.DigitalPhysicalChannelNames(self)
-            result = self.DigitalPhysicalChannelNames_ ;
-        end
-
-        function result = get.PhysicalChannelNames(self)
-            result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
-        end
-        
-        function result = get.AnalogChannelNames(self)
-            result = self.AnalogChannelNames_ ;
-        end
-    
-        function result = get.DigitalChannelNames(self)
-            result = self.DigitalChannelNames_ ;
-        end
-    
-        function result = get.ChannelNames(self)
-            result = [self.AnalogChannelNames self.DigitalChannelNames] ;
-        end
-    
-%         function result = get.AnalogChannelIDs(self)
-%             result = self.AnalogChannelIDs_ ;
+%         function value=get.StimulusLibrary(self)
+%             value=self.StimulusLibrary_;
 %         end
-        
-        function result = get.DeviceNamePerAnalogChannel(self)
-            result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
-        end
-        
-%         function result = get.AnalogPhysicalChannelNames(self)
-%             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
-%             analogChannelIDs = self.AnalogChannelIDs_ ;            
-%             nChannels=length(analogChannelIDs);
-%             result=cell(1,nChannels);
-%             for i=1:nChannels ,
-%                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
-%             end
-%         end
-        
-        function value = get.NAnalogChannels(self)
-            value = length(self.AnalogChannelNames_);
-        end
-        
-        function value = get.NDigitalChannels(self)
-            value = length(self.DigitalChannelNames_);
-        end
-
-        function value = get.NTimedDigitalChannels(self)
-            value = sum(self.IsDigitalChannelTimed);
-        end
-
-        function value = get.NChannels(self)
-            value = self.NAnalogChannels + self.NDigitalChannels ;
-        end
-        
-        function value=isAnalogChannelName(self,name)
-            value=any(strcmp(name,self.AnalogChannelNames));
-        end
-        
-        function value = get.IsChannelAnalog(self)
-            % Boolean array indicating, for each channel, whether is is analog or not
-            value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
-        end
-        
-%         function out = get.TrialDurations(self)
-%             if ~self.Enabled || isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-%                 out = 0;
-%             else                
-%                 if isa(self.StimulusLibrary.SelectedOutputable, 'ws.stimulus.StimulusSequence') ,
-%                     out = self.StimulusLibrary.SelectedOutputable.ItemDurations;
+%         
+%         function set.StimulusLibrary(self,newValue)
+%             if isempty(newValue) ,
+%                 if isempty(self.StimulusLibrary_) ,
+%                     % do nothing
 %                 else
-%                     out = self.StimulusLibrary.SelectedOutputable.Duration;
+%                     self.StimulusLibrary_=[];
+%                 end
+%             elseif isa(newValue, 'ws.stimulus.StimulusLibrary') && isscalar(newValue) ,
+%                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
+%                     self.StimulusLibrary_=newValue;
+%                     self.StimulusLibrary_.Parent=self;
 %                 end
 %             end
+%             self.broadcast('DidSetStimulusLibrary');
 %         end
 %         
-%         function set.TrialDurations(~, ~)  % Empty for triggering property events.
+%         function out = get.SampleRate(self)
+%             out= self.SampleRate_ ;
 %         end
-        
-        function set.TriggerScheme(self, value)
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('TriggerScheme', value);
-            self.TriggerScheme_ = value;
-        end
-
-        function value=get.TriggerScheme(self)
-            value=self.TriggerScheme_;
-        end
-        
-%         function out = get.LibraryStore_(self)
-%             % Get the file name of the current stimulus library
-%             out = '';
-%             
-%             if ~isempty(self.CycleInLibrary_)
-%                 if ~isempty(self.CycleInLibrary_.Library)
-%                     if self.CycleInLibrary_.Library.FileStoreExists
-%                         out = self.CycleInLibrary_.Library.Store;
-%                     end
-%                 end
+%         
+%         function set.SampleRate(self, value)
+%             self.SampleRate_ = value;
+% %             if ~isempty(self.TheFiniteAnalogOutputTask_)
+% %                 self.TheFiniteAnalogOutputTask_.SampleRate = value;
+% %                 self.TheFiniteDigitalOutputTask_.SampleRate = value;
+% %             end
+%             self.broadcast('DidSetSampleRate');
+%         end
+%         
+%         function out = get.IsDigitalChannelTimed(self)
+%             out= self.IsDigitalChannelTimed_ ;
+%         end
+%         
+%         function out = get.DigitalOutputStateIfUntimed(self)
+%             out= self.DigitalOutputStateIfUntimed_ ;
+%         end
+%         
+%         function out = get.DoRepeatSequence(self)
+%             out= self.DoRepeatSequence_ ;
+%         end
+%         
+%         function set.DoRepeatSequence(self, value)
+%             if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+%                 self.DoRepeatSequence_ = logical(value);
 %             end
+%             self.broadcast('DidSetDoRepeatSequence');
 %         end
 %         
-%         function set.LibraryStore_(self, value)            
-%             self.LibraryStoreState_ = value;
-%             self.load_stimulus_cycle_from_configuration_data();
-%         end
-        
-%         function out = get.SelectedOutputableUUID(self)
-%             out=self.StimulusLibrary_.SelectedOutputableUUID;
+%         function result = get.IsWithinRun(self)
+%             result = self.IsWithinRun_ ;
 %         end
 %         
-%         function set.SelectedOutputableUUID(self, newValue)
-%             self.StimulusLibrary_.SelectedOutputableUUID=newValue;
+%         function result = get.IsArmedOrStimulating(self)
+%             result = self.IsArmedOrStimulating_ ;
+%         end
+%     
+%         function result = get.AnalogPhysicalChannelNames(self)
+%             result = self.AnalogPhysicalChannelNames_ ;
+%         end
+%     
+%         function result = get.DigitalPhysicalChannelNames(self)
+%             result = self.DigitalPhysicalChannelNames_ ;
 %         end
 % 
-%         function value = get.SelectedOutputable(self)
-%             value=self.StimulusLibrary_.SelectedOutputable;
+%         function result = get.PhysicalChannelNames(self)
+%             result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
 %         end
 %         
-%         function set.SelectedOutputable(self, newValue)
-%             self.StimulusLibrary_.SelectedOutputable=newValue;
+%         function result = get.AnalogChannelNames(self)
+%             result = self.AnalogChannelNames_ ;
+%         end
+%     
+%         function result = get.DigitalChannelNames(self)
+%             result = self.DigitalChannelNames_ ;
+%         end
+%     
+%         function result = get.ChannelNames(self)
+%             result = [self.AnalogChannelNames self.DigitalChannelNames] ;
+%         end
+%     
+% %         function result = get.AnalogChannelIDs(self)
+% %             result = self.AnalogChannelIDs_ ;
+% %         end
+%         
+%         function result = get.DeviceNamePerAnalogChannel(self)
+%             result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
+%         end
+%         
+% %         function result = get.AnalogPhysicalChannelNames(self)
+% %             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
+% %             analogChannelIDs = self.AnalogChannelIDs_ ;            
+% %             nChannels=length(analogChannelIDs);
+% %             result=cell(1,nChannels);
+% %             for i=1:nChannels ,
+% %                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
+% %             end
+% %         end
+%         
+%         function value = get.NAnalogChannels(self)
+%             value = length(self.AnalogChannelNames_);
+%         end
+%         
+%         function value = get.NDigitalChannels(self)
+%             value = length(self.DigitalChannelNames_);
+%         end
+% 
+%         function value = get.NTimedDigitalChannels(self)
+%             value = sum(self.IsDigitalChannelTimed);
+%         end
+% 
+%         function value = get.NChannels(self)
+%             value = self.NAnalogChannels + self.NDigitalChannels ;
+%         end
+%         
+%         function value=isAnalogChannelName(self,name)
+%             value=any(strcmp(name,self.AnalogChannelNames));
+%         end
+%         
+%         function value = get.IsChannelAnalog(self)
+%             % Boolean array indicating, for each channel, whether is is analog or not
+%             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
+%         end
+        
+%         function set.TriggerScheme(self, value)
+%             if ~ws.utility.isASettableValue(value), return, end            
+%             self.validatePropArg('TriggerScheme', value);
+%             self.TriggerScheme_ = value;
+%         end
+% 
+%         function value=get.TriggerScheme(self)
+%             value=self.TriggerScheme_;
 %         end
 
-        function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
-            % Called by the parent WavesurferModel to notify that the electrode
-            % may have changed.
-            
-            % If the changed property is a monitor property, we can safely
-            % ignore            
-            %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
-            if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
-                return
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();                        
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end
+%         function set.TriggerScheme(self, value)
+%             if ~ws.utility.isASettableValue(value), return, end            
+%             self.validatePropArg('TriggerScheme', value);
+%             %self.TriggerScheme = value;
+%             self.Parent.Triggering.StimulationTriggerScheme = value ;
+%         end  % function
+
+%         function output = get.TriggerScheme(self)
+%             output = self.Parent.Triggering.StimulationTriggerScheme ;
+%         end
         
-        function electrodesRemoved(self)
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end
-        
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            stimulusLibrary=self.StimulusLibrary;
-            if ~isempty(stimulusLibrary) ,
-                stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end        
+%         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
+%             % Called by the parent WavesurferModel to notify that the electrode
+%             % may have changed.
+%             
+%             % If the changed property is a monitor property, we can safely
+%             % ignore            
+%             %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
+%             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
+%                 return
+%             end
+%             self.Parent.didSetAnalogChannelUnitsOrScales();                        
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end
+%         
+%         function electrodesRemoved(self)
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end
+%         
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             stimulusLibrary=self.StimulusLibrary;
+%             if ~isempty(stimulusLibrary) ,
+%                 stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end        
         
 %         function didSetSelectedOutputable(self)
 %             % Called by the child StimulusLibrary to notify self that the
@@ -343,42 +298,43 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
     end  % methods block
     
     methods
-        function set.IsDigitalChannelTimed(self,newValue)
-            if ws.utility.isASettableValue(newValue),
-                if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                    coercedNewValue = logical(newValue) ;
-                    if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
-                        self.IsDigitalChannelTimed_=coercedNewValue;
-                        self.syncTasksToChannelMembership_();
-                    end
-                else
-                    error('most:Model:invalidPropVal', ...
-                          'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
-                end
-            end
-            self.broadcast('DidSetIsDigitalChannelTimed');
-        end  % function
-        
-        function set.DigitalOutputStateIfUntimed(self,newValue)
-            if ws.utility.isASettableValue(newValue),
-                if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
-                        (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                    coercedNewValue = logical(newValue) ;
-                    self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
-                    if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-                        isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-                        untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
-                        if ~isempty(untimedDigitalChannelState) ,
-                            self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-                        end
-                    end
-                else
-                    error('most:Model:invalidPropVal', ...
-                          'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
-                end
-            end
-            self.broadcast('DidSetDigitalOutputStateIfUntimed');
-        end  % function
+%         function set.IsDigitalChannelTimed(self,newValue)
+%             if ws.utility.isASettableValue(newValue),
+%                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+%                     coercedNewValue = logical(newValue) ;
+%                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
+%                         self.IsDigitalChannelTimed_=coercedNewValue;
+%                         %self.syncTasksToChannelMembership_();
+%                     end
+%                 else
+%                     self.broadcast('DidSetIsDigitalChannelTimed');
+%                     error('most:Model:invalidPropVal', ...
+%                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
+%                 end
+%             end
+%             self.broadcast('DidSetIsDigitalChannelTimed');
+%         end  % function
+%         
+%         function set.DigitalOutputStateIfUntimed(self,newValue)
+%             if ws.utility.isASettableValue(newValue),
+%                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
+%                         (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+%                     coercedNewValue = logical(newValue) ;
+%                     self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
+%                     if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+%                         isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+%                         untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
+%                         if ~isempty(untimedDigitalChannelState) ,
+%                             self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+%                         end
+%                     end
+%                 else
+%                     error('most:Model:invalidPropVal', ...
+%                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
+%                 end
+%             end
+%             self.broadcast('DidSetDigitalOutputStateIfUntimed');
+%         end  % function
         
         function initializeFromMDFStructure(self, mdfStructure)            
             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
@@ -408,8 +364,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % Set the analog channel scales, units
                 nAnalogChannels = sum(isAnalog) ;
                 self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat(V,[1 nAnalogChannels]);
+                %V=ws.utility.SIUnit('V');  % by default, the units are volts                
+                self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
                 
                 % Set defaults for digital channels
                 nDigitalChannels = sum(isDigital) ;
@@ -419,104 +375,103 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 % Intialized the stimulus library
                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
                 
-                % Set up the untimed channels
-                self.syncTasksToChannelMembership_();
+%                 % Set up the untimed channels
+%                 self.syncTasksToChannelMembership_();
                 
-                % Finally, mark outselves as enable-able
-                nChannels = length(mdfStructure.physicalOutputChannelNames) ;
-                self.CanEnable = (nChannels>0);
             end
         end  % function
 
-        function acquireHardwareResources_(self)            
-            if isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteOutputTask(self, ...
-                                           'analog', ...
-                                           'Wavesurfer Finite Analog Output Task', ...
-                                           self.AnalogPhysicalChannelNames, ...
-                                           self.AnalogChannelNames) ;
-                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
-                %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
-            end
-            if isempty(self.TheFiniteDigitalOutputTask_) ,
-                self.TheFiniteDigitalOutputTask_ = ...
-                    ws.ni.FiniteOutputTask(self, ...
-                                           'digital', ...
-                                           'Wavesurfer Finite Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
-                                           self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
-                self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
-                %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
-            end
-            if isempty(self.TheUntimedDigitalOutputTask_) ,
-                 self.TheUntimedDigitalOutputTask_ = ...
-                    ws.ni.UntimedDigitalOutputTask(self, ...
-                                           'Wavesurfer Untimed Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
-                                           self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
-                 if ~all(self.IsDigitalChannelTimed)
-                     self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
-                 end
-           end
-        end
+%         function acquireHardwareResources_(self)            
+%             if isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_ = ...
+%                     ws.ni.FiniteOutputTask(self, ...
+%                                            'analog', ...
+%                                            'Wavesurfer Finite Analog Output Task', ...
+%                                            self.AnalogPhysicalChannelNames, ...
+%                                            self.AnalogChannelNames) ;
+%                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
+%                 %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
+%             end
+%             if isempty(self.TheFiniteDigitalOutputTask_) ,
+%                 self.TheFiniteDigitalOutputTask_ = ...
+%                     ws.ni.FiniteOutputTask(self, ...
+%                                            'digital', ...
+%                                            'Wavesurfer Finite Digital Output Task', ...
+%                                            self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
+%                                            self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
+%                 self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
+%                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
+%             end
+%             if isempty(self.TheUntimedDigitalOutputTask_) ,
+%                  self.TheUntimedDigitalOutputTask_ = ...
+%                     ws.ni.UntimedDigitalOutputTask(self, ...
+%                                            'Wavesurfer Untimed Digital Output Task', ...
+%                                            self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
+%                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
+%                  if ~all(self.IsDigitalChannelTimed)
+%                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
+%                  end
+%            end
+%         end
+%         
+%         function releaseHardwareResources(self)
+%             self.TheFiniteAnalogOutputTask_ = [];            
+%             self.TheFiniteDigitalOutputTask_ = [];            
+%             self.TheUntimedDigitalOutputTask_ = [];            
+%         end
         
-        function releaseHardwareResources(self)
-            self.TheFiniteAnalogOutputTask_ = [];            
-            self.TheFiniteDigitalOutputTask_ = [];            
-            self.TheUntimedDigitalOutputTask_ = [];            
-        end
-        
-        function willPerformExperiment(self, wavesurferObj, experimentMode) %#ok<INUSD>
-            %fprintf('Stimulation::willPerformExperiment()\n');
+        function willPerformRun(self)
+            %fprintf('Stimulation::willPerformRun()\n');
             %errors = [];
             %abort = false;
             
-            % Do a bunch of checks to make sure all is well for running an
-            % experiment
-            if isempty(self.TriggerScheme)
-                error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-            end            
-            if isempty(self.TriggerScheme.Target)
-                error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-            end            
-            %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-            %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
-            %end
+%             % Do a bunch of checks to make sure all is well for running an
+%             % run
+%             if isempty(self.TriggerScheme)
+%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
+%             end            
+%             if isempty(self.TriggerScheme.Target)
+%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
+%             end            
+%             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
+%             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
+%             %end
             
-            % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources_();
+            wavesurferModel = self.Parent ;
             
-            % Set up the task triggering
-            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-            
-            % Clear out any pre-existing output waveforms
-            self.TheFiniteAnalogOutputTask_.clearChannelData();
-            self.TheFiniteDigitalOutputTask_.clearChannelData();
+%             % Make the NI daq task, if don't have it already
+%             self.acquireHardwareResources_();
+%             
+%             % Set up the task triggering
+%             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+%             self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
+%             self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             
+%             % Clear out any pre-existing output waveforms
+%             self.TheFiniteAnalogOutputTask_.clearChannelData();
+%             self.TheFiniteDigitalOutputTask_.clearChannelData();
             
             % Determine how many episodes there will be, if possible
             if self.TriggerScheme.IsExternal ,
-                self.EpisodesPerExperiment_ = [];
+                self.EpisodesPerRun_ = [];
             else
                 % stim trigger scheme is internal
-                if wavesurferObj.Triggering.AcquisitionTriggerScheme.IsInternal
+                if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal
                     % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == wavesurferObj.Triggering.AcquisitionTriggerScheme.Target ,
-                        self.EpisodesPerExperiment_ = self.Parent.ExperimentTrialCount;
+                    if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
+                        self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
                     else
-                        self.EpisodesPerExperiment_ = self.TriggerScheme.Target.RepeatCount;
+                        self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
                     end
-                elseif wavesurferObj.Triggering.AcquisitionTriggerScheme.IsExternal
+                elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme
-                    self.EpisodesPerExperiment_ = self.TriggerScheme.Target.RepeatCount;
+                    self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
                 else
-                    % acq trigger scheme is null --- this experiment is
+                    % acq trigger scheme is null --- this run is
                     % stillborn, so doesn't matter
-                    self.EpisodesPerExperiment_ = [];
+                    self.EpisodesPerRun_ = [];
                 end
             end
 
@@ -528,68 +483,68 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.SelectedOutputableCache_=stimulusOutputable;
             
             % Set the state
-            self.IsWithinExperiment_=true;
-        end  % willPerformExperiment() function
+            self.IsWithinRun_=true;
+        end  % willPerformRun() function
         
-        function didPerformExperiment(self, ~)
-            %fprintf('Stimulation::didPerformExperiment()\n');
-            self.TheFiniteAnalogOutputTask_.disarm();
-            self.TheFiniteDigitalOutputTask_.disarm();
+        function didCompleteRun(self)
+            %fprintf('Stimulation::didCompleteRun()\n');
+%             self.TheFiniteAnalogOutputTask_.disarm();
+%             self.TheFiniteDigitalOutputTask_.disarm();
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
-            self.IsWithinExperiment_=false;  % might already be guaranteed to be false here...
+            self.IsWithinRun_=false;  % might already be guaranteed to be false here...
         end  % function
         
-        function didAbortExperiment(self, ~)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_.disarm();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) ,
-                self.TheFiniteDigitalOutputTask_.disarm();
-            end
+        function didAbortRun(self)
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_.disarm();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) ,
+%                 self.TheFiniteDigitalOutputTask_.disarm();
+%             end
             
             %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
-            self.IsWithinExperiment_=false;
+            self.IsWithinRun_=false;
         end  % function
         
-        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            % This gets called from above when an (acq) trial is about to
+        function willPerformSweep(self)
+            % This gets called from above when an (acq) sweep is about to
             % start.  What we do here depends a lot on the current triggering
             % settings.
             
-            %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
-            %fprintf('Stimulation::willPerformTrial()\n');
+            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
+            %fprintf('Stimulation::willPerformSweep()\n');
 
             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-            if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+            if self.TriggerScheme == acquisitionTriggerScheme ,
                 % Stim and acq are using same trigger source, so should arm
                 % stim system now.
                 self.armForEpisode();
             else
                 % Stim and acq are using distinct trigger
                 % sources.
-                % If first trial, arm.  Otherwise, we handle
-                % re-arming independently from the acq trials.
-                if self.Parent.ExperimentCompletedTrialCount == 0 ,
+                % If first sweep, arm.  Otherwise, we handle
+                % re-arming independently from the acq sweeps.
+                if self.Parent.NSweepsCompletedInThisRun == 0 ,
                     self.armForEpisode();
                 end
             end
         end  % function
 
-%         function willPerformTrial(self, wavesurferObj) %#ok<INUSD>
-%             % This gets called from above when an (acq) trial is about to
+%         function willPerformSweep(self, wavesurferObj) %#ok<INUSD>
+%             % This gets called from above when an (acq) sweep is about to
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
-%             %fprintf('Stimulation.willPerformTrial: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));                        
-%             fprintf('Stimulation::willPerformTrial()\n');
+%             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
+%             fprintf('Stimulation::willPerformSweep()\n');
 %             
 %             if self.TriggerScheme.IsExternal ,
 %                 % If external triggering, we set up for a trigger only if
 %                 % this is the first 
-%                 if self.Parent.ExperimentCompletedTrialCount == 0 ,
+%                 if self.Parent.NSweepsCompletedInThisRun == 0 ,
 %                     self.armForEpisode();
 %                 end
 %             else
@@ -597,15 +552,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
 %                 if acquisitionTriggerScheme.IsInternal ,
 %                     % acq trigger scheme is internal
-%                     if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+%                     if self.TriggerScheme == acquisitionTriggerScheme ,
 %                         % stim and acq are using same trigger source
 %                         self.armForEpisode();
 %                     else
 %                         % stim and acq are using distinct internal trigger
 %                         % sources
-%                         % if first trial, arm.  Otherwise, we handle
-%                         % re-arming independently from the acq trials.
-%                         if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
+%                         % if first sweep, arm.  Otherwise, we handle
+%                         % re-arming independently from the acq sweeps.
+%                         if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
 %                             self.armForEpisode();
 %                         else
 %                             % do nothing
@@ -614,15 +569,15 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %                 else
 %                     % acq trigger scheme is external, so must be different
 %                     % from stim trigger scheme, which is internal
-% %                     if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+% %                     if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
 % %                         self.armForEpisode();
 % %                     else
-% %                         self.IsWithinExperiment_ = false;
+% %                         self.IsWithinRun_ = false;
 % %                         self.Parent.stimulationEpisodeComplete();
 % %                     end
-%                     % if first trial, arm.  Otherwise, we handle
-%                     % re-arming independently from the acq trials.
-%                     if self.Parent.ExperimentCompletedTrialCount == 0 ,                            
+%                     % if first sweep, arm.  Otherwise, we handle
+%                     % re-arming independently from the acq sweeps.
+%                     if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
 %                         self.armForEpisode();
 %                     else
 %                         % do nothing
@@ -631,27 +586,29 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             end
 %         end  % function
         
-        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            %fprintf('Stimulation::didPerformTrial()\n');            
+        function didCompleteSweep(self)  %#ok<MANU>
+            %fprintf('Stimulation::didCompleteSweep()\n');            
         end
         
-        function didAbortTrial(self, ~)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
-                self.TheFiniteAnalogOutputTask_.abort();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
-                self.TheFiniteDigitalOutputTask_.abort();
-            end
-            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
-                self.TheUntimedDigitalOutputTask_.abort();            
-            end
+        function didAbortSweep(self)
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+%                 self.TheFiniteAnalogOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+%                 self.TheFiniteDigitalOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+%                 self.TheUntimedDigitalOutputTask_.abort();            
+%             end
             self.IsArmedOrStimulating_ = false ;
         end  % function
         
         function armForEpisode(self)
-            %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromExperimentStartTicId_));
+            %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
+            %dbstack
+            %fprintf('\n\n');
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
@@ -667,21 +624,23 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             self.setAnalogChannelData_(stimulusMap);
             self.setDigitalChannelData_(stimulusMap);
 
-            % Arm and start the analog task
-            if self.HasAnalogChannels_ ,
-                if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteAnalogOutputTask_.arm();
-                end
-                self.TheFiniteAnalogOutputTask_.start();                
-            end
-            
-            % Arm and start the digital task
-            if self.HasTimedDigitalChannels_ ,
-                if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteDigitalOutputTask_.arm();
-                end
-                self.TheFiniteDigitalOutputTask_.start(); 
-            end
+%             % Arm and start the analog task (which will then wait for a
+%             % trigger)
+%             if self.HasAnalogChannels_ ,
+%                 if self.EpisodesCompleted_ == 0 ,
+%                     self.TheFiniteAnalogOutputTask_.arm();
+%                 end
+%                 self.TheFiniteAnalogOutputTask_.start();                
+%             end
+%             
+%             % Arm and start the digital task (which will then wait for a
+%             % trigger)
+%             if self.HasTimedDigitalChannels_ ,
+%                 if self.EpisodesCompleted_ == 0 ,
+%                     self.TheFiniteDigitalOutputTask_.arm();
+%                 end
+%                 self.TheFiniteDigitalOutputTask_.start(); 
+%             end
             
             % If no samples at all, we just declare the episode done
             if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
@@ -695,7 +654,6 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
         end  % function
-        
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
@@ -729,138 +687,138 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
-                result=ws.utility.SIUnit.empty();
+                result='';
             else
                 iChannel=self.indexOfAnalogChannelFromName(channelName);
                 if isempty(iChannel) ,
-                    result=ws.utility.SIUnit.empty();
+                    result='';
                 else
-                    result=self.AnalogChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits{iChannel};
                 end
             end
         end  % function
         
-        function channelUnits=get.AnalogChannelUnits(self)
-            import ws.utility.*
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                channelUnits=self.AnalogChannelUnits_;
-            else
-                channelNames=self.AnalogChannelNames;            
-                [channelUnitsFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getCommandUnitsByName(channelNames);
-                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
-            end
-        end  % function
+%         function channelUnits=get.AnalogChannelUnits(self)
+%             import ws.utility.*
+%             wavesurferModel=self.Parent;
+%             if isempty(wavesurferModel) ,
+%                 ephys=[];
+%             else
+%                 ephys=wavesurferModel.Ephys;
+%             end
+%             if isempty(ephys) ,
+%                 electrodeManager=[];
+%             else
+%                 electrodeManager=ephys.ElectrodeManager;
+%             end
+%             if isempty(electrodeManager) ,
+%                 channelUnits=self.AnalogChannelUnits_;
+%             else
+%                 channelNames=self.AnalogChannelNames;            
+%                 [channelUnitsFromElectrodes, ...
+%                  isChannelScaleEnslaved] = ...
+%                     electrodeManager.getCommandUnitsByName(channelNames);
+%                 channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
+%             end
+%         end  % function
+%         
+%         function analogChannelScales=get.AnalogChannelScales(self)
+%             import ws.utility.*
+%             wavesurferModel=self.Parent;
+%             if isempty(wavesurferModel) ,
+%                 ephys=[];
+%             else
+%                 ephys=wavesurferModel.Ephys;
+%             end
+%             if isempty(ephys) ,
+%                 electrodeManager=[];
+%             else
+%                 electrodeManager=ephys.ElectrodeManager;
+%             end
+%             if isempty(electrodeManager) ,
+%                 analogChannelScales=self.AnalogChannelScales_;
+%             else
+%                 channelNames=self.AnalogChannelNames;            
+%                 [analogChannelScalesFromElectrodes, ...
+%                  isChannelScaleEnslaved] = ...
+%                     electrodeManager.getCommandScalingsByName(channelNames);
+%                 analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
+%             end
+%         end  % function
+%         
+%         function set.AnalogChannelUnits(self,newValue)
+%             import ws.utility.*
+%             oldValue=self.AnalogChannelUnits_;
+%             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
+%             editedNewValue=fif(isChangeable,newValue,oldValue);
+%             self.AnalogChannelUnits_=editedNewValue;
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
+%         
+%         function set.AnalogChannelScales(self,newValue)
+%             import ws.utility.*
+%             oldValue=self.AnalogChannelScales_;
+%             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
+%             editedNewValue=fif(isChangeable,newValue,oldValue);
+%             self.AnalogChannelScales_=editedNewValue;
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
         
-        function analogChannelScales=get.AnalogChannelScales(self)
-            import ws.utility.*
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                analogChannelScales=self.AnalogChannelScales_;
-            else
-                channelNames=self.AnalogChannelNames;            
-                [analogChannelScalesFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getCommandScalingsByName(channelNames);
-                analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
-            end
-        end  % function
+%         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
+%             import ws.utility.*
+%             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
+%             oldUnits=self.AnalogChannelUnits_;
+%             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
+%             oldScales=self.AnalogChannelScales_;
+%             editedNewScales=fif(isChangeable,newScales,oldScales);
+%             self.AnalogChannelUnits_=editedNewUnits;
+%             self.AnalogChannelScales_=editedNewScales;
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
+%         
+%         function setSingleAnalogChannelUnits(self,i,newValue)
+%             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
+%             isChangeable= ~isChangeableFull(i);
+%             if isChangeable ,
+%                 self.AnalogChannelUnits_(i)=newValue;
+%             end
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
+%         
+%         function setSingleAnalogChannelScale(self,i,newValue)
+%             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
+%             isChangeable= ~isChangeableFull(i);
+%             if isChangeable ,
+%                 self.AnalogChannelScales_(i)=newValue;
+%             end
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
         
-        function set.AnalogChannelUnits(self,newValue)
-            import ws.utility.*
-            oldValue=self.AnalogChannelUnits_;
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.AnalogChannelUnits_=editedNewValue;
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function set.AnalogChannelScales(self,newValue)
-            import ws.utility.*
-            oldValue=self.AnalogChannelScales_;
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.AnalogChannelScales_=editedNewValue;
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
-            import ws.utility.*
-            isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
-            oldUnits=self.AnalogChannelUnits_;
-            editedNewUnits=fif(isChangeable,newUnits,oldUnits);
-            oldScales=self.AnalogChannelScales_;
-            editedNewScales=fif(isChangeable,newScales,oldScales);
-            self.AnalogChannelUnits_=editedNewUnits;
-            self.AnalogChannelScales_=editedNewScales;
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function setSingleAnalogChannelUnits(self,i,newValue)
-            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
-            isChangeable= ~isChangeableFull(i);
-            if isChangeable ,
-                self.AnalogChannelUnits_(i)=newValue;
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function setSingleAnalogChannelScale(self,i,newValue)
-            isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
-            isChangeable= ~isChangeableFull(i);
-            if isChangeable ,
-                self.AnalogChannelScales_(i)=newValue;
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function result=getNumberOfElectrodesClaimingChannel(self)
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                result=zeros(1,self.NAnalogChannels);
-            else
-                channelNames=self.AnalogChannelNames;            
-                result = ...
-                    electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
-            end
-        end  % function        
+%         function result=getNumberOfElectrodesClaimingChannel(self)
+%             wavesurferModel=self.Parent;
+%             if isempty(wavesurferModel) ,
+%                 ephys=[];
+%             else
+%                 ephys=wavesurferModel.Ephys;
+%             end
+%             if isempty(ephys) ,
+%                 electrodeManager=[];
+%             else
+%                 electrodeManager=ephys.ElectrodeManager;
+%             end
+%             if isempty(electrodeManager) ,
+%                 result=zeros(1,self.NAnalogChannels);
+%             else
+%                 channelNames=self.AnalogChannelNames;            
+%                 result = ...
+%                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
+%             end
+%         end  % function        
         
         function analogEpisodeCompleted(self)
             %fprintf('Stimulation::analogEpisodeCompleted()\n');
@@ -899,8 +857,8 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             self.setPropertyAttributeFeatures('DoRepeatSequence', 'Classes', 'logical', 'Attributes', {'scalar'}, 'AllowEmpty', false);
 %         end
         
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);
 %             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('AnalogChannelUnits_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('AnalogChannelScales_', 'IncludeInFileTypes', {'cfg'});            
@@ -915,52 +873,48 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
 %             %self.setPropertyTags('SelectedOutputableUUID', 'ExcludeFromFileTypes', {'*'});
 %         end
         
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.system.Subsystem(self);            
-            %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
-        end
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
+%             %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
+%         end
 
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
-            if nargin < 3
-                value = [];
-            end
-            
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end        
     end  % protected methods block
     
     methods (Access = protected)
-        function syncTasksToChannelMembership_(self)
-            % Clear the timed digital output task, will be recreated when acq is
-            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
-            % And have to do it first to avoid a temporary collision.
-            self.TheFiniteDigitalOutputTask_ = [] ;
-            % Set the untimed output task appropriately
-            self.TheUntimedDigitalOutputTask_ = [] ;
-            isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-            untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
-            untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
-            self.TheUntimedDigitalOutputTask_ = ...
-                ws.ni.UntimedDigitalOutputTask(self, ...
-                                               'Wavesurfer Untimed Digital Output Task', ...
-                                               untimedDigitalPhysicalChannelNames, ...
-                                               untimedDigitalChannelNames) ;
-            % Set the outputs to the proper values, now that we have a task                               
-            if any(isDigitalChannelUntimed) ,
-                untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
-                self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-            end
-        end  % function
+%         function syncTasksToChannelMembership_(self)
+%             % Clear the timed digital output task, will be recreated when acq is
+%             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+%             % And have to do it first to avoid a temporary collision.
+%             %self.TheFiniteDigitalOutputTask_ = [] ;
+%             % Set the untimed output task appropriately
+%             self.TheUntimedDigitalOutputTask_ = [] ;
+%             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+%             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+%             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+%             self.TheUntimedDigitalOutputTask_ = ...
+%                 ws.ni.UntimedDigitalOutputTask(self, ...
+%                                                'Wavesurfer Untimed Digital Output Task', ...
+%                                                untimedDigitalPhysicalChannelNames, ...
+%                                                untimedDigitalChannelNames) ;
+%             % Set the outputs to the proper values, now that we have a task                               
+%             if any(isDigitalChannelUntimed) ,
+%                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
+%                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+%             end
+%         end  % function
         
         function stimulusMap = getCurrentStimulusMap_(self)
             % Calculate the episode index
-            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            episodeIndexWithinRun=self.EpisodesCompleted_+1;
             
             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
             % things
@@ -974,13 +928,13 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 else
                     % outputable must be a sequence                
                     nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
-                    if episodeIndexWithinExperiment <= nMapsInSequence ,
+                    if episodeIndexWithinRun <= nMapsInSequence ,
                         isThereAMap=true;
-                        indexOfMapIfSequence=episodeIndexWithinExperiment;
+                        indexOfMapIfSequence=episodeIndexWithinRun;
                     else
                         if self.DoRepeatSequence ,
                             isThereAMap=true;
-                            indexOfMapIfSequence=mod(episodeIndexWithinExperiment-1,nMapsInSequence)+1;
+                            indexOfMapIfSequence=mod(episodeIndexWithinRun-1,nMapsInSequence)+1;
                         else
                             isThereAMap=false;
                             indexOfMapIfSequence=1;  % arbitrary: doesn't get used if isThereAMap==false
@@ -1004,7 +958,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             import ws.utility.*
             
             % Calculate the episode index
-            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            episodeIndexWithinRun=self.EpisodesCompleted_+1;
             
             % Calculate the signals
             if isempty(stimulusMap) ,
@@ -1013,7 +967,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             else
                 isChannelAnalog = true(1,self.NAnalogChannels) ;
                 [aoData,nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinExperiment);
+                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinRun);
             end
             
             % Want to return the number of scans in the stimulus data
@@ -1034,16 +988,16 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % limit the data to [-10 V, +10 V]
             aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
 
-            % Finally, assign the stimulation data to the the relevant part
-            % of the output task
-            self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
         end  % function
 
         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap)
             import ws.utility.*
             
             % Calculate the episode index
-            episodeIndexWithinExperiment=self.EpisodesCompleted_+1;
+            episodeIndexWithinRun=self.EpisodesCompleted_+1;
             
             % Calculate the signals
             if isempty(stimulusMap) ,
@@ -1052,7 +1006,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             else
                 isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
                 [doData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinExperiment);
+                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinRun);
             end
             
             % Want to return the number of scans in the stimulus data
@@ -1061,9 +1015,9 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
             % limit the data to {false,true}
             doDataLimited=logical(doData);
 
-            % Finally, assign the stimulation data to the the relevant part
-            % of the output task
-            self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
         end  % function
 
         function episodeCompleted_(self)
@@ -1082,7 +1036,7 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
                 if acquisitionTriggerScheme.IsExternal ,
                     % both acq and stim are external
-                    if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+                    if self.TriggerScheme == acquisitionTriggerScheme ,
                         % stim and acq are using same trigger
                         self.Parent.stimulationEpisodeComplete();
                     else
@@ -1100,26 +1054,26 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
                 if acquisitionTriggerScheme.IsInternal ,
                     % acq trigger scheme is internal
-                    if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+                    if self.TriggerScheme == acquisitionTriggerScheme ,
                         % stim and acq are using same trigger source
                         self.Parent.stimulationEpisodeComplete();
                     else
                         % stim and acq are using distinct internal trigger
                         % sources
-                        if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+                        if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
                             self.armForEpisode();
                         else
-                            self.IsWithinExperiment_ = false;
+                            self.IsWithinRun_ = false;
                             self.Parent.stimulationEpisodeComplete();
                         end
                     end
                 else
                     % acq trigger scheme is external, so must be different
                     % from stim trigger scheme, which is internal
-                    if self.EpisodesCompleted_ < self.EpisodesPerExperiment_ ,
+                    if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
                         self.armForEpisode();
                     else
-                        self.IsWithinExperiment_ = false;
+                        self.IsWithinRun_ = false;
                         self.Parent.stimulationEpisodeComplete();
                     end
                 end
@@ -1128,34 +1082,31 @@ classdef Stimulation < ws.system.Subsystem   % & ws.mixin.DependentProperties
         
     end  % protected methods
 
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Stimulation.propertyAttributes();
-        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
-            s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
-            s.DoRepeatSequence = struct('Classes','binarylogical');
-
-        end  % function
-    end  % class methods block
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.SampleRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
+%             s.TriggerScheme = struct('Classes', 'ws.TriggerScheme', 'Attributes', {{'scalar'}}, 'AllowEmpty', false);
+%             s.DoRepeatSequence = struct('Classes','binarylogical');
+%         end  % function
+%     end  % class methods block
     
     methods
-        function pollingTimerFired(self,timeSinceTrialStart)
-            % Call the task to do the real work
-            if self.IsArmedOrStimulating_ ,
-                if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                    self.TheFiniteAnalogOutputTask_.pollingTimerFired(timeSinceTrialStart);
-                end
-                if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-                    self.TheFiniteDigitalOutputTask_.pollingTimerFired(timeSinceTrialStart);
-                end
-            end
+        function poll(self,timeSinceSweepStart)
+%             % Call the task to do the real work
+%             if self.IsArmedOrStimulating_ ,
+%                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+%                     self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
+%                 end
+%                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
+%                     self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
+%                 end
+%             end
         end
     end
     
