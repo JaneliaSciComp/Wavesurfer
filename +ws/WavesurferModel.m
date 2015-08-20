@@ -3,10 +3,10 @@ classdef WavesurferModel < ws.Model
 
     properties (Constant = true, Transient=true)
         NFastProtocols = 6        
-        LooperRPCPortNumber = 8081
-        FrontendRPCPortNumber = 8082
-        RefillerRPCPortNumber = 8083
-        DataPubSubPortNumber = 8084
+        %LooperRPCPortNumber = 8081
+        FrontendIPCPublisherPortNumber = 8082
+        %RefillerRPCPortNumber = 8083
+        LooperIPCPublisherPortNumber = 8084
     end
     
     properties (Dependent = true)
@@ -61,10 +61,10 @@ classdef WavesurferModel < ws.Model
     end
 
     properties (Access=protected, Transient=true)
-        RPCServer_
-        LooperRPCClient_
-        RefillerRPCClient_
-        DataSubscriber_
+        %RPCServer_
+        IPCPublisher_
+        %RefillerRPCClient_
+        IPCSubscriber_
         %ExpectedNextScanIndex_
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
@@ -138,26 +138,27 @@ classdef WavesurferModel < ws.Model
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
             if isITheOneTrueWavesurferModel ,
-                % Set up the communication sockets            
-                self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendRPCPortNumber) ;
-                self.RPCServer_.setDelegate(self) ;
-                self.RPCServer_.bind();
+%                 % Set up the communication sockets            
+%                 self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+%                 self.RPCServer_.setDelegate(self) ;
+%                 self.RPCServer_.bind();
 
-                self.LooperRPCClient_ = ws.RPCClient(ws.WavesurferModel.LooperRPCPortNumber) ;
-                self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
+                self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_.bind() ;
+                %self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
 
-                self.DataSubscriber_ = ws.IPCSubscriber(ws.WavesurferModel.DataPubSubPortNumber) ;
-                self.DataSubscriber_.setDelegate(self) ;
+                self.IPCSubscriber_ = ws.IPCSubscriber() ;
+                self.IPCSubscriber_.setDelegate(self) ;
 
                 % Start the other Matlab processes
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
-                system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop();"');
+                system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
 
                 % Connect to the various sockets
-                self.LooperRPCClient_.connect() ;
-                self.RefillerRPCClient_.connect() ;
-                self.DataSubscriber_.connect() ;
+                %self.LooperRPCClient_.connect() ;
+                %self.RefillerRPCClient_.connect() ;
+                self.IPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
             end
             
             % Initialize the fast protocols
@@ -735,12 +736,15 @@ classdef WavesurferModel < ws.Model
             
             % Tell the Looper to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
-            err = self.LooperRPCClient_.call('willPerformRun',wavesurferModelSettings) ;
-            if ~isempty(err) ,
-                self.cleanUpAfterAbortedRun_('problem');
-                self.changeReadiness(+1);
-                throw(err);                
-            end
+            fprintf('About to send willPerformRun\n');
+            self.IPCPublisher_.send('willPerformRun',wavesurferModelSettings) ;
+            % Might want to implement some kind of interlock here, with
+            % error after timeout
+%             if ~isempty(err) ,
+%                 self.cleanUpAfterAbortedRun_('problem');
+%                 self.changeReadiness(+1);
+%                 throw(err);                
+%             end
             
             % Change our own state to running
             self.setState_('running') ;
@@ -808,12 +812,15 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Tell the looper to ready itself
-                err = self.LooperRPCClient_.call('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
-                if ~isempty(err) ,
-                    self.cleanUpAfterAbortedRun_('problem');
-                    self.changeReadiness(+1);
-                    throw(err);                
-                end
+                fprintf('About to send willPerformSweep\n');
+                self.IPCPublisher_.send('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
+                % Might want to implement some kind of interlock here, with
+                % error after timeout
+%                 if ~isempty(err) ,
+%                     self.cleanUpAfterAbortedRun_('problem');
+%                     self.changeReadiness(+1);
+%                     throw(err);                
+%                 end
                 
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
@@ -1739,8 +1746,8 @@ classdef WavesurferModel < ws.Model
                 if timeSinceLastPoll >= pollingPeriod ,
                     timeOfLastPoll = timeNow ;
                     fprintf('just before message processing...\n');
-                    %self.DataSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    self.DataSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                    %self.IPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                    self.IPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
                     fprintf('within message processing...\n');
                     %self.RPCServer_.processMessagesIfAvailable() ;  % this is how we learn the sweep is complete
                     %self.RPCServer_.processMessageIfAvailable() ;  % this is how we learn the sweep is complete

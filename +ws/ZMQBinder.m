@@ -51,7 +51,9 @@ classdef ZMQBinder < handle
                     self.Socket =[] ;
                 end
                 if self.hasContext() ,
+                    fprintf('ZMQBinder::delete(): About to call zmq.core.ctx_term()\n');
                     zmq.core.ctx_term(self.Context);
+                    fprintf('ZMQBinder::delete(): Just called zmq.core.ctx_term()\n');
                     self.Context = [] ;
                 end
             catch me %#ok<NASGU>

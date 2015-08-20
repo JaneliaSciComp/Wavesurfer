@@ -5,8 +5,8 @@ classdef IPCSubscriber < ws.ZMQConnecter
     end
     
     methods
-        function self = IPCSubscriber(portNumber)
-            self@ws.ZMQConnecter(portNumber,'ZMQ_SUB');
+        function self = IPCSubscriber()
+            self@ws.ZMQConnecter('ZMQ_SUB');
         end  % function
 
         function delete(self)            
@@ -51,7 +51,8 @@ classdef IPCSubscriber < ws.ZMQConnecter
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
-            if isempty(self.Delegate) ,                    
+            fprintf('IPCSubscriber::processMessageIfAvailable(): Got message %s\n',methodName);
+            if isempty(self.Delegate) ,
                 error('IPCSubscriber:noDelegate', ...
                       'Couldn''t call the method because Delegate is empty or invalid');
             else
@@ -59,12 +60,11 @@ classdef IPCSubscriber < ws.ZMQConnecter
             end
         end  % function        
         
-        function connect(self)
-            self.connect@ws.ZMQConnecter();
+        function connect(self,portNumber)
+            self.connect@ws.ZMQConnecter(portNumber);
             zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
         end  % function
 
     end  % methods
     
 end
-

@@ -38,9 +38,10 @@ classdef Looper < ws.Model
     end
 
     properties (Access=protected, Transient=true)
-        RPCServer_
-        RPCClient_
+        %RPCServer_
+        %RPCClient_
         IPCPublisher_
+        IPCSubscriber_
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
@@ -107,15 +108,23 @@ classdef Looper < ws.Model
             self@ws.Model(parent);
             
             % Set up sockets
-            self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
-            self.RPCServer_.setDelegate(self) ;
-            self.RPCServer_.bind() ;
-            
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.DataPubSubPortNumber) ;
+%             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
+%             self.RPCServer_.setDelegate(self) ;
+%             self.RPCServer_.bind() ;
+
+            % Set up IPC publisher socket to let others know about what's
+            % going on with the Looper
+            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
-            self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendRPCPortNumber) ;
-            self.RPCClient_.connect() ;
+            % Set up IPC subscriber socket to get messages when stuff
+            % happens in the other processes
+            self.IPCSubscriber_ = ws.IPCSubscriber() ;
+            self.IPCSubscriber_.setDelegate(self) ;
+            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            
+%             self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+%             self.RPCClient_.connect() ;
             
             %self.State_ = ws.ApplicationState.Uninitialized;
             %self.IsYokedToScanImage_ = false;
@@ -209,11 +218,11 @@ classdef Looper < ws.Model
                         % And in particular, IsPerformingRun_ doesn't
                         % go false until the frontend tells us to do
                         % the post-run cleanup.
-                        self.RPCClient_.call('looperStoppedSweep') ;
+                        self.IPCPublisher_.send('looperStoppedSweep') ;
                     else
                         %fprintf('Looper: ~self.WasRunStoppedByUser_\n');
                         % Check for messages, but don't wait for them
-                        self.RPCServer_.processMessageIfAvailable() ;
+                        self.IPCSubscriber_.processMessagesIfAvailable() ;
 
                         % Acquire data, update soft real-time outputs
                         self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
@@ -225,7 +234,7 @@ classdef Looper < ws.Model
                     %fprintf('Looper: Not in a sweep\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
-                    self.RPCServer_.processMessageIfAvailable() ;
+                    self.IPCSubscriber_.processMessagesIfAvailable() ;
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end
             end
