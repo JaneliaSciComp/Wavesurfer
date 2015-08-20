@@ -535,7 +535,7 @@ classdef Looper < ws.Model
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            keyboard
+            %keyboard
             if self.Stimulation.IsEnabled ,
                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
                     % acq and stim trig sources are identical
@@ -784,6 +784,10 @@ classdef Looper < ws.Model
             
 %             % Call user functions and broadcast
 %             self.callUserFunctions_('sweepDidComplete');
+
+            % Notify the front end
+            %self.RPCClient_.call('looperCompletedSweep') ;            
+            self.IPCPublisher_.send('looperCompletedSweep') ;
         end  % function
         
         function cleanUpAfterSweepStoppedByUser_(self)
