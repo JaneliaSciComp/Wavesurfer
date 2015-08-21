@@ -41,9 +41,9 @@ classdef ZMQBinder < handle
         
         function delete(self)            
             try
-                % Don't need to unbind, I guess
                 if self.isBound() ,
                     %zmq.core.disconnect(self.Socket, sprintf('tcp://localhost:%d', self.PortNumber));
+                    zmq.core.unbind(self.Socket, sprintf('tcp://*:%d', self.PortNumber)) ;
                     self.IsBound = false;
                 end
                 if self.hasSocket() ,
@@ -51,8 +51,12 @@ classdef ZMQBinder < handle
                     self.Socket =[] ;
                 end
                 if self.hasContext() ,
+                    context = self.Context
+                    fprintf('ZMQBinder::delete(): About to call zmq.core.ctx_shutdown()\n');
+                    zmq.core.ctx_shutdown(self.Context) ;
+                    fprintf('ZMQBinder::delete(): Just called zmq.core.ctx_shutdown()\n');
                     fprintf('ZMQBinder::delete(): About to call zmq.core.ctx_term()\n');
-                    zmq.core.ctx_term(self.Context);
+                    zmq.core.ctx_term(self.Context) ;
                     fprintf('ZMQBinder::delete(): Just called zmq.core.ctx_term()\n');
                     self.Context = [] ;
                 end

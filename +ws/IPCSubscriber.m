@@ -24,7 +24,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
             end
         end
         
-        function isMessageAvailable=processMessageIfAvailable(self)
+        function [isMessageAvailable,methodName] = processMessageIfAvailable(self)
             try
                 %fprintf('Just before recv\n');
                 serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
@@ -36,12 +36,14 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     % not truly exceptional
                     %fprintf('No message available.\n');
                     isMessageAvailable = false;
+                    methodName = '' ;
                     return
                 elseif isequal(me.identifier,'zmq:core:recv:bufferTooSmall') ,
                     % serializedMessage will be truncated, and thus not
                     % unserializable, and thus useless
                     warning('Got a message too long for the buffer in IPCSubscriber');
                     isMessageAvailable = false;
+                    methodName = '' ;
                     return                    
                 else
                     rethrow(me);
@@ -59,6 +61,33 @@ classdef IPCSubscriber < ws.ZMQConnecter
                 feval(methodName,self.Delegate,arguments{:});
             end
         end  % function        
+        
+        function [didGetMessage,err] = waitForMessage(self, expectedMessageName, timeout)
+            % timeout is in sec
+            ticId = tic() ;
+            timeAtStart = toc(ticId) ;
+            timeSpentWaitingSoFar = 0 ;
+            didGetMessage = false ;
+            while ~didGetMessage && timeSpentWaitingSoFar<timeout ,
+                timeSpentWaitingSoFar = toc(ticId) - timeAtStart ;
+                [didGetMessage,messageName] = self.processMessageIfAvailable() ;
+                pause(0.010) ;
+            end
+            if didGetMessage ,
+                if isequal(messageName,expectedMessageName) ,
+                    err = [] ;
+                else
+                    err = MException('ws:unexpectedMessageName', ...
+                                     'Expected message name %s, got message name %s', ...
+                                     expectedMessageName, ...
+                                     messageName) ;
+                end
+            else
+                err = MException('ws:timeout', ...
+                                 'No message received within the timeout period of %g seconds', ...
+                                 timeout) ;
+            end
+        end
         
         function connect(self,portNumber)
             self.connect@ws.ZMQConnecter(portNumber);

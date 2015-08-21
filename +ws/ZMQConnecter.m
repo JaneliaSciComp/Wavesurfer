@@ -1,5 +1,5 @@
 classdef ZMQConnecter < handle
-    
+        
     properties
         TypeString
         Context
@@ -47,7 +47,8 @@ classdef ZMQConnecter < handle
                     self.Socket =[] ;
                 end
                 if self.hasContext() ,
-                    fprintf('ZMQConnecter::delete(): About to call zmq.core.ctx_term()\n');
+                    fprintf('ZMQConnecter::delete(): About to call zmq.core.ctx_term()\n');                    
+                    context = self.Context
                     zmq.core.ctx_term(self.Context);
                     fprintf('ZMQConnecter::delete(): Just called zmq.core.ctx_term()\n');
                     self.Context = [] ;

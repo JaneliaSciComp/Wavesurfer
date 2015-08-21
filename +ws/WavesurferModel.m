@@ -151,8 +151,8 @@ classdef WavesurferModel < ws.Model
                 self.IPCSubscriber_.setDelegate(self) ;
 
                 % Start the other Matlab processes
-                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop();"');
-                system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
+                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
+                %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
 
                 % Connect to the various sockets
@@ -210,8 +210,18 @@ classdef WavesurferModel < ws.Model
             self.setState_('no_mdf');
         end
         
-        function delete(self) %#ok<INUSD>
-            %fprintf('WavesurferModel::delete()\n');
+        function delete(self)
+            fprintf('WavesurferModel::delete()\n');
+            if self.IsITheOneTrueWavesurferModel_ ,
+                % Signal to others that we are going away
+                self.IPCPublisher_.send('frontendIsBeingDeleted') ;
+                keyboard
+
+                % Close the sockets
+                self.IPCSubscriber_ = [] ;
+                self.IPCPublisher_ = [] ;                
+            end
+            
             %if ~isempty(self) ,
             %import ws.utility.*
 %             if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
@@ -226,6 +236,7 @@ classdef WavesurferModel < ws.Model
             %deleteIfValidHandle(self.UserFunctions);
             %deleteIfValidHandle(self.Ephys);
             %end
+            fprintf('at end of WavesurferModel::delete()\n');
         end
         
 %         function unstring(self)
@@ -287,7 +298,20 @@ classdef WavesurferModel < ws.Model
         function looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
             self.IsSweepComplete_ = true ;
-        end        
+        end
+        
+        function looperReadyForRun(self) %#ok<MANU>
+            % Call by the Looper, via ZMQ pub-sub, when it has finished its
+            % preparations for a run.  Currrently does nothing, we just
+            % need a message to tell us it's OK to proceed.
+        end
+        
+        function looperReadyForSweep(self) %#ok<MANU>
+            % Call by the Looper, via ZMQ pub-sub, when it has finished its
+            % preparations for a sweep.  Currrently does nothing, we just
+            % need a message to tell us it's OK to proceed.
+        end
+        
     end  % methods
     
     methods
@@ -738,13 +762,13 @@ classdef WavesurferModel < ws.Model
             wavesurferModelSettings=self.encodeForPersistence();
             fprintf('About to send willPerformRun\n');
             self.IPCPublisher_.send('willPerformRun',wavesurferModelSettings) ;
-            % Might want to implement some kind of interlock here, with
-            % error after timeout
-%             if ~isempty(err) ,
-%                 self.cleanUpAfterAbortedRun_('problem');
-%                 self.changeReadiness(+1);
-%                 throw(err);                
-%             end
+            timeout = 10 ;  % s
+            [gotMessage,err] = self.IPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
+            if ~gotMessage ,
+                self.cleanUpAfterAbortedRun_('problem');
+                self.changeReadiness(+1);
+                throw(err);                
+            end
             
             % Change our own state to running
             self.setState_('running') ;
@@ -814,13 +838,13 @@ classdef WavesurferModel < ws.Model
                 % Tell the looper to ready itself
                 fprintf('About to send willPerformSweep\n');
                 self.IPCPublisher_.send('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
-                % Might want to implement some kind of interlock here, with
-                % error after timeout
-%                 if ~isempty(err) ,
-%                     self.cleanUpAfterAbortedRun_('problem');
-%                     self.changeReadiness(+1);
-%                     throw(err);                
-%                 end
+                timeout = 10 ;  % s
+                [didGetMessage,err] = self.IPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
+                if ~didGetMessage ,
+                    self.cleanUpAfterAbortedRun_('problem');
+                    self.changeReadiness(+1);
+                    throw(err);
+                end
                 
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
@@ -1042,6 +1066,8 @@ classdef WavesurferModel < ws.Model
             % successful end of run event.
             self.setState_('idle');
             
+            self.IPCPublisher_.send('didCompleteRun') ;
+
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
                     self.Subsystems_{idx}.didCompleteRun();

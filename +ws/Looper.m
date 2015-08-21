@@ -200,6 +200,10 @@ classdef Looper < ws.Model
 %         end
         
         function runMainLoop(self)
+            % Put something in the console, so user know's what this funny
+            % window is.
+            fprintf('This is the ''looper'' process.  It is part of Wavesurfer.\n');
+            fprintf('Don''t close this window if you want Wavesurfer to work properly.\n');                        
             % Main loop
             timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
@@ -240,22 +244,22 @@ classdef Looper < ws.Model
             end
         end  % function
 
-        function err = willPerformRun(self,wavesurferModelSettings)
+        function willPerformRun(self,wavesurferModelSettings)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
             % This is called via RPC, so must return exactly one return
             % value, and must not throw.
 
-            % Set default return value, if nothing goes wrong
-            err = [] ;
-            
             % Prepare for the run
-            try
-                self.prepareForRun_(wavesurferModelSettings) ;
-            catch me
-                err=me ;
-            end
+            self.prepareForRun_(wavesurferModelSettings) ;
+        end  % function
+
+        function didCompleteRun(self)
+            % Called by the WSM when the run is completed.
+
+            % Cleanup after run
+            self.cleanUpAfterCompletedRun_() ;
         end  % function
         
 %         function err = start(self)
@@ -264,7 +268,7 @@ classdef Looper < ws.Model
 %             err = [] ;
 %         end
 
-        function err = willPerformSweep(self,indexOfSweepWithinRun)
+        function willPerformSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -274,7 +278,7 @@ classdef Looper < ws.Model
             % process to hang.
 
             % Prepare for the run
-            err = self.prepareForSweep_(indexOfSweepWithinRun) ;
+            self.prepareForSweep_(indexOfSweepWithinRun) ;
         end  % function
 
 %         function err = startSweep(self)
@@ -309,6 +313,17 @@ classdef Looper < ws.Model
             
             % Actually stop the ongoing sweep
             self.WasRunStoppedByUser_ = true ;
+        end
+        
+        function frontendIsBeingDeleted(self) 
+            % Called by the frontend (i.e. the WSM) in its delete() method
+            
+            % We tell ourselves to stop running the main loop.  This should
+            % cause runMainLoop() to exit, which causes the script that we
+            % run after we create the looper process to fall through to a
+            % line that says "quit()".  So this should causes the looper
+            % process to terminate.
+            self.DoKeepRunningMainLoop_ = true ;
         end
     end  % methods
     
@@ -640,6 +655,8 @@ classdef Looper < ws.Model
         function prepareForRun_(self, wavesurferModelSettings)
             % Get ready to run, but don't start anything.
 
+            %keyboard
+            
             % If we're already acquiring, just ignore the message
             if self.IsPerformingRun_ ,
                 return
@@ -674,6 +691,9 @@ classdef Looper < ws.Model
             self.FromRunStartTicId_ = tic() ;
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
+            % Notify the fronted that we're ready
+            self.IPCPublisher_.send('looperReadyForRun') ;
+            
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
             
 %             % Move on to performing the sweeps
@@ -752,6 +772,9 @@ classdef Looper < ws.Model
             % Final preparations...
             %self.IsSweepComplete_ = false ;
             self.IsPerformingSweep_ = true ;
+            
+            % Notify the fronted that we're ready
+            self.IPCPublisher_.send('looperReadyForSweep') ;
         end  % function
 
 %         function err = startSweep_(self)
