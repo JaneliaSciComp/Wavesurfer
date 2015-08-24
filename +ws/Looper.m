@@ -157,22 +157,9 @@ classdef Looper < ws.Model
             %self.State = ws.ApplicationState.NoMDF;
         end
         
-        function delete(self) %#ok<INUSD>
-            %fprintf('WavesurferModel::delete()\n');
-            %if ~isempty(self) ,
-            %import ws.utility.*
-%             if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
-%                 delete(self.PollingTimer_);
-%                 self.PollingTimer_ = [] ;
-%             end
-            %deleteIfValidHandle(self.Acquisition);
-            %deleteIfValidHandle(self.Stimulation);
-            %deleteIfValidHandle(self.Display);
-            %deleteIfValidHandle(self.Triggering);
-            %deleteIfValidHandle(self.Logging);
-            %deleteIfValidHandle(self.UserFunctions);
-            %deleteIfValidHandle(self.Ephys);
-            %end
+        function delete(self)
+            self.IPCPublisher_ = [] ;
+            self.IPCSubscriber_ = [] ;
         end
         
 %         function unstring(self)
@@ -204,6 +191,7 @@ classdef Looper < ws.Model
             % window is.
             fprintf('This is the ''looper'' process.  It is part of Wavesurfer.\n');
             fprintf('Don''t close this window if you want Wavesurfer to work properly.\n');                        
+            pause(5);            
             % Main loop
             timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
@@ -238,7 +226,8 @@ classdef Looper < ws.Model
                     %fprintf('Looper: Not in a sweep\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
-                    self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    %self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end
             end
@@ -323,7 +312,7 @@ classdef Looper < ws.Model
             % run after we create the looper process to fall through to a
             % line that says "quit()".  So this should causes the looper
             % process to terminate.
-            self.DoKeepRunningMainLoop_ = true ;
+            self.DoKeepRunningMainLoop_ = false ;
         end
     end  % methods
     

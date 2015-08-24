@@ -149,16 +149,17 @@ classdef WavesurferModel < ws.Model
 
                 self.IPCSubscriber_ = ws.IPCSubscriber() ;
                 self.IPCSubscriber_.setDelegate(self) ;
+                self.IPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
-                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
+                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
+                system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
 
                 % Connect to the various sockets
                 %self.LooperRPCClient_.connect() ;
                 %self.RefillerRPCClient_.connect() ;
-                self.IPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
             end
             
             % Initialize the fast protocols
@@ -215,7 +216,7 @@ classdef WavesurferModel < ws.Model
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;
-                keyboard
+                pause(10);  % TODO: Take out eventually
 
                 % Close the sockets
                 self.IPCSubscriber_ = [] ;

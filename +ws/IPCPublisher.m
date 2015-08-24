@@ -9,7 +9,9 @@ classdef IPCPublisher < ws.ZMQBinder
             message=struct('methodName',{methodName},'arguments',{varargin});  % scalar struct
             serializedMessage = getByteStreamFromArray(message) ;  % uint8 array
             %messageAsInt8 = typecast(serializedThing, 'int8') ;
-            zmq.core.send(self.Socket, serializedMessage);
+            fprintf('IPCPublisher::send(): About to call zmq.core.send with %s message\n', methodName);
+            socket = self.Socket
+            zmq.core.send(socket, serializedMessage);
         end  % function
-    end  % methods    
+    end  % methods
 end  % classdef

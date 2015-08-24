@@ -29,13 +29,19 @@ classdef ZMQBinder < handle
         
         function bind(self)
             if ~self.hasContext() ,
-                self.Context = zmq.core.ctx_new();
+                fprintf('ZMQBinder::bind(): About to call zmq.core.ctx_new()\n');
+                context = zmq.core.ctx_new()
+                self.Context = context ;
             end
             if ~self.hasSocket() ,
-                self.Socket = zmq.core.socket(self.Context, self.TypeString);
+                fprintf('ZMQBinder::bind(): About to call zmq.core.socket()\n');
+                socket  = zmq.core.socket(self.Context, self.TypeString)
+                self.Socket = socket ;
             end
             if ~self.isBound() ,
+                fprintf('ZMQBinder::bind(): About to call zmq.core.bind()\n');
                 zmq.core.bind(self.Socket, sprintf('tcp://*:%d', self.PortNumber));
+                self.IsBound = true ;
             end
         end  % function
         
@@ -43,20 +49,28 @@ classdef ZMQBinder < handle
             try
                 if self.isBound() ,
                     %zmq.core.disconnect(self.Socket, sprintf('tcp://localhost:%d', self.PortNumber));
+                    fprintf('ZMQBinder::delete(): About to call zmq.core.unbind()\n');
                     zmq.core.unbind(self.Socket, sprintf('tcp://*:%d', self.PortNumber)) ;
                     self.IsBound = false;
                 end
                 if self.hasSocket() ,
-                    zmq.core.close(self.Socket);
-                    self.Socket =[] ;
+                    socket = self.Socket ;
+                    zmq.core.setsockopt(socket, 'ZMQ_LINGER', 0);  % don't wait to send pending messages
+                    fprintf('ZMQBinder::delete(): About to call zmq.core.close()\n');
+                    socket
+                    zmq.core.close(socket);
+                    fprintf('ZMQBinder::delete(): Just called zmq.core.close()\n');
+                    self.Socket = [] ;
                 end
                 if self.hasContext() ,
-                    context = self.Context
+                    context = self.Context ;
                     fprintf('ZMQBinder::delete(): About to call zmq.core.ctx_shutdown()\n');
-                    zmq.core.ctx_shutdown(self.Context) ;
+                    context
+                    zmq.core.ctx_shutdown(context) ;
                     fprintf('ZMQBinder::delete(): Just called zmq.core.ctx_shutdown()\n');
                     fprintf('ZMQBinder::delete(): About to call zmq.core.ctx_term()\n');
-                    zmq.core.ctx_term(self.Context) ;
+                    context
+                    zmq.core.ctx_term(context) ;
                     fprintf('ZMQBinder::delete(): Just called zmq.core.ctx_term()\n');
                     self.Context = [] ;
                 end
