@@ -4,6 +4,10 @@
 % This file itself shows how to build `matlab-zmq` using a Homebrew
 % installation of ZMQ 4.0.4 for OS-X.
 
+absolutePathToThisFile = mfilename('fullpath') ;
+absolutePathToWavesurferRepo = fileparts(fileparts(absolutePathToThisFile)) ;
+
+zeromq-4.1.3
 % ZMQ library filename
 ZMQ_COMPILED_LIB = 'libzmq-v90-mt-4_0_4.lib';
 
@@ -13,3 +17,16 @@ ZMQ_LIB_PATH = 'C:/Program Files/ZeroMQ 4.0.4/lib';
 % ZMQ headers path
 ZMQ_INCLUDE_PATH = 'C:/Program Files/ZeroMQ 4.0.4/include';
 
+
+
+
+% New ones for self-compiled zmp lib
+
+% ZMQ library filename
+ZMQ_COMPILED_LIB = 'libzmq-v90-mt-4_0_4.lib';
+
+% ZMQ library path
+ZMQ_LIB_PATH = 'C:/Program Files/ZeroMQ 4.0.4/lib';
+
+% ZMQ headers path
+ZMQ_INCLUDE_PATH = 'C:/Program Files/ZeroMQ 4.0.4/include';
