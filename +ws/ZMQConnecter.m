@@ -29,7 +29,7 @@ classdef ZMQConnecter < handle
         function connect(self,portNumber)
             if ~self.hasContext() ,
                 fprintf('ZMQConnecter::connect(): About to call zmq.core.ctx_new()\n');
-                context = zmq.core.ctx_new() 
+                context = zmq.core.ctx_new() ;
                 self.Context = context ;
             end
             if ~self.hasSocket() ,

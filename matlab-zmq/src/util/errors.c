@@ -46,7 +46,8 @@ void handle_error() {
     /* Windows users can have problems with errno, see http://api.zeromq.org/master:zmq-errno */
     if (err == 0)
         err = zmq_errno();
-
+    //mexPrintf("ZMQ Error number: %d\n",err);
+    
     if (err) {
         message = (const char*) zmq_strerror(err);
         caller  = mexFunctionName();

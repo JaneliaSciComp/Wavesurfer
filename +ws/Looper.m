@@ -191,7 +191,7 @@ classdef Looper < ws.Model
             % window is.
             fprintf('This is the ''looper'' process.  It is part of Wavesurfer.\n');
             fprintf('Don''t close this window if you want Wavesurfer to work properly.\n');                        
-            pause(5);            
+            %pause(5);            
             % Main loop
             timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
@@ -226,8 +226,8 @@ classdef Looper < ws.Model
                     %fprintf('Looper: Not in a sweep\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
-                    %self.IPCSubscriber_.processMessagesIfAvailable() ;
-                    self.frontendIsBeingDeleted();
+                    self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    %self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end
             end
