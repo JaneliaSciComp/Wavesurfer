@@ -223,7 +223,7 @@ classdef Looper < ws.Model
                         %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;
                     end
                 else
-                    %fprintf('Looper: Not in a sweep\n');
+                    fprintf('Looper: Not in a sweep, about to check for messages\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;
@@ -682,6 +682,7 @@ classdef Looper < ws.Model
 
             % Notify the fronted that we're ready
             self.IPCPublisher_.send('looperReadyForRun') ;
+            %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
             

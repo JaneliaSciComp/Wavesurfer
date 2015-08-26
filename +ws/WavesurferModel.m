@@ -216,6 +216,7 @@ classdef WavesurferModel < ws.Model
         
         function delete(self)
             fprintf('WavesurferModel::delete()\n');
+            dbstack
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;
@@ -767,6 +768,7 @@ classdef WavesurferModel < ws.Model
             fprintf('About to send willPerformRun\n');
             self.IPCPublisher_.send('willPerformRun',wavesurferModelSettings) ;
             timeout = 10 ;  % s
+            %keyboard
             [gotMessage,err] = self.IPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
             if ~gotMessage ,
                 self.cleanUpAfterAbortedRun_('problem');

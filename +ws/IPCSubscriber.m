@@ -27,7 +27,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
         function [isMessageAvailable,methodName] = processMessageIfAvailable(self)
             try
                 %fprintf('Just before recv\n');
-                fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
+                %fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
                 serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
                 %serializedMessage = zmq.core.recv(self.Socket) ;  % this should block
                 %fprintf('Just after recv\n');
@@ -47,6 +47,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     methodName = '' ;
                     return                    
                 else
+                    fprintf('There was an interesting error calling zmq.core.recv.  self.Socket: %d\n',self.Socket);
                     rethrow(me);
                 end
             end            

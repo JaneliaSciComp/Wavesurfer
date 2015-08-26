@@ -60,7 +60,7 @@ function success = clean(varargin)
   if nargin > 0
     rubbish = varargin;
   else
-    rubbish = {'lib/+zmq/+core/*.mex*', '*.o', '*.asv', '*.m~'};
+    rubbish = {'lib/+zmq/+core/*.mex*', '*.o', '*.asv', '*.m~', 'lib/+zmq/+core/*.dll'};
   end
 
   for n = 1:length(rubbish)
@@ -179,6 +179,14 @@ function success = build(varargin)
   fprintf(...
     '\tZMQ_INCLUDE_PATH = %s\n\tZMQ_LIB_PATH = %s\n\tZMQ_COMPILED_LIB = %s\n\n', ...
     orig_zmq_include_path, orig_zmq_lib_path, orig_zmq_lib);
+
+  % Copy the .dll into the dir with the .mex files
+  %orig_zmq_lib
+  [~,ZMQ_COMPILED_LIB_BASE_NAME,~] = fileparts(orig_zmq_lib) ;
+  ZMQ_DLL_NAME = sprintf('%s.dll',ZMQ_COMPILED_LIB_BASE_NAME) ;
+  zmq_dll_source_absolute_name = fullfile(ZMQ_LIB_PATH,ZMQ_DLL_NAME) ;
+  zmq_dll_dest_absolute_name = fullfile(lib_path,'+zmq','+core',ZMQ_DLL_NAME) ;
+  copyfile(zmq_dll_source_absolute_name,zmq_dll_dest_absolute_name) ;
 end
 
 %% Aux functions

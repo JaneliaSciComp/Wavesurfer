@@ -40,7 +40,7 @@ classdef ZMQBinder < handle
             end
             if ~self.isBound() ,
                 fprintf('ZMQBinder::bind(): About to call zmq.core.bind() on port %d\n',self.PortNumber);
-                zmq.core.bind(self.Socket, sprintf('tcp://*:%d', self.PortNumber));
+                zmq.core.bind(self.Socket, sprintf('tcp://127.0.0.1:%d', self.PortNumber));
                 self.IsBound = true ;
             end
         end  % function
@@ -50,7 +50,7 @@ classdef ZMQBinder < handle
                 if self.isBound() ,
                     %zmq.core.disconnect(self.Socket, sprintf('tcp://localhost:%d', self.PortNumber));
                     fprintf('ZMQBinder::delete(): About to call zmq.core.unbind() on port %d\n',self.PortNumber);
-                    zmq.core.unbind(self.Socket, sprintf('tcp://0.0.0.0:%d', self.PortNumber)) ;
+                    zmq.core.unbind(self.Socket, sprintf('tcp://127.0.0.1:%d', self.PortNumber)) ;
                     self.IsBound = false;
                 end
                 if self.hasSocket() ,
