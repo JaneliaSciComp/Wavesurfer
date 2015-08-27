@@ -140,7 +140,7 @@ classdef Looper < ws.Model
             self.Stimulation_ = ws.system.LooperStimulation(self);
             %self.Display = ws.system.Display(self);
             self.Triggering_ = ws.system.LooperTriggering(self);
-            self.UserFunctions_ = ws.system.UserFunctions(self);
+            self.UserFunctions_ = ws.system.LooperUserFunctions(self);
             %self.Logging = ws.system.Logging(self);
             %self.Ephys = ws.system.Ephys(self);
             
@@ -217,10 +217,17 @@ classdef Looper < ws.Model
                         self.IPCSubscriber_.processMessagesIfAvailable() ;
 
                         % Acquire data, update soft real-time outputs
-                        self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
-                        % This causes dataAcquired() to be fired for each
-                        % subsystem, which should do the rest of the work.
-                        %dataAsInt16 = self.acquireLatestDataAndUpdateRealTimeOutputs_() ;
+                        [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
+                            self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+                        
+                        if didReadFromTasks ,
+                            self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+                            self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
+                            self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
+                            if areTasksDone ,
+                                self.acquisitionSweepComplete() ;
+                            end
+                        end                        
                     end
                 else
                     fprintf('Looper: Not in a sweep, about to check for messages\n');
@@ -580,26 +587,26 @@ classdef Looper < ws.Model
             end            
         end  % function
                 
-        function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            % Called "from below" when data is available
-            self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
-            %profile resume
-            % time between subsequent calls to this
-%            t=toc(self.FromRunStartTicId_);
-%             if isempty(self.TimeOfLastSamplesAcquired_) ,
-%                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
-%             else
-%                 %dt=t-self.TimeOfLastSamplesAcquired_;
-%                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
-%             end
-            self.TimeOfLastSamplesAcquired_=timeSinceRunStartAtStartOfData;
-           
-            % Actually handle the data
-            %data = eventData.Samples;
-            %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-            %profile off
-        end
+%         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+%             % Called "from below" when data is available
+%             self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+%             %profile resume
+%             % time between subsequent calls to this
+% %            t=toc(self.FromRunStartTicId_);
+% %             if isempty(self.TimeOfLastSamplesAcquired_) ,
+% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
+% %             else
+% %                 %dt=t-self.TimeOfLastSamplesAcquired_;
+% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
+% %             end
+%             self.TimeOfLastSamplesAcquired_=timeSinceRunStartAtStartOfData;
+%            
+%             % Actually handle the data
+%             %data = eventData.Samples;
+%             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
+%             self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
+%             %profile off
+%         end
         
         function willSetAcquisitionDuration(self)
             self.Triggering.willSetAcquisitionDuration();
@@ -862,7 +869,7 @@ classdef Looper < ws.Model
             %self.callUserFunctions_('runDidAbort');
         end  % function
         
-        function haveDataAvailable_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
             nScans=size(rawAnalogData,1);
@@ -890,17 +897,29 @@ classdef Looper < ws.Model
                 %state = self.State_ ;
                 isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
-                for idx = 1: numel(self.Subsystems_) ,
-                    %tic
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.dataIsAvailable(isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-                    end
-                    %T(idx)=toc;
+                % No need to inform Triggering subsystem
+                self.Acquisition.samplesAcquired(isSweepBased, ...
+                                                 t, ...
+                                                 scaledAnalogData, ...
+                                                 rawAnalogData, ...
+                                                 rawDigitalData, ...
+                                                 timeSinceRunStartAtStartOfData);  % acq system is always enabled
+                if self.UserFunctions.IsEnabled ,                             
+                    self.UserFunctions.samplesAcquired(isSweepBased, ...
+                                                       t, ...
+                                                       scaledAnalogData, ...
+                                                       rawAnalogData, ...
+                                                       rawDigitalData, ...
+                                                       timeSinceRunStartAtStartOfData);
                 end
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
                 % Toss the data to the subscribers
-                self.IPCPublisher_.send('dataAvailable', self.NScansAcquiredInSweepSoFar_, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData ) ;
+                self.IPCPublisher_.send('samplesAcquired', ...
+                                        self.NScansAcquiredInSweepSoFar_, ...
+                                        rawAnalogData, ...
+                                        rawDigitalData, ...
+                                        timeSinceRunStartAtStartOfData ) ;
                 
                 % Update the number of scans acquired
                 self.NScansAcquiredInSweepSoFar_ = self.NScansAcquiredInSweepSoFar_ + nScans;

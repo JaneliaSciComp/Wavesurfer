@@ -58,8 +58,8 @@ classdef (Abstract) Subsystem < ws.Model
             % This code MUST be exception free.
         end
         
-        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
-        end
+%         function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+%         end
     end  % methods block
     
     methods (Access = protected)

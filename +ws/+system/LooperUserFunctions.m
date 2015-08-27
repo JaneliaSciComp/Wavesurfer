@@ -28,8 +28,8 @@ classdef LooperUserFunctions < ws.system.Subsystem
     
     methods
         function self = LooperUserFunctions(parent)
+            self@ws.system.Subsystem(parent) ;
             self.IsEnabled=true;            
-            self.Parent=parent;
         end  % function
 
         function result = get.ClassName(self)
@@ -110,9 +110,9 @@ classdef LooperUserFunctions < ws.system.Subsystem
             end
         end  % function
         
-        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
             % The data available callback 
-            self.invoke(self.Parent,'dataIsAvailableInLooper');
+            self.invoke(self.Parent,'samplesAcquiredInLooper');
         end        
     end  % methods
        

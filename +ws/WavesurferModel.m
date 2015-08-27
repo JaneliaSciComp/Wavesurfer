@@ -117,7 +117,7 @@ classdef WavesurferModel < ws.Model
         WillSetState
         DidSetState
         DidSetAreSweepsFiniteDurationOrContinuous
-        DataAvailable
+        UpdateForNewData
         DidCompleteSweep
     end
     
@@ -153,8 +153,7 @@ classdef WavesurferModel < ws.Model
 
                 % Start the other Matlab processes
                 %system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                
+                system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -295,7 +294,7 @@ classdef WavesurferModel < ws.Model
     end
        
     methods  % These are all the methods that get called in response to ZMQ messages
-        function dataAvailable(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             fprintf('got data.  scanIndex: %d\n',scanIndex);
             self.haveDataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
         end  % function
@@ -639,26 +638,26 @@ classdef WavesurferModel < ws.Model
             end            
         end  % function
                 
-        function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            % Called "from below" when data is available
-            self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
-            %profile resume
-            % time between subsequent calls to this
-%            t=toc(self.FromRunStartTicId_);
-%             if isempty(self.TimeOfLastSamplesAcquired_) ,
-%                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
-%             else
-%                 %dt=t-self.TimeOfLastSamplesAcquired_;
-%                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
-%             end
-            self.TimeOfLastSamplesAcquired_=timeSinceRunStartAtStartOfData;
-           
-            % Actually handle the data
-            %data = eventData.Samples;
-            %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-            self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-            %profile off
-        end
+%         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+%             % Called "from below" when data is available
+%             self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+%             %profile resume
+%             % time between subsequent calls to this
+% %            t=toc(self.FromRunStartTicId_);
+% %             if isempty(self.TimeOfLastSamplesAcquired_) ,
+% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
+% %             else
+% %                 %dt=t-self.TimeOfLastSamplesAcquired_;
+% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
+% %             end
+%             self.TimeOfLastSamplesAcquired_=timeSinceRunStartAtStartOfData;
+%            
+%             % Actually handle the data
+%             %data = eventData.Samples;
+%             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
+%             self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
+%             %profile off
+%         end
         
         function willSetAcquisitionDuration(self)
             self.Triggering.willSetAcquisitionDuration();
@@ -1136,23 +1135,47 @@ classdef WavesurferModel < ws.Model
                 %state = self.State_ ;
                 isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
-                for idx = 1: numel(self.Subsystems_) ,
-                    %tic
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.dataIsAvailable(isSweepBased, ...
-                                                              t, ...
-                                                              scaledAnalogData, ...
-                                                              rawAnalogData, ...
-                                                              rawDigitalData, ...
-                                                              timeSinceRunStartAtStartOfData);
-                    end
-                    %T(idx)=toc;
+                if self.Logging.IsEnabled ,
+                    self.Logging.dataIsAvailable(isSweepBased, ...
+                                                 t, ...
+                                                 scaledAnalogData, ...
+                                                 rawAnalogData, ...
+                                                 rawDigitalData, ...
+                                                 timeSinceRunStartAtStartOfData);
                 end
-                %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
+                if self.Display.IsEnabled ,
+                    self.Display.dataIsAvailable(isSweepBased, ...
+                                                 t, ...
+                                                 scaledAnalogData, ...
+                                                 rawAnalogData, ...
+                                                 rawDigitalData, ...
+                                                 timeSinceRunStartAtStartOfData);
+                end
+                if self.UserFunctions.IsEnabled ,
+                    self.UserFunctions.dataIsAvailable(isSweepBased, ...
+                                                       t, ...
+                                                       scaledAnalogData, ...
+                                                       rawAnalogData, ...
+                                                       rawDigitalData, ...
+                                                       timeSinceRunStartAtStartOfData);
+                end
+%                 for idx = 1: numel(self.Subsystems_) ,
+%                     %tic
+%                     if self.Subsystems_{idx}.IsEnabled ,
+%                         self.Subsystems_{idx}.dataIsAvailable(isSweepBased, ...
+%                                                               t, ...
+%                                                               scaledAnalogData, ...
+%                                                               rawAnalogData, ...
+%                                                               rawDigitalData, ...
+%                                                               timeSinceRunStartAtStartOfData);
+%                     end
+%                     %T(idx)=toc;
+%                 end
+%                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
-                self.broadcast('DataAvailable');
+                self.broadcast('UpdateForNewData');
                 
-                self.callUserFunctions_('dataIsAvailable');
+                %self.callUserFunctions_('dataIsAvailable');
             end
         end  % function
         

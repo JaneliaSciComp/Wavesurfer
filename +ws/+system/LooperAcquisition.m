@@ -182,9 +182,13 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.IsArmedOrAcquiring_ = false;
         end  % function
                         
-        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
+        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
+            fprintf('\n\n');
+            fprintf('LooperAcquisition::dataIsAvailable:\n');
+            dbstack
+            fprintf('\n\n');
             self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;
@@ -254,14 +258,14 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.IsArmedOrAcquiring_ = false;            
         end  % function
         
-        function acquisitionSweepComplete_(self)
-            fprintf('LooperAcquisition::acquisitionSweepComplete_()\n');
-            self.IsArmedOrAcquiring_ = false ;
-            parent = self.Parent ;
-            if ~isempty(parent) && isvalid(parent) ,
-                parent.acquisitionSweepComplete() ;
-            end
-        end  % function
+%         function acquisitionSweepComplete_(self)
+%             fprintf('LooperAcquisition::acquisitionSweepComplete_()\n');
+%             self.IsArmedOrAcquiring_ = false ;
+%             parent = self.Parent ;
+%             if ~isempty(parent) && isvalid(parent) ,
+%                 parent.acquisitionSweepComplete() ;
+%             end
+%         end  % function
         
         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             parent=self.Parent;
@@ -286,7 +290,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     end  % protected methods block
                 
     methods
-        function poll(self, timeSinceSweepStart, fromRunStartTicId)
+        function [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
+                poll(self, timeSinceSweepStart, fromRunStartTicId)
             fprintf('LooperAcquisition::poll()\n') ;
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
@@ -310,7 +315,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 fprintf('Read acq data. nScans: %d\n',nScans)
 
                 % Notify the whole system that samples were acquired
-                self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
+                didReadFromTasks = true ;  % we return this, even if zero samples were acquired
+                %self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
 
                 % If we were done before reading the data, act accordingly
                 if areTasksDone ,
@@ -319,10 +325,16 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     % Stop tasks, notify rest of system
                     self.AnalogInputTask_.stop();
                     self.DigitalInputTask_.stop();
-                    self.acquisitionSweepComplete_();
+                    self.IsArmedOrAcquiring_ = false ;
+                    %self.acquisitionSweepComplete_();
                 end
             else
                 fprintf('~IsArmedOrAcquiring\n') ;
+                didReadFromTasks = false ;
+                rawAnalogData = [] ;
+                rawDigitalData = [] ;
+                timeSinceRunStartAtStartOfData = false ;
+                areTasksDone = [] ;  
             end
             
             % Prepare for next time            

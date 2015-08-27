@@ -569,56 +569,56 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             keyboard
         end
         
-        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
-            % Called "from above" when data is available.  When called, we update
-            % our main-memory data cache with the newly available data.
-            self.LatestAnalogData_ = scaledAnalogData ;
-            self.LatestRawAnalogData_ = rawAnalogData ;
-            self.LatestRawDigitalData_ = rawDigitalData ;
-            if isSweepBased ,
-                % add data to cache
-                j0=self.IndexOfLastScanInCache_ + 1;
-                n=size(rawAnalogData,1);
-                jf=j0+n-1;
-                self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-                self.IndexOfLastScanInCache_ = jf ;
-                self.NScansFromLatestCallback_ = n ;                
-                if jf == size(self.RawAnalogDataCache_,1) ,
-                     self.IsAllDataInCacheValid_ = true;
-                end
-            else                
-                % Add data to cache, wrapping around if needed
-                j0=self.IndexOfLastScanInCache_ + 1;
-                n=size(rawAnalogData,1);
-                jf=j0+n-1;
-                nScansInCache = size(self.RawAnalogDataCache_,1);
-                if jf<=nScansInCache ,
-                    % the usual case
-                    self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-                    self.IndexOfLastScanInCache_ = jf ;
-                elseif jf==nScansInCache ,
-                    % the cache is just large enough to accommodate rawData
-                    self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-                    self.IndexOfLastScanInCache_ = 0 ;
-                    self.IsAllDataInCacheValid_ = true ;
-                else
-                    % Need to write part of rawData to end of data cache,
-                    % part to start of data cache                    
-                    nScansAtStartOfCache = jf - nScansInCache ;
-                    nScansAtEndOfCache = n - nScansAtStartOfCache ;
-                    self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
-                    self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
-                    self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
-                    self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
-                    self.IsAllDataInCacheValid_ = true ;
-                    self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
-                end
-                self.NScansFromLatestCallback_ = n ;
-            end
-        end  % function
+%         function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
+%             % Called "from above" when data is available.  When called, we update
+%             % our main-memory data cache with the newly available data.
+%             self.LatestAnalogData_ = scaledAnalogData ;
+%             self.LatestRawAnalogData_ = rawAnalogData ;
+%             self.LatestRawDigitalData_ = rawDigitalData ;
+%             if isSweepBased ,
+%                 % add data to cache
+%                 j0=self.IndexOfLastScanInCache_ + 1;
+%                 n=size(rawAnalogData,1);
+%                 jf=j0+n-1;
+%                 self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+%                 self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+%                 self.IndexOfLastScanInCache_ = jf ;
+%                 self.NScansFromLatestCallback_ = n ;                
+%                 if jf == size(self.RawAnalogDataCache_,1) ,
+%                      self.IsAllDataInCacheValid_ = true;
+%                 end
+%             else                
+%                 % Add data to cache, wrapping around if needed
+%                 j0=self.IndexOfLastScanInCache_ + 1;
+%                 n=size(rawAnalogData,1);
+%                 jf=j0+n-1;
+%                 nScansInCache = size(self.RawAnalogDataCache_,1);
+%                 if jf<=nScansInCache ,
+%                     % the usual case
+%                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+%                     self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+%                     self.IndexOfLastScanInCache_ = jf ;
+%                 elseif jf==nScansInCache ,
+%                     % the cache is just large enough to accommodate rawData
+%                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+%                     self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+%                     self.IndexOfLastScanInCache_ = 0 ;
+%                     self.IsAllDataInCacheValid_ = true ;
+%                 else
+%                     % Need to write part of rawData to end of data cache,
+%                     % part to start of data cache                    
+%                     nScansAtStartOfCache = jf - nScansInCache ;
+%                     nScansAtEndOfCache = n - nScansAtStartOfCache ;
+%                     self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
+%                     self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
+%                     self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
+%                     self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
+%                     self.IsAllDataInCacheValid_ = true ;
+%                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
+%                 end
+%                 self.NScansFromLatestCallback_ = n ;
+%             end
+%         end  % function
         
         function data = getLatestAnalogData(self)
             % Get the data from the most-recent data available callback, as
@@ -745,18 +745,18 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             end
         end  % function
         
-        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            %fprintf('Acquisition::samplesAcquired_()\n');
-            %profile resume
-
-            % read both the analog and digital data, they should be in
-            % lock-step
-            parent=self.Parent;
-            if ~isempty(parent) && isvalid(parent) ,
-                parent.samplesAcquired(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-            end
-            %profile off
-        end  % function
+%         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+%             %fprintf('Acquisition::samplesAcquired_()\n');
+%             %profile resume
+% 
+%             % read both the analog and digital data, they should be in
+%             % lock-step
+%             parent=self.Parent;
+%             if ~isempty(parent) && isvalid(parent) ,
+%                 parent.samplesAcquired(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
+%             end
+%             %profile off
+%         end  % function
 
         function value = getAnalogChannelScales_(self)
             value = self.AnalogChannelScales_ ;

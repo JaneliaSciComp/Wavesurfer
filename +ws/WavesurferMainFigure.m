@@ -161,7 +161,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
 
                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-               model.subscribeMe(self,'DataAvailable','','dataAvailable');
+               model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
                
                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
                  % no longer publicly settable
@@ -1498,7 +1498,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     end
     
     methods 
-        function dataAvailable(self,varargin)
+        function updateForNewData(self,varargin)
             % Want this to be as fast as possible, so we just update the
             % bare minimum
             model=self.Model;
