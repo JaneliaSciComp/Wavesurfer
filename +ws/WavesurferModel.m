@@ -64,7 +64,7 @@ classdef WavesurferModel < ws.Model
         %RPCServer_
         IPCPublisher_
         %RefillerRPCClient_
-        IPCSubscriber_
+        LooperIPCSubscriber_
         %ExpectedNextScanIndex_
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
@@ -81,7 +81,7 @@ classdef WavesurferModel < ws.Model
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceRunStart_ = 0
         %PollingTimer_
-        MinimumPollingDt_
+        %MinimumPollingDt_
         TimeOfLastPollInSweep_
         ClockAtRunStart_
         %DoContinuePolling_
@@ -147,9 +147,9 @@ classdef WavesurferModel < ws.Model
                 self.IPCPublisher_.bind() ;
                 %self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
 
-                self.IPCSubscriber_ = ws.IPCSubscriber() ;
-                self.IPCSubscriber_.setDelegate(self) ;
-                self.IPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+                self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
+                self.LooperIPCSubscriber_.setDelegate(self) ;
+                self.LooperIPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
                 %system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
@@ -222,7 +222,7 @@ classdef WavesurferModel < ws.Model
                 %pause(10);  % TODO: Take out eventually
 
                 % Close the sockets
-                self.IPCSubscriber_ = [] ;
+                self.LooperIPCSubscriber_ = [] ;
                 self.IPCPublisher_ = [] ;                
             end
             
@@ -295,7 +295,7 @@ classdef WavesurferModel < ws.Model
        
     methods  % These are all the methods that get called in response to ZMQ messages
         function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            fprintf('got data.  scanIndex: %d\n',scanIndex);
+            fprintf('got data.  scanIndex: %d\n',scanIndex) ;
             self.dataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
         end  % function
         
@@ -768,7 +768,7 @@ classdef WavesurferModel < ws.Model
             self.IPCPublisher_.send('willPerformRun',wavesurferModelSettings) ;
             timeout = 10 ;  % s
             %keyboard
-            [gotMessage,err] = self.IPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
+            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
             if ~gotMessage ,
                 self.cleanUpAfterAbortedRun_('problem');
                 self.changeReadiness(+1);
@@ -782,7 +782,9 @@ classdef WavesurferModel < ws.Model
             self.TimeOfLastWillPerformSweep_=[];
             self.FromRunStartTicId_=tic();
             self.NTimesSamplesAcquiredCalledSinceRunStart_=0;
-            self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
+            rawUpdateDt = 1/self.Display.UpdateRate ;  % s
+            updateDt = min(rawUpdateDt,self.SweepDuration);  % s
+            self.NScansPerUpdate_ = updateDt/self.Acquisition.SampleRate ;
             
             self.changeReadiness(+1);
 
@@ -844,7 +846,7 @@ classdef WavesurferModel < ws.Model
                 fprintf('About to send willPerformSweep\n');
                 self.IPCPublisher_.send('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
                 timeout = 10 ;  % s
-                [didGetMessage,err] = self.IPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
+                [didGetMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
                 if ~didGetMessage ,
                     self.cleanUpAfterAbortedRun_('problem');
                     self.changeReadiness(+1);
@@ -874,7 +876,7 @@ classdef WavesurferModel < ws.Model
 %                 end
                 
                 % Now poll
-                [didCompleteSweep,didUserStop] = self.runWithinSweepPollingLoop_();
+                [didCompleteSweep,didUserStop] = self.runWithinSweepLoop_();
 
                 % When done, clean up after sweep
                 if didCompleteSweep ,
@@ -1094,13 +1096,9 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('didAbortRun');
         end  % function
         
-        function dataAvailable_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            % The central method for handling incoming data.  Called by
-            % WavesurferModel::dataAvailable(), which is called in response
-            % to the 'dataAvailable' message coming in over a subscriber
-            % socker.
-            % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.
-            nScans=size(rawAnalogData,1);
+        function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+            % Get the number of scans
+            nScans = size(rawAnalogData,1) ;
 
             % Check that we didn't miss any data
             if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
@@ -1112,6 +1110,23 @@ classdef WavesurferModel < ws.Model
                 % All is well, so just update self.NScansAcquiredSoFarThisSweep_
                 self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans ;
             end
+
+            % Add the new data to the circular buffer
+            self.CircularBuffer_.addData(rawAnalogData,rawDigitalData) ;
+            
+            if self.CircularBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
+                self.dataAvailable_(timeSinceRunStartAtStartOfData) ;
+            end
+        end
+        
+        function dataAvailable_(self, timeSinceRunStartAtStartOfData)
+            % The central method for handling incoming data.  Called by
+            % WavesurferModel::dataAvailable(), which is called in response
+            % to the 'dataAvailable' message coming in over a subscriber
+            % socker.
+            % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.
+            [rawAnalogData,rawDigitalData] = self.CircularBuffer.getData() ;            
+            nScans = size(rawAnalogData,1) ;
 
             % Scale the new data, notify subsystems that we have new data
             if (nScans>0)
@@ -1787,7 +1802,7 @@ classdef WavesurferModel < ws.Model
 %     end
     
     methods (Access=protected)
-        function [isSweepComplete,wasStoppedByUser] = runWithinSweepPollingLoop_(self)
+        function [isSweepComplete,wasStoppedByUser] = runWithinSweepLoop_(self)
             % Runs the main polling loop.
             
             pollingTicId = tic() ;
@@ -1801,10 +1816,10 @@ classdef WavesurferModel < ws.Model
                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
                 if timeSinceLastPoll >= pollingPeriod ,
                     timeOfLastPoll = timeNow ;
-                    fprintf('just before message processing...\n');
-                    %self.IPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    self.IPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    fprintf('within message processing...\n');
+                    fprintf('just before message processing...\n') ;
+                    %self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                    self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                    fprintf('within message processing...\n') ;
                     %self.RPCServer_.processMessagesIfAvailable() ;  % this is how we learn the sweep is complete
                     %self.RPCServer_.processMessageIfAvailable() ;  % this is how we learn the sweep is complete
                     %fprintf('just after message processing.\n');
