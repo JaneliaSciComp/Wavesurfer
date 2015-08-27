@@ -17,7 +17,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         ChannelsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
-        UserFunctionsMenuItem
+        UserCodeManagerMenuItem
         ElectrodesMenuItem
         TestPulseMenuItem
         YokeToScanimageMenuItem
@@ -235,7 +235,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.StimulusLibraryMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','Stimulus Library...');
-            self.UserFunctionsMenuItem = ...
+            self.UserCodeManagerMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','User Functions...');
             self.ElectrodesMenuItem = ...
@@ -1207,7 +1207,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.ChannelsMenuItem,'Enable',onIff(isIdle));
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
-            set(self.UserFunctionsMenuItem,'Enable',onIff(isIdle));            
+            set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
             set(self.ElectrodesMenuItem,'Enable',onIff(isIdle));
             set(self.TestPulseMenuItem,'Enable',onIff(isIdle));
             set(self.YokeToScanimageMenuItem,'Enable',onIff(isIdle));

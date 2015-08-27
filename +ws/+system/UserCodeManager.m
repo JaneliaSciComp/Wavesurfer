@@ -1,4 +1,4 @@
-classdef UserFunctions < ws.system.Subsystem
+classdef UserCodeManager < ws.system.Subsystem
     
     properties (Dependent = true)
         ClassName
@@ -27,7 +27,7 @@ classdef UserFunctions < ws.system.Subsystem
     end
     
     methods
-        function self = UserFunctions(parent)
+        function self = UserCodeManager(parent)
             self@ws.system.Subsystem(parent) ;
             self.IsEnabled=true;            
         end  % function
@@ -111,7 +111,7 @@ classdef UserFunctions < ws.system.Subsystem
         end  % function
         
         % You might thing user methods would get invoked inside the
-        % UserFunctions methods willPerformRun, willPerformSweep,
+        % UserCodeManager methods willPerformRun, willPerformSweep,
         % dataAvailable, etc.  But we don't do it that way, because it
         % doesn't always lead to user methods being called at just the
         % right time.  Instead we call the callUserMethod_() method in the

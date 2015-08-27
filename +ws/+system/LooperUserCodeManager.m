@@ -1,4 +1,4 @@
-classdef LooperUserFunctions < ws.system.Subsystem
+classdef LooperUserCodeManager < ws.system.Subsystem
     
     properties (Dependent = true)
         ClassName
@@ -27,7 +27,7 @@ classdef LooperUserFunctions < ws.system.Subsystem
     end
     
     methods
-        function self = LooperUserFunctions(parent)
+        function self = LooperUserCodeManager(parent)
             self@ws.system.Subsystem(parent) ;
             self.IsEnabled=true;            
         end  % function
@@ -147,7 +147,7 @@ classdef LooperUserFunctions < ws.system.Subsystem
     end
         
 %     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = ws.system.UserFunctions.propertyAttributes();        
+%         mdlPropAttributes = ws.system.UserCodeManager.propertyAttributes();        
 %         mdlHeaderExcludeProps = {};
 %     end
     

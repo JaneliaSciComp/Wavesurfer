@@ -8,7 +8,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         TriggersController = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
-        UserFunctionsController = [];
+        UserCodeManagerController = [];
         ChannelsController = [];
         TestPulserController = [];
         ElectrodeManagerController= [];
@@ -1156,7 +1156,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             set(figureObject.ChannelsMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.TriggersMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
-%             set(figureObject.UserFunctionsMenuItem,'Enable',onIff(isIdle));            
+%             set(figureObject.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
 %             set(figureObject.ElectrodesMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.TestPulseMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
@@ -1590,8 +1590,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             specs.FastProtocolsController.className = 'ws.FastProtocolsController';
             %specs.FastProtocolsController.controlName = 'FastProtocolsFigure';
             
-            specs.UserFunctionsController.className = 'ws.UserFunctionsController';
-            %specs.UserFunctionsController.controlName = 'UserFunctionFigure';
+            specs.UserCodeManagerController.className = 'ws.UserCodeManagerController';
+            %specs.UserCodeManagerController.controlName = 'UserFunctionFigure';
             
             specs.ChannelsController.className = 'ws.ChannelsController';
             %specs.ChannelsController.controlName = 'ChannelsFigure';
@@ -1912,8 +1912,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.showChildFigure('StimulusLibraryController');
         end
         
-        function UserFunctionsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('UserFunctionsController');
+        function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.showChildFigure('UserCodeManagerController');
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>

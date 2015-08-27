@@ -29,7 +29,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=false;
-            wsModel.UserFunctions.ClassName='ws.examples.FlipDOFromSweepToSweep';
+            wsModel.UserCodeManager.ClassName='ws.examples.FlipDOFromSweepToSweep';
 
             nSweeps=5;
             wsModel.NSweepsPerRun=nSweeps;

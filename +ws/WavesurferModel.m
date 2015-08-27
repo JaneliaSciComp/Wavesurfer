@@ -21,7 +21,7 @@ classdef WavesurferModel < ws.Model
         Triggering
         Display
         Logging
-        UserFunctions
+        UserCodeManager
         Ephys
         SweepDuration  % the sweep duration, in s
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
@@ -48,7 +48,7 @@ classdef WavesurferModel < ws.Model
         Stimulation_
         Display_
         Ephys_
-        UserFunctions_
+        UserCodeManager_
         IsYokedToScanImage_ = false
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
@@ -176,7 +176,7 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_ = ws.system.Stimulation(self);
             self.Display_ = ws.system.Display(self);
             self.Triggering_ = ws.system.Triggering(self);
-            self.UserFunctions_ = ws.system.UserFunctions(self);
+            self.UserCodeManager_ = ws.system.UserCodeManager(self);
             self.Logging_ = ws.system.Logging(self);
             self.Ephys_ = ws.system.Ephys(self);
             
@@ -186,7 +186,7 @@ classdef WavesurferModel < ws.Model
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserFunctions};
+            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserCodeManager};
             
 %             % Configure subystem trigger relationships.  (Essentially,
 %             % this happens automatically now.)
@@ -237,7 +237,7 @@ classdef WavesurferModel < ws.Model
             %deleteIfValidHandle(self.Display);
             %deleteIfValidHandle(self.Triggering);
             %deleteIfValidHandle(self.Logging);
-            %deleteIfValidHandle(self.UserFunctions);
+            %deleteIfValidHandle(self.UserCodeManager);
             %deleteIfValidHandle(self.Ephys);
             %end
             fprintf('at end of WavesurferModel::delete()\n');
@@ -259,8 +259,8 @@ classdef WavesurferModel < ws.Model
 %             if ~isempty(self.Logging) ,
 %                 self.Logging.unstring();
 %             end
-%             if ~isempty(self.UserFunctions) ,
-%                 self.UserFunctions.unstring();
+%             if ~isempty(self.UserCodeManager) ,
+%                 self.UserCodeManager.unstring();
 %             end
 %             if ~isempty(self.Ephys) ,
 %                 self.Ephys.unstring();
@@ -345,8 +345,8 @@ classdef WavesurferModel < ws.Model
             out = self.Triggering_ ;
         end
         
-        function out = get.UserFunctions(self)
-            out = self.UserFunctions_ ;
+        function out = get.UserCodeManager(self)
+            out = self.UserCodeManager_ ;
         end
 
         function out = get.Display(self)
@@ -1151,9 +1151,9 @@ classdef WavesurferModel < ws.Model
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);
                 end
-                if self.UserFunctions.IsEnabled ,
-                    self.callUserMethods('dataAvailable');
-%                     self.UserFunctions.dataAvailable(isSweepBased, ...
+                if self.UserCodeManager.IsEnabled ,
+                    self.callUserMethod_('dataAvailable');
+%                     self.UserCodeManager.dataAvailable(isSweepBased, ...
 %                                                        t, ...
 %                                                        scaledAnalogData, ...
 %                                                        rawAnalogData, ...
@@ -1203,8 +1203,8 @@ classdef WavesurferModel < ws.Model
 % %             self.setPropertyTags('Display', 'IncludeInFileTypes', {'cfg'});
 % %             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr','header'});
 % %             self.setPropertyTags('Logging', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('UserFunctions', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'header'});
+% %             self.setPropertyTags('UserCodeManager', 'IncludeInFileTypes', {'cfg'});
+% %             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'header'});
 % %             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
 % %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
 % %             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
@@ -1228,7 +1228,7 @@ classdef WavesurferModel < ws.Model
 %             % This is because we want to maintain e.g. serial sweep indices even if
 %             % user switches protocols.
 %             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
-%             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'usr'});
 %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
 % 
 %             % Exclude FastProtocols from cfg file
@@ -1323,12 +1323,12 @@ classdef WavesurferModel < ws.Model
 %         end  % function
         
         function callUserMethod_(self, eventName)
-            % Handle user functions.  It would be possible to just make the UserFunctions
+            % Handle user functions.  It would be possible to just make the UserCodeManager
             % subsystem a regular listener of these events.  Handling it
             % directly removes at 
             % least one layer of function calls and allows for user functions for 'events'
             % that are not formally events on the model.
-            self.UserFunctions.invoke(self, eventName);
+            self.UserCodeManager.invoke(self, eventName);
             
             % Handle as standard event if applicable.
             %self.broadcast(eventName);
@@ -1814,7 +1814,7 @@ classdef WavesurferModel < ws.Model
                     %self.Triggering.poll(timeSinceSweepStart);
                     %self.Display.poll(timeSinceSweepStart);
                     %self.Logging.poll(timeSinceSweepStart);
-                    %self.UserFunctions.poll(timeSinceSweepStart);
+                    %self.UserCodeManager.poll(timeSinceSweepStart);
                     fprintf('drawnow()ing...\n');
                     drawnow() ;  % update, and also process any user actions
                 else
@@ -1834,7 +1834,7 @@ classdef WavesurferModel < ws.Model
 %             self.Triggering.poll(timeSinceSweepStart);
 %             %self.Display.poll(timeSinceSweepStart);
 %             %self.Logging.poll(timeSinceSweepStart);
-%             %self.UserFunctions.poll(timeSinceSweepStart);
+%             %self.UserCodeManager.poll(timeSinceSweepStart);
 %             %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
 %         end
         
@@ -1858,7 +1858,7 @@ classdef WavesurferModel < ws.Model
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 else
@@ -1881,7 +1881,7 @@ classdef WavesurferModel < ws.Model
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,

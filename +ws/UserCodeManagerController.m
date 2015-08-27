@@ -1,16 +1,16 @@
-classdef UserFunctionsController < ws.Controller     %& ws.EventSubscriber
+classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     
     methods
-        function self = UserFunctionsController(wavesurferController,wavesurferModel)
-%             userFunctionsModel=wavesurferModel.UserFunctions;
+        function self = UserCodeManagerController(wavesurferController,wavesurferModel)
+%             userFunctionsModel=wavesurferModel.UserCodeManager;
 %             self = self@ws.Controller(wavesurferController, userFunctionsModel, {'userFunctionsFigureWrapper'});
             
             % Call the superclass constructor
-            userFunctionsModel=wavesurferModel.UserFunctions;
+            userFunctionsModel=wavesurferModel.UserCodeManager;
             self = self@ws.Controller(wavesurferController,userFunctionsModel);
 
             % Create the figure, store a pointer to it
-            fig = ws.UserFunctionsFigure(userFunctionsModel,self) ;
+            fig = ws.UserCodeManagerFigure(userFunctionsModel,self) ;
             self.Figure_ = fig ;                        
         end  % constructor
     end  % methods block

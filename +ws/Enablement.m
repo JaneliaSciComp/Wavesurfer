@@ -31,8 +31,8 @@ classdef Enablement < handle
             %fprintf('ws.Enablement::enableMaybe()\n');
             %dbstack            
 %             className = class(self.Parent_) ;
-%             if isequal(className,'ws.system.UserFunctions') ,
-%                 fprintf('About to increment (maybe) UserFunctions degree of enablement.\n');
+%             if isequal(className,'ws.system.UserCodeManager') ,
+%                 fprintf('About to increment (maybe) UserCodeManager degree of enablement.\n');
 %             end
             newDegreeOfEnablementRaw = self.DegreeOfEnablement_ + 1 ;
             self.DegreeOfEnablement_ = min(1,newDegreeOfEnablementRaw) ;
@@ -42,8 +42,8 @@ classdef Enablement < handle
             %fprintf('ws.Enablement::disable()\n');
             %dbstack
 %             className = class(self.Parent_) ;
-%             if isequal(className,'ws.system.UserFunctions') ,
-%                 fprintf('About to decrement UserFunctions degree of enablement.\n');
+%             if isequal(className,'ws.system.UserCodeManager') ,
+%                 fprintf('About to decrement UserCodeManager degree of enablement.\n');
 %             end
             self.DegreeOfEnablement_ = self.DegreeOfEnablement_ - 1 ;
         end

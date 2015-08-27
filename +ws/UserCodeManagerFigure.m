@@ -1,4 +1,4 @@
-classdef UserFunctionsFigure < ws.MCOSFigure
+classdef UserCodeManagerFigure < ws.MCOSFigure
     properties
         ClassNameText
         ClassNameEdit        
@@ -7,7 +7,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure
     end  % properties
     
     methods
-        function self=UserFunctionsFigure(model,controller)
+        function self=UserCodeManagerFigure(model,controller)
             self = self@ws.MCOSFigure(model,controller);
             set(self.FigureGH, ...
                 'Tag','userFunctionsFigureWrapper', ...
@@ -192,7 +192,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure
 
     methods (Access=protected)
         function updateControlPropertiesImplementation_(self)
-            %fprintf('UserFunctionsFigure::updateControlPropertiesImplementation_\n');
+            %fprintf('UserCodeManagerFigure::updateControlPropertiesImplementation_\n');
             model=self.Model;
             if isempty(model) ,
                 return
@@ -205,7 +205,7 @@ classdef UserFunctionsFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateControlEnablementImplementation_(self,varargin)
-            model=self.Model;  % this is the UserFunctions object
+            model=self.Model;  % this is the UserCodeManager object
             if isempty(model) || ~isvalid(model) ,
                 return
             end
@@ -223,8 +223,8 @@ classdef UserFunctionsFigure < ws.MCOSFigure
     methods (Access=protected)
         function updateSubscriptionsToModelEvents_(self)
             % Unsubscribe from all events, then subsribe to all the
-            % approprate events of model.  model should be a UserFunctions subsystem
-            %fprintf('UserFunctionsFigure::updateSubscriptionsToModelEvents_()\n');
+            % approprate events of model.  model should be a UserCodeManager subsystem
+            %fprintf('UserCodeManagerFigure::updateSubscriptionsToModelEvents_()\n');
             %self.unsubscribeFromAll();
             
             model=self.Model;

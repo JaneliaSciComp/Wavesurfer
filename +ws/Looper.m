@@ -7,7 +7,7 @@ classdef Looper < ws.Model
         Triggering
         %Display
         %Logging
-        UserFunctions
+        UserCodeManager
         %Ephys
         SweepDuration  % the sweep duration, in s
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
@@ -31,7 +31,7 @@ classdef Looper < ws.Model
         Stimulation_
         %Display_
         %Logging_
-        UserFunctions_
+        UserCodeManager_
         %Ephys_
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
@@ -140,7 +140,7 @@ classdef Looper < ws.Model
             self.Stimulation_ = ws.system.LooperStimulation(self);
             %self.Display = ws.system.Display(self);
             self.Triggering_ = ws.system.LooperTriggering(self);
-            self.UserFunctions_ = ws.system.LooperUserFunctions(self);
+            self.UserCodeManager_ = ws.system.LooperUserCodeManager(self);
             %self.Logging = ws.system.Logging(self);
             %self.Ephys = ws.system.Ephys(self);
             
@@ -150,7 +150,7 @@ classdef Looper < ws.Model
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering, self.UserFunctions};            
+            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering, self.UserCodeManager};            
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -178,8 +178,8 @@ classdef Looper < ws.Model
 %             if ~isempty(self.Logging) ,
 %                 self.Logging.unstring();
 %             end
-%             if ~isempty(self.UserFunctions) ,
-%                 self.UserFunctions.unstring();
+%             if ~isempty(self.UserCodeManager) ,
+%                 self.UserCodeManager.unstring();
 %             end
 %             if ~isempty(self.Ephys) ,
 %                 self.Ephys.unstring();
@@ -336,8 +336,8 @@ classdef Looper < ws.Model
             out = self.Triggering_ ;
         end
         
-        function out = get.UserFunctions(self)
-            out = self.UserFunctions_ ;
+        function out = get.UserCodeManager(self)
+            out = self.UserCodeManager_ ;
         end
         
         function out = get.NSweepsCompletedInThisRun(self)
@@ -724,7 +724,7 @@ classdef Looper < ws.Model
             self.Triggering.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Triggering) ;
             self.Acquisition.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Acquisition) ;
             self.Stimulation.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Stimulation) ;
-            self.UserFunctions.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.UserFunctions) ;
+            self.UserCodeManager.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.UserCodeManager) ;
         end
         
         function err = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
@@ -812,7 +812,7 @@ classdef Looper < ws.Model
 %             self.broadcast('DidCompleteSweep');
             
 %             % Call user functions and broadcast
-%             self.callUserFunctions_('didCompleteSweep');
+%             self.callUserCodeManager_('didCompleteSweep');
 
             % Notify the front end
             %self.RPCClient_.call('looperCompletedSweep') ;            
@@ -838,7 +838,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            %self.callUserFunctions_('didAbortSweep');
+            %self.callUserCodeManager_('didAbortSweep');
             
             %self.abortRun_(reason);
         end  % function
@@ -854,7 +854,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            %self.callUserFunctions_('didCompleteRun');
+            %self.callUserCodeManager_('didCompleteRun');
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
@@ -866,7 +866,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            %self.callUserFunctions_('didAbortRun');
+            %self.callUserCodeManager_('didAbortRun');
         end  % function
         
         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -904,8 +904,8 @@ classdef Looper < ws.Model
                                                  rawAnalogData, ...
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
-                if self.UserFunctions.IsEnabled ,                             
-                    self.UserFunctions.samplesAcquired(isSweepBased, ...
+                if self.UserCodeManager.IsEnabled ,                             
+                    self.UserCodeManager.samplesAcquired(isSweepBased, ...
                                                        t, ...
                                                        scaledAnalogData, ...
                                                        rawAnalogData, ...
@@ -926,8 +926,8 @@ classdef Looper < ws.Model
 
                 %self.broadcast('DataAvailable');
                 
-                %self.callUserFunctions_('dataAvailable');  
-                    % now called by UserFunctions dataAvailable() method
+                %self.callUserCodeManager_('dataAvailable');  
+                    % now called by UserCodeManager dataAvailable() method
             end
         end  % function
         
@@ -946,7 +946,7 @@ classdef Looper < ws.Model
 %             % This is because we want to maintain e.g. serial sweep indices even if
 %             % user switches protocols.
 %             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
-%             self.setPropertyTags('UserFunctions', 'ExcludeFromFileTypes', {'usr'});
+%             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'usr'});
 %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
 % 
 %             % Exclude FastProtocols from cfg file
@@ -1001,13 +1001,13 @@ classdef Looper < ws.Model
 %     end  % methods block
         
     methods (Access = protected)                
-%         function callUserFunctions_(self, eventName)
-%             % Handle user functions.  It would be possible to just make the UserFunctions
+%         function callUserCodeManager_(self, eventName)
+%             % Handle user functions.  It would be possible to just make the UserCodeManager
 %             % subsystem a regular listener of these events.  Handling it
 %             % directly removes at 
 %             % least one layer of function calls and allows for user functions for 'events'
 %             % that are not formally events on the model.
-%             self.UserFunctions.invoke(self, eventName);
+%             self.UserCodeManager.invoke(self, eventName);
 %             
 %             % Handle as standard event if applicable.
 %             %self.broadcast(eventName);
@@ -1408,7 +1408,7 @@ classdef Looper < ws.Model
 %                     %self.Triggering.poll(timeSinceSweepStart);
 %                     %self.Display.poll(timeSinceSweepStart);
 %                     %self.Logging.poll(timeSinceSweepStart);
-%                     self.UserFunctions.poll(timeSinceSweepStart);
+%                     self.UserCodeManager.poll(timeSinceSweepStart);
 %                     drawnow() ;  % update, and also process any user actions
 %                 else
 %                     pause(0.010);  % don't want this loop to completely peg the CPU
@@ -1429,7 +1429,7 @@ classdef Looper < ws.Model
 %             % Set each property to the corresponding one
 %             for i = 1:length(propertyNames) ,
 %                 thisPropertyName=propertyNames{i};
-%                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserFunctions_'})) ,
+%                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
 %                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
 %                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
 %                 else
@@ -1453,7 +1453,7 @@ classdef Looper < ws.Model
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserFunctions_'})) ,
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(wsModel.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
