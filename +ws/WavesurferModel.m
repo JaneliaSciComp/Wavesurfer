@@ -886,6 +886,9 @@ classdef WavesurferModel < ws.Model
                 % Now poll
                 [didCompleteSweep,didUserStop] = self.runWithinSweepLoop_();
 
+                % On exit, process any remaining data in the samples buffer
+                self.dataAvailable_() ;
+                
                 % When done, clean up after sweep
                 if didCompleteSweep ,
                     self.cleanUpAfterCompletedSweep_();
@@ -1122,21 +1125,21 @@ classdef WavesurferModel < ws.Model
             end
 
             % Add the new data to the circular buffer
-            self.SamplesBuffer_.store(rawAnalogData,rawDigitalData) ;
+            self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             
             if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
-                self.dataAvailable_(timeSinceRunStartAtStartOfData) ;
+                self.dataAvailable_() ;
             end
         end
         
-        function dataAvailable_(self, timeSinceRunStartAtStartOfData)
+        function dataAvailable_(self)
             % The central method for handling incoming data.  Called by
             % WavesurferModel::dataAvailable(), which is called in response
             % to the 'dataAvailable' message coming in over a subscriber
             % socker.
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.
             fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
-            [rawAnalogData,rawDigitalData] = self.SamplesBuffer_.empty() ;            
+            [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = self.SamplesBuffer_.empty() ;            
             nScans = size(rawAnalogData,1)
 
             % Scale the new data, notify subsystems that we have new data

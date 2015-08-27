@@ -7,6 +7,7 @@ classdef SamplesBuffer < handle
         analogBuffer_
         digitalBuffer_
         nScansInBuffer_
+        timeSinceRunStartAtStartOfBuffer_
     end
     
     methods
@@ -26,7 +27,7 @@ classdef SamplesBuffer < handle
             self.nScansInBuffer_ = 0 ;
         end  % method
         
-        function err = store(self, newAnalogData, newDigitalData)
+        function err = store(self, newAnalogData, newDigitalData, timeSinceRunStartAtStartOfNewData)
             nNewScans = size(newAnalogData,1) ;
             nScansInBufferOriginally = self.nScansInBuffer_ ;
             nScansInBufferOnExit = nNewScans+nScansInBufferOriginally ;
@@ -34,6 +35,9 @@ classdef SamplesBuffer < handle
                 err = MException('ws:bufferOverrun', ...
                                  'Samples buffer was overrun before it could be emptied') ;
             else
+                if nScansInBufferOriginally==0 ,
+                    self.timeSinceRunStartAtStartOfBuffer_ = timeSinceRunStartAtStartOfNewData ;
+                end
                 self.analogBuffer_(nScansInBufferOriginally+1:nScansInBufferOnExit,:) = newAnalogData ;
                 self.digitalBuffer_(nScansInBufferOriginally+1:nScansInBufferOnExit,:) = newDigitalData ;
                 self.nScansInBuffer_ = nScansInBufferOnExit ;
@@ -41,11 +45,14 @@ classdef SamplesBuffer < handle
             end            
         end  % method
         
-        function [analogData,digitalData] = empty(self) 
+        function [analogData,digitalData,timeSinceRunStartAtStartOfBuffer] = empty(self) 
             nScansInBuffer = self.nScansInBuffer_ ; 
             analogData = self.analogBuffer_(1:nScansInBuffer,:) ; 
             digitalData = self.digitalBuffer_(1:nScansInBuffer,:) ; 
+            timeSinceRunStartAtStartOfBuffer = self.timeSinceRunStartAtStartOfBuffer_ ;
+            % zero-out the buffer
             self.nScansInBuffer_ = 0 ;
+            self.timeSinceRunStartAtStartOfBuffer_ = [] ;
         end  % method
         
         function result = nScansInBuffer(self)
