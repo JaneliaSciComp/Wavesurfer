@@ -569,7 +569,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             keyboard
         end
         
-%         function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
+%         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
 %             % Called "from above" when data is available.  When called, we update
 %             % our main-memory data cache with the newly available data.
 %             self.LatestAnalogData_ = scaledAnalogData ;

@@ -25,40 +25,40 @@ classdef TemplateUserClass < ws.UserClass
             self.Parameter2 = exp(1) ;            
         end
         
-        function runWillStart(self,wsModel,eventName)
+        function willPerformRun(self,wsModel,eventName)
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             fprintf('About to start a run.\n');
         end
         
-        function sweepWillStart(self,wsModel,eventName)
+        function willPerformSweep(self,wsModel,eventName)
             % Called just before each sweep
             fprintf('About to start a sweep.\n');
         end
         
-        function sweepDidComplete(self,wsModel,eventName)
+        function didCompleteSweep(self,wsModel,eventName)
             % Called after each sweep completes
             fprintf('Finished a sweep.\n');
         end
         
-        function sweepDidAbort(self,wsModel,eventName)
+        function didAbortSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
             fprintf('Oh noes!  A sweep aborted.\n');
         end        
         
-        function runDidComplete(self,wsModel,eventName)
+        function didCompleteRun(self,wsModel,eventName)
             % Called just after each set of sweeps (a.k.a. each
             % "run")
             fprintf('Finished a run.\n');
         end
         
-        function runDidAbort(self,wsModel,eventName)
+        function didAbortRun(self,wsModel,eventName)
             % Called if a run goes wrong, after the call to
-            % sweepDidAbort()
+            % didAbortSweep()
             fprintf('Oh noes!  A run aborted.\n');
         end
         
-        function dataIsAvailableInFrontend(self,wsModel,eventName)
+        function dataAvailableInFrontend(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             analogData = wsModel.Acquisition.getLatestAnalogData();
@@ -67,7 +67,7 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         
-        function dataIsAvailableInLooper(self,wsModel,eventName)
+        function dataAvailableInLooper(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             analogData = wsModel.Acquisition.getLatestAnalogData();

@@ -97,13 +97,13 @@ classdef WavesurferModel < ws.Model
 %         % As of 2014-10-16, none of these events are subscribed to
 %         % anywhere in the WS code.  But we'll leave them in as hooks for
 %         % user customization.
-%         sweepWillStart
-%         sweepDidComplete
-%         sweepDidAbort
-%         runWillStart
-%         runDidComplete
-%         runDidAbort        %NScopesMayHaveChanged
-%         dataIsAvailable
+%         willPerformSweep
+%         didCompleteSweep
+%         didAbortSweep
+%         willPerformRun
+%         didCompleteRun
+%         didAbortRun        %NScopesMayHaveChanged
+%         dataAvailable
 %     end
     
     events
@@ -296,7 +296,7 @@ classdef WavesurferModel < ws.Model
     methods  % These are all the methods that get called in response to ZMQ messages
         function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             fprintf('got data.  scanIndex: %d\n',scanIndex);
-            self.haveDataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+            self.dataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
         end  % function
         
         function looperCompletedSweep(self)
@@ -745,7 +745,7 @@ classdef WavesurferModel < ws.Model
             
             self.NSweepsCompletedInThisRun_ = 0;
             
-            self.callUserFunctions_('runWillStart');  
+            self.callUserFunctions_('willPerformRun');  
             
             % Tell all the subsystems to prepare for the run
             self.ClockAtRunStart_ = clock() ;
@@ -830,7 +830,7 @@ classdef WavesurferModel < ws.Model
             self.TimeOfLastPollInSweep_ = 0 ;  % s 
             
             % Call user functions 
-            self.callUserFunctions_('sweepWillStart');            
+            self.callUserFunctions_('willPerformSweep');            
             
             % Call willPerformSweep() on all the enabled subsystems
             try
@@ -926,7 +926,7 @@ classdef WavesurferModel < ws.Model
             self.broadcast('DidCompleteSweep');
             
             % Call user functions and broadcast
-            self.callUserFunctions_('sweepDidComplete');
+            self.callUserFunctions_('didCompleteSweep');
         end  % function
         
 %         function daisyChainNextAction_(self)
@@ -1034,7 +1034,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.callUserFunctions_('sweepDidAbort');
+            self.callUserFunctions_('didAbortSweep');
             
             %self.abortRun_(reason);
         end  % function
@@ -1061,7 +1061,7 @@ classdef WavesurferModel < ws.Model
 %                 end
 %             end
 %             
-%             self.callUserFunctions_('sweepDidAbort');
+%             self.callUserFunctions_('didAbortSweep');
 %             
 %             self.abortRun_(reason);
 %         end  % function
@@ -1079,7 +1079,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.callUserFunctions_('runDidComplete');
+            self.callUserFunctions_('didCompleteRun');
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
@@ -1091,10 +1091,10 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.callUserFunctions_('runDidAbort');
+            self.callUserFunctions_('didAbortRun');
         end  % function
         
-        function haveDataAvailable_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function dataAvailable_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             % The central method for handling incoming data.  Called by
             % WavesurferModel::dataAvailable(), which is called in response
             % to the 'dataAvailable' message coming in over a subscriber
@@ -1136,7 +1136,7 @@ classdef WavesurferModel < ws.Model
                 isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
                 if self.Logging.IsEnabled ,
-                    self.Logging.dataIsAvailable(isSweepBased, ...
+                    self.Logging.dataAvailable(isSweepBased, ...
                                                  t, ...
                                                  scaledAnalogData, ...
                                                  rawAnalogData, ...
@@ -1144,7 +1144,7 @@ classdef WavesurferModel < ws.Model
                                                  timeSinceRunStartAtStartOfData);
                 end
                 if self.Display.IsEnabled ,
-                    self.Display.dataIsAvailable(isSweepBased, ...
+                    self.Display.dataAvailable(isSweepBased, ...
                                                  t, ...
                                                  scaledAnalogData, ...
                                                  rawAnalogData, ...
@@ -1152,7 +1152,7 @@ classdef WavesurferModel < ws.Model
                                                  timeSinceRunStartAtStartOfData);
                 end
                 if self.UserFunctions.IsEnabled ,
-                    self.UserFunctions.dataIsAvailable(isSweepBased, ...
+                    self.UserFunctions.dataAvailable(isSweepBased, ...
                                                        t, ...
                                                        scaledAnalogData, ...
                                                        rawAnalogData, ...
@@ -1162,7 +1162,7 @@ classdef WavesurferModel < ws.Model
 %                 for idx = 1: numel(self.Subsystems_) ,
 %                     %tic
 %                     if self.Subsystems_{idx}.IsEnabled ,
-%                         self.Subsystems_{idx}.dataIsAvailable(isSweepBased, ...
+%                         self.Subsystems_{idx}.dataAvailable(isSweepBased, ...
 %                                                               t, ...
 %                                                               scaledAnalogData, ...
 %                                                               rawAnalogData, ...
@@ -1175,7 +1175,7 @@ classdef WavesurferModel < ws.Model
 
                 self.broadcast('UpdateForNewData');
                 
-                %self.callUserFunctions_('dataIsAvailable');
+                %self.callUserFunctions_('dataAvailable');
             end
         end  % function
         

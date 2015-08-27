@@ -69,13 +69,13 @@ classdef Looper < ws.Model
 %         % As of 2014-10-16, none of these events are subscribed to
 %         % anywhere in the WS code.  But we'll leave them in as hooks for
 %         % user customization.
-%         sweepWillStart
-%         sweepDidComplete
-%         sweepDidAbort
-%         runWillStart
-%         runDidComplete
-%         runDidAbort        %NScopesMayHaveChanged
-%         dataIsAvailable
+%         willPerformSweep
+%         didCompleteSweep
+%         didAbortSweep
+%         willPerformRun
+%         didCompleteRun
+%         didAbortRun        %NScopesMayHaveChanged
+%         dataAvailable
 %     end
     
     events
@@ -812,7 +812,7 @@ classdef Looper < ws.Model
 %             self.broadcast('DidCompleteSweep');
             
 %             % Call user functions and broadcast
-%             self.callUserFunctions_('sweepDidComplete');
+%             self.callUserFunctions_('didCompleteSweep');
 
             % Notify the front end
             %self.RPCClient_.call('looperCompletedSweep') ;            
@@ -838,7 +838,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            %self.callUserFunctions_('sweepDidAbort');
+            %self.callUserFunctions_('didAbortSweep');
             
             %self.abortRun_(reason);
         end  % function
@@ -854,7 +854,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            %self.callUserFunctions_('runDidComplete');
+            %self.callUserFunctions_('didCompleteRun');
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
@@ -866,7 +866,7 @@ classdef Looper < ws.Model
                 end
             end
             
-            %self.callUserFunctions_('runDidAbort');
+            %self.callUserFunctions_('didAbortRun');
         end  % function
         
         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -926,8 +926,8 @@ classdef Looper < ws.Model
 
                 %self.broadcast('DataAvailable');
                 
-                %self.callUserFunctions_('dataIsAvailable');  
-                    % now called by UserFunctions dataIsAvailable() method
+                %self.callUserFunctions_('dataAvailable');  
+                    % now called by UserFunctions dataAvailable() method
             end
         end  % function
         

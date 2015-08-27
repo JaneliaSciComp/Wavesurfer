@@ -266,7 +266,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             self.ClearOnNextData_ = true;
         end
         
-        function dataIsAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
             %fprintf('Display::dataAvailable()\n');
             %dbstack
             %T=zeros(4,1);

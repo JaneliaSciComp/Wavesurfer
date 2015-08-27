@@ -186,7 +186,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             fprintf('\n\n');
-            fprintf('LooperAcquisition::dataIsAvailable:\n');
+            fprintf('LooperAcquisition::dataAvailable:\n');
             dbstack
             fprintf('\n\n');
             self.LatestAnalogData_ = scaledAnalogData ;

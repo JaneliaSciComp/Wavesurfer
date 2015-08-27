@@ -7,27 +7,27 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         function self = FlipDOFromSweepToSweep(wsModel)
         end
         
-        function sweepWillStart(self,wsModel,eventName) %#ok<INUSD,INUSL>
+        function willPerformSweep(self,wsModel,eventName) %#ok<INUSD,INUSL>
             wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
                 mod(wsModel.NSweepsCompletedInThisRun,2);
         end
         
-        function sweepDidComplete(self,wsModel,eventName)  %#ok<INUSD>
+        function didCompleteSweep(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function sweepDidAbort(self,wsModel,eventName)  %#ok<INUSD>
+        function didAbortSweep(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function runWillStart(self,wsModel,eventName)  %#ok<INUSD>
+        function willPerformRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function runDidComplete(self,wsModel,eventName)  %#ok<INUSD>
+        function didCompleteRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function runDidAbort(self,wsModel,eventName)  %#ok<INUSD>
+        function didAbortRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function dataIsAvailable(self,wsModel,eventName)  %#ok<INUSD>
+        function dataAvailable(self,wsModel,eventName)  %#ok<INUSD>
         end
         
     end

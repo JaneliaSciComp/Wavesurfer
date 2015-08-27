@@ -38,16 +38,16 @@ classdef RasterVirtualReality < ws.UserClass
         function self = RasterVirtualReality(wsModel) %#ok<INUSD>
         end  % function
         
-        function sweepWillStart(self,wsModel,eventName) %#ok<INUSD>
+        function willPerformSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function sweepDidComplete(self,wsModel,eventName) %#ok<INUSD>
+        function didCompleteSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function sweepDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        function didAbortSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function runWillStart(self,wsModel,eventName) %#ok<INUSD>
+        function willPerformRun(self,wsModel,eventName) %#ok<INUSD>
 
             eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayProcess &');            
             self.TcpReceive = ws.jtcp.jtcp('ACCEPT',2000,'TIMEOUT',60000);
@@ -90,16 +90,16 @@ classdef RasterVirtualReality < ws.UserClass
             end
         end  % function
         
-        function runDidComplete(self,wsModel,eventName) %#ok<INUSD>
+        function didCompleteRun(self,wsModel,eventName) %#ok<INUSD>
             ws.jtcp.jtcp('WRITE',self.TcpSend,'quit');
             self.TcpSend = JTCP('CLOSE',self.TcpSend);
             self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
         end  % function
         
-        function runDidAbort(self,wsModel,eventName) %#ok<INUSD>
+        function didAbortRun(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function dataIsAvailable(self,wsModel,eventName) %#ok<INUSD>
+        function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
             % syncs found yet?
             tmp=ws.jtcp.jtcp('READ',self.TcpReceive);
             if ~isempty(tmp)
