@@ -91,6 +91,8 @@ classdef WavesurferModel < ws.Model
         ThrownException_
         NSweepsCompletedInThisRun_ = 0
         IsITheOneTrueWavesurferModel_
+        NScansPerUpdate_
+        SamplesBuffer_
     end
     
 %     events
@@ -153,7 +155,7 @@ classdef WavesurferModel < ws.Model
 
                 % Start the other Matlab processes
                 %system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
+                system('start matlab -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -296,7 +298,7 @@ classdef WavesurferModel < ws.Model
     methods  % These are all the methods that get called in response to ZMQ messages
         function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             fprintf('got data.  scanIndex: %d\n',scanIndex) ;
-            self.dataAvailable_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+            self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
         end  % function
         
         function looperCompletedSweep(self)
@@ -784,7 +786,13 @@ classdef WavesurferModel < ws.Model
             self.NTimesSamplesAcquiredCalledSinceRunStart_=0;
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
-            self.NScansPerUpdate_ = updateDt/self.Acquisition.SampleRate ;
+            self.NScansPerUpdate_ = round(updateDt*self.Acquisition.SampleRate) ;
+            
+            % Set up the samples buffer
+            bufferSizeInScans = 10*self.NScansPerUpdate_ ;
+            self.SamplesBuffer_ = ws.SamplesBuffer(self.Acquisition.NActiveAnalogChannels, ...
+                                                   self.Acquisition.NActiveDigitalChannels, ...
+                                                   bufferSizeInScans) ;
             
             self.changeReadiness(+1);
 
@@ -1084,9 +1092,11 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('didCompleteRun');
         end  % function
         
-        function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
+        function cleanUpAfterAbortedRun_(self, reason)
             self.setState_('idle');
             
+            self.IPCPublisher_.send('didAbortRun',reason) ;
+
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
                     self.Subsystems_{idx}.didAbortRun() ;
@@ -1112,9 +1122,9 @@ classdef WavesurferModel < ws.Model
             end
 
             % Add the new data to the circular buffer
-            self.CircularBuffer_.addData(rawAnalogData,rawDigitalData) ;
+            self.SamplesBuffer_.store(rawAnalogData,rawDigitalData) ;
             
-            if self.CircularBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
+            if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
                 self.dataAvailable_(timeSinceRunStartAtStartOfData) ;
             end
         end
@@ -1125,8 +1135,9 @@ classdef WavesurferModel < ws.Model
             % to the 'dataAvailable' message coming in over a subscriber
             % socker.
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.
-            [rawAnalogData,rawDigitalData] = self.CircularBuffer.getData() ;            
-            nScans = size(rawAnalogData,1) ;
+            fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
+            [rawAnalogData,rawDigitalData] = self.SamplesBuffer_.empty() ;            
+            nScans = size(rawAnalogData,1)
 
             % Scale the new data, notify subsystems that we have new data
             if (nScans>0)
@@ -1145,53 +1156,35 @@ classdef WavesurferModel < ws.Model
                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
                 end
 
-                % Notify each subsystem that data has just been acquired
-                %T=zeros(1,7);
-                %state = self.State_ ;
+                % Notify each relevant subsystem that data has just been acquired
                 isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
                 if self.Logging.IsEnabled ,
                     self.Logging.dataAvailable(isSweepBased, ...
-                                                 t, ...
-                                                 scaledAnalogData, ...
-                                                 rawAnalogData, ...
-                                                 rawDigitalData, ...
-                                                 timeSinceRunStartAtStartOfData);
+                                               t, ...
+                                               scaledAnalogData, ...
+                                               rawAnalogData, ...
+                                               rawDigitalData, ...
+                                               timeSinceRunStartAtStartOfData);
                 end
                 if self.Display.IsEnabled ,
                     self.Display.dataAvailable(isSweepBased, ...
-                                                 t, ...
-                                                 scaledAnalogData, ...
-                                                 rawAnalogData, ...
-                                                 rawDigitalData, ...
-                                                 timeSinceRunStartAtStartOfData);
+                                               t, ...
+                                               scaledAnalogData, ...
+                                               rawAnalogData, ...
+                                               rawDigitalData, ...
+                                               timeSinceRunStartAtStartOfData);
                 end
                 if self.UserCodeManager.IsEnabled ,
                     self.callUserMethod_('dataAvailable');
-%                     self.UserCodeManager.dataAvailable(isSweepBased, ...
-%                                                        t, ...
-%                                                        scaledAnalogData, ...
-%                                                        rawAnalogData, ...
-%                                                        rawDigitalData, ...
-%                                                        timeSinceRunStartAtStartOfData);
                 end
-%                 for idx = 1: numel(self.Subsystems_) ,
-%                     %tic
-%                     if self.Subsystems_{idx}.IsEnabled ,
-%                         self.Subsystems_{idx}.dataAvailable(isSweepBased, ...
-%                                                               t, ...
-%                                                               scaledAnalogData, ...
-%                                                               rawAnalogData, ...
-%                                                               rawDigitalData, ...
-%                                                               timeSinceRunStartAtStartOfData);
-%                     end
-%                     %T(idx)=toc;
-%                 end
-%                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
+                % Fire an event to cause views to sync
                 self.broadcast('UpdateForNewData');
                 
-                %self.callUserMethod_('dataAvailable');
+                % Do a drawnow(), to make sure user sees the changes, and
+                % to process any button presses, etc.
+                drawnow();                
             end
         end  % function
         
@@ -1803,39 +1796,15 @@ classdef WavesurferModel < ws.Model
     
     methods (Access=protected)
         function [isSweepComplete,wasStoppedByUser] = runWithinSweepLoop_(self)
-            % Runs the main polling loop.
+            % Runs the main message-processing loop during a sweep.
             
-            pollingTicId = tic() ;
-            pollingPeriod = 1/self.Display.UpdateRate ;
-            %self.DoContinuePolling_ = true ;
             self.IsSweepComplete_ = false ;
             self.WasRunStoppedByUser_ = false ;
-            timeOfLastPoll = toc(pollingTicId) ;
             while ~(self.IsSweepComplete_ || self.WasRunStoppedByUser_) ,
-                timeNow =  toc(pollingTicId) ;
-                timeSinceLastPoll = timeNow - timeOfLastPoll ;
-                if timeSinceLastPoll >= pollingPeriod ,
-                    timeOfLastPoll = timeNow ;
-                    fprintf('just before message processing...\n') ;
-                    %self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    fprintf('within message processing...\n') ;
-                    %self.RPCServer_.processMessagesIfAvailable() ;  % this is how we learn the sweep is complete
-                    %self.RPCServer_.processMessageIfAvailable() ;  % this is how we learn the sweep is complete
-                    %fprintf('just after message processing.\n');
-                    %timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-                    %self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-                    %self.Stimulation.poll(timeSinceSweepStart);
-                    %self.Triggering.poll(timeSinceSweepStart);
-                    %self.Display.poll(timeSinceSweepStart);
-                    %self.Logging.poll(timeSinceSweepStart);
-                    %self.UserCodeManager.poll(timeSinceSweepStart);
-                    fprintf('drawnow()ing...\n');
-                    drawnow() ;  % update, and also process any user actions
-                else
-                    fprintf('pause(0.010)ing...\n');
-                    pause(0.010);  % don't want this loop to completely peg the CPU
-                end                
+                fprintf('At top of within-sweep loop...\n') ;
+                self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                  % drawnow()'ing will have to happen at times of updates
+                  % in new scheme...
             end    
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to

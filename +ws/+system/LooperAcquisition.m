@@ -185,10 +185,10 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called "from above" when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
-            fprintf('\n\n');
-            fprintf('LooperAcquisition::dataAvailable:\n');
-            dbstack
-            fprintf('\n\n');
+            %fprintf('\n\n');
+            %fprintf('LooperAcquisition::samplesAcquired:\n');
+            %dbstack
+            %fprintf('\n\n');
             self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;
