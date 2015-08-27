@@ -745,7 +745,7 @@ classdef WavesurferModel < ws.Model
             
             self.NSweepsCompletedInThisRun_ = 0;
             
-            self.callUserFunctions_('willPerformRun');  
+            self.callUserMethod_('willPerformRun');  
             
             % Tell all the subsystems to prepare for the run
             self.ClockAtRunStart_ = clock() ;
@@ -830,7 +830,7 @@ classdef WavesurferModel < ws.Model
             self.TimeOfLastPollInSweep_ = 0 ;  % s 
             
             % Call user functions 
-            self.callUserFunctions_('willPerformSweep');            
+            self.callUserMethod_('willPerformSweep');            
             
             % Call willPerformSweep() on all the enabled subsystems
             try
@@ -926,7 +926,7 @@ classdef WavesurferModel < ws.Model
             self.broadcast('DidCompleteSweep');
             
             % Call user functions and broadcast
-            self.callUserFunctions_('didCompleteSweep');
+            self.callUserMethod_('didCompleteSweep');
         end  % function
         
 %         function daisyChainNextAction_(self)
@@ -1034,7 +1034,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.callUserFunctions_('didAbortSweep');
+            self.callUserMethod_('didAbortSweep');
             
             %self.abortRun_(reason);
         end  % function
@@ -1061,7 +1061,7 @@ classdef WavesurferModel < ws.Model
 %                 end
 %             end
 %             
-%             self.callUserFunctions_('didAbortSweep');
+%             self.callUserMethod_('didAbortSweep');
 %             
 %             self.abortRun_(reason);
 %         end  % function
@@ -1079,7 +1079,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.callUserFunctions_('didCompleteRun');
+            self.callUserMethod_('didCompleteRun');
         end  % function
         
         function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
@@ -1091,7 +1091,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.callUserFunctions_('didAbortRun');
+            self.callUserMethod_('didAbortRun');
         end  % function
         
         function dataAvailable_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -1152,12 +1152,13 @@ classdef WavesurferModel < ws.Model
                                                  timeSinceRunStartAtStartOfData);
                 end
                 if self.UserFunctions.IsEnabled ,
-                    self.UserFunctions.dataAvailable(isSweepBased, ...
-                                                       t, ...
-                                                       scaledAnalogData, ...
-                                                       rawAnalogData, ...
-                                                       rawDigitalData, ...
-                                                       timeSinceRunStartAtStartOfData);
+                    self.callUserMethods('dataAvailable');
+%                     self.UserFunctions.dataAvailable(isSweepBased, ...
+%                                                        t, ...
+%                                                        scaledAnalogData, ...
+%                                                        rawAnalogData, ...
+%                                                        rawDigitalData, ...
+%                                                        timeSinceRunStartAtStartOfData);
                 end
 %                 for idx = 1: numel(self.Subsystems_) ,
 %                     %tic
@@ -1175,7 +1176,7 @@ classdef WavesurferModel < ws.Model
 
                 self.broadcast('UpdateForNewData');
                 
-                %self.callUserFunctions_('dataAvailable');
+                %self.callUserMethod_('dataAvailable');
             end
         end  % function
         
@@ -1321,7 +1322,7 @@ classdef WavesurferModel < ws.Model
 %             %self.Triggering.SweepTrigger.Source.RepeatCount=1;  % Don't allow this to change
 %         end  % function
         
-        function callUserFunctions_(self, eventName)
+        function callUserMethod_(self, eventName)
             % Handle user functions.  It would be possible to just make the UserFunctions
             % subsystem a regular listener of these events.  Handling it
             % directly removes at 

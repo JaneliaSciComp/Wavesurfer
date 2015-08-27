@@ -110,10 +110,18 @@ classdef UserFunctions < ws.system.Subsystem
             end
         end  % function
         
-        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
-            % The data available callback 
-            self.invoke(self.Parent,'dataAvailableInFrontend');
-        end
+        % You might thing user methods would get invoked inside the
+        % UserFunctions methods willPerformRun, willPerformSweep,
+        % dataAvailable, etc.  But we don't do it that way, because it
+        % doesn't always lead to user methods being called at just the
+        % right time.  Instead we call the callUserMethod_() method in the
+        % WavesurferModel at just the right time, which calls the user
+        % method(s).
+        
+%         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+%             % The data available callback 
+%             self.invoke(self.Parent,'dataAvailable');
+%         end
     end  % methods
        
     methods (Access=protected)
