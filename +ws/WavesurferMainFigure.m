@@ -1473,12 +1473,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                             'Visible','on');
                     end
                 else
-                    nTimesSamplesAcquiredCalledSinceRunStart=model.NTimesSamplesAcquiredCalledSinceRunStart;
+                    % continuous acq
+                    nTimesDataAvailableCalledSinceRunStart=model.NTimesDataAvailableCalledSinceRunStart;
                     nSegments=10;
                     nPositions=2*nSegments;
                     barWidth=1/nSegments;
                     stepWidth=1/nPositions;
-                    xOffset=stepWidth*mod(nTimesSamplesAcquiredCalledSinceRunStart,nPositions);
+                    xOffset=stepWidth*mod(nTimesDataAvailableCalledSinceRunStart,nPositions);
                     set(self.ProgressBarPatch, ...
                         'XData',xOffset+[0 barWidth barWidth 0 0], ...
                         'YData',[0 0 1 1 0], ...

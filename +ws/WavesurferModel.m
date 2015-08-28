@@ -29,7 +29,7 @@ classdef WavesurferModel < ws.Model
         NSweepsPerRun  
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
         IsYokedToScanImage
-        NTimesSamplesAcquiredCalledSinceRunStart
+        NTimesDataAvailableCalledSinceRunStart
         ClockAtRunStart  
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
@@ -79,7 +79,7 @@ classdef WavesurferModel < ws.Model
         FromSweepStartTicId_
         TimeOfLastWillPerformSweep_        
         TimeOfLastSamplesAcquired_
-        NTimesSamplesAcquiredCalledSinceRunStart_ = 0
+        NTimesDataAvailableCalledSinceRunStart_ = 0
         %PollingTimer_
         %MinimumPollingDt_
         TimeOfLastPollInSweep_
@@ -649,7 +649,7 @@ classdef WavesurferModel < ws.Model
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
 %             % Called "from below" when data is available
-%             self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+%             self.NTimesDataAvailableCalledSinceRunStart_ = self.NTimesDataAvailableCalledSinceRunStart_ + 1 ;
 %             %profile resume
 %             % time between subsequent calls to this
 % %            t=toc(self.FromRunStartTicId_);
@@ -792,7 +792,7 @@ classdef WavesurferModel < ws.Model
             % Handle timing stuff
             self.TimeOfLastWillPerformSweep_=[];
             self.FromRunStartTicId_=tic();
-            self.NTimesSamplesAcquiredCalledSinceRunStart_=0;
+            self.NTimesDataAvailableCalledSinceRunStart_=0;
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
             self.NScansPerUpdate_ = round(updateDt*self.Acquisition.SampleRate) ;
@@ -1083,14 +1083,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function dataAvailable_(self)
-            % The central method for handling incoming data.  Called by
-            % WavesurferModel::dataAvailable(), which is called in response
-            % to the 'dataAvailable' message coming in over a subscriber
-            % socker.
-            % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.
+            % The central method for handling incoming data, after it has
+            % been buffered for a while, and we're ready to display+log it.
+            % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.            
+            
             fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
+            self.NTimesDataAvailableCalledSinceRunStart_ = self.NTimesDataAvailableCalledSinceRunStart_ + 1 ;
             [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = self.SamplesBuffer_.empty() ;            
-            nScans = size(rawAnalogData,1)
+            nScans = size(rawAnalogData,1) ;
 
             % Scale the new data, notify subsystems that we have new data
             if (nScans>0)
@@ -1574,8 +1574,8 @@ classdef WavesurferModel < ws.Model
 %     end
     
     methods
-        function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
-            value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
+        function value = get.NTimesDataAvailableCalledSinceRunStart(self)
+            value=self.NTimesDataAvailableCalledSinceRunStart_;
         end
     end
 
