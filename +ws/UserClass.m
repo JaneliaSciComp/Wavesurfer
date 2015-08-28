@@ -4,9 +4,11 @@ classdef UserClass < ws.mixin.Coding
         % these are called in the frontend process
         willPerformSweep(self,wsModel,eventName)        
         didCompleteSweep(self,wsModel,eventName)      
+        didStopSweep(self,wsModel,eventName)      
         didAbortSweep(self,wsModel,eventName)
         willPerformRun(self,wsModel,eventName)
         didCompleteRun(self,wsModel,eventName)
+        didStopRun(self,wsModel,eventName)
         didAbortRun(self,wsModel,eventName)
         dataAvailable(self,wsModel,eventName)
         % this one is called in the looper process

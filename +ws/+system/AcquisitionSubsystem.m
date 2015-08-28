@@ -450,14 +450,18 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %             self.DigitalInputTask_.arm();
         end  % function
         
-        function didCompleteRun(self)
-            %fprintf('Acquisition::didCompleteRun()\n');
-            self.didPerformOrAbortRun_();
-        end  % function
-        
-        function didAbortRun(self)
-            self.didPerformOrAbortRun_();
-        end  % function
+%         function didCompleteRun(self)
+%             %fprintf('Acquisition::didCompleteRun()\n');
+%             self.didCompleteOrStopOrAbortRun_();
+%         end  % function
+%         
+%         function didStopRun(self)
+%             self.didCompleteOrStopOrAbortRun_();
+%         end  % function
+%         
+%         function didAbortRun(self)
+%             self.didCompleteOrStopOrAbortRun_();
+%         end  % function
 
         function willPerformSweep(self)
             %fprintf('Acquisition::willPerformSweep()\n');
@@ -471,21 +475,6 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             %self.DigitalInputTask_.start();
         end  % function
         
-        function didCompleteSweep(self) %#ok<MANU>
-            %fprintf('Acquisition::didCompleteSweep()\n');
-        end
-        
-        function didAbortSweep(self)
-            try
-                %self.AnalogInputTask_.abort();
-                %self.DigitalInputTask_.abort();
-            catch me %#ok<NASGU>
-                % didAbortSweep() cannot throw an error, so we ignore any
-                % errors that arise here.
-            end
-            %self.IsArmedOrAcquiring_ = false;
-        end  % function
-                
         function iChannel=iActiveChannelFromName(self,channelName)
             iChannels=find(strcmp(channelName,self.ActiveChannelNames));
             if isempty(iChannels) ,
@@ -714,23 +703,23 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     end  % methods block
     
     methods (Access = protected)
-        function didPerformOrAbortRun_(self)
-%             if ~isempty(self.AnalogInputTask_) ,
-%                 if isvalid(self.AnalogInputTask_) ,
-%                     self.AnalogInputTask_.disarm();
-%                 else
-%                     self.AnalogInputTask_ = [] ;
-%                 end
-%             end
-%             if ~isempty(self.DigitalInputTask_) ,
-%                 if isvalid(self.DigitalInputTask_) ,
-%                     self.DigitalInputTask_.disarm();
-%                 else
-%                     self.DigitalInputTask_ = [] ;
-%                 end                    
-%             end
-            %self.IsArmedOrAcquiring_ = false;
-        end  % function
+%         function didCompleteOrStopOrAbortRun_(self) %#ok<MANU>
+% %             if ~isempty(self.AnalogInputTask_) ,
+% %                 if isvalid(self.AnalogInputTask_) ,
+% %                     self.AnalogInputTask_.disarm();
+% %                 else
+% %                     self.AnalogInputTask_ = [] ;
+% %                 end
+% %             end
+% %             if ~isempty(self.DigitalInputTask_) ,
+% %                 if isvalid(self.DigitalInputTask_) ,
+% %                     self.DigitalInputTask_.disarm();
+% %                 else
+% %                     self.DigitalInputTask_ = [] ;
+% %                 end                    
+% %             end
+%             %self.IsArmedOrAcquiring_ = false;
+%         end  % function
         
         function acquisitionSweepComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromRunStartTicId_));

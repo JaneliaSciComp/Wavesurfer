@@ -204,9 +204,16 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();
             
-            %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
+        end  % function
+        
+        function didStopRun(self)
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();
+            
+            self.SelectedOutputableCache_ = [];
+            self.IsWithinRun_=false;
         end  % function
         
         function didAbortRun(self)
@@ -217,7 +224,6 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 self.TheFiniteDigitalOutputTask_.disarm();
             end
             
-            %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
             self.IsWithinRun_=false;
         end  % function
@@ -302,6 +308,19 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         function didCompleteSweep(self)  %#ok<MANU>
             %fprintf('Stimulation::didCompleteSweep()\n');            
         end
+        
+        function didStopSweep(self)
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+                self.TheFiniteAnalogOutputTask_.abort();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+                self.TheFiniteDigitalOutputTask_.abort();
+            end
+            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+                self.TheUntimedDigitalOutputTask_.abort();            
+            end
+            self.IsArmedOrStimulating_ = false ;
+        end  % function
         
         function didAbortSweep(self)
             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 

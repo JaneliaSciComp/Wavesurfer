@@ -86,7 +86,7 @@ classdef WavesurferModel < ws.Model
         ClockAtRunStart_
         %DoContinuePolling_
         IsSweepComplete_
-        WasRunStoppedByUser_        
+        WasRunStopped_        
         WasExceptionThrown_
         ThrownException_
         NSweepsCompletedInThisRun_ = 0
@@ -285,16 +285,18 @@ classdef WavesurferModel < ws.Model
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current run, if any.
 
+            fprintf('WavesurferModel::stop()\n');
             if isequal(self.State,'idle') , 
                 % do nothing
             else
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');
-                self.WasRunStoppedByUser_ = true ;
+                %self.WasRunStoppedByUser_ = true ;
+                self.IPCPublisher_.send('frontendWantsToStopRun');  % the looper gets this message and stops the run, then publishes 'looperDidStopRun'
             end
         end  % function
     end
-       
+    
     methods  % These are all the methods that get called in response to ZMQ messages
         function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             fprintf('got data.  scanIndex: %d\n',scanIndex) ;
@@ -304,6 +306,12 @@ classdef WavesurferModel < ws.Model
         function looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
             self.IsSweepComplete_ = true ;
+        end
+        
+        function looperStoppedRun(self)
+            % Call by the Looper, via ZMQ pub-sub, when it has stopped the
+            % run (in response to a frontendWantsToStopRun message)
+            self.WasRunStopped_ = true ;
         end
         
         function looperReadyForRun(self) %#ok<MANU>
@@ -316,8 +324,7 @@ classdef WavesurferModel < ws.Model
             % Call by the Looper, via ZMQ pub-sub, when it has finished its
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
-        end
-        
+        end        
     end  % methods
     
     methods
@@ -759,7 +766,8 @@ classdef WavesurferModel < ws.Model
                     end
                 end
             catch me
-                self.cleanUpAfterAbortedRun_('problem');
+                % Something went wrong
+                self.cleanUpAfterAbortedRun_();
                 self.changeReadiness(+1);
                 me.rethrow();
             end
@@ -772,7 +780,8 @@ classdef WavesurferModel < ws.Model
             %keyboard
             [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
             if ~gotMessage ,
-                self.cleanUpAfterAbortedRun_('problem');
+                % Something went wrong
+                self.cleanUpAfterAbortedRun_();
                 self.changeReadiness(+1);
                 throw(err);                
             end
@@ -804,16 +813,19 @@ classdef WavesurferModel < ws.Model
             for iSweep = 1:self.NSweepsPerRun ,
                 if didCompleteLastSweep ,
                     [didCompleteLastSweep,didUserStop,didThrow,exception] = self.performSweep_() ;
+                else
+                    break
                 end
             end
             
             % Do some kind of clean up
             if didCompleteLastSweep ,
                 self.cleanUpAfterCompletedRun_();
+            elseif didUserStop ,
+                self.cleanUpAfterStoppedRun_();
             else
-                % do something else                
-                reason = ws.utility.fif(didUserStop, 'user', 'problem') ;
-                self.cleanUpAfterAbortedRun_(reason);
+                % Something went wrong
+                self.cleanUpAfterAbortedRun_();
             end
             
             % If an exception was thrown, re-throw it
@@ -856,7 +868,8 @@ classdef WavesurferModel < ws.Model
                 timeout = 10 ;  % s
                 [didGetMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
                 if ~didGetMessage ,
-                    self.cleanUpAfterAbortedRun_('problem');
+                    % Something went wrong
+                    self.cleanUpAfterAbortedRun_();
                     self.changeReadiness(+1);
                     throw(err);
                 end
@@ -885,14 +898,16 @@ classdef WavesurferModel < ws.Model
                 
                 % Now poll
                 [didCompleteSweep,didUserStop] = self.runWithinSweepLoop_();
-
-                % On exit, process any remaining data in the samples buffer
-                self.dataAvailable_() ;
                 
                 % When done, clean up after sweep
                 if didCompleteSweep ,
+                    self.dataAvailable_() ;  % Process any remaining data in the samples buffer
                     self.cleanUpAfterCompletedSweep_();
+                elseif didUserStop ,
+                    self.dataAvailable_() ;  % Process any remaining data in the samples buffer
+                    self.cleanUpAfterStoppedSweep_();
                 else
+                    % Something must have gone wrong...
                     self.cleanUpAfterAbortedSweep_();
                 end
                 
@@ -909,19 +924,21 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
 
-%         function cleanUpAfterSweepAndDaisyChainNextAction_(self)
-%             %fprintf('WavesurferModel::cleanUpAfterSweepAndDaisyChainNextAction_()\n');
-%             %dbstack
-% 
-%             % clean up after the sweep
-%             self.cleanUpAfterSweep_() ;
-%             
-%             % Daisy-chain another sweep, or wrap up the run,
-%             % depending
-%             self.daisyChainNextAction_();
-%         end  % function
+        % A run can end for one of three reasons: it is manually stopped by
+        % the user in the middle, something goes wrong, and it completes
+        % normally.  We call the first a "stop", the second an "abort", and
+        % the third a "complete".  This terminology is (hopefully) used
+        % consistently for methods like cleanUpAfterCompletedSweep_,
+        % cleanUpAfterAbortedSweep_, etc.  Also note that this sense of
+        % "abort" is not the same as it is used for DAQmx tasks.  For DAQmx
+        % tasks, it means, roughly: stop the task, uncommit it, and
+        % unreserve it.  Sometimes a Waversurfer "abort" leads to a DAQmx "abort"
+        % for one or more DAQmx tasks, but this is not necessarily the
+        % case.
         
         function cleanUpAfterCompletedSweep_(self)
+            % Clean up after a sweep completes successfully.
+            
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');
             %dbstack
             
@@ -938,102 +955,28 @@ classdef WavesurferModel < ws.Model
             % Broadcast event
             self.broadcast('DidCompleteSweep');
             
-            % Call user functions and broadcast
+            % Call user method
             self.callUserMethod_('didCompleteSweep');
         end  % function
-        
-%         function daisyChainNextAction_(self)
-%             %fprintf('WavesurferModel::daisyChainNextAction_()\n');
-%             %dbstack
-%             
-%             % Daisy-chain another sweep, or wrap up the run,
-%             % depending
-%             if self.Stimulation.IsEnabled ,
-%                 if self.Triggering.StimulationTriggerScheme.IsExternal ,
-%                     if self.Triggering.AcquisitionTriggerScheme.IsExternal ,
-%                         % stim, acq are both external
-%                         if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-%                             % stim, acq are both external, and are
-%                             % identical
-%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                         else
-%                             % stim, acq are both external, but are distinct
-%                             % In this case, we never declare the exp done, but we
-%                             % might daisy chain another sweep.
-%                             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                                 self.performSweep_();
-%                             else
-%                                 % do nothing
-%                             end
-%                         end
-%                     else
-%                         % stim external, acq internal
-%                         % In this case, we never declare the exp done, but we
-%                         % might daisy chain another sweep.
-%                         if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                             self.performSweep_();
-%                         else
-%                             % do nothing
-%                         end
-%                     end                    
-%                 else
-%                     % Stim triggering is internal
-%                     if self.Triggering.AcquisitionTriggerScheme.IsInternal ,
-%                         % Stim and acq triggers are both internal
-%                         if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-%                             % acq and stim trig sources are internal and identical
-%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                         else
-%                             % acq and stim trig sources are internal, but distinct
-%                             if self.Stimulation.IsWithinRun ,
-%                                 if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                                     self.performSweep_();
-%                                 else
-%                                     % no more acq sweeps to do, but
-%                                     % have to wait for stim to finish
-%                                     % before run is done
-%                                 end                                
-%                             else
-%                                 % stim is done, so all depends on acq
-%                                 self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                             end
-%                         end
-%                     else
-%                         % stim trig internal, acq trig external
-%                         % therefore they're distinct
-%                         if self.Stimulation.IsWithinRun ,
-%                             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                                 self.performSweep_();
-%                             else
-%                                 % no more acq sweeps to do, but
-%                                 % have to wait for stim to finish
-%                                 % before run is done
-%                             end                                
-%                         else
-%                             % stim is done, so all depends on acq
-%                             self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%                         end
-%                     end
-%                 end
-%             else
-%                 % Stimulation subsystem is disabled
-%                 self.performSweepOrCleanupAfterRunDependingOnAcqOnly_();
-%             end            
-%         end  % function
-        
-%         function performSweepOrCleanupAfterRunDependingOnAcqOnly_(self)
-%             if self.NSweepsCompletedInThisRun < self.NSweepsPerRun ,
-%                 self.performSweep_();
-%             else
-%                 self.cleanupAfterRun_();
-%             end
-%         end  % function
-        
-        function cleanUpAfterAbortedSweep_(self)
-            % Command to abort the current sweep, and the current run.  reason should be either
-            % 'user' (meaning a user caused the sweep to stop), or
-            % 'problem', meaning some problem occured.
+                
+        function cleanUpAfterStoppedSweep_(self)
+            % Clean up after a sweep is stopped by the user in mid-sweep.
             
+            % Notify all the subsystems that the sweep was stopped
+            for i = numel(self.Subsystems_):-1:1 ,
+                if self.Subsystems_{i}.IsEnabled ,
+                    self.Subsystems_{i}.didStopSweep();
+                end
+            end
+            
+            % Call user method
+            self.callUserMethod_('didStopSweep');
+        end  % function
+
+        function cleanUpAfterAbortedSweep_(self)
+            % Clean up after a sweep shits the bed.
+            
+            % Notify all the subsystems that the sweep aborted
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
                     try 
@@ -1047,65 +990,69 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
+            % Call user method
             self.callUserMethod_('didAbortSweep');
-            
-            %self.abortRun_(reason);
         end  % function
-        
-%         function abortSweepAndRun_(self, reason, highestIndexedSubsystemThatNeedsAbortion)
-%             % Command to abort the current sweep, and the current run.  reason should be either
-%             % 'user' (meaning a user caused the sweep to stop), or
-%             % 'problem', meaning some problem occured.
-%             
-%             if nargin < 3 ,
-%                 highestIndexedSubsystemThatNeedsAbortion = numel(self.Subsystems_);
-%             end
-%             
-%             for idx = highestIndexedSubsystemThatNeedsAbortion:-1:1 ,
-%                 if self.Subsystems_{idx}.IsEnabled ,
-%                     try 
-%                         self.Subsystems_{idx}.didAbortSweep();
-%                     catch me
-%                         % In theory, Subsystem::didAbortSweep() never
-%                         % throws an exception
-%                         % But just in case, we catch it here and ignore it
-%                         disp(me.getReport());
-%                     end
-%                 end
-%             end
-%             
-%             self.callUserMethod_('didAbortSweep');
-%             
-%             self.abortRun_(reason);
-%         end  % function
-        
+                
         function cleanUpAfterCompletedRun_(self)
-            % Stop assumes the object is running and completed successfully.  It generates
-            % successful end of run event.
-            self.setState_('idle');
+            % Clean up after a run completes successfully.
             
+            % Set state back to idle
+            self.setState_('idle');
+
+            % Notify other processes
             self.IPCPublisher_.send('didCompleteRun') ;
 
+            % Notify subsystems
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
                     self.Subsystems_{idx}.didCompleteRun();
                 end
             end
             
+            % Call user method
             self.callUserMethod_('didCompleteRun');
         end  % function
         
-        function cleanUpAfterAbortedRun_(self, reason)
+        function cleanUpAfterStoppedRun_(self)
+            % Called when the user stops the run in the middle, typically
+            % by pressing the stop button.
+            
+            % Set state back to idle
             self.setState_('idle');
             
-            self.IPCPublisher_.send('didAbortRun',reason) ;
+            % Notify other processes --- or not, we don't currently need
+            % this
+            %self.IPCPublisher_.send('didStopRun') ;
 
+            % Notify subsystems
+            for idx = numel(self.Subsystems_):-1:1 ,
+                if self.Subsystems_{idx}.IsEnabled ,
+                    self.Subsystems_{idx}.didStopRun() ;
+                end
+            end
+            
+            % Call user method
+            self.callUserMethod_('didStopRun');
+        end  % function
+
+        function cleanUpAfterAbortedRun_(self)
+            % Called when a run fails for some undesirable reason.
+            
+            % Set state back to idle
+            self.setState_('idle');
+            
+            % Notify other processes
+            self.IPCPublisher_.send('didAbortRun') ;
+
+            % Notify subsystems
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
                     self.Subsystems_{idx}.didAbortRun() ;
                 end
             end
             
+            % Call user method
             self.callUserMethod_('didAbortRun');
         end  % function
         
@@ -1116,7 +1063,10 @@ classdef WavesurferModel < ws.Model
             % Check that we didn't miss any data
             if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
                 nScansMissed = scanIndex - self.NScansAcquiredSoFarThisSweep_ ;
-                error('We apparently missed %d scans',nScansMissed);
+                error('We apparently missed %d scans: the index of the first scan in this acuire is %d, but we''ve only seen %d scans.', ...
+                      nScansMissed, ...
+                      scanIndex, ...
+                      self.NScansAcquiredSoFarThisSweep_ );
             elseif scanIndex<self.NScansAcquiredSoFarThisSweep_ ,
                 error('Weird.  The data timestamp is earlier than expected.  Timestamp: %d, expected: %d.',scanIndex,self.NScansAcquiredSoFarThisSweep_);
             else
@@ -1187,6 +1137,7 @@ classdef WavesurferModel < ws.Model
                 
                 % Do a drawnow(), to make sure user sees the changes, and
                 % to process any button presses, etc.
+                fprintf('About to do drawnow()\n');
                 drawnow();                
             end
         end  % function
@@ -1802,15 +1753,17 @@ classdef WavesurferModel < ws.Model
             % Runs the main message-processing loop during a sweep.
             
             self.IsSweepComplete_ = false ;
-            self.WasRunStoppedByUser_ = false ;
-            while ~(self.IsSweepComplete_ || self.WasRunStoppedByUser_) ,
+            self.WasRunStopped_ = false ;
+            while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
                 fprintf('At top of within-sweep loop...\n') ;
                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
                   % drawnow()'ing will have to happen at times of updates
                   % in new scheme...
             end    
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
-            wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to
+            wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
+            self.IsSweepComplete_ = [] ;
+            self.WasRunStopped_ = [] ;
         end  % function
         
 %         function poll_(self)

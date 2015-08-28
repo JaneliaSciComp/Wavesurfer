@@ -487,24 +487,16 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
         end  % willPerformRun() function
         
         function didCompleteRun(self)
-            %fprintf('Stimulation::didCompleteRun()\n');
-%             self.TheFiniteAnalogOutputTask_.disarm();
-%             self.TheFiniteDigitalOutputTask_.disarm();
-            
-            %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
         end  % function
         
+        function didStopRun(self)
+            self.SelectedOutputableCache_ = [];
+            self.IsWithinRun_=false;
+        end  % function
+
         function didAbortRun(self)
-%             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-%                 self.TheFiniteAnalogOutputTask_.disarm();
-%             end
-%             if ~isempty(self.TheFiniteDigitalOutputTask_) ,
-%                 self.TheFiniteDigitalOutputTask_.disarm();
-%             end
-            
-            %delete(self.StimulusSequenceIterator_);
             self.SelectedOutputableCache_ = [];
             self.IsWithinRun_=false;
         end  % function
@@ -590,16 +582,11 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
             %fprintf('Stimulation::didCompleteSweep()\n');            
         end
         
+        function didStopSweep(self)
+            self.IsArmedOrStimulating_ = false ;
+        end  % function
+                
         function didAbortSweep(self)
-%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
-%                 self.TheFiniteAnalogOutputTask_.abort();
-%             end
-%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
-%                 self.TheFiniteDigitalOutputTask_.abort();
-%             end
-%             if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
-%                 self.TheUntimedDigitalOutputTask_.abort();            
-%             end
             self.IsArmedOrStimulating_ = false ;
         end  % function
         

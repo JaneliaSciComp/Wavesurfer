@@ -44,6 +44,9 @@ classdef RasterVirtualReality < ws.UserClass
         function didCompleteSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
+        function didStopSweep(self,wsModel,eventName) %#ok<INUSD>
+        end  % function
+        
         function didAbortSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
@@ -94,6 +97,9 @@ classdef RasterVirtualReality < ws.UserClass
             ws.jtcp.jtcp('WRITE',self.TcpSend,'quit');
             self.TcpSend = JTCP('CLOSE',self.TcpSend);
             self.TcpReceive = JTCP('CLOSE',self.TcpReceive);
+        end  % function
+        
+        function didStopRun(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
         function didAbortRun(self,wsModel,eventName) %#ok<INUSD>

@@ -396,35 +396,48 @@ classdef Logging < ws.system.Subsystem
         end
         
         function didCompleteSweep(self)
-            %if wavesurferModel.State == ws.ApplicationState.AcquiringSweepBased ,
-                %self.CurrentSweepIndex_ = self.CurrentSweepIndex_ + 1 ;
-                self.NextSweepIndex = self.NextSweepIndex + 1;
-            %end
+            self.NextSweepIndex = self.NextSweepIndex + 1;
+        end
+        
+        function didStopSweep(self)
+            self.didStopOrAbortSweep_() ;
         end
         
         function didAbortSweep(self)
-            %if wavesurferModel.State == ws.ApplicationState.AcquiringSweepBased ,
-                if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
-                    if isempty(self.FirstSweepIndex_) ,
-                        % This probably means there was some sort of error
-                        % before the sweep even started.  So just leave
-                        % NextSweepIndex alone.
-                    else
-                        % In this case, no datasets were created, so put the
-                        % sweep index to the FirstSweepIndex for the set
-                        self.NextSweepIndex = self.FirstSweepIndex_ ;
-                    end
-                else
-                    self.NextSweepIndex = self.LastSweepIndexForWhichDatasetCreated_ + 1;
-                end
-            %end
+            self.didStopOrAbortSweep_() ;
         end
         
         function didCompleteRun(self)
-            self.didPerformOrAbortRun_();
+            self.nullOutTransients_();
+        end
+        
+        function didStopRun(self)
+            self.didStopOrAbortRun_();
         end
         
         function didAbortRun(self)
+            self.didStopOrAbortRun_();
+        end        
+    end  % public methods block
+    
+    methods (Access=protected)
+        function didStopOrAbortSweep_(self)
+            if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
+                if isempty(self.FirstSweepIndex_) ,
+                    % This probably means there was some sort of error
+                    % before the sweep even started.  So just leave
+                    % NextSweepIndex alone.
+                else
+                    % In this case, no datasets were created, so put the
+                    % sweep index to the FirstSweepIndex for the set
+                    self.NextSweepIndex = self.FirstSweepIndex_ ;
+                end
+            else
+                self.NextSweepIndex = self.LastSweepIndexForWhichDatasetCreated_ + 1;
+            end
+        end
+        
+        function didStopOrAbortRun_(self)
             %fprintf('Logging::didAbortRun()\n');
         
             %dbstop if caught
@@ -481,7 +494,7 @@ classdef Logging < ws.system.Subsystem
             end
 
             % Now do things common to performance and abortion
-            self.didPerformOrAbortRun_();
+            self.nullOutTransients_();
 
             % Now throw that exception, if there was one
             %dbclear all
@@ -490,18 +503,9 @@ classdef Logging < ws.system.Subsystem
             else
                 throw(exception);
             end            
-         end  % function
+        end  % function
             
-    end
-    
-    methods (Access=protected)
-%         function didPerformOrAbortSweep_(self, wavesurferModel)
-%             if wavesurferModel.State == ws.ApplicationState.AcquiringSweepBased ,
-%                 self.NextSweepIndex = self.NextSweepIndex + 1;
-%             end
-%         end
-        
-        function didPerformOrAbortRun_(self)
+        function nullOutTransients_(self)
             % null-out all the transient things that are only used during
             % the run
             self.CurrentRunAbsoluteFileName_ = [];
@@ -514,7 +518,7 @@ classdef Logging < ws.system.Subsystem
             self.LastSweepIndexForWhichDatasetCreated_ = [] ;
             self.DidWriteSomeDataForThisSweep_ = [] ;
             %self.CurrentSweepIndex_ = [];
-        end
+        end  % function
     end
 
     methods

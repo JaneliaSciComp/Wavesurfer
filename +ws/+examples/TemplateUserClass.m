@@ -41,6 +41,11 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Finished a sweep.\n');
         end
         
+        function didStopSweep(self,wsModel,eventName)
+            % Called if a sweep goes wrong
+            fprintf('User stopped a sweep.\n');
+        end        
+        
         function didAbortSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
             fprintf('Oh noes!  A sweep aborted.\n');
@@ -51,6 +56,11 @@ classdef TemplateUserClass < ws.UserClass
             % "run")
             fprintf('Finished a run.\n');
         end
+        
+        function didStopRun(self,wsModel,eventName)
+            % Called if a sweep goes wrong
+            fprintf('User stopped a run.\n');
+        end        
         
         function didAbortRun(self,wsModel,eventName)
             % Called if a run goes wrong, after the call to

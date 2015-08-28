@@ -36,6 +36,9 @@ classdef (Abstract) Subsystem < ws.Model
         function didCompleteRun(self) %#ok<MANU>
         end
         
+        function didStopRun(self) %#ok<MANU>
+        end
+        
         function didAbortRun(self) %#ok<MANU>
             % Called if a failure occurred during willPerformRun() for subsystems
             % that have already passed willPerformRun() to clean up, and called fater
@@ -48,6 +51,9 @@ classdef (Abstract) Subsystem < ws.Model
         end
         
         function didCompleteSweep(~)           % self
+        end
+        
+        function didStopSweep(~)           % self
         end
         
         function didAbortSweep(~)              % self

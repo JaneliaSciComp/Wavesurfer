@@ -148,11 +148,15 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         
         function didCompleteRun(self)
             %fprintf('Acquisition::didCompleteRun()\n');
-            self.didPerformOrAbortRun_();
+            self.didCompleteOrStopOrAbortRun_();
         end  % function
         
+        function didStopRun(self)
+            self.didCompleteOrStopOrAbortRun_();
+        end  % function
+
         function didAbortRun(self)
-            self.didPerformOrAbortRun_();
+            self.didCompleteOrStopOrAbortRun_();
         end  % function
 
         function willPerformSweep(self)
@@ -171,6 +175,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             %fprintf('Acquisition::didCompleteSweep()\n');
         end
         
+        function didStopSweep(self)
+            self.AnalogInputTask_.abort();
+            self.DigitalInputTask_.abort();
+            self.IsArmedOrAcquiring_ = false ;
+        end  % function
+
         function didAbortSweep(self)
             try
                 self.AnalogInputTask_.abort();
@@ -240,7 +250,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     end  % methods block
     
     methods (Access = protected)
-        function didPerformOrAbortRun_(self)
+        function didCompleteOrStopOrAbortRun_(self)
             if ~isempty(self.AnalogInputTask_) ,
                 if isvalid(self.AnalogInputTask_) ,
                     self.AnalogInputTask_.disarm();

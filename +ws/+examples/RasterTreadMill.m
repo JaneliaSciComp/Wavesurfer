@@ -51,6 +51,9 @@ classdef RasterTreadMill < ws.UserClass
         function didCompleteSweep(self,wsModel,eventName)
         end
         
+        function didStopSweep(self,wsModel,eventName)
+        end
+        
         function didAbortSweep(self,wsModel,eventName)
         end
         
@@ -107,6 +110,9 @@ classdef RasterTreadMill < ws.UserClass
         end
         
         function didCompleteRun(self,wsModel,eventName)
+        end
+        
+        function didStopRun(self,wsModel,eventName)
         end
         
         function didAbortRun(self,wsModel,eventName)

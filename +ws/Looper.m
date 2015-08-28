@@ -46,7 +46,7 @@ classdef Looper < ws.Model
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
         t_
-        NScansAcquiredInSweepSoFar_
+        NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_  
         FromSweepStartTicId_
         TimeOfLastSamplesAcquired_
@@ -57,7 +57,7 @@ classdef Looper < ws.Model
         %ClockAtRunStart_
         %DoContinuePolling_
         %IsSweepComplete_
-        WasRunStoppedByUser_        
+        DoesFrontendWantToStopRun_        
         WasExceptionThrown_
         ThrownException_
         DoKeepRunningMainLoop_
@@ -197,37 +197,46 @@ classdef Looper < ws.Model
             self.DoKeepRunningMainLoop_ = true ;
             while self.DoKeepRunningMainLoop_ ,
                 %fprintf('\n\n\nLooper: At top of main loop\n');
-                if self.IsPerformingRun_ && self.IsPerformingSweep_ ,
-                    fprintf('Looper: In a sweep\n');
-                    if self.WasRunStoppedByUser_ ,
-                        %fprintf('Looper: self.WasRunStoppedByUser_\n');
-                        % When done, clean up after sweep
-                        self.cleanUpAfterSweepStoppedByUser_() ;
-                        % Note that we clean up after the sweep, 
-                        % then tell the frontend that we have done so.
-                        % But we don't do the post-run cleanup until
-                        % after the frontend tells us to.
-                        % And in particular, IsPerformingRun_ doesn't
-                        % go false until the frontend tells us to do
-                        % the post-run cleanup.
-                        self.IPCPublisher_.send('looperStoppedSweep') ;
-                    else
-                        %fprintf('Looper: ~self.WasRunStoppedByUser_\n');
-                        % Check for messages, but don't wait for them
-                        self.IPCSubscriber_.processMessagesIfAvailable() ;
+                if self.IsPerformingRun_ ,
+                    % Action in a run depends on whether we are also in a
+                    % sweep, or are in-between sweeps
+                    if self.IsPerformingSweep_ ,
+                        fprintf('Looper: In a sweep\n');
+                        if self.DoesFrontendWantToStopRun_ ,
+                            %fprintf('Looper: self.DoesFrontendWantToStopRun_\n');
+                            % When done, clean up after sweep
+                            self.cleanUpAfterStoppedSweep_() ;  % this will set self.IsPerformingSweep to false
+                        else
+                            %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
+                            % Check for messages, but don't wait for them
+                            self.IPCSubscriber_.processMessagesIfAvailable() ;
 
-                        % Acquire data, update soft real-time outputs
-                        [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
-                            self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+                            % Acquire data, update soft real-time outputs
+                            [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
+                                self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+
+                            % Deal with the acquired samples
+                            if didReadFromTasks ,
+                                self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+                                self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
+                                self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
+                                if areTasksDone ,
+                                    self.acquisitionSweepComplete() ;
+                                end
+                            end                        
+                        end
+                    else
+                        fprintf('Looper: In a run, but not a sweep\n');
+                        if self.DoesFrontendWantToStopRun_ ,
+                            self.cleanUpAfterStoppedRun_() ;   % this will set self.IsPerformingRun to false
+                            self.IPCPublisher_.send('looperStoppedRun') ;
+                        else
+                            % Check for messages, but don't block
+                            self.IPCSubscriber_.processMessagesIfAvailable() ;                            
+                            % no pause here, b/c want to start sweep as
+                            % soon as frontend tells us to
+                        end
                         
-                        if didReadFromTasks ,
-                            self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
-                            self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
-                            self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
-                            if areTasksDone ,
-                                self.acquisitionSweepComplete() ;
-                            end
-                        end                        
                     end
                 else
                     fprintf('Looper: Not in a sweep, about to check for messages\n');
@@ -239,7 +248,9 @@ classdef Looper < ws.Model
                 end
             end
         end  % function
-
+    end  % public methods block
+        
+    methods  % RPC methods block
         function willPerformRun(self,wavesurferModelSettings)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
@@ -258,12 +269,28 @@ classdef Looper < ws.Model
             self.cleanUpAfterCompletedRun_() ;
         end  % function
         
-%         function err = start(self)
-%             % Start a run
-%             self.run_() ;
-%             err = [] ;
-%         end
+        function frontendWantsToStopRun(self)
+            % Called when you press the "Stop" button in the UI, for
+            % instance.  Stops the current sweep and run, if any.
 
+            % If not running, ignore
+            if ~self.IsPerformingRun_ , 
+                return
+            end
+            
+            % Actually stop the ongoing run
+            self.DoesFrontendWantToStopRun_ = true ;
+        end
+        
+        function didAbortRun(self)
+            % Called by the WSM when something goes wrong in mid-run
+
+            % Cleanup after run
+            if self.IsPerformingRun_ ,
+                self.cleanUpAfterAbortedRun_() ;
+            end
+        end  % function        
+        
         function willPerformSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % to run a sweep.  But the sweep doesn't start until the
@@ -277,40 +304,6 @@ classdef Looper < ws.Model
             self.prepareForSweep_(indexOfSweepWithinRun) ;
         end  % function
 
-%         function err = startSweep(self)
-%             % Once everything is prepped, WSM calls this to actually start
-%             % the sweep
-%             %
-%             % This is called via RPC, so must return exactly one return
-%             % value, and must not throw.
-% 
-%             % Set default return value, if nothing goes wrong
-%             err = [] ;
-%             
-%             % Prepare for the run
-%             try
-%                 self.startSweep_() ;
-%             catch me
-%                 err=me ;
-%             end
-%         end  % function
-        
-        function err = stop(self)
-            % Called when you press the "Stop" button in the UI, for
-            % instance.  Stops the current sweep and run, if any.
-
-            % Set default return value, if nothing goes wrong
-            err = [] ;
-
-            % If not running, ignore
-            if ~self.IsPerformingRun_ , 
-                return
-            end
-            
-            % Actually stop the ongoing sweep
-            self.WasRunStoppedByUser_ = true ;
-        end
-        
         function frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
             
@@ -321,7 +314,7 @@ classdef Looper < ws.Model
             % process to terminate.
             self.DoKeepRunningMainLoop_ = false ;
         end
-    end  % methods
+    end  % RPC methods block
     
     methods
         function out = get.Acquisition(self)
@@ -659,7 +652,7 @@ classdef Looper < ws.Model
             end
             
             % Change our own acquisition state if get this far
-            self.WasRunStoppedByUser_ = false ;
+            self.DoesFrontendWantToStopRun_ = false ;
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
             
@@ -678,7 +671,8 @@ classdef Looper < ws.Model
                     end
                 end
             catch me
-                self.cleanUpAfterAbortedRun_('problem') ;
+                % Something went wrong
+                self.cleanUpAfterAbortedRun_() ;
                 %self.changeReadiness(+1);
                 me.rethrow();
             end
@@ -736,7 +730,8 @@ classdef Looper < ws.Model
             err = [] ;
             
             % Reset the sample count for the sweep
-            self.NScansAcquiredInSweepSoFar_ = 0;
+            fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
+            self.NScansAcquiredSoFarThisSweep_ = 0;
                         
             % Call willPerformSweep() on all the enabled subsystems, and
             % start the counter timer tasks
@@ -819,7 +814,7 @@ classdef Looper < ws.Model
             self.IPCPublisher_.send('looperCompletedSweep') ;
         end  % function
         
-        function cleanUpAfterSweepStoppedByUser_(self)
+        function cleanUpAfterStoppedSweep_(self)
             % Stops the current sweep, when the run was stopped by the
             % user.
             
@@ -827,14 +822,7 @@ classdef Looper < ws.Model
 
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
-                    try 
-                        self.Subsystems_{i}.didAbortSweep();
-                    catch me
-                        % In theory, Subsystem::didAbortSweep() never
-                        % throws an exception
-                        % But just in case, we catch it here and ignore it
-                        disp(me.getReport());
-                    end
+                    self.Subsystems_{i}.didStopSweep();
                 end
             end
             
@@ -857,8 +845,21 @@ classdef Looper < ws.Model
             %self.callUserCodeManager_('didCompleteRun');
         end  % function
         
-        function cleanUpAfterAbortedRun_(self, reason)  %#ok<INUSD>
+        function cleanUpAfterStoppedRun_(self)
             self.IsPerformingRun_ = false ;
+            
+            for idx = numel(self.Subsystems_):-1:1 ,
+                if self.Subsystems_{idx}.IsEnabled ,
+                    self.Subsystems_{idx}.didStopRun() ;
+                end
+            end
+            
+            %self.callUserCodeManager_('didAbortRun');
+        end  % function
+        
+        function cleanUpAfterAbortedRun_(self)
+            self.IsPerformingRun_ = false ;
+            self.IsPerformingSweep_ = false ;  % just to make sure
             
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
@@ -915,14 +916,15 @@ classdef Looper < ws.Model
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
                 % Toss the data to the subscribers
+                fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
                 self.IPCPublisher_.send('samplesAcquired', ...
-                                        self.NScansAcquiredInSweepSoFar_, ...
+                                        self.NScansAcquiredSoFarThisSweep_, ...
                                         rawAnalogData, ...
                                         rawDigitalData, ...
                                         timeSinceRunStartAtStartOfData ) ;
                 
                 % Update the number of scans acquired
-                self.NScansAcquiredInSweepSoFar_ = self.NScansAcquiredInSweepSoFar_ + nScans;
+                self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans;
 
                 %self.broadcast('DataAvailable');
                 
@@ -1395,9 +1397,9 @@ classdef Looper < ws.Model
 %             pollingPeriod = 1/self.Display.UpdateRate ;
 %             %self.DoContinuePolling_ = true ;
 %             self.IsSweepComplete_ = false ;
-%             self.WasRunStoppedByUser_ = false ;
+%             self.DoesFrontendWantToStopRun_ = false ;
 %             timeOfLastPoll = toc(pollingTicId) ;
-%             while ~(self.IsSweepComplete_ || self.WasRunStoppedByUser_) ,
+%             while ~(self.IsSweepComplete_ || self.DoesFrontendWantToStopRun_) ,
 %                 timeNow =  toc(pollingTicId) ;
 %                 timeSinceLastPoll = timeNow - timeOfLastPoll ;
 %                 if timeSinceLastPoll >= pollingPeriod ,
@@ -1415,7 +1417,7 @@ classdef Looper < ws.Model
 %                 end                
 %             end    
 %             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
-%             wasStoppedByUser = self.WasRunStoppedByUser_ ;  % don't want to rely on this state more than we have to
+%             wasStoppedByUser = self.DoesFrontendWantToStopRun_ ;  % don't want to rely on this state more than we have to
 %         end  % function        
 %     end
     

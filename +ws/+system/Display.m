@@ -244,16 +244,20 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         end  % function
         
         function didCompleteRun(self)
-            self.didPerformOrAbortRun_();
+            self.didCompleteOrStopOrAbortRun_();
+        end
+        
+        function didStopRun(self)
+            self.didCompleteOrStopOrAbortRun_();
         end
         
         function didAbortRun(self)
-            self.didPerformOrAbortRun_();
+            self.didCompleteOrStopOrAbortRun_();
         end
     end
     
     methods (Access=protected)
-        function didPerformOrAbortRun_(self)
+        function didCompleteOrStopOrAbortRun_(self)
             if ~isempty(self.CachedDisplayXSpan_)
                 self.XSpan = self.CachedDisplayXSpan_;
             end
