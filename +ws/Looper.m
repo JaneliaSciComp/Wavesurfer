@@ -140,7 +140,7 @@ classdef Looper < ws.Model
             self.Stimulation_ = ws.system.LooperStimulation(self);
             %self.Display = ws.system.Display(self);
             self.Triggering_ = ws.system.LooperTriggering(self);
-            self.UserCodeManager_ = ws.system.LooperUserCodeManager(self);
+            self.UserCodeManager_ = ws.system.UserCodeManager(self);
             %self.Logging = ws.system.Logging(self);
             %self.Ephys = ws.system.Ephys(self);
             
@@ -712,14 +712,6 @@ classdef Looper < ws.Model
 %                 rethrow(exception) ;
 %             end
         end  % function
-        
-        function setCoreSettingsToMatchPackagedOnes(self,wavesurferModelSettings)
-            self.AreSweepsFiniteDuration_ = wavesurferModelSettings.AreSweepsFiniteDuration_ ;  % more like IsAcquisitionFinite...
-            self.Triggering.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Triggering) ;
-            self.Acquisition.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Acquisition) ;
-            self.Stimulation.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.Stimulation) ;
-            self.UserCodeManager.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings.UserCodeManager) ;
-        end
         
         function err = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
             % Get everything set up for the Looper to run a sweep, but

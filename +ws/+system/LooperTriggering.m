@@ -14,13 +14,6 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
 %             self.setupInternalTriggers();
 %         end
         
-        function setCoreSettingsToMatchPackagedOnes(self,settings)
-            for i=1:length(self.CoreFieldNames_)
-                fieldName = self.CoreFieldNames_{i} ;
-                self.(fieldName) = settings.(fieldName) ;
-            end
-        end
-        
         function releaseHardwareResources(self)
             self.teardownInternalTriggers_();
         end

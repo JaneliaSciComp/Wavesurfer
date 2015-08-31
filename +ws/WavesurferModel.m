@@ -3,10 +3,9 @@ classdef WavesurferModel < ws.Model
 
     properties (Constant = true, Transient=true)
         NFastProtocols = 6        
-        %LooperRPCPortNumber = 8081
-        FrontendIPCPublisherPortNumber = 8082
-        %RefillerRPCPortNumber = 8083
-        LooperIPCPublisherPortNumber = 8084
+        FrontendIPCPublisherPortNumber = 8081
+        LooperIPCPublisherPortNumber = 8082
+        RefillerIPCPublisherPortNumber = 8083        
     end
     
     properties (Dependent = true)
@@ -154,8 +153,8 @@ classdef WavesurferModel < ws.Model
                 self.LooperIPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
-                %system('start matlab -nojvm -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
                 system('start matlab -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
+                system('start matlab -r "refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -772,13 +771,23 @@ classdef WavesurferModel < ws.Model
                 me.rethrow();
             end
             
-            % Tell the Looper to prepare for the run
+            % Tell the Looper & Refiller to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
             fprintf('About to send willPerformRun\n');
             self.IPCPublisher_.send('willPerformRun',wavesurferModelSettings) ;
+            
+            % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            %keyboard
             [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
+            if ~gotMessage ,
+                % Something went wrong
+                self.cleanUpAfterAbortedRun_();
+                self.changeReadiness(+1);
+                throw(err);                
+            end
+            
+            % Wait for the refiller to respond that it is ready
+            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRun',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
                 self.cleanUpAfterAbortedRun_();
@@ -862,11 +871,22 @@ classdef WavesurferModel < ws.Model
                     end
                 end
 
-                % Tell the looper to ready itself
+                % Tell the looper & refiller to ready themselves
                 fprintf('About to send willPerformSweep\n');
                 self.IPCPublisher_.send('willPerformSweep',self.NSweepsCompletedInThisRun_+1) ;
+                
+                % Wait for the looper to respond
                 timeout = 10 ;  % s
                 [didGetMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
+                if ~didGetMessage ,
+                    % Something went wrong
+                    self.cleanUpAfterAbortedRun_();
+                    self.changeReadiness(+1);
+                    throw(err);
+                end
+                
+                % Wait for the refiller to respond
+                [didGetMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep',timeout) ;
                 if ~didGetMessage ,
                     % Something went wrong
                     self.cleanUpAfterAbortedRun_();

@@ -31,13 +31,6 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             output = self.IsArmedOrAcquiring_ ;
         end
         
-        function setCoreSettingsToMatchPackagedOnes(self,settings)
-            for i=1:length(self.CoreFieldNames_)
-                fieldName = self.CoreFieldNames_{i} ;
-                self.(fieldName) = settings.(fieldName) ;
-            end
-        end
-        
         function acquireHardwareResources_(self)
             % We create and analog InputTask and a digital InputTask, regardless
             % of whether there are any channels of each type.  Within InputTask,
