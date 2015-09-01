@@ -122,6 +122,11 @@ classdef Looper < ws.Model
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
             self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+
+%             % Send a message to let the frontend know we're alive
+%             fprintf('Looper::Looper(): About to send looperIsAlive\n') ;
+%             self.IPCPublisher_.send('looperIsAlive');            
+%             self.IPCPublisher_.send('looperIsAlive');            
             
 %             self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
 %             self.RPCClient_.connect() ;
@@ -279,11 +284,6 @@ classdef Looper < ws.Model
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
-            % If not running, ignore
-            if ~self.IsPerformingRun_ , 
-                return
-            end
-            
             % Actually stop the ongoing run
             self.DoesFrontendWantToStopRun_ = true ;
         end
@@ -320,6 +320,12 @@ classdef Looper < ws.Model
             % process to terminate.
             self.DoKeepRunningMainLoop_ = false ;
         end
+        
+        function areYallAliveQ(self)
+            fprintf('Looper::areYallAlive()\n') ;
+            self.IPCPublisher_.send('looperIsAlive');
+        end  % function        
+        
     end  % RPC methods block
     
     methods

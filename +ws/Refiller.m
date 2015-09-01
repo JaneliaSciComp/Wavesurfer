@@ -123,6 +123,11 @@ classdef Refiller < ws.Model
             self.IPCSubscriber_.setDelegate(self) ;
             self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
             
+%             % Send a message to let the frontend know we're alive
+%             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;
+%             self.IPCPublisher_.send('refillerIsAlive');            
+%             self.IPCPublisher_.send('refillerIsAlive');            
+            
 %             self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
 %             self.RPCClient_.connect() ;
             
@@ -268,15 +273,6 @@ classdef Refiller < ws.Model
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
-            % If not running, go ahead and tell the frontend that we
-            % stopped the run, to keep it happy.
-            if self.IsPerformingRun_ ,
-                % Actually stop the ongoing run
-                self.DoesFrontendWantToStopRun_ = true ;
-            else                
-                self.IPCPublisher_.send('refillerStoppedRun') ;
-            end
-            
             % Actually stop the ongoing run
             self.DoesFrontendWantToStopRun_ = true ;
         end
@@ -313,6 +309,12 @@ classdef Refiller < ws.Model
             % process to terminate.
             self.DoKeepRunningMainLoop_ = false ;
         end
+        
+        function areYallAliveQ(self)
+            fprintf('Refiller::areYallAlive()\n') ;            
+            self.IPCPublisher_.send('refillerIsAlive');
+        end  % function        
+        
     end  % RPC methods block
     
     methods

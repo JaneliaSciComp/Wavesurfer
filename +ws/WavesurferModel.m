@@ -142,11 +142,6 @@ classdef WavesurferModel < ws.Model
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
             if isITheOneTrueWavesurferModel ,
-%                 % Set up the communication sockets            
-%                 self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
-%                 self.RPCServer_.setDelegate(self) ;
-%                 self.RPCServer_.bind();
-
                 % Set up the object to broadcast messages to the satellite
                 % processes
                 self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
@@ -170,9 +165,56 @@ classdef WavesurferModel < ws.Model
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
 
-                % Connect to the various sockets
-                %self.LooperRPCClient_.connect() ;
-                %self.RefillerRPCClient_.connect() ;
+                % Start broadcasting pings until the satellite processes
+                % respond
+                nPingsMax=60 ;
+                isLooperAlive=false;
+                isRefillerAlive=false;
+                for iPing = 1:nPingsMax ,
+                    self.IPCPublisher_.send('areYallAliveQ') ;
+                    pause(1);
+                    [didGetMessage,messageName] = self.LooperIPCSubscriber_.processMessageIfAvailable() ;
+                    if didGetMessage && isequal(messageName,'looperIsAlive') ,
+                        isLooperAlive=true;
+                    end
+                    [didGetMessage,messageName] = self.RefillerIPCSubscriber_.processMessageIfAvailable() ;
+                    if didGetMessage && isequal(messageName,'refillerIsAlive') ,
+                        isRefillerAlive=true;
+                    end
+                    if isLooperAlive && isRefillerAlive ,
+                        break
+                    end
+                end
+
+                % Error if either satellite is not responding
+                if ~isLooperAlive ,
+                    error('ws:noContactWithLooper' , ...
+                          'Unable to establish contact with the looper process');
+                end
+                if ~isRefillerAlive ,
+                    error('ws:noContactWithRefiller' , ...
+                          'Unable to establish contact with the refiller process');
+                end
+                    
+%                 % Wait for the Looper & Refiller to phone home
+%                 %self.IPCPublisher_.send('areYallAliveQ') ;
+% 
+%                 % Wait for the looper to respond that it is alive
+%                 timeout = 30 ;  % s
+%                 gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperIsAlive',timeout) ;
+%                 if ~gotMessage ,
+%                     % Something went wrong
+%                     error('ws:looperNotAlive' , ...
+%                           'The looper did not respond to the ''Are you alive?'' message');
+%                 end
+% 
+%                 % Wait for the refiller to respond that it is alive
+%                 gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerIsAlive',timeout) ;
+%                 if ~gotMessage ,
+%                     % Something went wrong
+%                     error('ws:refillerNotAlive' , ...
+%                           'The refiller did not respond to the ''Are you alive?'' message');
+%                 end
             end
             
             % Initialize the fast protocols
@@ -337,6 +379,11 @@ classdef WavesurferModel < ws.Model
             % need a message to tell us it's OK to proceed.
         end        
         
+        function looperIsAlive(self)  %#ok<MANU>
+            % Doesn't need to do anything
+            fprintf('WavesurferModel::looperIsAlive()\n');
+        end
+        
         function refillerReadyForRun(self) %#ok<MANU>
             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
             % preparations for a run.  Currrently does nothing, we just
@@ -355,6 +402,11 @@ classdef WavesurferModel < ws.Model
             fprintf('WavesurferModel::refillerStoppedRun()\n');
             self.WasRunStoppedInRefiller_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
+        end
+        
+        function refillerIsAlive(self)  %#ok<MANU>
+            % Doesn't need to do anything
+            fprintf('WavesurferModel::refillerIsAlive()\n');
         end
         
     end  % methods
