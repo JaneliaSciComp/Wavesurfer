@@ -386,8 +386,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.acquireHardwareResources_() ;
             
             % Set up the task triggering
-            pfiID = self.TriggerScheme.PFIID
-            edge = self.TriggerScheme.Edge
+            pfiID = self.TriggerScheme.PFIID ;
+            edge = self.TriggerScheme.Edge ;
             self.TheFiniteAnalogOutputTask_.TriggerPFIID = pfiID ;
             self.TheFiniteAnalogOutputTask_.TriggerEdge = edge ;
             self.TheFiniteDigitalOutputTask_.TriggerPFIID = pfiID ;
@@ -403,11 +403,12 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.NEpisodesPerSweep_ = 1 ;
             else
                 % Means continuous acq, so need to consult stim trigger
-                if self.TriggerScheme.IsExternal ,
-                    self.NEpisodesPerSweep_ = inf ;  % by convention
-                else
+                if self.TriggerScheme.IsInternal ,
                     % stim trigger scheme is internal
-                    self.NEpisodesPerSweep_ = self.TriggerScheme.RepeatCount;
+                    self.NEpisodesPerSweep_ = self.TriggerScheme.RepeatCount ;
+                else
+                    % stim trigger scheme is external
+                    self.NEpisodesPerSweep_ = inf ;  % by convention
                 end
             end
             

@@ -219,6 +219,7 @@ classdef Refiller < ws.Model
                         fprintf('Refiller: In a run, but not a sweep\n');
                         if self.DoesFrontendWantToStopRun_ ,
                             self.cleanUpAfterStoppedRun_() ;   % this will set self.IsPerformingRun to false
+                            self.DoesFrontendWantToStopRun_ = false ;  % reset this
                             self.IPCPublisher_.send('refillerStoppedRun') ;
                         else
                             % Check for messages, but don't block
@@ -229,10 +230,14 @@ classdef Refiller < ws.Model
                         
                     end
                 else
-                    fprintf('Refiller: Not in a sweep, about to check for messages\n');
+                    fprintf('Refiller: Not in a run, about to check for messages\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    if self.DoesFrontendWantToStopRun_ ,
+                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                        self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
+                    end
                     %self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end
@@ -263,9 +268,13 @@ classdef Refiller < ws.Model
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
-            % If not running, ignore
-            if ~self.IsPerformingRun_ , 
-                return
+            % If not running, go ahead and tell the frontend that we
+            % stopped the run, to keep it happy.
+            if self.IsPerformingRun_ ,
+                % Actually stop the ongoing run
+                self.DoesFrontendWantToStopRun_ = true ;
+            else                
+                self.IPCPublisher_.send('refillerStoppedRun') ;
             end
             
             % Actually stop the ongoing run

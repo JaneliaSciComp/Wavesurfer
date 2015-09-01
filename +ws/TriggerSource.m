@@ -7,6 +7,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     
     properties (Constant=true)
         IsInternal = true
+        %IsExternal = false
     end
     
     properties (Dependent=true)

@@ -230,6 +230,7 @@ classdef Looper < ws.Model
                         fprintf('Looper: In a run, but not a sweep\n');
                         if self.DoesFrontendWantToStopRun_ ,
                             self.cleanUpAfterStoppedRun_() ;   % this will set self.IsPerformingRun to false
+                            self.DoesFrontendWantToStopRun_ = false ;  % reset this                            
                             self.IPCPublisher_.send('looperStoppedRun') ;
                         else
                             % Check for messages, but don't block
@@ -240,10 +241,14 @@ classdef Looper < ws.Model
                         
                     end
                 else
-                    fprintf('Looper: Not in a sweep, about to check for messages\n');
+                    fprintf('Looper: Not in a run, about to check for messages\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    if self.DoesFrontendWantToStopRun_ ,
+                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                        self.IPCPublisher_.send('looperStoppedRun') ;  % just do this to keep front-end happy
+                    end                    
                     %self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when not acquiring
                 end

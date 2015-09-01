@@ -87,6 +87,8 @@ classdef WavesurferModel < ws.Model
         %DoContinuePolling_
         IsSweepComplete_
         WasRunStopped_        
+        WasRunStoppedInLooper_        
+        WasRunStoppedInRefiller_        
         WasExceptionThrown_
         ThrownException_
         NSweepsCompletedInThisRun_ = 0
@@ -318,7 +320,9 @@ classdef WavesurferModel < ws.Model
         function looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
-            self.WasRunStopped_ = true ;
+            fprintf('WavesurferModel::looperStoppedRun()\n');
+            self.WasRunStoppedInLooper_ = true ;
+            self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
         end
         
         function looperReadyForRun(self) %#ok<MANU>
@@ -344,6 +348,15 @@ classdef WavesurferModel < ws.Model
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
         end        
+        
+        function refillerStoppedRun(self)
+            % Call by the Looper, via ZMQ pub-sub, when it has stopped the
+            % run (in response to a frontendWantsToStopRun message)
+            fprintf('WavesurferModel::refillerStoppedRun()\n');
+            self.WasRunStoppedInRefiller_ = true ;
+            self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
+        end
+        
     end  % methods
     
     methods
@@ -839,12 +852,16 @@ classdef WavesurferModel < ws.Model
             didUserStop = false ;
             didThrow = false ;
             exception = [] ;
-            for iSweep = 1:self.NSweepsPerRun ,
+            iSweep=1 ;
+            %for iSweep = 1:self.NSweepsPerRun ,
+            % Can't use a for loop b/c self.NSweepsPerRun can be Inf
+            while iSweep<=self.NSweepsPerRun ,
                 if didCompleteLastSweep ,
                     [didCompleteLastSweep,didUserStop,didThrow,exception] = self.performSweep_() ;
                 else
                     break
                 end
+                iSweep = iSweep + 1 ;
             end
             
             % Do some kind of clean up
@@ -1793,16 +1810,21 @@ classdef WavesurferModel < ws.Model
             % Runs the main message-processing loop during a sweep.
             
             self.IsSweepComplete_ = false ;
+            self.WasRunStoppedInLooper_ = false ;
+            self.WasRunStoppedInRefiller_ = false ;
             self.WasRunStopped_ = false ;
             while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
-                fprintf('At top of within-sweep loop...\n') ;
+                %fprintf('At top of within-sweep loop...\n') ;
                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
                   % drawnow()'ing will have to happen at times of updates
                   % in new scheme...
+                self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
             end    
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
             self.IsSweepComplete_ = [] ;
+            self.WasRunStoppedInLooper_ = [] ;
+            self.WasRunStoppedInRefiller_ = [] ;
             self.WasRunStopped_ = [] ;
         end  % function
         

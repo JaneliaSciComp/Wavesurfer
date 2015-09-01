@@ -7,6 +7,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
     
     properties (Constant=true)
         IsInternal = false
+        %IsExternal = true
     end
     
     properties (Dependent=true)

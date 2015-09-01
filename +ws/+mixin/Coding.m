@@ -184,7 +184,7 @@ classdef (Abstract) Coding < handle
                     end
                 end
             elseif isa(thing, 'ws.mixin.Coding') ,
-                encoding = thing.encodeAnythingForHeader() ;
+                encoding = thing.encodeForHeader() ;
             else                
                 error('Coding:dontKnowHowToEncode', ...
                       'Don''t know how to encode an entity of class %s', ...
