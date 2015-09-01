@@ -21,7 +21,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testTooLargeStimulus(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            model=ws.WavesurferModel();
+            model=ws.WavesurferModel([],true);  % no parent, it *is* the one true WSM
             model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Enable stimulation subsystem
