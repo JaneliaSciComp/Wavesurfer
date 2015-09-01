@@ -131,261 +131,208 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-        function willPerformRun(self)
-            %fprintf('Stimulation::willPerformRun()\n');
-            %errors = [];
-            %abort = false;
-            
-            % Do a bunch of checks to make sure all is well for running an
-            % run
-            if isempty(self.TriggerScheme)
-                error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-            end            
-            %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-            %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
-            %end
-            
-            wavesurferModel = self.Parent ;
-            
-            % Make the NI daq task, if don't have it already
-            self.acquireHardwareResources_();
-            
-            % Set up the task triggering
-            self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.PFIID ;
-            self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
-            self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.PFIID ;
-            self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
-            
-            % Clear out any pre-existing output waveforms
-            self.TheFiniteAnalogOutputTask_.clearChannelData() ;
-            self.TheFiniteDigitalOutputTask_.clearChannelData() ;
-            
-            % Determine how many episodes there will be, if possible
-            % TODO: This seems like it works fine, but it might be overly
-            % general given that we now force ASAP triggering for
-            % trial-based acq.
-            if self.TriggerScheme.IsExternal ,
-                self.EpisodesPerRun_ = [] ;
-            else
-                % stim trigger scheme is internal
-                if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal ,
-                    % acq trigger scheme is internal
-                    if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
-                        self.EpisodesPerRun_ = self.Parent.NSweepsPerRun ;
-                    else
-                        self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount ;
-                        % TODO: This part in particular seems maybe
-                        % unnecessary...
-                    end
-                elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
-                    % acq trigger scheme is external, so must be different
-                    % from stim trigger scheme
-                    self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount ;
-                else
-                    % acq trigger scheme is null --- this run is
-                    % stillborn, so doesn't matter
-                    self.EpisodesPerRun_ = [] ;
-                end
-            end
-
-            % Initialize the episode counter
-            self.EpisodesCompleted_ = 0;
-            
-            % Set up the selected outputable cache
-            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
-            self.SelectedOutputableCache_=stimulusOutputable;
-            
-            % Set the state
-            self.IsWithinRun_=true;
-        end  % willPerformRun() function
+%         function willPerformRun(self)
+%             %fprintf('Stimulation::willPerformRun()\n');
+%             %errors = [];
+%             %abort = false;
+%             
+%             % Do a bunch of checks to make sure all is well for running an
+%             % run
+%             if isempty(self.TriggerScheme)
+%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
+%             end            
+%             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
+%             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
+%             %end
+%             
+%             wavesurferModel = self.Parent ;
+%             
+%             % Make the NI daq task, if don't have it already
+%             self.acquireHardwareResources_();
+%             
+%             % Set up the task triggering
+%             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.PFIID ;
+%             self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+%             self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.PFIID ;
+%             self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+%             
+%             % Clear out any pre-existing output waveforms
+%             self.TheFiniteAnalogOutputTask_.clearChannelData() ;
+%             self.TheFiniteDigitalOutputTask_.clearChannelData() ;
+%             
+%             % Determine how many episodes there will be, if possible
+%             % TODO: This seems like it works fine, but it might be overly
+%             % general given that we now force ASAP triggering for
+%             % trial-based acq.
+%             if self.TriggerScheme.IsExternal ,
+%                 self.EpisodesPerRun_ = [] ;
+%             else
+%                 % stim trigger scheme is internal
+%                 if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal ,
+%                     % acq trigger scheme is internal
+%                     if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
+%                         self.EpisodesPerRun_ = self.Parent.NSweepsPerRun ;
+%                     else
+%                         self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount ;
+%                         % TODO: This part in particular seems maybe
+%                         % unnecessary...
+%                     end
+%                 elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
+%                     % acq trigger scheme is external, so must be different
+%                     % from stim trigger scheme
+%                     self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount ;
+%                 else
+%                     % acq trigger scheme is null --- this run is
+%                     % stillborn, so doesn't matter
+%                     self.EpisodesPerRun_ = [] ;
+%                 end
+%             end
+% 
+%             % Initialize the episode counter
+%             self.EpisodesCompleted_ = 0;
+%             
+%             % Set up the selected outputable cache
+%             stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
+%             self.SelectedOutputableCache_=stimulusOutputable;
+%             
+%             % Set the state
+%             self.IsWithinRun_=true;
+%         end  % willPerformRun() function
         
-        function didCompleteRun(self)
-            %fprintf('Stimulation::didCompleteRun()\n');
-            self.TheFiniteAnalogOutputTask_.disarm();
-            self.TheFiniteDigitalOutputTask_.disarm();
-            
-            self.SelectedOutputableCache_ = [];
-            self.IsWithinRun_=false;  % might already be guaranteed to be false here...
-        end  % function
+%         function didCompleteRun(self)
+%             %fprintf('Stimulation::didCompleteRun()\n');
+%             self.TheFiniteAnalogOutputTask_.disarm();
+%             self.TheFiniteDigitalOutputTask_.disarm();
+%             
+%             self.SelectedOutputableCache_ = [];
+%             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
+%         end  % function
         
-        function didStopRun(self)
-            self.TheFiniteAnalogOutputTask_.disarm();
-            self.TheFiniteDigitalOutputTask_.disarm();
-            
-            self.SelectedOutputableCache_ = [];
-            self.IsWithinRun_=false;
-        end  % function
+%         function didStopRun(self)
+%             self.TheFiniteAnalogOutputTask_.disarm();
+%             self.TheFiniteDigitalOutputTask_.disarm();
+%             
+%             self.SelectedOutputableCache_ = [];
+%             self.IsWithinRun_=false;
+%         end  % function
+%         
+%         function didAbortRun(self)
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 self.TheFiniteAnalogOutputTask_.disarm();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) ,
+%                 self.TheFiniteDigitalOutputTask_.disarm();
+%             end
+%             
+%             self.SelectedOutputableCache_ = [];
+%             self.IsWithinRun_=false;
+%         end  % function
         
-        function didAbortRun(self)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                self.TheFiniteAnalogOutputTask_.disarm();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) ,
-                self.TheFiniteDigitalOutputTask_.disarm();
-            end
-            
-            self.SelectedOutputableCache_ = [];
-            self.IsWithinRun_=false;
-        end  % function
-        
-        function willPerformSweep(self)
-            % This gets called from above when an (acq) sweep is about to
-            % start.  What we do here depends a lot on the current triggering
-            % settings.
-            
-            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-            %fprintf('Stimulation::willPerformSweep()\n');
-
-            acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-            if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
-                % Stim and acq are using same trigger source, so should arm
-                % stim system now.
-                self.armForEpisode();
-            else
-                % Stim and acq are using distinct trigger
-                % sources.
-                % If first sweep, arm.  Otherwise, we handle
-                % re-arming independently from the acq sweeps.
-                if self.Parent.NSweepsCompletedInThisRun == 0 ,
-                    self.armForEpisode();
-                end
-            end
-        end  % function
-
-%         function willPerformSweep(self, wavesurferObj) %#ok<INUSD>
+%         function willPerformSweep(self)
 %             % This gets called from above when an (acq) sweep is about to
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
 %             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-%             fprintf('Stimulation::willPerformSweep()\n');
-%             
-%             if self.TriggerScheme.IsExternal ,
-%                 % If external triggering, we set up for a trigger only if
-%                 % this is the first 
+%             %fprintf('Stimulation::willPerformSweep()\n');
+% 
+%             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
+%             if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
+%                 % Stim and acq are using same trigger source, so should arm
+%                 % stim system now.
+%                 self.armForEpisode();
+%             else
+%                 % Stim and acq are using distinct trigger
+%                 % sources.
+%                 % If first sweep, arm.  Otherwise, we handle
+%                 % re-arming independently from the acq sweeps.
 %                 if self.Parent.NSweepsCompletedInThisRun == 0 ,
 %                     self.armForEpisode();
 %                 end
-%             else
-%                 % stim trigger scheme is internal
-%                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-%                 if acquisitionTriggerScheme.IsInternal ,
-%                     % acq trigger scheme is internal
-%                     if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
-%                         % stim and acq are using same trigger source
-%                         self.armForEpisode();
-%                     else
-%                         % stim and acq are using distinct internal trigger
-%                         % sources
-%                         % if first sweep, arm.  Otherwise, we handle
-%                         % re-arming independently from the acq sweeps.
-%                         if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
-%                             self.armForEpisode();
-%                         else
-%                             % do nothing
-%                         end
-%                     end
-%                 else
-%                     % acq trigger scheme is external, so must be different
-%                     % from stim trigger scheme, which is internal
-% %                     if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
-% %                         self.armForEpisode();
-% %                     else
-% %                         self.IsWithinRun_ = false;
-% %                         self.Parent.stimulationEpisodeComplete();
-% %                     end
-%                     % if first sweep, arm.  Otherwise, we handle
-%                     % re-arming independently from the acq sweeps.
-%                     if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
-%                         self.armForEpisode();
-%                     else
-%                         % do nothing
-%                     end                    
-%                 end
 %             end
 %         end  % function
+% 
+%         function didCompleteSweep(self)  %#ok<MANU>
+%             %fprintf('Stimulation::didCompleteSweep()\n');            
+%         end
+%         
+%         function didStopSweep(self)
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+%                 self.TheFiniteAnalogOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+%                 self.TheFiniteDigitalOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+%                 self.TheUntimedDigitalOutputTask_.abort();            
+%             end
+%             self.IsArmedOrStimulating_ = false ;
+%         end  % function
+%         
+%         function didAbortSweep(self)
+%             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
+%                 self.TheFiniteAnalogOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
+%                 self.TheFiniteDigitalOutputTask_.abort();
+%             end
+%             if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
+%                 self.TheUntimedDigitalOutputTask_.abort();            
+%             end
+%             self.IsArmedOrStimulating_ = false ;
+%         end  % function
         
-        function didCompleteSweep(self)  %#ok<MANU>
-            %fprintf('Stimulation::didCompleteSweep()\n');            
-        end
-        
-        function didStopSweep(self)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
-                self.TheFiniteAnalogOutputTask_.abort();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
-                self.TheFiniteDigitalOutputTask_.abort();
-            end
-            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
-                self.TheUntimedDigitalOutputTask_.abort();            
-            end
-            self.IsArmedOrStimulating_ = false ;
-        end  % function
-        
-        function didAbortSweep(self)
-            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
-                self.TheFiniteAnalogOutputTask_.abort();
-            end
-            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) , 
-                self.TheFiniteDigitalOutputTask_.abort();
-            end
-            if ~isempty(self.TheUntimedDigitalOutputTask_) && isvalid(self.TheUntimedDigitalOutputTask_) ,
-                self.TheUntimedDigitalOutputTask_.abort();            
-            end
-            self.IsArmedOrStimulating_ = false ;
-        end  % function
-        
-        function armForEpisode(self)
-            %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
-            %thisTic=tic();
-            %fprintf('Stimulation::armForEpisode()\n');
-            %dbstack
-            %fprintf('\n\n');
-            %self.DidAnalogEpisodeComplete_ = false ;
-            %self.DidDigitalEpisodeComplete_ = false ;
-            self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
-            self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
-            self.DidAnalogEpisodeComplete_ = false ;  
-            self.DidDigitalEpisodeComplete_ = false ;
-            self.IsArmedOrStimulating_ = true;
-            
-            % Get the current stimulus map
-            stimulusMap = self.getCurrentStimulusMap_();
-
-            % Set the channel data in the tasks
-            self.setAnalogChannelData_(stimulusMap);
-            self.setDigitalChannelData_(stimulusMap);
-
-            % Arm and start the analog task (which will then wait for a
-            % trigger)
-            if self.HasAnalogChannels_ ,
-                if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteAnalogOutputTask_.arm();
-                end
-                self.TheFiniteAnalogOutputTask_.start();                
-            end
-            
-            % Arm and start the digital task (which will then wait for a
-            % trigger)
-            if self.HasTimedDigitalChannels_ ,
-                if self.EpisodesCompleted_ == 0 ,
-                    self.TheFiniteDigitalOutputTask_.arm();
-                end
-                self.TheFiniteDigitalOutputTask_.start(); 
-            end
-            
-            % If no samples at all, we just declare the episode done
-            if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
-                % do nothing
-            else
-                % This was triggered, it just has a map/stimulus that has zero samples.
-                self.IsArmedOrStimulating_ = false;
-                self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
-            end
-            
-            %T=toc(thisTic);
-            %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
-        end  % function
+%         function armForEpisode(self)
+%             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
+%             %thisTic=tic();
+%             %fprintf('Stimulation::armForEpisode()\n');
+%             %dbstack
+%             %fprintf('\n\n');
+%             %self.DidAnalogEpisodeComplete_ = false ;
+%             %self.DidDigitalEpisodeComplete_ = false ;
+%             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
+%             self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
+%             self.DidAnalogEpisodeComplete_ = false ;  
+%             self.DidDigitalEpisodeComplete_ = false ;
+%             self.IsArmedOrStimulating_ = true;
+%             
+%             % Get the current stimulus map
+%             stimulusMap = self.getCurrentStimulusMap_();
+% 
+%             % Set the channel data in the tasks
+%             self.setAnalogChannelData_(stimulusMap);
+%             self.setDigitalChannelData_(stimulusMap);
+% 
+%             % Arm and start the analog task (which will then wait for a
+%             % trigger)
+%             if self.HasAnalogChannels_ ,
+%                 if self.EpisodesCompleted_ == 0 ,
+%                     self.TheFiniteAnalogOutputTask_.arm();
+%                 end
+%                 self.TheFiniteAnalogOutputTask_.start();                
+%             end
+%             
+%             % Arm and start the digital task (which will then wait for a
+%             % trigger)
+%             if self.HasTimedDigitalChannels_ ,
+%                 if self.EpisodesCompleted_ == 0 ,
+%                     self.TheFiniteDigitalOutputTask_.arm();
+%                 end
+%                 self.TheFiniteDigitalOutputTask_.start(); 
+%             end
+%             
+%             % If no samples at all, we just declare the episode done
+%             if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
+%                 % do nothing
+%             else
+%                 % This was triggered, it just has a map/stimulus that has zero samples.
+%                 self.IsArmedOrStimulating_ = false;
+%                 self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
+%             end
+%             
+%             %T=toc(thisTic);
+%             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
+%         end  % function
         
         
         function didSelectStimulusSequence(self, cycle)

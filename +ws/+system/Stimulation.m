@@ -420,227 +420,145 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             self.TheUntimedDigitalOutputTask_ = [];            
 %         end
         
-        function willPerformRun(self)
-            %fprintf('Stimulation::willPerformRun()\n');
-            %errors = [];
-            %abort = false;
-            
-%             % Do a bunch of checks to make sure all is well for running an
-%             % run
-%             if isempty(self.TriggerScheme)
-%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-%             end            
-%             if isempty(self.TriggerScheme.Target)
-%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-%             end            
-%             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-%             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
-%             %end
-            
-            wavesurferModel = self.Parent ;
-            
-%             % Make the NI daq task, if don't have it already
-%             self.acquireHardwareResources_();
+%         function willPerformRun(self)
+%             wavesurferModel = self.Parent ;
+%            
+%             % Determine how many episodes there will be, if possible
+%             if self.TriggerScheme.IsExternal ,
+%                 self.EpisodesPerRun_ = [];
+%             else
+%                 % stim trigger scheme is internal
+%                 if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal
+%                     % acq trigger scheme is internal
+%                     if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
+%                         self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
+%                     else
+%                         self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
+%                     end
+%                 elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
+%                     % acq trigger scheme is external, so must be different
+%                     % from stim trigger scheme
+%                     self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
+%                 else
+%                     % acq trigger scheme is null --- this run is
+%                     % stillborn, so doesn't matter
+%                     self.EpisodesPerRun_ = [];
+%                 end
+%             end
+% 
+%             % Initialize the episode counter
+%             self.EpisodesCompleted_ = 0;
 %             
-%             % Set up the task triggering
-%             self.TheFiniteAnalogOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-%             self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-%             self.TheFiniteDigitalOutputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-%             self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
+%             % Set up the selected outputable cache
+%             stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
+%             self.SelectedOutputableCache_=stimulusOutputable;
 %             
-%             % Clear out any pre-existing output waveforms
-%             self.TheFiniteAnalogOutputTask_.clearChannelData();
-%             self.TheFiniteDigitalOutputTask_.clearChannelData();
-            
-            % Determine how many episodes there will be, if possible
-            if self.TriggerScheme.IsExternal ,
-                self.EpisodesPerRun_ = [];
-            else
-                % stim trigger scheme is internal
-                if wavesurferModel.Triggering.AcquisitionTriggerScheme.IsInternal
-                    % acq trigger scheme is internal
-                    if self.TriggerScheme == wavesurferModel.Triggering.AcquisitionTriggerScheme ,
-                        self.EpisodesPerRun_ = self.Parent.NSweepsPerRun;
-                    else
-                        self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
-                    end
-                elseif wavesurferModel.Triggering.AcquisitionTriggerScheme.IsExternal
-                    % acq trigger scheme is external, so must be different
-                    % from stim trigger scheme
-                    self.EpisodesPerRun_ = self.TriggerScheme.RepeatCount;
-                else
-                    % acq trigger scheme is null --- this run is
-                    % stillborn, so doesn't matter
-                    self.EpisodesPerRun_ = [];
-                end
-            end
-
-            % Initialize the episode counter
-            self.EpisodesCompleted_ = 0;
-            
-            % Set up the selected outputable cache
-            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
-            self.SelectedOutputableCache_=stimulusOutputable;
-            
-            % Set the state
-            self.IsWithinRun_=true;
-        end  % willPerformRun() function
-        
-        function didCompleteRun(self)
-            %self.SelectedOutputableCache_ = [];
-            self.IsWithinRun_=false;  % might already be guaranteed to be false here...
-        end  % function
-        
-        function didStopRun(self)
-            %self.SelectedOutputableCache_ = [];
-            self.IsWithinRun_=false;
-        end  % function
-
-        function didAbortRun(self)
-            %self.SelectedOutputableCache_ = [];
-            self.IsWithinRun_=false;
-        end  % function
-        
-        function willPerformSweep(self)
-            % This gets called from above when an (acq) sweep is about to
-            % start.  What we do here depends a lot on the current triggering
-            % settings.
-            
-            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-            %fprintf('Stimulation::willPerformSweep()\n');
-
-            acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-            if self.TriggerScheme == acquisitionTriggerScheme ,
-                % Stim and acq are using same trigger source, so should arm
-                % stim system now.
-                self.armForEpisode();
-            else
-                % Stim and acq are using distinct trigger
-                % sources.
-                % If first sweep, arm.  Otherwise, we handle
-                % re-arming independently from the acq sweeps.
-                if self.Parent.NSweepsCompletedInThisRun == 0 ,
-                    self.armForEpisode();
-                end
-            end
-        end  % function
-
-%         function willPerformSweep(self, wavesurferObj) %#ok<INUSD>
+%             % Set the state
+%             self.IsWithinRun_=true;
+%         end  % willPerformRun() function
+%         
+%         function didCompleteRun(self)
+%             %self.SelectedOutputableCache_ = [];
+%             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
+%         end  % function
+%         
+%         function didStopRun(self)
+%             %self.SelectedOutputableCache_ = [];
+%             self.IsWithinRun_=false;
+%         end  % function
+% 
+%         function didAbortRun(self)
+%             %self.SelectedOutputableCache_ = [];
+%             self.IsWithinRun_=false;
+%         end  % function
+%         
+%         function willPerformSweep(self)
 %             % This gets called from above when an (acq) sweep is about to
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
 %             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-%             fprintf('Stimulation::willPerformSweep()\n');
-%             
-%             if self.TriggerScheme.IsExternal ,
-%                 % If external triggering, we set up for a trigger only if
-%                 % this is the first 
+%             %fprintf('Stimulation::willPerformSweep()\n');
+% 
+%             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
+%             if self.TriggerScheme == acquisitionTriggerScheme ,
+%                 % Stim and acq are using same trigger source, so should arm
+%                 % stim system now.
+%                 self.armForEpisode();
+%             else
+%                 % Stim and acq are using distinct trigger
+%                 % sources.
+%                 % If first sweep, arm.  Otherwise, we handle
+%                 % re-arming independently from the acq sweeps.
 %                 if self.Parent.NSweepsCompletedInThisRun == 0 ,
 %                     self.armForEpisode();
 %                 end
-%             else
-%                 % stim trigger scheme is internal
-%                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-%                 if acquisitionTriggerScheme.IsInternal ,
-%                     % acq trigger scheme is internal
-%                     if self.TriggerScheme == acquisitionTriggerScheme ,
-%                         % stim and acq are using same trigger source
-%                         self.armForEpisode();
-%                     else
-%                         % stim and acq are using distinct internal trigger
-%                         % sources
-%                         % if first sweep, arm.  Otherwise, we handle
-%                         % re-arming independently from the acq sweeps.
-%                         if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
-%                             self.armForEpisode();
-%                         else
-%                             % do nothing
-%                         end
-%                     end
-%                 else
-%                     % acq trigger scheme is external, so must be different
-%                     % from stim trigger scheme, which is internal
-% %                     if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
-% %                         self.armForEpisode();
-% %                     else
-% %                         self.IsWithinRun_ = false;
-% %                         self.Parent.stimulationEpisodeComplete();
-% %                     end
-%                     % if first sweep, arm.  Otherwise, we handle
-%                     % re-arming independently from the acq sweeps.
-%                     if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
-%                         self.armForEpisode();
-%                     else
-%                         % do nothing
-%                     end                    
-%                 end
 %             end
 %         end  % function
-        
-        function didCompleteSweep(self)  %#ok<MANU>
-            %fprintf('Stimulation::didCompleteSweep()\n');            
-        end
-        
-        function didStopSweep(self)
-            self.IsArmedOrStimulating_ = false ;
-        end  % function
-                
-        function didAbortSweep(self)
-            self.IsArmedOrStimulating_ = false ;
-        end  % function
-        
-        function armForEpisode(self)
-            %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
-            %thisTic=tic();
-            %fprintf('Stimulation::armForEpisode()\n');
-            %dbstack
-            %fprintf('\n\n');
-            %self.DidAnalogEpisodeComplete_ = false ;
-            %self.DidDigitalEpisodeComplete_ = false ;
-            self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
-            self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
-            self.DidAnalogEpisodeComplete_ = false ;  
-            self.DidDigitalEpisodeComplete_ = false ;
-            self.IsArmedOrStimulating_ = true;
-            
-            % Get the current stimulus map
-            stimulusMap = self.getCurrentStimulusMap_();
-
-            % Set the channel data in the tasks
-            self.setAnalogChannelData_(stimulusMap);
-            self.setDigitalChannelData_(stimulusMap);
-
-%             % Arm and start the analog task (which will then wait for a
-%             % trigger)
-%             if self.HasAnalogChannels_ ,
-%                 if self.EpisodesCompleted_ == 0 ,
-%                     self.TheFiniteAnalogOutputTask_.arm();
-%                 end
-%                 self.TheFiniteAnalogOutputTask_.start();                
+%         
+%         function didCompleteSweep(self)  %#ok<MANU>
+%             %fprintf('Stimulation::didCompleteSweep()\n');            
+%         end
+%         
+%         function didStopSweep(self)
+%             self.IsArmedOrStimulating_ = false ;
+%         end  % function
+%                 
+%         function didAbortSweep(self)
+%             self.IsArmedOrStimulating_ = false ;
+%         end  % function
+%         
+%         function armForEpisode(self)
+%             %fprintf('Stimulation.armForEpisode: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
+%             %thisTic=tic();
+%             %fprintf('Stimulation::armForEpisode()\n');
+%             %dbstack
+%             %fprintf('\n\n');
+%             %self.DidAnalogEpisodeComplete_ = false ;
+%             %self.DidDigitalEpisodeComplete_ = false ;
+%             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
+%             self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
+%             self.DidAnalogEpisodeComplete_ = false ;  
+%             self.DidDigitalEpisodeComplete_ = false ;
+%             self.IsArmedOrStimulating_ = true;
+%             
+%             % Get the current stimulus map
+%             stimulusMap = self.getCurrentStimulusMap_();
+% 
+%             % Set the channel data in the tasks
+%             self.setAnalogChannelData_(stimulusMap);
+%             self.setDigitalChannelData_(stimulusMap);
+% 
+% %             % Arm and start the analog task (which will then wait for a
+% %             % trigger)
+% %             if self.HasAnalogChannels_ ,
+% %                 if self.EpisodesCompleted_ == 0 ,
+% %                     self.TheFiniteAnalogOutputTask_.arm();
+% %                 end
+% %                 self.TheFiniteAnalogOutputTask_.start();                
+% %             end
+% %             
+% %             % Arm and start the digital task (which will then wait for a
+% %             % trigger)
+% %             if self.HasTimedDigitalChannels_ ,
+% %                 if self.EpisodesCompleted_ == 0 ,
+% %                     self.TheFiniteDigitalOutputTask_.arm();
+% %                 end
+% %                 self.TheFiniteDigitalOutputTask_.start(); 
+% %             end
+%             
+%             % If no samples at all, we just declare the episode done
+%             if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
+%                 % do nothing
+%             else
+%                 % This was triggered, it just has a map/stimulus that has zero samples.
+%                 self.IsArmedOrStimulating_ = false;
+%                 self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
 %             end
 %             
-%             % Arm and start the digital task (which will then wait for a
-%             % trigger)
-%             if self.HasTimedDigitalChannels_ ,
-%                 if self.EpisodesCompleted_ == 0 ,
-%                     self.TheFiniteDigitalOutputTask_.arm();
-%                 end
-%                 self.TheFiniteDigitalOutputTask_.start(); 
-%             end
-            
-            % If no samples at all, we just declare the episode done
-            if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
-                % do nothing
-            else
-                % This was triggered, it just has a map/stimulus that has zero samples.
-                self.IsArmedOrStimulating_ = false;
-                self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
-            end
-            
-            %T=toc(thisTic);
-            %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
-        end  % function
+%             %T=toc(thisTic);
+%             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
+%         end  % function
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
@@ -709,29 +627,34 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             end
 %         end  % function
 %         
-%         function analogChannelScales=get.AnalogChannelScales(self)
-%             import ws.utility.*
-%             wavesurferModel=self.Parent;
-%             if isempty(wavesurferModel) ,
-%                 ephys=[];
-%             else
-%                 ephys=wavesurferModel.Ephys;
-%             end
-%             if isempty(ephys) ,
-%                 electrodeManager=[];
-%             else
-%                 electrodeManager=ephys.ElectrodeManager;
-%             end
-%             if isempty(electrodeManager) ,
-%                 analogChannelScales=self.AnalogChannelScales_;
-%             else
-%                 channelNames=self.AnalogChannelNames;            
-%                 [analogChannelScalesFromElectrodes, ...
-%                  isChannelScaleEnslaved] = ...
-%                     electrodeManager.getCommandScalingsByName(channelNames);
-%                 analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
-%             end
-%         end  % function
+    end  % public methods block
+    
+    methods (Access=protected)
+        function analogChannelScales=getAnalogChannelScales_(self)
+            import ws.utility.*
+            wavesurferModel=self.Parent;
+            if isempty(wavesurferModel) ,
+                ephys=[];
+            else
+                ephys=wavesurferModel.Ephys;
+            end
+            if isempty(ephys) ,
+                electrodeManager=[];
+            else
+                electrodeManager=ephys.ElectrodeManager;
+            end
+            if isempty(electrodeManager) ,
+                analogChannelScales=self.AnalogChannelScales_;
+            else
+                channelNames=self.AnalogChannelNames;            
+                [analogChannelScalesFromElectrodes, ...
+                 isChannelScaleEnslaved] = ...
+                    electrodeManager.getCommandScalingsByName(channelNames);
+                analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
+            end
+        end  % function
+    end  % protected methods block
+    
 %         
 %         function set.AnalogChannelUnits(self,newValue)
 %             import ws.utility.*
@@ -807,6 +730,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             end
 %         end  % function        
         
+    methods
         function analogEpisodeCompleted(self)
             %fprintf('Stimulation::analogEpisodeCompleted()\n');
             self.DidAnalogEpisodeComplete_ = true ;
@@ -899,173 +823,173 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             end
 %         end  % function
         
-        function stimulusMap = getCurrentStimulusMap_(self)
-            % Calculate the episode index
-            episodeIndexWithinRun=self.EpisodesCompleted_+1;
-            
-            % Determine the stimulus map, given self.SelectedOutputableCache_ and other
-            % things
-            if isempty(self.SelectedOutputableCache_) ,
-                isThereAMap = false ;
-                indexOfMapIfSequence=[];  % arbitrary: doesn't get used if isThereAMap==false
-            else
-                if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
-                    isThereAMap=true;
-                    indexOfMapIfSequence=[];
-                else
-                    % outputable must be a sequence                
-                    nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
-                    if episodeIndexWithinRun <= nMapsInSequence ,
-                        isThereAMap=true;
-                        indexOfMapIfSequence=episodeIndexWithinRun;
-                    else
-                        if self.DoRepeatSequence ,
-                            isThereAMap=true;
-                            indexOfMapIfSequence=mod(episodeIndexWithinRun-1,nMapsInSequence)+1;
-                        else
-                            isThereAMap=false;
-                            indexOfMapIfSequence=1;  % arbitrary: doesn't get used if isThereAMap==false
-                        end
-                    end
-                end            
-            end
-            if isThereAMap ,
-                if isempty(indexOfMapIfSequence) ,
-                    % this means the outputable is a "naked" map
-                    stimulusMap=self.SelectedOutputableCache_;
-                else
-                    stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
-                end
-            else
-                stimulusMap = [] ;
-            end
-        end  % function
+%         function stimulusMap = getCurrentStimulusMap_(self)
+%             % Calculate the episode index
+%             episodeIndexWithinRun=self.EpisodesCompleted_+1;
+%             
+%             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
+%             % things
+%             if isempty(self.SelectedOutputableCache_) ,
+%                 isThereAMap = false ;
+%                 indexOfMapIfSequence=[];  % arbitrary: doesn't get used if isThereAMap==false
+%             else
+%                 if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
+%                     isThereAMap=true;
+%                     indexOfMapIfSequence=[];
+%                 else
+%                     % outputable must be a sequence                
+%                     nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
+%                     if episodeIndexWithinRun <= nMapsInSequence ,
+%                         isThereAMap=true;
+%                         indexOfMapIfSequence=episodeIndexWithinRun;
+%                     else
+%                         if self.DoRepeatSequence ,
+%                             isThereAMap=true;
+%                             indexOfMapIfSequence=mod(episodeIndexWithinRun-1,nMapsInSequence)+1;
+%                         else
+%                             isThereAMap=false;
+%                             indexOfMapIfSequence=1;  % arbitrary: doesn't get used if isThereAMap==false
+%                         end
+%                     end
+%                 end            
+%             end
+%             if isThereAMap ,
+%                 if isempty(indexOfMapIfSequence) ,
+%                     % this means the outputable is a "naked" map
+%                     stimulusMap=self.SelectedOutputableCache_;
+%                 else
+%                     stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
+%                 end
+%             else
+%                 stimulusMap = [] ;
+%             end
+%         end  % function
         
-        function [nScans,nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMap)
-            import ws.utility.*
-            
-            % Calculate the episode index
-            episodeIndexWithinRun=self.EpisodesCompleted_+1;
-            
-            % Calculate the signals
-            if isempty(stimulusMap) ,
-                aoData = zeros(0,length(self.AnalogChannelNames));
-                nChannelsWithStimulus = 0 ;
-            else
-                isChannelAnalog = true(1,self.NAnalogChannels) ;
-                [aoData,nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinRun);
-            end
-            
-            % Want to return the number of scans in the stimulus data
-            nScans= size(aoData,1);
-            
-            % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AnalogChannelScales;
-            inverseAnalogChannelScales=1./analogChannelScales;
-            sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+%         function [nScans,nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMap)
+%             import ws.utility.*
+%             
+%             % Calculate the episode index
+%             episodeIndexWithinRun=self.EpisodesCompleted_+1;
+%             
+%             % Calculate the signals
+%             if isempty(stimulusMap) ,
+%                 aoData = zeros(0,length(self.AnalogChannelNames));
+%                 nChannelsWithStimulus = 0 ;
+%             else
+%                 isChannelAnalog = true(1,self.NAnalogChannels) ;
+%                 [aoData,nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinRun);
+%             end
+%             
+%             % Want to return the number of scans in the stimulus data
+%             nScans= size(aoData,1);
+%             
+%             % If any channel scales are problematic, deal with this
+%             analogChannelScales=self.AnalogChannelScales;
+%             inverseAnalogChannelScales=1./analogChannelScales;
+%             sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+% 
+%             % scale the data by the channel scales
+%             if isempty(aoData) ,
+%                 aoDataScaled=aoData;
+%             else
+%                 aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
+%             end
+% 
+%             % limit the data to [-10 V, +10 V]
+%             aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
+% 
+% %             % Finally, assign the stimulation data to the the relevant part
+% %             % of the output task
+% %             self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
+%         end  % function
+% 
+%         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap)
+%             import ws.utility.*
+%             
+%             % Calculate the episode index
+%             episodeIndexWithinRun=self.EpisodesCompleted_+1;
+%             
+%             % Calculate the signals
+%             if isempty(stimulusMap) ,
+%                 doData=zeros(0,length(self.IsDigitalChannelTimed));
+%                 nChannelsWithStimulus = 0 ;
+%             else
+%                 isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
+%                 [doData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinRun);
+%             end
+%             
+%             % Want to return the number of scans in the stimulus data
+%             nScans= size(doData,1);
+%             
+%             % limit the data to {false,true}
+%             doDataLimited=logical(doData);
+% 
+% %             % Finally, assign the stimulation data to the the relevant part
+% %             % of the output task
+% %             self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+%         end  % function
 
-            % scale the data by the channel scales
-            if isempty(aoData) ,
-                aoDataScaled=aoData;
-            else
-                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
-            end
-
-            % limit the data to [-10 V, +10 V]
-            aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
-
-%             % Finally, assign the stimulation data to the the relevant part
-%             % of the output task
-%             self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
-        end  % function
-
-        function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap)
-            import ws.utility.*
-            
-            % Calculate the episode index
-            episodeIndexWithinRun=self.EpisodesCompleted_+1;
-            
-            % Calculate the signals
-            if isempty(stimulusMap) ,
-                doData=zeros(0,length(self.IsDigitalChannelTimed));
-                nChannelsWithStimulus = 0 ;
-            else
-                isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
-                [doData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.DigitalChannelNames(self.IsDigitalChannelTimed), isChannelAnalog, episodeIndexWithinRun);
-            end
-            
-            % Want to return the number of scans in the stimulus data
-            nScans= size(doData,1);
-            
-            % limit the data to {false,true}
-            doDataLimited=logical(doData);
-
-%             % Finally, assign the stimulation data to the the relevant part
-%             % of the output task
-%             self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
-        end  % function
-
-        function episodeCompleted_(self)
-            % Called from "below" when a single episode of stimulation is
-            % completed.  
-            %fprintf('Stimulation::episodeCompleted_()\n');
-            % We only want this method to do anything once per episode, and the next three
-            % lines make this the case.
-            if ~self.IsArmedOrStimulating ,
-                return
-            end
-            self.IsArmedOrStimulating_ = false;
-            self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
-            
-            if self.TriggerScheme.IsExternal ,
-                acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-                if acquisitionTriggerScheme.IsExternal ,
-                    % both acq and stim are external
-                    if self.TriggerScheme == acquisitionTriggerScheme ,
-                        % stim and acq are using same trigger
-                        self.Parent.stimulationEpisodeComplete();
-                    else
-                        % stim and acq are using distinct external trigger
-                        % sources
-                        self.armForEpisode();
-                    end
-                else
-                    % stim external, acq internal, therefore distinct
-                    %fprintf('About to self.armForEpisode(), as we oughtta...\n');
-                    self.armForEpisode();               
-                end
-            else
-                % stim trigger scheme is internal
-                acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-                if acquisitionTriggerScheme.IsInternal ,
-                    % acq trigger scheme is internal
-                    if self.TriggerScheme == acquisitionTriggerScheme ,
-                        % stim and acq are using same trigger source
-                        self.Parent.stimulationEpisodeComplete();
-                    else
-                        % stim and acq are using distinct internal trigger
-                        % sources
-                        if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
-                            self.armForEpisode();
-                        else
-                            self.IsWithinRun_ = false;
-                            self.Parent.stimulationEpisodeComplete();
-                        end
-                    end
-                else
-                    % acq trigger scheme is external, so must be different
-                    % from stim trigger scheme, which is internal
-                    if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
-                        self.armForEpisode();
-                    else
-                        self.IsWithinRun_ = false;
-                        self.Parent.stimulationEpisodeComplete();
-                    end
-                end
-            end
-        end  % function
+%         function episodeCompleted_(self)
+%             % Called from "below" when a single episode of stimulation is
+%             % completed.  
+%             %fprintf('Stimulation::episodeCompleted_()\n');
+%             % We only want this method to do anything once per episode, and the next three
+%             % lines make this the case.
+%             if ~self.IsArmedOrStimulating ,
+%                 return
+%             end
+%             self.IsArmedOrStimulating_ = false;
+%             self.EpisodesCompleted_ = self.EpisodesCompleted_ + 1;
+%             
+%             if self.TriggerScheme.IsExternal ,
+%                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
+%                 if acquisitionTriggerScheme.IsExternal ,
+%                     % both acq and stim are external
+%                     if self.TriggerScheme == acquisitionTriggerScheme ,
+%                         % stim and acq are using same trigger
+%                         self.Parent.stimulationEpisodeComplete();
+%                     else
+%                         % stim and acq are using distinct external trigger
+%                         % sources
+%                         self.armForEpisode();
+%                     end
+%                 else
+%                     % stim external, acq internal, therefore distinct
+%                     %fprintf('About to self.armForEpisode(), as we oughtta...\n');
+%                     self.armForEpisode();               
+%                 end
+%             else
+%                 % stim trigger scheme is internal
+%                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
+%                 if acquisitionTriggerScheme.IsInternal ,
+%                     % acq trigger scheme is internal
+%                     if self.TriggerScheme == acquisitionTriggerScheme ,
+%                         % stim and acq are using same trigger source
+%                         self.Parent.stimulationEpisodeComplete();
+%                     else
+%                         % stim and acq are using distinct internal trigger
+%                         % sources
+%                         if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
+%                             self.armForEpisode();
+%                         else
+%                             self.IsWithinRun_ = false;
+%                             self.Parent.stimulationEpisodeComplete();
+%                         end
+%                     end
+%                 else
+%                     % acq trigger scheme is external, so must be different
+%                     % from stim trigger scheme, which is internal
+%                     if self.EpisodesCompleted_ < self.EpisodesPerRun_ ,
+%                         self.armForEpisode();
+%                     else
+%                         self.IsWithinRun_ = false;
+%                         self.Parent.stimulationEpisodeComplete();
+%                     end
+%                 end
+%             end
+%         end  % function
         
     end  % protected methods
 
@@ -1083,18 +1007,18 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         end  % function
 %     end  % class methods block
     
-    methods
-        function poll(self,timeSinceSweepStart)
-%             % Call the task to do the real work
-%             if self.IsArmedOrStimulating_ ,
-%                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-%                     self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
-%                 end
-%                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-%                     self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
-%                 end
-%             end
-        end
-    end
+%     methods
+%         function poll(self,timeSinceSweepStart)
+% %             % Call the task to do the real work
+% %             if self.IsArmedOrStimulating_ ,
+% %                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+% %                     self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
+% %                 end
+% %                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
+% %                     self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
+% %                 end
+% %             end
+%         end
+%     end
     
 end  % classdef

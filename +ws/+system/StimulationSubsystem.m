@@ -312,31 +312,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end  % function
-        
+
         function analogChannelScales=get.AnalogChannelScales(self)
-            import ws.utility.*
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                analogChannelScales=self.AnalogChannelScales_;
-            else
-                channelNames=self.AnalogChannelNames;            
-                [analogChannelScalesFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getCommandScalingsByName(channelNames);
-                analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
-            end
-        end  % function
-        
+            analogChannelScales=self.getAnalogChannelScales_() ;
+        end
+
         function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
             newValue = cellfun(@strtrim,newValue,'UniformOutput',false);
@@ -413,6 +393,12 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             end
         end  % function                
     end  % methods block
+
+    methods (Access = protected)        
+        function analogChannelScales=getAnalogChannelScales_(self)
+            analogChannelScales = self.AnalogChannelScales_;
+        end  % function
+    end  % protected methods block        
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.

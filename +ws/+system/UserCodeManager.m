@@ -118,10 +118,9 @@ classdef UserCodeManager < ws.system.Subsystem
         % WavesurferModel at just the right time, which calls the user
         % method(s).
         
-%         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
-%             % The data available callback 
-%             self.invoke(self.Parent,'dataAvailable');
-%         end
+%        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
+%             self.invoke(self.Parent,'samplesAcquired');
+%        end
     end  % methods
        
     methods (Access=protected)

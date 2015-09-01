@@ -213,7 +213,7 @@ classdef Refiller < ws.Model
 
                             % Check the finite outputs, refill them if
                             % needed.
-                            self.Stimulation.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+                            self.Stimulation.poll(timeSinceSweepStart) ;
                         end
                     else
                         fprintf('Refiller: In a run, but not a sweep\n');
@@ -578,9 +578,9 @@ classdef Refiller < ws.Model
         end        
         
         function releaseHardwareResources(self)
-            self.Acquisition.releaseHardwareResources();
+            %self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
-            self.Triggering.releaseHardwareResources();
+            %self.Triggering.releaseHardwareResources();
             %self.Ephys.releaseHardwareResources();
         end
         

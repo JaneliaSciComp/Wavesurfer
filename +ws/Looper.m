@@ -221,7 +221,8 @@ classdef Looper < ws.Model
                                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
                                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
                                 if areTasksDone ,
-                                    self.acquisitionSweepComplete() ;
+                                    self.cleanUpAfterCompletedSweep_() ;
+                                    %self.acquisitionSweepComplete() ;
                                 end
                             end                        
                         end
@@ -548,28 +549,28 @@ classdef Looper < ws.Model
             % Triggering subsystems.  Generally speaking, we want to make
             % sure that all three subsystems are done with the sweep before
             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            %keyboard
-            if self.Stimulation.IsEnabled ,
-                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-                    % acq and stim trig sources are identical
-                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.cleanUpAfterCompletedSweep_();
-                    end
-                else
-                    % acq and stim trig sources are distinct
-                    % this means the stim trigger basically runs on
-                    % its own until it's done
-                    if self.Acquisition.IsArmedOrAcquiring ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.cleanUpAfterCompletedSweep_();
-                    end
-                end
-            else
+            
+%             if self.Stimulation.IsEnabled ,
+%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
+%                     % acq and stim trig sources are identical
+%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.cleanUpAfterCompletedSweep_();
+%                     end
+%                 else
+%                     % acq and stim trig sources are distinct
+%                     % this means the stim trigger basically runs on
+%                     % its own until it's done
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.cleanUpAfterCompletedSweep_();
+%                     end
+%                 end
+%             else
                 % Stimulation subsystem is disabled
                 if self.Acquisition.IsArmedOrAcquiring , 
                     % do nothing
@@ -577,7 +578,7 @@ classdef Looper < ws.Model
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
                     self.cleanUpAfterCompletedSweep_();
                 end
-            end            
+%             end            
         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -898,12 +899,7 @@ classdef Looper < ws.Model
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
                 if self.UserCodeManager.IsEnabled ,                             
-                    self.UserCodeManager.samplesAcquired(isSweepBased, ...
-                                                       t, ...
-                                                       scaledAnalogData, ...
-                                                       rawAnalogData, ...
-                                                       rawDigitalData, ...
-                                                       timeSinceRunStartAtStartOfData);
+                    self.callUserMethod_('samplesAcquired');
                 end
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
@@ -925,6 +921,17 @@ classdef Looper < ws.Model
             end
         end  % function
         
+        function callUserMethod_(self, eventName)
+            % Handle user functions.  It would be possible to just make the UserCodeManager
+            % subsystem a regular listener of these events.  Handling it
+            % directly removes at 
+            % least one layer of function calls and allows for user functions for 'events'
+            % that are not formally events on the model.
+            self.UserCodeManager.invoke(self, eventName);
+            
+            % Handle as standard event if applicable.
+            %self.broadcast(eventName);
+        end  % function                
     end % protected methods block
     
 %     methods (Access = protected)

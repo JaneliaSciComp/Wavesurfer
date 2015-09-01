@@ -64,6 +64,7 @@ classdef WavesurferModel < ws.Model
         IPCPublisher_
         %RefillerRPCClient_
         LooperIPCSubscriber_
+        RefillerIPCSubscriber_
         %ExpectedNextScanIndex_
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
@@ -144,13 +145,20 @@ classdef WavesurferModel < ws.Model
 %                 self.RPCServer_.setDelegate(self) ;
 %                 self.RPCServer_.bind();
 
+                % Set up the object to broadcast messages to the satellite
+                % processes
                 self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
                 self.IPCPublisher_.bind() ;
-                %self.RefillerRPCClient_ = ws.RPCClient(ws.WavesurferModel.RefillerRPCPortNumber) ;
 
+                % Subscribe the the looper boradcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
                 self.LooperIPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+
+                % Subscribe the the refiller broadcaster
+                self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
+                self.RefillerIPCSubscriber_.setDelegate(self) ;
+                self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
                 system('start matlab -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
@@ -321,6 +329,18 @@ classdef WavesurferModel < ws.Model
         
         function looperReadyForSweep(self) %#ok<MANU>
             % Call by the Looper, via ZMQ pub-sub, when it has finished its
+            % preparations for a sweep.  Currrently does nothing, we just
+            % need a message to tell us it's OK to proceed.
+        end        
+        
+        function refillerReadyForRun(self) %#ok<MANU>
+            % Call by the Refiller, via ZMQ pub-sub, when it has finished its
+            % preparations for a run.  Currrently does nothing, we just
+            % need a message to tell us it's OK to proceed.
+        end
+        
+        function refillerReadyForSweep(self) %#ok<MANU>
+            % Call by the Refiller, via ZMQ pub-sub, when it has finished its
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
         end        
