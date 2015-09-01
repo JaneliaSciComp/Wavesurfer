@@ -4,6 +4,8 @@ classdef SamplesBuffer < handle
     end
     
     properties
+        nAnalogChannels_
+        nDigitalChannels_
         analogBuffer_
         digitalBuffer_
         nScansInBuffer_
@@ -22,9 +24,15 @@ classdef SamplesBuffer < handle
             else %nActiveChannels<=32 ,
                 digitalType = 'uint32' ;
             end
-            self.digitalBuffer_ = zeros(bufferSizeInScans,1,digitalType) ;
+            if nDigitalChannels==0 ,
+                self.digitalBuffer_ = zeros(bufferSizeInScans,0,digitalType) ;
+            else
+                self.digitalBuffer_ = zeros(bufferSizeInScans,1,digitalType) ;
+            end
             self.bufferSizeInScans_ = bufferSizeInScans ;
             self.nScansInBuffer_ = 0 ;
+            self.nAnalogChannels_ = nAnalogChannels ;
+            self.nDigitalChannels_ = nDigitalChannels ;            
         end  % method
         
         function err = store(self, newAnalogData, newDigitalData, timeSinceRunStartAtStartOfNewData)
@@ -38,8 +46,12 @@ classdef SamplesBuffer < handle
                 if nScansInBufferOriginally==0 ,
                     self.timeSinceRunStartAtStartOfBuffer_ = timeSinceRunStartAtStartOfNewData ;
                 end
-                self.analogBuffer_(nScansInBufferOriginally+1:nScansInBufferOnExit,:) = newAnalogData ;
-                self.digitalBuffer_(nScansInBufferOriginally+1:nScansInBufferOnExit,:) = newDigitalData ;
+                if self.nAnalogChannels_>0 ,
+                    self.analogBuffer_(nScansInBufferOriginally+1:nScansInBufferOnExit,:) = newAnalogData ;
+                end
+                if self.nDigitalChannels_>0 ,
+                    self.digitalBuffer_(nScansInBufferOriginally+1:nScansInBufferOnExit,:) = newDigitalData ;
+                end
                 self.nScansInBuffer_ = nScansInBufferOnExit ;
                 err = [] ;
             end            
