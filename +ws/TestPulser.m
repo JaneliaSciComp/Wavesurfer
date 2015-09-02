@@ -376,11 +376,8 @@ classdef TestPulser < ws.Model
             electrodeManager=ephys.ElectrodeManager;
             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
             %resultAsCellArray={testPulseElectrodes.TestPulseAmplitude};
-            resultAsCellArray=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
-                                      testPulseElectrodes, ...
-                                      'UniformOutput',false);
-            result=cellfun(@(doubleString)(doubleString.toDouble()), ...
-                           resultAsCellArray);
+            result=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
+                           testPulseElectrodes);
         end
         
         function value=get.Amplitude(self)
@@ -1073,7 +1070,7 @@ classdef TestPulser < ws.Model
 
                 % Free up resources we will need for test pulsing
                 if ~isempty(wavesurferModel) ,
-                    wavesurferModel.releaseHardwareResources();
+                    wavesurferModel.releaseAllHardwareResources();
                 end
                 
                 % Get the stimulus
@@ -1106,7 +1103,7 @@ classdef TestPulser < ws.Model
                 % Limit the stimulus to the allowable range
                 limitedCommandsInVolts=max(-10,min(commandsInVolts,+10));
 
-                % Write the command to the output task
+                % Write the command to the output task                
                 self.OutputTask_.writeAnalogData(limitedCommandsInVolts);
 
                 % Set up the input task callback

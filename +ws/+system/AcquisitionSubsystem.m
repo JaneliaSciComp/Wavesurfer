@@ -322,7 +322,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 if isempty(iChannel) ,
                     result='';
                 else
-                    result=self.AnalogChannelScales{iChannel};
+                    result=self.AnalogChannelScales(iChannel);
                 end
             end
         end  % function

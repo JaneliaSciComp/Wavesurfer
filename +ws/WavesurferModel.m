@@ -409,6 +409,11 @@ classdef WavesurferModel < ws.Model
             fprintf('WavesurferModel::refillerIsAlive()\n');
         end
         
+        function looperDidReleaseHardwareResources(self) %#ok<MANU>
+        end
+        
+        function refillerDidReleaseHardwareResources(self) %#ok<MANU>
+        end        
     end  % methods
     
     methods
@@ -769,6 +774,28 @@ classdef WavesurferModel < ws.Model
             self.Triggering.releaseHardwareResources();
             self.Ephys.releaseHardwareResources();
         end
+
+        function releaseAllHardwareResources(self)
+            % Release our own hardware resources, and also tell the
+            % satellites to do so.
+            self.releaseHardwareResources() ;
+            self.IPCPublisher_.send('satellitesReleaseHardwareResources') ;
+            
+            % Wait for the looper to respond
+            timeout = 10 ;  % s
+            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseHardwareResources',timeout) ;
+            if ~gotMessage ,
+                % Something went wrong
+                throw(err);
+            end
+            
+            % Wait for the refiller to respond
+            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseHardwareResources',timeout) ;
+            if ~gotMessage ,
+                % Something went wrong
+                throw(err);
+            end            
+        end  % function
         
         function result=get.FastProtocols(self)
             result = self.FastProtocols_ ;

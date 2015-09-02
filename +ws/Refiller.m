@@ -315,6 +315,11 @@ classdef Refiller < ws.Model
             self.IPCPublisher_.send('refillerIsAlive');
         end  % function        
         
+        function satellitesReleaseHardwareResources(self)
+            self.releaseHardwareResources();
+            self.IPCPublisher_.send('refillerDidReleaseHardwareResources');            
+        end
+        
     end  % RPC methods block
     
     methods

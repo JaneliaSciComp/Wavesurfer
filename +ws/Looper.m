@@ -326,6 +326,10 @@ classdef Looper < ws.Model
             self.IPCPublisher_.send('looperIsAlive');
         end  % function        
         
+        function satellitesReleaseHardwareResources(self)
+            self.releaseHardwareResources();
+            self.IPCPublisher_.send('looperDidReleaseHardwareResources');            
+        end
     end  % RPC methods block
     
     methods
