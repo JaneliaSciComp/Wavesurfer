@@ -195,7 +195,8 @@ classdef TestPulserFigure < ws.MCOSFigure
                     set(self.GainUnitsTexts(j),'String','');
                 else
                     set(self.GainTexts(j),'String',sprintf('%0.1f ',gainOrResistanceThis));
-                    set(self.GainUnitsTexts(j),'String',string(gainOrResistanceUnits(j)));
+                    gainOrResistanceUnitsThis = gainOrResistanceUnits{j} ;
+                    set(self.GainUnitsTexts(j),'String',gainOrResistanceUnitsThis);
                 end
             end
             %fprintf('here 3\n');
