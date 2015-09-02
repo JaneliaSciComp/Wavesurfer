@@ -30,17 +30,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
                 self.DigitalChannelNames_ = channelNames(isDigital) ;
                 self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
-                
-%                 self.AnalogInputTask_ = ...
-%                     ws.ni.AnalogInputTask(mdfStructure.inputDeviceNames, ...
-%                                                 mdfStructure.inputChannelIDs, ...
-%                                                 'Wavesurfer Analog Acquisition Task', ...
-%                                                 mdfStructure.inputChannelNames);
-%                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
-%                 self.AnalogInputTask_.SampleRate = self.SampleRate;
-                
-%                 self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                
+                                
                 nAnalogChannels = length(self.AnalogPhysicalChannelNames_);
                 nDigitalChannels = length(self.DigitalPhysicalChannelNames_);                
                 %nChannels=length(physicalInputChannelNames);

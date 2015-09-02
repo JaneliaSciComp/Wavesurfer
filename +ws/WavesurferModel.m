@@ -268,7 +268,6 @@ classdef WavesurferModel < ws.Model
         
         function delete(self)
             fprintf('WavesurferModel::delete()\n');
-            dbstack
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;

@@ -46,13 +46,7 @@ classdef FiniteOutputTask < handle
             self.Parent_ = parent ;
                                     
             % Determine the task type, digital or analog
-            if isequal(taskType,'analog') ,
-                self.IsAnalog_ = true ;
-            elseif isequal(taskType,'digital') ,
-                self.IsAnalog_ = false ;
-            else
-                error('Illegal output task type');
-            end                
+            self.IsAnalog_ = ~isequal(taskType,'digital') ;
             
             % Create the task, channels
             if nChannels==0 ,
@@ -222,7 +216,8 @@ classdef FiniteOutputTask < handle
                     catch me
                         self.DabsDaqTask_.sampClkRate = originalSampleRate;
                         self.SampleRate_ = originalSampleRate;
-                        error('Invalid sample rate value');
+                        error('most:Model:invalidPropVal', ...
+                              'Unable to set task sample rate to the given value');
                     end
                 else
                     self.SampleRate_ = newValue;

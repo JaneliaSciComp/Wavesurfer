@@ -1855,13 +1855,13 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         % File menu items
         function LoadMachineDataFileMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.pickMDFFileAndInitializeUsingIt();
+            self.pickMDFFileAndInitializeUsingIt() ;
         end
         
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');            
-            fileName = '';
-            self.loadConfigSettings(fileName,startLoc);
+            startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath') ;
+            fileName = '' ;
+            self.loadConfigSettings(fileName,startLoc) ;
         end
 
         function SaveProtocolMenuItemActuated(self,source,event) %#ok<INUSD>

@@ -52,18 +52,12 @@ classdef InputTask < handle
     methods
         function self = InputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
-                                    
+            
             % Store the parent
             self.Parent_ = parent ;
             
             % Determine the task type, digital or analog
-            if isequal(taskType,'analog') ,
-                self.IsAnalog_ = true ;
-            elseif isequal(taskType,'digital') ,
-                self.IsAnalog_ = false ;
-            else
-                error('Illegal output task type');
-            end                
+            self.IsAnalog_ = ~isequal(taskType,'digital') ;
             
             % Create the task, channels
             if nChannels==0 ,
