@@ -118,15 +118,15 @@ classdef Triggering < ws.system.TriggeringSubsystem
             %self.teardownInternalSweepBasedTriggers();            
         end  % function
         
-        function didAbortSweep(self) %#ok<MANU>
+        function abortingSweep(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didCompleteRun(self) %#ok<MANU>
+        function completingRun(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();
         end  % function
         
-        function didAbortRun(self) %#ok<MANU>
+        function abortingRun(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();
         end  % function
                 

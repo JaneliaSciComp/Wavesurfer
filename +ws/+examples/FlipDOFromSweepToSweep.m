@@ -15,22 +15,22 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         function completingSweep(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function didStopSweep(self,wsModel,eventName)  %#ok<INUSD>
+        function stoppingSweep(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function didAbortSweep(self,wsModel,eventName)  %#ok<INUSD>
+        function abortingSweep(self,wsModel,eventName)  %#ok<INUSD>
         end
         
         function startingRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function didCompleteRun(self,wsModel,eventName)  %#ok<INUSD>
+        function completingRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function didStopRun(self,wsModel,eventName)  %#ok<INUSD>
+        function stoppingRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
-        function didAbortRun(self,wsModel,eventName)  %#ok<INUSD>
+        function abortingRun(self,wsModel,eventName)  %#ok<INUSD>
         end
         
         function dataAvailable(self,wsModel,eventName)  %#ok<INUSD>

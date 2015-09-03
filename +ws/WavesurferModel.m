@@ -954,17 +954,17 @@ classdef WavesurferModel < ws.Model
                 self.setState_('idle');
                 
                 % Notify other processes
-                self.IPCPublisher_.send('didCompleteRun') ;
+                self.IPCPublisher_.send('completingRun') ;
 
                 % Notify subsystems
                 for idx = 1: numel(self.Subsystems_)
                     if self.Subsystems_{idx}.IsEnabled
-                        self.Subsystems_{idx}.didCompleteRun();
+                        self.Subsystems_{idx}.completingRun();
                     end
                 end
 
                 % Call user method
-                self.callUserMethod_('didCompleteRun');
+                self.callUserMethod_('completingRun');
             elseif didUserRequestStop ,
                 % Set state back to idle
                 self.IsPerformingRun_ =  false;
@@ -977,12 +977,12 @@ classdef WavesurferModel < ws.Model
                 % Notify subsystems
                 for idx = numel(self.Subsystems_):-1:1 ,
                     if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.didStopRun() ;
+                        self.Subsystems_{idx}.stoppingRun() ;
                     end
                 end
 
                 % Call user method
-                self.callUserMethod_('didStopRun');                
+                self.callUserMethod_('stoppingRun');                
             else
                 % Something went wrong
                 self.wrapUpAbortedRun_();
@@ -994,7 +994,7 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
         
-        function [didWeCompleteSweep,didUserRequestStop,didThrow,exception] = performSweep_(self)
+        function [didCompleteSweep,didUserRequestStop,didThrow,exception] = performSweep_(self)
             % time between subsequent calls to this, etc
             t=toc(self.FromRunStartTicId_);
             self.TimeOfLastWillPerformSweep_=t;
@@ -1011,6 +1011,10 @@ classdef WavesurferModel < ws.Model
             % Pretend that we last polled at time 0
             self.TimeOfLastPollInSweep_ = 0 ;  % s 
             
+            % As of the next line, the wavesurferModel is offically
+            % performing a sweep
+            self.IsPerformingSweep_ = true ;
+                
             % Call user functions 
             self.callUserMethod_('startingSweep');            
             
@@ -1045,10 +1049,6 @@ classdef WavesurferModel < ws.Model
                     throw(err);
                 end
                 
-                % As of the next line, the wavesurferModel is offically
-                % performing a sweep
-                self.IsPerformingSweep_ = true ;
-                
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
 
@@ -1072,56 +1072,28 @@ classdef WavesurferModel < ws.Model
 %                 end
                 
                 % Now poll
-                [didWeCompleteSweep,didUserRequestStop] = self.runWithinSweepLoop_();
+                [isAllClearForCompletion,didUserRequestStop] = self.runWithinSweepLoop_();
                 
-                % When done, clean up after sweep
-                if didWeCompleteSweep ,
-                    self.dataAvailable_() ;  % Process any remaining data in the samples buffer
-
-                    % As of next line, sweep is officially over
-                    self.IsPerformingSweep_ = false ;
-                    
-                    % Bump the number of completed sweeps
-                    self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
-
-                    % Notify all the subsystems that the sweep is done
-                    for idx = 1: numel(self.Subsystems_)
-                        if self.Subsystems_{idx}.IsEnabled
-                            self.Subsystems_{idx}.completingSweep();
-                        end
-                    end
-
-                    % Call user method
-                    self.callUserMethod_('didCompleteSweep');
-
-                    % Broadcast event
-                    self.broadcast('DidCompleteSweep');
+                % End the sweep in the way appropriate, either a "complete",
+                % a stop, or an abort
+                if isAllClearForCompletion ,
+                    self.completeTheOngoingSweep_() ;
+                    didCompleteSweep = true ;
                 elseif didUserRequestStop ,
-                    self.dataAvailable_() ;  % Process any remaining data in the samples buffer
-
-                    % As of next line, sweep is officially over
-                    self.IsPerformingSweep_ = false ;
-                    
-                    % Notify all the subsystems that the sweep was stopped
-                    for i = numel(self.Subsystems_):-1:1 ,
-                        if self.Subsystems_{i}.IsEnabled ,
-                            self.Subsystems_{i}.stopTheOngoingSweep();
-                        end
-                    end
-                    
-                    % Call user method
-                    self.callUserMethod_('didStopSweep');                    
+                    self.stopTheOngoingSweep_();
+                    didCompleteSweep = false ;
                 else
                     % Something must have gone wrong...
-                    self.wrapUpAbortedSweep_();
+                    self.abortTheOngoingSweep_();
+                    didCompleteSweep = false ;
                 end
                 
                 % No errors thrown, so set return values accordingly
                 didThrow = false ;  
                 exception = [] ;
             catch me
-                self.wrapUpAbortedSweep_();
-                didWeCompleteSweep = false ;
+                self.abortTheOngoingSweep_();
+                didCompleteSweep = false ;
                 didUserRequestStop = false ;
                 didThrow = true ;
                 exception = me ;
@@ -1134,7 +1106,7 @@ classdef WavesurferModel < ws.Model
         % normally.  We call the first a "stop", the second an "abort", and
         % the third a "complete".  This terminology is (hopefully) used
         % consistently for methods like cleanUpAfterCompletedSweep_,
-        % wrapUpAbortedSweep_, etc.  Also note that this sense of
+        % abortTheOngoingSweep_, etc.  Also note that this sense of
         % "abort" is not the same as it is used for DAQmx tasks.  For DAQmx
         % tasks, it means, roughly: stop the task, uncommit it, and
         % unreserve it.  Sometimes a Waversurfer "abort" leads to a DAQmx "abort"
@@ -1164,27 +1136,57 @@ classdef WavesurferModel < ws.Model
 %             self.callUserMethod_('didCompleteSweep');
 %         end  % function
                 
+        function completeTheOngoingSweep_(self)
+            self.dataAvailable_() ;  % Process any remaining data in the samples buffer
+
+            % Bump the number of completed sweeps
+            self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
+
+            % Notify all the subsystems that the sweep is done
+            for idx = 1: numel(self.Subsystems_)
+                if self.Subsystems_{idx}.IsEnabled
+                    self.Subsystems_{idx}.completingSweep();
+                end
+            end
+
+            % Call user method
+            self.callUserMethod_('completingSweep');
+
+            % As of next line, sweep is officially over
+            self.IsPerformingSweep_ = false ;
+
+            % Broadcast event
+            self.broadcast('DidCompleteSweep');
+        end
+        
         function stopTheOngoingSweep_(self)
-            % Stop the ongoing sweep following user request
-            
+            % Stop the ongoing sweep following user request            
+            self.dataAvailable_() ;  % Process any remaining data in the samples buffer
+
             % Notify all the subsystems that the sweep was stopped
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
                     self.Subsystems_{i}.stopTheOngoingSweep();
                 end
             end
+
+            % Call user method
+            self.callUserMethod_('stoppingSweep');                    
+
+            % As of next line, sweep is officially over
+            self.IsPerformingSweep_ = false ;                    
         end  % function
 
-        function wrapUpAbortedSweep_(self)
+        function abortTheOngoingSweep_(self)
             % Clean up after a sweep shits the bed.
             
             % Notify all the subsystems that the sweep aborted
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
                     try 
-                        self.Subsystems_{i}.didAbortSweep();
+                        self.Subsystems_{i}.abortingSweep();
                     catch me
-                        % In theory, Subsystem::didAbortSweep() never
+                        % In theory, Subsystem::abortingSweep() never
                         % throws an exception
                         % But just in case, we catch it here and ignore it
                         disp(me.getReport());
@@ -1192,11 +1194,11 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            % declare the sweep over
-            self.IsPerformingSweep_ = false ;
-            
             % Call user method
-            self.callUserMethod_('didAbortSweep');
+            self.callUserMethod_('abortingSweep');
+            
+            % declare the sweep over
+            self.IsPerformingSweep_ = false ;            
         end  % function
                 
         function wrapUpRunInWhichAllSweepsCompleted_(self)
@@ -1206,17 +1208,17 @@ classdef WavesurferModel < ws.Model
             self.setState_('idle');
 
             % Notify other processes
-            self.IPCPublisher_.send('didCompleteRun') ;
+            self.IPCPublisher_.send('completingRun') ;
 
             % Notify subsystems
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.didCompleteRun();
+                    self.Subsystems_{idx}.completingRun();
                 end
             end
             
             % Call user method
-            self.callUserMethod_('didCompleteRun');
+            self.callUserMethod_('completingRun');
         end  % function
         
         function stopTheOngoingRun_(self)
@@ -1233,12 +1235,12 @@ classdef WavesurferModel < ws.Model
             % Notify subsystems
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.didStopRun() ;
+                    self.Subsystems_{idx}.stoppingRun() ;
                 end
             end
             
             % Call user method
-            self.callUserMethod_('didStopRun');
+            self.callUserMethod_('stoppingRun');
         end  % function
 
         function wrapUpAbortedRun_(self)
@@ -1249,17 +1251,17 @@ classdef WavesurferModel < ws.Model
             self.IsPerformingRun_ = false ; 
             
             % Notify other processes
-            self.IPCPublisher_.send('didAbortRun') ;
+            self.IPCPublisher_.send('abortingRun') ;
 
             % Notify subsystems
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.didAbortRun() ;
+                    self.Subsystems_{idx}.abortingRun() ;
                 end
             end
             
             % Call user method
-            self.callUserMethod_('didAbortRun');
+            self.callUserMethod_('abortingRun');
         end  % function
         
         function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)

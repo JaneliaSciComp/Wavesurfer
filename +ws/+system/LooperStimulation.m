@@ -38,7 +38,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         %TheFiniteAnalogOutputTask_ = []
         %TheFiniteDigitalOutputTask_ = []
         TheUntimedDigitalOutputTask_ = []
-        %SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in didCompleteRun())
+        %SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in completingRun())
         %IsArmedOrStimulating_ = false
         %IsWithinRun_ = false                       
         %HasAnalogChannels_
@@ -199,8 +199,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             self.IsWithinRun_=true;
 %         end  % startingRun() function
         
-%         function didCompleteRun(self)
-%             %fprintf('Stimulation::didCompleteRun()\n');
+%         function completingRun(self)
+%             %fprintf('Stimulation::completingRun()\n');
 %             self.TheFiniteAnalogOutputTask_.disarm();
 %             self.TheFiniteDigitalOutputTask_.disarm();
 %             
@@ -208,7 +208,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
 %         end  % function
         
-%         function didStopRun(self)
+%         function stoppingRun(self)
 %             self.TheFiniteAnalogOutputTask_.disarm();
 %             self.TheFiniteDigitalOutputTask_.disarm();
 %             
@@ -216,7 +216,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             self.IsWithinRun_=false;
 %         end  % function
 %         
-%         function didAbortRun(self)
+%         function abortingRun(self)
 %             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
 %                 self.TheFiniteAnalogOutputTask_.disarm();
 %             end
@@ -256,7 +256,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             %fprintf('Stimulation::completingSweep()\n');            
 %         end
 %         
-%         function didStopSweep(self)
+%         function stoppingSweep(self)
 %             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
 %                 self.TheFiniteAnalogOutputTask_.abort();
 %             end
@@ -269,7 +269,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             self.IsArmedOrStimulating_ = false ;
 %         end  % function
 %         
-%         function didAbortSweep(self)
+%         function abortingSweep(self)
 %             if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) , 
 %                 self.TheFiniteAnalogOutputTask_.abort();
 %             end

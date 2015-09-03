@@ -165,11 +165,11 @@ classdef Ephys < ws.system.Subsystem
         end
         
         %%
-        function didCompleteRun(self) %#ok<MANU>
+        function completingRun(self) %#ok<MANU>
         end
         
         %%
-        function didAbortRun(self) %#ok<MANU>
+        function abortingRun(self) %#ok<MANU>
         end
         
         function didSetAcquisitionSampleRate(self,newValue)

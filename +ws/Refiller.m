@@ -262,11 +262,11 @@ classdef Refiller < ws.Model
             self.prepareForRun_(wavesurferModelSettings) ;
         end  % function
 
-        function didCompleteRun(self)
+        function completingRun(self)
             % Called by the WSM when the run is completed.
 
             % Cleanup after run
-            self.cleanUpAfterCompletedRun_() ;
+            self.completeTheOngoingRun_() ;
         end  % function
         
         function frontendWantsToStopRun(self)
@@ -277,12 +277,12 @@ classdef Refiller < ws.Model
             self.DoesFrontendWantToStopRun_ = true ;
         end
         
-        function didAbortRun(self)
+        function abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
 
             % Cleanup after run
             if self.IsPerformingRun_ ,
-                self.cleanUpAfterAbortedRun_() ;
+                self.abortTheOngoingRun_() ;
             end
         end  % function        
         
@@ -472,41 +472,41 @@ classdef Refiller < ws.Model
             end            
         end
         
-        function willPerformTestPulse(self)
-            % Called by the TestPulserModel to inform the WavesurferModel that
-            % it is about to start test pulsing.
-            
-            % I think the main thing we want to do here is to change the
-            % Wavesurfer mode to TestPulsing
-            if isequal(self.State,'idle') ,
-                self.State = 'test_pulsing' ;
-            end
-        end
-        
-        function didPerformTestPulse(self)
-            % Called by the TestPulserModel to inform the WavesurferModel that
-            % it has just finished test pulsing.
-            
-            if isequal(self.State,'test_pulsing') ,
-                self.State = 'idle' ;
-            end
-        end  % function
-        
-        function didAbortTestPulse(self)
-            % Called by the TestPulserModel when a problem arises during test
-            % pulsing, that (hopefully) the TestPulseModel has been able to
-            % gracefully recover from.
-            
-            if isequal(self.State,'test_pulsing') ,
-                self.State = 'idle' ;
-            end
-        end  % function
+%         function willPerformTestPulse(self)
+%             % Called by the TestPulserModel to inform the WavesurferModel that
+%             % it is about to start test pulsing.
+%             
+%             % I think the main thing we want to do here is to change the
+%             % Wavesurfer mode to TestPulsing
+%             if isequal(self.State,'idle') ,
+%                 self.State = 'test_pulsing' ;
+%             end
+%         end
+%         
+%         function didPerformTestPulse(self)
+%             % Called by the TestPulserModel to inform the WavesurferModel that
+%             % it has just finished test pulsing.
+%             
+%             if isequal(self.State,'test_pulsing') ,
+%                 self.State = 'idle' ;
+%             end
+%         end  % function
+%         
+%         function didAbortTestPulse(self)
+%             % Called by the TestPulserModel when a problem arises during test
+%             % pulsing, that (hopefully) the TestPulseModel has been able to
+%             % gracefully recover from.
+%             
+%             if isequal(self.State,'test_pulsing') ,
+%                 self.State = 'idle' ;
+%             end
+%         end  % function
         
         function acquisitionSweepComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % sweep.
             fprintf('Refiller::acquisitionSweepComplete()\n');
-            self.checkIfSweepIsComplete_();            
+            self.checkIfReadyToCompleteOngoingSweep_();            
         end  % function
         
         function stimulationEpisodeComplete(self)
@@ -515,16 +515,16 @@ classdef Refiller < ws.Model
             
             fprintf('Refiller::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfSweepIsComplete_();
+            self.checkIfReadyToCompleteOngoingSweep_();
         end  % function
         
         function internalStimulationCounterTriggerTaskComplete(self)
             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
             %dbstack
-            self.checkIfSweepIsComplete_();
+            self.checkIfReadyToCompleteOngoingSweep_();
         end
         
-        function checkIfSweepIsComplete_(self)
+        function checkIfReadyToCompleteOngoingSweep_(self)
             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
             % depending on the states of the Acquisition, Stimulation, and
             % Triggering subsystems.  Generally speaking, we want to make
@@ -538,7 +538,7 @@ classdef Refiller < ws.Model
                         % do nothing
                     else
                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.cleanUpAfterCompletedSweep_();
+                        self.completeTheOngoingSweep_();
                     end
                 else
                     % acq and stim trig sources are distinct
@@ -548,7 +548,7 @@ classdef Refiller < ws.Model
                         % do nothing
                     else
                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.cleanUpAfterCompletedSweep_();
+                        self.completeTheOngoingSweep_();
                     end
                 end
             else
@@ -557,7 +557,7 @@ classdef Refiller < ws.Model
                     % do nothing
                 else
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.cleanUpAfterCompletedSweep_();
+                    self.completeTheOngoingSweep_();
                 end
             end            
         end  % function
@@ -648,7 +648,7 @@ classdef Refiller < ws.Model
                 end
             catch me
                 % Something went wrong
-                self.cleanUpAfterAbortedRun_() ;
+                self.abortTheOngoingRun_() ;
                 %self.changeReadiness(+1);
                 me.rethrow();
             end
@@ -689,9 +689,7 @@ classdef Refiller < ws.Model
             self.IPCPublisher_.send('refillerReadyForSweep') ;
         end  % function
 
-        function cleanUpAfterCompletedSweep_(self)
-            self.IsPerformingSweep_ = false ;
-            
+        function completeTheOngoingSweep_(self)
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
@@ -701,7 +699,9 @@ classdef Refiller < ws.Model
             
             % Bump the number of completed sweeps
             self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
-        
+
+            self.IsPerformingSweep_ = false ;            
+            
             % Notify the front end
             self.IPCPublisher_.send('refillerCompletedSweep') ;
         end  % function
@@ -709,50 +709,50 @@ classdef Refiller < ws.Model
         function stopTheOngoingSweep_(self)
             % Stops the ongoing sweep.
             
-            self.IsPerformingSweep_ = false ;
-
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
                     self.Subsystems_{i}.stopTheOngoingSweep();
                 end
             end
             
+            self.IsPerformingSweep_ = false ;
+            
             %self.callUserCodeManager_('didStopSweep');
         end  % function
         
-        function cleanUpAfterCompletedRun_(self)
+        function completeTheOngoingRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
-            self.IsPerformingRun_ = false ;
-            
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.didCompleteRun();
+                    self.Subsystems_{idx}.completingRun();
                 end
             end
+
+            self.IsPerformingRun_ = false ;
             
             %self.callUserCodeManager_('didCompleteRun');
         end  % function
         
         function stopTheOngoingRun_(self)
-            self.IsPerformingRun_ = false ;
-            
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.didStopRun() ;
+                    self.Subsystems_{idx}.stoppingRun() ;
                 end
             end
+            
+            self.IsPerformingRun_ = false ;
             
             %self.callUserCodeManager_('didAbortRun');
         end  % function
         
-        function cleanUpAfterAbortedRun_(self)
+        function abortTheOngoingRun_(self)
             self.IsPerformingRun_ = false ;
             self.IsPerformingSweep_ = false ;  % just to make sure
             
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.didAbortRun() ;
+                    self.Subsystems_{idx}.abortingRun() ;
                 end
             end
             
@@ -822,6 +822,17 @@ classdef Refiller < ws.Model
 %             end
 %         end  % function
         
+        function callUserMethod_(self, eventName)
+            % Handle user functions.  It would be possible to just make the UserCodeManager
+            % subsystem a regular listener of these events.  Handling it
+            % directly removes at 
+            % least one layer of function calls and allows for user functions for 'events'
+            % that are not formally events on the model.
+            self.UserCodeManager.invoke(self, eventName);
+            
+            % Handle as standard event if applicable.
+            %self.broadcast(eventName);
+        end  % function                
     end % protected methods block
     
     methods (Access = protected)        

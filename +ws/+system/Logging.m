@@ -34,7 +34,7 @@ classdef Logging < ws.system.Subsystem
 
     % These are all properties that are only used when acquisition is
     % ongoing.  They are set in startingRun(), and are nulled in
-    % didCompleteRun() and didAbortRun()
+    % completingRun() and abortingRun()
     properties (Access = protected, Transient=true)
         CurrentRunAbsoluteFileName_
         CurrentDatasetOffset_
@@ -400,28 +400,28 @@ classdef Logging < ws.system.Subsystem
         end
         
         function stopTheOngoingSweep(self)
-            self.didStopOrAbortSweep_() ;
+            self.stoppingOrAbortingSweep_() ;
         end
         
-        function didAbortSweep(self)
-            self.didStopOrAbortSweep_() ;
+        function abortingSweep(self)
+            self.stoppingOrAbortingSweep_() ;
         end
         
-        function didCompleteRun(self)
+        function completingRun(self)
             self.nullOutTransients_();
         end
         
-        function didStopRun(self)
-            self.didStopOrAbortRun_();
+        function stoppingRun(self)
+            self.stoppingOrAbortingRun_();
         end
         
-        function didAbortRun(self)
-            self.didStopOrAbortRun_();
+        function abortingRun(self)
+            self.stoppingOrAbortingRun_();
         end        
     end  % public methods block
     
     methods (Access=protected)
-        function didStopOrAbortSweep_(self)
+        function stoppingOrAbortingSweep_(self)
             if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
                 if isempty(self.FirstSweepIndex_) ,
                     % This probably means there was some sort of error
@@ -437,8 +437,8 @@ classdef Logging < ws.system.Subsystem
             end
         end
         
-        function didStopOrAbortRun_(self)
-            %fprintf('Logging::didAbortRun()\n');
+        function stoppingOrAbortingRun_(self)
+            %fprintf('Logging::abortingRun()\n');
         
             %dbstop if caught
             %

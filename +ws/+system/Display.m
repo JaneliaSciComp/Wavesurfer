@@ -243,21 +243,21 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
         end  % function
         
-        function didCompleteRun(self)
-            self.didCompleteOrStopOrAbortRun_();
+        function completingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
         end
         
-        function didStopRun(self)
-            self.didCompleteOrStopOrAbortRun_();
+        function stoppingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
         end
         
-        function didAbortRun(self)
-            self.didCompleteOrStopOrAbortRun_();
+        function abortingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
         end
     end
     
     methods (Access=protected)
-        function didCompleteOrStopOrAbortRun_(self)
+        function completingOrStoppingOrAbortingRun_(self)
             if ~isempty(self.CachedDisplayXSpan_)
                 self.XSpan = self.CachedDisplayXSpan_;
             end

@@ -139,17 +139,17 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.DigitalInputTask_.arm();
         end  % function
         
-        function didCompleteRun(self)
-            %fprintf('Acquisition::didCompleteRun()\n');
-            self.didCompleteOrStopOrAbortRun_();
+        function completingRun(self)
+            %fprintf('Acquisition::completingRun()\n');
+            self.completingOrStoppingOrAbortingRun_();
         end  % function
         
-        function didStopRun(self)
-            self.didCompleteOrStopOrAbortRun_();
+        function stoppingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
         end  % function
 
-        function didAbortRun(self)
-            self.didCompleteOrStopOrAbortRun_();
+        function abortingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
         end  % function
 
         function startingSweep(self)
@@ -174,12 +174,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.IsArmedOrAcquiring_ = false ;
         end  % function
 
-        function didAbortSweep(self)
+        function abortingSweep(self)
             try
                 self.AnalogInputTask_.abort();
                 self.DigitalInputTask_.abort();
             catch me %#ok<NASGU>
-                % didAbortSweep() cannot throw an error, so we ignore any
+                % abortingSweep() cannot throw an error, so we ignore any
                 % errors that arise here.
             end
             self.IsArmedOrAcquiring_ = false;
@@ -243,7 +243,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     end  % methods block
     
     methods (Access = protected)
-        function didCompleteOrStopOrAbortRun_(self)
+        function completingOrStoppingOrAbortingRun_(self)
             if ~isempty(self.AnalogInputTask_) ,
                 if isvalid(self.AnalogInputTask_) ,
                     self.AnalogInputTask_.disarm();

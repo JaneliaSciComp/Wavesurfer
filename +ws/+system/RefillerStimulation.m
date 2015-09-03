@@ -25,7 +25,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         TheFiniteAnalogOutputTask_ = []
         TheFiniteDigitalOutputTask_ = []
         NEpisodesPerSweep_
-        SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in didCompleteRun())
+        SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in completingRun())
         IsArmedOrStimulating_ = false
         HasAnalogChannels_
         HasTimedDigitalChannels_
@@ -423,17 +423,17 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %self.IsWithinRun_=true;
         end  % startingRun() function
         
-        function didCompleteRun(self)
+        function completingRun(self)
             self.SelectedOutputableCache_ = [];
             %self.IsWithinRun_=false;  % might already be guaranteed to be false here...
         end  % function
         
-        function didStopRun(self)
+        function stoppingRun(self)
             self.SelectedOutputableCache_ = [];
             %self.IsWithinRun_=false;
         end  % function
 
-        function didAbortRun(self)
+        function abortingRun(self)
             self.SelectedOutputableCache_ = [];
             %self.IsWithinRun_=false;
         end  % function
@@ -530,7 +530,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.IsArmedOrStimulating_ = false ;
         end  % function
                 
-        function didAbortSweep(self)
+        function abortingSweep(self)
             self.IsArmedOrStimulating_ = false ;
         end  % function
         
@@ -543,9 +543,6 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
             
-            % Call user functions
-            self.callUserMethod_('willPerformEpsiode');                        
-
             % Initialized some transient instance variables
             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
             self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
@@ -938,8 +935,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.IsArmedOrStimulating_ = false;
             self.NEpisodesCompleted_ = self.NEpisodesCompleted_ + 1 ;
             
-            % Call user method
-            self.callUserMethod_('didCompleteEpsiode');                        
+%             % Call user method
+%             self.callUserMethod_('completingEpsiode');                        
             
             % If we might have more episodes to deliver, arm for next one
             if self.NEpisodesCompleted_ < self.NEpisodesPerSweep_ ,

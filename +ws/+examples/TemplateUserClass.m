@@ -32,6 +32,23 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('About to start a run.\n');
         end
         
+        function completingRun(self,wsModel,eventName)
+            % Called just after each set of sweeps (a.k.a. each
+            % "run")
+            fprintf('Completed a run.\n');
+        end
+        
+        function stoppingRun(self,wsModel,eventName)
+            % Called if a sweep goes wrong
+            fprintf('User stopped a run.\n');
+        end        
+        
+        function abortingRun(self,wsModel,eventName)
+            % Called if a run goes wrong, after the call to
+            % abortingSweep()
+            fprintf('Oh noes!  A run aborted.\n');
+        end
+        
         function startingSweep(self,wsModel,eventName)
             % Called just before each sweep
             fprintf('About to start a sweep.\n');
@@ -39,35 +56,18 @@ classdef TemplateUserClass < ws.UserClass
         
         function completingSweep(self,wsModel,eventName)
             % Called after each sweep completes
-            fprintf('Finished a sweep.\n');
+            fprintf('Completed a sweep.\n');
         end
         
-        function didStopSweep(self,wsModel,eventName)
+        function stoppingSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
             fprintf('User stopped a sweep.\n');
         end        
         
-        function didAbortSweep(self,wsModel,eventName)
+        function abortingSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
             fprintf('Oh noes!  A sweep aborted.\n');
         end        
-        
-        function didCompleteRun(self,wsModel,eventName)
-            % Called just after each set of sweeps (a.k.a. each
-            % "run")
-            fprintf('Finished a run.\n');
-        end
-        
-        function didStopRun(self,wsModel,eventName)
-            % Called if a sweep goes wrong
-            fprintf('User stopped a run.\n');
-        end        
-        
-        function didAbortRun(self,wsModel,eventName)
-            % Called if a run goes wrong, after the call to
-            % didAbortSweep()
-            fprintf('Oh noes!  A run aborted.\n');
-        end
         
         function dataAvailable(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
@@ -89,22 +89,22 @@ classdef TemplateUserClass < ws.UserClass
         end
         
         % These methods are called in the refiller process
-        function willPerformEpisode(self,wsModel,eventName)
+        function startingEpisode(self,wsModel,eventName)
             % Called just before each episode
             fprintf('About to start an episode.\n');
         end
         
-        function didCompleteEpisode(self,wsModel,eventName)
+        function completingEpisode(self,wsModel,eventName)
             % Called after each episode completes
-            fprintf('Finished an episode.\n');
+            fprintf('Completed an episode.\n');
         end
         
-        function didStopEpisode(self,wsModel,eventName)
+        function stoppingEpisode(self,wsModel,eventName)
             % Called if a episode goes wrong
             fprintf('User stopped an episode.\n');
         end        
         
-        function didAbortEpisode(self,wsModel,eventName)
+        function abortingEpisode(self,wsModel,eventName)
             % Called if a episode goes wrong
             fprintf('Oh noes!  An episode aborted.\n');
         end

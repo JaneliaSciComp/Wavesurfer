@@ -94,19 +94,19 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             self.teardownInternalTriggers_();
         end  % function
         
-        function didAbortSweep(self)
+        function abortingSweep(self)
             self.teardownInternalTriggers_();
         end  % function
         
-        function didCompleteRun(self)
+        function completingRun(self)
             self.teardownInternalTriggers_();
         end  % function
         
-        function didStopRun(self)
+        function stoppingRun(self)
             self.teardownInternalTriggers_();
         end  % function
 
-        function didAbortRun(self)
+        function abortingRun(self)
             self.teardownInternalTriggers_();
         end  % function
         

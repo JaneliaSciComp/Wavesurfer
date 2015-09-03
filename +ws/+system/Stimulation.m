@@ -38,7 +38,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 % %         TheFiniteAnalogOutputTask_ = []
 % %         TheFiniteDigitalOutputTask_ = []
 % %         TheUntimedDigitalOutputTask_ = []
-%         SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in didCompleteRun())
+%         SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in completingRun())
 %         IsArmedOrStimulating_ = false
 %         IsWithinRun_ = false                       
 %         %TriggerScheme_ = ws.TriggerScheme.empty()
@@ -457,17 +457,17 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             self.IsWithinRun_=true;
 %         end  % startingRun() function
 %         
-%         function didCompleteRun(self)
+%         function completingRun(self)
 %             %self.SelectedOutputableCache_ = [];
 %             self.IsWithinRun_=false;  % might already be guaranteed to be false here...
 %         end  % function
 %         
-%         function didStopRun(self)
+%         function stoppingRun(self)
 %             %self.SelectedOutputableCache_ = [];
 %             self.IsWithinRun_=false;
 %         end  % function
 % 
-%         function didAbortRun(self)
+%         function abortingRun(self)
 %             %self.SelectedOutputableCache_ = [];
 %             self.IsWithinRun_=false;
 %         end  % function
@@ -500,11 +500,11 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             %fprintf('Stimulation::completingSweep()\n');            
 %         end
 %         
-%         function didStopSweep(self)
+%         function stoppingSweep(self)
 %             self.IsArmedOrStimulating_ = false ;
 %         end  % function
 %                 
-%         function didAbortSweep(self)
+%         function abortingSweep(self)
 %             self.IsArmedOrStimulating_ = false ;
 %         end  % function
 %         

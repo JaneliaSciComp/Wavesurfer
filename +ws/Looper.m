@@ -226,7 +226,7 @@ classdef Looper < ws.Model
                                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
                                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
                                 if areTasksDone ,
-                                    self.cleanUpAfterCompletedSweep_() ;
+                                    self.completeSweep_() ;
                                     %self.acquisitionSweepComplete() ;
                                 end
                             end                        
@@ -272,11 +272,11 @@ classdef Looper < ws.Model
             self.prepareForRun_(wavesurferModelSettings) ;
         end  % function
 
-        function didCompleteRun(self)
+        function completingRun(self)
             % Called by the WSM when the run is completed.
 
             % Cleanup after run
-            self.cleanUpAfterCompletedRun_() ;
+            self.completeTheOngoingRun_() ;
         end  % function
         
         function frontendWantsToStopRun(self)
@@ -287,12 +287,12 @@ classdef Looper < ws.Model
             self.DoesFrontendWantToStopRun_ = true ;
         end
         
-        function didAbortRun(self)
+        function abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
 
             % Cleanup after run
             if self.IsPerformingRun_ ,
-                self.cleanUpAfterAbortedRun_() ;
+                self.abortTheOngoingRun_() ;
             end
         end  % function        
         
@@ -571,7 +571,7 @@ classdef Looper < ws.Model
 %                         % do nothing
 %                     else
 %                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.cleanUpAfterCompletedSweep_();
+%                         self.completeSweep_();
 %                     end
 %                 else
 %                     % acq and stim trig sources are distinct
@@ -581,7 +581,7 @@ classdef Looper < ws.Model
 %                         % do nothing
 %                     else
 %                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.cleanUpAfterCompletedSweep_();
+%                         self.completeSweep_();
 %                     end
 %                 end
 %             else
@@ -590,7 +590,7 @@ classdef Looper < ws.Model
                     % do nothing
                 else
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.cleanUpAfterCompletedSweep_();
+                    self.completeSweep_();
                 end
 %             end            
         end  % function
@@ -682,14 +682,14 @@ classdef Looper < ws.Model
             try
                 for idx = 1:numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.startingRun();
+                        self.Subsystems_{idx}.startingRun() ;
                     end
                 end
             catch me
                 % Something went wrong
-                self.cleanUpAfterAbortedRun_() ;
+                self.abortTheOngoingRun_() ;
                 %self.changeReadiness(+1);
-                me.rethrow();
+                me.rethrow() ;
             end
             
             % Initialize timing variables
@@ -715,11 +715,11 @@ classdef Looper < ws.Model
 %             
 %             % Do some kind of clean up
 %             if didCompleteLastSweep ,
-%                 self.cleanUpAfterCompletedRun_();
+%                 self.completeTheOngoingRun_();
 %             else
 %                 % do something else                
 %                 reason = ws.utility.fif(didUserStop, 'user', 'problem') ;
-%                 self.cleanUpAfterAbortedRun_(reason);
+%                 self.abortTheOngoingRun_(reason);
 %             end
 %             
 %             % If an exception was thrown, re-throw it
@@ -794,11 +794,9 @@ classdef Looper < ws.Model
 %             end
 %         end  % function
         
-        function cleanUpAfterCompletedSweep_(self)
+        function completeSweep_(self)
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');
             %dbstack
-            
-            self.IsPerformingSweep_ = false ;
             
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
@@ -816,65 +814,67 @@ classdef Looper < ws.Model
 %             % Call user functions and broadcast
 %             self.callUserCodeManager_('didCompleteSweep');
 
+            self.IsPerformingSweep_ = false ;
+            
             % Notify the front end
             %self.RPCClient_.call('looperCompletedSweep') ;            
-            self.IPCPublisher_.send('looperCompletedSweep') ;
+            self.IPCPublisher_.send('looperCompletedSweep') ;            
         end  % function
         
         function stopTheOngoingSweep_(self)
             % Stops the current sweep, when the run was stopped by the
             % user.
             
-            self.IsPerformingSweep_ = false ;
-
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
                     self.Subsystems_{i}.stopTheOngoingSweep();
                 end
             end
+
+            self.IsPerformingSweep_ = false ;
             
             %self.callUserCodeManager_('didAbortSweep');
             
             %self.abortRun_(reason);
         end  % function
         
-        function cleanUpAfterCompletedRun_(self)
+        function completeTheOngoingRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
-            self.IsPerformingRun_ = false ;
-            
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.didCompleteRun();
+                    self.Subsystems_{idx}.completingRun();
                 end
             end
-            
-            %self.callUserCodeManager_('didCompleteRun');
+
+            %self.callUserCodeManager_('completingRun');
+
+            self.IsPerformingRun_ = false ;            
         end  % function
         
         function stopTheOngoingRun_(self)
-            self.IsPerformingRun_ = false ;
             
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.didStopRun() ;
+                    self.Subsystems_{idx}.stoppingRun() ;
                 end
             end
             
-            %self.callUserCodeManager_('didAbortRun');
+            %self.callUserCodeManager_('stoppingRun');
+
+            self.IsPerformingRun_ = false ;            
         end  % function
         
-        function cleanUpAfterAbortedRun_(self)
-            self.IsPerformingRun_ = false ;
-            self.IsPerformingSweep_ = false ;  % just to make sure
-            
+        function abortTheOngoingRun_(self)
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.didAbortRun() ;
+                    self.Subsystems_{idx}.abortingRun() ;
                 end
             end
-            
-            %self.callUserCodeManager_('didAbortRun');
+
+            %self.callUserCodeManager_('abortingRun');
+
+            self.IsPerformingRun_ = false ;                        
         end  % function
         
         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)

@@ -51,10 +51,10 @@ classdef RasterTreadMill < ws.UserClass
         function completingSweep(self,wsModel,eventName)
         end
         
-        function didStopSweep(self,wsModel,eventName)
+        function stoppingSweep(self,wsModel,eventName)
         end
         
-        function didAbortSweep(self,wsModel,eventName)
+        function abortingSweep(self,wsModel,eventName)
         end
         
         function startingRun(self,wsModel,eventName)
@@ -109,13 +109,13 @@ classdef RasterTreadMill < ws.UserClass
             self.AllBinSubthresholds=cell(1,self.NBins);
         end
         
-        function didCompleteRun(self,wsModel,eventName)
+        function completingRun(self,wsModel,eventName)
         end
         
-        function didStopRun(self,wsModel,eventName)
+        function stoppingRun(self,wsModel,eventName)
         end
         
-        function didAbortRun(self,wsModel,eventName)
+        function abortingRun(self,wsModel,eventName)
         end
         
         function dataAvailable(self,wsModel,eventName)

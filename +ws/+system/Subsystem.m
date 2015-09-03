@@ -33,16 +33,16 @@ classdef (Abstract) Subsystem < ws.Model
         function startingRun(self) %#ok<MANU>
         end
         
-        function didCompleteRun(self) %#ok<MANU>
+        function completingRun(self) %#ok<MANU>
         end
         
-        function didStopRun(self) %#ok<MANU>
+        function stoppingRun(self) %#ok<MANU>
         end
         
-        function didAbortRun(self) %#ok<MANU>
+        function abortingRun(self) %#ok<MANU>
             % Called if a failure occurred during startingRun() for subsystems
             % that have already passed startingRun() to clean up, and called fater
-            % didAbortSweep().
+            % abortingSweep().
             
             % This code MUST be exception free.
         end
@@ -56,7 +56,7 @@ classdef (Abstract) Subsystem < ws.Model
         function stopTheOngoingSweep(~)           % self
         end
         
-        function didAbortSweep(~)              % self
+        function abortingSweep(~)              % self
             % Called when a sweep is interrupted, either unexpectedly because of an error,
             % or intentionally such as stopping preview mode or stopping an ephys test
             % pulse.
