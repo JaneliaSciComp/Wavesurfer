@@ -38,10 +38,10 @@ classdef RasterVirtualReality < ws.UserClass
         function self = RasterVirtualReality(wsModel) %#ok<INUSD>
         end  % function
         
-        function willPerformSweep(self,wsModel,eventName) %#ok<INUSD>
+        function startingSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function didCompleteSweep(self,wsModel,eventName) %#ok<INUSD>
+        function completingSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
         function didStopSweep(self,wsModel,eventName) %#ok<INUSD>
@@ -50,7 +50,7 @@ classdef RasterVirtualReality < ws.UserClass
         function didAbortSweep(self,wsModel,eventName) %#ok<INUSD>
         end  % function
         
-        function willPerformRun(self,wsModel,eventName) %#ok<INUSD>
+        function startingRun(self,wsModel,eventName) %#ok<INUSD>
 
             eval('!matlab -nodesktop -nosplash -r ws.examples.rasterVirtualRealityDisplayProcess &');            
             self.TcpReceive = ws.jtcp.jtcp('ACCEPT',2000,'TIMEOUT',60000);

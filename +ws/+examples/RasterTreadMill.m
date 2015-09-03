@@ -45,10 +45,10 @@ classdef RasterTreadMill < ws.UserClass
         function self = RasterTreadMill(wsModel)
         end
         
-        function willPerformSweep(self,wsModel,eventName)
+        function startingSweep(self,wsModel,eventName)
         end
         
-        function didCompleteSweep(self,wsModel,eventName)
+        function completingSweep(self,wsModel,eventName)
         end
         
         function didStopSweep(self,wsModel,eventName)
@@ -57,7 +57,7 @@ classdef RasterTreadMill < ws.UserClass
         function didAbortSweep(self,wsModel,eventName)
         end
         
-        function willPerformRun(self,wsModel,eventName)
+        function startingRun(self,wsModel,eventName)
             self.BinWidth = self.TreadMillLength / self.NBins;
             self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
             self.SampleRate = wsModel.Acquisition.SampleRate;

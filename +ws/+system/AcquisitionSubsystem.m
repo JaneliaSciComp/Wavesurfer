@@ -385,8 +385,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
         end
         
-        function willPerformRun(self)
-            %fprintf('Acquisition::willPerformRun()\n');
+        function startingRun(self)
+            %fprintf('Acquisition::startingRun()\n');
             %errors = [];
             %abort = false;
             
@@ -463,8 +463,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %             self.didCompleteOrStopOrAbortRun_();
 %         end  % function
 
-        function willPerformSweep(self)
-            %fprintf('Acquisition::willPerformSweep()\n');
+        function startingSweep(self)
+            %fprintf('Acquisition::startingSweep()\n');
             %self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;

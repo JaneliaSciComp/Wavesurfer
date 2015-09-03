@@ -237,7 +237,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             theScopeModel.IsVisibleWhenDisplayEnabled = ~originalState ;
         end
         
-        function willPerformRun(self)
+        function startingRun(self)
             self.XOffset = 0;
             self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
             self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
@@ -266,7 +266,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
     end
         
     methods    
-        function willPerformSweep(self)
+        function startingSweep(self)
             self.ClearOnNextData_ = true;
         end
         

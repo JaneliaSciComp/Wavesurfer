@@ -1109,7 +1109,7 @@ classdef TestPulser < ws.Model
                 % Set up the input task callback
                 %nSamplesPerSweep=nScans*nElectrodes;
                 self.InputTask_.everyNSamples=nScans;
-                self.InputTask_.everyNSamplesEventCallbacks=@(varargin)(self.didCompleteSweep());
+                self.InputTask_.everyNSamplesEventCallbacks=@(varargin)(self.completingSweep());
 
                 % Cache some things for speed during sweeps
                 self.IsVCPerElectrodeCached_=self.IsVCPerElectrode;
@@ -1352,11 +1352,11 @@ classdef TestPulser < ws.Model
             end
         end  % function
         
-        function didCompleteSweep(self,varargin)
+        function completingSweep(self,varargin)
             % compute resistance
             % compute delta in monitor
             % Specify the time windows for measuring the baseline and the pulse amplitude
-            %fprintf('Inside TestPulser::didCompleteSweep()\n');
+            %fprintf('Inside TestPulser::completingSweep()\n');
             rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
                 % We now read exactly the number of scans we expect.  Not
                 % doing this seemed to work fine on ALT's machine, but caused
@@ -1413,7 +1413,7 @@ classdef TestPulser < ws.Model
             self.LastToc_=thisToc;
             
             self.broadcast('UpdateTrace');
-            %fprintf('About to exit TestPulser::didCompleteSweep()\n');            
+            %fprintf('About to exit TestPulser::completingSweep()\n');            
         end  % function
         
 %         function mimic(self, other)

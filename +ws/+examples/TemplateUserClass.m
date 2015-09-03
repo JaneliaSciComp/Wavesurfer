@@ -5,7 +5,7 @@ classdef TemplateUserClass < ws.UserClass
     
     % Information that you want to stick around between calls to the
     % functions below, and want to be settable/gettable from the command
-    % line
+    % line.
     properties
         Parameter1
         Parameter2
@@ -17,8 +17,7 @@ classdef TemplateUserClass < ws.UserClass
         SomethingPrivateAndTemporary_
     end    
     
-    methods
-        
+    methods        
         function self = TemplateUserClass(wsModel)
             % creates the "user object"
             fprintf('Instantiating an instance of TemplateUserClass.\n');
@@ -26,18 +25,19 @@ classdef TemplateUserClass < ws.UserClass
             self.Parameter2 = exp(1) ;            
         end
         
-        function willPerformRun(self,wsModel,eventName)
+        % These methods are called in the frontend process
+        function startingRun(self,wsModel,eventName)
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             fprintf('About to start a run.\n');
         end
         
-        function willPerformSweep(self,wsModel,eventName)
+        function startingSweep(self,wsModel,eventName)
             % Called just before each sweep
             fprintf('About to start a sweep.\n');
         end
         
-        function didCompleteSweep(self,wsModel,eventName)
+        function completingSweep(self,wsModel,eventName)
             % Called after each sweep completes
             fprintf('Finished a sweep.\n');
         end
@@ -69,7 +69,7 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Oh noes!  A run aborted.\n');
         end
         
-        function dataAvailableInFrontend(self,wsModel,eventName)
+        function dataAvailable(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             analogData = wsModel.Acquisition.getLatestAnalogData();
@@ -78,13 +78,35 @@ classdef TemplateUserClass < ws.UserClass
             fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         
-        function dataAvailableInLooper(self,wsModel,eventName)
+        % These methods are called in the looper process
+        function samplesAcquired(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             analogData = wsModel.Acquisition.getLatestAnalogData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             nScans = size(analogData,1);
             fprintf('Just read %d scans of data.\n',nScans);                                    
+        end
+        
+        % These methods are called in the refiller process
+        function willPerformEpisode(self,wsModel,eventName)
+            % Called just before each episode
+            fprintf('About to start an episode.\n');
+        end
+        
+        function didCompleteEpisode(self,wsModel,eventName)
+            % Called after each episode completes
+            fprintf('Finished an episode.\n');
+        end
+        
+        function didStopEpisode(self,wsModel,eventName)
+            % Called if a episode goes wrong
+            fprintf('User stopped an episode.\n');
+        end        
+        
+        function didAbortEpisode(self,wsModel,eventName)
+            % Called if a episode goes wrong
+            fprintf('Oh noes!  An episode aborted.\n');
         end
     end  % methods
     

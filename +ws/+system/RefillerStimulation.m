@@ -25,7 +25,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         TheFiniteAnalogOutputTask_ = []
         TheFiniteDigitalOutputTask_ = []
         NEpisodesPerSweep_
-        SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didCompleteRun())
+        SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in didCompleteRun())
         IsArmedOrStimulating_ = false
         HasAnalogChannels_
         HasTimedDigitalChannels_
@@ -363,8 +363,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-        function willPerformRun(self)
-            %fprintf('Stimulation::willPerformRun()\n');
+        function startingRun(self)
+            %fprintf('Stimulation::startingRun()\n');
             %errors = [];
             %abort = false;
             
@@ -421,7 +421,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             
             % Set the state
             %self.IsWithinRun_=true;
-        end  % willPerformRun() function
+        end  % startingRun() function
         
         function didCompleteRun(self)
             self.SelectedOutputableCache_ = [];
@@ -438,12 +438,12 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %self.IsWithinRun_=false;
         end  % function
         
-        function willPerformSweep(self)
+        function startingSweep(self)
             % This gets called from above when an (acq) sweep is about to
             % start.
             
-            %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-            %fprintf('Stimulation::willPerformSweep()\n');
+            %fprintf('Stimulation.startingSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
+            %fprintf('Stimulation::startingSweep()\n');
 
             self.armForEpisode();
             
@@ -469,13 +469,13 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             end
         end  % function
 
-%         function willPerformSweep(self, wavesurferObj) %#ok<INUSD>
+%         function startingSweep(self, wavesurferObj) %#ok<INUSD>
 %             % This gets called from above when an (acq) sweep is about to
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
-%             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-%             fprintf('Stimulation::willPerformSweep()\n');
+%             %fprintf('Stimulation.startingSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
+%             fprintf('Stimulation::startingSweep()\n');
 %             
 %             if self.TriggerScheme.IsExternal ,
 %                 % If external triggering, we set up for a trigger only if
@@ -522,11 +522,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             end
 %         end  % function
         
-        function didCompleteSweep(self)  %#ok<MANU>
-            %fprintf('Stimulation::didCompleteSweep()\n');            
+        function completingSweep(self)  %#ok<MANU>
+            %fprintf('Stimulation::completingSweep()\n');            
         end
         
-        function didStopSweep(self)
+        function stopTheOngoingSweep(self)
             self.IsArmedOrStimulating_ = false ;
         end  % function
                 
@@ -542,6 +542,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %fprintf('\n\n');
             %self.DidAnalogEpisodeComplete_ = false ;
             %self.DidDigitalEpisodeComplete_ = false ;
+            
+            % Call user functions
+            self.callUserMethod_('willPerformEpsiode');                        
+
+            % Initialized some transient instance variables
             self.HasAnalogChannels_ = (self.NAnalogChannels>0) ;  % cache this info for quick access
             self.HasTimedDigitalChannels_ = (self.NTimedDigitalChannels>0) ;  % cache this info for quick access
             self.DidAnalogEpisodeComplete_ = false ;  
@@ -932,6 +937,9 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             end
             self.IsArmedOrStimulating_ = false;
             self.NEpisodesCompleted_ = self.NEpisodesCompleted_ + 1 ;
+            
+            % Call user method
+            self.callUserMethod_('didCompleteEpsiode');                        
             
             % If we might have more episodes to deliver, arm for next one
             if self.NEpisodesCompleted_ < self.NEpisodesPerSweep_ ,

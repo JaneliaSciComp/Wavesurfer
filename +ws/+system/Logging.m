@@ -33,7 +33,7 @@ classdef Logging < ws.system.Subsystem
     end
 
     % These are all properties that are only used when acquisition is
-    % ongoing.  They are set in willPerformRun(), and are nulled in
+    % ongoing.  They are set in startingRun(), and are nulled in
     % didCompleteRun() and didAbortRun()
     properties (Access = protected, Transient=true)
         CurrentRunAbsoluteFileName_
@@ -253,7 +253,7 @@ classdef Logging < ws.system.Subsystem
             value = self.CurrentRunAbsoluteFileName_ ;
         end  % function
         
-        function willPerformRun(self)
+        function startingRun(self)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
@@ -337,7 +337,7 @@ classdef Logging < ws.system.Subsystem
             % Add an HDF "dataset" for each active AI channel, for each
             % sweep.
             % TODO: Try moving the dataset creation for each sweep to
-            % willPerformSweep() --- This is the cause of slowness at sweep
+            % startingSweep() --- This is the cause of slowness at sweep
             % set start for Justin Little, possibly others.
 %             if ~isempty(wavesurferModel.Acquisition) ,
 %                 for indexOfSweepWithinSet = 1:wavesurferModel.NSweepsPerRun ,
@@ -361,7 +361,7 @@ classdef Logging < ws.system.Subsystem
             self.DidWriteSomeDataForThisSweep_ = [] ;
         end
         
-        function willPerformSweep(self)
+        function startingSweep(self)
             %profile resume
             thisSweepIndex = self.NextSweepIndex ;
             timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
@@ -395,11 +395,11 @@ classdef Logging < ws.system.Subsystem
             %profile off
         end
         
-        function didCompleteSweep(self)
+        function completingSweep(self)
             self.NextSweepIndex = self.NextSweepIndex + 1;
         end
         
-        function didStopSweep(self)
+        function stopTheOngoingSweep(self)
             self.didStopOrAbortSweep_() ;
         end
         

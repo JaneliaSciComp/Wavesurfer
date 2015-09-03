@@ -69,10 +69,10 @@ classdef Looper < ws.Model
 %         % As of 2014-10-16, none of these events are subscribed to
 %         % anywhere in the WS code.  But we'll leave them in as hooks for
 %         % user customization.
-%         willPerformSweep
+%         startingSweep
 %         didCompleteSweep
 %         didAbortSweep
-%         willPerformRun
+%         startingRun
 %         didCompleteRun
 %         didAbortRun        %NScopesMayHaveChanged
 %         dataAvailable
@@ -210,7 +210,7 @@ classdef Looper < ws.Model
                         if self.DoesFrontendWantToStopRun_ ,
                             %fprintf('Looper: self.DoesFrontendWantToStopRun_\n');
                             % When done, clean up after sweep
-                            self.cleanUpAfterStoppedSweep_() ;  % this will set self.IsPerformingSweep to false
+                            self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
                         else
                             %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
                             % Check for messages, but don't wait for them
@@ -234,7 +234,7 @@ classdef Looper < ws.Model
                     else
                         fprintf('Looper: In a run, but not a sweep\n');
                         if self.DoesFrontendWantToStopRun_ ,
-                            self.cleanUpAfterStoppedRun_() ;   % this will set self.IsPerformingRun to false
+                            self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
                             self.DoesFrontendWantToStopRun_ = false ;  % reset this                            
                             self.IPCPublisher_.send('looperStoppedRun') ;
                         else
@@ -242,8 +242,7 @@ classdef Looper < ws.Model
                             self.IPCSubscriber_.processMessagesIfAvailable() ;                            
                             % no pause here, b/c want to start sweep as
                             % soon as frontend tells us to
-                        end
-                        
+                        end                        
                     end
                 else
                     fprintf('Looper: Not in a run, about to check for messages\n');
@@ -262,7 +261,7 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function willPerformRun(self,wavesurferModelSettings)
+        function startingRun(self,wavesurferModelSettings)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -297,7 +296,7 @@ classdef Looper < ws.Model
             end
         end  % function        
         
-        function willPerformSweep(self,indexOfSweepWithinRun)
+        function startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -683,7 +682,7 @@ classdef Looper < ws.Model
             try
                 for idx = 1:numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.willPerformRun();
+                        self.Subsystems_{idx}.startingRun();
                     end
                 end
             catch me
@@ -741,12 +740,12 @@ classdef Looper < ws.Model
             fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
                         
-            % Call willPerformSweep() on all the enabled subsystems, and
+            % Call startingSweep() on all the enabled subsystems, and
             % start the counter timer tasks
 %             try
                 for i = 1:numel(self.Subsystems_) ,
                     if self.Subsystems_{i}.IsEnabled ,
-                        self.Subsystems_{i}.willPerformSweep();
+                        self.Subsystems_{i}.startingSweep();
                     end
                 end
 
@@ -754,7 +753,7 @@ classdef Looper < ws.Model
                 % hardware-timed AI, AO, DI, and DO tasks.  But the counter
                 % timer tasks will not start running until they themselves
                 % are triggered by the master trigger.
-                self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::willPerformSweep?  Is there an ordering issue?
+                self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
 
                 % At this point, all the hardware-timed tasks the looper is
                 % responsible for should be "started" (in the DAQmx sense)
@@ -804,7 +803,7 @@ classdef Looper < ws.Model
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
                 if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.didCompleteSweep();
+                    self.Subsystems_{idx}.completingSweep();
                 end
             end
             
@@ -822,7 +821,7 @@ classdef Looper < ws.Model
             self.IPCPublisher_.send('looperCompletedSweep') ;
         end  % function
         
-        function cleanUpAfterStoppedSweep_(self)
+        function stopTheOngoingSweep_(self)
             % Stops the current sweep, when the run was stopped by the
             % user.
             
@@ -830,7 +829,7 @@ classdef Looper < ws.Model
 
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
-                    self.Subsystems_{i}.didStopSweep();
+                    self.Subsystems_{i}.stopTheOngoingSweep();
                 end
             end
             
@@ -853,7 +852,7 @@ classdef Looper < ws.Model
             %self.callUserCodeManager_('didCompleteRun');
         end  % function
         
-        function cleanUpAfterStoppedRun_(self)
+        function stopTheOngoingRun_(self)
             self.IsPerformingRun_ = false ;
             
             for idx = numel(self.Subsystems_):-1:1 ,

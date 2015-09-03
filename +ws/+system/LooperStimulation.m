@@ -38,7 +38,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         %TheFiniteAnalogOutputTask_ = []
         %TheFiniteDigitalOutputTask_ = []
         TheUntimedDigitalOutputTask_ = []
-        %SelectedOutputableCache_ = []  % cache used only during acquisition (set during willPerformRun(), set to [] in didCompleteRun())
+        %SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in didCompleteRun())
         %IsArmedOrStimulating_ = false
         %IsWithinRun_ = false                       
         %HasAnalogChannels_
@@ -131,8 +131,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
-%         function willPerformRun(self)
-%             %fprintf('Stimulation::willPerformRun()\n');
+%         function startingRun(self)
+%             %fprintf('Stimulation::startingRun()\n');
 %             %errors = [];
 %             %abort = false;
 %             
@@ -197,7 +197,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             
 %             % Set the state
 %             self.IsWithinRun_=true;
-%         end  % willPerformRun() function
+%         end  % startingRun() function
         
 %         function didCompleteRun(self)
 %             %fprintf('Stimulation::didCompleteRun()\n');
@@ -228,13 +228,13 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             self.IsWithinRun_=false;
 %         end  % function
         
-%         function willPerformSweep(self)
+%         function startingSweep(self)
 %             % This gets called from above when an (acq) sweep is about to
 %             % start.  What we do here depends a lot on the current triggering
 %             % settings.
 %             
-%             %fprintf('Stimulation.willPerformSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-%             %fprintf('Stimulation::willPerformSweep()\n');
+%             %fprintf('Stimulation.startingSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
+%             %fprintf('Stimulation::startingSweep()\n');
 % 
 %             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
 %             if self.TriggerScheme.Target == acquisitionTriggerScheme.Target ,
@@ -252,8 +252,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             end
 %         end  % function
 % 
-%         function didCompleteSweep(self)  %#ok<MANU>
-%             %fprintf('Stimulation::didCompleteSweep()\n');            
+%         function completingSweep(self)  %#ok<MANU>
+%             %fprintf('Stimulation::completingSweep()\n');            
 %         end
 %         
 %         function didStopSweep(self)

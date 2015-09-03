@@ -128,7 +128,7 @@ classdef UserCodeManager < ws.system.Subsystem
         end  % function
         
         % You might thing user methods would get invoked inside the
-        % UserCodeManager methods willPerformRun, willPerformSweep,
+        % UserCodeManager methods startingRun, startingSweep,
         % dataAvailable, etc.  But we don't do it that way, because it
         % doesn't always lead to user methods being called at just the
         % right time.  Instead we call the callUserMethod_() method in the

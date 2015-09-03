@@ -30,7 +30,7 @@ classdef (Abstract) Subsystem < ws.Model
             self.setIsEnabledImplementation_(value);            
         end
         
-        function willPerformRun(self) %#ok<MANU>
+        function startingRun(self) %#ok<MANU>
         end
         
         function didCompleteRun(self) %#ok<MANU>
@@ -40,20 +40,20 @@ classdef (Abstract) Subsystem < ws.Model
         end
         
         function didAbortRun(self) %#ok<MANU>
-            % Called if a failure occurred during willPerformRun() for subsystems
-            % that have already passed willPerformRun() to clean up, and called fater
+            % Called if a failure occurred during startingRun() for subsystems
+            % that have already passed startingRun() to clean up, and called fater
             % didAbortSweep().
             
             % This code MUST be exception free.
         end
         
-        function willPerformSweep(~)          % self
+        function startingSweep(~)          % self
         end
         
-        function didCompleteSweep(~)           % self
+        function completingSweep(~)           % self
         end
         
-        function didStopSweep(~)           % self
+        function stopTheOngoingSweep(~)           % self
         end
         
         function didAbortSweep(~)              % self

@@ -158,7 +158,7 @@ classdef Ephys < ws.system.Subsystem
         end
                 
         %%
-        function willPerformRun(self)
+        function startingRun(self)
             % Update all the gains and modes that are associated with smart
             % electrodes
             self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();

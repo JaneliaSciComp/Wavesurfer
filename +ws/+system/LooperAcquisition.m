@@ -2,14 +2,14 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     
     properties (Dependent=true)
         IsArmedOrAcquiring
-            % This goes true during self.willPerformSweep() and goes false
+            % This goes true during self.startingSweep() and goes false
             % after a single finite acquisition has completed.  Then the
             % cycle may repeat, depending...
     end
     
     properties (Access = protected, Transient=true)
         IsArmedOrAcquiring_ = false
-            % This goes true during self.willPerformSweep() and goes false
+            % This goes true during self.startingSweep() and goes false
             % after a single finite acquisition has completed.  Then the
             % cycle may repeat, depending...
         AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
@@ -75,7 +75,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.DigitalInputTask_=[];            
         end
         
-        function willPerformRun(self)
+        function startingRun(self)
             parent = self.Parent ;
             
             % Make the NI daq task, if don't have it already
@@ -152,8 +152,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.didCompleteOrStopOrAbortRun_();
         end  % function
 
-        function willPerformSweep(self)
-            %fprintf('Acquisition::willPerformSweep()\n');
+        function startingSweep(self)
+            %fprintf('Acquisition::startingSweep()\n');
             self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
@@ -164,11 +164,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.DigitalInputTask_.start();
         end  % function
         
-        function didCompleteSweep(self) %#ok<MANU>
-            %fprintf('Acquisition::didCompleteSweep()\n');
+        function completingSweep(self) %#ok<MANU>
+            %fprintf('Acquisition::completingSweep()\n');
         end
         
-        function didStopSweep(self)
+        function stopTheOngoingSweep(self)
             self.AnalogInputTask_.abort();
             self.DigitalInputTask_.abort();
             self.IsArmedOrAcquiring_ = false ;

@@ -79,18 +79,18 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             end            
         end  % function
         
-        function willPerformRun(self) %#ok<MANU>
+        function startingRun(self) %#ok<MANU>
         end  % function
         
-        function willPerformSweep(self)
+        function startingSweep(self)
             self.setupInternalTriggers_();
         end  % function
 
-        function didCompleteSweep(self)
+        function completingSweep(self)
             self.teardownInternalTriggers_();            
         end  % function
         
-        function didStopSweep(self)
+        function stopTheOngoingSweep(self)
             self.teardownInternalTriggers_();
         end  % function
         

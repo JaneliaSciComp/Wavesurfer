@@ -106,15 +106,15 @@ classdef Triggering < ws.system.TriggeringSubsystem
             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
                 
-        function willPerformRun(self)
+        function startingRun(self)
             self.setupMasterTriggerTask();            
         end  % function
         
-        function willPerformSweep(self) %#ok<MANU>
+        function startingSweep(self) %#ok<MANU>
             %self.setupInternalSweepBasedTriggers();
         end  % function
 
-        function didCompleteSweep(self) %#ok<MANU>
+        function completingSweep(self) %#ok<MANU>
             %self.teardownInternalSweepBasedTriggers();            
         end  % function
         
