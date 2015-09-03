@@ -144,8 +144,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %typicalHeightBetweenEdits=4;
             %heightBetweenEditBlocks=16;
             
-            widthFromEditToChooseButton=5;
-            chooseButtonWidth = 80 ;
+            %widthFromEditToChooseButton=5;
+            %chooseButtonWidth = 80 ;
 
             heightFromReinstantiateButtonToBottomEdit=6;
             reinstantiateButtonHeight = 24 ;
@@ -154,7 +154,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             % Just want to use the default edit height
             sampleEditPosition=get(self.ClassNameEdit,'Position');
             editHeight=sampleEditPosition(4);  
-            chooseButtonHeight = editHeight ;
+            %chooseButtonHeight = editHeight ;
 
 %             % Just want to use the default checkbox height
 %             checkboxPosition=get(self.AbortCallsCompleteCheckbox,'Position');
