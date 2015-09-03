@@ -2,7 +2,7 @@ classdef UserCodeManager < ws.system.Subsystem
     
     properties (Dependent = true)
         ClassName
-        AbortCallsComplete
+        %AbortCallsComplete
     end
     
     properties (Dependent = true, SetAccess = immutable)
@@ -11,7 +11,7 @@ classdef UserCodeManager < ws.system.Subsystem
     
     properties (Access = protected)
         ClassName_ = '' 
-        AbortCallsComplete_ = true  % If true and the equivalent abort function is empty, complete will be called when abort happens.
+        %AbortCallsComplete_ = true  % If true and the equivalent abort function is empty, complete will be called when abort happens.
     end
 
     properties (Access = protected, Transient=true)
@@ -36,9 +36,9 @@ classdef UserCodeManager < ws.system.Subsystem
             result = self.ClassName_;
         end
                 
-        function result = get.AbortCallsComplete(self)
-            result = self.AbortCallsComplete_;
-        end
+%         function result = get.AbortCallsComplete(self)
+%             result = self.AbortCallsComplete_;
+%         end
                 
         function result = get.TheObject(self)
             result = self.TheObject_;
@@ -64,19 +64,36 @@ classdef UserCodeManager < ws.system.Subsystem
             self.broadcast('Update');
         end  % function
         
-        function set.AbortCallsComplete(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
-                    valueAsLogical = logical(value>0) ;
-                    self.AbortCallsComplete_ = valueAsLogical ;
+        function reinstantiateUserObject(self)
+            if isempty(self.ClassName) ,
+                % do nothing except synching the view to the model
+                self.broadcast('Update');
+            else
+                [newObject,err] = self.tryToInstantiateObject_(self.ClassName) ;
+                if isempty(err) ,
+                    self.TheObject_ = newObject;
+                    self.broadcast('Update');                    
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'Invalid value for property ''AbortCallsComplete'' supplied.');
+                    error('wavesurfer:errorWhileReinstantiatingUserObject', ...
+                          'Unable to reinstantiate user object: %s.  Left original object in place.',err.message);
                 end
             end
-            self.broadcast('Update');
-        end  % function
+        end  % method
+        
+%         function set.AbortCallsComplete(self, value)
+%             if ws.utility.isASettableValue(value) ,
+%                 if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
+%                     valueAsLogical = logical(value>0) ;
+%                     self.AbortCallsComplete_ = valueAsLogical ;
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'Invalid value for property ''AbortCallsComplete'' supplied.');
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
         
         function invoke(self, wavesurferModel, eventName)
             try
@@ -93,18 +110,18 @@ classdef UserCodeManager < ws.system.Subsystem
                     self.TheObject_.(eventName)(wavesurferModel, eventName);
                 end
 
-                if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
-                    self.TheObject_.SweepDidComplete(wavesurferModel, eventName); % Calls sweep completion user function, but still passes SweepDidAbort
-                end
+%                 if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
+%                     self.TheObject_.SweepDidComplete(wavesurferModel, eventName); % Calls sweep completion user function, but still passes SweepDidAbort
+%                 end
 
-                if self.AbortCallsComplete && strcmp(eventName, 'RunDidAbort') && ~isempty(self.TheObject_) ,
-                    self.TheObject_.RunDidComplete(wavesurferModel, eventName); 
-                      % Calls run completion user function, but still passes SweepDidAbort
-                end
+%                 if self.AbortCallsComplete && strcmp(eventName, 'RunDidAbort') && ~isempty(self.TheObject_) ,
+%                     self.TheObject_.RunDidComplete(wavesurferModel, eventName); 
+%                       % Calls run completion user function, but still passes SweepDidAbort
+%                 end
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                 %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
-                warning('wavesurfer:usercodemanager:codeerror', 'Error in user class method:');
+                warning('wavesurfer:usercodemanager:codeerror', 'Error in user class method');
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end

@@ -21,6 +21,7 @@ classdef TemplateUserClass < ws.UserClass
         
         function self = TemplateUserClass(wsModel)
             % creates the "user object"
+            fprintf('Instantiating an instance of TemplateUserClass.\n');
             self.Parameter1 = pi ;
             self.Parameter2 = exp(1) ;            
         end

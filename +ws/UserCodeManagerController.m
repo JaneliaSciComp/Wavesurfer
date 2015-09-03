@@ -69,9 +69,8 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
         end
 
-        function AbortCallsCompleteCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model,'AbortCallsComplete',newValue);
+        function ReinstantiateButtonActuated(self,source,event) %#ok<INUSD>
+            self.Model.reinstantiateUserObject();
         end
     end
     

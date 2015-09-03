@@ -3,7 +3,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
         ClassNameText
         ClassNameEdit        
         
-        AbortCallsCompleteCheckbox
+        ReinstantiateButton
+        %AbortCallsCompleteCheckbox
     end  % properties
     
     methods
@@ -14,7 +15,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 'Units','Pixels', ...
                 'Color',get(0,'defaultUIControlBackgroundColor'), ...
                 'Resize','off', ...
-                'Name','User Functions', ...
+                'Name','User Code', ...
                 'MenuBar','none', ...
                 'DockControls','off', ...
                 'NumberTitle','off', ...
@@ -62,10 +63,14 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','edit');
                       
-            self.AbortCallsCompleteCheckbox = ...
+            self.ReinstantiateButton = ...
                 uicontrol('Parent',self.FigureGH, ...
-                          'Style','checkbox', ...
-                          'String','Abort Calls Complete');
+                          'Style','pushbutton', ...
+                          'String','Reinstantiate');
+%             self.AbortCallsCompleteCheckbox = ...
+%                 uicontrol('Parent',self.FigureGH, ...
+%                           'Style','checkbox', ...
+%                           'String','Abort Calls Complete');
         end  % function
     end  % protected methods block
     
@@ -130,24 +135,26 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             topPadHeight=10;
             labelWidth=75;
             editWidth=300;
-            typicalHeightBetweenEdits=4;
-            heightBetweenEditBlocks=16;
-            heightFromCheckboxToBottomEdit=4;
+            %typicalHeightBetweenEdits=4;
+            %heightBetweenEditBlocks=16;
+            heightFromReinstantiateButtonToBottomEdit=6;
+            reinstantiateButtonHeight = 24 ;
+            reinstantiateButtonWidth = 80 ;
             
             % Just want to use the default edit height
             sampleEditPosition=get(self.ClassNameEdit,'Position');
             editHeight=sampleEditPosition(4);  
 
-            % Just want to use the default checkbox height
-            checkboxPosition=get(self.AbortCallsCompleteCheckbox,'Position');
-            checkboxHeight=checkboxPosition(4);
+%             % Just want to use the default checkbox height
+%             checkboxPosition=get(self.AbortCallsCompleteCheckbox,'Position');
+%             checkboxHeight=checkboxPosition(4);
             
             % Compute the figure dimensions
             figureWidth=leftPadWidth+labelWidth+editWidth+rightPadWidth;
             figureHeight= bottomPadHeight + ...
-                          checkboxHeight + ...
-                          heightFromCheckboxToBottomEdit + ...
                           editHeight + ...
+                          reinstantiateButtonHeight + ...
+                          heightFromReinstantiateButtonToBottomEdit + ...
                           topPadHeight;
             
             % The edits and their labels
@@ -157,14 +164,20 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             positionEditLabelAndUnitsBang(self.ClassNameText,self.ClassNameEdit,[], ....
                                           editXOffset,rowYOffset,editWidth)
 
-            % Checkbox
-            checkboxFullExtent=get(self.AbortCallsCompleteCheckbox,'Extent');
-            checkboxExtent=checkboxFullExtent(3:4);
-            checkboxXOffset=editXOffset;
-            checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
-            checkboxYOffset=bottomPadHeight;            
-            set(self.AbortCallsCompleteCheckbox, ...
-                'Position',[checkboxXOffset checkboxYOffset checkboxWidth checkboxHeight]);
+            % Button
+            reinstantiateButtonXOffset = editXOffset+editWidth-reinstantiateButtonWidth ;
+            reinstantiateButtonYOffset = rowYOffset - heightFromReinstantiateButtonToBottomEdit - reinstantiateButtonHeight ;
+            set(self.ReinstantiateButton, ...
+                'Position',[reinstantiateButtonXOffset reinstantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
+                                      
+%             % Checkbox
+%             checkboxFullExtent=get(self.AbortCallsCompleteCheckbox,'Extent');
+%             checkboxExtent=checkboxFullExtent(3:4);
+%             checkboxXOffset=editXOffset;
+%             checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
+%             checkboxYOffset=bottomPadHeight;            
+%             set(self.AbortCallsCompleteCheckbox, ...
+%                 'Position',[checkboxXOffset checkboxYOffset checkboxWidth checkboxHeight]);
                         
             % We return the figure size
             figureSize=[figureWidth figureHeight];
@@ -199,7 +212,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             end
 
             set(self.ClassNameEdit,'String',model.ClassName);            
-            set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
+            %set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
         end
     end
     
@@ -213,10 +226,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end
-            import ws.utility.onIff
-            isIdle=isequal(wavesurferModel.State,'idle');
-            set(self.ClassNameEdit,'Enable',onIff(isIdle));            
-            set(self.AbortCallsCompleteCheckbox,'Enable',onIff(isIdle));
+            isIdle = isequal(wavesurferModel.State,'idle') ;
+            set(self.ClassNameEdit, 'Enable', ws.utility.onIff(isIdle) );
+            set(self.ReinstantiateButton, 'Enable', ws.utility.onIff(isIdle&&~isempty(model.ClassName)) );
         end
     end
     
