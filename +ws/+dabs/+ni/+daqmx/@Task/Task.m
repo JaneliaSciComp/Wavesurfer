@@ -121,11 +121,11 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             % the current code will have trouble when the auto-generated
             % IDs come to 123.
             
-            %Handle case where superclass construction was aborted
-            if obj.cancelConstruct
-                delete(obj);
-                return;
-            end
+%             %Handle case where superclass construction was aborted
+%             if obj.cancelConstruct
+%                 delete(obj);
+%                 return;
+%             end
             
             % create/validate taskName
             if nargin == 0
@@ -142,7 +142,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             
             if taskmap.isKey(tName)
                 %NOTE: Could consider returning the already-existing Task, but an error is probably better choice given typical usage
-                obj.cancelConstruct = true;
+                %obj.cancelConstruct = true;
                 error('A Task with name ''%s'' already exists in the DAQmx System',tName);
             end
             
@@ -160,40 +160,40 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
         end
         
         function delete(obj)
-            if ~obj.cancelConstruct
-                %fprintf('Task::delete()\n');
-                try
-                    % abort if task is not done
-                    if ~obj.isTaskDoneQuiet()
-                        obj.abort();
-                    end        
-                catch me %#ok<NASGU>
-                    % If this fails for whatever reason, want to just proceed
-                    % In certain error states, isTaskDoneQuiet() can throw,
-                    % and we don't want to let that stop us from clearing
-                    % the DAQmx task.
-                end
-                
-                %Unregister any callbacks -- required to clear data record in the RegisterXXXCallback MEX functions
-                obj.registerDoneEvent();
-                obj.registerSignalEvent(); 
-                obj.registerEveryNSamplesEvent();
-
-                if ~isempty(obj.channels)
-                    deleteHidden(obj.channels);
-                end
-                
-                if ~isempty(obj.taskID)
-                    % if a task has a valid taskID, it was successfully
-                    % constructed and added to DAQmx
-                    obj.apiCall('DAQmxClearTask',obj.taskID);
-                end
-                
-                taskmap = ws.dabs.ni.daqmx.Task.getTaskMap();
-                if taskmap.isKey(obj.taskName)
-                    taskmap.remove(obj.taskName);
-                end
+%             if ~obj.cancelConstruct
+            %fprintf('Task::delete()\n');
+            try
+                % abort if task is not done
+                if ~obj.isTaskDoneQuiet()
+                    obj.abort();
+                end        
+            catch me %#ok<NASGU>
+                % If this fails for whatever reason, want to just proceed
+                % In certain error states, isTaskDoneQuiet() can throw,
+                % and we don't want to let that stop us from clearing
+                % the DAQmx task.
             end
+
+            %Unregister any callbacks -- required to clear data record in the RegisterXXXCallback MEX functions
+            obj.registerDoneEvent();
+            obj.registerSignalEvent(); 
+            obj.registerEveryNSamplesEvent();
+
+            if ~isempty(obj.channels)
+                deleteHidden(obj.channels);
+            end
+
+            if ~isempty(obj.taskID)
+                % if a task has a valid taskID, it was successfully
+                % constructed and added to DAQmx
+                obj.apiCall('DAQmxClearTask',obj.taskID);
+            end
+
+            taskmap = ws.dabs.ni.daqmx.Task.getTaskMap();
+            if taskmap.isKey(obj.taskName)
+                taskmap.remove(obj.taskName);
+            end
+%             end
         end        
         
         %% TASK CONTROL

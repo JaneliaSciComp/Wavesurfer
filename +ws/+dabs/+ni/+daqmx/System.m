@@ -35,10 +35,10 @@ classdef System < ws.dabs.ni.daqmx.private.DAQmxClass
             % Allen wanted to make the constructor private, likely thinking that getHandle() would be means of getting System object handle..but it's preferable to use constructor semantics
             
             %Handle case where superclass construction was aborted
-            if obj.cancelConstruct
-                delete(obj);
-                return;
-            end
+%             if obj.cancelConstruct
+%                 delete(obj);
+%                 return;
+%             end
             
             if nargin>0 && strcmp(varargin{1},'singleton')
                 return;
