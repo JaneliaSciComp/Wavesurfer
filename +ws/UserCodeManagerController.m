@@ -72,6 +72,13 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
         function ReinstantiateButtonActuated(self,source,event) %#ok<INUSD>
             self.Model.reinstantiateUserObject();
         end
+        
+        function ChooseButtonActuated(self,source,event) %#ok<INUSD>
+            mAbsoluteFileName = uigetdir(self.Model.Logging.FileLocation, 'Choose User Class M-file...');
+            if ~isempty(mAbsoluteFileName) ,
+                self.Model.Logging.FileLocation = mAbsoluteFileName;
+            end
+        end
     end
     
 end

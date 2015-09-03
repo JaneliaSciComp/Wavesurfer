@@ -525,7 +525,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function saveOrSaveAsConfig(self, isSaveAs)
             % Figure out the file name, or leave empty for save as
-            lastConfigFileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
             if isSaveAs ,
                 isFileNameKnown=false;
                 fileName='';  % not used
@@ -548,6 +547,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % config file name
                     isFileNameKnown=false;
                     fileName='';  % not used
+                    lastConfigFileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
                     if isempty(lastConfigFileName)
                         fileChooserInitialFileName = fullfile(pwd(),'untitled.cfg');
                     else
@@ -893,7 +893,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
         
         function changeDataFileLocation(self, varargin)
-            folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
+            
+            folderName = uigetfile(self.Model.Logging.FileLocation, 'Change Data Folder...');
             if folderName
                 self.Model.Logging.FileLocation = folderName;
             end
