@@ -378,31 +378,31 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             end
         end  % function
                                 
-        function analogEpisodeCompleted(self)
-            %fprintf('Stimulation::analogEpisodeCompleted()\n');
-            self.DidAnalogEpisodeComplete_ = true ;
-            if self.HasTimedDigitalChannels_ ,
-                if self.DidDigitalEpisodeComplete_ ,
-                    self.episodeCompleted_();
-                end
-            else
-                % No digital channels, so the episode is complete
-                self.episodeCompleted_();
-            end
-        end  % function
-        
-        function digitalEpisodeCompleted(self)
-            %fprintf('Stimulation::digitalEpisodeCompleted()\n');
-            self.DidDigitalEpisodeComplete_ = true ;
-            if self.HasAnalogChannels_ ,
-                if self.DidAnalogEpisodeComplete_ ,
-                    self.episodeCompleted_();
-                end
-            else
-                % No analog channels, so the episode is complete
-                self.episodeCompleted_();
-            end
-        end  % function       
+%         function analogEpisodeCompleted(self)
+%             %fprintf('Stimulation::analogEpisodeCompleted()\n');
+%             self.DidAnalogEpisodeComplete_ = true ;
+%             if self.HasTimedDigitalChannels_ ,
+%                 if self.DidDigitalEpisodeComplete_ ,
+%                     self.episodeCompleted_();
+%                 end
+%             else
+%                 % No digital channels, so the episode is complete
+%                 self.episodeCompleted_();
+%             end
+%         end  % function
+%         
+%         function digitalEpisodeCompleted(self)
+%             %fprintf('Stimulation::digitalEpisodeCompleted()\n');
+%             self.DidDigitalEpisodeComplete_ = true ;
+%             if self.HasAnalogChannels_ ,
+%                 if self.DidAnalogEpisodeComplete_ ,
+%                     self.episodeCompleted_();
+%                 end
+%             else
+%                 % No analog channels, so the episode is complete
+%                 self.episodeCompleted_();
+%             end
+%         end  % function       
     end  % methods block
     
     methods (Access = protected)

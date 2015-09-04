@@ -1,6 +1,6 @@
 classdef FiniteOutputTask < handle
     properties (Dependent = true, SetAccess = immutable)
-        Parent
+        %Parent
         IsAnalog
         IsDigital
         TaskName
@@ -18,7 +18,7 @@ classdef FiniteOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        Parent_
+        %Parent_
         DabsDaqTask_ = [];  % Can be empty if there are zero channels
     end
     
@@ -39,11 +39,11 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
+        function self = FiniteOutputTask(taskType, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
             
-            % Store the parent
-            self.Parent_ = parent ;
+%             % Store the parent
+%             self.Parent_ = parent ;
                                     
             % Determine the task type, digital or analog
             self.IsAnalog_ = ~isequal(taskType,'digital') ;
@@ -86,7 +86,7 @@ classdef FiniteOutputTask < handle
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
-            self.Parent_ = [] ;  % prob not needed
+            %self.Parent_ = [] ;  % prob not needed
         end  % function
         
         function start(self)
@@ -128,9 +128,9 @@ classdef FiniteOutputTask < handle
             end
         end  % function
         
-        function value = get.Parent(self)
-            value = self.Parent_;
-        end  % function
+%         function value = get.Parent(self)
+%             value = self.Parent_;
+%         end  % function
         
         function value = get.IsArmed(self)
             value = self.IsArmed_;
@@ -310,21 +310,25 @@ classdef FiniteOutputTask < handle
             end
         end  % function   
         
-        function poll(self,timeSinceSweepStart) %#ok<INUSD>
+        function isTaskDone = poll(self,timeSinceSweepStart) %#ok<INUSD>
             %fprintf('FiniteOutputTask::poll()\n');
             if isempty(self.DabsDaqTask_)
                 % This means there are no channels, so nothing to do
+                isTaskDone = false ;  % by convention
             else
                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                    self.DabsDaqTask_.stop();
-                    parent = self.Parent ;
-                    if ~isempty(parent) && isvalid(parent) ,
-                        if self.IsAnalog ,
-                            parent.analogEpisodeCompleted();
-                        else
-                            parent.digitalEpisodeCompleted();
-                        end
-                    end
+                    self.DabsDaqTask_.stop() ;
+                    isTaskDone = true ;
+%                     parent = self.Parent ;
+%                     if ~isempty(parent) && isvalid(parent) ,
+%                         if self.IsAnalog ,
+%                             parent.analogEpisodeCompleted() ;
+%                         else
+%                             parent.digitalEpisodeCompleted() ;
+%                         end
+%                     end
+                else
+                    isTaskDone = false ;                    
                 end
             end
         end  % function

@@ -327,8 +327,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         function acquireHardwareResources_(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteOutputTask(self, ...
-                                           'analog', ...
+                    ws.ni.FiniteOutputTask('analog', ...
                                            'Wavesurfer Finite Analog Output Task', ...
                                            self.AnalogPhysicalChannelNames, ...
                                            self.AnalogChannelNames) ;
@@ -337,8 +336,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
                 self.TheFiniteDigitalOutputTask_ = ...
-                    ws.ni.FiniteOutputTask(self, ...
-                                           'digital', ...
+                    ws.ni.FiniteOutputTask('digital', ...
                                            'Wavesurfer Finite Digital Output Task', ...
                                            self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
                                            self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
@@ -445,7 +443,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %fprintf('Stimulation.startingSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
             %fprintf('Stimulation::startingSweep()\n');
 
-            self.armForEpisode();
+            self.armForEpisode_();
             
             % Don't think we need the code below anymore---if user is doing
             % finite sweeps, then it's always one episode per sweep; if
@@ -533,8 +531,10 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         function abortingSweep(self)
             self.IsArmedOrStimulating_ = false ;
         end  % function
-        
-        function armForEpisode(self)
+    end  % public methods block
+    
+    methods (Access=protected)    
+        function armForEpisode_(self)
             fprintf('RefillerStimulation::armForEpisode()\n');
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
@@ -549,6 +549,9 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.DidAnalogEpisodeComplete_ = false ;  
             self.DidDigitalEpisodeComplete_ = false ;
             self.IsArmedOrStimulating_ = true;
+            
+            % Call user method
+            self.callUserMethod_('startingEpisode');                        
             
             % Get the current stimulus map
             stimulusMap = self.getCurrentStimulusMap_();
@@ -587,7 +590,9 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
         end  % function
-        
+    end  % protected methods block
+    
+    methods 
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
         end  % function
@@ -752,8 +757,10 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
 %             end
 %         end  % function        
-        
-        function analogEpisodeCompleted(self)
+    end        
+
+    methods (Access=protected)
+        function analogEpisodeCompleted_(self)
             %fprintf('Stimulation::analogEpisodeCompleted()\n');
             self.DidAnalogEpisodeComplete_ = true ;
             if self.HasTimedDigitalChannels_ ,
@@ -766,7 +773,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             end
         end  % function
         
-        function digitalEpisodeCompleted(self)
+        function digitalEpisodeCompleted_(self)
             %fprintf('Stimulation::digitalEpisodeCompleted()\n');
             self.DidDigitalEpisodeComplete_ = true ;
             if self.HasAnalogChannels_ ,
@@ -778,7 +785,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.episodeCompleted_();
             end
         end  % function       
-    end  % methods block
+    end  % protected methods block
     
     methods (Access = protected)
         % Allows access to protected and protected variables from ws.mixin.Coding.
@@ -924,7 +931,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         end  % function
 
         function episodeCompleted_(self)
-            % Called from "below" when a single episode of stimulation is
+            % Called from .poll() when a single episode of stimulation is
             % completed.  
             %fprintf('Stimulation::episodeCompleted_()\n');
             % We only want this method to do anything once per episode, and the next three
@@ -932,15 +939,17 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             if ~self.IsArmedOrStimulating_ ,
                 return
             end
-            self.IsArmedOrStimulating_ = false;
-            self.NEpisodesCompleted_ = self.NEpisodesCompleted_ + 1 ;
             
-%             % Call user method
-%             self.callUserMethod_('completingEpsiode');                        
+            % Call user method
+            self.callUserMethod_('completingEpisode');                        
+
+            % Update state
+            self.IsArmedOrStimulating_ = false;
+            self.NEpisodesCompleted_ = self.NEpisodesCompleted_ + 1 ;            
             
             % If we might have more episodes to deliver, arm for next one
             if self.NEpisodesCompleted_ < self.NEpisodesPerSweep_ ,
-                self.armForEpisode() ;
+                self.armForEpisode_() ;
             end                        
             
 %             if self.TriggerScheme.IsExternal ,
@@ -998,10 +1007,16 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             % Call the task to do the real work
             if self.IsArmedOrStimulating_ ,
                 if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-                    self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
+                    isTaskDone=self.TheFiniteAnalogOutputTask_.poll(timeSinceSweepStart);
+                    if isTaskDone ,
+                        self.analogEpisodeCompleted_() ;
+                    end
                 end
                 if ~isempty(self.TheFiniteDigitalOutputTask_) ,            
-                    self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
+                    isTaskDone = self.TheFiniteDigitalOutputTask_.poll(timeSinceSweepStart);
+                    if isTaskDone ,
+                        self.digitalEpisodeCompleted_() ;
+                    end
                 end
             end
         end

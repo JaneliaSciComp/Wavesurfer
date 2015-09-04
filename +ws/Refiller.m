@@ -231,8 +231,7 @@ classdef Refiller < ws.Model
                             self.IPCSubscriber_.processMessagesIfAvailable() ;                            
                             % no pause here, b/c want to start sweep as
                             % soon as frontend tells us to
-                        end
-                        
+                        end                        
                     end
                 else
                     fprintf('Refiller: Not in a run, about to check for messages\n');
