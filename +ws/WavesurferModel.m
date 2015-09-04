@@ -891,21 +891,23 @@ classdef WavesurferModel < ws.Model
             
             % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
+            gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
                 self.wrapUpAbortedRun_();
                 self.changeReadiness(+1);
-                throw(err);                
+                error('wavesurfer:looperDidntRespond', ...
+                      'Looper didn''t respond within the timeout period');
             end
             
             % Wait for the refiller to respond that it is ready
-            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRun',timeout) ;
+            gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRun',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
                 self.wrapUpAbortedRun_();
                 self.changeReadiness(+1);
-                throw(err);                
+                error('wavesurfer:refillerDidntRespond', ...
+                      'Refiller didn''t respond within the timeout period');
             end
             
             % Change our own state to running

@@ -378,7 +378,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
 %             %end
             
-            wavesurferModel = self.Parent ;
+            %wavesurferModel = self.Parent ;
             
             % Make the NI daq tasks, if don't have already
             self.acquireHardwareResources_() ;
@@ -394,6 +394,10 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             % Clear out any pre-existing output waveforms
             self.TheFiniteAnalogOutputTask_.clearChannelData() ;
             self.TheFiniteDigitalOutputTask_.clearChannelData() ;
+
+            % Arm the tasks
+            self.TheFiniteAnalogOutputTask_.arm() ;
+            self.TheFiniteDigitalOutputTask_.arm() ;
             
 %             % Determine episodes per sweep
 %             if wavesurferModel.AreSweepsFiniteDuration ,
@@ -411,8 +415,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             end
             
             % Set up the selected outputable cache
-            stimulusOutputable = self.StimulusLibrary.SelectedOutputable;
-            self.SelectedOutputableCache_=stimulusOutputable;
+            stimulusOutputable = self.StimulusLibrary.SelectedOutputable ;
+            self.SelectedOutputableCache_=stimulusOutputable ;
             
             % Set the state
             %self.IsWithinRun_=true;
@@ -420,120 +424,46 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         
         function completingRun(self)
             self.SelectedOutputableCache_ = [];
+            
+            % Disarm the tasks
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();            
+            
             %self.IsWithinRun_=false;  % might already be guaranteed to be false here...
         end  % function
         
         function stoppingRun(self)
             self.SelectedOutputableCache_ = [];
+
+            % Disarm the tasks
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();            
+            
             %self.IsWithinRun_=false;
         end  % function
 
         function abortingRun(self)
             self.SelectedOutputableCache_ = [];
+            
+            % Disarm the tasks
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();            
+            
             %self.IsWithinRun_=false;
         end  % function
         
-        function startingSweep(self)
-            % This gets called from above when an (acq) sweep is about to
-            % start.
-            
-            % Currently, we don't do anything here, instead waiting for
-            % startingEpisode() to, well, start the episode
-            
-            %fprintf('Stimulation.startingSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-            %fprintf('Stimulation::startingSweep()\n');
-
-            % % Initialize the episode counter
-            % self.NEpisodesCompleted_ = 0;
-            
-%             indexOfEpisodeWithinSweep = 1 ;
-%             self.armForEpisode(indexOfEpisodeWithinSweep);
-            
-            % Don't think we need the code below anymore---if user is doing
-            % finite sweeps, then it's always one episode per sweep; if
-            % user is doing an infinite sweep, then we still want to arm
-            % for an episode at the start, then re-arm after each episode
-            % completes (the re-arming is handled elsewhere).
-            
-%             acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-%             if self.TriggerScheme == acquisitionTriggerScheme ,
-%                 % Stim and acq are using same trigger source, so should arm
-%                 % stim system now.
-%                 self.armForEpisode();
-%             else
-%                 % Stim and acq are using distinct trigger
-%                 % sources.
-%                 % If first sweep, arm.  Otherwise, we handle
-%                 % re-arming independently from the acq sweeps.
-%                 if self.Parent.NSweepsCompletedInThisRun == 0 ,
-%                     self.armForEpisode();
-%                 end
-%             end
+        function startingSweep(self) %#ok<MANU>
+            % Don't do anything here, b/c for us the action happens when the
+            % episode starts
         end  % function
 
-%         function startingSweep(self, wavesurferObj) %#ok<INUSD>
-%             % This gets called from above when an (acq) sweep is about to
-%             % start.  What we do here depends a lot on the current triggering
-%             % settings.
-%             
-%             %fprintf('Stimulation.startingSweep: %0.3f\n',toc(self.Parent.FromRunStartTicId_));                        
-%             fprintf('Stimulation::startingSweep()\n');
-%             
-%             if self.TriggerScheme.IsExternal ,
-%                 % If external triggering, we set up for a trigger only if
-%                 % this is the first 
-%                 if self.Parent.NSweepsCompletedInThisRun == 0 ,
-%                     self.armForEpisode();
-%                 end
-%             else
-%                 % stim trigger scheme is internal
-%                 acquisitionTriggerScheme=self.Parent.Triggering.AcquisitionTriggerScheme;
-%                 if acquisitionTriggerScheme.IsInternal ,
-%                     % acq trigger scheme is internal
-%                     if self.TriggerScheme == acquisitionTriggerScheme ,
-%                         % stim and acq are using same trigger source
-%                         self.armForEpisode();
-%                     else
-%                         % stim and acq are using distinct internal trigger
-%                         % sources
-%                         % if first sweep, arm.  Otherwise, we handle
-%                         % re-arming independently from the acq sweeps.
-%                         if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
-%                             self.armForEpisode();
-%                         else
-%                             % do nothing
-%                         end
-%                     end
-%                 else
-%                     % acq trigger scheme is external, so must be different
-%                     % from stim trigger scheme, which is internal
-% %                     if self.NEpisodesCompleted_ < self.EpisodesPerRun_ ,
-% %                         self.armForEpisode();
-% %                     else
-% %                         self.IsWithinRun_ = false;
-% %                         self.Parent.stimulationEpisodeComplete();
-% %                     end
-%                     % if first sweep, arm.  Otherwise, we handle
-%                     % re-arming independently from the acq sweeps.
-%                     if self.Parent.NSweepsCompletedInThisRun == 0 ,                            
-%                         self.armForEpisode();
-%                     else
-%                         % do nothing
-%                     end                    
-%                 end
-%             end
-%         end  % function
-        
         function completingSweep(self)  %#ok<MANU>
-            %fprintf('Stimulation::completingSweep()\n');            
         end
         
-        function stoppingSweep(self)
-            self.IsArmedOrStimulating_ = false ;
+        function stoppingSweep(self) %#ok<MANU>
         end  % function
                 
-        function abortingSweep(self)
-            self.IsArmedOrStimulating_ = false ;
+        function abortingSweep(self) %#ok<MANU>
         end  % function
         
         function startingEpisode(self,indexOfEpisodeWithinSweep)
@@ -572,18 +502,18 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             % Arm and start the analog task (which will then wait for a
             % trigger)
             %if self.HasAnalogChannels_ ,
-            if indexOfEpisodeWithinSweep == 1 ,
-                self.TheFiniteAnalogOutputTask_.arm();
-            end
+%             if indexOfEpisodeWithinSweep == 1 ,
+%                 self.TheFiniteAnalogOutputTask_.arm();
+%             end
             self.TheFiniteAnalogOutputTask_.start();                
             %end
             
             % Arm and start the digital task (which will then wait for a
             % trigger)
             %if self.HasTimedDigitalChannels_ ,
-            if indexOfEpisodeWithinSweep == 1 ,
-                self.TheFiniteDigitalOutputTask_.arm();
-            end
+%             if indexOfEpisodeWithinSweep == 1 ,
+%                 self.TheFiniteDigitalOutputTask_.arm();
+%             end
             self.TheFiniteDigitalOutputTask_.start(); 
             %end
             
@@ -601,23 +531,26 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         end  % function
     
         function completingEpisode(self)
-            % nothing to do here---self.IsArmedOrStimulating_ is already
-            % set to false in .checkForDoneness()
+            if self.IsArmedOrStimulating_ ,
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;                
+                self.IsArmedOrStimulating_ = false ;
+            end
         end  % method
         
         function stoppingEpisode(self)
             if self.IsArmedOrStimulating_ ,
-                self.TheFiniteAnalogOutputTask.abort();
-                self.TheFiniteDigitalOutputTask.abort();                
-                self.IsArmedOrStimulation_ = false ;
+                self.TheFiniteAnalogOutputTask_.abort() ;
+                self.TheFiniteDigitalOutputTask_.abort() ;                
+                self.IsArmedOrStimulating_ = false ;
             end
         end  % function
                 
         function abortingEpisode(self)
             if self.IsArmedOrStimulating_ ,
-                self.TheFiniteAnalogOutputTask.abort();
-                self.TheFiniteDigitalOutputTask.abort();                
-                self.IsArmedOrStimulation_ = false ;
+                self.TheFiniteAnalogOutputTask_.abort() ;
+                self.TheFiniteDigitalOutputTask_.abort() ;                
+                self.IsArmedOrStimulating_ = false ;
             end
         end  % function
                 
@@ -987,27 +920,24 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     end  % protected methods
     
     methods
-        function areTasksDone = checkForDoneness(self,timeSinceSweepStart)
-            % Check if the tasks are done.  Note that this is the only
-            % place where self.IsArmedOrStimulating_ gets set to false.  So
-            % if you don't call this for a long time during an episode, the
-            % tasks will presumably be done, but self.IsArmedOrStimulating_
-            % will still be true until you call this.
+        function result = areTasksDone(self)
+            % Check if the tasks are done.  This doesn't change the object
+            % state at all.
             
             % Call the task to do the real work
             if self.IsArmedOrStimulating_ ,
                 % if isArmedOrStimulating_ is true, the tasks should be
                 % non-empty (this is an object invariant)
-                isAnalogTaskDone=self.TheFiniteAnalogOutputTask_.checkForDoneness(timeSinceSweepStart);
-                isDigitalTaskDone = self.TheFiniteDigitalOutputTask_.checkForDoneness(timeSinceSweepStart);
-                areTasksDone = isAnalogTaskDone && isDigitalTaskDone ;
-                if areTasksDone ,
-                    self.IsArmedOrStimulating_ = false ;
-                end
+                isAnalogTaskDone=self.TheFiniteAnalogOutputTask_.isDone();
+                isDigitalTaskDone = self.TheFiniteDigitalOutputTask_.isDone();
+                result = isAnalogTaskDone && isDigitalTaskDone ;
+                % if areTasksDone ,
+                %     self.IsArmedOrStimulating_ = false ;
+                % end
             else
                 % doneness is not really defined if
                 % self.IsArmedOrStimulating_ is false
-                areTasksDone = [] ;
+                result = [] ;
             end
         end
     end

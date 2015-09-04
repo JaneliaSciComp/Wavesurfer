@@ -303,15 +303,15 @@ classdef FiniteOutputTask < handle
             end
         end  % function   
         
-        function isTaskDone = checkForDoneness(self,timeSinceSweepStart) %#ok<INUSD>
+        function result = isDone(self)
             %fprintf('FiniteOutputTask::poll()\n');
-            if isempty(self.DabsDaqTask_)
+            if isempty(self.DabsDaqTask_) ,
                 % This means there are no channels, so nothing to do
-                isTaskDone = true ;  % things work out better if you use this convention
+                result = true ;  % things work out better if you use this convention
             else
-                if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                    self.DabsDaqTask_.stop() ;
-                    isTaskDone = true ;
+                result = self.DabsDaqTask_.isTaskDoneQuiet() ;
+%                     self.DabsDaqTask_.stop() ;
+%                     isTaskDone = true ;
 %                     parent = self.Parent ;
 %                     if ~isempty(parent) && isvalid(parent) ,
 %                         if self.IsAnalog ,
@@ -320,9 +320,9 @@ classdef FiniteOutputTask < handle
 %                             parent.digitalEpisodeCompleted() ;
 %                         end
 %                     end
-                else
-                    isTaskDone = false ;                    
-                end
+%                 else
+%                     isTaskDone = false ;                    
+%                 end
             end
         end  % function
     end  % public methods

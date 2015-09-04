@@ -64,7 +64,8 @@ classdef Refiller < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsPerformingEpisode_ = false
-        NEpisodesCompletedSoFarThisSweep_ = []
+        NEpisodesPerSweep_
+        NEpisodesCompletedSoFarThisSweep_
     end
     
 %     events
@@ -200,7 +201,7 @@ classdef Refiller < ws.Model
             fprintf('Don''t close this window if you want Wavesurfer to work properly.\n');                        
             %pause(5);            
             % Main loop
-            timeSinceSweepStart=nan;  % hack
+            %timeSinceSweepStart=nan;  % hack
             self.DoKeepRunningMainLoop_ = true ;
             while self.DoKeepRunningMainLoop_ ,
                 %fprintf('\n\n\nRefiller: At top of main loop\n');
@@ -208,12 +209,12 @@ classdef Refiller < ws.Model
                     % Action in a run depends on whether we are also in a
                     % sweep, or are in-between sweeps
                     if self.IsPerformingSweep_ ,
-                        fprintf('Refiller: In a sweep\n');
+                        fprintf('Refiller: In a sweep\n') ;
                         if self.DoesFrontendWantToStopRun_ ,
                             %fprintf('Refiller: self.DoesFrontendWantToStopRun_\n');
                             % When done, clean up after sweep
                             if self.IsPerformingEpisode_ ,
-                                self.stopTheOngoingEpisode_();
+                                self.stopTheOngoingEpisode_() ;
                             end
                             self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
                         else
@@ -224,7 +225,7 @@ classdef Refiller < ws.Model
                             % Check the finite outputs, refill them if
                             % needed.
                             if self.IsPerformingEpisode_ ,
-                                areTasksDone = self.Stimulation.checkForDoneness(timeSinceSweepStart) ;
+                                areTasksDone = self.Stimulation.areTasksDone() ;
                                 if areTasksDone ,
                                     self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                                     %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
@@ -293,7 +294,14 @@ classdef Refiller < ws.Model
         function abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
 
-            % Cleanup after run
+            if self.IsPerformingEpisode_ ,
+                self.abortTheOngoingEpisode_() ;
+            end
+            
+            if self.IsPerformingSweep_ ,
+                self.abortTheOngoingSweep_() ;
+            end
+            
             if self.IsPerformingRun_ ,
                 self.abortTheOngoingRun_() ;
             end
@@ -639,18 +647,33 @@ classdef Refiller < ws.Model
             if self.IsPerformingRun_ ,
                 return
             end
-            
-            % Change our own acquisition state if get this far
-            self.DoesFrontendWantToStopRun_ = false ;
-            self.NSweepsCompletedInThisRun_ = 0 ;
-            self.IsPerformingRun_ = true ;                        
-            
+                        
             % Make our own settings mimic those of wavesurferModelSettings
             self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             %keyboard
             self.mimicWavesurferModel_(wsModel) ;
+            
+            % Determine episodes per sweep
+            if self.AreSweepsFiniteDuration ,
+                % this means one episode per sweep, always
+                self.NEpisodesPerSweep_ = 1 ;
+            else
+                % Means continuous acq, so need to consult stim trigger
+                if self.Stimulation.TriggerScheme.IsInternal ,
+                    % stim trigger scheme is internal
+                    self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                else
+                    % stim trigger scheme is external
+                    self.NEpisodesPerSweep_ = inf ;  % by convention
+                end
+            end
+
+            % Change our own acquisition state if get this far
+            self.DoesFrontendWantToStopRun_ = false ;
+            self.NSweepsCompletedInThisRun_ = 0 ;
+            self.IsPerformingRun_ = true ;                        
             
             % Tell all the subsystems to prepare for the run
             try
@@ -737,6 +760,16 @@ classdef Refiller < ws.Model
             %self.callUserCodeManager_('didStopSweep');
         end  % function
 
+        function abortTheOngoingSweep_(self)            
+            for idx = numel(self.Subsystems_):-1:1 ,
+                if self.Subsystems_{idx}.IsEnabled ,
+                    self.Subsystems_{idx}.abortingSweep() ;
+                end
+            end
+            
+            self.IsPerformingSweep_ = false ;          
+        end            
+        
         function completeTheOngoingRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
@@ -756,24 +789,17 @@ classdef Refiller < ws.Model
                 if self.Subsystems_{idx}.IsEnabled ,
                     self.Subsystems_{idx}.stoppingRun() ;
                 end
-            end
-            
+            end            
             self.IsPerformingRun_ = false ;
-            
-            %self.callUserCodeManager_('didAbortRun');
         end  % function
         
-        function abortTheOngoingRun_(self)
-            self.IsPerformingRun_ = false ;
-            self.IsPerformingSweep_ = false ;  % just to make sure
-            
+        function abortTheOngoingRun_(self)            
             for idx = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{idx}.IsEnabled ,
                     self.Subsystems_{idx}.abortingRun() ;
                 end
             end
-            
-            %self.callUserCodeManager_('didAbortRun');
+            self.IsPerformingRun_ = false ;
         end  % function
         
 %         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
