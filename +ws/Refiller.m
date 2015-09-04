@@ -63,6 +63,8 @@ classdef Refiller < ws.Model
         DoKeepRunningMainLoop_
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
+        IsPerformingEpisode_ = false
+        NEpisodesCompletedSoFarThisSweep_ = []
     end
     
 %     events
@@ -210,6 +212,9 @@ classdef Refiller < ws.Model
                         if self.DoesFrontendWantToStopRun_ ,
                             %fprintf('Refiller: self.DoesFrontendWantToStopRun_\n');
                             % When done, clean up after sweep
+                            if self.IsPerformingEpisode_ ,
+                                self.stopTheOngoingEpisode_();
+                            end
                             self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
                         else
                             %fprintf('Refiller: ~self.DoesFrontendWantToStopRun_\n');
@@ -218,7 +223,16 @@ classdef Refiller < ws.Model
 
                             % Check the finite outputs, refill them if
                             % needed.
-                            self.Stimulation.poll(timeSinceSweepStart) ;
+                            if self.IsPerformingEpisode_ ,
+                                areTasksDone = self.Stimulation.checkForDoneness(timeSinceSweepStart) ;
+                                if areTasksDone ,
+                                    self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                                    %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
+                                    if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
+                                        self.startEpisode_() ;
+                                    end
+                                end                                
+                            end
                         end
                     else
                         fprintf('Refiller: In a run, but not a sweep\n');
@@ -668,6 +682,7 @@ classdef Refiller < ws.Model
             % Reset the sample count for the sweep
             fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
+            self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             
             % Call startingSweep() on all the enabled subsystems
             for i = 1:numel(self.Subsystems_) ,
@@ -675,14 +690,17 @@ classdef Refiller < ws.Model
                     self.Subsystems_{i}.startingSweep();
                 end
             end
-
+                        
             % At this point, all the hardware-timed tasks the refiller is
             % responsible for should be "started" (in the DAQmx sense)
             % and simply waiting for their trigger to go high to truly
             % start.                
                 
-            % Final preparations...
+            % Almost-Final preparations...
             self.IsPerformingSweep_ = true ;
+
+            % Start an episode
+            self.startEpisode_() ;
             
             % Notify the fronted that we're ready
             self.IPCPublisher_.send('refillerReadyForSweep') ;
@@ -710,7 +728,7 @@ classdef Refiller < ws.Model
             
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
-                    self.Subsystems_{i}.stopTheOngoingSweep();
+                    self.Subsystems_{i}.stoppingSweep();
                 end
             end
             
@@ -718,7 +736,7 @@ classdef Refiller < ws.Model
             
             %self.callUserCodeManager_('didStopSweep');
         end  % function
-        
+
         function completeTheOngoingRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
@@ -830,8 +848,50 @@ classdef Refiller < ws.Model
             self.UserCodeManager.invoke(self, eventName);
             
             % Handle as standard event if applicable.
-            %self.broadcast(eventName);
+            %self.broadcast(eventName);            
         end  % function                
+        
+        function startEpisode_(self)
+            self.IsPerformingEpisode_ = true ;
+            self.callUserMethod_('startingEpisode') ;
+            self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisSweep_+1) ;
+        end
+        
+        function completeTheOngoingEpisode_(self)
+            % Called from runMainLoop() when a single episode of stimulation is
+            % completed.  
+            %fprintf('Stimulation::episodeCompleted_()\n');
+            % We only want this method to do anything once per episode, and the next three
+            % lines make this the case.
+
+            % Notify the Stimulation subsystem
+            self.Stimulation.completingEpisode() ;
+            
+            % Call user method
+            self.callUserMethod_('completingEpisode');                        
+
+            % Update state
+            self.IsPerformingEpisode_ = false;
+            self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;            
+            
+%             % If we might have more episodes to deliver, arm for next one
+%             if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
+%                 self.armForEpisode_() ;
+%             end                                    
+        end  % function
+        
+        function stopTheOngoingEpisode_(self)
+            self.Stimulation.stoppingEpisode();            
+            self.callUserMethod_('stoppingEpisode');            
+            self.IsPerformingEpisode_ = false ;            
+        end  % function
+        
+        function abortTheOngoingEpisode_(self)
+            self.Stimulation.abortingEpisode();            
+            self.callUserMethod_('abortingEpisode');            
+            self.IsPerformingEpisode_ = false ;            
+        end  % function
+                
     end % protected methods block
     
     methods (Access = protected)        

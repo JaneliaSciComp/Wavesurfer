@@ -53,7 +53,7 @@ classdef (Abstract) Subsystem < ws.Model
         function completingSweep(~)           % self
         end
         
-        function stopTheOngoingSweep(~)           % self
+        function stoppingSweep(~)           % self
         end
         
         function abortingSweep(~)              % self

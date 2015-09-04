@@ -90,7 +90,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             self.teardownInternalTriggers_();            
         end  % function
         
-        function stopTheOngoingSweep(self)
+        function stoppingSweep(self)
             self.teardownInternalTriggers_();
         end  % function
         

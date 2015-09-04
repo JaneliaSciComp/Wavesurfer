@@ -399,7 +399,7 @@ classdef Logging < ws.system.Subsystem
             self.NextSweepIndex = self.NextSweepIndex + 1;
         end
         
-        function stopTheOngoingSweep(self)
+        function stoppingSweep(self)
             self.stoppingOrAbortingSweep_() ;
         end
         

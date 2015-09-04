@@ -827,7 +827,7 @@ classdef Looper < ws.Model
             
             for i = numel(self.Subsystems_):-1:1 ,
                 if self.Subsystems_{i}.IsEnabled ,
-                    self.Subsystems_{i}.stopTheOngoingSweep();
+                    self.Subsystems_{i}.stoppingSweep();
                 end
             end
 

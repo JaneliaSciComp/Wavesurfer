@@ -168,7 +168,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             %fprintf('Acquisition::completingSweep()\n');
         end
         
-        function stopTheOngoingSweep(self)
+        function stoppingSweep(self)
             self.AnalogInputTask_.abort();
             self.DigitalInputTask_.abort();
             self.IsArmedOrAcquiring_ = false ;

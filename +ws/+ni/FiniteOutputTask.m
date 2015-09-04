@@ -115,15 +115,8 @@ classdef FiniteOutputTask < handle
         end  % function
         
         function stop(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::stop()\n');
-%             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::stop()\n');
-%             end
-            %fprintf('FiniteOutputTask::stop()\n');
-            %dbstack
-            if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
+            %if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
+            if ~isempty(self.DabsDaqTask_) ,
                 self.DabsDaqTask_.stop();
             end
         end  % function
@@ -310,11 +303,11 @@ classdef FiniteOutputTask < handle
             end
         end  % function   
         
-        function isTaskDone = poll(self,timeSinceSweepStart) %#ok<INUSD>
+        function isTaskDone = checkForDoneness(self,timeSinceSweepStart) %#ok<INUSD>
             %fprintf('FiniteOutputTask::poll()\n');
             if isempty(self.DabsDaqTask_)
                 % This means there are no channels, so nothing to do
-                isTaskDone = false ;  % by convention
+                isTaskDone = true ;  % things work out better if you use this convention
             else
                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
                     self.DabsDaqTask_.stop() ;
