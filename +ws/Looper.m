@@ -913,7 +913,7 @@ classdef Looper < ws.Model
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
                 if self.UserCodeManager.IsEnabled ,                             
-                    self.callUserMethod_('samplesAcquired');
+                    self.callUserMethod_('samplesAcquired',scaledAnalogData,rawDigitalData);
                 end
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
@@ -935,13 +935,13 @@ classdef Looper < ws.Model
             end
         end  % function
         
-        function callUserMethod_(self, eventName)
+        function callUserMethod_(self, eventName, varargin)
             % Handle user functions.  It would be possible to just make the UserCodeManager
             % subsystem a regular listener of these events.  Handling it
             % directly removes at 
             % least one layer of function calls and allows for user functions for 'events'
             % that are not formally events on the model.
-            self.UserCodeManager.invoke(self, eventName);
+            self.UserCodeManager.invoke(self, eventName, varargin{:});
             
             % Handle as standard event if applicable.
             %self.broadcast(eventName);

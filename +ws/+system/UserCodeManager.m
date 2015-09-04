@@ -95,7 +95,7 @@ classdef UserCodeManager < ws.system.Subsystem
 %             self.broadcast('Update');
 %         end  % function
         
-        function invoke(self, wavesurferModel, eventName)
+        function invoke(self, rootModel, eventName, varargin)
             try
                 if isempty(self.TheObject_) ,
                     [newObject,exception] = self.tryToInstantiateObject_(self.ClassName) ;
@@ -107,7 +107,7 @@ classdef UserCodeManager < ws.system.Subsystem
                 end
                 
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.(eventName)(wavesurferModel, eventName);
+                    self.TheObject_.(eventName)(rootModel, eventName, varargin{:});
                 end
 
 %                 if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,

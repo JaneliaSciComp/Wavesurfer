@@ -323,7 +323,9 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %                 
 %             end
 %         end  % function
+    end
 
+    methods (Access=protected)
         function acquireHardwareResources_(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
@@ -354,7 +356,9 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %                  end
 %            end
         end
-        
+    end
+    
+    methods
         function releaseHardwareResources(self)
             self.TheFiniteAnalogOutputTask_ = [];            
             self.TheFiniteDigitalOutputTask_ = [];            
@@ -861,7 +865,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 
             % Finally, assign the stimulation data to the the relevant part
             % of the output task
-            self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
+            if isempty(self.TheFiniteAnalogOutputTask_) ,
+                error('Adam is dumb');
+            else
+                self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
+            end
         end  % function
 
         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap, episodeIndexWithinRun)

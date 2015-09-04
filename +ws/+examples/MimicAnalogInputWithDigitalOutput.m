@@ -1,4 +1,4 @@
-classdef TemplateUserClass < ws.UserClass
+classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
 
     % This is a very simple user class.  It writes to the console when
     % things like a sweep start/end happen,
@@ -7,106 +7,105 @@ classdef TemplateUserClass < ws.UserClass
     % functions below, and want to be settable/gettable from the command
     % line.
     properties
-        Parameter1
-        Parameter2
     end  % properties
 
     % Information that only the methods need access to.  (The underscore is
     % optional, but helps to remind you that it's protected.)
     properties (Access=protected, Transient=true)
-        SomethingPrivateAndTemporary_
     end
     
     methods        
-        function self = TemplateUserClass(wsModel)
+        function self = MimicAnalogInputWithDigitalOutput(wsModel) %#ok<INUSD>
             % creates the "user object"
-            fprintf('Instantiating an instance of TemplateUserClass.\n');
-            self.Parameter1 = pi ;
-            self.Parameter2 = exp(1) ;            
+            fprintf('Instantiating an instance of MimicAnalogInputWithDigitalOutput.\n');
+            %self.Parameter1 = pi ;
+            %self.Parameter2 = exp(1) ;            
         end
         
         % These methods are called in the frontend process
-        function startingRun(self,wsModel,eventName)
+        function startingRun(self,wsModel,eventName) %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             fprintf('About to start a run.\n');
         end
         
-        function completingRun(self,wsModel,eventName)
+        function completingRun(self,wsModel,eventName) %#ok<INUSD>
             % Called just after each set of sweeps (a.k.a. each
             % "run")
             fprintf('Completed a run.\n');
         end
         
-        function stoppingRun(self,wsModel,eventName)
+        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>
             % Called if a sweep goes wrong
             fprintf('User stopped a run.\n');
         end        
         
-        function abortingRun(self,wsModel,eventName)
+        function abortingRun(self,wsModel,eventName) %#ok<INUSD>
             % Called if a run goes wrong, after the call to
             % abortingSweep()
             fprintf('Oh noes!  A run aborted.\n');
         end
         
-        function startingSweep(self,wsModel,eventName)
+        function startingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Called just before each sweep
             fprintf('About to start a sweep.\n');
         end
         
-        function completingSweep(self,wsModel,eventName)
+        function completingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Called after each sweep completes
             fprintf('Completed a sweep.\n');
         end
         
-        function stoppingSweep(self,wsModel,eventName)
+        function stoppingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Called if a sweep goes wrong
             fprintf('User stopped a sweep.\n');
         end        
         
-        function abortingSweep(self,wsModel,eventName)
+        function abortingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Called if a sweep goes wrong
             fprintf('Oh noes!  A sweep aborted.\n');
         end        
         
-        function dataAvailable(self,wsModel,eventName)
+        function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
-            analogData = wsModel.Acquisition.getLatestAnalogData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
-            nScans = size(analogData,1);
-            fprintf('Just read %d scans of data.\n',nScans);                                    
+%             analogData = wsModel.Acquisition.getLatestAnalogData();
+%             digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
+%             nScans = size(analogData,1);
+%             fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,wsModel,eventName)
+        function samplesAcquired(self,wsModel,eventName,analogData,digitalData) %#ok<INUSL,INUSD>
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
-            analogData = wsModel.Acquisition.getLatestAnalogData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
-            nScans = size(analogData,1);
-            fprintf('Just read %d scans of data.\n',nScans);                                    
+            %analogData = wsModel.Acquisition.getLatestAnalogData();
+            %digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
+            vSample = analogData(end,1);  % this method only gets called when nScans>=1
+            wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
+                (vSample>2.5) ;
+            %fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         
         % These methods are called in the refiller process
-        function startingEpisode(self,wsModel,eventName)
+        function startingEpisode(self,wsModel,eventName) %#ok<INUSD>
             % Called just before each episode
-            fprintf('About to start an episode.\n');
+            %fprintf('About to start an episode.\n');
         end
         
-        function completingEpisode(self,wsModel,eventName)
+        function completingEpisode(self,wsModel,eventName) %#ok<INUSD>
             % Called after each episode completes
-            fprintf('Completed an episode.\n');
+            %fprintf('Completed an episode.\n');
         end
         
-        function stoppingEpisode(self,wsModel,eventName)
+        function stoppingEpisode(self,wsModel,eventName) %#ok<INUSD>
             % Called if a episode goes wrong
-            fprintf('User stopped an episode.\n');
+            %fprintf('User stopped an episode.\n');
         end        
         
-        function abortingEpisode(self,wsModel,eventName)
+        function abortingEpisode(self,wsModel,eventName) %#ok<INUSD>
             % Called if a episode goes wrong
-            fprintf('Oh noes!  An episode aborted.\n');
+            %fprintf('Oh noes!  An episode aborted.\n');
         end
     end  % methods
     

@@ -160,8 +160,8 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
-                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -nojvm -minimize -r "refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"');
+                system('start matlab -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
+                system('start matlab -r "refiller=ws.Refiller(); dbstop if error; refiller.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -879,7 +879,7 @@ classdef WavesurferModel < ws.Model
                 end
             catch me
                 % Something went wrong
-                self.wrapUpAbortedRun_();
+                self.abortOngoingRun_();
                 self.changeReadiness(+1);
                 me.rethrow();
             end
@@ -894,7 +894,7 @@ classdef WavesurferModel < ws.Model
             gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
-                self.wrapUpAbortedRun_();
+                self.abortOngoingRun_();
                 self.changeReadiness(+1);
                 error('wavesurfer:looperDidntRespond', ...
                       'Looper didn''t respond within the timeout period');
@@ -904,7 +904,7 @@ classdef WavesurferModel < ws.Model
             gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRun',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
-                self.wrapUpAbortedRun_();
+                self.abortOngoingRun_();
                 self.changeReadiness(+1);
                 error('wavesurfer:refillerDidntRespond', ...
                       'Refiller didn''t respond within the timeout period');
@@ -950,44 +950,12 @@ classdef WavesurferModel < ws.Model
             % Do some kind of clean up
             if didCompleteLastSweep ,
                 % Wrap up run in which all sweeps completed
-            
-                % Set state back to idle
-                self.IsPerformingRun_ =  false;
-                self.setState_('idle');
-                
-                % Notify other processes
-                self.IPCPublisher_.send('completingRun') ;
-
-                % Notify subsystems
-                for idx = 1: numel(self.Subsystems_)
-                    if self.Subsystems_{idx}.IsEnabled
-                        self.Subsystems_{idx}.completingRun();
-                    end
-                end
-
-                % Call user method
-                self.callUserMethod_('completingRun');
+                self.wrapUpRunInWhichAllSweepsCompleted_() ;
             elseif didUserRequestStop ,
-                % Set state back to idle
-                self.IsPerformingRun_ =  false;
-                self.setState_('idle');
-
-                % Notify other processes --- or not, we don't currently need
-                % this
-                %self.IPCPublisher_.send('didStopRun') ;
-
-                % Notify subsystems
-                for idx = numel(self.Subsystems_):-1:1 ,
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.stoppingRun() ;
-                    end
-                end
-
-                % Call user method
-                self.callUserMethod_('stoppingRun');                
+                self.stopTheOngoingRun_();
             else
                 % Something went wrong
-                self.wrapUpAbortedRun_();
+                self.abortOngoingRun_();
             end
 
             % If an exception was thrown, re-throw it
@@ -1037,7 +1005,7 @@ classdef WavesurferModel < ws.Model
                 [didGetMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
                 if ~didGetMessage ,
                     % Something went wrong
-                    self.wrapUpAbortedRun_();
+                    self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     throw(err);
                 end
@@ -1046,7 +1014,7 @@ classdef WavesurferModel < ws.Model
                 [didGetMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep',timeout) ;
                 if ~didGetMessage ,
                     % Something went wrong
-                    self.wrapUpAbortedRun_();
+                    self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     throw(err);
                 end
@@ -1068,7 +1036,7 @@ classdef WavesurferModel < ws.Model
                 
 %                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,
-%                     self.wrapUpAbortedRun_('problem');
+%                     self.abortOngoingRun_('problem');
 %                     self.changeReadiness(+1);
 %                     throw(err);                
 %                 end
@@ -1206,9 +1174,6 @@ classdef WavesurferModel < ws.Model
         function wrapUpRunInWhichAllSweepsCompleted_(self)
             % Clean up after a run completes successfully.
             
-            % Set state back to idle
-            self.setState_('idle');
-
             % Notify other processes
             self.IPCPublisher_.send('completingRun') ;
 
@@ -1221,18 +1186,22 @@ classdef WavesurferModel < ws.Model
             
             % Call user method
             self.callUserMethod_('completingRun');
+            
+            % Finalize
+            self.IsPerformingRun_ =  false;
+            self.setState_('idle');            
         end  % function
         
         function stopTheOngoingRun_(self)
             % Called when the user stops the run in the middle, typically
             % by pressing the stop button.
             
-            % Set state back to idle
-            self.setState_('idle');
-            
             % Notify other processes --- or not, we don't currently need
             % this
             %self.IPCPublisher_.send('didStopRun') ;
+
+            % Notify other processes
+            self.IPCPublisher_.send('stoppingRun') ;
 
             % Notify subsystems
             for idx = numel(self.Subsystems_):-1:1 ,
@@ -1240,17 +1209,17 @@ classdef WavesurferModel < ws.Model
                     self.Subsystems_{idx}.stoppingRun() ;
                 end
             end
-            
-            % Call user method
-            self.callUserMethod_('stoppingRun');
-        end  % function
 
-        function wrapUpAbortedRun_(self)
-            % Called when a run fails for some undesirable reason.
+            % Call user method
+            self.callUserMethod_('stoppingRun');                
             
             % Set state back to idle
+            self.IsPerformingRun_ =  false;
             self.setState_('idle');
-            self.IsPerformingRun_ = false ; 
+        end  % function
+
+        function abortOngoingRun_(self)
+            % Called when a run fails for some undesirable reason.
             
             % Notify other processes
             self.IPCPublisher_.send('abortingRun') ;
@@ -1264,6 +1233,10 @@ classdef WavesurferModel < ws.Model
             
             % Call user method
             self.callUserMethod_('abortingRun');
+            
+            % Set state back to idle
+            self.IsPerformingRun_ = false ; 
+            self.setState_('idle');
         end  % function
         
         function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -1494,17 +1467,17 @@ classdef WavesurferModel < ws.Model
 %             %self.Triggering.SweepTrigger.Source.RepeatCount=1;  % Don't allow this to change
 %         end  % function
         
-        function callUserMethod_(self, eventName)
+        function callUserMethod_(self, eventName, varargin)
             % Handle user functions.  It would be possible to just make the UserCodeManager
             % subsystem a regular listener of these events.  Handling it
             % directly removes at 
             % least one layer of function calls and allows for user functions for 'events'
             % that are not formally events on the model.
-            self.UserCodeManager.invoke(self, eventName);
+            self.UserCodeManager.invoke(self, eventName, varargin{:});
             
             % Handle as standard event if applicable.
             %self.broadcast(eventName);
-        end  % function
+        end  % function                
         
         function [areFilesGone,errorMessage]=ensureYokingFilesAreGone_(self) %#ok<MANU>
             % This deletes the command and response yoking files from the

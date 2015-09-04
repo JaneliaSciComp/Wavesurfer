@@ -865,22 +865,24 @@ classdef Refiller < ws.Model
 %             end
 %         end  % function
         
-        function callUserMethod_(self, eventName)
+        function callUserMethod_(self, eventName, varargin)
             % Handle user functions.  It would be possible to just make the UserCodeManager
             % subsystem a regular listener of these events.  Handling it
             % directly removes at 
             % least one layer of function calls and allows for user functions for 'events'
             % that are not formally events on the model.
-            self.UserCodeManager.invoke(self, eventName);
+            self.UserCodeManager.invoke(self, eventName, varargin{:});
             
             % Handle as standard event if applicable.
-            %self.broadcast(eventName);            
+            %self.broadcast(eventName);
         end  % function                
         
         function startEpisode_(self)
             self.IsPerformingEpisode_ = true ;
             self.callUserMethod_('startingEpisode') ;
-            self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisSweep_+1) ;
+            if self.Stimulation.IsEnabled ,
+                self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisSweep_+1) ;
+            end
         end
         
         function completeTheOngoingEpisode_(self)
@@ -891,7 +893,9 @@ classdef Refiller < ws.Model
             % lines make this the case.
 
             % Notify the Stimulation subsystem
-            self.Stimulation.completingEpisode() ;
+            if self.Stimulation.IsEnabled ,
+                self.Stimulation.completingEpisode() ;
+            end
             
             % Call user method
             self.callUserMethod_('completingEpisode');                        
@@ -907,13 +911,17 @@ classdef Refiller < ws.Model
         end  % function
         
         function stopTheOngoingEpisode_(self)
-            self.Stimulation.stoppingEpisode();            
+            if self.Stimulation.IsEnabled ,
+                self.Stimulation.stoppingEpisode();
+            end
             self.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
         end  % function
         
         function abortTheOngoingEpisode_(self)
-            self.Stimulation.abortingEpisode();            
+            if self.Stimulation.IsEnabled ,
+                self.Stimulation.abortingEpisode();
+            end
             self.callUserMethod_('abortingEpisode');            
             self.IsPerformingEpisode_ = false ;            
         end  % function
