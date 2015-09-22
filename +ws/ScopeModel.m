@@ -428,8 +428,10 @@ classdef ScopeModel < ws.Model
     
     methods
         function addChannel(self, newChannelName)
-            assert(ischar(newChannelName) && ~isempty(newChannelName), ...
-                   'A new, valid channel name must be supplied to addChannel()');
+            % If newChannelName is not a string, or is empty, just return
+            if ~ws.utility.isString(newChannelName) || isempty(newChannelName) ,
+                return
+            end
             
             % If channel already on scope, just return   
             if any(strcmp(newChannelName,self.ChannelNames)) ,
@@ -700,6 +702,32 @@ classdef ScopeModel < ws.Model
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            % YData_ is transient, so we have to set it to make it
+            % consistent with the current number of channels
+            %fprintf('ScopeModel::synchronizeTransientStateToPersistedState_()\n');
+            %dbstack
+            %self
+            nChannels = length(self.ChannelNames_) ;  % self.ChannelNames_ is persisted
+            yData = cell(1,nChannels) ;
+            for i = 1:nChannels ,
+                yData{i} = zeros(0,1) ;
+            end
+            self.YData_ = yData ;
+            %keyboard
+        end
+        
     end
     
 %     methods (Access=protected)        

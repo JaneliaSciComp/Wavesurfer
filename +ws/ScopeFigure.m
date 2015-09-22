@@ -646,7 +646,7 @@ classdef ScopeFigure < ws.MCOSFigure
             persistent persistentYScrollDownIcon
             if isempty(persistentYScrollDownIcon) ,
                 wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
                 persistentYScrollDownIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             end
 
@@ -665,7 +665,10 @@ classdef ScopeFigure < ws.MCOSFigure
             end
             
             % Update the togglebutton
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+            dbstack
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData
+            setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
+            
             set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.utility.onIff(areYLimitsLockedTightToData));            
 

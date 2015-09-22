@@ -82,6 +82,10 @@ classdef (Abstract) Coding < handle
                     self.setPropertyValue_(thisPropertyName, source) ;
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
         end  % function
         
         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
@@ -131,6 +135,18 @@ classdef (Abstract) Coding < handle
             matchingClassProperties = allClassProperties(isMatch);
             propertyNames = cellfun(@(x)x.Name, matchingClassProperties, 'UniformOutput', false);
         end        
+        
+        function synchronizeTransientStateToPersistedState_(self) %#ok<MANU>
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+        end
     end  % protected methods block
     
     methods (Static = true)
@@ -257,6 +273,10 @@ classdef (Abstract) Coding < handle
                     %             class(self));
                     end
                 end  % for            
+                
+                % Make sure the transient state is consistent with
+                % the non-transient state
+                result.synchronizeTransientStateToPersistedState_() ;
             else
                 % Unable to decode 
                 error('Coding:dontKnowHowToDecodeThat', ...
