@@ -126,6 +126,7 @@ classdef ScopeFigure < ws.MCOSFigure
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
+            fprintf('ScopeFigure::delete()\n');
             ws.utility.deleteIfValidHGHandle(self.LineGHs_);
             ws.utility.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function
@@ -665,9 +666,9 @@ classdef ScopeFigure < ws.MCOSFigure
             end
             
             % Update the togglebutton
-            dbstack
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData
-            setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
+            %dbstack
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+            %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
             
             set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.utility.onIff(areYLimitsLockedTightToData));            
@@ -1111,6 +1112,13 @@ classdef ScopeFigure < ws.MCOSFigure
 %         end  % function
 %     end
     
+    methods
+        function castOffAllAttachments(self)
+            self.unsubscribeFromAll() ;
+            self.deleteFigureGH() ;
+        end
+    end
+
     methods (Static=true)
         function result=getWidthInPixels(ax)
             % Gets the x span of the given axes, in pixels.

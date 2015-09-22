@@ -1099,11 +1099,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 scopeController=self.ScopeControllers{scopeIndex};
                 isMatch=cellfun(@(childController)(scopeController==childController),self.ChildControllers);
                 childIndex=find(isMatch,1);
-                %childIndex=find(scopeController==self.ChildControllers);
-                scopeController.delete();  
-                self.ScopeControllers(scopeIndex)=[];
+                %scopeController.delete();  % NEED TO DO SOMETHING DIFFERENT HERE!!!
+                scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%                 scopeController.deleteFigureGH() ;
+%                 scopeController.unsubscribeFromAll() ;
+%                 scopeController.Figure.unsubscribeFromAll() ;
+                self.ScopeControllers(scopeIndex)=[];  % delete an element from the cell array
                 if ~isempty(childIndex) ,
-                    self.ChildControllers(childIndex)=[];
+                    self.ChildControllers(childIndex)=[];  % delete an element from the cell array
                 end
             end
                 

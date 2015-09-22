@@ -99,7 +99,7 @@ classdef Controller < handle
         function deleteFigureGH(self)   
             self.tellFigureToDeleteFigureGH_();
         end  % function       
-    end  % methods    
+    end  % methods
             
     methods (Access = protected)
 %         function deleteFigure_(self)

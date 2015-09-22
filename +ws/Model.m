@@ -106,6 +106,12 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
         end  % function         
     end  % public methods block    
     
+    methods         
+        function debug(self) %#ok<MANU>
+            keyboard
+        end  % function        
+    end
+
     methods (Access = protected)
 %         function setParent_(self, newValue)
 %             if ws.utility.isASettableValue(newValue) ,

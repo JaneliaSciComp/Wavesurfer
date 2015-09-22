@@ -254,6 +254,13 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
         
     end  % public methods block
 
+    methods
+        function castOffAllAttachments(self)
+            self.unsubscribeFromAll() ;
+            self.Figure.castOffAllAtachments() ;
+        end                
+    end        
+    
     methods (Access=protected)
         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
             % This method is inhierited from AbstractController, and is

@@ -822,6 +822,9 @@ classdef WavesurferModel < ws.Model
                     end
                 end
             end
+%             if isequal(newValue,'running') ,
+%                 keyboard
+%             end
             self.broadcast('DidSetState');
         end  % function
         

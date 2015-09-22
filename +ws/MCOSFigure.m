@@ -433,7 +433,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     methods
         function closeRequested(self,source,event)            
             if isempty(self.Controller_) ,
-                self.deleteFigureGH_();
+                self.deleteFigureGH();
             else
                 self.Controller_.windowCloseRequested(source,event);
             end
