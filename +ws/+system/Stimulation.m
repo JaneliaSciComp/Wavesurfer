@@ -88,7 +88,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
 %             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
-            self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
+            %self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
 %         function delete(self)
@@ -336,51 +336,6 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             self.broadcast('DidSetDigitalOutputStateIfUntimed');
 %         end  % function
         
-        function initializeFromMDFStructure(self, mdfStructure)            
-            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
-                % Get the list of physical channel names
-                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
-                channelNames = mdfStructure.outputChannelNames ;                                
-                
-                % Check that they're all on the same device (for now)
-                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
-                uniqueDeviceNames = unique(deviceNames);
-                if ~isscalar(uniqueDeviceNames) ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'Wavesurfer only supports a single NI card at present.');                      
-                end
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
-                isAnalog = strcmp(channelTypes,'ao');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names
-                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
-                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
-                self.AnalogChannelNames_ = channelNames(isAnalog) ;
-                self.DigitalChannelNames_ = channelNames(isDigital) ;
-                
-                % Set the analog channel scales, units
-                nAnalogChannels = sum(isAnalog) ;
-                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                %V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
-                
-                % Set defaults for digital channels
-                nDigitalChannels = sum(isDigital) ;
-                self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
-                self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
-
-                % Intialized the stimulus library
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
-                
-%                 % Set up the untimed channels
-%                 self.syncTasksToChannelMembership_();
-                
-            end
-        end  % function
-
 %         function acquireHardwareResources_(self)            
 %             if isempty(self.TheFiniteAnalogOutputTask_) ,
 %                 self.TheFiniteAnalogOutputTask_ = ...
@@ -801,27 +756,13 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
     end  % protected methods block
     
     methods (Access = protected)
-%         function syncTasksToChannelMembership_(self)
-%             % Clear the timed digital output task, will be recreated when acq is
-%             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
-%             % And have to do it first to avoid a temporary collision.
-%             %self.TheFiniteDigitalOutputTask_ = [] ;
-%             % Set the untimed output task appropriately
-%             self.TheUntimedDigitalOutputTask_ = [] ;
-%             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-%             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
-%             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
-%             self.TheUntimedDigitalOutputTask_ = ...
-%                 ws.ni.UntimedDigitalOutputTask(self, ...
-%                                                'Wavesurfer Untimed Digital Output Task', ...
-%                                                untimedDigitalPhysicalChannelNames, ...
-%                                                untimedDigitalChannelNames) ;
-%             % Set the outputs to the proper values, now that we have a task                               
-%             if any(isDigitalChannelUntimed) ,
-%                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
-%                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-%             end
-%         end  % function
+        function syncTasksToChannelMembership_(self)            
+            % Clear the timed digital output task, will be recreated when acq is
+            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+            % And have to do it first to avoid a temporary collision.
+            
+            % Subclasses override this as appropriate
+        end  % function
         
 %         function stimulusMap = getCurrentStimulusMap_(self)
 %             % Calculate the episode index
@@ -1021,4 +962,22 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         end
 %     end
     
+    methods (Access=protected)
+        function setIsDigitalChannelTimed_(self,newValue)
+            wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            if wasSet ,
+                self.syncTasksToChannelMembership_() ;
+                self.Parent.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
+            end  
+            %self.broadcast('DidSetIsDigitalChannelTimed');
+        end  % function
+        
+        function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
+            wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            if wasSet ,
+                self.Parent.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
+            end
+        end  % function
+    end
+
 end  % classdef

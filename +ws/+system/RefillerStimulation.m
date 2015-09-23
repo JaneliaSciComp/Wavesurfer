@@ -359,11 +359,15 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     end
     
     methods
-        function releaseHardwareResources(self)
+        function releaseTimedHardwareResources(self)
             self.TheFiniteAnalogOutputTask_ = [];            
             self.TheFiniteDigitalOutputTask_ = [];            
             %self.TheUntimedDigitalOutputTask_ = [];            
         end
+        
+        function releaseHardwareResources(self)
+            self.releaseTimedHardwareResources();
+        end        
         
         function startingRun(self)
             %fprintf('Stimulation::startingRun()\n');
@@ -949,5 +953,40 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             end
         end
     end
+    
+    methods (Access = protected)
+        function syncTasksToChannelMembership_(self)
+            % Clear the timed digital output task, will be recreated when acq is
+            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+            % And have to do it first to avoid a temporary collision.
+            
+            self.TheFiniteDigitalOutputTask_ = [] ;  % Simply clear the task, and then we'll reinstantiate it at the start of a run
+%             % Set the untimed output task appropriately
+%             self.TheUntimedDigitalOutputTask_ = [] ;
+%             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+%             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+%             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+%             self.TheUntimedDigitalOutputTask_ = ...
+%                 ws.ni.UntimedDigitalOutputTask(self, ...
+%                                                'Wavesurfer Untimed Digital Output Task', ...
+%                                                untimedDigitalPhysicalChannelNames, ...
+%                                                untimedDigitalChannelNames) ;
+%             % Set the outputs to the proper values, now that we have a task                               
+%             if any(isDigitalChannelUntimed) ,
+%                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
+%                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+%             end
+        end  % function
+    end    
+    
+    methods (Access=protected)
+        function setIsDigitalChannelTimed_(self, newValue)
+            wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            if wasSet ,
+                self.syncTasksToChannelMembership_() ;
+            end  
+            %self.broadcast('DidSetIsDigitalChannelTimed');
+        end  % function
+    end         
     
 end  % classdef

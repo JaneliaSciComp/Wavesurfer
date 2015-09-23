@@ -8,56 +8,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
         function self = Triggering(parent)
             self@ws.system.TriggeringSubsystem(parent);
         end  % function
-        
-        function initializeFromMDFStructure(self,mdfStructure)
-            % Set up the trigger sources (i.e. internal triggers) specified
-            % in the MDF.
-            triggerSourceSpecs=mdfStructure.triggerSource;
-            for idx = 1:length(triggerSourceSpecs) ,
-                thisTriggerSourceSpec=triggerSourceSpecs(idx);
                 
-                % Create the trigger source, set params
-                source = self.addNewTriggerSource() ;
-                %source = ws.TriggerSource();                
-                source.Name=thisTriggerSourceSpec.Name;
-                source.DeviceName=thisTriggerSourceSpec.DeviceName;
-                source.CounterID=thisTriggerSourceSpec.CounterID;                
-                source.RepeatCount = 1;
-                source.Interval = 1;  % s
-                source.PFIID = thisTriggerSourceSpec.CounterID + 12;                
-                source.Edge = 'rising';                                
-                
-                % add the trigger source to the subsystem
-                %self.addTriggerSource(source);
-                
-                % If the first source, set things to point to it
-                if idx==1 ,
-                    self.AcquisitionTriggerSchemeIndex_ = 1 ;
-                    self.StimulationTriggerSchemeIndex_ = 1 ;  
-                    self.StimulationUsesAcquisitionTriggerScheme = true;
-                end                    
-            end  % for loop
-            
-            % Set up the trigger destinations (i.e. external triggers)
-            % specified in the MDF.
-            triggerDestinationSpecs=mdfStructure.triggerDestination;
-            for idx = 1:length(triggerDestinationSpecs) ,
-                thisTriggerDestinationSpec=triggerDestinationSpecs(idx);
-                
-                % Create the trigger destination, set params
-                %destination = ws.TriggerDestination();
-                destination = self.addNewTriggerDestination();
-                destination.Name = thisTriggerDestinationSpec.Name;
-                destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
-                destination.PFIID = thisTriggerDestinationSpec.PFIID;
-                destination.Edge = lower(thisTriggerDestinationSpec.Edge);
-                
-                % add the trigger destination to the subsystem
-                %self.addTriggerDestination(destination);
-            end  % for loop
-            
-        end  % function
-        
         function settings = packageCoreSettings(self)
             settings=struct() ;
             for i=1:length(self.CoreFieldNames_)

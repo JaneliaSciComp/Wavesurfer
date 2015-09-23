@@ -81,6 +81,7 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
             % is read from the DAQ board.
             %analogData = wsModel.Acquisition.getLatestAnalogData();
             %digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
+            %fprintf('MimicAnalogInputWithDigitalInput::samplesAcquired()\n');
             vSample = analogData(end,1);  % this method only gets called when nScans>=1
             wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
                 (vSample>2.5) ;

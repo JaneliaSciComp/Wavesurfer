@@ -68,9 +68,54 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     methods
         function self = StimulationSubsystem(parent)
             self@ws.system.Subsystem(parent) ;            
-            %self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
+            self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
+        function initializeFromMDFStructure(self, mdfStructure)            
+            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
+                % Get the list of physical channel names
+                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+                channelNames = mdfStructure.outputChannelNames ;                                
+                
+                % Check that they're all on the same device (for now)
+                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+                uniqueDeviceNames = unique(deviceNames);
+                if ~isscalar(uniqueDeviceNames) ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'Wavesurfer only supports a single NI card at present.');                      
+                end
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+                isAnalog = strcmp(channelTypes,'ao');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names
+                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
+                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
+                self.AnalogChannelNames_ = channelNames(isAnalog) ;
+                self.DigitalChannelNames_ = channelNames(isDigital) ;
+                
+                % Set the analog channel scales, units
+                nAnalogChannels = sum(isAnalog) ;
+                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
+                %V=ws.utility.SIUnit('V');  % by default, the units are volts                
+                self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
+                
+                % Set defaults for digital channels
+                nDigitalChannels = sum(isDigital) ;
+                self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
+                self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
+
+                % Intialized the stimulus library
+                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
+                
+%                 % Set up the untimed channels
+%                 self.syncTasksToChannelMembership_();
+                
+            end
+        end  % function
+
         function value=get.StimulusLibrary(self)
             value=self.StimulusLibrary_;
         end
@@ -229,22 +274,22 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     end  % methods block
     
     methods
-        function set.IsDigitalChannelTimed(self,newValue)
-            if ws.utility.isASettableValue(newValue),
-                if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                    coercedNewValue = logical(newValue) ;
-                    if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
-                        self.IsDigitalChannelTimed_=coercedNewValue;
-                        %self.syncTasksToChannelMembership_();
-                    end
-                else
-                    self.broadcast('DidSetIsDigitalChannelTimed');
-                    error('most:Model:invalidPropVal', ...
-                          'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
-                end
-            end
-            self.broadcast('DidSetIsDigitalChannelTimed');
-        end  % function
+%         function set.IsDigitalChannelTimed(self,newValue)
+%             if ws.utility.isASettableValue(newValue),
+%                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+%                     coercedNewValue = logical(newValue) ;
+%                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
+%                         self.IsDigitalChannelTimed_=coercedNewValue;
+%                         %self.syncTasksToChannelMembership_();
+%                     end
+%                 else
+%                     self.broadcast('DidSetIsDigitalChannelTimed');
+%                     error('most:Model:invalidPropVal', ...
+%                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
+%                 end
+%             end
+%             self.broadcast('DidSetIsDigitalChannelTimed');
+%         end  % function
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
@@ -440,22 +485,9 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     end  % public methods block
 
     methods
-%         function set.IsDigitalChannelTimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
-%                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-%                     coercedNewValue = logical(newValue) ;
-%                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
-%                         self.IsDigitalChannelTimed_=coercedNewValue;
-%                         %self.syncTasksToChannelMembership_();
-%                     end
-%                 else
-%                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
-%                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
-%                 end
-%             end
-%             self.broadcast('DidSetIsDigitalChannelTimed');
-%         end  % function
+        function set.IsDigitalChannelTimed(self,newValue)
+            self.setIsDigitalChannelTimed_(newValue) ;
+        end  % function
         
         function set.DigitalOutputStateIfUntimed(self,newValue)
             self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter
@@ -463,6 +495,27 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     end
 
     methods (Access=protected)
+        function wasSet = setIsDigitalChannelTimed_(self,newValue)
+            if ws.utility.isASettableValue(newValue),
+                nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
+                if isequal(size(newValue),[1 nDigitalChannels]) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                    coercedNewValue = logical(newValue) ;
+                    if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
+                        self.IsDigitalChannelTimed_=coercedNewValue;
+                        %self.syncTasksToChannelMembership_();
+                        wasSet = true ;
+                    end
+                else
+                    self.broadcast('DidSetIsDigitalChannelTimed');
+                    error('most:Model:invalidPropVal', ...
+                          'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
+                end
+            else
+                wasSet = false ;
+            end
+            self.broadcast('DidSetIsDigitalChannelTimed');
+        end  % function
+        
         function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
             if ws.utility.isASettableValue(newValue),
                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
@@ -470,14 +523,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                     coercedNewValue = logical(newValue) ;
                     self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
                     wasSet = true ;
-%                     if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-%                         isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-%                         untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
-%                         if ~isempty(untimedDigitalChannelState) ,
-%                             self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-%                         end
-%                     end
                 else
+                    self.broadcast('DidSetDigitalOutputStateIfUntimed');
                     error('most:Model:invalidPropVal', ...
                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
                 end

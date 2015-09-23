@@ -92,42 +92,33 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     end  % public methods block
     
     methods
-        function acquireHardwareResources_(self)            
-%             if isempty(self.TheFiniteAnalogOutputTask_) ,
-%                 self.TheFiniteAnalogOutputTask_ = ...
-%                     ws.ni.FiniteOutputTask(self, ...
-%                                            'analog', ...
-%                                            'Wavesurfer Finite Analog Output Task', ...
-%                                            self.AnalogPhysicalChannelNames, ...
-%                                            self.AnalogChannelNames) ;
-%                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
-%                 %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
-%             end
-%             if isempty(self.TheFiniteDigitalOutputTask_) ,
-%                 self.TheFiniteDigitalOutputTask_ = ...
-%                     ws.ni.FiniteOutputTask(self, ...
-%                                            'digital', ...
-%                                            'Wavesurfer Finite Digital Output Task', ...
-%                                            self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
-%                                            self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
-%                 self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
-%                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
-%             end
+        function acquireHardwareResources(self)            
+            self.acquireOnDemandHardwareResources() ;  % LooperStimulation has only on-demand resources, not timed ones
+        end
+        
+        function acquireOnDemandHardwareResources(self)            
             if isempty(self.TheUntimedDigitalOutputTask_) ,
                  self.TheUntimedDigitalOutputTask_ = ...
-                    ws.ni.UntimedDigitalOutputTask(self, ...
-                                           'Wavesurfer Untimed Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
-                                           self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
+                     ws.ni.UntimedDigitalOutputTask(self, ...
+                                                    'Wavesurfer Untimed Digital Output Task', ...
+                                                    self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
+                                                    self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
                  if ~all(self.IsDigitalChannelTimed)
                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
                  end
-           end
+            end
         end
         
         function releaseHardwareResources(self)
-            %self.TheFiniteAnalogOutputTask_ = [];            
-            %self.TheFiniteDigitalOutputTask_ = [];            
+            self.releaseOnDemandHardwareResources() ;  % LooperStimulation has only on-demand resources, not timed ones
+            self.releaseTimedHardwareResources() ;
+        end
+
+        function releaseTimedHardwareResources(self) %#ok<MANU>
+            % LooperStimulation has only on-demand resources, not timed ones
+        end
+        
+        function releaseOnDemandHardwareResources(self)
             self.TheUntimedDigitalOutputTask_ = [];            
         end
         
@@ -414,7 +405,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
-        end        
+        end
     end  % protected methods block
     
     methods (Access = protected)
@@ -422,7 +413,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             % Clear the timed digital output task, will be recreated when acq is
             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
             % And have to do it first to avoid a temporary collision.
-            self.TheFiniteDigitalOutputTask_ = [] ;
+            
+            %self.TheFiniteDigitalOutputTask_ = [] ;
             % Set the untimed output task appropriately
             self.TheUntimedDigitalOutputTask_ = [] ;
             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
@@ -638,24 +630,6 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %         end
 %     end
     
-%     methods
-%         function set.IsDigitalChannelTimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
-%                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-%                     coercedNewValue = logical(newValue) ;
-%                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
-%                         self.IsDigitalChannelTimed_=coercedNewValue;
-%                         %self.syncTasksToChannelMembership_();
-%                     end
-%                 else
-%                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
-%                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
-%                 end
-%             end
-%             self.broadcast('DidSetIsDigitalChannelTimed');
-%         end  % function
-%         
 %         function set.DigitalOutputStateIfUntimed(self,newValue)
 %             if ws.utility.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
@@ -679,6 +653,14 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %     end
     
     methods (Access=protected)
+        function setIsDigitalChannelTimed_(self,newValue)
+            wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            if wasSet ,
+                self.syncTasksToChannelMembership_() ;
+            end  
+            %self.broadcast('DidSetIsDigitalChannelTimed');
+        end  % function
+         
         function setDigitalOutputStateIfUntimed_(self,newValue)
             wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self,newValue) ;
             if wasSet ,
@@ -690,7 +672,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                     end
                 end
             end
-            self.broadcast('DidSetDigitalOutputStateIfUntimed');
+            %self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
     end
     

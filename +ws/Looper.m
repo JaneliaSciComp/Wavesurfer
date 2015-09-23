@@ -261,6 +261,11 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
+        function initializeFromMDFStructure(self,mdfStructure)
+            self.initializeFromMDFStructure_(mdfStructure) ;
+            self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+        end  % function
+
         function startingRun(self,wavesurferModelSettings)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
@@ -325,10 +330,25 @@ classdef Looper < ws.Model
             self.IPCPublisher_.send('looperIsAlive');
         end  % function        
         
-        function satellitesReleaseHardwareResources(self)
-            self.releaseHardwareResources();
-            self.IPCPublisher_.send('looperDidReleaseHardwareResources');            
-        end
+        function satellitesReleaseTimedHardwareResources(self)
+            self.releaseTimedHardwareResources_();
+            self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+        end  % function
+        
+        function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+            whos
+            newValue
+            self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
+            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        end  % function
+        
+        function isDigitalChannelTimedWasSetInFrontend(self, newValue)
+            whos
+            newValue
+            self.Stimulation.IsDigitalChannelTimed = newValue ;
+            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        end  % function
+        
     end  % RPC methods block
     
     methods
@@ -625,18 +645,35 @@ classdef Looper < ws.Model
             self.Triggering.didSetAcquisitionDuration();
             self.Display.didSetAcquisitionDuration();
         end        
-        
-        function releaseHardwareResources(self)
+    end
+       
+    methods (Access=protected)
+        function releaseTimedHardwareResources_(self)
             self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseHardwareResources();
+            self.Stimulation.releaseTimedHardwareResources();
+            %self.Stimulation.releaseOnDemandHardwareResources();
             self.Triggering.releaseHardwareResources();
             %self.Ephys.releaseHardwareResources();
         end
+
+        function releaseOnDemandHardwareResources_(self)
+            %self.Acquisition.releaseHardwareResources();
+            %self.Stimulation.releaseTimedHardwareResources();
+            self.Stimulation.releaseOnDemandHardwareResources();
+            %self.Triggering.releaseHardwareResources();
+            %self.Ephys.releaseHardwareResources();
+        end
         
-%         function result=get.FastProtocols(self)
-%             result = self.FastProtocols_;
-%         end
-        
+        function releaseAllHardwareResources_(self)
+            self.Acquisition.releaseHardwareResources();
+            self.Stimulation.releaseTimedHardwareResources();
+            self.Stimulation.releaseOnDemandHardwareResources();
+            self.Triggering.releaseHardwareResources();
+            %self.Ephys.releaseHardwareResources();
+        end
+    end
+
+    methods
         function didSetAcquisitionSampleRate(self,newValue)
             ephys = self.Ephys ;
             if ~isempty(ephys) ,
@@ -646,6 +683,17 @@ classdef Looper < ws.Model
     end  % methods
     
     methods (Access = protected)
+        function acquireTimedHardwareResources_(self)
+            %self.Acquisition.releaseHardwareResources();
+            self.Stimulation.acquireTimedHardwareResources();
+            %self.Triggering.releaseHardwareResources();
+            %self.Ephys.releaseHardwareResources();
+        end
+
+        function acquireOnDemandHardwareResources_(self)
+            self.Stimulation.acquireOnDemandHardwareResources();
+        end
+        
 %         function runWithGuards_(self)
 %             % Start a run.
 %             
@@ -672,10 +720,7 @@ classdef Looper < ws.Model
             self.IsPerformingRun_ = true ;                        
             
             % Make our own settings mimic those of wavesurferModelSettings
-            self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
-            %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            %keyboard
             self.mimicWavesurferModel_(wsModel) ;
             
             % Tell all the subsystems to prepare for the run
@@ -1461,6 +1506,9 @@ classdef Looper < ws.Model
         function mimicWavesurferModel_(self, wsModel)
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
+        
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseTimedHardwareResources_();
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -1482,4 +1530,24 @@ classdef Looper < ws.Model
             end
         end  % function
     end  % public methods block
+    
+    methods (Access=protected)
+        function initializeFromMDFStructure_(self, mdfStructure)                        
+            % Initialize the acquisition subsystem given the MDF data
+            self.Acquisition.initializeFromMDFStructure(mdfStructure);
+            
+            % Initialize the stimulation subsystem given the MDF
+            self.Stimulation.initializeFromMDFStructure(mdfStructure);
+
+            % Initialize the triggering subsystem given the MDF
+            self.Triggering.initializeFromMDFStructure(mdfStructure);
+            
+            % Add the default scopes to the display
+            %self.Display.initializeScopes();
+            
+            % Change our state to reflect the presence of the MDF file
+            %self.setState_('idle');            
+        end  % function
+    end  % methods block        
+    
 end  % classdef

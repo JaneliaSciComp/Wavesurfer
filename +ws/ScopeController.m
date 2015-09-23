@@ -257,7 +257,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
     methods
         function castOffAllAttachments(self)
             self.unsubscribeFromAll() ;
-            self.Figure.castOffAllAtachments() ;
+            self.Figure.castOffAllAttachments() ;
         end                
     end        
     

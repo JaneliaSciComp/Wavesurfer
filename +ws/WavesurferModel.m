@@ -410,10 +410,10 @@ classdef WavesurferModel < ws.Model
             fprintf('WavesurferModel::refillerIsAlive()\n');
         end
         
-        function looperDidReleaseHardwareResources(self) %#ok<MANU>
+        function looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
         end
         
-        function refillerDidReleaseHardwareResources(self) %#ok<MANU>
+        function refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
         end        
     end  % methods
     
@@ -776,28 +776,36 @@ classdef WavesurferModel < ws.Model
             self.Ephys.releaseHardwareResources();
         end
 
-        function releaseAllHardwareResources(self)
+        function testPulserIsAboutToStartTestPulsing(self)
+            self.releaseTimedHardwareResourcesOfAllProcesses_();
+        end
+    end
+    
+    methods (Access=protected)
+        function releaseTimedHardwareResourcesOfAllProcesses_(self)
             % Release our own hardware resources, and also tell the
             % satellites to do so.
-            self.releaseHardwareResources() ;
-            self.IPCPublisher_.send('satellitesReleaseHardwareResources') ;
+            self.releaseTimedHardwareResources_() ;
+            self.IPCPublisher_.send('satellitesReleaseTimedHardwareResources') ;
             
             % Wait for the looper to respond
             timeout = 10 ;  % s
-            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseHardwareResources',timeout) ;
+            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
                 throw(err);
             end
             
             % Wait for the refiller to respond
-            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseHardwareResources',timeout) ;
+            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
             if ~gotMessage ,
                 % Something went wrong
                 throw(err);
             end            
-        end  % function
-        
+        end  % function        
+    end
+    
+    methods
         function result=get.FastProtocols(self)
             result = self.FastProtocols_ ;
         end
@@ -1203,8 +1211,10 @@ classdef WavesurferModel < ws.Model
             % this
             %self.IPCPublisher_.send('didStopRun') ;
 
-            % Notify other processes
-            self.IPCPublisher_.send('stoppingRun') ;
+            % No need to notify other processes, already did this by
+            % sending 'frontendWantsToStopRun' message
+            % % Notify other processes
+            % self.IPCPublisher_.send('stoppingRun') ;
 
             % Notify subsystems
             for idx = numel(self.Subsystems_):-1:1 ,
@@ -1434,9 +1444,12 @@ classdef WavesurferModel < ws.Model
             
             % Add the default scopes to the display
             self.Display.initializeScopes();
-                        
+            
             % Change our state to reflect the presence of the MDF file
             self.setState_('idle');
+            
+            % Notify the satellites
+            self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;            
         end  % function
     end  % methods block
         
@@ -1924,6 +1937,18 @@ classdef WavesurferModel < ws.Model
         end
     end
 
+    methods
+        function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
+            value = self.Stimulation.DigitalOutputStateIfUntimed ;
+            self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend',value) ;
+        end
+        
+        function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
+            value = self.Stimulation.IsDigitalChannelTimed ;
+            self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',value) ;
+        end
+    end
+    
 %     methods
 %         function triggeringSubsystemJustStartedFirstSweepInRun(self)
 %             % Called by the triggering subsystem just after first sweep

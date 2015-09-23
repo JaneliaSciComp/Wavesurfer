@@ -265,6 +265,10 @@ classdef Refiller < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
+        function initializeFromMDFStructure(self,mdfStructure)
+            self.initializeFromMDFStructure_(mdfStructure) ;
+        end  % function
+        
         function startingRun(self,wavesurferModelSettings)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
@@ -336,10 +340,21 @@ classdef Refiller < ws.Model
             self.IPCPublisher_.send('refillerIsAlive');
         end  % function        
         
-        function satellitesReleaseHardwareResources(self)
-            self.releaseHardwareResources();
-            self.IPCPublisher_.send('refillerDidReleaseHardwareResources');            
+        function satellitesReleaseTimedHardwareResources(self)
+            self.releaseTimedHardwareResources_();
+            self.IPCPublisher_.send('refillerDidReleaseTimedHardwareResources');            
         end
+        
+        function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue) %#ok<INUSD>
+            % Refiller doesn't need to do anything in response to this
+        end
+        
+        function isDigitalChannelTimedWasSetInFrontend(self, newValue)
+            whos
+            newValue
+            self.Stimulation.IsDigitalChannelTimed = newValue ;
+            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        end  % function
         
     end  % RPC methods block
     
@@ -614,13 +629,6 @@ classdef Refiller < ws.Model
             self.Display.didSetAcquisitionDuration();
         end        
         
-        function releaseHardwareResources(self)
-            %self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseHardwareResources();
-            %self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
-        end
-        
 %         function result=get.FastProtocols(self)
 %             result = self.FastProtocols_;
 %         end
@@ -638,6 +646,17 @@ classdef Refiller < ws.Model
     end
 
     methods (Access = protected)
+        function releaseHardwareResources_(self)
+            self.releaseTimedHardwareResources_() ;  % All the refiller resources are timed
+        end
+        
+        function releaseTimedHardwareResources_(self)
+            %self.Acquisition.releaseHardwareResources();
+            self.Stimulation.releaseHardwareResources();
+            %self.Triggering.releaseHardwareResources();
+            %self.Ephys.releaseHardwareResources();
+        end
+        
         function prepareForRun_(self, wavesurferModelSettings)
             % Get ready to run, but don't start anything.
 
@@ -649,7 +668,6 @@ classdef Refiller < ws.Model
             end
                         
             % Make our own settings mimic those of wavesurferModelSettings
-            self.releaseHardwareResources();  % Have to do this before decoding properties, or bad things will happen
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             %keyboard
@@ -945,6 +963,9 @@ classdef Refiller < ws.Model
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
             
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseTimedHardwareResources_();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -965,4 +986,24 @@ classdef Refiller < ws.Model
             end
         end  % function
     end  % public methods block
+    
+    methods (Access=protected)
+        function initializeFromMDFStructure_(self, mdfStructure)                        
+            % Initialize the acquisition subsystem given the MDF data
+            %self.Acquisition.initializeFromMDFStructure(mdfStructure);
+            
+            % Initialize the stimulation subsystem given the MDF
+            self.Stimulation.initializeFromMDFStructure(mdfStructure);
+
+            % Initialize the triggering subsystem given the MDF
+            self.Triggering.initializeFromMDFStructure(mdfStructure);
+            
+            % Add the default scopes to the display
+            %self.Display.initializeScopes();
+            
+            % Change our state to reflect the presence of the MDF file
+            %self.setState_('idle');
+        end  % function
+    end  % methods block        
+    
 end  % classdef
