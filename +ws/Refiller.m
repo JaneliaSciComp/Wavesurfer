@@ -209,7 +209,7 @@ classdef Refiller < ws.Model
                     % Action in a run depends on whether we are also in a
                     % sweep, or are in-between sweeps
                     if self.IsPerformingSweep_ ,
-                        fprintf('Refiller: In a sweep\n') ;
+                        %fprintf('Refiller: In a sweep\n') ;
                         if self.DoesFrontendWantToStopRun_ ,
                             %fprintf('Refiller: self.DoesFrontendWantToStopRun_\n');
                             % When done, clean up after sweep
@@ -236,7 +236,7 @@ classdef Refiller < ws.Model
                             end
                         end
                     else
-                        fprintf('Refiller: In a run, but not a sweep\n');
+                        %fprintf('Refiller: In a run, but not a sweep\n');
                         if self.DoesFrontendWantToStopRun_ ,
                             self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
                             self.DoesFrontendWantToStopRun_ = false ;  % reset this
@@ -249,7 +249,7 @@ classdef Refiller < ws.Model
                         end                        
                     end
                 else
-                    fprintf('Refiller: Not in a run, about to check for messages\n');
+                    %fprintf('Refiller: Not in a run, about to check for messages\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;

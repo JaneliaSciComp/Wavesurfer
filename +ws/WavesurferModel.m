@@ -1799,7 +1799,6 @@ classdef WavesurferModel < ws.Model
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
-            self.releaseHardwareResources() ;  % Have to do this before decoding properties, or bad things will happen
             %self.decodeProperties(wavesurferModelSettings);
             newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicProtocol_(newModel) ;
@@ -1940,7 +1939,7 @@ classdef WavesurferModel < ws.Model
     methods
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.DigitalOutputStateIfUntimed ;
-            self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend',value) ;
+            self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
         end
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
@@ -2030,6 +2029,10 @@ classdef WavesurferModel < ws.Model
     methods (Access=protected) 
         function mimicProtocol_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.
+
+            % Do this before replacing properties in place, or bad things
+            % will happen
+            self.releaseHardwareResources() ;
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -2048,6 +2051,12 @@ classdef WavesurferModel < ws.Model
                         self.setPropertyValue_(thisPropertyName, source) ;
                     end
                 end
+            end
+            
+            % Make sure the looper knows which output channels are timed vs
+            % on-demand
+            if self.IsITheOneTrueWavesurferModel_ ,
+                self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
             end
         end  % function
     end  % public methods block

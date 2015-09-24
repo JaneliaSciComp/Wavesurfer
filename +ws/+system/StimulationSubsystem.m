@@ -504,6 +504,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                         self.IsDigitalChannelTimed_=coercedNewValue;
                         %self.syncTasksToChannelMembership_();
                         wasSet = true ;
+                    else
+                        wasSet = false ;
                     end
                 else
                     self.broadcast('DidSetIsDigitalChannelTimed');

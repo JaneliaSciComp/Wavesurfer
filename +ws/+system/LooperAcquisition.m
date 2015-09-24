@@ -295,13 +295,13 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     methods
         function [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
                 poll(self, timeSinceSweepStart, fromRunStartTicId)
-            fprintf('LooperAcquisition::poll()\n') ;
+            %fprintf('LooperAcquisition::poll()\n') ;
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring ,
-                fprintf('IsArmedOrAcquiring\n') ;
+                %fprintf('IsArmedOrAcquiring\n') ;
                 % Check for task doneness
                 areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
                 if areTasksDone ,
@@ -332,7 +332,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     %self.acquisitionSweepComplete_();
                 end
             else
-                fprintf('~IsArmedOrAcquiring\n') ;
+                %fprintf('~IsArmedOrAcquiring\n') ;
                 didReadFromTasks = false ;
                 rawAnalogData = [] ;
                 rawDigitalData = [] ;

@@ -206,7 +206,7 @@ classdef Looper < ws.Model
                     % Action in a run depends on whether we are also in a
                     % sweep, or are in-between sweeps
                     if self.IsPerformingSweep_ ,
-                        fprintf('Looper: In a sweep\n');
+                        %fprintf('Looper: In a sweep\n');
                         if self.DoesFrontendWantToStopRun_ ,
                             %fprintf('Looper: self.DoesFrontendWantToStopRun_\n');
                             % When done, clean up after sweep
@@ -232,7 +232,7 @@ classdef Looper < ws.Model
                             end                        
                         end
                     else
-                        fprintf('Looper: In a run, but not a sweep\n');
+                        %fprintf('Looper: In a run, but not a sweep\n');
                         if self.DoesFrontendWantToStopRun_ ,
                             self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
                             self.DoesFrontendWantToStopRun_ = false ;  % reset this                            
@@ -245,7 +245,7 @@ classdef Looper < ws.Model
                         end                        
                     end
                 else
-                    fprintf('Looper: Not in a run, about to check for messages\n');
+                    %fprintf('Looper: Not in a run, about to check for messages\n');
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;

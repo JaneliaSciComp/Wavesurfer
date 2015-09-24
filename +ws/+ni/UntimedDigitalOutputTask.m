@@ -26,6 +26,10 @@ classdef UntimedDigitalOutputTask < handle
 
     methods
         function self = UntimedDigitalOutputTask(parent, taskName, physicalChannelNames, channelNames)
+            fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
+            physicalChannelNames
+            channelNames
+           
             nChannels=length(physicalChannelNames);
                                     
             % Store the parent
@@ -93,12 +97,13 @@ classdef UntimedDigitalOutputTask < handle
         
         function set.ChannelData(self, newValue)
             if ws.utility.isASettableValue(newValue),
-                if islogical(newValue) && isrow(newValue) && length(newValue)==length(self.ChannelNames) ,
+                nChannels = length(self.ChannelNames) ;
+                if islogical(newValue) && isrow(newValue) && length(newValue)==nChannels ,
                     self.ChannelData_ = newValue;
                     self.syncOutputBufferToChannelData_();
                 else
                     error('most:Model:invalidPropVal', ...
-                          'ChannelData must be an 1xR matrix, R the number of channels, of the appropriate type.');
+                          'ChannelData must be an 1x%d matrix, of the appropriate type.',nChannels);
                 end
             end
         end  % function        
