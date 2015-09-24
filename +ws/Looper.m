@@ -816,6 +816,7 @@ classdef Looper < ws.Model
             % Final preparations...
             %self.IsSweepComplete_ = false ;
             self.IsPerformingSweep_ = true ;
+            %profile on
             
             % Notify the fronted that we're ready
             self.IPCPublisher_.send('looperReadyForSweep') ;
@@ -859,6 +860,7 @@ classdef Looper < ws.Model
 %             % Call user functions and broadcast
 %             self.callUserCodeManager_('didCompleteSweep');
 
+            %profile off
             self.IsPerformingSweep_ = false ;
             
             % Notify the front end
@@ -876,6 +878,7 @@ classdef Looper < ws.Model
                 end
             end
 
+            %profile off
             self.IsPerformingSweep_ = false ;
             
             %self.callUserCodeManager_('didAbortSweep');
@@ -963,7 +966,7 @@ classdef Looper < ws.Model
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
                 % Toss the data to the subscribers
-                fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
+                %fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
                 self.IPCPublisher_.send('samplesAcquired', ...
                                         self.NScansAcquiredSoFarThisSweep_, ...
                                         rawAnalogData, ...

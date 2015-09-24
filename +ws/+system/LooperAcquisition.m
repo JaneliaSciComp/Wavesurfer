@@ -12,6 +12,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % This goes true during self.startingSweep() and goes false
             % after a single finite acquisition has completed.  Then the
             % cycle may repeat, depending...
+        AreSweepsContinuous_
+            % this is set to true or false at the start of a run, and is
+            % used during polling to see if we need to check the DAQmx
+            % tasks for doneness.  If sweeps are continuous, there's no
+            % need to check.  This is an important optimization, b/c
+            % checking takes 10-20 ms
         AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
         DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
     end    
@@ -89,9 +95,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             
             % Set for finite-duration vs. continous acquisition
             if parent.AreSweepsContinuous ,
+                self.AreSweepsContinuous_ = true ;
                 self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
             else
+                self.AreSweepsContinuous_ = false ;
                 self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
@@ -300,10 +308,17 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
 
             % Call the task to do the real work
-            if self.IsArmedOrAcquiring ,
+            if self.IsArmedOrAcquiring_ ,
                 %fprintf('IsArmedOrAcquiring\n') ;
                 % Check for task doneness
-                areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
+                if self.AreSweepsContinuous_ ,  
+                    % if doing continuous acq, no need to check.  This is
+                    % an important optimization, b/c the checks can take
+                    % 10-20 ms.
+                    areTasksDone = false;
+                else                    
+                    areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
+                end
                 if areTasksDone ,
                     fprintf('Acquisition tasks are done.\n')
                 end
@@ -314,8 +329,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 %end
                 [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
                     self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
-                nScans = size(rawAnalogData,1) ;
-                fprintf('Read acq data. nScans: %d\n',nScans)
+                %nScans = size(rawAnalogData,1) ;
+                %fprintf('Read acq data. nScans: %d\n',nScans)
 
                 % Notify the whole system that samples were acquired
                 didReadFromTasks = true ;  % we return this, even if zero samples were acquired
