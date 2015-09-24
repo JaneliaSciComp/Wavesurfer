@@ -676,4 +676,10 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         end  % function
     end
     
+    methods
+        function setDigitalOutputStateIfUntimedQuicklyAndDirtily(self,newValue)
+            % This method does no error checking, for minimum latency
+            self.TheUntimedDigitalOutputTask_.setChannelDataQuicklyAndDirtily(newValue) ;
+        end
+    end
 end  % classdef

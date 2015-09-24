@@ -350,8 +350,8 @@ classdef Refiller < ws.Model
         end
         
         function isDigitalChannelTimedWasSetInFrontend(self, newValue)
-            whos
-            newValue
+%             whos
+%             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
         end  % function

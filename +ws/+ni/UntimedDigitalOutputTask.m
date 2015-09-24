@@ -26,9 +26,9 @@ classdef UntimedDigitalOutputTask < handle
 
     methods
         function self = UntimedDigitalOutputTask(parent, taskName, physicalChannelNames, channelNames)
-            fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
-            physicalChannelNames
-            channelNames
+            %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
+            %physicalChannelNames
+            %channelNames
            
             nChannels=length(physicalChannelNames);
                                     
@@ -107,6 +107,14 @@ classdef UntimedDigitalOutputTask < handle
                 end
             end
         end  % function        
+        
+        function setChannelDataQuicklyAndDirtily(self,newValue)
+            % Set the channel data as fast as possible, for minimum
+            % latency.  Note that there's no error checking here, so if
+            % newValue is a bad value, that's on you.  No free lunch, etc.
+            self.ChannelData_ = newValue ;
+            self.DabsDaqTask_.writeDigitalData(newValue);
+        end
         
         function debug(self) %#ok<MANU>
             keyboard

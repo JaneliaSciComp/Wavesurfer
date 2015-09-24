@@ -94,7 +94,19 @@ classdef UserCodeManager < ws.system.Subsystem
 %             end
 %             self.broadcast('Update');
 %         end  % function
-        
+
+        function startingRun(self)
+            % Instantiate a user object, if one doesn't already exist
+            if isempty(self.TheObject_) ,
+                [newObject,exception] = self.tryToInstantiateObject_(self.ClassName) ;
+                if isempty(exception) ,
+                    self.TheObject_ = newObject ;
+                else
+                    throw(exception);
+                end
+            end            
+        end  % function
+
         function invoke(self, rootModel, eventName, varargin)
             try
                 if isempty(self.TheObject_) ,
@@ -126,6 +138,18 @@ classdef UserCodeManager < ws.system.Subsystem
                 display(me.getReport());
             end
         end  % function
+        
+        function invokeSamplesAcquired(self, rootModel, scaledAnalogData, rawDigitalData) 
+            % This method is designed to be fast, at the expense of
+            % error-checking.
+            try
+                self.TheObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+            catch me
+                warning('wavesurfer:usercodemanager:codeerror', 'Error in user class method samplesAcquired');
+                fprintf('Stack trace for user class method error:\n');
+                display(me.getReport());
+            end            
+        end
         
         % You might thing user methods would get invoked inside the
         % UserCodeManager methods startingRun, startingSweep,

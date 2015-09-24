@@ -76,15 +76,17 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,wsModel,eventName,analogData,digitalData) %#ok<INUSL,INUSD>
+        function samplesAcquired(self,wsModel,eventName,analogData,digitalData)  %#ok<INUSL,INUSD>
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             %analogData = wsModel.Acquisition.getLatestAnalogData();
             %digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             %fprintf('MimicAnalogInputWithDigitalInput::samplesAcquired()\n');
             vSample = analogData(end,1);  % this method only gets called when nScans>=1
-            wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
-                (vSample>2.5) ;
+%             wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = ...
+%                 (vSample>2.5) ;
+            newOutput = (vSample>2.5) ;
+            wsModel.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newOutput) ;
             %fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         

@@ -63,6 +63,7 @@ classdef Looper < ws.Model
         DoKeepRunningMainLoop_
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
+        IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
     end
     
 %     events
@@ -336,15 +337,15 @@ classdef Looper < ws.Model
         end  % function
         
         function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-            whos
-            newValue
+%             whos
+%             newValue
             self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
         end  % function
         
         function isDigitalChannelTimedWasSetInFrontend(self, newValue)
-            whos
-            newValue
+%             whos
+%             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
         end  % function
@@ -717,6 +718,7 @@ classdef Looper < ws.Model
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
             self.NSweepsCompletedInThisRun_ = 0 ;
+            self.IsUserCodeManagerEnabled_ = self.UserCodeManager.IsEnabled ;  % cache for speed                             
             self.IsPerformingRun_ = true ;                        
             
             % Make our own settings mimic those of wavesurferModelSettings
@@ -960,9 +962,13 @@ classdef Looper < ws.Model
                                                  rawAnalogData, ...
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
-                if self.UserCodeManager.IsEnabled ,                             
-                    self.callUserMethod_('samplesAcquired',scaledAnalogData,rawDigitalData);
+%                 if self.UserCodeManager.IsEnabled ,                             
+%                     self.callUserMethod_('samplesAcquired',scaledAnalogData,rawDigitalData);
+%                 end
+                if self.IsUserCodeManagerEnabled_ ,
+                    self.UserCodeManager_.invokeSamplesAcquired(self, scaledAnalogData, rawDigitalData) ;
                 end
+                
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
                 % Toss the data to the subscribers
