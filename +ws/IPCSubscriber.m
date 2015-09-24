@@ -55,7 +55,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
-            fprintf('IPCSubscriber::processMessageIfAvailable(): Got message %s\n',methodName);
+            %fprintf('IPCSubscriber::processMessageIfAvailable(): Got message %s\n',methodName);
             if isempty(self.Delegate) ,
                 error('IPCSubscriber:noDelegate', ...
                       'Couldn''t call the method because Delegate is empty or invalid');

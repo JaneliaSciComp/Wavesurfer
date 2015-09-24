@@ -351,7 +351,7 @@ classdef WavesurferModel < ws.Model
     
     methods  % These are all the methods that get called in response to ZMQ messages
         function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            fprintf('got data.  scanIndex: %d\n',scanIndex) ;
+            %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
             self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
         end  % function
         
@@ -1283,7 +1283,7 @@ classdef WavesurferModel < ws.Model
             % been buffered for a while, and we're ready to display+log it.
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.            
             
-            fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
+            %fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
             self.NTimesDataAvailableCalledSinceRunStart_ = self.NTimesDataAvailableCalledSinceRunStart_ + 1 ;
             [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = self.SamplesBuffer_.empty() ;            
             nScans = size(rawAnalogData,1) ;
@@ -1333,7 +1333,7 @@ classdef WavesurferModel < ws.Model
                 
                 % Do a drawnow(), to make sure user sees the changes, and
                 % to process any button presses, etc.
-                fprintf('About to do drawnow()\n');
+                %fprintf('About to do drawnow()\n');
                 drawnow();                
             end
         end  % function

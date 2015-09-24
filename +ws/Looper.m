@@ -213,24 +213,27 @@ classdef Looper < ws.Model
                             % When done, clean up after sweep
                             self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
                         else
-                            %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
-                            % Check for messages, but don't wait for them
-                            self.IPCSubscriber_.processMessagesIfAvailable() ;
-
-                            % Acquire data, update soft real-time outputs
-                            [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
-                                self.Acquisition.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
-
-                            % Deal with the acquired samples
-                            if didReadFromTasks ,
-                                self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
-                                self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
-                                self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
-                                if areTasksDone ,
-                                    self.completeSweep_() ;
-                                    %self.acquisitionSweepComplete() ;
-                                end
-                            end                        
+                            % This is the block that runs time after time
+                            % during an ongoing sweep
+                            self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart) ;
+%                             %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
+%                             % Check for messages, but don't wait for them
+%                             self.IPCSubscriber_.processMessagesIfAvailable() ;
+% 
+%                             % Acquire data, update soft real-time outputs
+%                             [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
+%                                 self.Acquisition_.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+% 
+%                             % Deal with the acquired samples
+%                             if didReadFromTasks ,
+%                                 self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+%                                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
+%                                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
+%                                 if areTasksDone ,
+%                                     self.completeSweep_() ;
+%                                     %self.acquisitionSweepComplete() ;
+%                                 end
+%                             end                        
                         end
                     else
                         %fprintf('Looper: In a run, but not a sweep\n');
@@ -649,6 +652,27 @@ classdef Looper < ws.Model
     end
        
     methods (Access=protected)
+        function performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
+            %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
+            % Check for messages, but don't wait for them
+            self.IPCSubscriber_.processMessagesIfAvailable() ;
+
+            % Acquire data, update soft real-time outputs
+            [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
+                self.Acquisition_.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+
+            % Deal with the acquired samples
+            if didReadFromTasks ,
+                self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+                self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
+                self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
+                if areTasksDone ,
+                    self.completeSweep_() ;
+                    %self.acquisitionSweepComplete() ;
+                end
+            end                        
+        end
+        
         function releaseTimedHardwareResources_(self)
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseTimedHardwareResources();
@@ -940,7 +964,7 @@ classdef Looper < ws.Model
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
-                channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
+                channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
                 if isempty(rawAnalogData) ,
                     scaledAnalogData=zeros(size(rawAnalogData));
