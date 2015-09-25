@@ -85,6 +85,7 @@ classdef ScopeModel < ws.Model
         DataCleared
         DidSetChannelUnits
         WindowVisibilityNeedsToBeUpdated
+        UpdateXAxisLimits
         UpdateYAxisLimits
         UpdateAreYLimitsLockedTightToData
     end  % events
@@ -275,7 +276,7 @@ classdef ScopeModel < ws.Model
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.XOffset_ = newValue;
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateXAxisLimits');
         end
 
         function value=get.XOffset(self)

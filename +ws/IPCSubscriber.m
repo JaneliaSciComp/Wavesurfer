@@ -45,13 +45,13 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     warning('Got a message too long for the buffer in IPCSubscriber');
                     isMessageAvailable = false;
                     methodName = '' ;
-                    return                    
+                    return
                 else
                     fprintf('There was an interesting error calling zmq.core.recv.  self.Socket: %d\n',self.Socket);
                     rethrow(me);
                 end
-            end            
-            isMessageAvailable = true;
+            end
+            isMessageAvailable = true ;
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
@@ -62,7 +62,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
             else
                 feval(methodName,self.Delegate,arguments{:});
             end
-        end  % function        
+        end  % function
         
         function [didGetMessage,err] = waitForMessage(self, expectedMessageName, timeout)
             % timeout is in sec

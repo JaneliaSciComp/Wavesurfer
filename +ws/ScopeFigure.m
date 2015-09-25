@@ -187,6 +187,7 @@ classdef ScopeFigure < ws.MCOSFigure
             % Subscribe to some model events
             if ~isempty(model) ,
                 model.subscribeMe(self,'Update','','update');
+                model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
                 model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
                 model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
                 model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
@@ -274,7 +275,7 @@ classdef ScopeFigure < ws.MCOSFigure
 %             end
 %         end
         
-        function modelXAxisLimitSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+        function updateXAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateXAxisLimits_();
         end  % function
         

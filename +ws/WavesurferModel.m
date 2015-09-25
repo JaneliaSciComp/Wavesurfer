@@ -97,6 +97,7 @@ classdef WavesurferModel < ws.Model
         SamplesBuffer_
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
+        %IsDeeplyIntoPerformingSweep_ = false
     end
     
 %     events
@@ -354,7 +355,7 @@ classdef WavesurferModel < ws.Model
             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
             
             % If we are not performing sweeps, just ignore.  This can
-            % happen after stopping a run, where some old messages from the last run are
+            % happen after stopping a run and then starting another, where some old messages from the last run are
             % still in the queue
             if self.IsPerformingSweep_ ,
                 self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
@@ -1000,7 +1001,8 @@ classdef WavesurferModel < ws.Model
             
             % As of the next line, the wavesurferModel is offically
             % performing a sweep
-            self.IsPerformingSweep_ = true ;
+            % Actually, we'll wait until a bit later to set this true
+            %self.IsPerformingSweep_ = true ;
                 
             % Call user functions 
             self.callUserMethod_('startingSweep');            
@@ -1049,6 +1051,11 @@ classdef WavesurferModel < ws.Model
 
                 % Pulse the master trigger to start the sweep!
                 fprintf('About to pulse the master trigger!\n');
+                self.IsPerformingSweep_ = true ;  
+                    % have to wait until now to set this true, so that old
+                    % samplesAcquired messages are ignored when we're
+                    % waiting for looperReadyForSweep and
+                    % refillerReadyForSweep messages above.
                 self.Triggering.pulseMasterTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
@@ -1265,7 +1272,7 @@ classdef WavesurferModel < ws.Model
             % Check that we didn't miss any data
             if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
                 nScansMissed = scanIndex - self.NScansAcquiredSoFarThisSweep_ ;
-                error('We apparently missed %d scans: the index of the first scan in this acuire is %d, but we''ve only seen %d scans.', ...
+                error('We apparently missed %d scans: the index of the first scan in this acquire is %d, but we''ve only seen %d scans.', ...
                       nScansMissed, ...
                       scanIndex, ...
                       self.NScansAcquiredSoFarThisSweep_ );
@@ -1280,7 +1287,9 @@ classdef WavesurferModel < ws.Model
             self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             
             if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
+                %profile resume
                 self.dataAvailable_() ;
+                %profile off
             end
         end
         
@@ -1290,6 +1299,7 @@ classdef WavesurferModel < ws.Model
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.            
             
             %fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
+            tHere=tic();
             self.NTimesDataAvailableCalledSinceRunStart_ = self.NTimesDataAvailableCalledSinceRunStart_ + 1 ;
             [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = self.SamplesBuffer_.empty() ;            
             nScans = size(rawAnalogData,1) ;
@@ -1340,8 +1350,9 @@ classdef WavesurferModel < ws.Model
                 % Do a drawnow(), to make sure user sees the changes, and
                 % to process any button presses, etc.
                 %fprintf('About to do drawnow()\n');
-                drawnow();                
+                drawnow();  
             end
+            toc(tHere)
         end  % function
         
     end % protected methods block
