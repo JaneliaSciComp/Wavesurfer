@@ -196,21 +196,21 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             if islogical(newIsDigitalChannelActive) && isequal(size(newIsDigitalChannelActive),size(self.IsDigitalChannelActive)) ,
                 % For the current settings, break into analog and digital
                 % parts.
-                % We'll check these for changes later.
-                originalIsDigitalChannelActive = self.IsDigitalChannelActive ;
+%                 % We'll check these for changes later.
+%                 originalIsDigitalChannelActive = self.IsDigitalChannelActive ;
 
                 % Set the setting
                 self.IsDigitalChannelActive_ = newIsDigitalChannelActive;
 
-                % Now delete any tasks that have the wrong channel subsets,
-                % if needed
-                if ~isempty(self.DigitalInputTask_) ,
-                    if isequal(newIsDigitalChannelActive,originalIsDigitalChannelActive) ,
-                        % no need to do anything
-                    else
-                        self.DigitalInputTask_= [] ;  % need to clear, will re-create when needed 
-                    end
-                end
+%                 % Now delete any tasks that have the wrong channel subsets,
+%                 % if needed
+%                 if ~isempty(self.DigitalInputTask_) ,
+%                     if isequal(newIsDigitalChannelActive,originalIsDigitalChannelActive) ,
+%                         % no need to do anything
+%                     else
+%                         self.DigitalInputTask_= [] ;  % need to clear, will re-create when needed 
+%                     end
+%                 end
             end
             self.broadcast('DidSetIsChannelActive');
         end

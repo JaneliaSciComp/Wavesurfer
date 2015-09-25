@@ -12,7 +12,7 @@ classdef Preferences < ws.UrPreferences
             % Idiomatic usage is to pass an arg like 'clear', so
             % if there's an arg, clear the preferences
             if nargin > 0 && ~isempty(thePreferences) ,
-                delete(thePreferences);
+                delete(thePreferences);  % do I need to explicitly delete?
                 thePreferences = [];
                 return
             end

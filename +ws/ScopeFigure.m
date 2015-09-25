@@ -126,7 +126,7 @@ classdef ScopeFigure < ws.MCOSFigure
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
-            fprintf('ScopeFigure::delete()\n');
+            %fprintf('ScopeFigure::delete()\n');
             ws.utility.deleteIfValidHGHandle(self.LineGHs_);
             ws.utility.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function

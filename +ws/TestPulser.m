@@ -1238,8 +1238,8 @@ classdef TestPulser < ws.Model
                 % Continue with stopping stuff
                 % fprintf('About to delete the tasks...\n');
                 %self
-                delete(self.InputTask_);
-                delete(self.OutputTask_);
+                delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
+                delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
                 self.InputTask_=[];
                 self.OutputTask_=[];
                 % maybe need to do more here...

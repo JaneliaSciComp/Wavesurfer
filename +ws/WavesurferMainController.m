@@ -1061,7 +1061,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             thisScopeController=self.ScopeControllers{scopeIndex};
             isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
             
-            thisScopeController.delete();
+            % thisScopeController.delete();
+            thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
             self.ScopeControllers(scopeIndex)=[];
             self.ChildControllers(isMatchAsChild)=[];
             

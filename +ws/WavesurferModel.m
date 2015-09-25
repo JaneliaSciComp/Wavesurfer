@@ -352,7 +352,13 @@ classdef WavesurferModel < ws.Model
     methods  % These are all the methods that get called in response to ZMQ messages
         function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
-            self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+            
+            % If we are not performing sweeps, just ignore.  This can
+            % happen after stopping a run, where some old messages from the last run are
+            % still in the queue
+            if self.IsPerformingSweep_ ,
+                self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+            end
         end  % function
         
         function looperCompletedSweep(self)
@@ -2034,7 +2040,7 @@ classdef WavesurferModel < ws.Model
 
             % Do this before replacing properties in place, or bad things
             % will happen
-            self.releaseHardwareResources() ;
+            self.releaseTimedHardwareResources_() ;
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
