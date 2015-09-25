@@ -143,7 +143,9 @@ classdef UserCodeManager < ws.system.Subsystem
             % This method is designed to be fast, at the expense of
             % error-checking.
             try
-                self.TheObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+                if ~isempty(self.TheObject_) ,
+                    self.TheObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+                end
             catch me
                 warning('wavesurfer:usercodemanager:codeerror', 'Error in user class method samplesAcquired');
                 fprintf('Stack trace for user class method error:\n');

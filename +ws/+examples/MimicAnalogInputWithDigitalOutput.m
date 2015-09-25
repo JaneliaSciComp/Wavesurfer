@@ -29,21 +29,24 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
             fprintf('About to start a run.\n');
         end
         
-        function completingRun(self,wsModel,eventName) %#ok<INUSD>
+        function completingRun(self,wsModel,eventName) %#ok<INUSL,INUSD>
             % Called just after each set of sweeps (a.k.a. each
             % "run")
             fprintf('Completed a run.\n');
+            wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = false ;  % don't want this left high
         end
         
-        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>
+        function stoppingRun(self,wsModel,eventName) %#ok<INUSL,INUSD>
             % Called if a sweep goes wrong
             fprintf('User stopped a run.\n');
+            wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = false ;  % don't want this left high
         end        
         
-        function abortingRun(self,wsModel,eventName) %#ok<INUSD>
+        function abortingRun(self,wsModel,eventName) %#ok<INUSL,INUSD>
             % Called if a run goes wrong, after the call to
             % abortingSweep()
             fprintf('Oh noes!  A run aborted.\n');
+            wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = false ;  % don't want this left high
         end
         
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
@@ -76,7 +79,7 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,wsModel,eventName,analogData,digitalData)  %#ok<INUSL,INUSD>
+        function samplesAcquired(self,looper,eventName,analogData,digitalData)  %#ok<INUSL,INUSD>
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % is read from the DAQ board.
             %analogData = wsModel.Acquisition.getLatestAnalogData();
@@ -86,27 +89,27 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
 %             wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = ...
 %                 (vSample>2.5) ;
             newOutput = (vSample>2.5) ;
-            wsModel.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newOutput) ;
+            looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newOutput) ;
             %fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         
         % These methods are called in the refiller process
-        function startingEpisode(self,wsModel,eventName) %#ok<INUSD>
+        function startingEpisode(self,refiller,eventName) %#ok<INUSD>
             % Called just before each episode
             %fprintf('About to start an episode.\n');
         end
         
-        function completingEpisode(self,wsModel,eventName) %#ok<INUSD>
+        function completingEpisode(self,refiller,eventName) %#ok<INUSD>
             % Called after each episode completes
             %fprintf('Completed an episode.\n');
         end
         
-        function stoppingEpisode(self,wsModel,eventName) %#ok<INUSD>
+        function stoppingEpisode(self,refiller,eventName) %#ok<INUSD>
             % Called if a episode goes wrong
             %fprintf('User stopped an episode.\n');
         end        
         
-        function abortingEpisode(self,wsModel,eventName) %#ok<INUSD>
+        function abortingEpisode(self,refiller,eventName) %#ok<INUSD>
             % Called if a episode goes wrong
             %fprintf('Oh noes!  An episode aborted.\n');
         end

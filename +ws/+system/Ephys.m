@@ -102,9 +102,9 @@ classdef Ephys < ws.system.Subsystem
 %             % Nothing to do here, maybe
 %         end  % function
 % 
-        function releaseHardwareResources(self) %#ok<MANU>
-            % Nothing to do here, maybe
-        end
+%         function releaseHardwareResources(self) %#ok<MANU>
+%             % Nothing to do here, maybe
+%         end
 
         %%
         function electrodeMayHaveChanged(self,electrode,propertyName)

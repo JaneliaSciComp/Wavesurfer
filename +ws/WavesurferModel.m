@@ -160,8 +160,8 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
-                system('start matlab -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -r "refiller=ws.Refiller(); dbstop if error; refiller.runMainLoop(); clear; quit()"');
+                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
+                system('start matlab -nojvm -minimize -r "refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -769,11 +769,11 @@ classdef WavesurferModel < ws.Model
             self.Display.didSetAcquisitionDuration();
         end        
         
-        function releaseHardwareResources(self)
+        function releaseTimedHardwareResources_(self)
             %self.Acquisition.releaseHardwareResources();
             %self.Stimulation.releaseHardwareResources();
-            self.Triggering.releaseHardwareResources();
-            self.Ephys.releaseHardwareResources();
+            self.Triggering.releaseTimedHardwareResources();
+            %self.Ephys.releaseTimedHardwareResources();
         end
 
         function testPulserIsAboutToStartTestPulsing(self)
@@ -1449,7 +1449,9 @@ classdef WavesurferModel < ws.Model
             self.setState_('idle');
             
             % Notify the satellites
-            self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;            
+            if self.IsITheOneTrueWavesurferModel_ ,
+                self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
+            end
         end  % function
     end  % methods block
         

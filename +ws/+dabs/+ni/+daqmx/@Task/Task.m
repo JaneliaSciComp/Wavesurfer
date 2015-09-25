@@ -190,7 +190,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             end
 
             taskmap = ws.dabs.ni.daqmx.Task.getTaskMap();
-            if taskmap.isKey(obj.taskName)
+            if isvalid(taskmap) && taskmap.isKey(obj.taskName) ,
                 taskmap.remove(obj.taskName);
             end
 %             end

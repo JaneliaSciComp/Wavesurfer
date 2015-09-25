@@ -1070,7 +1070,7 @@ classdef TestPulser < ws.Model
 
                 % Free up resources we will need for test pulsing
                 if ~isempty(wavesurferModel) ,
-                    wavesurferModel.releaseTimedHardwareResourcesOfAllProcesses();
+                    wavesurferModel.testPulserIsAboutToStartTestPulsing();
                 end
                 
                 % Get the stimulus

@@ -24,14 +24,18 @@ classdef Triggering < ws.system.TriggeringSubsystem
                 self.MasterTriggerDABSTask_.writeDigitalData(false);
             end
         end  % function
-
-        function teardownMasterTriggerTask(self) 
+    end
+    
+    methods (Access=protected)
+        function teardownMasterTriggerTask_(self) 
             ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
             self.MasterTriggerDABSTask_ = [] ;
         end
-        
-        function releaseHardwareResources(self)
-            self.teardownMasterTriggerTask();
+    end
+    
+    methods
+        function releaseTimedHardwareResources(self)
+            self.teardownMasterTriggerTask_();
         end  % function
         
         function delete(self)
