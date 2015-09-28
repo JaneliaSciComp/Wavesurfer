@@ -78,7 +78,7 @@ classdef WavesurferModel < ws.Model
         FromRunStartTicId_
         FromSweepStartTicId_
         TimeOfLastWillPerformSweep_        
-        TimeOfLastSamplesAcquired_
+        %TimeOfLastSamplesAcquired_
         NTimesDataAvailableCalledSinceRunStart_ = 0
         %PollingTimer_
         %MinimumPollingDt_
@@ -93,11 +93,13 @@ classdef WavesurferModel < ws.Model
         ThrownException_
         NSweepsCompletedInThisRun_ = 0
         IsITheOneTrueWavesurferModel_
-        NScansPerUpdate_
+        DesiredNScansPerUpdate_        
+        NScansPerUpdate_        
         SamplesBuffer_
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         %IsDeeplyIntoPerformingSweep_ = false
+        TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
     end
     
 %     events
@@ -938,10 +940,11 @@ classdef WavesurferModel < ws.Model
             self.NTimesDataAvailableCalledSinceRunStart_=0;
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
-            self.NScansPerUpdate_ = round(updateDt*self.Acquisition.SampleRate) ;
+            self.DesiredNScansPerUpdate_ = round(updateDt*self.Acquisition.SampleRate) ;
+            self.NScansPerUpdate_ = self.DesiredNScansPerUpdate_ ;  % at start, will be modified depending on how long stuff takes
             
             % Set up the samples buffer
-            bufferSizeInScans = 10*self.NScansPerUpdate_ ;
+            bufferSizeInScans = 10*self.DesiredNScansPerUpdate_ ;
             self.SamplesBuffer_ = ws.SamplesBuffer(self.Acquisition.NActiveAnalogChannels, ...
                                                    self.Acquisition.NActiveDigitalChannels, ...
                                                    bufferSizeInScans) ;
@@ -988,7 +991,7 @@ classdef WavesurferModel < ws.Model
             self.TimeOfLastWillPerformSweep_=t;
             
             % clear timing stuff that is strictly within-sweep
-            self.TimeOfLastSamplesAcquired_=[];            
+            %self.TimeOfLastSamplesAcquired_=[];            
             
             % Reset the sample count for the sweep
             self.NScansAcquiredSoFarThisSweep_ = 0;
@@ -1266,6 +1269,9 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+            % Record the time
+            self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
+            
             % Get the number of scans
             nScans = size(rawAnalogData,1) ;
 
@@ -1288,7 +1294,16 @@ classdef WavesurferModel < ws.Model
             
             if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
                 %profile resume
+                ticId = tic() ;
                 self.dataAvailable_() ;
+                durationOfDataAvailableCall = toc(ticId) ;
+                % Update NScansPerUpdate to make sure we don't fall behind,
+                % but must update at least 1/sec
+                fs = self.Acquisition.SampleRate ;
+                nScansPerUpdate = min(round(fs), ...
+                                      max(2*round(durationOfDataAvailableCall*fs), ...
+                                          self.DesiredNScansPerUpdate_ ) ) ;
+                self.NScansPerUpdate_= nScansPerUpdate ;
                 %profile off
             end
         end

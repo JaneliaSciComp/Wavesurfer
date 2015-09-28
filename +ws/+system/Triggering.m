@@ -57,7 +57,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
         function pulseMasterTrigger(self)
             % Produce a pulse on the master trigger, which will truly start things
             self.MasterTriggerDABSTask_.writeDigitalData(true);            
-            pause(0.010);  % TODO: get rid of once done debugging
+            %pause(0.010);  % TODO: get rid of once done debugging
             self.MasterTriggerDABSTask_.writeDigitalData(false);            
         end  % function
                 
