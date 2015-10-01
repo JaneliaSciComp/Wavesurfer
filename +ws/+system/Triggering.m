@@ -34,16 +34,17 @@ classdef Triggering < ws.system.TriggeringSubsystem
     end
     
     methods
+        function releaseHardwareResources(self)
+            self.releaseTimedHardwareResources();
+            % no untimed HW resources
+        end  % function
+
         function releaseTimedHardwareResources(self)
             self.teardownMasterTriggerTask_();
         end  % function
         
         function delete(self)
-            try
-                self.releaseHardwareResources();
-            catch me %#ok<NASGU>
-                % Can't throw in the delete() function
-            end                
+            self.releaseHardwareResources();
         end  % function
                 
         function debug(self) %#ok<MANU>

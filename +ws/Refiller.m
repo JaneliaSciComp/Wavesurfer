@@ -538,12 +538,12 @@ classdef Refiller < ws.Model
 %             end
 %         end  % function
         
-        function acquisitionSweepComplete(self)
-            % Called by the acq subsystem when it's done acquiring for the
-            % sweep.
-            fprintf('Refiller::acquisitionSweepComplete()\n');
-            self.checkIfReadyToCompleteOngoingSweep_();            
-        end  % function
+%         function acquisitionSweepComplete(self)
+%             % Called by the acq subsystem when it's done acquiring for the
+%             % sweep.
+%             fprintf('Refiller::acquisitionSweepComplete()\n');
+%             self.checkIfReadyToCompleteOngoingSweep_();            
+%         end  % function
         
         function stimulationEpisodeComplete(self)
             % Called by the stimulation subsystem when it is done outputting
