@@ -44,7 +44,7 @@ classdef Refiller < ws.Model
         IPCSubscriber_
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
-        NSweepsCompletedInThisRun_ = 0
+        %NSweepsCompletedInThisRun_ = 0
         t_
         NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_  
@@ -64,8 +64,8 @@ classdef Refiller < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsPerformingEpisode_ = false
-        NEpisodesPerSweep_
-        NEpisodesCompletedSoFarThisSweep_
+        NEpisodesPerRun_
+        NEpisodesCompletedSoFarThisRun_
     end
     
 %     events
@@ -229,7 +229,7 @@ classdef Refiller < ws.Model
                                 if areTasksDone ,
                                     self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                                     %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
-                                    if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
+                                    if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
                                         self.startEpisode_() ;
                                     end
                                 end                                
@@ -675,22 +675,23 @@ classdef Refiller < ws.Model
             
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
-                % this means one episode per sweep, always
-                self.NEpisodesPerSweep_ = 1 ;
+                % This means one episode per sweep, always
+                self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;
             else
                 % Means continuous acq, so need to consult stim trigger
                 if self.Stimulation.TriggerScheme.IsInternal ,
                     % stim trigger scheme is internal
-                    self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                    self.NEpisodesPerRun_ = self.Stimulation.TriggerScheme.RepeatCount ;
                 else
                     % stim trigger scheme is external
-                    self.NEpisodesPerSweep_ = inf ;  % by convention
+                    self.NEpisodesPerRun_ = inf ;  % by convention
                 end
             end
 
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
-            self.NSweepsCompletedInThisRun_ = 0 ;
+            %self.NSweepsCompletedInThisRun_ = 0 ;
+            self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
             
             % Tell all the subsystems to prepare for the run
@@ -721,9 +722,9 @@ classdef Refiller < ws.Model
             % don't pulse the master trigger yet.
             
             % Reset the sample count for the sweep
-            fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
+            %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
-            self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
+            %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             
             % Call startingSweep() on all the enabled subsystems
             for i = 1:numel(self.Subsystems_) ,
@@ -756,7 +757,7 @@ classdef Refiller < ws.Model
             end
             
             % Bump the number of completed sweeps
-            self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
+            %self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
 
             self.IsPerformingSweep_ = false ;            
             
@@ -899,14 +900,14 @@ classdef Refiller < ws.Model
             self.IsPerformingEpisode_ = true ;
             self.callUserMethod_('startingEpisode') ;
             if self.Stimulation.IsEnabled ,
-                self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisSweep_+1) ;
+                self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisRun_+1) ;
             end
         end
         
         function completeTheOngoingEpisode_(self)
             % Called from runMainLoop() when a single episode of stimulation is
             % completed.  
-            %fprintf('Stimulation::episodeCompleted_()\n');
+            fprintf('Refiller::completeTheOngoingEpisode_()\n');
             % We only want this method to do anything once per episode, and the next three
             % lines make this the case.
 
@@ -920,12 +921,14 @@ classdef Refiller < ws.Model
 
             % Update state
             self.IsPerformingEpisode_ = false;
-            self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;            
+            self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
 %             % If we might have more episodes to deliver, arm for next one
-%             if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
+%             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
 %                 self.armForEpisode_() ;
 %             end                                    
+            fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
+            fprintf('    self.NEpisodesCompletedSoFarThisRun_: %d\n',self.NEpisodesCompletedSoFarThisRun_);
         end  % function
         
         function stopTheOngoingEpisode_(self)
