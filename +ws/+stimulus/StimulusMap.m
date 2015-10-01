@@ -440,6 +440,13 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
         end  % function
         
+        function nullStimulusAtBindingIndex(self, bindingIndex)
+            % Set all occurances of stimulus in the self to []
+            if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
+                self.Stimuli{bindingIndex} = [] ;
+            end
+        end  % function
+        
         function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
             % nBoundChannels is the number of channels *in channelNames* for which
             % a non-empty binding was found.
@@ -512,6 +519,17 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %                     break
 %                 end
 %             end
+        end
+        
+        function setStimulusByName(self, bindingIndex, stimulusName)
+            if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
+                library = self.Parent ;
+                stimulusIndexInLibrary = library.indexOfStimulusWithName(stimulusName) ;
+                if ~isempty(stimulusIndexInLibrary) ,
+                    self.IndexOfEachStimulusInLibrary_{bindingIndex} = stimulusIndexInLibrary ;
+                end
+            end
+            self.Parent.childMayHaveChanged(self);
         end
         
         function lines = plot(self, fig, ax, sampleRate)
