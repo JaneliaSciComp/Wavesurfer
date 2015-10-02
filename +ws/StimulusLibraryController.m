@@ -351,8 +351,8 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function
     
         function SequenceTableCellEdited(self,source,event) %#ok<INUSL>
-            model=self.Model;
-            selectedSequence=model.SelectedItem;
+            library=self.Model;
+            selectedSequence=library.SelectedItem;
             if isempty(selectedSequence) ,
                 return
             end            
@@ -362,7 +362,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             if (columnIndex==1) ,
                 % this is the Map Name column
                 newMapName=event.EditData;
-                map=model.mapWithName(newMapName);
+                map=library.mapWithName(newMapName);
                 selectedSequence.setMap(rowIndex,map);
             elseif (columnIndex==4) ,
                 % this is the Delete? column

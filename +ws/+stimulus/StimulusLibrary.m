@@ -322,7 +322,6 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             end
         end  % function
         
-        
         function set.SelectedOutputable(self, newSelection)
             if ws.utility.isASettableValue(newSelection) ,
                 if isempty(newSelection) ,

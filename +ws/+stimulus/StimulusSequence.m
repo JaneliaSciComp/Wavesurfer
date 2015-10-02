@@ -208,15 +208,14 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 
         function setMap(self, indexWithinSequence, newMap)
             nMaps = length(self.IndexOfEachMapInLibrary_) ;
+            library = self.Parent ;
             if 1<=indexWithinSequence && indexWithinSequence<=nMaps && round(indexWithinSequence)==indexWithinSequence ,
-                indexOfNewMapInLibrary = self.Parent.indexOfMapInLibrary(newMap) ;
+                indexOfNewMapInLibrary = library.getMapIndex(newMap) ;
                 if ~isempty(indexOfNewMapInLibrary) ,
                     self.IndexOfEachMapInLibrary_{indexWithinSequence} = indexOfNewMapInLibrary ;
                 end
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+            library.childMayHaveChanged(self);
         end   % function
         
 %         function insertMap(self, map, index)
