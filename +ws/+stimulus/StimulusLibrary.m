@@ -748,6 +748,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
         function result=getStimulusIndex(self,queryStimulus)
             result=find(self.isStimulusAMatch(queryStimulus),1);
         end
+        
+        function debug(self)
+            keyboard
+        end
     end  % public methods
     
 %     methods (Access = protected)

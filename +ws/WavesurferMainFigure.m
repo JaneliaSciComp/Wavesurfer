@@ -142,7 +142,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                
                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
                model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
-               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
+               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
+               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
                
                model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
@@ -1094,7 +1095,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
             set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
-            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));            
+            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
             set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
             %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
