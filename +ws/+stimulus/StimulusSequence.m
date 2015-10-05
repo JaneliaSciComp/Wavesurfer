@@ -12,7 +12,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     properties (Dependent=true, SetAccess=immutable)
         MapDurations
-        IsLive
+        %IsLive
     end      
     
     properties (Access = protected)
@@ -476,12 +476,13 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %     end  % class methods block
     
     methods
-        function result=areAllMapsInDictionary(self,mapDictionary)
-            nMaps=length(self.Maps);
-            for i=1:nMaps ,
-                thisMap=self.Maps{i};
-                isMatch=cellfun(@(map)(thisMap==map),mapDictionary);
-                if ~any(isMatch) ,
+        function result=areAllMapIndicesValid(self)
+            library = self.Parent ;
+            nMapsInLibrary = length(library.Maps) ;
+            nMapsInSequence=length(self.IndexOfEachMapInLibrary) ;
+            for i=1:nMapsInSequence ,
+                thisMapIndex = self.IndexOfEachMapInLibrary{i} ;
+                if thisMapIndex~=round(thisMapIndex) || thisMapIndex<1 || thisMapIndex>nMapsInLibrary ,
                     result=false;
                     return
                 end

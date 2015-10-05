@@ -815,11 +815,18 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                         indexOfMapIfSequence=episodeIndexWithinSweep;
                     else
                         if self.DoRepeatSequence ,
-                            isThereAMap=true;
-                            indexOfMapIfSequence=mod(episodeIndexWithinSweep-1,nMapsInSequence)+1;
+                            if nMapsInSequence>0 ,
+                                isThereAMap=true;
+                                indexOfMapIfSequence=mod(episodeIndexWithinSweep-1,nMapsInSequence)+1;
+                            else
+                                % Special case for when a sequence has zero
+                                % maps in it
+                                isThereAMap=false;
+                                indexOfMapIfSequence = -1 ;  % arbitrary: doesn't get used if isThereAMap==false
+                            end                            
                         else
                             isThereAMap=false;
-                            indexOfMapIfSequence=1;  % arbitrary: doesn't get used if isThereAMap==false
+                            indexOfMapIfSequence = -1 ;  % arbitrary: doesn't get used if isThereAMap==false
                         end
                     end
                 end            

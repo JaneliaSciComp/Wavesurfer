@@ -6,29 +6,47 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
         Sequences
         % We store the currently selected "outputable" in the stim library
         % itself.  This seems weird at first, but the big advantage is that
-        % all the UUID consistency concerns are confined to the stim
+        % all the self-onsistency concerns are confined to the stim
         % library itself.  And the SelectedOutputable can be empty if
         % desired.
         SelectedOutputable  % The thing currently selected for output.  Can be a sequence or a map.
-        %SelectedOutputableUUID  % The UUID of the thing currently selected for output.
-        % This is the item currently selected in the library.  This is
-        % completely orthogonal to the selected outputable.  The selected
-        % outputable represents the sequence or library that will be used
-        % for determining the stimuli when the user collects data.  The
-        % selected item is strictly internal to the library, and determines
-        % which item's parameters are shown on the left-hand side of the
-        % stimulus library window.
-        % Arguably, we should change "SelectedOutputable" to
-        % "CurrentOutputable", because these things are all orthogonal to
-        % the SelectedOutputable.
         SelectedStimulus
         SelectedMap
         SelectedSequence
         SelectedItem
+            % This is the item currently selected in the library.  This is
+            % completely orthogonal to the selected outputable.  The selected
+            % outputable represents the sequence or library that will be used
+            % for determining the stimuli when the user collects data.  The
+            % selected item is strictly internal to the library, and determines
+            % which item's parameters are shown on the left-hand side of the
+            % stimulus library window.
+            % Arguably, we should change "SelectedOutputable" to
+            % "CurrentOutputable", because these things are all orthogonal to
+            % the SelectedOutputable.
+            % The SelectedItem is entirely determined by the values of
+            % SelectedItemClassName, SelectedStimulus, SelectedMap, and
+            % SelectedSequence.
+            % Invariant: If SelectedItemClassName is empty, then SelectedItem is [].
+            % Invariant: If SelectedItemClassName is
+            %            'ws.stimulus.StimulusSequence', then SelectedItem==SelectedStimulus (object identity).
+            % Invariant: If SelectedItemClassName is
+            %            'ws.stimulus.StimulusMap', then SelectedItem==SelectedMap (object identity).
+            % Invariant: If SelectedItemClassName is
+            %            'ws.stimulus.Stimulus', then SelectedItem==SelectedStimulus (object identity).        
         SelectedItemClassName
         SelectedStimulusIndex
+            % Invariant: SelectedStimulusIndex can be [].
+            % Invariant: If SelectedStimulusIndex is nonempty, it must be an
+            %            integer >=1 and <=length(self.Stimuli)
+            % Invariant: If SelectedStimulusIndex is empty, then
+            %            self.SelectedSequence is empty.          
+            % Invariant: If SelectedStimulusIndex is nonempty, then
+            %            self.SelectedSequence == self.Stimuli{self.SelectedStimulusIndex}
         SelectedMapIndex
+          % (Similar invariants to SelectedStimulusIndex)
         SelectedSequenceIndex
+          % (Similar invariants to SelectedStimulusIndex)
         SelectedOutputableClassName
         SelectedOutputableIndex
         IsEmpty
@@ -38,10 +56,11 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
         Stimuli_  % cell array
         Maps_  % cell array
         Sequences_  % cell array
-        SelectedItemClassName_
-        SelectedStimulusIndex_
-        SelectedMapIndex_
-        SelectedSequenceIndex_
+        SelectedItemClassName_  % the class of the currently selected item.  Must be one of 'ws.stimulus.StimulusSequence', 'ws.stimulus.StimulusMap', 
+                                %     'ws.stimulus.Stimulus', or ''.  If '', it implies that no item is currently selected
+        SelectedStimulusIndex_  % the index of the currently selected stimulus, or [] if no stimulus is selected
+        SelectedMapIndex_  % the index of the currently selected map, or [] if no map is selected
+        SelectedSequenceIndex_  % the index of the currently selected sequence, or [] if no sequence is selected
         SelectedOutputableClassName_
         SelectedOutputableIndex_  % Underlying storage for SelectedOutputable
     end
@@ -175,7 +194,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
                 if isempty(map)
                     % this is fine
                 else
-                    if map.areAllStimuliInDictionary(length(self.Stimuli)) ,
+                    if map.areAllStimulusIndicesValid() ,
                         % excellent.  excellent.
                     else
                         value=false;
@@ -183,6 +202,75 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
                     end
                 end
             end            
+            
+            % For all sequences, make sure all the maps in the sequence are in
+            % self.Maps
+            nSequences=length(self.Sequences);
+            for i=1:nSequences ,
+                sequence=self.Sequences{i};
+                if isempty(sequence)
+                    % this is fine
+                else
+                    if sequence.areAllMapIndicesValid() ,
+                        % excellent.  excellent.
+                    else
+                        value=false;
+                        return
+                    end
+                end
+            end            
+            
+            %
+            % Make sure the selection indices are all in-range, etc.
+            %
+            
+            % Class of SelectedItem
+            selectedItemClassName = self.SelectedItemClassName_ ;
+            if isequal(selectedItemClassName,'') || ...
+               isequal(selectedItemClassName,'ws.stimulus.StimulusSequence') || ...
+               isequal(selectedItemClassName,'ws.stimulus.StimulusMap') || ...
+               isequal(selectedItemClassName,'ws.stimulus.Stimulus')
+                % all is well
+            else
+                value = false ;
+                return
+            end
+            
+            % Selected sequence
+            selectedSequenceIndex = self.SelectedSequenceIndex_ ;
+            if isempty(selectedSequenceIndex) || ...
+               ( selectedSequenceIndex==round(selectedSequenceIndex) && ...
+                 1<=selectedSequenceIndex && ...
+                 selectedSequenceIndex<=length(self.Sequences_) ) ,
+                % all is well
+            else
+                value = false ;
+                return
+            end
+            
+            % Selected map
+            selectedMapIndex = self.SelectedMapIndex_ ;
+            if isempty(selectedMapIndex) || ...
+               ( selectedMapIndex==round(selectedMapIndex) && ...
+                 1<=selectedMapIndex && ...
+                 selectedMapIndex<=length(self.Maps_) ) ,
+                % all is well
+            else
+                value = false ;
+                return
+            end
+            
+            % Selected stimulus
+            selectedStimulusIndex = self.SelectedStimulusIndex_ ;
+            if isempty(selectedStimulusIndex) || ...
+               ( selectedStimulusIndex==round(selectedStimulusIndex) && ...
+                 1<=selectedStimulusIndex && ...
+                 selectedStimulusIndex<=length(self.Stimuli_) ) ,
+                % all is well
+            else
+                value = false ;
+                return
+            end
             
             value=true;
         end  % function
@@ -273,12 +361,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             %    self.Sequences{i}.Parent=self;  % make the Parent correct
             %end
 
-            % Copy over the selected outputable, making the needed UUID
-            % translation
+            % Copy over the indices of the selected outputable
             self.SelectedOutputableIndex_ = other.SelectedOutputableIndex_ ;
             self.SelectedOutputableClassName_ = other.SelectedOutputableClassName_ ;
-            % Copy over the selected item, making the needed UUID
-            % translations
+            % Copy over the selected item indices
             self.SelectedStimulusIndex_ = other.SelectedStimulusIndex_ ;
             self.SelectedMapIndex_ = other.SelectedMapIndex_ ;
             self.SelectedSequenceIndex_ = other.SelectedSequenceIndex_ ;
@@ -390,6 +476,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             if isempty(self.Sequences_) || isempty(self.SelectedSequenceIndex_) ,
                 value = [] ;
             else
+                if 1<=self.SelectedSequenceIndex_ && self.SelectedSequenceIndex_<=length(self.Sequences_) ,
+                    % all is well
+                else
+                    fprintf('About to do an out-of-bounds reference.\n');
+                    keyboard
+                end
                 value = self.Sequences_{self.SelectedSequenceIndex_} ;
             end
             %value=self.findSequenceWithUUID(self.SelectedSequenceUUID_);
@@ -540,13 +632,56 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             end
         end  % function
         
-        function deleteItem(self, item)
-            % Remove the given items from the stimulus library. If the
+        function deleteItem(self,item)
+            % Remove the selected item from the stimulus library. If the
             % to-be-removed items are used by other items, the references
             % are first nulled to maintain the self-consistency of the
-            % library.            
+            % library.
+            %fprintf('StimulusLibrary::deleteItem()\n') ;
+            % Change the selected item, if necessary, null any references
+            % to the item, etc.
             self.makeItemDeletable_(item);
-            self.deleteItem_(item);
+            % Actually delete the item
+            if isa(item, 'ws.stimulus.StimulusSequence')
+                isMatch = cellfun(@(element)(element==item),self.Sequences) ;
+                iMatch = find(isMatch,1) ;
+                if ~isempty(iMatch) ,
+                    if self.SelectedSequenceIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
+                        self.SelectedSequenceIndex_ = self.SelectedSequenceIndex_ - 1 ;
+                    end
+                    if isequal(self.SelectedOutputableClassName_,'ws.stimulus.StimulusSequence') && self.SelectedOutputableIndex_ > iMatch ,
+                        self.SelectedOutputableIndex_ = self.SelectedOutputableIndex_ - 1 ;
+                    end
+                    self.Sequences_(iMatch) = [] ;
+                end                    
+            elseif isa(item, 'ws.stimulus.StimulusMap')
+                isMatch = cellfun(@(element)(element==item),self.Maps) ;
+                iMatch = find(isMatch,1) ;
+                if ~isempty(iMatch) ,
+                    if self.SelectedMapIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
+                        self.SelectedMapIndex_ = self.SelectedMapIndex_ - 1 ;
+                    end
+                    if isequal(self.SelectedOutputableClassName_,'ws.stimulus.StimulusMap') && self.SelectedOutputableIndex_ > iMatch ,
+                        self.SelectedOutputableIndex_ = self.SelectedOutputableIndex_ - 1 ;
+                    end
+                    self.Maps_(iMatch) = [] ;
+                end
+            elseif isa(item, 'ws.stimulus.Stimulus')
+                isMatch = ws.utility.ismemberOfCellArray(self.Stimuli,{item}) ;
+                iMatch = find(isMatch,1) ;
+                if ~isempty(iMatch) ,
+                    if self.SelectedStimulusIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
+                        self.SelectedStimulusIndex_ = self.SelectedStimulusIndex_ - 1 ;
+                    end
+                    self.Stimuli_(iMatch) = [] ;
+                end
+            end
+%             % Check for self-consistency
+%             if ~self.isSelfConsistent() ,
+%                 warning('Lack of self-consistency detected!') ;
+%                 keyboard
+%             end
+            % And, finally, notify dependents
             self.broadcast('Update');
         end  % function
         
@@ -749,7 +884,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             result=find(self.isStimulusAMatch(queryStimulus),1);
         end
         
-        function debug(self)
+        function debug(self) %#ok<MANU>
             keyboard
         end
     end  % public methods
@@ -807,58 +942,82 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
     end  % public methods block
     
     methods (Access = protected)        
-        function deleteItem_(self, item)
-            % Remove the given item, without any checks to make sure the
-            % self-consistency of the library is maintained.  In general,
-            % one should first call self.makeItemDeletable_(item) before
-            % calling this.
-            if isa(item, 'ws.stimulus.StimulusSequence')
-                self.deleteSequence_(item);
-            elseif isa(item, 'ws.stimulus.StimulusMap')
-                self.deleteMap_(item);
-            elseif isa(item, 'ws.stimulus.Stimulus')
-                self.deleteStimulus_(item);
-            end
-        end  % function
+%         function deleteItem_(self, item)
+%             % Remove the given item, without any checks to make sure the
+%             % self-consistency of the library is maintained.  In general,
+%             % one should first call self.makeItemDeletable_(item) before
+%             % calling this.
+%             if isa(item, 'ws.stimulus.StimulusSequence')
+%                 self.deleteSequence_(item);
+%             elseif isa(item, 'ws.stimulus.StimulusMap')
+%                 self.deleteMap_(item);
+%             elseif isa(item, 'ws.stimulus.Stimulus')
+%                 self.deleteStimulus_(item);
+%             end
+%         end  % function
 
-        function deleteSequence_(self, sequence)
-            isMatch=cellfun(@(element)(element==sequence),self.Sequences);   
-            self.Sequences_(isMatch) = [];
-        end  % function
-                
-        function deleteMap_(self, map)
-            isMatch=cellfun(@(element)(element==map),self.Maps);
-            self.Maps_(isMatch) = [];
-        end  % function
-        
-        function deleteStimulus_(self, stimulus)
-            isMatch=ws.utility.ismemberOfCellArray(self.Stimuli,{stimulus});
-            self.Stimuli_(isMatch) = [];
-        end  % function
+%         function deleteSequence_(self, sequence)
+%             isMatch=cellfun(@(element)(element==sequence),self.Sequences);   
+%             self.Sequences_(isMatch) = [];
+%         end  % function
+%                 
+%         function deleteMap_(self, map)
+%             isMatch=cellfun(@(element)(element==map),self.Maps);
+%             self.Maps_(isMatch) = [];
+%         end  % function
+%         
+%         function deleteStimulus_(self, stimulus)
+%             isMatch=ws.utility.ismemberOfCellArray(self.Stimuli,{stimulus});
+%             self.Stimuli_(isMatch) = [];
+%         end  % function
         
         function makeItemDeletable_(self, item)
-            % Make it so that no other items in the library refer to item,
-            % and item is no longer selected, and is not the current
-            % outputable.
-            if isa(item, 'ws.stimulus.StimulusSequence') 
-                self.tryToChangeSelectedSequenceToSomethingElse_(item);  % if this fails...
-                self.changeSelectedItemToSomethingElse_(item);  % this makes darn sure item is not the selected item
-                  % this above does nothing if
-                  % tryToChangeSelectedSequenceToSomethingElse_() succeeds
+            % Make it so that no other items in the library refer to the selected item,
+            % and the originally-selected item is no longer selected, and is not the current
+            % outputable.  Item must be a scalar.
+            
+            selectedItemOnEntry = self.SelectedItem ;
+            wasItemSelectedOnEntry = ~isempty(selectedItemOnEntry) && (item==selectedItemOnEntry) ;
+            if isa(item, 'ws.stimulus.StimulusSequence') ,
+                selectedSequence =  self.SelectedSequence ;
+                if ~isempty(selectedSequence) && (item==selectedSequence) ,
+                    self.SelectedSequenceIndex_ = ...
+                        ws.stimulus.StimulusLibrary.indexOfAnItemThatIsNearTheGivenItem_(self.Sequences, item) ;
+                end
+                % Finally, change the selected outputable to something
+                % else, if needed
                 self.changeSelectedOutputableToSomethingElse_(item);
-            elseif isa(item, 'ws.stimulus.StimulusMap')
-                self.tryToChangeSelectedMapToSomethingElse_(item);
-                self.changeSelectedItemToSomethingElse_(item);
+            elseif isa(item, 'ws.stimulus.StimulusMap') ,
+                selectedMap =  self.SelectedMap ;
+                if ~isempty(selectedMap) && (item==selectedMap) ,
+                    self.SelectedMapIndex_ = ...
+                        ws.stimulus.StimulusLibrary.indexOfAnItemThatIsNearTheGivenItem_(self.Maps, item) ;
+                end
+                % Change the selected outputable to something
+                % else, if needed
                 self.changeSelectedOutputableToSomethingElse_(item);
+                % Delete any references to item in the sequences
                 for i = 1:numel(self.Sequences) ,
                     self.Sequences{i}.deleteMapByValue(item);
                 end
-            elseif isa(item, 'ws.stimulus.Stimulus')
-                self.tryToChangeSelectedStimulusToSomethingElse_(item);
-                self.changeSelectedItemToSomethingElse_(item);
+            elseif isa(item, 'ws.stimulus.Stimulus') ,
+                selectedStimulus =  self.SelectedStimulus ;
+                if ~isempty(selectedStimulus) && (item==selectedStimulus) ,
+                    self.SelectedStimulusIndex_ = ...
+                        ws.stimulus.StimulusLibrary.indexOfAnItemThatIsNearTheGivenItem_(self.Stimuli, item) ;
+                end
+                % Delete any references to item in the maps
                 for i = 1:numel(self.Maps) ,
                     self.Maps{i}.nullStimulus(item);
                 end
+            end
+            if wasItemSelectedOnEntry && isempty(self.SelectedItem) ,
+                % This implies that the to-be-deleted item was the selected item, but now
+                % nothing is selected, so we should select something near
+                % item in the list of items.  (This happens when the
+                % to-be-deleted item is the only item of its type in the
+                % library.)
+                self.ifNoSelectedItemTryToSelectItemNearThisItemButNotThisItem_(item) ;
             end
         end  % function
         
@@ -900,151 +1059,215 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             end
         end  % function
         
-        function changeSelectedItemToSomethingElse_(self, item)
-            % Make sure item is not the selected item, hopefully by
-            % picking a different item.  Typically called before
-            % deleting item.  Does nothing if item is not the
-            % selected item.  item must be a scalar.
-            items=self.getItems();
-            if isempty(items) ,
-                % This should never happen, but still...
-                return
-            end            
-            if item==self.SelectedItem ,
-                % The given item is the selected item,
-                % so change the selected item.
-                isMatch=cellfun(@(element)(element==item),items);
-                j=find(isMatch,1);  % the index of item in the list of all items
-                % j is guaranteed to be nonempty if the library is
-                % self-consistent, but still...
-                if ~isempty(j) ,
-                    if length(items)==1 ,
-                        % item is the last one, so the selection
-                        % will have to be empty
-                        self.SelectedItem=[];
-                    else
-                        % there are at least two items
-                        if j>1 ,
-                            % The usual case: point SelectedItem at the
-                            % item before the to-be-deleted item
-                            self.SelectedItem=items{j-1};
-                        else
-                            % item is the first, but there are
-                            % others, so select the second item
-                            self.SelectedItem=items{2};
-                        end
-                    end
-                end
-            end
-        end  % function
+%         function setSelectedItemToSomethingBesidesThisOrToNothing_(self, item)
+%             % Set the selected item to something besides item, unless item
+%             % is the only item remaining, if which case select nothing.  If
+%             % some other item is already the selected item, does nothing.
+%             % (But if nothing is currently selected, and there exists at
+%             % least one item besides item, then of the not-item items will
+%             % be selected.) item must be a scalar.  Assumes all invariants
+%             % hold on entry, and preserves all invariants.
+%             items=self.getItems();
+%             isMatch=cellfun(@(element)(element==item),items);
+%             j=find(isMatch,1);  % the index of item in the list of all items
+%             if isempty(j) ,
+%                 % item is not even an item in the library, so just need to
+%                 % make sure that some item is selected
+%                 selectedItem = self.SelectedItem ;
+%                 if isempty(selectedItem) ,
+%                     if isempty(items) ,
+%                         % There are no items in the library, so nothing to
+%                         % be done.
+%                     else
+%                         % Just set the selected item to be the first item
+%                         self.SelectedItem = item{1} ;
+%                     end
+%                 else
+%                     % There's a selected item, and item is not in the
+%                     % library, so there's nothing to do.
+%                 end
+%             else
+%                 % item is in the library, and item==items{j}
+%                 if length(items)==1 ,
+%                     % item is the last one, so the selection
+%                     % will have to be empty
+%                     self.SelectedItem = [] ;  % this sets self.SelectedItemClassName_ to  '', nothing else
+%                 else
+%                     % there are at least two items
+%                     if j>1 ,
+%                         % The usual case: point SelectedItem at the
+%                         % item before the to-be-deleted item
+%                         self.SelectedItem = items{j-1} ;
+%                     else
+%                         % item is the first, but there are
+%                         % others, so select the second item
+%                         self.SelectedItem = items{2} ;
+%                     end
+%                 end
+%             end
+%         end  % function
         
-        function tryToChangeSelectedStimulusToSomethingElse_(self, item)
-            % Make sure item is not the selected item, hopefully by
-            % picking a different item.  Typically called before
-            % deleting item.  Does nothing if item is not the
-            % selected item.  item must be a scalar.
-            items=self.Stimuli;
-            if isempty(items) ,
-                % This should never happen, but still...
-                return
-            end            
-            if item==self.SelectedStimulus ,
-                % The given item is the selected one,
-                % so change the selected item.
-                isMatch=cellfun(@(element)(element==item),items);
-                j=find(isMatch,1);  % the index of item in the list of all stimuli
-                % j is guaranteed to be nonempty if the library is
-                % self-consistent, but still...
-                if ~isempty(j) ,
-                    if length(items)==1 ,
-                        % item is the last one, so give up
-                    else
-                        % there are at least two items
-                        if j>1 ,
-                            % The usual case: point SelectedItem at the
-                            % item before the to-be-deleted item
-                            self.SelectedStimulus=items{j-1};
-                        else
-                            % item is the first, but there are
-                            % others, so select the second item
-                            self.SelectedStimulus=items{2};
-                        end
-                    end
-                end
-            end
-        end  % function
+%         function changeSelectedStimulusToSomethingElseOrToNothing_(self, stimulus)
+%             % Make sure stimulus is not the selected stimulus, hopefully by
+%             % picking a different stimulus.  Typically called before
+%             % deleting stimulus.  Does nothing if stimulus is not the
+%             % selected stimulus.  stimulus must be a scalar.
+%             stimuli=self.Stimuli;
+%             if isempty(stimuli) ,
+%                 % This should never happen, but still...
+%                 return
+%             end            
+%             if stimulus==self.SelectedStimulus ,
+%                 % The given stimulus is the selected one,
+%                 % so change the selected stimulus.
+%                 isMatch=cellfun(@(element)(element==stimulus),stimuli);
+%                 j=find(isMatch,1);  % the index of stimulus in the list of all stimuli
+%                 % j is guaranteed to be nonempty if the library is
+%                 % self-consistent, but still...
+%                 if ~isempty(j) ,
+%                     if length(stimuli)==1 ,
+%                         % stimulus is the last one, so give up
+%                         self.SelectedStimulusIndex_ = [] ;
+%                     else
+%                         % there are at least two items
+%                         if j>1 ,
+%                             % The usual case: point SelectedStimulus at the
+%                             % item before the to-be-deleted item
+%                             self.SelectedStimulusIndex_ = j-1 ;
+%                         else
+%                             % stimulus is the first, but there are
+%                             % others, so select the second stimulus
+%                             self.SelectedStimulusIndex_ = 2 ;
+%                         end
+%                     end
+%                 end
+%             end
+%         end  % function
         
-        function tryToChangeSelectedMapToSomethingElse_(self, item)
-            % Make sure item is not the selected item, hopefully by
-            % picking a different item.  Typically called before
-            % deleting item.  Does nothing if item is not the
-            % selected item.  item must be a scalar.
-            items=self.Stimuli;
-            if isempty(items) ,
-                % This should never happen, but still...
-                return
-            end            
-            if item==self.SelectedMap ,
-                % The given item is the selected one,
-                % so change the selected item.
-                isMatch=cellfun(@(element)(element==item),items);
-                j=find(isMatch,1);  % the index of item in the list of all stimuli
-                % j is guaranteed to be nonempty if the library is
-                % self-consistent, but still...
-                if ~isempty(j) ,
-                    if length(items)==1 ,
-                        % item is the last one, so give up
-                    else
-                        % there are at least two items
-                        if j>1 ,
-                            % The usual case: point SelectedItem at the
-                            % item before the to-be-deleted item
-                            self.SelectedMap=items{j-1};
-                        else
-                            % item is the first, but there are
-                            % others, so select the second item
-                            self.SelectedMap=items{2};
-                        end
-                    end
-                end
-            end
-        end  % function
+%         function changeSelectedMapToSomethingElseOrToNothing_(self, map)
+%             % Make sure map is not the selected map, hopefully by
+%             % picking a different map.  Typically called before
+%             % deleting map.  Does nothing if map is not the
+%             % selected map.  map must be a scalar.
+%             maps=self.Maps;
+%             if isempty(maps) ,
+%                 % This should never happen, but still...
+%                 return
+%             end            
+%             if map==self.SelectedMap ,
+%                 % The given map is the selected one,
+%                 % so change the selected map.
+%                 isMatch=cellfun(@(element)(element==map),maps);
+%                 indexOfGivenMap=find(isMatch,1);  % the index of map in the list of all maps
+%                 % j is guaranteed to be nonempty if the library is
+%                 % self-consistent, but still...
+%                 if ~isempty(indexOfGivenMap) ,
+%                     if length(maps)==1 ,
+%                         % map is the last one, so give up
+%                         self.SelectedMapIndex_ = [] ;
+%                     else
+%                         % there are at least two items
+%                         if indexOfGivenMap>1 ,
+%                             % The usual case: point SelectedMap at the
+%                             % item before the to-be-deleted item
+%                             self.SelectedMapIndex_ = indexOfGivenMap-1 ;
+%                         else
+%                             % map is the first, but there are
+%                             % others, so select the second map
+%                             self.SelectedMapIndex_ = 2 ;
+%                         end
+%                     end
+%                 end
+%             end
+%         end  % function
         
-        function tryToChangeSelectedSequenceToSomethingElse_(self, item)
-            % Make sure item is not the selected item, hopefully by
-            % picking a different item.  Typically called before
-            % deleting item.  Does nothing if item is not the
-            % selected item.  item must be a scalar.
-            items=self.Stimuli;
-            if isempty(items) ,
-                % This should never happen, but still...
-                return
-            end            
-            if item==self.SelectedSequence ,
-                % The given item is the selected one,
-                % so change the selected item.
-                isMatch=cellfun(@(element)(element==item),items);
-                j=find(isMatch,1);  % the index of item in the list of all stimuli
-                % j is guaranteed to be nonempty if the library is
-                % self-consistent, but still...
-                if ~isempty(j) ,
-                    if length(items)==1 ,
-                        % item is the last one, so give up
-                    else
-                        % there are at least two items
-                        if j>1 ,
-                            % The usual case: point SelectedItem at the
-                            % item before the to-be-deleted item
-                            self.SelectedSequence=items{j-1};
+        function ifNoSelectedItemTryToSelectItemNearThisItemButNotThisItem_(self, item)
+            % Typically, item is a to-be-deleted item, and we've already
+            % made sure it's no longer the selected item within its class.
+            % But when we did that, we might have set the selected item to
+            % nothing, even though there are still items in the other
+            % classes.  So we call this to set the selection to something
+            % from nothing, but not the given item.  If the selected item
+            % is already something, does nothing.  In some cases (like if
+            % item is the only item left of any class), this method does
+            % nothing.
+            %
+            % This method assumes the object invariants are
+            % satisfied at invocation, and if they are it preserves them.
+            if ~isscalar(item) ,
+                error('Argument item to ifNoSelectedItemTryToSelectItemNearThisItemButNotThisItem_() must be a scalar') ;
+            else
+                selectedItem = self.SelectedItem ;
+                if isempty(selectedItem) ,
+                    items = self.getItems() ;  % we know this is sequences, then maps, then stimuli
+                    if isempty(items) ,
+                        % If no items, then item can't be the selected item, so
+                        % nothing to do
+                    else                    
+                        isMatch = cellfun(@(element)(element==item), items);
+                        indexOfGivenItem = find(isMatch,1) ;
+                        if isempty(indexOfGivenItem) ,
+                            % The given item doesn't seem to be one of the items
+                            % at all, so just do nothing.
                         else
-                            % item is the first, but there are
-                            % others, so select the second item
-                            self.SelectedSequence=items{2};
+                            if length(items)==1 ,
+                                % In this case, we're stuck, so do nothing
+                            else
+                                % there are at least two items
+                                if indexOfGivenItem>1 ,
+                                    % Use the previous item, which is safe
+                                    indexOfNewSelectedItem = indexOfGivenItem - 1 ;
+                                else
+                                    % the given item is the first, but we know
+                                    % there's at least one other item, so pick
+                                    % the second item.
+                                    indexOfNewSelectedItem = 2 ;
+                                end
+                                self.SelectedItem = items{indexOfNewSelectedItem} ;
+                            end
                         end
                     end
+                else
+                    % If something is currently selected, do nothing
                 end
             end
         end  % function
+                
+%             [self.SelectedSequenceIndex_, didChangeToNothing] = ...
+%                 indexOfAnItemThatIsNearTheSelectedItemButIsNotTheForbiddenItem_(theForbiddenSequence, self.Sequences, self.SelectedSequence) ;
+%             
+%             if isempty(sequences) ,
+%                 % This should never happen, but still...
+%                 return
+%             end            
+%             if theForbiddenSequence==self.SelectedSequence ,
+%                 % The given sequence is the selected one,
+%                 % so change the selected sequence.
+%                 isMatch=cellfun(@(element)(element==theForbiddenSequence),sequences);
+%                 j=find(isMatch,1);  % the index of sequence in the list of all sequences
+%                 % j is guaranteed to be nonempty if the library is
+%                 % self-consistent, but still...
+%                 if ~isempty(j) ,
+%                     if length(sequences)==1 ,
+%                         % sequence is the last one, so give up
+%                         self.SelectedSequenceIndex_ = [] ;
+%                         didChangeToNothing = true ;
+%                     else
+%                         % there are at least two sequences
+%                         if j>1 ,
+%                             % The usual case: point SelectedSequence at the
+%                             % sequence before the to-be-deleted sequence
+%                             self.SelectedSequenceIndex_ = j-1 ;
+%                         else
+%                             % sequence is the first, but there are
+%                             % others, so select the second sequence
+%                             self.SelectedSequenceIndex_ = 2 ;
+%                         end
+%                         didChangeToNothing = false ;
+%                     end
+%                 end
+%             end
+%         end  % function
         
         function out = isItemInUse_(self, items)
             % Note that this doesn't check if the items are selected.  This
@@ -1238,6 +1461,47 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
                 translatedItem=translatedDictionary{i};
             end
         end  % function            
+        
+        function result = indexOfAnItemThatIsNearTheGivenItem_(items, theGivenItem)
+            % Just what it says on the tin.  If the theGivenItem is
+            % empty, or is not in items, returns [].  Otherwise, if the
+            % theForbiddenItem is empty, or is not in items, returns the
+            % index of the selected item.  If both are in the list, but the
+            % list has only one member, returns [].  
+            if isempty(theGivenItem) ,
+                % There's nothing selected, so no item can be "near" the
+                % selected one
+                result = [] ;
+            else
+                isSelected=cellfun(@(element)(element==theGivenItem),items);
+                indexOfTheSelectedItem=find(isSelected,1);
+                if isempty(indexOfTheSelectedItem) ,
+                    % the supposedly-selected item is not even in the
+                    % list...
+                    result = [] ;
+                else
+                    % if get here, indexOfTheSelectedItem is a scalar                
+                    if indexOfTheSelectedItem>1 ,
+                        % The usual case: return the index of the
+                        % item just before the selected (but forbidden) item 
+                        result = indexOfTheSelectedItem-1 ;
+                    else
+                        % selected-but-forbidden item is the first in the list
+                        if length(items)<=1 ,  % can't be zero or negative (see above)
+                            % There is no item except the
+                            % selected-but-forbidden item
+                            result = [] ;
+                        else
+                            % Selected-but-forbidden item is the
+                            % first, but there is at least one
+                            % other item, so select the second item
+                            result = 2 ;
+                        end
+                    end
+                end
+            end
+        end  % function
+        
     end  % static methods
     
 end

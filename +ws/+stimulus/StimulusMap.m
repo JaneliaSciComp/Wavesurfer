@@ -15,7 +15,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         IsDurationFree
-        IsLive
+        %IsLive
         NBindings
     end
     
@@ -504,22 +504,22 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %             end
 %         end  % function
 
-        function value=get.IsLive(self)   %#ok<MANU>
-            value=true;
-%             nBindings=length(self.ChannelNames);
+%         function value=get.IsLive(self)   %#ok<MANU>
 %             value=true;
-%             for i=1:nBindings ,
-%                 % A binding is broken when there's a stimulus UUID but no
-%                 % stimulus handle.  It's sound iff it's not broken.
-%                 thisStimulus=self.Stimuli_{i};
-%                 thisStimulusUUID=self.StimulusUUIDs_{i};
-%                 isThisOneLive= ~(isempty(thisStimulus) && ~isempty(thisStimulusUUID)) ;                
-%                 if ~isThisOneLive ,
-%                     value=false;
-%                     break
-%                 end
-%             end
-        end
+% %             nBindings=length(self.ChannelNames);
+% %             value=true;
+% %             for i=1:nBindings ,
+% %                 % A binding is broken when there's a stimulus UUID but no
+% %                 % stimulus handle.  It's sound iff it's not broken.
+% %                 thisStimulus=self.Stimuli_{i};
+% %                 thisStimulusUUID=self.StimulusUUIDs_{i};
+% %                 isThisOneLive= ~(isempty(thisStimulus) && ~isempty(thisStimulusUUID)) ;                
+% %                 if ~isThisOneLive ,
+% %                     value=false;
+% %                     break
+% %                 end
+% %             end
+%         end
         
         function setStimulusByName(self, bindingIndex, stimulusName)
             if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
@@ -621,11 +621,16 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 % %             end
 %         end  % function        
 
-        function result=areAllStimuliInDictionary(self,nStimuliInLibrary)
-            nStimuli=self.NBindings;
+        function result=areAllStimulusIndicesValid(self)
+            library = self.Parent ;
+            nStimuliInLibrary = length(library.Stimuli) ;
+            nStimuli = self.NBindings ;
             for i=1:nStimuli ,
-                thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i};
-                if thisStimulusIndex<1 || thisStimulusIndex>nStimuliInLibrary ,
+                thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i} ;
+                if isempty(thisStimulusIndex) || ...
+                   ( thisStimulusIndex==round(thisStimulusIndex) && 1<=thisStimulusIndex || thisStimulusIndex<=nStimuliInLibrary ) ,
+                    % this is all to the good
+                else
                     result=false;
                     return
                 end
