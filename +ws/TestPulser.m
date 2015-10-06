@@ -50,7 +50,7 @@ classdef TestPulser < ws.Model
         %AutomaticYLimits
         Electrodes
         NElectrodes
-        AmplitudeAsDoublePerElectrode
+        AmplitudePerElectrode
         CommandPerElectrode
         CommandChannelScalePerElectrode
         MonitorChannelScalePerElectrode
@@ -104,7 +104,7 @@ classdef TestPulser < ws.Model
         ElectrodeIndexCached_
         %IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
         %IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
-        AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during sweeps
+        AmplitudePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during sweeps
         IsCCPerElectrodeCached_  
         IsVCPerElectrodeCached_  
         MonitorChannelInverseScalePerElectrodeCached_
@@ -369,7 +369,7 @@ classdef TestPulser < ws.Model
             end
         end
         
-        function result=get.AmplitudeAsDoublePerElectrode(self)
+        function result=get.AmplitudePerElectrode(self)
             % Get the amplitudes of the test pulse for all the
             % marked-for-test-pulsing electrodes, as a double array.            
             ephys=self.Parent_;
@@ -443,7 +443,7 @@ classdef TestPulser < ws.Model
             % of the Stimulation object
             t=self.Time;  % col vector
             delay=self.PulseDuration/2;
-            amplitudes=self.AmplitudeAsDoublePerElectrode;  % row vector
+            amplitudes=self.AmplitudePerElectrode;  % row vector
             unscaledCommand=(delay<=t)&(t<delay+self.PulseDuration);  % col vector
             commands=bsxfun(@times,amplitudes,unscaledCommand);
         end  
@@ -753,7 +753,7 @@ classdef TestPulser < ws.Model
         end
         
         function [gainOrResistance,gainOrResistanceUnits] = getGainOrResistancePerElectrodeWithNiceUnits(self)
-            rawGainOrResistance = self.GainOrResistancePerElectrode;
+            rawGainOrResistance = self.GainOrResistancePerElectrode ;
             rawGainOrResistanceUnits = self.GainOrResistanceUnitsPerElectrode ;
             % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
             [gainOrResistanceUnits,gainOrResistance] = ...
@@ -1126,7 +1126,7 @@ classdef TestPulser < ws.Model
                 self.IsCCPerElectrodeCached_=self.IsCCPerElectrode;
                 self.MonitorChannelInverseScalePerElectrodeCached_=1./self.MonitorChannelScalePerElectrode;
                 %self.CommandChannelScalePerElectrodeCached_=self.CommandChannelScalePerElectrode;
-                self.AmplitudeAsDoublePerElectrodeCached_=self.AmplitudeAsDoublePerElectrode;
+                self.AmplitudePerElectrodeCached_ = self.AmplitudePerElectrode ;
                 self.ElectrodeIndexCached_=self.ElectrodeIndex;
                 self.NScansInSweepCached_ = self.NScansInSweep;
                 self.NElectrodesCached_ = self.NElectrodes;
@@ -1387,7 +1387,7 @@ classdef TestPulser < ws.Model
             base=mean(scaledMonitor(i0Base:ifBase,:),1);
             pulse=mean(scaledMonitor(i0Pulse:ifPulse,:),1);
             monitorDelta=pulse-base;
-            self.GainPerElectrode_=monitorDelta./self.AmplitudeAsDoublePerElectrodeCached_;
+            self.GainPerElectrode_=monitorDelta./self.AmplitudePerElectrodeCached_;
             % Compute resistance per electrode
             self.GainOrResistancePerElectrode_=self.GainPerElectrode_;
             self.GainOrResistancePerElectrode_(self.IsVCPerElectrodeCached_)= ...
