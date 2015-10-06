@@ -342,7 +342,8 @@ classdef WavesurferModel < ws.Model
 
             fprintf('WavesurferModel::stop()\n');
             if isequal(self.State,'idle') , 
-                % do nothing
+                % do nothing except re-sync the view to the model
+                self.broadcast('Update');
             else
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');

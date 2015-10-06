@@ -389,16 +389,26 @@ classdef TestPulser < ws.Model
             end
         end
         
-        function set.Amplitude(self,newString)  % in units of the electrode command channel
+        function set.Amplitude(self, newValue)  % in units of the electrode command channel
             if ~isempty(self.Electrode_) ,
-                newValue=str2double(newString);
-                if isfinite(newValue) ,
-                    self.Electrode_.TestPulseAmplitude=newString;
-                    %self.AmplitudeAsDouble_=newValue;
-                    self.clearExistingSweepIfPresent_();
+                if ws.utility.isString(newValue) ,
+                    newValueAsDouble = str2double(newValue) ;
+                elseif isnumeric(newValue) && isscalar(newValue) ,
+                    newValueAsDouble = double(newValue) ;
+                else
+                    newValueAsDouble = nan ;  % isfinite(nan) is false
                 end
-            end
-            self.broadcast('Update');
+                if isfinite(newValueAsDouble) ,
+                    self.Electrode_.TestPulseAmplitude = newValueAsDouble ;
+                    %self.AmplitudeAsDouble_=newValue;
+                    self.clearExistingSweepIfPresent_() ;
+                else
+                    self.broadcast('Update') ;
+                    error('most:Model:invalidPropVal', ...
+                          'Amplitude must be a finite scalar');
+                end
+            end                
+            self.broadcast('Update') ;
         end
         
         function value=get.PulseDuration(self)  % s
