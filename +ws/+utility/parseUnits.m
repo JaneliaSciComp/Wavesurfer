@@ -4,17 +4,18 @@ function [wasParsed,prefix,coreUnits,prefixPowerOfTen] = parseUnits(units)
     prefixes = {'y' 'z' 'a' 'f' 'p' 'n' 'u' 'm' '' 'k' 'M' 'G' 'T' 'P' 'E' 'Z' 'Y'} ;
     prefixPowers = [-24 -21 -18 -15 -12 -9 -6 -3 0 3 6 9 12 15 18 21 24] ;
     
+    lengthOfUnits = length(units) ;
     didFindUnitsMatch = false ;
     possiblePrefix = '' ;  % fallback value
     for i=1:length(knownCoreUnits) ,
         knownUnit = knownCoreUnits{i} ;
-        lengthOfUnits = length(units) ;
         lengthOfKnownUnit = length(knownUnit) ;
         if lengthOfUnits>=lengthOfKnownUnit ,
             lastPartOfUnits = units(end-lengthOfKnownUnit+1:end) ;
             if isequal(knownUnit,lastPartOfUnits) ,
                 didFindUnitsMatch = true ;
                 possiblePrefix = units(1:(lengthOfUnits-lengthOfKnownUnit)) ;                
+                break
             end            
         end
     end
