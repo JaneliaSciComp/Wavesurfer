@@ -146,11 +146,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
                
+               model.Display.subscribeMe(self,'Update','','update');
                model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
                model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
-               model.Display.subscribeMe(self,'DidSetIsXSpanSlavedToAcquistionDuration','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
                model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
@@ -1361,12 +1361,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             isIdle=isequal(model.State,'idle');            
 
-            isDisplayEnabled=model.Display.IsEnabled;
+            displaySubsystem = model.Display ;
+            isDisplayEnabled=displaySubsystem.IsEnabled;
             set(self.DisplayEnabledCheckbox,'Enable',onIff(isIdle));
-            set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~model.Display.IsAutoRate));
+            set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',onIff(isIdle && isDisplayEnabled && ~model.Display.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',onIff(isIdle && isDisplayEnabled));            
+            set(self.SpanEdit,'Enable',onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
+            set(self.AutoSpanCheckbox,'Enable',onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
         end  % function
     end
     

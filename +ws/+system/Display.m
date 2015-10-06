@@ -8,6 +8,9 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         IsXSpanSlavedToAcquistionDuration
           % if true, the x span for all the scopes is set to the acquisiton
           % sweep duration
+        IsXSpanSlavedToAcquistionDurationSettable
+          % true iff IsXSpanSlavedToAcquistionDuration is currently
+          % settable
         Scopes  % a cell array of ws.ScopeModel objects
         NScopes
     end
@@ -31,7 +34,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
     events
         NScopesMayHaveChanged
         DidSetScopeIsVisibleWhenDisplayEnabled
-        DidSetIsXSpanSlavedToAcquistionDuration
+        %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
     end
@@ -134,24 +137,32 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         end
         
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
-            value = self.IsXSpanSlavedToAcquistionDuration_;
-        end
+            if self.Parent.AreSweepsContinuous ,
+                value = false ;
+            else
+                value = self.IsXSpanSlavedToAcquistionDuration_;
+            end
+        end  % function
         
         function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if self.IsXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
                     for idx = 1:numel(self.Scopes) ,
                         self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                     end
                 else
-                    self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
                 end
             end
-            self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');            
+            self.broadcast('Update');            
         end
+        
+        function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
+            value = self.Parent.AreSweepsFiniteDuration ;
+        end  % function       
         
         function self=didSetAnalogChannelUnitsOrScales(self)
             scopes=self.Scopes;
