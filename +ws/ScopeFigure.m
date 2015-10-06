@@ -606,13 +606,22 @@ classdef ScopeFigure < ws.MCOSFigure
                           'FontSize',9, ...
                           'TooltipString', 'Set y-axis limits tight to data', ....
                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
+            % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
+            % we want to do with this button when we change to
+            % green-on-black mode.  Also, there's a checked menu item that
+            % shows when this toggle is engaged or diengaged, so hopefully
+            % it won't be too jarring to the user when this button doesn't
+            % look toggled after she presses it.  I think it should be OK
+            % --- sometimes it's hard to tell even when a togglebutton is
+            % toggled.
             self.SetYLimTightToDataLockedButtonGH_ = ...
                 uicontrol('Parent',self.FigureGH, ...
-                          'Style','togglebutton', ...
+                          'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
                           'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));                      
+                      
         end  % function            
 
         function updateControlsInExistance_(self)            
@@ -671,7 +680,7 @@ classdef ScopeFigure < ws.MCOSFigure
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
             %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
             
-            set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
+            %set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.utility.onIff(areYLimitsLockedTightToData));            
 
             % Update the Show Grid togglemenu
@@ -735,6 +744,8 @@ classdef ScopeFigure < ws.MCOSFigure
             set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
             set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
             set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
             
             % Set the button scroll up/down button images
             if areColorsNormal ,
@@ -745,8 +756,8 @@ classdef ScopeFigure < ws.MCOSFigure
             else
                 yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
                 yScrollDownIcon = 1-persistentYScrollDownIcon ;                
-                yTightToDataIcon = persistentYTightToDataIcon ;  % togglebutton backgrounds don't get reversed, so don't bother
-                yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;  % togglebutton backgrounds don't get reversed, so don't bother
+                yTightToDataIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
+                yTightToDataLockedIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
             end                
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
