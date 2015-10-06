@@ -223,7 +223,7 @@ classdef (Abstract) Coding < handle
             encoding = encodingContainer.encoding ;
             
             % Create the object to be returned
-            if isequal(className,'double') || isequal(className,'char') || isequal(className,'logical') ,
+            if ws.utility.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
                 result = encoding ;
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;

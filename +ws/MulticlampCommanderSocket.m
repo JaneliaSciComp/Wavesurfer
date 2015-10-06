@@ -1102,6 +1102,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 %rawUnits=ws.utility.SIUnit('A')/ws.utility.SIUnit('V');
                 %targetUnits=ws.utility.SIUnit('pA')/ws.utility.SIUnit('V');
                 %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                err=[];
             else
                 value=nan;
                 err=[];  % this is not an error, it's part of normal operation
@@ -1119,9 +1120,10 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 %rawUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('V');
                 %targetUnits=ws.utility.SIUnit('mV')/ws.utility.SIUnit('V');
                 %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                err = [] ;
             else
-                value=nan;
-                err=[];  % this is not an error, it's part of normal operation
+                value = nan ;
+                err = [] ;  % this is not an error, it's part of normal operation
             end
         end  % function
 
