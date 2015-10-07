@@ -618,7 +618,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             tickLength=5;  % in pixels
             minimumLayoutWidth=570;  % If the figure gets small, we lay it out as if it was bigger
             minimumLayoutHeight=500;  
-            updateRateTextWidth=30;
+            updateRateTextWidth=36;  % wide enough to accomodate '100.0'
             gainTextWidth=60;
             textHeight=20;  % for 9 pt font
             interGainSpaceHeight=0;
