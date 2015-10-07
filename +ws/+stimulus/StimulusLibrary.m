@@ -476,12 +476,12 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             if isempty(self.Sequences_) || isempty(self.SelectedSequenceIndex_) ,
                 value = [] ;
             else
-                if 1<=self.SelectedSequenceIndex_ && self.SelectedSequenceIndex_<=length(self.Sequences_) ,
-                    % all is well
-                else
-                    fprintf('About to do an out-of-bounds reference.\n');
-                    keyboard
-                end
+%                 if 1<=self.SelectedSequenceIndex_ && self.SelectedSequenceIndex_<=length(self.Sequences_) ,
+%                     % all is well
+%                 else
+%                     fprintf('About to do an out-of-bounds reference.\n');
+%                     keyboard
+%                 end
                 value = self.Sequences_{self.SelectedSequenceIndex_} ;
             end
             %value=self.findSequenceWithUUID(self.SelectedSequenceUUID_);

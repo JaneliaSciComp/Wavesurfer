@@ -104,7 +104,7 @@ classdef InputTask < handle
         function start(self)
             if self.IsArmed ,
                 if ~isempty(self.DabsDaqTask_) ,
-                    fprintf('About to start InputTask named %s\n',self.TaskName);
+                    %fprintf('About to start InputTask named %s\n',self.TaskName);
                     self.DabsDaqTask_.start();
                     self.TimeAtLastRead_ = toc(self.TicId_) ;
                 end

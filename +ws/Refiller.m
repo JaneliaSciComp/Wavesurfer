@@ -336,7 +336,7 @@ classdef Refiller < ws.Model
         end
         
         function areYallAliveQ(self)
-            fprintf('Refiller::areYallAlive()\n') ;            
+            %fprintf('Refiller::areYallAlive()\n') ;            
             self.IPCPublisher_.send('refillerIsAlive');
         end  % function        
         
@@ -549,7 +549,7 @@ classdef Refiller < ws.Model
             % Called by the stimulation subsystem when it is done outputting
             % the sweep
             
-            fprintf('Refiller::stimulationEpisodeComplete()\n');
+            %fprintf('Refiller::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
             self.checkIfReadyToCompleteOngoingSweep_();
         end  % function
@@ -907,7 +907,7 @@ classdef Refiller < ws.Model
         function completeTheOngoingEpisode_(self)
             % Called from runMainLoop() when a single episode of stimulation is
             % completed.  
-            fprintf('Refiller::completeTheOngoingEpisode_()\n');
+            %fprintf('Refiller::completeTheOngoingEpisode_()\n');
             % We only want this method to do anything once per episode, and the next three
             % lines make this the case.
 
@@ -927,8 +927,8 @@ classdef Refiller < ws.Model
 %             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
 %                 self.armForEpisode_() ;
 %             end                                    
-            fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
-            fprintf('    self.NEpisodesCompletedSoFarThisRun_: %d\n',self.NEpisodesCompletedSoFarThisRun_);
+            %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
+            %fprintf('    self.NEpisodesCompletedSoFarThisRun_: %d\n',self.NEpisodesCompletedSoFarThisRun_);
         end  % function
         
         function stopTheOngoingEpisode_(self)

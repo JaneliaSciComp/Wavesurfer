@@ -57,7 +57,7 @@ classdef RPCServer < ws.ZMQBinder
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
-            fprintf('RPCServer: We got a message: %s !\n',methodName) ;
+            %fprintf('RPCServer: We got a message: %s !\n',methodName) ;
             if isempty(self.Delegate) ,
                 value = MException('RPCServer:noDelegate', ...
                                    'Couldn''t call the method because Delegate is empty or invalid');

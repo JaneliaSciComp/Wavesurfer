@@ -12,12 +12,12 @@ classdef UserClass < ws.mixin.Coding
         abortingSweep(self,wsModel,eventName)
         dataAvailable(self,wsModel,eventName)
         % this one is called in the looper process
-        samplesAcquired(self,wsModel,eventName) 
+        samplesAcquired(self,looper,eventName,analogData,digitalData) 
         % these are are called in the refiller process
-        startingEpisode(self,wsModel,eventName)        
-        completingEpisode(self,wsModel,eventName)      
-        stoppingEpisode(self,wsModel,eventName)      
-        abortingEpisode(self,wsModel,eventName)        
+        startingEpisode(self,refiller,eventName)        
+        completingEpisode(self,refiller,eventName)      
+        stoppingEpisode(self,refiller,eventName)      
+        abortingEpisode(self,refiller,eventName)        
     end  % methods
 
 end  % classdef

@@ -272,7 +272,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function delete(self)
-            fprintf('WavesurferModel::delete()\n');
+            %fprintf('WavesurferModel::delete()\n');
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;
@@ -297,7 +297,7 @@ classdef WavesurferModel < ws.Model
             %deleteIfValidHandle(self.UserCodeManager);
             %deleteIfValidHandle(self.Ephys);
             %end
-            fprintf('at end of WavesurferModel::delete()\n');
+            %fprintf('at end of WavesurferModel::delete()\n');
         end
         
 %         function unstring(self)
@@ -340,7 +340,7 @@ classdef WavesurferModel < ws.Model
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current run, if any.
 
-            fprintf('WavesurferModel::stop()\n');
+            %fprintf('WavesurferModel::stop()\n');
             if isequal(self.State,'idle') , 
                 % do nothing except re-sync the view to the model
                 self.broadcast('Update');
@@ -373,7 +373,7 @@ classdef WavesurferModel < ws.Model
         function looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
-            fprintf('WavesurferModel::looperStoppedRun()\n');
+            %fprintf('WavesurferModel::looperStoppedRun()\n');
             self.WasRunStoppedInLooper_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
         end
@@ -392,7 +392,7 @@ classdef WavesurferModel < ws.Model
         
         function looperIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
-            fprintf('WavesurferModel::looperIsAlive()\n');
+            %fprintf('WavesurferModel::looperIsAlive()\n');
         end
         
         function refillerReadyForRun(self) %#ok<MANU>
@@ -410,14 +410,14 @@ classdef WavesurferModel < ws.Model
         function refillerStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
-            fprintf('WavesurferModel::refillerStoppedRun()\n');
+            %fprintf('WavesurferModel::refillerStoppedRun()\n');
             self.WasRunStoppedInRefiller_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
         end
         
         function refillerIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
-            fprintf('WavesurferModel::refillerIsAlive()\n');
+            %fprintf('WavesurferModel::refillerIsAlive()\n');
         end
         
         function looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
@@ -691,7 +691,7 @@ classdef WavesurferModel < ws.Model
         function acquisitionSweepComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % sweep.
-            fprintf('WavesurferModel::acquisitionSweepComplete()\n');
+            %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
             self.checkIfSweepIsComplete_();            
         end  % function
         
@@ -699,7 +699,7 @@ classdef WavesurferModel < ws.Model
             % Called by the stimulation subsystem when it is done outputting
             % the sweep
             
-            fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
+            %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
             self.checkIfSweepIsComplete_();
         end  % function
@@ -907,7 +907,7 @@ classdef WavesurferModel < ws.Model
             
             % Tell the Looper & Refiller to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
-            fprintf('About to send startingRun\n');
+            %fprintf('About to send startingRun\n');
             self.IPCPublisher_.send('startingRun',wavesurferModelSettings) ;
             
             % Wait for the looper to respond that it is ready
@@ -1020,7 +1020,7 @@ classdef WavesurferModel < ws.Model
                 end
                 
                 % Tell the looper & refiller to ready themselves
-                fprintf('About to send startingSweep\n');
+                %fprintf('About to send startingSweep\n');
                 self.IPCPublisher_.send('startingSweep',self.NSweepsCompletedInThisRun_+1) ;
                 
                 % Wait for the looper to respond
@@ -1054,7 +1054,7 @@ classdef WavesurferModel < ws.Model
                 %self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
 
                 % Pulse the master trigger to start the sweep!
-                fprintf('About to pulse the master trigger!\n');
+                %fprintf('About to pulse the master trigger!\n');
                 self.IsPerformingSweep_ = true ;  
                     % have to wait until now to set this true, so that old
                     % samplesAcquired messages are ignored when we're
@@ -1315,7 +1315,7 @@ classdef WavesurferModel < ws.Model
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.            
             
             %fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
-            tHere=tic();
+            %tHere=tic();
             self.NTimesDataAvailableCalledSinceRunStart_ = self.NTimesDataAvailableCalledSinceRunStart_ + 1 ;
             [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = self.SamplesBuffer_.empty() ;            
             nScans = size(rawAnalogData,1) ;
@@ -1368,7 +1368,7 @@ classdef WavesurferModel < ws.Model
                 %fprintf('About to do drawnow()\n');
                 drawnow();  
             end
-            toc(tHere)
+            %toc(tHere)
         end  % function
         
     end % protected methods block

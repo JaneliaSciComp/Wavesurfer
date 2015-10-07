@@ -330,7 +330,7 @@ classdef Looper < ws.Model
         end
         
         function areYallAliveQ(self)
-            fprintf('Looper::areYallAlive()\n') ;
+            %fprintf('Looper::areYallAlive()\n') ;
             self.IPCPublisher_.send('looperIsAlive');
         end  % function        
         
@@ -562,7 +562,7 @@ classdef Looper < ws.Model
         function acquisitionSweepComplete(self)
             % Called by the acq subsystem when it's done acquiring for the
             % sweep.
-            fprintf('Looper::acquisitionSweepComplete()\n');
+            %fprintf('Looper::acquisitionSweepComplete()\n');
             self.checkIfSweepIsComplete_();            
         end  % function
         
@@ -570,7 +570,7 @@ classdef Looper < ws.Model
             % Called by the stimulation subsystem when it is done outputting
             % the sweep
             
-            fprintf('Looper::stimulationEpisodeComplete()\n');
+            %fprintf('Looper::stimulationEpisodeComplete()\n');
             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
             self.checkIfSweepIsComplete_();
         end  % function
@@ -808,7 +808,7 @@ classdef Looper < ws.Model
             err = [] ;
             
             % Reset the sample count for the sweep
-            fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
+            %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
                         
             % Call startingSweep() on all the enabled subsystems, and

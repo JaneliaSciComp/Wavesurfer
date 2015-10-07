@@ -477,10 +477,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         function startingEpisode(self,indexOfEpisodeWithinSweep)
             % Called by the Refiller when it's starting an episode
             
-            fprintf('\n');            
-            fprintf('RefillerStimulation::startingEpisode()\n');
-            fprintf('    indexOfEpisodeWithinSweep: %d\n',indexOfEpisodeWithinSweep);     
-            fprintf('\n');            
+            %fprintf('\n');            
+            %fprintf('RefillerStimulation::startingEpisode()\n');
+            %fprintf('    indexOfEpisodeWithinSweep: %d\n',indexOfEpisodeWithinSweep);     
+            %fprintf('\n');            
+            
             %thisTic=tic();
             %fprintf('Stimulation::armForEpisode()\n');
             %dbstack

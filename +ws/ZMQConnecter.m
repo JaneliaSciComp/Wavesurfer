@@ -28,15 +28,15 @@ classdef ZMQConnecter < handle
 
         function connect(self,portNumber)
             if ~self.hasContext() ,
-                fprintf('ZMQConnecter::connect(): About to call zmq.core.ctx_new()\n');
+                %fprintf('ZMQConnecter::connect(): About to call zmq.core.ctx_new()\n');
                 context = zmq.core.ctx_new() ;
                 self.Context = context ;
             end
             if ~self.hasSocket() ,
-                fprintf('ZMQConnecter::connect(): About to call zmq.core.socket()\n');
+                %fprintf('ZMQConnecter::connect(): About to call zmq.core.socket()\n');
                 self.Socket = zmq.core.socket(self.Context, self.TypeString);
             end
-            fprintf('ZMQConnecter::connect(): About to call zmq.core.connect()\n');
+            %fprintf('ZMQConnecter::connect(): About to call zmq.core.connect()\n');
             zmq.core.connect(self.Socket, sprintf('tcp://localhost:%d', portNumber));
             self.Connections = [self.Connections portNumber];
             %self.IsConnected = true ;
@@ -51,7 +51,7 @@ classdef ZMQConnecter < handle
                     % At this point, nConnectionsLeft is the number of
                     % connections that have not yet been disconnected
                     portNumber = self.Connections(nConnectionsLeft) ;  % peel off the last one
-                    fprintf('ZMQConnecter::delete(): About to call zmq.core.disconnect()\n');
+                    %fprintf('ZMQConnecter::delete(): About to call zmq.core.disconnect()\n');
                     zmq.core.disconnect(self.Socket, sprintf('tcp://localhost:%d', portNumber)) ;                    
                     self.Connections = self.Connections(1:(nConnectionsLeft-1)) ;
                     nConnectionsLeft = nConnectionsLeft - 1 ;
@@ -59,20 +59,20 @@ classdef ZMQConnecter < handle
                 self.Connections = [] ;
                 % close the socket
                 if self.hasSocket() ,
-                    fprintf('ZMQConnecter::delete(): About to call zmq.core.setsockopt()\n');
+                    %fprintf('ZMQConnecter::delete(): About to call zmq.core.setsockopt()\n');
                     zmq.core.setsockopt(self.Socket, 'ZMQ_LINGER', 0);  % don't wait to send pending messages
-                    fprintf('ZMQConnecter::delete(): About to call zmq.core.close()\n');
+                    %fprintf('ZMQConnecter::delete(): About to call zmq.core.close()\n');
                     zmq.core.close(self.Socket);
                     self.Socket =[] ;
                 end
                 % destroy the context
                 if self.hasContext() ,
-                    fprintf('ZMQConnecter::delete(): About to call zmq.core.ctx_shutdown()\n');
+                    %fprintf('ZMQConnecter::delete(): About to call zmq.core.ctx_shutdown()\n');
                     zmq.core.ctx_shutdown(self.Context) ;
-                    fprintf('ZMQConnecter::delete(): Just called zmq.core.ctx_shutdown()\n');                    
-                    fprintf('ZMQConnecter::delete(): About to call zmq.core.ctx_term()\n');                    
+                    %fprintf('ZMQConnecter::delete(): Just called zmq.core.ctx_shutdown()\n');                    
+                    %fprintf('ZMQConnecter::delete(): About to call zmq.core.ctx_term()\n');                    
                     zmq.core.ctx_term(self.Context);
-                    fprintf('ZMQConnecter::delete(): Just called zmq.core.ctx_term()\n');
+                    %fprintf('ZMQConnecter::delete(): Just called zmq.core.ctx_term()\n');
                     self.Context = [] ;
                 end
             catch me %#ok<NASGU>

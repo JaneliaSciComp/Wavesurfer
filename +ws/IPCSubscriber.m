@@ -47,7 +47,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     methodName = '' ;
                     return
                 else
-                    fprintf('There was an interesting error calling zmq.core.recv.  self.Socket: %d\n',self.Socket);
+                    %fprintf('There was an interesting error calling zmq.core.recv.  self.Socket: %d\n',self.Socket);
                     rethrow(me);
                 end
             end
@@ -93,7 +93,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
         
         function connect(self,portNumber)
             self.connect@ws.ZMQConnecter(portNumber);
-            fprintf('IPCSubscriber::connect(): About to call zmq.core.setsockopt()\n') ;
+            %fprintf('IPCSubscriber::connect(): About to call zmq.core.setsockopt()\n') ;
             zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
         end  % function
 

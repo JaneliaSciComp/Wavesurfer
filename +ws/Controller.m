@@ -341,10 +341,11 @@ classdef Controller < handle
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
-                    fprintf('ws.Controller::controlActuated: An error occured:\n');
-                    id = me.identifier
-                    msg = me.message
-                    report = me.getReport()
+
+%                     fprintf('ws.Controller::controlActuated: An error occured:\n');
+%                     id = me.identifier
+%                     msg = me.message
+%                     report = me.getReport()
                     errordlg(me.message,'Error','modal');
 %                end
             end

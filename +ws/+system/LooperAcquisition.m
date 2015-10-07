@@ -319,9 +319,9 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 else                    
                     areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
                 end
-                if areTasksDone ,
-                    fprintf('Acquisition tasks are done.\n')
-                end
+%                 if areTasksDone ,
+%                     fprintf('Acquisition tasks are done.\n')
+%                 end
                 
                 % Get data
                 %if areTasksDone ,

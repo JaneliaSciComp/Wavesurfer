@@ -1,7 +1,4 @@
 classdef ScopeFigure < ws.MCOSFigure
-    % This is an EventBroadcaster only so that changes to it via the
-    % default Matlab figure controls can be communicated to the model (via
-    % the controller)
     
     properties (Dependent=true)
         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure

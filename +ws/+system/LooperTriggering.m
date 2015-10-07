@@ -43,7 +43,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
         end  % function
         
         function startAllDistinctTriggerTasks_(self)
-            fprintf('LooperTriggering::startAllDistinctTriggerTasks_()\n');
+            %fprintf('LooperTriggering::startAllDistinctTriggerTasks_()\n');
 %             triggerSchemes = self.getUniqueInternalTriggersInOrderForStarting_();
 %             for idx = 1:numel(triggerSchemes) ,
 %                 thisTriggerScheme=triggerSchemes{idx};
