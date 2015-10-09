@@ -18,7 +18,7 @@ classdef InputTask < handle
         SampleRate      % Hz
         AcquisitionDuration  % Seconds
         DurationPerDataAvailableCallback  % Seconds
-        ClockTiming 
+        ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerPFIID
         TriggerEdge
     end
@@ -28,6 +28,9 @@ classdef InputTask < handle
         DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
         TicId_
         TimeAtLastRead_
+        TimeAtTaskStart_  % only accurate if DabsDaqTask_ is empty, and task has been started
+        NScansReadSoFar_  % only accurate if DabsDaqTask_ is empty, and task has been started
+        NScansExpectedCache_  % only accurate if DabsDaqTask_ is empty, and task has been started
     end
     
     properties (Access = protected)
@@ -103,10 +106,17 @@ classdef InputTask < handle
         
         function start(self)
             if self.IsArmed ,
-                if ~isempty(self.DabsDaqTask_) ,
+                if isempty(self.DabsDaqTask_) ,
+                    self.NScansExpectedCache_ = self.ExpectedScanCount ;
+                    self.NScansReadSoFar_ = 0 ;                    
+                    timeNow = toc(self.TicId_) ;
+                    self.TimeAtTaskStart_ = timeNow ;                    
+                else                    
                     %fprintf('About to start InputTask named %s\n',self.TaskName);
                     self.DabsDaqTask_.start();
-                    self.TimeAtLastRead_ = toc(self.TicId_) ;
+                    timeNow = toc(self.TicId_) ;
+                    %self.TimeAtTaskStart_ = timeNow ;
+                    self.TimeAtLastRead_ = timeNow ;
                 end
             end
         end
@@ -130,7 +140,14 @@ classdef InputTask < handle
         
         function result = isTaskDone(self)
             if isempty(self.DabsDaqTask_) ,
-                result = true ;  % Well, the task is certainly not running...
+                %result = true ;  % Well, the task is certainly not running...
+                if isinf(self.AcquisitionDuration_) ,  % don't want to bother with toc() if we already know the answer...
+                    result = false ;
+                else
+                    timeNow = toc(self.TicId_) ;
+                    durationSoFar = timeNow-self.TimeAtTaskStart_ ;
+                    result = durationSoFar>self.AcquisitionDuration_ ;
+                end
             else
                 result = self.DabsDaqTask_.isTaskDoneQuiet() ;
             end            
@@ -146,11 +163,21 @@ classdef InputTask < handle
             timeSinceRunStartNow = toc(fromRunStartTicId) ;
             if self.IsAnalog ,
                 if isempty(self.DabsDaqTask_) ,
+                    % Since there are zero active channels, want to fake
+                    % the acquisition of a reasonable number of samples,
+                    % given the timing and acq duration.
                     if isempty(nScansToRead) ,
-                        rawData = zeros(0,0,'int16');
+                        nScansRequested = +inf ;
                     else
-                        rawData = zeros(nScansToRead,0,'int16');
+                        nScansRequested = nScansToRead ;
                     end
+                    timeNow = toc(self.TicId_) ;                        
+                    nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                    nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                    nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                    nScans = min(nScansPossible,nScansRequested) ;
+                    rawData = zeros(nScans,0,'int16');
+                    self.TimeAtLastRead_ = timeNow ;
                 else
                     if isempty(nScansToRead) ,
                         rawData = self.queryUntilEnoughThenRead_();
@@ -160,11 +187,21 @@ classdef InputTask < handle
                 end
             else % IsDigital
                 if isempty(self.DabsDaqTask_) ,
+                    % Since there are zero active channels, want to fake
+                    % the acquisition of a reasonable number of samples,
+                    % given the timing and acq duration.
                     if isempty(nScansToRead) ,
-                        packedData = zeros(0,0,'uint32');
+                        nScansRequested = +inf ;
                     else
-                        packedData = zeros(nScansToRead,0,'uint32');
-                    end                        
+                        nScansRequested = nScansToRead ;
+                    end
+                    timeNow = toc(self.TicId_) ;                        
+                    nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                    nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                    nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                    nScans = min(nScansPossible,nScansRequested) ;
+                    packedData = zeros(nScans,0,'uint32');
+                    self.TimeAtLastRead_ = timeNow ;
                 else       
                     if isempty(nScansToRead) ,
                         readData = self.queryUntilEnoughThenRead_();
@@ -213,7 +250,7 @@ classdef InputTask < handle
             if self.IsAnalog_ ,
                 data = self.DabsDaqTask_.readAnalogData([],'native') ;
             else
-                self.DabsDaqTask_.readDigitalData([],'uint32');
+                data = self.DabsDaqTask_.readDigitalData([],'uint32');
             end
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
@@ -367,11 +404,16 @@ classdef InputTask < handle
         end  % function
         
         function set.AcquisitionDuration(self, value)
-            if ~( isnumeric(value) && isscalar(value) && value>0 )  ,
+            if ~( isnumeric(value) && isscalar(value) && ~isnan(value) && value>0 )  ,
                 error('most:Model:invalidPropVal', ...
                       'AcquisitionDuration must be a positive scalar');       
             end            
             self.AcquisitionDuration_ = value;
+            if isinf(value) ,
+                self.ClockTiming_ = 'DAQmx_Val_ContSamps' ;
+            else
+                self.ClockTiming_ = 'DAQmx_Val_FiniteSamps' ;
+            end                
         end  % function
         
         function value = get.AcquisitionDuration(self)
@@ -420,14 +462,14 @@ classdef InputTask < handle
             value = self.TriggerEdge_ ;
         end  % function                
         
-        function set.ClockTiming(self,value)
-            if isequal(value,'DAQmx_Val_FiniteSamps') || isequal(value,'DAQmx_Val_ContSamps') || isequal(value,'DAQmx_Val_HWTimedSinglePoint') ,
-                self.ClockTiming_ = value;
-            else
-                error('most:Model:invalidPropVal', ...
-                      'ClockTiming must be ''DAQmx_Val_FiniteSamps'', ''DAQmx_Val_ContSamps'', or ''DAQmx_Val_HWTimedSinglePoint''');       
-            end            
-        end  % function           
+%         function set.ClockTiming(self,value)
+%             if isequal(value,'DAQmx_Val_FiniteSamps') || isequal(value,'DAQmx_Val_ContSamps') || isequal(value,'DAQmx_Val_HWTimedSinglePoint') ,
+%                 self.ClockTiming_ = value;
+%             else
+%                 error('most:Model:invalidPropVal', ...
+%                       'ClockTiming must be ''DAQmx_Val_FiniteSamps'', ''DAQmx_Val_ContSamps'', or ''DAQmx_Val_HWTimedSinglePoint''');       
+%             end            
+%         end  % function           
         
         function value = get.ClockTiming(self)
             value = self.ClockTiming_ ;
@@ -453,7 +495,7 @@ classdef InputTask < handle
     %             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
 
                 % Set up timing
-                switch self.ClockTiming ,
+                switch self.ClockTiming_ ,
                     case 'DAQmx_Val_FiniteSamps'
                         self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
                     case 'DAQmx_Val_ContSamps'
