@@ -71,7 +71,7 @@ classdef TemplateUserClass < ws.UserClass
         
         function dataAvailable(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
-            % is read from the DAQ board.
+            % has been accumulated from the looper.
             analogData = wsModel.Acquisition.getLatestAnalogData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             nScans = size(analogData,1);
@@ -79,32 +79,30 @@ classdef TemplateUserClass < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,wsModel,eventName)
-            % Called each time a "chunk" of data (typically 100 ms worth) 
+        function samplesAcquired(self,looper,eventName,analogData,digitalData) 
+            % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
-            analogData = wsModel.Acquisition.getLatestAnalogData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             nScans = size(analogData,1);
-            fprintf('Just read %d scans of data.\n',nScans);                                    
+            fprintf('Just acquired %d scans of data.\n',nScans);                                    
         end
         
         % These methods are called in the refiller process
-        function startingEpisode(self,wsModel,eventName)
+        function startingEpisode(self,refiller,eventName)
             % Called just before each episode
             fprintf('About to start an episode.\n');
         end
         
-        function completingEpisode(self,wsModel,eventName)
+        function completingEpisode(self,refiller,eventName)
             % Called after each episode completes
             fprintf('Completed an episode.\n');
         end
         
-        function stoppingEpisode(self,wsModel,eventName)
+        function stoppingEpisode(self,refiller,eventName)
             % Called if a episode goes wrong
             fprintf('User stopped an episode.\n');
         end        
         
-        function abortingEpisode(self,wsModel,eventName)
+        function abortingEpisode(self,refiller,eventName)
             % Called if a episode goes wrong
             fprintf('Oh noes!  An episode aborted.\n');
         end
