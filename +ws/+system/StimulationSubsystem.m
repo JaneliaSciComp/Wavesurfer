@@ -401,7 +401,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             isChangeableFull=(self.getNumberOfElectrodesClaimingChannel()==1);
             isChangeable= ~isChangeableFull(i);
             if isChangeable ,
-                self.AnalogChannelUnits_(i)=strtrim(newValue);
+                self.AnalogChannelUnits_{i}=strtrim(newValue);
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
             self.broadcast('DidSetAnalogChannelUnitsOrScales');

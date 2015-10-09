@@ -591,7 +591,7 @@ classdef ScopeModel < ws.Model
             firstChannelName=self.ChannelNames{1};
             iFirstChannel=acquisition.iAnalogChannelFromName(firstChannelName);
             if isfinite(iFirstChannel) ,
-                newChannelUnits=acquisition.AnalogChannelUnits(iFirstChannel);  
+                newChannelUnits=acquisition.AnalogChannelUnits{iFirstChannel};  
                 newScale=acquisition.AnalogChannelScales(iFirstChannel);  % V/newChannelUnits
                 %yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
                 %newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;

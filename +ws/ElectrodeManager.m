@@ -557,12 +557,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             value=sum(isMatchBig,1);
         end  % function
         
-        function [queryChannelUnits,isQueryChannelScaleManaged] = getCommandUnitsByName(self,queryChannelNamesRaw)
-            if ischar(queryChannelNamesRaw) ,
-                queryChannelNames={queryChannelNamesRaw};
-            else
-                queryChannelNames=queryChannelNamesRaw;
-            end
+        function [queryChannelUnits,isQueryChannelScaleManaged] = getCommandUnitsByName(self,queryChannelNames)
+%             if ischar(queryChannelNamesRaw) ,
+%                 queryChannelNames={queryChannelNamesRaw};
+%             else
+%                 queryChannelNames=queryChannelNamesRaw;
+%             end
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
             isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
             nQueryChannels=length(queryChannelNames);
@@ -574,7 +574,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1); 
                         electrode=self.Electrodes{iElectrode};
-                        queryChannelUnits{i}=electrode.getCommandUnitsByName(queryChannelNames{i});
+                        queryChannelUnits{i}=electrode.getCommandUnitByName(queryChannelNames{i});
                     end                    
                 end                    
             end

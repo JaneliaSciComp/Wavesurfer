@@ -651,7 +651,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             end
         end
         
-        function result = getCommandUnitsByName(self,channelName)
+        function result = getCommandUnitByName(self,channelName)
             % Get the scaling for the named command channel dictated by
             % this electrode.  If the named channel is both the current and
             % voltage command name, use the mode to break the tie.

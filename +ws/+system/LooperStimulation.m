@@ -364,7 +364,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 if isempty(iChannel) ,
                     result='';
                 else
-                    result=self.AnalogChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits{iChannel};
                 end
             end
         end  % function

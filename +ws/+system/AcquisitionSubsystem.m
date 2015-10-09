@@ -323,7 +323,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
             newValue = strtrim(newValueRaw) ;
-            self.AnalogChannelUnits_(i)=fif(isChangeable,newValue,self.AnalogChannelUnits_(i));
+            self.AnalogChannelUnits_{i}=fif(isChangeable,newValue,self.AnalogChannelUnits_{i});
             self.Parent.didSetAnalogChannelUnitsOrScales();
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
