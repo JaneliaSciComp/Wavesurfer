@@ -97,7 +97,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 uniqueInputDeviceNames=unique(inputDeviceNames);
                 if ~isscalar(uniqueInputDeviceNames) ,
                     error('ws:MoreThanOneDeviceName', ...
-                          'Wavesurfer only supports a single NI card at present.');                      
+                          'WaveSurfer only supports a single NI card at present.');                      
                 end
                 self.DeviceNames_ = inputDeviceNames;
                 channelNames = mdfStructure.inputChannelNames;

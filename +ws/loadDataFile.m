@@ -15,7 +15,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
     % Check that file has proper extension
     [~, ~, ext] = fileparts(filename);
     if ~isequal(ext, '.h5') ,
-        error('File must be a Wavesurfer-generated HDF5 (.h5) file.');
+        error('File must be a WaveSurfer-generated HDF5 (.h5) file.');
     end
 
     % Extract dataset at each group level, recursively.    

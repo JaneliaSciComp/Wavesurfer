@@ -82,7 +82,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 uniqueDeviceNames = unique(deviceNames);
                 if ~isscalar(uniqueDeviceNames) ,
                     error('ws:MoreThanOneDeviceName', ...
-                          'Wavesurfer only supports a single NI card at present.');                      
+                          'WaveSurfer only supports a single NI card at present.');                      
                 end
                 
                 % Figure out which are analog and which are digital

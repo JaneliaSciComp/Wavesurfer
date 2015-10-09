@@ -197,8 +197,8 @@ classdef Refiller < ws.Model
         function runMainLoop(self)
             % Put something in the console, so user know's what this funny
             % window is.
-            fprintf('This is the ''refiller'' process.  It is part of Wavesurfer.\n');
-            fprintf('Don''t close this window if you want Wavesurfer to work properly.\n');                        
+            fprintf('This is the ''refiller'' process.  It is part of WaveSurfer.\n');
+            fprintf('Don''t close this window if you want WaveSurfer to work properly.\n');                        
             %pause(5);            
             % Main loop
             %timeSinceSweepStart=nan;  % hack

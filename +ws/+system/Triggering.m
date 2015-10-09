@@ -19,7 +19,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
         
         function setupMasterTriggerTask(self) 
             if isempty(self.MasterTriggerDABSTask_) ,
-                self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('Wavesurfer Master Trigger Task');
+                self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Master Trigger Task');
                 self.MasterTriggerDABSTask_.createDOChan(self.Sources{1}.DeviceName, self.MasterTriggerPhysicalChannelName_);
                 self.MasterTriggerDABSTask_.writeDigitalData(false);
             end
