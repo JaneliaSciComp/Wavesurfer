@@ -48,7 +48,7 @@
 
 //Helper functions
 void handleDAQmxError(int32 status, const char *functionName)
-{
+    {
 	int32 errorStringSize;
 	char *errorString;
 
@@ -63,21 +63,21 @@ void handleDAQmxError(int32 status, const char *functionName)
 
 	sprintf(finalErrorString, "DAQmx Error (%d) encountered in %s:\n %s\n", status, functionName, errorString);
 	mexErrMsgTxt(finalErrorString);
-}
+    }
 
 //Static variables
-static bool32 fillMode = DAQmx_Val_GroupByChannel; //Arrange data by channel, so that columns correspond to channels given MATLAB's column-major data format
+static bool32 fillMode = DAQmx_Val_GroupByChannel;  // Arrange data by channel, so that columns correspond to channels given MATLAB's column-major data format
 
 //Gateway routine
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+    {
 	//Read input arguments
 	char outputFormat[10];
 	char outputVarName[MAXVARNAMESIZE];
 	int	outputVarSampsPerChan;
 	double timeout;
 	int numSampsPerChan;
-	bool outputData; //Indicates whether to return an outputData argument
+	//bool outputData; //Indicates whether to return an outputData argument
 	mxClassID outputDataClass;
 	uInt32 bufSize;
 	bool writeDigitalLines;
@@ -85,37 +85,47 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	TaskHandle taskID, *taskIDPtr;
 	int32 status;
 
-	//Get TaskHandle
+    // prhs[0]: task
+    // prhs[1]: numSampsPerChan
+    // prhs[2]: outputFormat
+    // prhs[3]: timeout
+
+    // prhs[0]: task
+	// Get TaskHandle
 	taskIDPtr = (TaskHandle*)mxGetData(mxGetProperty(prhs[0],0, "taskID"));
 	taskID = *taskIDPtr;
 
-	//Determine if this is a buffered read operation
+	// Determine if this is a buffered read operation
 	status = DAQmxGetBufInputBufSize(taskID, &bufSize);
 	if (status)
+        {
 		handleDAQmxError(status, "DAQmxGetBufInputBufSize");
+        }
 
-	//Handle input arguments
+    // prhs[1]: numSampsPerChan
+	// Handle input arguments
 	if ((nrhs < 2) || mxIsEmpty(prhs[1]) || mxIsInf(mxGetScalar(prhs[1])))
-	{
+	    {
 		if (bufSize==0)
 			numSampsPerChan = 1;
 		else
 			numSampsPerChan = DAQmx_Val_Auto;
-	}
+	    }
 	else
 		numSampsPerChan = (int) mxGetScalar(prhs[1]);
 	
+    // prhs[2]: outputFormat
 	if ((nrhs < 3) || mxIsEmpty(prhs[2]))
-	{
-		//Automatic determination of read type
+	    {
+		// Automatic determination of read type
 		bool isLineBased = (bool) mxGetScalar(mxGetProperty(prhs[0],0,"isLineBasedDigital"));		
 
-		if ((bufSize==0) && isLineBased) //This is a non-buffered, line-based Task: return data as a double array
+		if ((bufSize==0) && isLineBased)  // This is a non-buffered, line-based Task: return data as a double array
 			outputDataClass = mxDOUBLE_CLASS;
-		else if ((bufSize!=0 && isLineBased)) //This is a buffered, line-based Task: return data as a double array
+		else if ((bufSize!=0 && isLineBased))  // This is a buffered, line-based Task: return data as a double array
 			outputDataClass = mxDOUBLE_CLASS;
 		else
-		{
+		    {
 			status = DAQmxGetReadDigitalLinesBytesPerChan(taskID,&bytesPerChan); //This actually returns the number of bytes required to represent one sample of Channel data
 			if (status)
 				handleDAQmxError(status, "DAQmxGetReadDigitalLinesBytesPerChan");
@@ -128,10 +138,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				outputDataClass = mxUINT32_CLASS;
 			else
 				mexErrMsgTxt("It is not currently possible to read integer values from Task with greater than 32 lines per sample value");
-		}
-	}
+		    }
+	    }
 	else
-	{
+	    {
 		mxGetString(prhs[2], outputFormat, 10);		
 
 		if (_strcmpi(outputFormat,"uint8") == 0)
@@ -146,28 +156,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			outputDataClass = mxLOGICAL_CLASS;
 		else
 			mexErrMsgTxt("The specified 'outputFormat' value (case-sensitive) is not recognized.");
-	}
+	    }
 
 	if ((outputDataClass == mxDOUBLE_CLASS) || (outputDataClass == mxLOGICAL_CLASS))
-	{
+	    {
 		writeDigitalLines = true;
 		if (bytesPerChan == 0)
-		{
+		    {
 			status = DAQmxGetReadDigitalLinesBytesPerChan(taskID,&bytesPerChan); //This actually returns the number of bytes required to represent one sample of Channel data
 			if (status)
 				handleDAQmxError(status, "DAQmxGetReadDigitalLinesBytesPerChan");
-		}			
-	}
+		    }			
+	    }
 	else
 		writeDigitalLines = false;
 
 
+    // prhs[3]: timeout
 	if ((nrhs < 4) || mxIsEmpty(prhs[3]) || mxIsInf(mxGetScalar(prhs[3])))
 		timeout = DAQmx_Val_WaitInfinitely;
 	else
 		timeout = mxGetScalar(prhs[3]);
 
 
+    // prhs[4]: outputVarSizeOrName
+    //outputData = true;
+	outputVarSampsPerChan = numSampsPerChan; //If value is DAQmx_Val_Auto, then the # of samples available will be queried before allocting array
+    /*
 	if ((nrhs < 5) || mxIsEmpty(prhs[4])) //OutputVarSizeOrName argument
 	{
 		outputData = true;
@@ -185,6 +200,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		else
 			mxGetString(prhs[4], outputVarName, MAXVARNAMESIZE);
 	}
+    */
 
 	//Determin # of output channels
 	uInt32 numChannels; 
@@ -195,39 +211,39 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	void *outputDataPtr;
 
 	//float64 *outputDataPtr;
-	if (outputData)
-	{
-		mwSize numRows;
+	//if (outputData)
+    //	{
+	mwSize numRows;
 
-		if (outputVarSampsPerChan == DAQmx_Val_Auto)
-		{
-			status = DAQmxGetReadAvailSampPerChan(taskID, (uInt32 *)&outputVarSampsPerChan);
-			if (status)
-			{
-				handleDAQmxError(status, "DAQmxGetReadAvailSampPerChan");
-				return;
-			}
-		}
-		
-		if (writeDigitalLines)
-			numRows = (mwSize) (outputVarSampsPerChan * bytesPerChan);
-		else
-			numRows = (mwSize) outputVarSampsPerChan;
-		
-		if (outputDataClass == mxDOUBLE_CLASS)
-		{
-			outputDataBuf = mxCreateNumericMatrix(numRows,numChannels,mxUINT8_CLASS,mxREAL);
-			outputDataBufTrue = mxCreateDoubleMatrix(numRows,numChannels,mxREAL);
-		}
-		else
-			outputDataBuf = mxCreateNumericMatrix(numRows,numChannels,outputDataClass,mxREAL);
-	}
-	else //I don't believe this is working
-	{
-		outputDataBuf = mexGetVariable("caller", outputVarName);
-		outputVarSampsPerChan = mxGetM(outputDataBuf);
-		//TODO: Add check to ensure WS variable is of correct class
-	}
+	if (outputVarSampsPerChan == DAQmx_Val_Auto)
+    	{
+		status = DAQmxGetReadAvailSampPerChan(taskID, (uInt32 *)&outputVarSampsPerChan);
+		if (status)
+	    	{
+			handleDAQmxError(status, "DAQmxGetReadAvailSampPerChan");
+			return;
+		    }
+	    }
+	
+	if (writeDigitalLines)
+		numRows = (mwSize) (outputVarSampsPerChan * bytesPerChan);
+	else
+		numRows = (mwSize) outputVarSampsPerChan;
+	
+	if (outputDataClass == mxDOUBLE_CLASS)
+	    {
+		outputDataBuf = mxCreateNumericMatrix(numRows,numChannels,mxUINT8_CLASS,mxREAL);
+		outputDataBufTrue = mxCreateDoubleMatrix(numRows,numChannels,mxREAL);
+	    }
+	else
+		outputDataBuf = mxCreateNumericMatrix(numRows,numChannels,outputDataClass,mxREAL);
+	//  }
+	//else //I don't believe this is working
+	//    {
+	//	outputDataBuf = mexGetVariable("caller", outputVarName);
+	//	outputVarSampsPerChan = mxGetM(outputDataBuf);
+	//	//TODO: Add check to ensure WS variable is of correct class
+	//    }
 
 	outputDataPtr = mxGetData(outputDataBuf);
 
@@ -237,79 +253,81 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	// The DAQmx reading functions complain if you call them when there's no more data to read, even if you ask for zero scans.
 	// So we don't attempt a read if numSampsPerChanToTryToRead is zero.
-	if (numSampsPerChan>0)  {
+	if (numSampsPerChan>0)  
+        {
 		switch (outputDataClass)
-		{
-		case mxUINT8_CLASS:
-			status = DAQmxReadDigitalU8(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
-			break;
-		case mxUINT16_CLASS:
-			status = DAQmxReadDigitalU16(taskID, numSampsPerChan, timeout, fillMode, (uInt16*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
-			break;
-		case mxUINT32_CLASS:
-			status = DAQmxReadDigitalU32(taskID, numSampsPerChan, timeout, fillMode, (uInt32*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
-			break;
-		case mxLOGICAL_CLASS:
-		case mxDOUBLE_CLASS:
-			status = DAQmxReadDigitalLines(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels * bytesPerChan, &numSampsRead, &numBytesPerSamp, NULL);
-			break;
-		default:
-			mexErrMsgTxt("There must be two output arguments specified if a preallocated MATLAB variable is not specified");
-		}
-	}
-	else  {
+		    {
+		    case mxUINT8_CLASS:
+			    status = DAQmxReadDigitalU8(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
+			    break;
+		    case mxUINT16_CLASS:
+			    status = DAQmxReadDigitalU16(taskID, numSampsPerChan, timeout, fillMode, (uInt16*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
+			    break;
+		    case mxUINT32_CLASS:
+			    status = DAQmxReadDigitalU32(taskID, numSampsPerChan, timeout, fillMode, (uInt32*) outputDataPtr, outputVarSampsPerChan * numChannels, &numSampsRead, NULL);
+			    break;
+		    case mxLOGICAL_CLASS:
+		    case mxDOUBLE_CLASS:
+			    status = DAQmxReadDigitalLines(taskID, numSampsPerChan, timeout, fillMode, (uInt8*) outputDataPtr, outputVarSampsPerChan * numChannels * bytesPerChan, &numSampsRead, &numBytesPerSamp, NULL);
+			    break;
+		    default:
+			    mexErrMsgTxt("There must be two output arguments specified if a preallocated MATLAB variable is not specified");
+		    }
+	    }
+	else  
+        {
 		numSampsRead=0;
 		status=0;
-	}
+	    }
 
 
 	//Return output data
 	if (!status)
-	{
+	    {
 		//mexPrintf("Successfully read %d samples of data\n", numSampsRead);		
 
-		if (outputData)
-		{
-			if (nlhs > 0)
-			{
-				if (outputDataClass == mxDOUBLE_CLASS)
-				{
-					//Convert logical data to double type
-					double *outputDataTruePtr = mxGetPr(outputDataBufTrue);
-					for (size_t i=0;i < mxGetNumberOfElements(outputDataBuf);i++)	
-						*(outputDataTruePtr+i) = (double) *((uInt8 *)outputDataPtr+i);
-						
-					mxDestroyArray(outputDataBuf);
+		//if (outputData)
+		//    {
+		if (nlhs > 0)
+		    {
+			if (outputDataClass == mxDOUBLE_CLASS)
+			    {
+				//Convert logical data to double type
+				double *outputDataTruePtr = mxGetPr(outputDataBufTrue);
+				for (size_t i=0;i < mxGetNumberOfElements(outputDataBuf);i++)	
+					*(outputDataTruePtr+i) = (double) *((uInt8 *)outputDataPtr+i);
+					
+				mxDestroyArray(outputDataBuf);
 
-					plhs[0] = outputDataBufTrue;
-				}
-				else
-					plhs[0] = outputDataBuf;
-			}
+				plhs[0] = outputDataBufTrue;
+			    }
 			else
-				mxDestroyArray(outputDataBuf); //If you don't read out, all the reading was done for naught
-		}
-		else //I don't believe this is working
-		{
-			mexErrMsgTxt("invalid branch");
-			mexPutVariable("caller", outputVarName, outputDataBuf);
-			
-			if (nlhs > 0) //Return empty value for output data
-				plhs[0] = mxCreateDoubleMatrix(0,0,mxREAL);
-		}			
+				plhs[0] = outputDataBuf;
+		    }
+		else
+			mxDestroyArray(outputDataBuf); //If you don't read out, all the reading was done for naught
+		//    }
+		//else //I don't believe this is working
+		//    {
+		//	mexErrMsgTxt("invalid branch");
+		//	mexPutVariable("caller", outputVarName, outputDataBuf);
+		//	
+		//	if (nlhs > 0) //Return empty value for output data
+		//		plhs[0] = mxCreateDoubleMatrix(0,0,mxREAL);
+  //  		}			
 
 		if (nlhs > 1) //Return number of samples actually read
-		{
+	    	{
 			double *sampsReadOutput;
 
 			plhs[1] = mxCreateDoubleScalar(0);	
 			sampsReadOutput = mxGetPr(plhs[1]);
 
 			*sampsReadOutput = (double)numSampsRead;
-		}
-	}
+		    }
+	    }
 	else //Read failed
 		handleDAQmxError(status, mexFunctionName());
 
-}
+    }
 
