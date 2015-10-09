@@ -298,7 +298,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             if self.IsAtLeastOneActiveAnalogChannelCached_ ,
                 [rawAnalogData,timeSinceRunStartAtStartOfData] = ...
                     self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
-                nScans = size(rawAnalogData,1) 
+                nScans = size(rawAnalogData,1) ;
                 rawDigitalData = ...
                     self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
             else
@@ -309,7 +309,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 % things using tic() and toc().
                 [rawDigitalData,timeSinceRunStartAtStartOfData] = ...
                     self.DigitalInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);                    
-                nScans = size(rawDigitalData,1)
+                nScans = size(rawDigitalData,1) ;
                 rawAnalogData = zeros(nScans, 0, 'int16') ;
                 % rawAnalogData  = ...
                 %     self.AnalogInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
