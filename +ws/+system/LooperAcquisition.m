@@ -20,6 +20,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % checking takes 10-20 ms
         AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
         DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
+        IsAtLeastOneActiveAnalogChannelCached_
+        IsAtLeastOneActiveDigitalChannelCached_
     end    
     
     methods
@@ -96,13 +98,15 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % Set for finite-duration vs. continous acquisition
             if parent.AreSweepsContinuous ,
                 self.AreSweepsContinuous_ = true ;
-                self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
-                self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
+                self.AnalogInputTask_.AcquisitionDuration = +inf ;
+                self.DigitalInputTask_.AcquisitionDuration = +inf ;
+                %self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
+                %self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
             else
                 self.AreSweepsContinuous_ = false ;
-                self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
+                %self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
-                self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
+                %self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
                 self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
             end
             
@@ -141,6 +145,9 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 self.RawAnalogDataCache_ = [];                
                 self.RawDigitalDataCache_ = [];                
             end
+            
+            self.IsAtLeastOneActiveAnalogChannelCached_ = (NActiveAnalogChannels>0) ;
+            self.IsAtLeastOneActiveDigitalChannelCached_ = (NActiveDigitalChannels>0) ;
             
             % Arm the AI task
             self.AnalogInputTask_.arm();
@@ -288,13 +295,25 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         function [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
                 readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone) %#ok<INUSD>
             % both analog and digital tasks are for-real
-            [rawAnalogData,timeSinceRunStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
-            nScans = size(rawAnalogData,1) ;
-            %if areTasksDone ,
-            %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
-            %end
-            rawDigitalData = ...
-                self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            if self.IsAtLeastOneActiveAnalogChannelCached_ ,
+                [rawAnalogData,timeSinceRunStartAtStartOfData] = ...
+                    self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
+                nScans = size(rawAnalogData,1) ;
+                rawDigitalData = ...
+                    self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            else
+                % There are zero active analog channels
+                % In this case, want the digital task to determine the
+                % "pace" of data acquisition.  If there are also zero
+                % active digital channels, readData() essentially fakes
+                % things using tic() and toc().
+                [rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+                    self.DigitalInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);                    
+                nScans = size(rawDigitalData,1) ;
+                rawAnalogData = zeros(nScans, 0, 'int16') ;
+                % rawAnalogData  = ...
+                %     self.AnalogInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            end
             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
         end  % function
         
