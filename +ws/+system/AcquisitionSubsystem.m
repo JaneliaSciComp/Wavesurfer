@@ -425,70 +425,6 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
         end
         
-        function startingRun(self)
-            %fprintf('Acquisition::startingRun()\n');
-            %errors = [];
-            %abort = false;
-            
-%             if isempty(self.TriggerScheme) ,
-%                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
-%                       'The acquisition trigger scheme can not be empty when the system is enabled.');
-%             end
-%             
-%             if isempty(self.TriggerScheme.Target) ,
-%                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
-%                       'The acquisition trigger scheme target can not be empty when the system is enabled.');
-%             end
-            
-            wavesurferModel = self.Parent ;
-            
-%             % Make the NI daq task, if don't have it already
-%             self.acquireHardwareResources_();
-
-%             % Set up the task triggering
-%             self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-%             self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-%             self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-%             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-%             
-%             % Set for finite vs. continous sampling
-%             if wavesurferModel.AreSweepsContinuous ,
-%                 self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
-%                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
-%             else
-%                 self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
-%                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
-%                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
-%                 self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
-%             end
-                        
-            % Dimension the cache that will hold acquired data in main memory
-            if self.NDigitalChannels<=8
-                dataType = 'uint8';
-            elseif self.NDigitalChannels<=16
-                dataType = 'uint16';
-            else %self.NDigitalChannels<=32
-                dataType = 'uint32';
-            end
-            NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
-            NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
-            if wavesurferModel.AreSweepsContinuous ,
-                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
-                self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
-            elseif wavesurferModel.AreSweepsFiniteDuration ,
-                self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
-            else
-                % Shouldn't ever happen
-                self.RawAnalogDataCache_ = [];                
-                self.RawDigitalDataCache_ = [];                
-            end
-            
-%             % Arm the AI task
-%             self.AnalogInputTask_.arm();
-%             self.DigitalInputTask_.arm();
-        end  % function
         
 %         function completingRun(self)
 %             %fprintf('Acquisition::completingRun()\n');
@@ -665,6 +601,55 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % Get the data from the most-recent data available callback
             data = self.LatestRawDigitalData_ ;
         end  % function
+
+        function addDataToUserCache(self, rawAnalogData, rawDigitalData, scaledAnalogData, isSweepBased)
+            self.LatestAnalogData_ = scaledAnalogData ;
+            self.LatestRawAnalogData_ = rawAnalogData ;
+            self.LatestRawDigitalData_ = rawDigitalData ;
+            if isSweepBased ,
+                % add data to cache
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawAnalogData,1);
+                jf=j0+n-1;
+                self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                self.IndexOfLastScanInCache_ = jf ;
+                self.NScansFromLatestCallback_ = n ;                
+                if jf == size(self.RawAnalogDataCache_,1) ,
+                     self.IsAllDataInCacheValid_ = true;
+                end
+            else                
+                % Add data to cache, wrapping around if needed
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawAnalogData,1);
+                jf=j0+n-1;
+                nScansInCache = size(self.RawAnalogDataCache_,1);
+                if jf<=nScansInCache ,
+                    % the usual case
+                    self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                    self.IndexOfLastScanInCache_ = jf ;
+                elseif jf==nScansInCache ,
+                    % the cache is just large enough to accommodate rawData
+                    self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                    self.IndexOfLastScanInCache_ = 0 ;
+                    self.IsAllDataInCacheValid_ = true ;
+                else
+                    % Need to write part of rawData to end of data cache,
+                    % part to start of data cache                    
+                    nScansAtStartOfCache = jf - nScansInCache ;
+                    nScansAtEndOfCache = n - nScansAtStartOfCache ;
+                    self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
+                    self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
+                    self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
+                    self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
+                    self.IsAllDataInCacheValid_ = true ;
+                    self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
+                end
+                self.NScansFromLatestCallback_ = n ;
+            end
+        end
 
         function scaledAnalogData = getAnalogDataFromCache(self)
             % Get the data from the main-memory cache, as double-precision floats.  This

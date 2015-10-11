@@ -1290,7 +1290,7 @@ classdef WavesurferModel < ws.Model
                 self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans ;
             end
 
-            % Add the new data to the circular buffer
+            % Add the new data to the storage buffer
             self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             
             if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
@@ -1336,6 +1336,11 @@ classdef WavesurferModel < ws.Model
                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
                 end
+                
+                % Store the data in the user cache
+                self.Acquisition.addDataToUserCache(rawAnalogData, rawDigitalData, scaledAnalogData, self.AreSweepsFiniteDuration_) ;
+                
+                % 
 
                 % Notify each relevant subsystem that data has just been acquired
                 isSweepBased = self.AreSweepsFiniteDuration_ ;
