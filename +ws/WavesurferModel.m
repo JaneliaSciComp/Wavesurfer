@@ -34,6 +34,7 @@ classdef WavesurferModel < ws.Model
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
         State
+        VersionString
     end
     
     %
@@ -57,6 +58,7 @@ classdef WavesurferModel < ws.Model
         
         % Not saved to either protocol or .usr file
         Logging_
+        VersionString_
     end
 
     properties (Access=protected, Transient=true)
@@ -141,6 +143,8 @@ classdef WavesurferModel < ws.Model
             self@ws.Model(parent);
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
+            
+            self.VersionString_ = ws.versionString() ;
             
             % We only set up the sockets if we are the one true
             % WavesurferModel, and not some blasted pretender!
@@ -428,6 +432,10 @@ classdef WavesurferModel < ws.Model
     end  % methods
     
     methods
+        function value=get.VersionString(self)
+            value=self.VersionString_ ;
+        end  % function
+        
         function value=get.State(self)
             value=self.State_;
         end  % function
