@@ -231,3 +231,14 @@ Version History
 0.805: (July 23, 2015) Fixed bug that made it impossible to record if 
        a user class was in use.
 
+0.9-beta-1: (October 12, 2015) Major redesign of WaveSurfer to support
+            low-latency (< 5 ms) real-time feedback loops.  WaveSurfer
+            now spawns two additional Matlab processes when you lauch
+            it: one to aquire data and run real-time feedback loop
+            code, and another to ensure that the sweep-based output
+            buffer is refilled properly.  Also some streamlining of
+            the triggering settings, and changes in terminology
+            (e.g. "trials" are now sweeps, an "experiment" is now a
+            run).  Note that this is a beta release, so is likely
+            somewhat buggier than a regular release.
+
