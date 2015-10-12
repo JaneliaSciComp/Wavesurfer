@@ -11,13 +11,13 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     properties (Access=protected)
-        FileName_ = ''  % path, possibly containing %d, which is replaced by the trial number
+        FileName_ = ''  % path, possibly containing %d, which is replaced by the sweep number
     end
     
     methods
         function self = FileStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'FileName'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'FileName'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -30,7 +30,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
-                test = ws.stimulus.Stimulus.evaluateStringTrialTemplate(valueWithoutBackslashes,1);
+                test = ws.stimulus.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set
                     self.FileName_ = valueWithoutBackslashes;
@@ -48,9 +48,9 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         % digital signals should be returned as doubles and are thresholded at 0.5
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)  %#ok<INUSL>
-            %eval(['i=trialIndexWithinSet; fileNameAfterEvaluation=' self.FileName ';']);
-            fileNameAfterEvaluation = ws.stimulus.Stimulus.evaluateStringTrialTemplate(self.FileName,trialIndexWithinSet);
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  %#ok<INUSL>
+            %eval(['i=sweepIndexWithinSet; fileNameAfterEvaluation=' self.FileName ';']);
+            fileNameAfterEvaluation = ws.stimulus.Stimulus.evaluateStringSweepTemplate(self.FileName,sweepIndexWithinSet);
             if isempty(fileNameAfterEvaluation) ,
                 y=zeros(size(t));
             else
@@ -70,14 +70,14 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
         
     end
 
-    methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.stimulus.StimulusDelegate(self);
-            self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     %
     % Implementations of methods needed to be a ws.mixin.ValueComparable
@@ -94,6 +94,17 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
             propertyNamesToCompare={'FileName'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
+    end
+    
+    methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
     end
     
 end

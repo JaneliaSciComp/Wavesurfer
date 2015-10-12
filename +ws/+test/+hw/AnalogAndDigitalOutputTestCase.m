@@ -24,13 +24,13 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
-            nTrials=3;
-            wsModel.ExperimentTrialCount=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -61,14 +61,14 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.start();
+            wsModel.record();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
@@ -76,7 +76,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
         function testDigitalOnly(self)
@@ -86,13 +86,13 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
-            nTrials=3;
-            wsModel.ExperimentTrialCount=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -124,14 +124,14 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.start();
+            wsModel.record();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
@@ -139,7 +139,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
         function testAnalogAndDigital(self)
@@ -149,13 +149,13 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
-            nTrials=3;
-            wsModel.ExperimentTrialCount=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -188,14 +188,14 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.start();
+            wsModel.record();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
@@ -203,7 +203,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
         

@@ -1,10 +1,10 @@
-classdef MulticlampCommanderSocket < ws.Mimic
+classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     % Represents a "socket" for talking to one or more Axon Multiclamp
     % Commander instances.
     
     %%
     properties (SetAccess=protected, Hidden=true)
-        %ModeDetents={ws.ElectrodeMode.VC ws.ElectrodeMode.CC ws.ElectrodeMode.IEqualsZero}';
+        %ModeDetents={'vc' 'cc' 'i_equals_zero'}';
 %         CurrentMonitorNominalGainDetents= 1e-3*[ ...
 %             0.005 ...
 %             0.010 ...
@@ -32,11 +32,6 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %             0 10 20]';  % mV/V (the hardware allows for a (largely) arbitrary setting, but these are convenient values for testing)
     end
     
-    %%
-    properties  (Access=protected)
-        ElectrodeIDs_ = zeros(0,1)
-    end
-
     properties (Dependent=true, SetAccess=immutable)
         IsOpen  % true iff a connection to the Multiclamp Commander program(s) have been established, and hasn't failed yet       
     end
@@ -46,10 +41,16 @@ classdef MulticlampCommanderSocket < ws.Mimic
         %IsOpen  % true iff a connection to the EpcMaster program has been established, and hasn't failed yet        
         NElectrodes
     end
+
+    %%
+    properties  (Access=protected)
+        ElectrodeIDs_ = zeros(0,1)
+    end
     
     methods
         %%
-        function self=MulticlampCommanderSocket()
+        function self=MulticlampCommanderSocket(parent)
+            self@ws.Model(parent) ;
             %self.IsOpen_=false;
         end  % function
         
@@ -164,7 +165,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
-%             if ~(isequal(newMode,ws.ElectrodeMode.VC) || isequal(newMode,ws.ElectrodeMode.CC)) ,
+%             if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
 %                 return
 %             end
 %             if ~self.IsOpen ,
@@ -178,7 +179,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %               % least wait long enough for it to emerge before giving
 %               % another command
 % 
-%             newModeIndex=fif(isequal(newMode,ws.ElectrodeMode.CC),4,3);
+%             newModeIndex=fif(isequal(newMode,'cc'),4,3);
 %               % 4 == Current clamp
 %               % 3 == Whole cell
 %             commandString2=sprintf('Set E Mode %d',newModeIndex);
@@ -754,7 +755,7 @@ classdef MulticlampCommanderSocket < ws.Mimic
                         [voltageCommandGains(i),voltageCommandError] = ws.MulticlampCommanderSocket.voltageCommandGainFromElectrodeState(electrodeState);
                         %isCommandEnabled{i} = (electrodeState.ExtCmdSens~=0);  
                         thisMode=modes{i};
-                        isCommandEnabled{i} = ~isequal(thisMode,ws.ElectrodeMode.IEqualsZero) ; 
+                        isCommandEnabled{i} = ~isequal(thisMode,'i_equals_zero') ; 
                             % This should always be true, b/c it's
                             % not really an independent parameter for an
                             % Axon amp (actually, it should be false for
@@ -797,16 +798,16 @@ classdef MulticlampCommanderSocket < ws.Mimic
 %         function mode=parseModeResponse(responseString)
 %             % The response should look like 'V-Clamp', 'I-Clamp', or 
 %             % 'I = 0'
-%             % Returns either ws.ElectrodeMode.VC,ws.ElectrodeMode.CC, or ws.ElectrodeMode.IEqualsZero
+%             % Returns either 'vc','cc', or 'i_equals_zero'
 %             switch responseString ,
 %                 case 'V-Clamp' ,
-%                     mode=ws.ElectrodeMode.VC;
+%                     mode='vc';
 %                 case 'I-Clamp' ,
-%                     mode=ws.ElectrodeMode.CC;
+%                     mode='cc';
 %                 case 'I = 0' ,
-%                     mode=ws.ElectrodeMode.IEqualsZero;
+%                     mode='i_equals_zero';
 %                 otherwise
-%                     mode=ws.ElectrodeMode.VC;  % fallback
+%                     mode='vc';  % fallback
 % %                     errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
 % %                     errorMessage='Unable to parse mode response string';
 % %                     error(errorId,errorMessage);
@@ -953,48 +954,91 @@ classdef MulticlampCommanderSocket < ws.Mimic
         function units=unitsFromUnitsString(unitsAsString)
             % Convert a units string of the kind produced by
             % ws.dabs.axon.MulticlampTelegraph().
-            topAndBottomUnits=strsplit(unitsAsString,'/');
-            if isempty(topAndBottomUnits) ,
-                units=ws.utility.SIUnit();  % pure (why not?)
-            elseif length(topAndBottomUnits)==1 ,
-                units=ws.utility.SIUnit(topAndBottomUnits{1});
-            else
-                units=ws.utility.SIUnit(topAndBottomUnits{1})/ws.utility.SIUnit(topAndBottomUnits{2}) ;
-            end                
+            units=unitsAsString ;
+%             topAndBottomUnits=strsplit(unitsAsString,'/');
+%             if isempty(topAndBottomUnits) ,
+%                 units=ws.utility.SIUnit();  % pure (why not?)
+%             elseif length(topAndBottomUnits)==1 ,
+%                 units=ws.utility.SIUnit(topAndBottomUnits{1});
+%             else
+%                 units=ws.utility.SIUnit(topAndBottomUnits{1})/ws.utility.SIUnit(topAndBottomUnits{2}) ;
+%             end                
+        end  % function
+
+%         %%
+%         function [targetNumber,err]=numberForTargetUnits(targetUnits,sourceNumber,sourceUnits)
+%             % Convert a dimensional quantity equal to
+%             % sourceNumber*sourceUnits to the targetUnits.  sourceUnits
+%             % and targetUnits must be commensurable.            
+%             if areSummable(targetUnits,sourceUnits) ,
+%                 targetNumber=sourceNumber.*multiplier(sourceUnits/targetUnits);
+%                 err=[];
+%             else
+%                 targetNumber=NaN;
+%                 errorId='MulticlampCommanderSocket:unableToConvertToTargetUnits';
+%                 errorMessage='Unable to convert source quantity to target units.';
+%                 err=MException(errorId,errorMessage);
+%             end
+%         end  % function
+    
+        %%
+        function [targetNumber,err]=convertToVoltsPerPicoamp(sourceNumber,sourceUnits)
+            err = [] ;
+            switch sourceUnits ,
+                case 'V/A',                     
+                    scale = 1e-12 ;
+                case 'V/mA', 
+                    scale = 1e-9 ;
+                case 'V/uA',
+                    scale = 1e-6 ;
+                case 'V/nA',
+                    scale = 1e-3 ;
+                case 'V/pA',
+                    scale = 1 ;
+                otherwise
+                    scale=NaN;
+                    errorId='MulticlampCommanderSocket:unableToConvertToTargetUnits';
+                    errorMessage='Unable to convert source quantity to target units.';
+                    err=MException(errorId,errorMessage);
+            end
+            targetNumber = scale * sourceNumber ;
         end  % function
 
         %%
-        function [targetNumber,err]=numberForTargetUnits(targetUnits,sourceNumber,sourceUnits)
-            % Convert a dimensional quantity equal to
-            % sourceNumber*sourceUnits to the targetUnits.  sourceUnits
-            % and targetUnits must be commensurable.            
-            if areSummable(targetUnits,sourceUnits) ,
-                targetNumber=sourceNumber.*multiplier(sourceUnits/targetUnits);
-                err=[];
-            else
-                targetNumber=NaN;
-                errorId='MulticlampCommanderSocket:unableToConvertToTargetUnits';
-                errorMessage='Unable to convert source quantity to target units.';
-                err=MException(errorId,errorMessage);
+        function [targetNumber,err]=convertToVoltsPerMillivolt(sourceNumber,sourceUnits)
+            err = [] ;
+            switch sourceUnits ,
+                case 'V/V',                     
+                    scale = 1e-3 ;
+                case 'V/mV', 
+                    scale = 1 ;
+                case 'V/uV',
+                    scale = 1e3 ;
+                otherwise
+                    scale=NaN;
+                    errorId='MulticlampCommanderSocket:unableToConvertToTargetUnits';
+                    errorMessage='Unable to convert source quantity to target units.';
+                    err=MException(errorId,errorMessage);
             end
+            targetNumber = scale * sourceNumber ;
         end  % function
-    
+
         %%
         function [value,err]=modeFromElectrodeState(electrodeState)
             % Returns the current mode as a string
             operatingModeString=electrodeState.OperatingMode;
             switch operatingModeString ,
                 case 'V-Clamp' ,
-                    value=ws.ElectrodeMode.VC;
+                    value='vc';
                     err=[];
                 case 'I-Clamp' ,
-                    value=ws.ElectrodeMode.CC;
+                    value='cc';
                     err=[];
                 case 'I = 0' ,
-                    value=ws.ElectrodeMode.IEqualsZero;
+                    value='i_equals_zero';
                     err=[];
                 otherwise
-                    %value=ws.ElectrodeMode.VC;  % fallback
+                    %value='vc';  % fallback
                     value=[];
                     errorId='MulticlampCommanderSocket:electrodeInUnknownMode';
                     errorMessage='Electrode is in an unknown mode.';
@@ -1008,10 +1052,10 @@ classdef MulticlampCommanderSocket < ws.Mimic
             if isequal(electrodeState.OperatingMode,'V-Clamp') ,
                 if isequal(electrodeState.ScaledOutSignal,'Im') ,
                     rawScaleFactor=electrodeState.ScaleFactor*electrodeState.Alpha;
-                    rawUnitsAsString=electrodeState.ScaleFactorUnits;
-                    rawUnits=ws.MulticlampCommanderSocket.unitsFromUnitsString(rawUnitsAsString);
-                    targetUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('pA');
-                    [value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                    rawUnits=electrodeState.ScaleFactorUnits;
+                    %rawUnits=ws.MulticlampCommanderSocket.unitsFromUnitsString(rawUnitsAsString);
+                    %targetUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('pA');
+                    [value,err]=ws.MulticlampCommanderSocket.convertToVoltsPerPicoamp(rawScaleFactor,rawUnits);
                 else
                     value=nan;
                     errorId='MulticlampCommanderSocket:notConfiguredToOutputMembraneCurrent';
@@ -1030,10 +1074,11 @@ classdef MulticlampCommanderSocket < ws.Mimic
             if isequal(electrodeState.OperatingMode,'I-Clamp') || isequal(electrodeState.OperatingMode,'I = 0') ,
                 if isequal(electrodeState.ScaledOutSignal,'Vm') ,
                     rawScaleFactor = electrodeState.ScaleFactor * electrodeState.Alpha ;
-                    rawUnitsAsString=electrodeState.ScaleFactorUnits;
-                    rawUnits=ws.MulticlampCommanderSocket.unitsFromUnitsString(rawUnitsAsString);
-                    targetUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('mV');
-                    [value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                    rawUnits=electrodeState.ScaleFactorUnits;
+                    %rawUnits=ws.MulticlampCommanderSocket.unitsFromUnitsString(rawUnitsAsString);
+                    %targetUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('mV');
+                    %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                    [value,err]=ws.MulticlampCommanderSocket.convertToVoltsPerMillivolt(rawScaleFactor,rawUnits);
                 else
                     value=nan;                    
                     errorId='MulticlampCommanderSocket:notConfiguredToOutputMembranePotential';
@@ -1053,9 +1098,11 @@ classdef MulticlampCommanderSocket < ws.Mimic
             % it for consistentcy.
             if isequal(electrodeState.OperatingMode,'I-Clamp') || isequal(electrodeState.OperatingMode,'I = 0') ,
                 rawScaleFactor=electrodeState.ExtCmdSens;
-                rawUnits=ws.utility.SIUnit('A')/ws.utility.SIUnit('V');
-                targetUnits=ws.utility.SIUnit('pA')/ws.utility.SIUnit('V');
-                [value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                value = 1e12 * rawScaleFactor ;  % convert x A/V => y pA/V
+                %rawUnits=ws.utility.SIUnit('A')/ws.utility.SIUnit('V');
+                %targetUnits=ws.utility.SIUnit('pA')/ws.utility.SIUnit('V');
+                %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                err=[];
             else
                 value=nan;
                 err=[];  % this is not an error, it's part of normal operation
@@ -1069,12 +1116,14 @@ classdef MulticlampCommanderSocket < ws.Mimic
             % it for consistentcy.
             if isequal(electrodeState.OperatingMode,'V-Clamp') ,
                 rawScaleFactor=electrodeState.ExtCmdSens;
-                rawUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('V');
-                targetUnits=ws.utility.SIUnit('mV')/ws.utility.SIUnit('V');
-                [value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                value = 1e3 * rawScaleFactor ;  % convert x V/V => y mV/V
+                %rawUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('V');
+                %targetUnits=ws.utility.SIUnit('mV')/ws.utility.SIUnit('V');
+                %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
+                err = [] ;
             else
-                value=nan;
-                err=[];  % this is not an error, it's part of normal operation
+                value = nan ;
+                err = [] ;  % this is not an error, it's part of normal operation
             end
         end  % function
 
@@ -1208,6 +1257,22 @@ classdef MulticlampCommanderSocket < ws.Mimic
             end
         end  % function
     end
+    
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to encode private/protected variables, or do
+            % some other kind of transformation on encoding, this method can be overridden.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to decode private/protected variables, or do
+            % some other kind of transformation on decoding, this method can be overridden.
+            self.(name) = value;
+        end        
+    end  % protected methods
     
     methods (Static=true, Access=protected)  % protected class methods
         %%

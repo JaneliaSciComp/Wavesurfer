@@ -44,10 +44,10 @@ classdef Device < ws.dabs.ni.daqmx.private.DAQmxClass
             
             
             %Handle case where superclass construction was aborted
-            if obj.cancelConstruct
-                delete(obj);
-                return;
-            end
+%             if obj.cancelConstruct
+%                 delete(obj);
+%                 return;
+%             end
             
             error(nargchk(1,inf,nargin,'struct'));            
             

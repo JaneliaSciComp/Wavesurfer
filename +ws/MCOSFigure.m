@@ -1,4 +1,4 @@
-classdef (Abstract) MCOSFigure < handle
+classdef (Abstract) MCOSFigure < ws.EventSubscriber
     % This is a base class that wraps a handle graphics figure in a proper
     % MCOS object.
     
@@ -20,42 +20,71 @@ classdef (Abstract) MCOSFigure < handle
         %IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
     end
     
-    properties (SetAccess=protected)
+    properties (Dependent=true, SetAccess=immutable)
         FigureGH  % the figure graphics handle
         Controller  % the controller, an instance of ws.Controller
         Model  % the model        
     end  % properties
+
+    properties (Access=protected)
+        FigureGH_  % the figure graphics handle
+        Controller_  % the controller, an instance of ws.Controller
+        Model_  % the model        
+    end  % properties
+    
     
     methods
         function self=MCOSFigure(model,controller)
-            self.FigureGH=figure('Units','Pixels', ...
-                                 'Color',get(0,'defaultUIControlBackgroundColor'), ...
-                                 'Visible','off', ...
-                                 'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
+            % Note that when this is called, the controller is in a
+            % not-completely-initialized state, so it's not safe to do much
+            % of anything with it except copy a pointer to it.
+            self.FigureGH_=figure('Units','Pixels', ...
+                                  'Color',get(0,'defaultUIControlBackgroundColor'), ...
+                                  'Visible','off', ...
+                                  'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
             if exist('model','var')
-                self.Model=model;
+                self.setModel_(model);
             else
-                self.Model=[];  % need this to can create an empty array of MCOSFigures
+                self.setModel_([]);  % need this to can create an empty array of MCOSFigures
             end
             if exist('controller','var')
-                self.Controller=controller;
+                self.Controller_=controller;
             else
-                self.Controller=[];  % need this to can create an empty array of MCOSFigures
+                self.Controller_=[];  % need this to can create an empty array of MCOSFigures
             end
         end
         
         function delete(self)
-            if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
-              delete(self.FigureGH);  % delete the HG figure 
-            end
-            self.FigureGH=[];
-            self.Controller=[];
-            self.Model=[];
+            %keyboard
+            self.deleteFigureGH();
+            self.Controller_=[];
+            %self.setModel_([]);
+            self.Model_ = [] ;
+            %fprintf('here i am doing something\n');
+        end
+
+%         function deleteFigureGH(self)
+%             if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
+%               delete(self.FigureGH);  % delete the HG figure 
+%             end
+%             self.FigureGH=[];
+%         end
+        
+        function output = get.Model(self)
+            output = self.Model_ ;
         end
         
-        function set.Model(self,newValue)
+        function output = get.FigureGH(self)
+            output = self.FigureGH_ ;
+        end
+        
+        function output = get.Controller(self)
+            output = self.Controller_ ;
+        end
+                
+        function setModel_(self,newValue)
             self.willSetModel_();
-            self.Model=newValue;            
+            self.Model_ = newValue ;            
             self.didSetModel_();
         end
         
@@ -129,17 +158,17 @@ classdef (Abstract) MCOSFigure < handle
                 % special case to deal with Visible, which seems to
                 % sometimes be a boolean
                 if value,
-                    set(self.FigureGH,'Visible','on');
+                    set(self.FigureGH_,'Visible','on');
                 else
-                    set(self.FigureGH,'Visible','off');
+                    set(self.FigureGH_,'Visible','off');
                 end
             else
-                set(self.FigureGH,propName,value);
+                set(self.FigureGH_,propName,value);
             end
         end
         
         function value=get(self,propName)
-            value=get(self.FigureGH,propName);
+            value=get(self.FigureGH_,propName);
         end
         
         function update(self,varargin)
@@ -193,11 +222,11 @@ classdef (Abstract) MCOSFigure < handle
 %             
 %             if isReadyAfter && ~isReadyBefore ,
 %                 % Change cursor to normal
-%                 set(self.FigureGH,'pointer','arrow');
+%                 set(self.FigureGH_,'pointer','arrow');
 %                 drawnow('update');
 %             elseif ~isReadyAfter && isReadyBefore ,
 %                 % Change cursor to hourglass
-%                 set(self.FigureGH,'pointer','watch');
+%                 set(self.FigureGH_,'pointer','watch');
 %                 drawnow('update');
 %             end            
 %         end  % function        
@@ -257,7 +286,7 @@ classdef (Abstract) MCOSFigure < handle
             % subclasses if needed.
             figureSize=self.layoutFixedControls_();
             figureSizeModified=self.layoutNonfixedControls_(figureSize);
-            ws.utility.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
+            ws.utility.resizeLeavingUpperLeftFixedBang(self.FigureGH_,figureSizeModified);            
         end
         
         function updateImplementation_(self)
@@ -275,11 +304,11 @@ classdef (Abstract) MCOSFigure < handle
         end
         
         function updateReadinessImplementation_(self)
-            if isempty(self.Model) 
+            if isempty(self.Model_) 
                 pointerValue = 'arrow';
             else
-                if isvalid(self.Model) ,
-                    if self.Model.IsReady ,
+                if isvalid(self.Model_) ,
+                    if self.Model_.IsReady ,
                         pointerValue = 'arrow';
                     else
                         pointerValue = 'watch';
@@ -288,7 +317,7 @@ classdef (Abstract) MCOSFigure < handle
                     pointerValue = 'arrow';
                 end
             end
-            set(self.FigureGH,'pointer',pointerValue);
+            set(self.FigureGH_,'pointer',pointerValue);
             %fprintf('drawnow(''update'')\n');
             drawnow('update');
         end
@@ -296,8 +325,8 @@ classdef (Abstract) MCOSFigure < handle
     
     methods (Access=protected)
         function setIsVisible_(self, newValue)
-            if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
-                set(self.FigureGH, 'Visible', ws.utility.onIff(newValue));
+            if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
+                set(self.FigureGH_, 'Visible', ws.utility.onIff(newValue));
             end
         end  % function
     end  % methods
@@ -316,14 +345,14 @@ classdef (Abstract) MCOSFigure < handle
     
     methods
         function raise(self)
-            figureGHs=allchild(0);  % ws.most.Controller likes to make things with HandleVisibility=='off'
-            isMe=(figureGHs==self.FigureGH);
+            figureGHs=allchild(0);  % the old MOST Controller superclass liked to make things with HandleVisibility=='off'
+            isMe=(figureGHs==self.FigureGH_);
             i=find(isMe,1);
             if isempty(i) ,
                 % do nothing
             else
                 otherRootChildren=figureGHs(~isMe);
-                newRootChildren=[self.FigureGH otherRootChildren];
+                newRootChildren=[self.FigureGH_ otherRootChildren];
                 set(0,'Children',newRootChildren);
             end
         end  % function       
@@ -333,11 +362,11 @@ classdef (Abstract) MCOSFigure < handle
         function updateGuidata_(self)
             % Set up the figure guidata the way it would be if this were a
             % GUIDE UI, or close enough to fool a ws.most.Controller.
-            handles=ws.MCOSFigure.updateGuidataHelper_(struct(),self.FigureGH);
+            handles=ws.MCOSFigure.updateGuidataHelper_(struct(),self.FigureGH_);
             % Add a pointer to self to the figure guidata
             handles.FigureObject=self;
             % commit to the guidata
-            guidata(self.FigureGH,handles);
+            guidata(self.FigureGH_,handles);
         end  % function        
     end  % protected methods block
     
@@ -351,7 +380,7 @@ classdef (Abstract) MCOSFigure < handle
         function didSetModel_(self) 
             % This can be overridden if the figure wants something special to
             % happen just after the model is set
-            model=self.Model;
+            model=self.Model_;
             if ~isempty(model) && isvalid(model) ,
                 model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
             end
@@ -403,13 +432,22 @@ classdef (Abstract) MCOSFigure < handle
     
     methods
         function closeRequested(self,source,event)            
-            if isempty(self.Controller) ,
-                if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
-                    delete(self.FigureGH);
-                end
+            if isempty(self.Controller_) ,
+                self.deleteFigureGH();
             else
-                self.Controller.windowCloseRequested(source,event);
+                self.Controller_.windowCloseRequested(source,event);
             end
+        end  % function       
+    end  % methods    
+    
+    methods
+        function deleteFigureGH(self)   
+            % This causes the figure HG object to be deleted, with no ifs
+            % ands or buts
+            if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
+                delete(self.FigureGH_);
+            end
+            self.FigureGH_ = [] ;
         end  % function       
     end  % methods    
     
@@ -419,10 +457,10 @@ classdef (Abstract) MCOSFigure < handle
             % references to the controller in the closures attached to HG
             % object callbacks.  It also means we can just do nothing if
             % the Controller is invalid, instead of erroring.
-            if isempty(self.Controller) || ~isvalid(self.Controller) ,
+            if isempty(self.Controller_) || ~isvalid(self.Controller_) ,
                 % do nothing
             else
-                self.Controller.controlActuated(controlName,source,event);
+                self.Controller_.controlActuated(controlName,source,event);
             end
         end  % function       
     end  % methods

@@ -1,4 +1,4 @@
-classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef WavesurferMainFigure < ws.MCOSFigure
     properties
         FileMenu
         LoadMachineDataFileMenuItem
@@ -17,7 +17,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         ChannelsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
-        UserFunctionsMenuItem
+        UserCodeManagerMenuItem
         ElectrodesMenuItem
         TestPulseMenuItem
         YokeToScanimageMenuItem
@@ -37,16 +37,16 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         FastProtocolButtons
         
         AcquisitionPanel
-        TrialBasedRadiobutton
+        SweepBasedRadiobutton
         ContinuousRadiobutton
         AcquisitionSampleRateText
         AcquisitionSampleRateEdit
         AcquisitionSampleRateUnitsText
-        NTrialsText
-        NTrialsEdit
-        TrialDurationText
-        TrialDurationEdit
-        TrialDurationUnitsText        
+        NSweepsText
+        NSweepsEdit
+        SweepDurationText
+        SweepDurationEdit
+        SweepDurationUnitsText        
         
         StimulationPanel
         StimulationEnabledCheckbox
@@ -81,8 +81,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
         SessionIndexText
         SessionIndexEdit
         IncrementSessionIndexButton
-        NextTrialText
-        NextTrialEdit
+        NextSweepText
+        NextSweepEdit
         FileNameText
         FileNameEdit
         
@@ -105,12 +105,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 'Units','Pixels', ...
                 'Color',get(0,'defaultUIControlBackgroundColor'), ...
                 'Resize','off', ...
-                'Name',sprintf('Wavesurfer %s',ws.versionString()), ...
+                'Name',sprintf('WaveSurfer %s',ws.versionString()), ...
                 'MenuBar','none', ...
                 'DockControls','off', ...
                 'NumberTitle','off', ...
                 'Visible','off', ...
-                'CloseRequestFcn',@(source,event)(self.closeRequested()));
+                'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
                % CloseRequestFcn will get overwritten by the ws.most.Controller constructor, but
                % we re-set it in the ws.WavesurferMainController
                % constructor.
@@ -140,40 +140,41 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
 
                model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
                
-               model.Stimulation.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');               
+               model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
                model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
-               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
+               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
+               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
                
+               model.Display.subscribeMe(self,'Update','','update');
                model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
-               model.Display.subscribeMe(self,'DidSetEnabled','','update');
+               model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
                model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
-               model.Display.subscribeMe(self,'DidSetIsXSpanSlavedToAcquistionDuration','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
-               model.Logging.subscribeMe(self,'DidSetEnabled','','updateControlEnablement');
+               model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
                %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetNextTrialIndex','','updateControlProperties');
+               %model.Logging.subscribeMe(self,'DidSetNextSweepIndex','','updateControlProperties');
                model.Logging.subscribeMe(self,'Update','','updateControlProperties');
                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
 
-               model.subscribeMe(self,'trialDidComplete','','updateControlProperties');
-               model.subscribeMe(self,'dataIsAvailable','','dataWasAcquired');
+               model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
+               model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
                
                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
                  % no longer publicly settable
                for i = 1:numel(model.FastProtocols) ,
-                   thisFastProtocol=model.FastProtocols(i);
+                   thisFastProtocol=model.FastProtocols{i};
                    %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','updateControlEnablement');
                    %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','updateControlEnablement');
                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
                end               
                
-               model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
-               model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
+               %model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
+               %model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
            end
            
            % Make the figure visible
@@ -235,9 +236,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.StimulusLibraryMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','Stimulus Library...');
-            self.UserFunctionsMenuItem = ...
+            self.UserCodeManagerMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
-                       'Label','User Functions...');
+                       'Label','User Code...');
             self.ElectrodesMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','Electrodes...');
@@ -258,7 +259,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                                  'Label','Help');
             self.AboutMenuItem = ...
                 uimenu('Parent',self.HelpMenu, ...
-                       'Label','About Wavesurfer...');
+                       'Label','About WaveSurfer...');
                    
             % "Toolbar" buttons
             wavesurferDirName=fileparts(which('wavesurfer'));
@@ -298,10 +299,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels',...
                         'Title','Acquisition');
-            self.TrialBasedRadiobutton = ...
+            self.SweepBasedRadiobutton = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','radiobutton', ...
-                          'String','Trial-based');
+                          'String','Sweep-based');
             self.ContinuousRadiobutton = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','radiobutton', ...
@@ -318,23 +319,23 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
                           'String','Hz');
-            self.NTrialsText = ...
+            self.NSweepsText = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
-                          'String','# of Trials:');
-            self.NTrialsEdit = ...
+                          'String','# of Sweeps:');
+            self.NSweepsEdit = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'HorizontalAlignment','right', ...
                           'Style','edit');
-            self.TrialDurationText = ...
+            self.SweepDurationText = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
-                          'String','Trial Duration:');
-            self.TrialDurationEdit = ...
+                          'String','Sweep Duration:');
+            self.SweepDurationEdit = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'HorizontalAlignment','right', ...
                           'Style','edit');
-            self.TrialDurationUnitsText = ...
+            self.SweepDurationUnitsText = ...
                 uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
                           'String','s');
@@ -469,11 +470,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','pushbutton', ...
                           'String','+');
-            self.NextTrialText = ...
+            self.NextSweepText = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'Style','text', ...
-                          'String','Current Trial:');  % text is 'Next Trial:' most of the time, but this is for sizing
-            self.NextTrialEdit = ...
+                          'String','Current Sweep:');  % text is 'Next Sweep:' most of the time, but this is for sizing
+            self.NextSweepEdit = ...
                 uicontrol('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','right', ...
                           'Style','edit');
@@ -715,24 +716,24 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             widthBetweenRadiobuttons=20;
             
             % Row of two radiobuttons
-            trialBasedRadiobuttonExtent=get(self.TrialBasedRadiobutton,'Extent');
-            trialBasedRadiobuttonExtent=trialBasedRadiobuttonExtent(3:4);  % no info in 1:2
-            trialBasedRadiobuttonWidth=trialBasedRadiobuttonExtent(1)+16;  % 16 is the size of the radiobutton itself
+            sweepBasedRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
+            sweepBasedRadiobuttonExtent=sweepBasedRadiobuttonExtent(3:4);  % no info in 1:2
+            sweepBasedRadiobuttonWidth=sweepBasedRadiobuttonExtent(1)+16;  % 16 is the size of the radiobutton itself
 
-            continuousRadiobuttonExtent=get(self.TrialBasedRadiobutton,'Extent');
+            continuousRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
             continuousRadiobuttonExtent=continuousRadiobuttonExtent(3:4);  % no info in 1:2
             continuousRadiobuttonWidth=continuousRadiobuttonExtent(1)+16;
             
-            trialBasedRadiobuttonPosition=get(self.TrialBasedRadiobutton,'Position');
-            trialBasedRadiobuttonHeight=trialBasedRadiobuttonPosition(4);
-            radiobuttonBarHeight=trialBasedRadiobuttonHeight;
-            radiobuttonBarWidth=trialBasedRadiobuttonWidth+widthBetweenRadiobuttons+continuousRadiobuttonWidth;
+            sweepBasedRadiobuttonPosition=get(self.SweepBasedRadiobutton,'Position');
+            sweepBasedRadiobuttonHeight=sweepBasedRadiobuttonPosition(4);
+            radiobuttonBarHeight=sweepBasedRadiobuttonHeight;
+            radiobuttonBarWidth=sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons+continuousRadiobuttonWidth;
             
             radiobuttonBarXOffset=(acquisitionPanelWidth-radiobuttonBarWidth)/2;
             radiobuttonBarYOffset=acquisitionPanelHeight-heightOfPanelTitle-heightFromTopToRadiobuttonBar-radiobuttonBarHeight;
 
-            set(self.TrialBasedRadiobutton,'Position',[radiobuttonBarXOffset radiobuttonBarYOffset trialBasedRadiobuttonWidth radiobuttonBarHeight]);
-            xOffset=radiobuttonBarXOffset+trialBasedRadiobuttonWidth+widthBetweenRadiobuttons;
+            set(self.SweepBasedRadiobutton,'Position',[radiobuttonBarXOffset radiobuttonBarYOffset sweepBasedRadiobuttonWidth radiobuttonBarHeight]);
+            xOffset=radiobuttonBarXOffset+sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons;
             set(self.ContinuousRadiobutton,'Position',[xOffset radiobuttonBarYOffset continuousRadiobuttonWidth radiobuttonBarHeight]);
 
             % Sample rate row
@@ -740,14 +741,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             positionEditLabelAndUnitsBang(self.AcquisitionSampleRateText,self.AcquisitionSampleRateEdit,self.AcquisitionSampleRateUnitsText, ....
                                           editXOffset,gridRowYOffset,editWidth)
                                       
-            % # of trials row
+            % # of sweeps row
             gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            positionEditLabelAndUnitsBang(self.NTrialsText,self.NTrialsEdit,[], ....
+            positionEditLabelAndUnitsBang(self.NSweepsText,self.NSweepsEdit,[], ....
                                           editXOffset,gridRowYOffset,editWidth)
             
-            % Trial duration row
+            % Sweep duration row
             gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            positionEditLabelAndUnitsBang(self.TrialDurationText,self.TrialDurationEdit,self.TrialDurationUnitsText, ....
+            positionEditLabelAndUnitsBang(self.SweepDurationText,self.SweepDurationEdit,self.SweepDurationUnitsText, ....
                                           editXOffset,gridRowYOffset,editWidth)            
         end  % function
     end
@@ -876,8 +877,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             showButtonWidth=70;
             changeLocationButtonWidth=90;
             widthBetweenLocationWidgets=6;
-            nextTrialEditWidth=50;
-            nextTrialLabelFixedWidth=70;  % We fix this, because the label text changes
+            nextSweepEditWidth=50;
+            nextSweepLabelFixedWidth=80;  % We fix this, because the label text changes
             fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
             widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
             
@@ -914,10 +915,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             
                                       
             %
-            % Date, session, trial row
+            % Date, session, sweep row
             %
             
-            dataSessionAndTrialRowYOffset = baseNameEditYOffset - heightBetweenEdits - editHeight ;
+            dataSessionAndSweepRowYOffset = baseNameEditYOffset - heightBetweenEdits - editHeight ;
             
             % Include date checkbox
             includeDateCheckboxExtent=get(self.IncludeDateCheckbox,'Extent');
@@ -925,7 +926,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             includeDateCheckboxPosition=get(self.IncludeDateCheckbox,'Position');
             includeDateCheckboxHeight=includeDateCheckboxPosition(4);            
             includeDateCheckboxXOffset=xOffsetOfEdits;
-            includeDateCheckboxYOffset=dataSessionAndTrialRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
+            includeDateCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
             set(self.IncludeDateCheckbox,'Position',[includeDateCheckboxXOffset includeDateCheckboxYOffset ...
                                                      includeDateCheckboxWidth includeDateCheckboxHeight]);
             
@@ -935,7 +936,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             sessionIndexCheckboxPosition=get(self.SessionIndexCheckbox,'Position');
             sessionIndexCheckboxHeight=sessionIndexCheckboxPosition(4);            
             sessionIndexCheckboxXOffset = includeDateCheckboxXOffset + includeDateCheckboxWidth + widthFromIncludeDateCheckboxToSessionIndexCheckbox;
-            sessionIndexCheckboxYOffset=dataSessionAndTrialRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
+            sessionIndexCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
             set(self.SessionIndexCheckbox,'Position',[sessionIndexCheckboxXOffset sessionIndexCheckboxYOffset ...
                                                       sessionIndexCheckboxWidth sessionIndexCheckboxHeight]);
             
@@ -944,7 +945,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             sessionIndexEditWidth = 50 ;
             sessionIndexEditXOffset =  ...
                 sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
-            sessionIndexEditYOffset = dataSessionAndTrialRowYOffset ;
+            sessionIndexEditYOffset = dataSessionAndSweepRowYOffset ;
             positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
                                           sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
                                       
@@ -953,23 +954,23 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             incrementSessionIndexButtonHeight = 20 ;            
             widthFromIncrementSessionIndexToButton = 5 ;
             incrementSessionIndexButtonXOffset = sessionIndexEditXOffset + sessionIndexEditWidth + widthFromIncrementSessionIndexToButton ;
-            incrementSessionIndexButtonYOffset = dataSessionAndTrialRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
+            incrementSessionIndexButtonYOffset = dataSessionAndSweepRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
             set(self.IncrementSessionIndexButton,'Position',[incrementSessionIndexButtonXOffset incrementSessionIndexButtonYOffset ...
                                                              incrementSessionIndexButtonWidth incrementSessionIndexButtonHeight]);            
                                       
-            % Next Trial edit and label
-            nextTrialEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextTrialEditWidth ;
-            nextTrialEditYOffset = dataSessionAndTrialRowYOffset ;
-            positionEditLabelAndUnitsBang(self.NextTrialText,self.NextTrialEdit,[], ....
-                                          nextTrialEditXOffset,nextTrialEditYOffset,nextTrialEditWidth, ...
-                                          nextTrialLabelFixedWidth);
+            % Next Sweep edit and label
+            nextSweepEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextSweepEditWidth ;
+            nextSweepEditYOffset = dataSessionAndSweepRowYOffset ;
+            positionEditLabelAndUnitsBang(self.NextSweepText,self.NextSweepEdit,[], ....
+                                          nextSweepEditXOffset,nextSweepEditYOffset,nextSweepEditWidth, ...
+                                          nextSweepLabelFixedWidth);
             
 
             %
             % File Name Row
             %
             fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
-            fileNameEditYOffset = nextTrialEditYOffset - heightBetweenEdits - editHeight ;
+            fileNameEditYOffset = nextSweepEditYOffset - heightBetweenEdits - editHeight ;
             positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
                                           xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
                                           fileNameLabelFixedWidth) ;
@@ -1048,43 +1049,43 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             import ws.utility.onIff
             import ws.utility.fif
             
-            isIdle = (model.State==ws.ApplicationState.Idle);
+            isIdle = isequal(model.State,'idle');
 
-%             s.IsTrialBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialBasedRadiobutton'}});
-%             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.ExperimentTrialCount = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
+%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
+%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
+%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
-%             s.TrialDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialDurationEdit'}});
+%             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             
 %             % Need to handle stim.CanEnable
-%             s.Stimulation.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
+%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
 %             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
 %             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
 %             
-%             s.Display.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
+%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
 %             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
 %             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
-%             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
+%             s.Logging.NextSweepIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextSweepEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
             
             % Acquisition panel
-            set(self.TrialBasedRadiobutton,'Value',model.IsTrialBased);
-            set(self.ContinuousRadiobutton,'Value',model.IsContinuous);
+            set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
+            set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
             set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
-            set(self.NTrialsEdit,'String',sprintf('%d',model.ExperimentTrialCount));
-            set(self.TrialDurationEdit,'String',sprintf('%.6g',model.TrialDuration));
+            set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
+            set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
             
             % Stimulation panel (most of it)
-            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.Enabled);
+            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
             set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
             set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
             
             % Display panel
-            set(self.DisplayEnabledCheckbox, 'Value', model.Display.Enabled);
+            set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
@@ -1094,20 +1095,21 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
             set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
-            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));            
-            set(self.NextTrialText, 'String', fif(~isIdle&&model.Logging.Enabled,'Current Trial:','Next Trial:'));
-            %set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
-            set(self.NextTrialEdit, 'String', sprintf('%d',model.Logging.NextTrialIndex));
-            %set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
-            if ~isIdle&&model.Logging.Enabled ,
-                set(self.FileNameEdit, 'String', model.Logging.CurrentTrialSetAbsoluteFileName);
+            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
+            set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
+            %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
+            set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
+            %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
+            if ~isIdle&&model.Logging.IsEnabled ,
+                set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
             else
-                set(self.FileNameEdit, 'String', model.Logging.NextTrialSetAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
             end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
-            set(self.StatusText,'String',model.State.num2str());
+            statusString = ws.titleStringFromApplicationState(model.State) ;
+            set(self.StatusText,'String',statusString);
             
             % Progress bar
             self.updateProgressBarProperties_();
@@ -1177,11 +1179,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %figureObject=self.Figure; 
             %window=self.hGUIData.WavesurferWindow;
             
-            isNoMDF=(model.State == ws.ApplicationState.NoMDF);
-            isIdle=(model.State == ws.ApplicationState.Idle);
-            isTrialBased=model.IsTrialBased;
+            isNoMDF = isequal(model.State,'no_mdf') ;
+            isIdle=isequal(model.State,'idle');
+            isSweepBased=model.AreSweepsFiniteDuration;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
-            isAcquiring= (model.State == ws.ApplicationState.AcquiringTrialBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
+            %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
+            isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
             set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
@@ -1194,18 +1197,18 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoMDF));
             %set(self.QuitMenuItem,'Enable',onIff(true));  % always available          
             
-            %% Experiment Menu
+            %% Run Menu
             %window.StartMenu.IsEnabled=isIdle;
             %%window.PreviewMenu.IsEnabled=isIdle;
             %window.StopMenu.IsEnabled= isAcquiring;
             
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-            set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.Enabled));
+            set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             set(self.ChannelsMenuItem,'Enable',onIff(isIdle));
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
-            set(self.UserFunctionsMenuItem,'Enable',onIff(isIdle));            
+            set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
             set(self.ElectrodesMenuItem,'Enable',onIff(isIdle));
             set(self.TestPulseMenuItem,'Enable',onIff(isIdle));
             set(self.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
@@ -1221,19 +1224,20 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols(i).IsNonempty));
+                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols{i}.IsNonempty));
             end
 
             % Acquisition controls
-            set(self.TrialBasedRadiobutton,'Enable',onIff(isIdle));
+            set(self.SweepBasedRadiobutton,'Enable',onIff(isIdle));
             set(self.ContinuousRadiobutton,'Enable',onIff(isIdle));            
             set(self.AcquisitionSampleRateEdit,'Enable',onIff(isIdle));
-            set(self.NTrialsEdit,'Enable',onIff(isIdle&&isTrialBased));
-            set(self.TrialDurationEdit,'Enable',onIff(isIdle&&isTrialBased));
+            set(self.NSweepsEdit,'Enable',onIff(isIdle&&isSweepBased));
+            set(self.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
             
             % Stimulation controls
-            isStimulationEnableable = model.Stimulation.CanEnable ;
-            isStimulusEnabled=model.Stimulation.Enabled;
+            %isStimulationEnableable = model.Stimulation.CanEnable ;
+            isStimulationEnableable = true ;
+            isStimulusEnabled=model.Stimulation.IsEnabled;
             stimulusLibrary=model.Stimulation.StimulusLibrary;            
             isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
             set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
@@ -1305,8 +1309,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             removeItem=self.RemoveMenuItem;
             
             % Set the enablement of the Scopes menu item
-            isIdle=(model.State == ws.ApplicationState.Idle);
-            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.Enabled));
+            isIdle=isequal(model.State,'idle');
+            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             
             % Set the Visibility of the Remove item in the Scope submenu
             set(removeItem,'Visible',onIff(model.Display.NScopes>0));
@@ -1316,7 +1320,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % the Remove subsubmenu.
             for i = 1:model.Display.NScopes ,
                 menuItem = uimenu('Parent',removeItem, ...
-                                  'Label',sprintf('Remove %s',model.Display.Scopes(i).Title), ...
+                                  'Label',sprintf('Remove %s',model.Display.Scopes{i}.Title), ...
                                   'Tag',sprintf('RemoveSubsubmenuItems(%02d)',i), ...
                                   'Callback',@(source,event)(self.controlActuated('RemoveSubsubmenuItems',source,event)));
                 %if i==1 ,
@@ -1330,9 +1334,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             % the Scopes submenu.
             for i = 1:model.Display.NScopes ,
                 menuItem = uimenu('Parent',scopesMenuItem, ...
-                                  'Label',model.Display.Scopes(i).Title, ...
+                                  'Label',model.Display.Scopes{i}.Title, ...
                                   'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
-                                  'Checked',onIff(model.Display.Scopes(i).IsVisibleWhenDisplayEnabled), ...
+                                  'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
                                   'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
                 self.ShowHideChannelMenuItems(end+1)=menuItem;                       
             end
@@ -1355,14 +1359,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             
-            isIdle=(model.State == ws.ApplicationState.Idle);            
+            isIdle=isequal(model.State,'idle');            
 
-            isDisplayEnabled=model.Display.Enabled;
+            displaySubsystem = model.Display ;
+            isDisplayEnabled=displaySubsystem.IsEnabled;
             set(self.DisplayEnabledCheckbox,'Enable',onIff(isIdle));
-            set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~model.Display.IsAutoRate));
+            set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',onIff(isIdle && isDisplayEnabled && ~model.Display.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',onIff(isIdle && isDisplayEnabled));            
+            set(self.SpanEdit,'Enable',onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
+            set(self.AutoSpanCheckbox,'Enable',onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
         end  % function
     end
     
@@ -1382,9 +1387,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             
-            isIdle=(model.State == ws.ApplicationState.Idle);
+            isIdle=isequal(model.State,'idle');
 
-            %isLoggingEnabled=model.Logging.Enabled;
+            %isLoggingEnabled=model.Logging.IsEnabled;
             %isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',onIff(isIdle));
             doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
@@ -1398,7 +1403,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.SessionIndexCheckbox,'Enable',onIff(isIdle));
             set(self.SessionIndexEdit,'Enable',onIff(isIdle&&doIncludeSessionIndex));
             set(self.IncrementSessionIndexButton,'Enable',onIff(isIdle&&doIncludeSessionIndex));            
-            set(self.NextTrialEdit,'Enable',onIff(isIdle));
+            set(self.NextSweepEdit,'Enable',onIff(isIdle));
             
             
         end  % function
@@ -1420,7 +1425,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             self.OriginalModelState_=[];
             
             % If we're switching out of the "no MDF" mode, update the scope menu            
-            if originalModelState==ws.ApplicationState.NoMDF && self.Model.State~=ws.ApplicationState.NoMDF ,
+            if isequal(originalModelState,'no_mdf') && ~isequal(self.Model.State,'no_mdf') ,
                 self.update();
             else
                 % More limited update is sufficient
@@ -1435,52 +1440,55 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
             model=self.Model;
             state=model.State;
-            if state==ws.ApplicationState.AcquiringTrialBased ,
-                if isfinite(model.ExperimentTrialCount) ,
-                    nTrials=model.ExperimentTrialCount;
-                    nTrialsCompleted=model.ExperimentCompletedTrialCount;
-                    fractionCompleted=nTrialsCompleted/nTrials;
-                    set(self.ProgressBarPatch, ...
-                        'XData',[0 fractionCompleted fractionCompleted 0 0], ...
-                        'YData',[0 0 1 1 0], ...
-                        'Visible','on');
-                    set(self.ProgressBarAxes, ...                
-                        'Visible','on');
-                else
-                    % number of trials is infinite
-                    nTrialsPretend=20;
-                    nTrialsCompleted = model.ExperimentCompletedTrialCount ;
-                    nTrialsCompletedModded=mod(nTrialsCompleted,nTrialsPretend);
-                    if nTrialsCompletedModded==0 ,
-                        if nTrialsCompleted==0 ,
-                            nTrialsCompletedPretend = 0 ;
-                        else
-                            nTrialsCompletedPretend = nTrialsPretend ;                            
-                        end
+            if isequal(state,'running') ,
+                if model.AreSweepsFiniteDuration ,
+                    if isfinite(model.NSweepsPerRun) ,
+                        nSweeps=model.NSweepsPerRun;
+                        nSweepsCompleted=model.NSweepsCompletedInThisRun;
+                        fractionCompleted=nSweepsCompleted/nSweeps;
+                        set(self.ProgressBarPatch, ...
+                            'XData',[0 fractionCompleted fractionCompleted 0 0], ...
+                            'YData',[0 0 1 1 0], ...
+                            'Visible','on');
+                        set(self.ProgressBarAxes, ...                
+                            'Visible','on');
                     else
-                        nTrialsCompletedPretend = nTrialsCompletedModded ;
-                    end                    
-                    fractionCompletedPretend=nTrialsCompletedPretend/nTrialsPretend;
+                        % number of sweeps is infinite
+                        nSweepsPretend=20;
+                        nSweepsCompleted = model.NSweepsCompletedInThisRun ;
+                        nSweepsCompletedModded=mod(nSweepsCompleted,nSweepsPretend);
+                        if nSweepsCompletedModded==0 ,
+                            if nSweepsCompleted==0 ,
+                                nSweepsCompletedPretend = 0 ;
+                            else
+                                nSweepsCompletedPretend = nSweepsPretend ;                            
+                            end
+                        else
+                            nSweepsCompletedPretend = nSweepsCompletedModded ;
+                        end                    
+                        fractionCompletedPretend=nSweepsCompletedPretend/nSweepsPretend;
+                        set(self.ProgressBarPatch, ...
+                            'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
+                            'YData',[0 0 1 1 0], ...
+                            'Visible','on');
+                        set(self.ProgressBarAxes, ...                
+                            'Visible','on');
+                    end
+                else
+                    % continuous acq
+                    nTimesDataAvailableCalledSinceRunStart=model.NTimesDataAvailableCalledSinceRunStart;
+                    nSegments=10;
+                    nPositions=2*nSegments;
+                    barWidth=1/nSegments;
+                    stepWidth=1/nPositions;
+                    xOffset=stepWidth*mod(nTimesDataAvailableCalledSinceRunStart,nPositions);
                     set(self.ProgressBarPatch, ...
-                        'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
+                        'XData',xOffset+[0 barWidth barWidth 0 0], ...
                         'YData',[0 0 1 1 0], ...
                         'Visible','on');
                     set(self.ProgressBarAxes, ...                
                         'Visible','on');
                 end
-            elseif state==ws.ApplicationState.AcquiringContinuously ,
-                nTimesSamplesAcquiredCalledSinceExperimentStart=model.NTimesSamplesAcquiredCalledSinceExperimentStart;
-                nSegments=10;
-                nPositions=2*nSegments;
-                barWidth=1/nSegments;
-                stepWidth=1/nPositions;
-                xOffset=stepWidth*mod(nTimesSamplesAcquiredCalledSinceExperimentStart,nPositions);
-                set(self.ProgressBarPatch, ...
-                    'XData',xOffset+[0 barWidth barWidth 0 0], ...
-                    'YData',[0 0 1 1 0], ...
-                    'Visible','on');
-                set(self.ProgressBarAxes, ...                
-                    'Visible','on');
             else
                 set(self.ProgressBarPatch, ...
                     'XData',[0 0 0 0 0], ...
@@ -1493,12 +1501,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods 
-        function dataWasAcquired(self,varargin)
+        function updateForNewData(self,varargin)
             % Want this to be as fast as possible, so we just update the
             % bare minimum
             model=self.Model;
-            state=model.State;
-            if state==ws.ApplicationState.AcquiringContinuously ,
+            if model.AreSweepsContinuous ,
                 self.updateProgressBarProperties_();
             end
         end

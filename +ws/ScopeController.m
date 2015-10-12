@@ -7,7 +7,11 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
     methods
         function self=ScopeController(wavesurferController,scopeModel)
             %self = self@ws.Controller(wavesurferController,scopeModel,{},figureClassNames);  % as third arg, should start out hidden
-            self = self@ws.Controller(wavesurferController, scopeModel, {'scopeFigureWrapper'});
+            self = self@ws.Controller(wavesurferController, scopeModel);
+
+            % Create the figure, store a pointer to it
+            fig = ws.ScopeFigure(scopeModel,self) ;
+            self.Figure_ = fig ;
 
             %scopeModel.Parent.subscribeMe(self,'PostSet','Enabled','displayEnablementMayHaveChanged');
             %  We want the scopes to be made visible in a well-defined
@@ -19,15 +23,15 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             %self.Figure.subscribeMe(self,'XLim','PostSet','didSetXLimInView');
             display=scopeModel.Parent;
             if ~isempty(display) ,
-                display.subscribeMe(self,'DidSetEnabled','','displayEnablementMayHaveChanged');
+                display.subscribeMe(self,'DidSetIsEnabled','','displayEnablementMayHaveChanged');
             end
             scopeFigure=self.Figure;
 %             scopeFigure.subscribeMe(self,'PostSet','XLim','didSetXLimInView');           
 %             scopeFigure.subscribeMe(self,'PostSet','YLim','didSetYLimInView');           
-            scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
-            scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
-            self.IsSuiGeneris=false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
-            scopeFigure.updateColorsFontsTitleGridAndTags();  % ws.most.Controller changes the background color, so change it back
+            %scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
+            %scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
+            %self.IsSuiGeneris_ = false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
+            scopeFigure.syncTitleAndTagsToModel();  % Shouldn't this happen somewhere else?
             self.updateWindowVisibility();
               % Need to update the window visibility to match Display
               % subsystem enablement and the per-scope visibility setting.
@@ -55,10 +59,9 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                 return
             end
             
-            display=self.Model.Parent;
-            display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=true;
-%             self.showFigureForReals();
-%             self.broadcast('ScopeVisibilitySetDirectlyByScopeController');
+            self.Model.IsVisibleWhenDisplayEnabled = true ;
+            %display=self.Model.Parent;
+            %display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=true;
         end
         
         function hideFigure(self)
@@ -79,10 +82,9 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
                 return
             end
             
-            display=self.Model.Parent;
-            display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=false;
-%             self.hideFigureForReals();
-%             self.broadcast('ScopeVisibilitySetDirectlyByScopeController');
+            self.Model.IsVisibleWhenDisplayEnabled = false ;
+%             display=self.Model.Parent;
+%             display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=false;
         end
         
         function showFigureForReals_(self)
@@ -133,16 +135,24 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             if isempty(self.Model.Parent) || ~isvalid(self.Model.Parent) ,
                 return
             end
+%             display=self.Model.Parent;
+%             iScope=find(display.Scopes==self.Model);
+%             if isscalar(iScope) ,
+%                 shouldBeVisible=(display.IsEnabled && display.Scopes{iScope}.IsVisibleWhenDisplayEnabled);
+%                 if shouldBeVisible ,
+%                     self.showFigureForReals_();
+%                 else
+%                     self.hideFigureForReals_();
+%                 end
+%             end
+            
             display=self.Model.Parent;
-            iScope=find(display.Scopes==self.Model);
-            if isscalar(iScope) ,
-                shouldBeVisible=(display.Enabled && display.Scopes(iScope).IsVisibleWhenDisplayEnabled);
-                if shouldBeVisible ,
-                    self.showFigureForReals_();
-                else
-                    self.hideFigureForReals_();
-                end
-            end            
+            shouldBeVisible=(display.IsEnabled && self.Model.IsVisibleWhenDisplayEnabled);
+            if shouldBeVisible ,
+                self.showFigureForReals_();
+            else
+                self.hideFigureForReals_();
+            end
         end  % method
         
         function didSetXLimInView(self,varargin)
@@ -177,12 +187,26 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             %figureObject=self.Figure;
             try
                 switch controlName ,
-                    case 'SetYLimTightToDataButtonGH' ,
+                    case {'SetYLimTightToDataButtonGH', 'SetYLimTightToDataMenuItemGH'} ,
                         self.setYLimTightToDataButtonActuated();
-                    case 'SetYLimTightToDataLockedButtonGH' ,
+                    case {'SetYLimTightToDataLockedButtonGH', 'SetYLimTightToDataLockedMenuItemGH'} ,
                         self.setYLimTightToDataLockedButtonActuated();
                     case 'YLimitsMenuItemGH' ,
                         self.yLimitsMenuItemActuated();
+                    case 'InvertColorsMenuItemGH' ,
+                        self.invertColorsMenuItemActuated();
+                    case 'DoShowButtonsMenuItemGH' ,
+                        self.doShowButtonsMenuItemActuated();
+                    case 'ShowGridMenuItemGH' ,
+                        self.showGridMenuItemActuated();
+                    case {'YZoomInButtonGH','YZoomInMenuItemGH'} ,
+                        self.zoomInButtonPressed();
+                    case {'YZoomOutButtonGH','YZoomOutMenuItemGH'} ,
+                        self.zoomOutButtonPressed();
+                    case {'YScrollUpButtonGH','YScrollUpMenuItemGH'} ,
+                        self.scrollUpButtonPressed();
+                    case {'YScrollDownButtonGH','YScrollDownMenuItemGH'} ,
+                        self.scrollDownButtonPressed();
                 end  % switch
             catch me
 %                 isInDebugMode=~isempty(dbstatus());
@@ -199,8 +223,44 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             self.MyYLimDialogController=...
                 ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'));
         end  % method        
+        
+        function showGridMenuItemActuated(self)
+            self.Model.toggleIsGridOn();
+        end  % method        
+
+        function doShowButtonsMenuItemActuated(self)
+            self.Model.toggleDoShowButtons();
+        end  % method        
+
+        function invertColorsMenuItemActuated(self)
+            self.Model.toggleAreColorsNormal();
+        end  % method        
+
+        function zoomInButtonPressed(self)
+            self.Model.zoomIn();
+        end
+        
+        function zoomOutButtonPressed(self)
+            self.Model.zoomOut();
+        end
+        
+        function scrollUpButtonPressed(self)
+            self.Model.scrollUp();
+        end
+        
+        function scrollDownButtonPressed(self)
+            self.Model.scrollDown();
+        end
+        
     end  % public methods block
 
+    methods
+        function castOffAllAttachments(self)
+            self.unsubscribeFromAll() ;
+            self.Figure.castOffAllAttachments() ;
+        end                
+    end        
+    
     methods (Access=protected)
         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
             % This method is inhierited from AbstractController, and is
@@ -211,7 +271,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             % If acquisition is happening, ignore the close window request
             wavesurferModel = ws.utility.getSubproperty(self,'Model','Parent','Parent') ;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if isIdle ,
                     shouldStayPut=false;
                 else                 
@@ -224,49 +284,50 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
     end % protected methods block
     
     methods (Access=protected)
-        function layoutOfWindowsInClassButOnlyForThisWindow = encode_window_layout(self)
+        function layoutOfWindowsInClassButOnlyForThisWindow = encodeWindowLayout_(self)
             window = self.Figure;
             layoutOfWindowsInClassButOnlyForThisWindow = struct();
             tag = get(window, 'Tag');
             layoutOfWindowsInClassButOnlyForThisWindow.(tag).Position = get(window, 'Position');
             isVisible=self.Model.IsVisibleWhenDisplayEnabled;
             layoutOfWindowsInClassButOnlyForThisWindow.(tag).IsVisibleWhenDisplayEnabled = isVisible;
-            if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
-                layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
-            else
-                layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
-            end
+%             if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
+%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
+%             else
+%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
+%             end
         end
         
-        function decode_window_layout(self, layoutOfWindowsInClass)
-            window = self.Figure;
+        function decodeWindowLayout(self, layoutOfWindowsInClass)
+            window = self.Figure ;
             tag = get(window, 'Tag');
             if isfield(layoutOfWindowsInClass, tag)
                 thisWindowLayout = layoutOfWindowsInClass.(tag);
 
-                if isfield(thisWindowLayout, 'Toggle')
-                    toggleState = thisWindowLayout.Toggle;
-                else
-                    % This branch is only to support legacy .usr files that
-                    % don't have up-to-date layout info.
-                    toggleState = [];
-                end
+%                 if isfield(thisWindowLayout, 'Toggle')
+%                     toggleState = thisWindowLayout.Toggle;
+%                 else
+%                     % This branch is only to support legacy .usr files that
+%                     % don't have up-to-date layout info.
+%                     toggleState = [];
+%                 end
 
-                if ~isempty(toggleState)
-                    assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(window));
-
-                    ws.most.gui.AdvancedPanelToggler.loadToggleState(window,toggleState);
-
-                    % gui is toggleable; for position, only set x- and
-                    % y-pos, not width and height, as those are controlled
-                    % by toggle-state.
-                    pos = get(window,'Position');
-                    pos(1:2) = thisWindowLayout.Position(1:2);
-                    set(window,'Position',pos);
-                else
-                    % Not a toggleable GUI.
-                    set(window, 'Position', thisWindowLayout.Position);
-                end
+%                 if ~isempty(toggleState)
+%                     assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(window));
+% 
+%                     ws.most.gui.AdvancedPanelToggler.loadToggleState(window,toggleState);
+% 
+%                     % gui is toggleable; for position, only set x- and
+%                     % y-pos, not width and height, as those are controlled
+%                     % by toggle-state.
+%                     pos = get(window,'Position');
+%                     pos(1:2) = thisWindowLayout.Position(1:2);
+%                     set(window,'Position',pos);
+%                 else
+%                     % Not a toggleable GUI.
+%                     set(window, 'Position', thisWindowLayout.Position);
+%                 end
+                set(window, 'Position', thisWindowLayout.Position);
 
                 if isfield(thisWindowLayout,'IsVisibleWhenDisplayEnabled') ,
                     %set(window, 'Visible', layoutInfo.Visible);
@@ -282,8 +343,8 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 
     end  % protected methods block
     
-    properties (SetAccess=protected)
-       propBindings = struct();
-    end
+%     properties (SetAccess=protected)
+%        propBindings = struct();
+%     end
     
 end  % classdef

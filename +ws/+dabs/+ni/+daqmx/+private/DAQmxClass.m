@@ -550,6 +550,6 @@ switch lower(computer)
         assert(false);
 end
 
-p = fullfile(ws.most.idioms.startPath,pfDir,'national instruments','ni-daq','daqmx ansi c dev','include');
+p = fullfile(ws.utility.startPath,pfDir,'national instruments','ni-daq','daqmx ansi c dev','include');
 
 end

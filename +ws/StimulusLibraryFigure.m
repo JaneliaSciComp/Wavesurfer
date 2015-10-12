@@ -1,4 +1,4 @@
-classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef StimulusLibraryFigure < ws.MCOSFigure
     properties  % these are protected by gentleman's agreement
         FileMenu
         %ImportLibraryMenuItem
@@ -707,7 +707,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                     'String',{'(None)'}, ...
                     'Value',1);
             else
-                selectedSequenceIndex=stimulusLibrary.getSequenceIndex(stimulusLibrary.SelectedSequence);
+                %selectedSequenceIndex=stimulusLibrary.getSequenceIndex(stimulusLibrary.SelectedSequence);
+                selectedSequenceIndex = stimulusLibrary.SelectedSequenceIndex ;
                 set(self.SequencesListbox, ...
                     'String',sequenceNames, ...
                     'Value',selectedSequenceIndex);
@@ -720,7 +721,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                     'String',{'(None)'}, ...
                     'Value',1);
             else
-                selectedMapIndex=stimulusLibrary.getMapIndex(stimulusLibrary.SelectedMap);
+                %selectedMapIndex=stimulusLibrary.getMapIndex(stimulusLibrary.SelectedMap);
+                selectedMapIndex = stimulusLibrary.SelectedMapIndex ;
                 set(self.MapsListbox, ...
                     'String',mapNames, ...
                     'Value',selectedMapIndex);            
@@ -733,8 +735,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                     'String',{'(None)'}, ...
                     'Value',1);
             else
-                selectedStimulus=stimulusLibrary.SelectedStimulus;
-                selectedStimulusIndex=stimulusLibrary.getStimulusIndex(selectedStimulus);
+                %selectedStimulus=stimulusLibrary.SelectedStimulus;
+                selectedStimulusIndex=stimulusLibrary.SelectedStimulusIndex;
                 set(self.StimuliListbox, ...
                     'String',stimulusNames, ...
                     'Value',selectedStimulusIndex);
@@ -943,7 +945,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
             wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');   
-            isIdle=fif(isempty(wavesurferModel),true,(wavesurferModel.State==ws.ApplicationState.Idle));
+            isIdle=fif(isempty(wavesurferModel),true,isequal(wavesurferModel.State,'idle'));
             isSelection=~isempty(model.SelectedItem);
             isLibraryEmpty=model.IsEmpty;
             

@@ -1,4 +1,4 @@
-classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef TestPulserFigure < ws.MCOSFigure
     properties  (SetAccess=protected)
         StartStopButton
         ElectrodePopupMenuLabelText
@@ -182,11 +182,22 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % Extra spaces b/c right-align cuts of last char a bit
             set(self.UpdateRateText,'String',fif(isnan(self.Model.UpdateRate),'? ',sprintf('%0.1f ',self.Model.UpdateRate)));
             %fprintf('here\n');
-            gainOrResistance=self.Model.GainOrResistancePerElectrode;
+            %rawGainOrResistance=self.Model.GainOrResistancePerElectrode;
+            %rawGainOrResistanceUnits = self.Model.GainOrResistanceUnitsPerElectrode ;
+            %[gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;
+            [gainOrResistance,gainOrResistanceUnits] = self.Model.getGainOrResistancePerElectrodeWithNiceUnits() ;
             %fprintf('here 2\n');
             nElectrodes=length(gainOrResistance);
             for j=1:nElectrodes ,
-                set(self.GainTexts(j),'String',fif(isnan(gainOrResistance(j)),'? ',sprintf('%0.3g ',gainOrResistance(j))));
+                gainOrResistanceThis = gainOrResistance(j) ;
+                if isnan(gainOrResistanceThis) ,
+                    set(self.GainTexts(j),'String','? ');
+                    set(self.GainUnitsTexts(j),'String','');
+                else
+                    set(self.GainTexts(j),'String',sprintf('%0.1f ',gainOrResistanceThis));
+                    gainOrResistanceUnitsThis = gainOrResistanceUnits{j} ;
+                    set(self.GainUnitsTexts(j),'String',gainOrResistanceUnitsThis);
+                end
             end
             %fprintf('here 3\n');
             % draw the trace line
@@ -245,7 +256,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             % Define some useful booleans
             isElectrodeManual=isempty(electrode)||isequal(electrode.Type,'Manual');
             isElectrodeManagerInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
-            isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isWavesurferIdle=isequal(wavesurferModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
             isWavesurferTestPulsing=self.Model.IsRunning;
             isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;
@@ -278,16 +289,16 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             set(self.VCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
                                              ~isempty(electrode) && ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
-                              'Value',~isempty(electrode)&&isequal(electrode.Mode,ws.ElectrodeMode.VC));
+                              'Value',~isempty(electrode)&&isequal(electrode.Mode,'vc'));
             set(self.CCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
                                              ~isempty(electrode)&& ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
                               'Value',~isempty(electrode)&& ...
-                                      (isequal(electrode.Mode,ws.ElectrodeMode.CC)||isequal(electrode.Mode,ws.ElectrodeMode.IEqualsZero)));
+                                      (isequal(electrode.Mode,'cc')||isequal(electrode.Mode,'i_equals_zero')));
                         
-            set(self.AmplitudeEdit,'String',self.Model.Amplitude.toString(), ...
+            set(self.AmplitudeEdit,'String',sprintf('%g',self.Model.Amplitude), ...
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
-            set(self.AmplitudeEditUnitsText,'String',string(self.Model.CommandUnits), ...
+            set(self.AmplitudeEditUnitsText,'String',self.Model.CommandUnits, ...
                                             'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
             set(self.DurationEdit,'String',self.Model.PulseDurationInMsAsString, ...
                                   'Enable',onIff(isWavesurferIdleOrTestPulsing));
@@ -299,12 +310,13 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                 else
                     set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',self.Model.Electrodes{i}.Name));
                 end
-                set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
+                %set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
+                set(self.GainUnitsTexts(i),'String','');
             end
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
-            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',string(self.Model.MonitorUnits)));
+            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));
@@ -447,9 +459,9 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             
             % Axis labels
             self.XAxisLabel= ...
-                xlabel(self.TraceAxes,'Time (ms)');
+                xlabel(self.TraceAxes,'Time (ms)','FontSize',10);
             self.YAxisLabel= ...
-                ylabel(self.TraceAxes,'Monitor (pA)');
+                ylabel(self.TraceAxes,'Monitor (pA)','FontSize',10);
             
             % Trace line
             self.TraceLine= ...
@@ -494,20 +506,29 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                           'FontSize',9, ...
                           'String','-', ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+
+            wavesurferDirName=fileparts(which('wavesurfer'));
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollUpButton= ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
-                          'String','^', ...
+                          'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+%                           'String','^', ...
+
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollDownButton= ...
                 uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'FontSize',9, ...
-                          'String','v', ...
+                          'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+%                           'String','v', ...
                     
 %             % Gain text
 %             self.GainLabelTexts= ...
@@ -597,7 +618,7 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
             tickLength=5;  % in pixels
             minimumLayoutWidth=570;  % If the figure gets small, we lay it out as if it was bigger
             minimumLayoutHeight=500;  
-            updateRateTextWidth=30;
+            updateRateTextWidth=36;  % wide enough to accomodate '100.0'
             gainTextWidth=60;
             textHeight=20;  % for 9 pt font
             interGainSpaceHeight=0;
@@ -942,7 +963,8 @@ classdef TestPulserFigure < ws.MCOSFigure & ws.EventSubscriber
                                   'Style','text', ...
                                   'Units','pixels', ...
                                   'FontSize',9, ...
-                                  'String','GOhm');
+                                  'HorizontalAlignment','left', ...
+                                  'String','MOhm');
                 end
             elseif nNewElectrodes<0 ,
                 % Delete the excess HG objects

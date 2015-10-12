@@ -1,4 +1,4 @@
-classdef YLimDialogFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef YLimDialogFigure < ws.MCOSFigure
     properties
         % The various HG objects in the figure
         YMaxText

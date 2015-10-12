@@ -45,16 +45,19 @@ classdef RasterTreadMill < ws.UserClass
         function self = RasterTreadMill(wsModel)
         end
         
-        function trialWillStart(self,wsModel,eventName)
+        function startingSweep(self,wsModel,eventName)
         end
         
-        function trialDidComplete(self,wsModel,eventName)
+        function completingSweep(self,wsModel,eventName)
         end
         
-        function trialDidAbort(self,wsModel,eventName)
+        function stoppingSweep(self,wsModel,eventName)
         end
         
-        function experimentWillStart(self,wsModel,eventName)
+        function abortingSweep(self,wsModel,eventName)
+        end
+        
+        function startingRun(self,wsModel,eventName)
             self.BinWidth = self.TreadMillLength / self.NBins;
             self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
             self.SampleRate = wsModel.Acquisition.SampleRate;
@@ -106,13 +109,16 @@ classdef RasterTreadMill < ws.UserClass
             self.AllBinSubthresholds=cell(1,self.NBins);
         end
         
-        function experimentDidComplete(self,wsModel,eventName)
+        function completingRun(self,wsModel,eventName)
         end
         
-        function experimentDidAbort(self,wsModel,eventName)
+        function stoppingRun(self,wsModel,eventName)
         end
         
-        function dataIsAvailable(self,wsModel,eventName)
+        function abortingRun(self,wsModel,eventName)
+        end
+        
+        function dataAvailable(self,wsModel,eventName)
 
             % get data
             analogData = wsModel.Acquisition.getLatestAnalogData();

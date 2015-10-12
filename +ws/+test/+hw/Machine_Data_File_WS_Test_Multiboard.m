@@ -14,7 +14,7 @@ outputChannelNames = {'Cmd1' 'Cmd2'}; % String cell array of channel identifiers
 % % In this case, it uses Counter 0 (CTR0) on the NI board.  By default, this
 % % will be output as a TTL signal (using rising edges as the trigger) on
 % % PFI12 (counter index+12)
-triggerSource(1).Name = 'Trial Trigger'; % String specifying name of an Wavesurfer self trigger source.
+triggerSource(1).Name = 'Sweep Trigger'; % String specifying name of an Wavesurfer self trigger source.
 triggerSource(1).DeviceName = 'Dev1'; % String specifying device name on which Wavesurfer self trigger is generated.
 triggerSource(1).CounterID = 0;  % Which internal counter device will be used to generate this trigger output.
 

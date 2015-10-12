@@ -28,12 +28,12 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
         function testModeSettingAndGetting(self)
             ems=ws.EPCMasterSocket();
             ems.open();
-            ems.setMode(1,ws.ElectrodeMode.VC);
+            ems.setMode(1,'vc');
             mode=ems.getElectrodeParameter(1,'Mode');  % getMode(1)
-            self.verifyEqual(mode,ws.ElectrodeMode.VC);
-            ems.setMode(1,ws.ElectrodeMode.CC);
+            self.verifyEqual(mode,'vc');
+            ems.setMode(1,'cc');
             mode=ems.getElectrodeParameter(1,'Mode');  % ems.getMode(1);
-            self.verifyEqual(mode,ws.ElectrodeMode.CC);            
+            self.verifyEqual(mode,'cc');            
         end
         
         function testVoltageMonitorGainSettingAndGetting(self)
@@ -54,7 +54,7 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
             ems=ws.EPCMasterSocket();          
             ems.open();
             detents=ems.CurrentMonitorNominalGainDetents;
-            ems.setMode(electrodeIndex,ws.ElectrodeMode.VC);  % has to be in VC to get full range of current monitor gain settings
+            ems.setMode(electrodeIndex,'vc');  % has to be in VC to get full range of current monitor gain settings
             for i=1:length(detents) ,
                 value=detents(i);
                 ems.setCurrentMonitorNominalGain(electrodeIndex,value);
@@ -71,7 +71,7 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
             ems=ws.EPCMasterSocket();          
             ems.open();
             detents=ems.CurrentCommandGainDetents;
-            ems.setMode(electrodeIndex,ws.ElectrodeMode.VC);  % has to be in VC to set this
+            ems.setMode(electrodeIndex,'vc');  % has to be in VC to set this
             for i=1:length(detents) ,
                 value=detents(i);
                 ems.setCurrentCommandGain(electrodeIndex,value);
@@ -85,7 +85,7 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
             ems=ws.EPCMasterSocket();          
             ems.open();
             detents=ems.VoltageCommandGainDetents;
-            %ems.setMode(electrodeIndex,ws.ElectrodeMode.VC);  % has to be in VC to set this
+            %ems.setMode(electrodeIndex,'vc');  % has to be in VC to set this
             for i=1:length(detents) ,
                 value=detents(i);
                 ems.setVoltageCommandGain(electrodeIndex,value);
@@ -96,7 +96,7 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
         
         function testGetModeAndGains(self)
             electrodeIndex=1;
-            modeValue=ws.ElectrodeMode.VC;
+            modeValue='vc';
             ems=ws.EPCMasterSocket();          
             ems.open();
             currentMonitorNominalGainValue=ems.CurrentMonitorNominalGainDetents(1);

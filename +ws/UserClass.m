@@ -1,13 +1,23 @@
-classdef UserClass < handle
+classdef UserClass < ws.mixin.Coding
 
-    methods        
-        trialWillStart(self,wsModel,eventName)        
-        trialDidComplete(self,wsModel,eventName)      
-        trialDidAbort(self,wsModel,eventName)
-        experimentWillStart(self,wsModel,eventName)
-        experimentDidComplete(self,wsModel,eventName)
-        experimentDidAbort(self,wsModel,eventName)
-        dataIsAvailable(self,wsModel,eventName)
-    end
-    
-end
+    methods
+        % these are called in the frontend process
+        startingRun(self,wsModel,eventName)
+        completingRun(self,wsModel,eventName)
+        stoppingRun(self,wsModel,eventName)
+        abortingRun(self,wsModel,eventName)
+        startingSweep(self,wsModel,eventName)        
+        completingSweep(self,wsModel,eventName)      
+        stoppingSweep(self,wsModel,eventName)      
+        abortingSweep(self,wsModel,eventName)
+        dataAvailable(self,wsModel,eventName)
+        % this one is called in the looper process
+        samplesAcquired(self,looper,eventName,analogData,digitalData) 
+        % these are are called in the refiller process
+        startingEpisode(self,refiller,eventName)        
+        completingEpisode(self,refiller,eventName)      
+        stoppingEpisode(self,refiller,eventName)      
+        abortingEpisode(self,refiller,eventName)        
+    end  % methods
+
+end  % classdef

@@ -1,6 +1,6 @@
 function dataFileAsStruct = loadDataFile(filename,formatString)
     % Loads Wavesurfer data file.  The returned data is a structure array
-    % with one element per trial in the data file.
+    % with one element per sweep in the data file.
 
     % Deal with optional args
     if ~exist('formatString','var') || isempty(formatString) ,
@@ -15,7 +15,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
     % Check that file has proper extension
     [~, ~, ext] = fileparts(filename);
     if ~isequal(ext, '.h5') ,
-        error('File must be a Wavesurfer-generated HDF5 (.h5) file.');
+        error('File must be a WaveSurfer-generated HDF5 (.h5) file.');
     end
 
     % Extract dataset at each group level, recursively.    
@@ -26,18 +26,23 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % User wants raw data, so nothing to do
     else
         try
-            analogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales(...
-                    dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
         catch
             error('Unable to read channel scale information from file.');
         end
+        try
+            isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+        catch
+            error('Unable to read active/inactive channel information from file.');
+        end
+        analogChannelScales = allAnalogChannelScales(isActive) ;
         inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
         doesUserWantSingle = strcmpi(formatString,'single') ;
         %doesUserWantDouble = ~doesUserWantSingle ;
         fieldNames = fieldnames(dataFileAsStruct);
         for i=1:length(fieldNames) ,
             fieldName = fieldNames{i};
-            if length(fieldName)>=5 && isequal(fieldName(1:5),'trial') ,
+            if length(fieldName)>=5 && isequal(fieldName(1:5),'sweep') ,
                 rawAnalogData = dataFileAsStruct.(fieldName).analogScans;
                 if isempty(rawAnalogData) ,
                     if doesUserWantSingle ,

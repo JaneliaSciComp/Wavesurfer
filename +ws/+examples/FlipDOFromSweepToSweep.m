@@ -1,0 +1,40 @@
+classdef FlipDOFromSweepToSweep < ws.UserClass
+    % This is an example user class.  
+    % It flips the first DO channel back and forth between high and low
+    % from sweep to sweep.
+
+    methods        
+        function self = FlipDOFromSweepToSweep(wsModel) %#ok<INUSD>
+        end
+        
+        function startingSweep(self,wsModel,eventName) %#ok<INUSD,INUSL>
+            wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
+                mod(wsModel.NSweepsCompletedInThisRun,2);
+        end
+        
+        function completingSweep(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function stoppingSweep(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function abortingSweep(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function startingRun(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function completingRun(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function stoppingRun(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function abortingRun(self,wsModel,eventName)  %#ok<INUSD>
+        end
+        
+        function dataAvailable(self,wsModel,eventName)  %#ok<INUSD>
+        end        
+    end  % methods
+    
+end  % classdef

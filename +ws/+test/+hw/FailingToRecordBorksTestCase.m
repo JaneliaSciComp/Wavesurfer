@@ -26,10 +26,10 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
 
             % Turn on stimulation (there's a single pulse output by
             % default)
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
 
             % Turn on logging
-            wsModel.Logging.Enabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
             % set the data file name
             thisFileName=mfilename();
@@ -37,9 +37,9 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             wsModel.Logging.FileBaseName=dataFileBaseName;
 
             % Want to make sure there's a pre-existing file by that name
-            nextTrialSetAbsoluteFileName=wsModel.Logging.NextTrialSetAbsoluteFileName;
-            if ~exist(nextTrialSetAbsoluteFileName,'file');
-                fid=fopen(nextTrialSetAbsoluteFileName,'w');
+            nextRunAbsoluteFileName=wsModel.Logging.NextRunAbsoluteFileName;
+            if ~exist(nextRunAbsoluteFileName,'file');
+                fid=fopen(nextRunAbsoluteFileName,'w');
                 fclose(fid);
             end
 
@@ -48,7 +48,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             
             % start the acq, which should error
             try
-                wsModel.start();
+                wsModel.record();
             catch me
                 if isequal(me.identifier,'wavesurfer:logFileAlreadyExists') ,
                     % ignore error
@@ -64,7 +64,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             pause(0.1);
             
             % start the acq, which should work this time
-            wsModel.start();
+            wsModel.record();
             
             % Wait for acq to complete
             dtBetweenChecks=0.1;  % s
@@ -72,7 +72,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=1 ,
+                if wsModel.NSweepsCompletedInThisRun>=1 ,
                     break
                 end
             end                   
@@ -82,7 +82,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,1);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);            
         end  % function
         
     end  % test methods

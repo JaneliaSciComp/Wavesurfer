@@ -1,4 +1,4 @@
-classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
+classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     properties  (Access = protected)
         % Figure window for showing plots.
         PlotFigureGH_
@@ -6,8 +6,16 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
     
     methods
         function self = StimulusLibraryController(wavesurferController,wavesurferModel)
+%             stimulusLibraryModel=wavesurferModel.Stimulation.StimulusLibrary;
+%             self = self@ws.Controller(wavesurferController, stimulusLibraryModel, {'stimulusLibraryFigureWrapper'});
+
+            % Call the superclass constructor
             stimulusLibraryModel=wavesurferModel.Stimulation.StimulusLibrary;
-            self = self@ws.Controller(wavesurferController, stimulusLibraryModel, {'stimulusLibraryFigureWrapper'});
+            self = self@ws.Controller(wavesurferController,stimulusLibraryModel);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.StimulusLibraryFigure(stimulusLibraryModel,self) ;
+            self.Figure_ = fig ;
         end  % constructor
                 
         function debug(self) %#ok<MANU>
@@ -343,8 +351,8 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
         end  % function
     
         function SequenceTableCellEdited(self,source,event) %#ok<INUSL>
-            model=self.Model;
-            selectedSequence=model.SelectedItem;
+            library=self.Model;
+            selectedSequence=library.SelectedItem;
             if isempty(selectedSequence) ,
                 return
             end            
@@ -354,7 +362,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             if (columnIndex==1) ,
                 % this is the Map Name column
                 newMapName=event.EditData;
-                map=model.mapWithName(newMapName);
+                map=library.mapWithName(newMapName);
                 selectedSequence.setMap(rowIndex,map);
             elseif (columnIndex==4) ,
                 % this is the Delete? column
@@ -383,11 +391,12 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
                 if isequal(newThing,'(Unspecified)') ,
-                    stimulus=[];
+                    %stimulusIndex=[];
+                    selectedMap.nullStimulusAtBindingIndex(rowIndex)
                 else
-                    stimulus=model.stimulusWithName(newThing);
-                end
-                selectedMap.Stimuli{rowIndex}=stimulus;                                
+                    %stimulusIndex=model.indexOfStimulusWithName(newThing);
+                    selectedMap.setStimulusByName(rowIndex, newThing) ;
+                end                
             elseif (columnIndex==4) ,
                 % this is the Multiplier column
                 newValue=str2double(newThing);
@@ -552,7 +561,7 @@ classdef StimulusLibraryController < ws.Controller & ws.EventSubscriber
                 out=false;
                 return
             end            
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             out=~isIdle;  % if doing something, window should stay put
         end        
     end  % protected methods block

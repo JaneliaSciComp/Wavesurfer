@@ -17,11 +17,11 @@ classdef (Abstract=true) EventBroadcaster < handle
     % When called, the various arguments supplied are what you'd expect
     % from the name.
     properties (Access=protected, Transient=true)
-        OutgoingSubscriptions_=struct('subscriber',cell(1,0), ...
-                                      'eventName',cell(1,0), ...
-                                      'propertyName',cell(1,0), ...
-                                      'methodName',cell(1,0))
-        Listeners_=event.listener.empty()
+        OutgoingSubscriptions_ = struct('subscriber',cell(1,0), ...
+                                        'eventName',cell(1,0), ...
+                                        'propertyName',cell(1,0), ...
+                                        'methodName',cell(1,0))
+        Listeners_ = event.listener.empty()
         BroadcastEnablement_
     end  % properties
     
@@ -110,12 +110,12 @@ classdef (Abstract=true) EventBroadcaster < handle
         function disableBroadcasts(self)
             %fprintf('EventBroadcaster::disableBroadcasts()\n');
 %             className = class(self);
-%             if isequal(className,'ws.system.UserFunctions') ,
-%                 fprintf('UserFunctions::disableBroadcasts()\n');
+%             if isequal(className,'ws.system.UserCodeManager') ,
+%                 fprintf('UserCodeManager::disableBroadcasts()\n');
 %                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
             self.BroadcastEnablement_.disable();
-%             if isequal(class(self),'ws.system.UserFunctions') ,
+%             if isequal(class(self),'ws.system.UserCodeManager') ,
 %                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
         end
@@ -123,13 +123,13 @@ classdef (Abstract=true) EventBroadcaster < handle
         function enableBroadcastsMaybe(self)
             %fprintf('EventBroadcaster::enableBroadcasts()\n');
 %             className = class(self);
-%             if isequal(className,'ws.system.UserFunctions') ,
-%                 fprintf('UserFunctions::enableBroadcastsMaybe()\n');
+%             if isequal(className,'ws.system.UserCodeManager') ,
+%                 fprintf('UserCodeManager::enableBroadcastsMaybe()\n');
 %                 %dbstack
 %                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
             self.BroadcastEnablement_.enableMaybe();
-%             if isequal(class(self),'ws.system.UserFunctions') ,
+%             if isequal(class(self),'ws.system.UserCodeManager') ,
 %                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
         end

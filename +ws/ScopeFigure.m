@@ -1,7 +1,4 @@
-classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
-    % This is an EventBroadcaster only so that changes to it via the
-    % default Matlab figure controls can be communicated to the model (via
-    % the controller)
+classdef ScopeFigure < ws.MCOSFigure
     
     properties (Dependent=true)
         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
@@ -35,8 +32,23 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         YLim_
         SetYLimTightToDataButtonGH_
         SetYLimTightToDataLockedButtonGH_
+        
         ScopeMenuGH_
+        YZoomInMenuItemGH_
+        YZoomOutMenuItemGH_        
+        SetYLimTightToDataMenuItemGH_
+        SetYLimTightToDataLockedMenuItemGH_        
+        YScrollUpMenuItemGH_
+        YScrollDownMenuItemGH_
         YLimitsMenuItemGH_
+        InvertColorsMenuItemGH_
+        ShowGridMenuItemGH_
+        DoShowButtonsMenuItemGH_
+        
+        YZoomInButtonGH_
+        YZoomOutButtonGH_
+        YScrollUpButtonGH_
+        YScrollDownButtonGH_
     end
     
 %     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
@@ -50,150 +62,55 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 
     methods
         function self=ScopeFigure(model,controller)
-            import ws.utility.*
-            
+            % Call the superclass constructor
             self = self@ws.MCOSFigure(model,controller);
             
-            % create the downsampled data
-            nChannels=length(model.ChannelNames);
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);
-            
-            %
-            % Create all the widgets, set them up
-            %
+            % Set properties of the figure
             set(self.FigureGH, ...
                 'Tag',model.Tag,...
                 'Name', model.Title, ...
-                'Color', model.BackgroundColor,...
+                'Color',get(0,'defaultUIControlBackgroundColor'), ...
                 'NumberTitle', 'off',...
                 'Units', 'pixels',...
                 'HandleVisibility', 'on',...
-                'Renderer','OpenGL', ...
-                'CloseRequestFcn', @(source,event)self.closeRequested(source,event));
-%                 'Toolbar','none', ...
-%                 'MenuBar','none', ...
+                'Menubar','none', ...
+                'Toolbar','none', ...
+                'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
+                'ResizeFcn',@(sourse,event)(self.layout_()));
+%                'Renderer','OpenGL', ...            
+%                'Color', model.BackgroundColor,...
             
-            xl=model.XLim;
-            yl=model.YLim;
-            self.AxesGH_ = ...
-                axes('Parent', self.FigureGH, ...
-                     'Position', [0.11 0.11 0.87 0.83], ...
-                     'FontSize', model.FontSize, ...
-                     'FontWeight', model.FontWeight, ...
-                     'Color', model.BackgroundColor, ...
-                     'XColor', model.ForegroundColor, ...
-                     'YColor', model.ForegroundColor, ...
-                     'ZColor', model.ForegroundColor, ...
-                     'XGrid', onIff(model.GridOn), ...
-                     'YGrid', onIff(model.GridOn), ...
-                     'XLim',xl, ...
-                     'YLim',yl ...
-                     );
-            self.XLim_=xl;
-            self.YLim_=yl;
-            
-            colorOrder = get(self.AxesGH_, 'ColorOrder');
-            colorOrder = [1 1 1; 1 0.25 0.25; colorOrder];
-            set(self.AxesGH_, 'ColorOrder', colorOrder);
-            
-%             self.HorizontalCenterLineGH = ...
-%                 line('Parent', self.AxesGH_,...
-%                      'XData',[],...
-%                      'YData',[],...
-%                      'Color',[0 0 0],...
-%                      'LineStyle','-.',...
-%                      'Marker','d',...
-%                      'Tag','scope_horizontalCenterLine');
-%             
-%             self.VerticalCenterLineGH = ...
-%                 line('Parent',self.AxesGH_,...
-%                      'XData',[],...
-%                      'YData',[],...
-%                      'Color',[0 0 0],...
-%                      'LineStyle','-.',...
-%                      'Marker','d',...
-%                      'Tag','scope_verticalCenterLine');
-%             
-%             self.GroundLineGH = ...
-%                 line('Parent',self.AxesGH_,...
-%                      'XData',[],...
-%                      'YData',[],...
-%                      'Color',[0 .5 0],...
-%                      'LineStyle','-.',...
-%                      'LineWidth',2,...
-%                      'Marker','none',...
-%                      'Tag','scope_groundLine',...
-%                      'Visible','off');
-
-            xlabel(self.AxesGH_,sprintf('Time (%s)',string(model.XUnits)));
-
-            % Set up listeners to monitor the axes XLim, YLim, and to set
-            % the XLim and YLim properties when they change.  This is
-            % mainly so that the XLim and YLim properties can be observed,
-            % and used to change them in the model to maintain
-            % synchronization.
-            % Can't do this using EventBroadcaster/EventSubscriber
-            % mechanism b/c can't make the axes HG object an
-            % EventBroadcaster.
-            addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
-            addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
-            
-            % Add a line for each channel in the model
-            for i=1:self.Model.NChannels
-                self.addChannelLine_();
-            end
-            
-            % Add a toolbar button
-            wavesurferDirName=fileparts(which('wavesurfer'));
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);
-            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
-            self.SetYLimTightToDataButtonGH_ = ...
-                uipushtool(toolbarGH, ...
-                           'CData', cdata, ...
-                           'TooltipString', 'Set y-axis limits tight to data', ....
-                           'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
-                         
-            % Add a second toolbar button           
-            [cdata, map] = imread(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png'));
-            map(map(:,1)+map(:,2)+map(:,3)==0) = NaN;
-            cdata = ind2rgb(cdata, map);
-            self.SetYLimTightToDataLockedButtonGH_ = ...
-                uitoggletool(toolbarGH, ...
-                             'CData', cdata, ...
-                             'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
-                             'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
-                       
-            % Add a menu, and a single menu item
-            self.ScopeMenuGH_ = ...
-                uimenu('Parent',self.FigureGH, ...
-                       'Label','Scope');
-            self.YLimitsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
-                       'Label','Y Limits...', ...
-                       'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));
+            % Create the widgets that will persist through the life of the
+            % figure
+            self.createFixedControls_();
             
             % Subscribe to some model events
-            model.subscribeMe(self,'Update','','update');
-            model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-            model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-            model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-            model.subscribeMe(self,'DataAdded','','modelDataAdded');
-            model.subscribeMe(self,'DataCleared','','modelDataCleared');
-            model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
-
-            % Subscribe to events in the master model
-            if ~isempty(model) ,
-                display=model.Parent;
-                if ~isempty(display) ,
-                    wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) ,
-                        wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                    end
-                end                
-            end            
+            %self.didSetModel_();
+            
+%             % reset the downsampled data
+%             nChannels=length(model.ChannelNames);
+%             self.XForPlotting_=zeros(0,1);
+%             self.YForPlotting_=zeros(0,nChannels);
+%             
+%             % Subscribe to some model events
+%             model.subscribeMe(self,'Update','','update');
+%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
+%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
+%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
+% 
+%             % Subscribe to events in the master model
+%             if ~isempty(model) ,
+%                 display=model.Parent;
+%                 if ~isempty(display) ,
+%                     wavesurferModel=display.Parent;
+%                     if ~isempty(wavesurferModel) ,
+%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
+%                     end
+%                 end
+%             end            
             
             % Do stuff to make ws.most.Controller happy
             self.setHGTagsToPropertyNames_();
@@ -204,25 +121,13 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         end  % constructor
         
         function delete(self)
-            % if ~isempty(self.Model) && isvalid(self.Model) ,
-            %     self.Model.unsubscribeMeFromAll(self);
-            % end
+            % Do I even need to do this stuff?  Those GHs will become
+            % invalid when the figure HG object is deleted...
+            %fprintf('ScopeFigure::delete()\n');
             ws.utility.deleteIfValidHGHandle(self.LineGHs_);
-            %deleteIfValidHGHandle(self.GroundLineGH);
-            %deleteIfValidHGHandle(self.VerticalCenterLineGH);
-            %deleteIfValidHGHandle(self.HorizontalCenterLineGH);
             ws.utility.deleteIfValidHGHandle(self.AxesGH_);            
-        end
+        end  % function
         
-%         function result=get.IsVisibleWhenDisplayEnabled(self)
-%             model=self.Model;
-%             if isempty(model) ,
-%                 result=[];
-%             else
-%                 result=model.IsVisibleWhenDisplayEnabled;
-%             end
-%         end  % function
-
         function set(self,propName,value)
             % Override MCOSFigure set to catch XLim, YLim
             if strcmpi(propName,'XLim') ,
@@ -233,8 +138,73 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 set@ws.MCOSFigure(self,propName,value);
             end
         end  % function
+    end  % public methods block
+    
+    methods (Access=protected)        
+        function willSetModel_(self)            
+            % clear the downsampled data
+            self.XForPlotting_=zeros(0,1);
+            self.YForPlotting_=zeros(0,0);
 
-    end  % methods
+            % Call the superclass method
+            willSetModel_@ws.MCOSFigure(self);
+
+            % Get the Model
+            model = self.Model ;            
+
+            % If model is nonempty, do some unsubscribing
+            if ~isempty(model) ,
+                % Unsubscribe from events in the model
+                %model.unsubscribeMeFromAll(self) ;
+
+                % Unsubsribe from events in the master model
+                display=model.Parent;
+                if ~isempty(display) && isvalid(display) ,
+                    wavesurferModel=display.Parent;
+                    if ~isempty(wavesurferModel) && isvalid(display) ,
+                        wavesurferModel.unsubscribeMeFromAll(self);
+                    end
+                end
+            end
+        end  % function
+        
+        function didSetModel_(self)
+            model = self.Model ;
+
+            % reset the downsampled data
+            if ~isempty(model) ,
+                nChannels=length(model.ChannelNames);
+                self.XForPlotting_=zeros(0,1);
+                self.YForPlotting_=zeros(0,nChannels);
+            end
+
+            % Call the superclass method
+            didSetModel_@ws.MCOSFigure(self);
+
+            % Subscribe to some model events
+            if ~isempty(model) ,
+                model.subscribeMe(self,'Update','','update');
+                model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
+                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+                model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+                model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+                model.subscribeMe(self,'DataAdded','','modelDataAdded');
+                model.subscribeMe(self,'DataCleared','','modelDataCleared');
+                model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
+            end
+
+            % Subscribe to events in the master model
+            if ~isempty(model) ,
+                display=model.Parent;
+                if ~isempty(display) ,
+                    wavesurferModel=display.Parent;
+                    if ~isempty(wavesurferModel) ,
+                        wavesurferModel.subscribeMe(self,'DidSetState','','update');
+                    end
+                end
+            end
+        end  % function
+    end  % protected methods block    
     
     methods
 %         function set.Visible(self,newValue)
@@ -254,12 +224,12 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.XLim_=newValue;
                 set(self.AxesGH_,'XLim',newValue);
             end
-            self.broadcast('DidSetXLim');
-        end
+            %self.broadcast('DidSetXLim');
+        end  % function
         
         function value=get.XLim(self)
             value=self.XLim_;
-        end
+        end  % function
         
         function set.YLim(self,newValue)
             %fprintf('ScopeFigure::set.YLim()\n');
@@ -267,23 +237,23 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.YLim_=newValue;
                 set(self.AxesGH_,'YLim',newValue);
             end
-            self.broadcast('DidSetYLim');
-        end
+            %self.broadcast('DidSetYLim');
+        end  % function
             
         function value=get.YLim(self)
             value=self.YLim_;
-        end
+        end  % function
                 
         function didSetXLimInAxesGH(self,varargin)
             self.XLim=get(self.AxesGH_,'XLim');
-        end
+        end  % function
         
         function didSetYLimInAxesGH(self,varargin)
             %fprintf('ScopeFigure::didSetYLimInAxesGH()\n');
             %ylOld=self.YLim
             ylNew=get(self.AxesGH_,'YLim');
             self.YLim=ylNew;
-        end
+        end  % function
         
 %         function modelPropertyWasSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD,INUSL>
 %             if isequal(propertyName,'YLim') ,
@@ -302,29 +272,31 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %             end
 %         end
         
-        function modelXAxisLimitSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+        function updateXAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateXAxisLimits_();
-        end
+        end  % function
         
         function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateYAxisLimits_();
-        end
+        end  % function
         
         function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.updateAreYLimitsLockedTightToData_();
-        end
+            %self.updateAreYLimitsLockedTightToData_();
+            %self.updateControlEnablement_();
+            self.update() ;
+        end  % function
         
         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Redimension downsampled data, clearing the existing data in
             % the process
             nChannels=self.Model.NChannels;
             self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);            
+            self.YForPlotting_=zeros(0,nChannels);
             
             % Do other stuff
-            self.addChannelLine_();
+            self.addChannelLineToAxes_();
             self.update();
-        end
+        end  % function
         
         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             % Need to pack up all the y data into a single array for
@@ -378,7 +350,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 
             % Update the lines
             self.updateLineXDataAndYData_();
-        end
+        end  % function
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             %fprintf('ScopeFigure::modelDataCleared()\n');
@@ -386,82 +358,603 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             self.XForPlotting_=zeros(0,1);
             self.YForPlotting_=zeros(0,nChannels);                        
             self.updateLineXDataAndYData_();                      
-        end
+        end  % function
         
         function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.update();
-        end
+        end  % function
 
-        function updateColorsFontsTitleGridAndTags(self)
+        function syncTitleAndTagsToModel(self)
             import ws.utility.onIff
             
             model=self.Model;
             set(self.FigureGH, ...
                 'Tag',model.Tag,...
-                'Name', model.Title, ...
-                'Color', model.BackgroundColor);
-            set(self.AxesGH_, ...
-                'FontSize', model.FontSize, ...
-                'FontWeight', model.FontWeight, ...
-                'Color', model.BackgroundColor, ...
-                'XColor', model.ForegroundColor, ...
-                'YColor', model.ForegroundColor, ...
-                'ZColor', model.ForegroundColor, ...
-                'XGrid', onIff(model.GridOn), ...
-                'YGrid', onIff(model.GridOn) ...
-                );
-        end
+                'Name', model.Title);
+%             , ...
+%                 'Color', model.BackgroundColor);
+%             set(self.AxesGH_, ...
+%                 'FontSize', model.FontSize, ...
+%                 'FontWeight', model.FontWeight, ...
+%                 'Color', model.BackgroundColor, ...
+%                 'XColor', model.ForegroundColor, ...
+%                 'YColor', model.ForegroundColor, ...
+%                 'ZColor', model.ForegroundColor, ...
+%                 'XGrid', onIff(model.GridOn), ...
+%                 'YGrid', onIff(model.GridOn) ...
+%                 );
+%             set(self.AxesGH_, ...
+%                 'XGrid', onIff(model.IsGridOn), ...
+%                 'YGrid', onIff(model.IsGridOn) ...
+%                 );
+        end  % function
     end  % methods
     
-    methods (Access=protected)
-        function updateImplementation_(self,varargin)
-            % Syncs self with the model.
+    methods (Access=protected)        
+%         function updateImplementation_(self,varargin)
+%             % Syncs self with the model.
+%             
+%             % If there are issues with the model, just return
+%             model=self.Model;
+%             if isempty(model) || ~isvalid(model) ,
+%                 return
+%             end
+% 
+%             % Update the togglebutton
+%             self.updateAreYLimitsLockedTightToData_();
+% 
+%             % Update the axis limits
+%             self.updateXAxisLimits_();
+%             self.updateYAxisLimits_();
+%             
+%             % Update the graphics objects to match the model
+%             self.updateYAxisLabel_();
+%             self.updateLineXDataAndYData_();
+%             
+%             % Update the enablement of controls
+%             %import ws.utility.onIff
+%             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(isWavesurferIdle));
+%             %set(self.YLimitsMenuItemGH_,'Enable',onIff(isWavesurferIdle));            
+%             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(true));
+%             %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
+%         end                
+
+%         function loadIcons_(self)
+%             % Load icons from disk, store them in instance vars
+%             
+%             wavesurferDirName=fileparts(which('wavesurfer'));
+% 
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             self.SetYLimTightToDataIcon_ = cdata ;
+%                                      
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             self.SetYLimTightToDataLockedIcon_ = cdata ;
+% 
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
+%             self.YScrollUpIcon_ = cdata ;
+%             
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
+%             self.YScrollDownIcon_ = cdata ;
+%         end
+
+        function createFixedControls_(self)
+            % Creates the controls that are guaranteed to persist
+            % throughout the life of the window.
             
+            %model = self.Model ;
+            self.AxesGH_ = ...
+                axes('Parent', self.FigureGH, ...
+                     'Units','pixels', ...
+                     'Box','on' );
+%                      'XGrid', ws.utility.onIff(model.IsGridOn), ...
+%                      'YGrid', ws.utility.onIff(model.IsGridOn) );
+            %         'Position', [0.11 0.11 0.87 0.83], ...
+%                      'XColor', model.ForegroundColor, ...
+%                      'YColor', model.ForegroundColor, ...
+%                      'ZColor', model.ForegroundColor, ...
+%                      'FontSize', model.FontSize, ...
+%                      'FontWeight', model.FontWeight, ...
+%                     'Color', model.BackgroundColor, ...
+            
+            colorOrder = get(self.AxesGH_, 'ColorOrder');
+            %colorOrder = [1 1 1; 1 0.25 0.25; colorOrder];
+            colorOrder = [0 0 0; colorOrder];
+            set(self.AxesGH_, 'ColorOrder', colorOrder);
+
+            % Create the x-axis label
+            %xlabel(self.AxesGH_,sprintf('Time (%s)',string(model.XUnits)),'FontSize',10);
+
+            % Set up listeners to monitor the axes XLim, YLim, and to set
+            % the XLim and YLim properties when they change.  This is
+            % mainly so that the XLim and YLim properties can be observed,
+            % and used to change them in the model to maintain
+            % synchronization.
+            % Can't do this using EventBroadcaster/EventSubscriber
+            % mechanism b/c can't make the axes HG object an
+            % EventBroadcaster.
+            addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
+            addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
+            
+%             % Add a line for each channel in the model
+%             for i=1:self.Model.NChannels
+%                 self.addChannelLineToAxes_();
+%             end
+
+%             % Load some icons
+%             wavesurferDirName=fileparts(which('wavesurfer'));
+%             
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+% %            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
+% %             self.SetYLimTightToDataButtonGH_ = ...
+% %                 uipushtool(toolbarGH, ...
+% %                            'CData', cdata, ...
+% %                            'TooltipString', 'Set y-axis limits tight to data', ....
+% %                            'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
+%             self.SetYLimTightToDataButtonGH_ = ...
+%                 uicontrol('Parent',self.FigureGH, ...
+%                           'Style','pushbutton', ...
+%                           'Units','pixels', ...
+%                           'FontSize',9, ...
+%                           'TooltipString', 'Set y-axis limits tight to data', ....
+%                           'CData', cdata, ...
+%                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
+%                        
+%             % Add a second toolbar button           
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+% %             self.SetYLimTightToDataLockedButtonGH_ = ...
+% %                 uitoggletool(toolbarGH, ...
+% %                              'CData', cdata, ...
+% %                              'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+% %                              'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
+%             self.SetYLimTightToDataLockedButtonGH_ = ...
+%                 uicontrol('Parent',self.FigureGH, ...
+%                           'Style','togglebutton', ...
+%                           'Units','pixels', ...
+%                           'FontSize',9, ...
+%                           'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+%                           'CData', cdata, ...
+%                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
+                       
+            % Add a menu, and a single menu item
+            self.ScopeMenuGH_ = ...
+                uimenu('Parent',self.FigureGH, ...
+                       'Label','Scope');
+            self.YScrollUpMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Scroll Up Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YScrollUpMenuItemGH',source,event));            
+            self.YScrollDownMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Scroll Down Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YScrollDownMenuItemGH',source,event));                               
+
+            self.SetYLimTightToDataMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Y Limits Tight to Data', ...
+                       'Callback',@(source,event)self.controlActuated('SetYLimTightToDataMenuItemGH',source,event));            
+            self.SetYLimTightToDataLockedMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Lock Y Limits Tight to Data', ...
+                       'Callback',@(source,event)self.controlActuated('SetYLimTightToDataLockedMenuItemGH',source,event));            
+                   
+            self.YZoomInMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Zoom In Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YZoomInMenuItemGH',source,event));            
+            self.YZoomOutMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Zoom Out Y-Axis', ...
+                       'Callback',@(source,event)self.controlActuated('YZoomOutMenuItemGH',source,event));            
+            self.YLimitsMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Y Limits...', ...
+                       'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
+            self.InvertColorsMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Separator','on', ...
+                       'Label','Green On Black', ...
+                       'Callback',@(source,event)self.controlActuated('InvertColorsMenuItemGH',source,event));            
+            self.ShowGridMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Show Grid', ...
+                       'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
+            self.DoShowButtonsMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Show Buttons', ...
+                       'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
+                                      
+            % Y axis control buttons
+            self.YZoomInButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'String','+', ...
+                          'Callback',@(source,event)(self.controlActuated('YZoomInButtonGH',source,event)));
+            self.YZoomOutButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'String','-', ...
+                          'Callback',@(source,event)(self.controlActuated('YZoomOutButtonGH',source,event)));
+            self.YScrollUpButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'Callback',@(source,event)(self.controlActuated('YScrollUpButtonGH',source,event)));
+            self.YScrollDownButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'Callback',@(source,event)(self.controlActuated('YScrollDownButtonGH',source,event)));
+            self.SetYLimTightToDataButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'TooltipString', 'Set y-axis limits tight to data', ....
+                          'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
+            % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
+            % we want to do with this button when we change to
+            % green-on-black mode.  Also, there's a checked menu item that
+            % shows when this toggle is engaged or diengaged, so hopefully
+            % it won't be too jarring to the user when this button doesn't
+            % look toggled after she presses it.  I think it should be OK
+            % --- sometimes it's hard to tell even when a togglebutton is
+            % toggled.
+            self.SetYLimTightToDataLockedButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+                          'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));                      
+                      
+        end  % function            
+
+        function updateControlsInExistance_(self)            
+            % Make it so we have the same number of lines as channels,
+            % adding/deleting them as needed
+            nChannels = self.Model.NChannels ;            
+            currentLineGHs = self.LineGHs_ ;            
+            nLines= length(currentLineGHs);
+            if nLines>nChannels ,
+                delete(self.LineGHs_(nChannels+1:nLines));
+                self.LineGHs_(nChannels+1:nLines)=[];
+            elseif nLines<nChannels
+                for i=nLines+1:nChannels ,
+                    self.addChannelLineToAxes_();
+                end                
+            end
+        end  % function
+        
+        function updateControlPropertiesImplementation_(self)
             % If there are issues with the model, just return
             model=self.Model;
             if isempty(model) || ~isvalid(model) ,
                 return
             end
+
+            persistent persistentYScrollUpIcon
+            if isempty(persistentYScrollUpIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+                persistentYScrollUpIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+
+            persistent persistentYScrollDownIcon
+            if isempty(persistentYScrollDownIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+                persistentYScrollDownIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+
+            persistent persistentYTightToDataIcon
+            if isempty(persistentYTightToDataIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+                persistentYTightToDataIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
             
-%             % Need to figure out the wavesurferModel State            
-%             display=[];
-%             if ~isempty(model) && isvalid(model),
-%                 display=model.Parent;
-%             end
-%             wavesurferModel=[];
-%             if ~isempty(display) && isvalid(display),
-%                 wavesurferModel=display.Parent;
-%             end
-%             isWavesurferIdle=[];
-%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                 isWavesurferIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
-%             end
-%             if isempty(isWavesurferIdle)
-%                 isWavesurferIdle=true;  % things are probably fucked anyway...
-%             end            
-
+            persistent persistentYTightToDataLockedIcon
+            if isempty(persistentYTightToDataLockedIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+                persistentYTightToDataLockedIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+            
             % Update the togglebutton
-            self.updateAreYLimitsLockedTightToData_();
+            %dbstack
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+            %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
+            
+            %set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
+            set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.utility.onIff(areYLimitsLockedTightToData));            
 
+            % Update the Show Grid togglemenu
+            isGridOn = self.Model.IsGridOn ;
+            set(self.ShowGridMenuItemGH_,'Checked',ws.utility.onIff(isGridOn));
+
+            % Update the Invert Colors togglemenu
+            areColorsNormal = self.Model.AreColorsNormal ;
+            set(self.InvertColorsMenuItemGH_,'Checked',ws.utility.onIff(~areColorsNormal));
+
+            % Update the Do Show Buttons togglemenu
+            doShowButtons = self.Model.DoShowButtons ;
+            set(self.DoShowButtonsMenuItemGH_,'Checked',ws.utility.onIff(doShowButtons));
+
+            % Update the colors
+            areColorsNormal = self.Model.AreColorsNormal ;
+            defaultUIControlBackgroundColor = get(0,'defaultUIControlBackgroundColor') ;
+            controlBackground  = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForeground = ws.utility.fif(areColorsNormal,'k','w') ;
+            figureBackground = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            set(self.FigureGH,'Color',figureBackground);
+            axesBackground = ws.utility.fif(areColorsNormal,'w','k') ;
+            set(self.AxesGH_,'Color',axesBackground);
+            axesForeground = ws.utility.fif(areColorsNormal,'k','g') ;
+            set(self.AxesGH_,'XColor',axesForeground);
+            set(self.AxesGH_,'YColor',axesForeground);
+            set(self.AxesGH_,'ZColor',axesForeground);
+            if areColorsNormal ,
+                colorOrder = ...
+                    [      0                         0                         0  ; ...
+                           0                         0                         1  ; ...
+                           0                       0.5                         0  ; ...
+                           1                         0                         0  ; ...
+                           0                      0.75                      0.75  ; ...
+                        0.75                         0                      0.75  ; ...
+                        0.75                      0.75                         0  ; ...
+                        0.25                      0.25                      0.25  ] ;
+            else
+                colorOrder = ...
+                    [      1                         1                         1  ; ...
+                           0                       0.5                         1  ; ...
+                           0                         1                         0  ; ...
+                           1                         0                         1  ; ...
+                           0                         1                         1  ; ...
+                        0.75                         0                      0.75  ; ...
+                           1                         1                         0  ; ...
+                        0.75                      0.75                      0.75  ] ;
+                
+            end
+            set(self.AxesGH_,'ColorOrder',colorOrder);
+
+            % Set the line colors
+            for iChannel = 1:length(self.LineGHs_)
+                lineGH = self.LineGHs_(iChannel) ;
+                color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
+                set(lineGH,'Color',color);
+            end
+
+            % Set the button colors
+            set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            
+            % Set the button scroll up/down button images
+            if areColorsNormal ,
+                yScrollUpIcon   = persistentYScrollUpIcon   ;
+                yScrollDownIcon = persistentYScrollDownIcon ;
+                yTightToDataIcon = persistentYTightToDataIcon ;
+                yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;
+            else
+                yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
+                yScrollDownIcon = 1-persistentYScrollDownIcon ;                
+                yTightToDataIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
+                yTightToDataLockedIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
+            end                
+            set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
+            set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
+            set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
+            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
+            
+            % Update the axes grid on/off
+            set(self.AxesGH_, ...
+                'XGrid', ws.utility.onIff(isGridOn), ...
+                'YGrid', ws.utility.onIff(isGridOn) ...
+                );
+            
             % Update the axis limits
             self.updateXAxisLimits_();
             self.updateYAxisLimits_();
             
             % Update the graphics objects to match the model
-            self.updateYAxisLabel_();
+            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10);
+            self.updateYAxisLabel_(axesForeground);
             self.updateLineXDataAndYData_();
-            
+        end  % function
+        
+        function updateControlEnablementImplementation_(self)
             % Update the enablement of controls
+            if isempty(self.Model) || ~isvalid(self.Model) ,
+                return
+            end
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+            
             %import ws.utility.onIff
-            %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(isWavesurferIdle));
-            %set(self.YLimitsMenuItemGH_,'Enable',onIff(isWavesurferIdle));            
-            %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(true));
-            %set(self.YLimitsMenuItemGH_,'Enable',onIff(true));            
-        end                
+            onIffNotAreYLimitsLockedTightToData = ws.utility.onIff(~areYLimitsLockedTightToData) ;
+            set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
+            set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+        end  % function
+        
+        function layout_(self)
+            % This method should make sure all the controls are sized and placed
+            % appropraitely given the current model state.  
+
+            % We can use a simplified version of this, since all the
+            % controls are fixed (i.e. they exist for the lifetime of the
+            % figure)
+            self.layoutFixedControls_() ;
+            
+            % This implementation should work in most cases, but can be overridden by
+            % subclasses if needed.
+            %figureSize=self.layoutFixedControls_();
+            %figureSizeModified=self.layoutNonfixedControls_(figureSize);
+            %ws.utility.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
+        end  % function
+        
+        function layoutFixedControls_(self)
+            % Layout parameters
+            minLeftMargin = 46 ;
+            maxLeftMargin = 62 ;
+            
+            minRightMarginIfButtons = 8 ;            
+            maxRightMarginIfButtons = 8 ;            
+
+            minRightMarginIfNoButtons = 8 ;            
+            maxRightMarginIfNoButtons = 16 ;            
+            
+            %minBottomMargin = 38 ;  % works ok with HG1
+            minBottomMargin = 44 ;  % works ok with HG2 and HG1
+            maxBottomMargin = 52 ;
+            
+            minTopMargin = 10 ;
+            maxTopMargin = 26 ;            
+            
+            minAxesAndButtonsAreaWidth = 20 ;
+            minAxesAndButtonsAreaHeight = 20 ;
+            
+            fromAxesToYRangeButtonsWidth = 6 ;
+            yRangeButtonSize = 20 ;  % those buttons are square
+            spaceBetweenScrollButtons=5;
+            spaceBetweenZoomButtons=5;
+            spaceBetweenZoomToDataButtons=5;
+            minHeightBetweenButtonBanks = 5 ;
+            
+            % Show buttons only if user wants them
+            doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
+
+            if doesUserWantToSeeButtons ,
+                minRightMargin = minRightMarginIfButtons ;
+                maxRightMargin = maxRightMarginIfButtons ;
+            else
+                minRightMargin = minRightMarginIfNoButtons ;
+                maxRightMargin = maxRightMarginIfNoButtons ;
+            end
+            
+            % Get the current figure width, height
+            figurePosition = get(self.FigureGH, 'Position') ;
+            figureSize = figurePosition(3:4);
+            figureWidth = figureSize(1) ;
+            figureHeight = figureSize(2) ;
+            
+            % Calculate the first-pass dimensions
+            leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
+            rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
+            bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
+            topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
+            axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
+            axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
+
+            % If not enough vertical space for the buttons, hide them
+            if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
+                isEnoughHeightForButtons = false ;
+                % Recalculate some things that are affected by this change
+                minRightMargin = minRightMarginIfNoButtons ;
+                maxRightMargin = maxRightMarginIfNoButtons ;
+                rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
+                axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;                
+            else
+                isEnoughHeightForButtons = true ;
+            end
+            doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons ;
+            
+            % If the axes-and-buttons-area is too small, make it larger,
+            % and change the right margin and/or bottom margin to accomodate
+            if axesAndButtonsAreaWidth<minAxesAndButtonsAreaWidth ,                
+                axesAndButtonsAreaWidth = minAxesAndButtonsAreaWidth ;
+                %rightMargin = figureWidth - axesAndButtonsAreaWidth - leftMargin ;  % can be less than minRightMargin, and that's ok
+            end
+            if axesAndButtonsAreaHeight<minAxesAndButtonsAreaHeight ,                
+                axesAndButtonsAreaHeight = minAxesAndButtonsAreaHeight ;
+                bottomMargin = figureHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
+            end
+
+            % Set the axes width, depends on whether we're showing the
+            % buttons or not
+            if doShowButtons ,
+                axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
+            else
+                axesWidth = axesAndButtonsAreaWidth ;
+            end
+            axesHeight = axesAndButtonsAreaHeight ;            
+            
+            % Update the axes position
+            axesXOffset = leftMargin ;
+            axesYOffset = bottomMargin ;
+            set(self.AxesGH_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
+            
+            % the zoom buttons
+            yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
+            zoomOutButtonX=yRangeButtonsX;
+            zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
+            set(self.YZoomOutButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[zoomOutButtonX zoomOutButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            zoomInButtonX=yRangeButtonsX;
+            zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
+            set(self.YZoomInButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[zoomInButtonX zoomInButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            
+            % the scroll buttons
+            scrollUpButtonX=yRangeButtonsX;
+            scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
+            set(self.YScrollUpButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[scrollUpButtonX scrollUpButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            scrollDownButtonX=yRangeButtonsX;
+            scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
+            set(self.YScrollDownButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[scrollDownButtonX scrollDownButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+                        
+            % the zoom-to-data buttons
+            zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
+            zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
+            setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
+            set(self.SetYLimTightToDataButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
+            set(self.SetYLimTightToDataLockedButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            
+        end  % function
+        
     end
     
     methods (Access = protected)
-        function addChannelLine_(self)
+        function addChannelLineToAxes_(self)
             % Creates a new channel line, adding it to the end of self.LineGHs_.
             iChannel=length(self.LineGHs_)+1;
             newChannelName=self.Model.ChannelNames{iChannel};
@@ -475,11 +968,11 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                      'YData', [],...
                      'ZData', [],...
                      'Color', color,...
-                     'Marker', self.Model.Marker,...
-                     'LineStyle', self.Model.LineStyle,...
                      'Tag', sprintf('%s::%s', self.Model.Tag, newChannelName));
 %                                      'LineWidth', 2,...
-        end
+%                      'Marker', self.Model.Marker,...
+%                      'LineStyle', self.Model.LineStyle,...
+        end  % function
         
 %         function modelAxisLimitWasSet(self)
 %             self.updateReferenceLines();
@@ -487,34 +980,34 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         
         function modelGenericVisualPropertyWasSet_(self)
             self.update();
-        end 
+        end  % function 
         
         function updateLineXDataAndYData_(self)
             for iChannel = 1:self.Model.NChannels ,                
                 thisLineGH = self.LineGHs_(iChannel);
                 ws.utility.setifhg(thisLineGH, 'XData', self.XForPlotting_, 'YData', self.YForPlotting_(:,iChannel));
             end                     
-        end
+        end  % function
         
-        function updateYAxisLabel_(self)
+        function updateYAxisLabel_(self,color)
             % Updates the y axis label handle graphics to match the model state
             % and that of the Acquisition subsystem.
             %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
             if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal');
+                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10);
             else
                 %firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
                 units=self.Model.YUnits;
-                if units.isPure() ,
+                if isempty(units) ,
                     unitsString = 'pure' ;
                 else
-                    unitsString = string(units) ;
+                    unitsString = units ;
                 end
-                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString));
+                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color,'FontSize',10);
             end
-        end
+        end  % function
         
         function updateXAxisLimits_(self)
             % Update the axes limits to match those in the model
@@ -523,7 +1016,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             end
             xlimInModel=self.Model.XLim;
             %ws.utility.setifhg(self.AxesGH_, 'XLim', xl);
-            if any(xlimInModel~=self.XLim) ,                
+            if ~isequal(xlimInModel,self.XLim) ,                
                 % Set this directly, instead of calling the XLim setter
                 % This means that we don't fire the DidSetXLim method.
                 % This should be OK, since updateXAxisLimits_ is only called in 
@@ -531,7 +1024,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.XLim_=xlimInModel;
                 set(self.AxesGH_,'XLim',xlimInModel);
             end
-        end        
+        end  % function        
 
         function updateYAxisLimits_(self)
             % Update the axes limits to match those in the model
@@ -540,7 +1033,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             end
             ylimInModel=self.Model.YLim;
             %ws.utility.setifhg(self.AxesGH_, 'YLim', yl);
-            if any(ylimInModel~=self.YLim) ,   
+            if ~isequal(ylimInModel,self.YLim) ,   
                 % Set this directly, instead of calling the YLim setter
                 % This means that we don't fire the DidSetYLim method.
                 % This should be OK, since updateYAxisLimits_ is only called in 
@@ -548,16 +1041,16 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.YLim_=ylimInModel;
                 set(self.AxesGH_,'YLim',ylimInModel);
             end
-        end        
+        end  % function        
 
-        function updateAreYLimitsLockedTightToData_(self)
-            % Update the axes limits to match those in the model
-            if isempty(self.Model) || ~isvalid(self.Model) ,
-                return
-            end
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-            set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
-        end        
+%         function updateAreYLimitsLockedTightToData_(self)
+%             % Update the axes limits to match those in the model
+%             if isempty(self.Model) || ~isvalid(self.Model) ,
+%                 return
+%             end
+%             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+%             set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
+%         end  % function        
         
         
 %         function updateAxisLimits(self)
@@ -628,6 +1121,13 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %         end  % function
 %     end
     
+    methods
+        function castOffAllAttachments(self)
+            self.unsubscribeFromAll() ;
+            self.deleteFigureGH() ;
+        end
+    end
+
     methods (Static=true)
         function result=getWidthInPixels(ax)
             % Gets the x span of the given axes, in pixels.
@@ -636,7 +1136,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             pos=get(ax,'Position');
             result=pos(3);
             set(ax,'Units',savedUnits);            
-        end
+        end  % function
         
         function r=ratioSubsampling(t,T_view,n_pels_view)
             % Computes r, a good ratio to use for subsampling data on time base t

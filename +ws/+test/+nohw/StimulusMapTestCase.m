@@ -29,7 +29,7 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function createDefaultMap(self)
-            stimLib = ws.stimulus.StimulusLibrary();            
+            stimLib = ws.stimulus.StimulusLibrary([]);  % no parent
             
             st1 = stimLib.addNewStimulus('SquarePulseTrain');
             st1.DCOffset = 0;

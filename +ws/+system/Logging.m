@@ -3,57 +3,57 @@ classdef Logging < ws.system.Subsystem
     
     properties (Dependent=true)
         FileLocation  % absolute path of data file directory
-        FileBaseName  % prefix for data file name to which trial index will be appended
+        FileBaseName  % prefix for data file name to which sweep index will be appended
         DoIncludeDate
         DoIncludeSessionIndex
         SessionIndex
-        NextTrialIndex  % the index of the next trial (one-based).  (This gets reset if you change the FileBaseName.)
+        NextSweepIndex  % the index of the next sweep (one-based).  (This gets reset if you change the FileBaseName.)
         IsOKToOverwrite  % logical, whether it's OK to overwrite data files without warning
     end
     
     properties (Dependent=true, SetAccess=immutable)
         AugmentedBaseName
-        NextTrialSetAbsoluteFileName
-        CurrentTrialSetAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current trial set file name
-        %CurrentTrialIndex
+        NextRunAbsoluteFileName
+        CurrentRunAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current run file name
+        %CurrentSweepIndex
     end
 
-    properties (Access = protected, Transient = true)
-        DateAsString_
-    end
-    
     properties (Access = protected)
         FileLocation_
         FileBaseName_
         DoIncludeDate_
         DoIncludeSessionIndex_
         SessionIndex_
-        NextTrialIndex_
+        NextSweepIndex_
         IsOKToOverwrite_
     end
-    
+
+    properties (Access = protected, Transient = true)
+        DateAsString_
+    end
+
     % These are all properties that are only used when acquisition is
-    % ongoing.  They are set in willPerformExperiment(), and are nulled in
-    % didPerformExperiment() and didAbortExperiment()
+    % ongoing.  They are set in startingRun(), and are nulled in
+    % completingRun() and abortingRun()
     properties (Access = protected, Transient=true)
-        CurrentTrialSetAbsoluteFileName_
+        CurrentRunAbsoluteFileName_
         CurrentDatasetOffset_
             % during acquisition, the index of the next "scan" to be written (one-based)
             % "scan" is an NI-ism meaning all the samples acquired for a
             % single time stamp
-        ExpectedTrialSize_  
-            % if all the acquired data for one trial were put into an array, this
+        ExpectedSweepSize_  
+            % if all the acquired data for one sweep were put into an array, this
             % would be the size of that array.  
             % I.e. [nScans nActiveChannels]        
-        WriteToTrialId_  % During the acquisition of a trial set, the current trial index being written to
+        WriteToSweepId_  % During the acquisition of a run, the current sweep index being written to
         ChunkSize_
-        FirstTrialIndex_  % index of the first trial in the ongoing trial set
-        DidCreateCurrentDataFile_  % whether the data file for the current trial set has been created
-        LastTrialIndexForWhichDatasetCreated_  
-          % For the current file/trialset, the trial index of the most-recently dataset in the data file.
+        FirstSweepIndex_  % index of the first sweep in the ongoing run
+        DidCreateCurrentDataFile_  % whether the data file for the current run has been created
+        LastSweepIndexForWhichDatasetCreated_  
+          % For the current file/sweepset, the sweep index of the most-recently dataset in the data file.
           % Empty if the no dataset has yet been created for the current file.
-        DidWriteSomeDataForThisTrial_        
-        %CurrentTrialIndex_
+        DidWriteSomeDataForThisSweep_        
+        %CurrentSweepIndex_
     end
 
     events
@@ -62,38 +62,37 @@ classdef Logging < ws.system.Subsystem
     
     methods
         function self = Logging(parent)
-            self.CanEnable=true;            
-            self.Parent=parent;
+            self@ws.system.Subsystem(parent) ;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
             self.DoIncludeSessionIndex_ = false ;
             self.SessionIndex_ = 1 ;
-            self.NextTrialIndex_ = 1 ; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
-            %self.FirstTrialIndexInNextFile_ = 1 ; % Number of trials acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            self.NextSweepIndex_ = 1 ; % Number of sweeps acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
+            %self.FirstSweepIndexInNextFile_ = 1 ; % Number of sweeps acquired since value was reset + 1 (reset occurs automatically on FileBaseName change).
             self.IsOKToOverwrite_ = false ;
-            self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-experiment
-        end
-        
-        function delete(self)
-            self.Parent=[];
+            self.DateAsString_ = datestr(now(),'yyyy-mm-dd') ;  % Determine this now, don't want it to change in mid-run
         end
         
         function set.FileLocation(self, newValue)
-            if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('FileLocation', newValue);
-                if exist(newValue,'dir') ,
-                    originalValue=self.FileLocation_;
-                    self.FileLocation_ = newValue;
-                    % If file name has changed, reset the trial index
-                    originalFullName=fullfile(originalValue,self.FileBaseName);
-                    newFullName=fullfile(newValue,self.FileBaseName);
-                    if ~isequal(originalFullName,newFullName) ,
-                        self.NextTrialIndex = 1;
+            if ws.utility.isASettableValue(newValue) ,
+                if ws.utility.isString(newValue) ,
+                    if exist(newValue,'dir') ,
+                        originalValue=self.FileLocation_;
+                        self.FileLocation_ = newValue;
+                        % If file name has changed, reset the sweep index
+                        originalFullName=fullfile(originalValue,self.FileBaseName);
+                        newFullName=fullfile(newValue,self.FileBaseName);
+                        if ~isequal(originalFullName,newFullName) ,
+                            self.NextSweepIndex = 1;
+                        end
                     end
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'FileLocation must be a string');                    
                 end
             end
-            %self.broadcast('DidSetFileLocation');
             self.broadcast('Update');            
         end
         
@@ -104,18 +103,22 @@ classdef Logging < ws.system.Subsystem
         function set.FileBaseName(self, newValue)
             %fprintf('Entered set.FileBaseName()\n');            
             if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('FileBaseName', newValue);
-                originalValue=self.FileBaseName_;
-                self.FileBaseName_ = newValue;
-                % If file name has changed, reset the trial index
-                originalFullName=fullfile(self.FileLocation,originalValue);
-                newFullName=fullfile(self.FileLocation,newValue);
-                if ~isequal(originalFullName,newFullName) ,
-                    %fprintf('About to reset NextTrialIndex...\n');
-                    self.NextTrialIndex = 1;
+                if ws.utility.isString(newValue) ,
+                    originalValue=self.FileBaseName_;
+                    self.FileBaseName_ = newValue;
+                    % If file name has changed, reset the sweep index
+                    originalFullName=fullfile(self.FileLocation,originalValue);
+                    newFullName=fullfile(self.FileLocation,newValue);
+                    if ~isequal(originalFullName,newFullName) ,
+                        %fprintf('About to reset NextSweepIndex...\n');
+                        self.NextSweepIndex = 1;
+                    end
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'FileBaseName must be a string');                    
                 end
             end
-            %self.broadcast('DidSetFileBaseName');            
             self.broadcast('Update');            
         end
         
@@ -123,31 +126,33 @@ classdef Logging < ws.system.Subsystem
             result=self.FileBaseName_;
         end
         
-        function set.NextTrialIndex(self, newValue)
-            %fprintf('set.NextTrialIndex\n');
-            %dbstack
+        function set.NextSweepIndex(self, newValue)
             if ws.utility.isASettableValue(newValue), 
-                self.validatePropArg('NextTrialIndex', newValue);
-                self.NextTrialIndex_ = newValue;
-                %self.FirstTrialIndexInNextFile_ = newValue_ ;
+                if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
+                    newValue=double(newValue) ;
+                    self.NextSweepIndex_ = newValue;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'NextSweepIndex must be a (scalar) nonnegative integer');
+                end
             end
-            %self.broadcast('DidSetNextTrialIndex');            
-            self.broadcast('Update');            
         end
         
-        function result=get.NextTrialIndex(self)
-            result=self.NextTrialIndex_;
+        function result=get.NextSweepIndex(self)
+            result=self.NextSweepIndex_;
         end
 
-%         function result=get.CurrentTrialIndex(self)
-%             result=self.CurrentTrialIndex_;
+%         function result=get.CurrentSweepIndex(self)
+%             result=self.CurrentSweepIndex_;
 %         end
 
         function set.IsOKToOverwrite(self, newValue)
             if ws.utility.isASettableValue(newValue), 
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
                 end
@@ -164,6 +169,7 @@ classdef Logging < ws.system.Subsystem
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
                     self.DoIncludeDate_ = logical(newValue);
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'DoIncludeDate must be a logical scalar, or convertable to one');                  
                 end
@@ -182,10 +188,11 @@ classdef Logging < ws.system.Subsystem
                     newValueForReals = logical(newValue) ;
                     self.DoIncludeSessionIndex_ = newValueForReals ;
                     if newValueForReals && ~originalValue ,
-                        self.NextTrialIndex_ = 1 ;
-                        %self.FirstTrialIndexInNextFile_ = 1 ;
+                        self.NextSweepIndex_ = 1 ;
+                        %self.FirstSweepIndexInNextFile_ = 1 ;
                     end
                 else
+                    self.broadcast('UpdateDoIncludeSessionIndex');
                     error('most:Model:invalidPropVal', ...
                           'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
                 end
@@ -204,14 +211,16 @@ classdef Logging < ws.system.Subsystem
                         originalValue = self.SessionIndex_ ;
                         self.SessionIndex_ = newValue;
                         if newValue ~= originalValue ,
-                            self.NextTrialIndex_ = 1 ;
-                            %self.FirstTrialIndexInNextFile_ = 1 ;
+                            self.NextSweepIndex_ = 1 ;
+                            %self.FirstSweepIndexInNextFile_ = 1 ;
                         end
                     else
+                        self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'SessionIndex must be an integer greater than or equal to one');
                     end
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'Can''t set SessionIndex when DoIncludeSessionIndex is false');
                     
@@ -232,60 +241,49 @@ classdef Logging < ws.system.Subsystem
             result = self.augmentedBaseName_();
         end  % function
         
-        function value=get.NextTrialSetAbsoluteFileName(self)
+        function value=get.NextRunAbsoluteFileName(self)
             wavesurferModel=self.Parent;
-            firstTrialIndex = self.NextTrialIndex ;
-            numberOfTrials = wavesurferModel.ExperimentTrialCount ;
-            fileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfTrials);
+            firstSweepIndex = self.NextSweepIndex ;
+            numberOfSweeps = wavesurferModel.NSweepsPerRun ;
+            fileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfSweeps);
             value = fullfile(self.FileLocation, fileName);
         end  % function
         
-        function value=get.CurrentTrialSetAbsoluteFileName(self)
-            value = self.CurrentTrialSetAbsoluteFileName_ ;
+        function value=get.CurrentRunAbsoluteFileName(self)
+            value = self.CurrentRunAbsoluteFileName_ ;
         end  % function
         
-        function willPerformExperiment(self, wavesurferModel, desiredApplicationState)
+        function startingRun(self)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
+            
+            wavesurferModel = self.Parent ;
             
             % Note that we have not yet created the current data file
             self.DidCreateCurrentDataFile_ = false ;
             
             % Set the chunk size for writing data to disk
-            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive);
-            switch desiredApplicationState ,
-                case ws.ApplicationState.AcquiringTrialBased ,
-                    self.ExpectedTrialSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
-                    if any(isinf(self.ExpectedTrialSize_))
-                        self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-                    else
-                        self.ChunkSize_ = self.ExpectedTrialSize_;
-                    end
-%                     if wavesurferModel.ExperimentTrialCount == 1 ,
-%                         trueLogFileName = sprintf('%s_%04d', self.FileBaseName, self.NextTrialIndex);
-%                     else
-%                         trueLogFileName = sprintf('%s_%04d-%04d', ...
-%                                                   self.FileBaseName, ...
-%                                                   self.NextTrialIndex, ...
-%                                                   self.NextTrialIndex + wavesurferModel.ExperimentTrialCount - 1);
-%                     end
-                case ws.ApplicationState.AcquiringContinuously ,
-                    self.ExpectedTrialSize_ = [Inf nActiveAnalogChannels];
+            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
+            if wavesurferModel.AreSweepsFiniteDuration ,
+                self.ExpectedSweepSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+                if any(isinf(self.ExpectedSweepSize_))
                     self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-%                     trueLogFileName = sprintf('%s-continuous_%s', self.FileBaseName, strrep(strrep(datestr(now), ' ', '_'), ':', '-'));
-                otherwise
-                    error('wavesurfer:saveddatasystem:invalidmode', ...
-                          sprintf('%s is not a supported mode for data logging.', char(desiredApplicationState))); %#ok<SPERR>
+                else
+                    self.ChunkSize_ = self.ExpectedSweepSize_;
+                end
+            else
+                self.ExpectedSweepSize_ = [Inf nActiveAnalogChannels];
+                self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
             end
             
             % Determine the absolute file names
-            %self.CurrentTrialSetAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            self.CurrentTrialSetAbsoluteFileName_ = self.NextTrialSetAbsoluteFileName ;
-            %self.CurrentTrialIndex_ = self.NextTrialIndex ;
+            %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
+            self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
+            %self.CurrentSweepIndex_ = self.NextSweepIndex ;
             
-            % Store the first trial index for the trial set 
-            self.FirstTrialIndex_ = self.NextTrialIndex ;
+            % Store the first sweep index for the run 
+            self.FirstSweepIndex_ = self.NextSweepIndex ;
             
             % If the target dir doesn't exist, create it
             if ~exist(self.FileLocation, 'dir')
@@ -297,34 +295,34 @@ classdef Logging < ws.system.Subsystem
                 % don't need to check anything
                 % But need to delete pre-existing files, otherwise h5create
                 % will just add datasets to a pre-existing file.
-                if exist(self.CurrentTrialSetAbsoluteFileName_, 'file') == 2 ,
-                    ws.utility.deleteFileWithoutWarning(self.CurrentTrialSetAbsoluteFileName_);
+                if exist(self.CurrentRunAbsoluteFileName_, 'file') == 2 ,
+                    ws.utility.deleteFileWithoutWarning(self.CurrentRunAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
 %                 end
             else
                 % Check if the log file already exists, and error if so
-                if exist(self.CurrentTrialSetAbsoluteFileName_, 'file') == 2 ,
+                if exist(self.CurrentRunAbsoluteFileName_, 'file') == 2 ,
                     error('wavesurfer:logFileAlreadyExists', ...
-                          'The data file %s already exists', self.CurrentTrialSetAbsoluteFileName_);
+                          'The data file %s already exists', self.CurrentRunAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
 %                     error('wavesurfer:sidecarFileAlreadyExists', ...
-%                           'The sidecar file %s already exists', self.CurrentTrialSetAbsoluteFileName_);
+%                           'The sidecar file %s already exists', self.CurrentRunAbsoluteFileName_);
 %                 end
             end
 
             % Extract all the "headerable" info in the WS model into a
             % structure
-            headerStruct = wavesurferModel.encodeForFileType('header');
+            headerStruct = wavesurferModel.encodeForHeader();
             
             % Put the header into into the log file header
             %numericPrecision=4;
             %stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
             doCreateFile=true;
-            %ws.most.fileutil.h5savestr(self.CurrentTrialSetAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-            ws.most.fileutil.h5save(self.CurrentTrialSetAbsoluteFileName_, '/header', headerStruct, doCreateFile);
+            %ws.h5.h5savestr(self.CurrentRunAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.h5.h5save(self.CurrentRunAbsoluteFileName_, '/header', headerStruct, doCreateFile);
             self.DidCreateCurrentDataFile_ = true ;
             
 %             % Save the "header" information to a sidecar file instead.
@@ -332,21 +330,21 @@ classdef Logging < ws.system.Subsystem
 %             % in with the data sensu strictu.
 %             save('-mat',sidecarFileNameAbsolute,'-struct','headerStruct');
             
-            % Set the write-to trial ID so it's correct when data needs to
+            % Set the write-to sweep ID so it's correct when data needs to
             % be written
-            self.WriteToTrialId_ = self.NextTrialIndex;
+            self.WriteToSweepId_ = self.NextSweepIndex;
             
             % Add an HDF "dataset" for each active AI channel, for each
-            % trial.
-            % TODO: Try moving the dataset creation for each trial to
-            % willPerformTrial() --- This is the cause of slowness at trial
+            % sweep.
+            % TODO: Try moving the dataset creation for each sweep to
+            % startingSweep() --- This is the cause of slowness at sweep
             % set start for Justin Little, possibly others.
 %             if ~isempty(wavesurferModel.Acquisition) ,
-%                 for indexOfTrialWithinSet = 1:wavesurferModel.ExperimentTrialCount ,
-%                     h5create(self.CurrentTrialSetAbsoluteFileName_, ...
-%                              sprintf('/trial_%04d', ...
-%                                      self.WriteToTrialId_ + (indexOfTrialWithinSet-1)), ...
-%                              self.ExpectedTrialSize_, ...
+%                 for indexOfSweepWithinSet = 1:wavesurferModel.NSweepsPerRun ,
+%                     h5create(self.CurrentRunAbsoluteFileName_, ...
+%                              sprintf('/sweep_%04d', ...
+%                                      self.WriteToSweepId_ + (indexOfSweepWithinSet-1)), ...
+%                              self.ExpectedSweepSize_, ...
 %                              'ChunkSize', chunkSize, ...
 %                              'DataType','int16');
 %                 end
@@ -356,25 +354,25 @@ classdef Logging < ws.system.Subsystem
             % index in the dataset
             self.CurrentDatasetOffset_ = 1;
             
-            % This should be empty until we create a dataset for a trial
-            self.LastTrialIndexForWhichDatasetCreated_ = [] ;
+            % This should be empty until we create a dataset for a sweep
+            self.LastSweepIndexForWhichDatasetCreated_ = [] ;
             
             % For tidyness
-            self.DidWriteSomeDataForThisTrial_ = [] ;
+            self.DidWriteSomeDataForThisSweep_ = [] ;
         end
         
-        function willPerformTrial(self, wavesurferModel) %#ok<INUSD>
+        function startingSweep(self)
             %profile resume
-            thisTrialIndex = self.NextTrialIndex ;
-            timestampDatasetName = sprintf('/trial_%04d/timestamp',thisTrialIndex) ;
-            h5create(self.CurrentTrialSetAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
-            scansDatasetName = sprintf('/trial_%04d/analogScans',thisTrialIndex) ;
-            h5create(self.CurrentTrialSetAbsoluteFileName_, ...
+            thisSweepIndex = self.NextSweepIndex ;
+            timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
+            h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
+            scansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
+            h5create(self.CurrentRunAbsoluteFileName_, ...
                      scansDatasetName, ...
-                     self.ExpectedTrialSize_, ...
+                     self.ExpectedSweepSize_, ...
                      'ChunkSize', self.ChunkSize_, ...
                      'DataType','int16');
-            scansDatasetName = sprintf('/trial_%04d/digitalScans',thisTrialIndex) ;
+            scansDatasetName = sprintf('/sweep_%04d/digitalScans',thisSweepIndex) ;
             % TODO: Probably need to change to number of active digital channels
             % below
             NActiveDigitalChannels = sum(self.Parent.Acquisition.IsDigitalChannelActive);
@@ -386,78 +384,91 @@ classdef Logging < ws.system.Subsystem
                 dataType = 'uint32';
             end
             if NActiveDigitalChannels>0 ,
-                h5create(self.CurrentTrialSetAbsoluteFileName_, ...
+                h5create(self.CurrentRunAbsoluteFileName_, ...
                          scansDatasetName, ...
-                         [self.ExpectedTrialSize_(1) 1], ...
+                         [self.ExpectedSweepSize_(1) 1], ...
                          'ChunkSize', [self.ChunkSize_(1) 1], ...
                          'DataType',dataType);
             end
-            self.LastTrialIndexForWhichDatasetCreated_ =  thisTrialIndex;                     
-            self.DidWriteSomeDataForThisTrial_ = false ;
+            self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;                     
+            self.DidWriteSomeDataForThisSweep_ = false ;
             %profile off
         end
         
-        function didPerformTrial(self, wavesurferModel) %#ok<INUSD>
-            %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
-                %self.CurrentTrialIndex_ = self.CurrentTrialIndex_ + 1 ;
-                self.NextTrialIndex = self.NextTrialIndex + 1;
-            %end
+        function completingSweep(self)
+            self.NextSweepIndex = self.NextSweepIndex + 1;
         end
         
-        function didAbortTrial(self, wavesurferModel) %#ok<INUSD>
-            %if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
-                if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
-                    if isempty(self.FirstTrialIndex_) ,
-                        % This probably means there was some sort of error
-                        % before the trial even started.  So just leave
-                        % NextTrialIndex alone.
-                    else
-                        % In this case, no datasets were created, so put the
-                        % trial index to the FirstTrialIndex for the set
-                        self.NextTrialIndex = self.FirstTrialIndex_ ;
-                    end
+        function stoppingSweep(self)
+            self.stoppingOrAbortingSweep_() ;
+        end
+        
+        function abortingSweep(self)
+            self.stoppingOrAbortingSweep_() ;
+        end
+        
+        function completingRun(self)
+            self.nullOutTransients_();
+        end
+        
+        function stoppingRun(self)
+            self.stoppingOrAbortingRun_();
+        end
+        
+        function abortingRun(self)
+            self.stoppingOrAbortingRun_();
+        end        
+    end  % public methods block
+    
+    methods (Access=protected)
+        function stoppingOrAbortingSweep_(self)
+            if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
+                if isempty(self.FirstSweepIndex_) ,
+                    % This probably means there was some sort of error
+                    % before the sweep even started.  So just leave
+                    % NextSweepIndex alone.
                 else
-                    self.NextTrialIndex = self.LastTrialIndexForWhichDatasetCreated_ + 1;
+                    % In this case, no datasets were created, so put the
+                    % sweep index to the FirstSweepIndex for the set
+                    self.NextSweepIndex = self.FirstSweepIndex_ ;
                 end
-            %end
+            else
+                self.NextSweepIndex = self.LastSweepIndexForWhichDatasetCreated_ + 1;
+            end
         end
         
-        function didPerformExperiment(self, ~)
-            self.didPerformOrAbortExperiment_();
-        end
-        
-        function didAbortExperiment(self, wavesurferModel) %#ok<INUSD>
-            %fprintf('Logging::didAbortExperiment()\n');
+        function stoppingOrAbortingRun_(self)
+            %fprintf('Logging::abortingRun()\n');
         
             %dbstop if caught
             %
-            % Want to rename the data file to reflect the actual number of trials acquired
+            % Want to rename the data file to reflect the actual number of sweeps acquired
             %
             exception = [] ;
             if self.DidCreateCurrentDataFile_ ,
                 % A data file was created.  Might need to rename it, or delete it.
-                originalAbsoluteLogFileName = self.CurrentTrialSetAbsoluteFileName_ ;
-                firstTrialIndex = self.FirstTrialIndex_ ;
-                if isempty(self.LastTrialIndexForWhichDatasetCreated_) ,
-                    % This means no trials were actually added to the log file.
-                    numberOfPartialTrialsLogged = 0 ;
+                originalAbsoluteLogFileName = self.CurrentRunAbsoluteFileName_ ;
+                firstSweepIndex = self.FirstSweepIndex_ ;
+                if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
+                    % This means no sweeps were actually added to the log file.
+                    numberOfPartialSweepsLogged = 0 ;
                 else                    
-                    numberOfPartialTrialsLogged = self.LastTrialIndexForWhichDatasetCreated_ - firstTrialIndex + 1 ;  % includes complete and partial trials
+                    numberOfPartialSweepsLogged = self.LastSweepIndexForWhichDatasetCreated_ - firstSweepIndex + 1 ;  % includes complete and partial sweeps
                 end
-                if numberOfPartialTrialsLogged == 0 ,
-                    % If no trials logged, and we actually created the data file for the current trial set, delete the file
+                if numberOfPartialSweepsLogged == 0 ,
+                    % If no sweeps logged, and we actually created the data file for the current run, delete the file
                     if self.DidCreateCurrentDataFile_ ,
                         ws.utility.deleteFileWithoutWarning(originalAbsoluteLogFileName);
                     else
                         % nothing to do
                     end
                 else    
-                    % We logged some trials, but maybe not the number number requested.  Check for this, renaming the
+                    % We logged some sweeps, but maybe not the number number requested.  Check for this, renaming the
                     % data file if needed.
-                    newLogFileName = self.trialSetFileNameFromNumbers_(firstTrialIndex,numberOfPartialTrialsLogged) ;
+                    newLogFileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfPartialSweepsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
                     if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
-                        % This might happen, e.g. if the number of trials is inf
+                        % This might happen, e.g. if the number of sweeps is inf
                         % do nothing.
                     else
                         % Check for filename collisions, if that's what user wants
@@ -483,7 +494,7 @@ classdef Logging < ws.system.Subsystem
             end
 
             % Now do things common to performance and abortion
-            self.didPerformOrAbortExperiment_();
+            self.nullOutTransients_();
 
             % Now throw that exception, if there was one
             %dbclear all
@@ -492,35 +503,26 @@ classdef Logging < ws.system.Subsystem
             else
                 throw(exception);
             end            
-         end  % function
+        end  % function
             
-    end
-    
-    methods (Access=protected)
-%         function didPerformOrAbortTrial_(self, wavesurferModel)
-%             if wavesurferModel.State == ws.ApplicationState.AcquiringTrialBased ,
-%                 self.NextTrialIndex = self.NextTrialIndex + 1;
-%             end
-%         end
-        
-        function didPerformOrAbortExperiment_(self)
+        function nullOutTransients_(self)
             % null-out all the transient things that are only used during
-            % the trial set
-            self.CurrentTrialSetAbsoluteFileName_ = [];
-            self.FirstTrialIndex_ = [] ;
+            % the run
+            self.CurrentRunAbsoluteFileName_ = [];
+            self.FirstSweepIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
-            self.ExpectedTrialSize_ = [];
-            self.WriteToTrialId_ = [];
+            self.ExpectedSweepSize_ = [];
+            self.WriteToSweepId_ = [];
             self.ChunkSize_ = [];
             self.DidCreateCurrentDataFile_ = [] ;
-            self.LastTrialIndexForWhichDatasetCreated_ = [] ;
-            self.DidWriteSomeDataForThisTrial_ = [] ;
-            %self.CurrentTrialIndex_ = [];
-        end
+            self.LastSweepIndexForWhichDatasetCreated_ = [] ;
+            self.DidWriteSomeDataForThisSweep_ = [] ;
+            %self.CurrentSweepIndex_ = [];
+        end  % function
     end
 
     methods
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL>
             %ticId=tic();
             
 %             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
@@ -530,23 +532,23 @@ classdef Logging < ws.system.Subsystem
             %dataSingle=single(scaledData);
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
-            if ~self.DidWriteSomeDataForThisTrial_ ,
-                timestampDatasetName = sprintf('/trial_%04d/timestamp',self.WriteToTrialId_) ;
-                h5write(self.CurrentTrialSetAbsoluteFileName_, timestampDatasetName, timeSinceExperimentStartAtStartOfData);
-                self.DidWriteSomeDataForThisTrial_ = true ;  % will be true momentarily...
+            if ~self.DidWriteSomeDataForThisSweep_ ,
+                timestampDatasetName = sprintf('/sweep_%04d/timestamp',self.WriteToSweepId_) ;
+                h5write(self.CurrentRunAbsoluteFileName_, timestampDatasetName, timeSinceRunStartAtStartOfData);
+                self.DidWriteSomeDataForThisSweep_ = true ;  % will be true momentarily...
             end
             
             if ~isempty(self.FileBaseName) ,
-                h5write(self.CurrentTrialSetAbsoluteFileName_, ...
-                        sprintf('/trial_%04d/analogScans', ...
-                                self.WriteToTrialId_), ...
+                h5write(self.CurrentRunAbsoluteFileName_, ...
+                        sprintf('/sweep_%04d/analogScans', ...
+                                self.WriteToSweepId_), ...
                                 rawAnalogData, ...
                                 [self.CurrentDatasetOffset_ 1], ...
                                 size(rawAnalogData));
                 if ~isempty(rawDigitalData) ,
-                    h5write(self.CurrentTrialSetAbsoluteFileName_, ...
-                            sprintf('/trial_%04d/digitalScans', ...
-                                    self.WriteToTrialId_), ...
+                    h5write(self.CurrentRunAbsoluteFileName_, ...
+                            sprintf('/sweep_%04d/digitalScans', ...
+                                    self.WriteToSweepId_), ...
                             rawDigitalData, ...
                             [self.CurrentDatasetOffset_ 1], ...
                             size(rawDigitalData));
@@ -555,9 +557,9 @@ classdef Logging < ws.system.Subsystem
             
             self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
-            if self.CurrentDatasetOffset_ > self.ExpectedTrialSize_(1) ,
+            if self.CurrentDatasetOffset_ > self.ExpectedSweepSize_(1) ,
                 self.CurrentDatasetOffset_ = 1;
-                self.WriteToTrialId_ = self.WriteToTrialId_ + 1;
+                self.WriteToSweepId_ = self.WriteToSweepId_ + 1;
             end
             %T=toc(ticId);
             %fprintf('Time in Logging.dataAvailable(): %0.3f s\n',T);
@@ -581,43 +583,43 @@ classdef Logging < ws.system.Subsystem
             end
         end  % function        
         
-        function fileName = trialSetFileNameFromNumbers_(self,firstTrialIndex,numberOfTrials)
+        function fileName = sweepSetFileNameFromNumbers_(self,firstSweepIndex,numberOfSweeps)
             augmentedBaseName = self.augmentedBaseName_() ;
             % This is a "leaf" file name, not an absolute one
-            if numberOfTrials == 1 ,
-                fileName = sprintf('%s_%04d.h5', augmentedBaseName, firstTrialIndex);
+            if numberOfSweeps == 1 ,
+                fileName = sprintf('%s_%04d.h5', augmentedBaseName, firstSweepIndex);
             else
-                if isfinite(numberOfTrials) ,
-                    lastTrialIndex = firstTrialIndex + numberOfTrials - 1 ;
+                if isfinite(numberOfSweeps) ,
+                    lastSweepIndex = firstSweepIndex + numberOfSweeps - 1 ;
                     fileName = sprintf('%s_%04d-%04d.h5', ...
                                        augmentedBaseName, ...
-                                       firstTrialIndex, ...
-                                       lastTrialIndex);
+                                       firstSweepIndex, ...
+                                       lastSweepIndex);
                 else
                     fileName = sprintf('%s_%04d-.h5', ...
                                        augmentedBaseName, ...
-                                       firstTrialIndex);
+                                       firstSweepIndex);
                 end
             end            
         end  % function        
     end  % static methods block
     
     methods (Access = protected)
-        function defineDefaultPropertyAttributes(self)
-            defineDefaultPropertyAttributes@ws.system.Subsystem(self);
-            self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
-            self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
-            self.setPropertyAttributeFeatures('NextTrialIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-        end
+%         function defineDefaultPropertyAttributes(self)
+%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
+%             self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
+%             self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
+%             self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
+%         end
         
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
 %             % self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'*'});  
 %             %self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'});
 %             %self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'usr'});            
 %             self.setPropertyTags('FileLocation', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('FileBaseName', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('NextTrialIndex', 'IncludeInFileTypes', {'cfg'});
+%             self.setPropertyTags('NextSweepIndex', 'IncludeInFileTypes', {'cfg'});
 %         end
         
 %         function zprvFileLocationWillChange(self, ~, ~)
@@ -631,7 +633,7 @@ classdef Logging < ws.system.Subsystem
 %         function zprvFileLocationOrBaseNameDidChange(self, ~, ~)
 %             % MATLAB loves to fire set events when the value does not actually change.
 %             if ~strcmp(fullfile(self.CachedLoggingFileNameInfo_{1}, self.CachedLoggingFileNameInfo_{2}), fullfile(self.FileLocation, self.FileBaseName))
-%                 self.NextTrialIndex = 1;
+%                 self.NextSweepIndex = 1;
 %             end
 %         end
     end
@@ -644,40 +646,27 @@ classdef Logging < ws.system.Subsystem
 %             % blank slate, so that we're sure no aspects of the old
 %             % protocol get carried over when loading a new .cfg file.
 %             
-%             self.Enabled=true;
+%             self.IsEnabled=true;
 %             self.FileBaseName='untitled';
 %             self.FileLocation='C:\Data';
-%             self.NextTrialIndex=1;
+%             self.NextSweepIndex=1;
 %         end  % function
 %     end % methods
 
     methods (Access=protected)        
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Logging.propertyAttributes();
-        
-        mdlHeaderExcludeProps = {};
-    end
-    
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
-            s.FileLocation = struct('Classes', 'string');
-            s.FileBaseName = struct('Classes', 'string');
-            s.NextTrialIndex = struct('Attributes', {{'scalar', 'finite', 'integer', '>=', 1}});
-            s.IsOKToOverwrite = struct('Classes','binarylogical', 'Attributes', {{'scalar'}} );            
-        end  % function
-    end  % class methods block
-    
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end        
     
 end
