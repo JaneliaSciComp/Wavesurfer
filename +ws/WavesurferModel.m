@@ -163,7 +163,7 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes
-                system('start matlab -nojvm -minimize -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
+                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
                 system('start matlab -nojvm -minimize -r "refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
