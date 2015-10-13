@@ -365,6 +365,7 @@ classdef WavesurferModel < ws.Model
             % happen after stopping a run and then starting another, where some old messages from the last run are
             % still in the queue
             if self.IsPerformingSweep_ ,
+                %fprintf('About to call samplesAcquired_()\n') ;
                 self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             end
         end  % function
@@ -953,7 +954,7 @@ classdef WavesurferModel < ws.Model
             self.NScansPerUpdate_ = self.DesiredNScansPerUpdate_ ;  % at start, will be modified depending on how long stuff takes
             
             % Set up the samples buffer
-            bufferSizeInScans = 10*self.DesiredNScansPerUpdate_ ;
+            bufferSizeInScans = 30*self.DesiredNScansPerUpdate_ ;
             self.SamplesBuffer_ = ws.SamplesBuffer(self.Acquisition.NActiveAnalogChannels, ...
                                                    self.Acquisition.NActiveDigitalChannels, ...
                                                    bufferSizeInScans) ;
@@ -1287,11 +1288,15 @@ classdef WavesurferModel < ws.Model
             % Check that we didn't miss any data
             if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
                 nScansMissed = scanIndex - self.NScansAcquiredSoFarThisSweep_ ;
+                %fprintf('About to error in samplesAcquired_()\n');
+                %keyboard
                 error('We apparently missed %d scans: the index of the first scan in this acquire is %d, but we''ve only seen %d scans.', ...
                       nScansMissed, ...
                       scanIndex, ...
                       self.NScansAcquiredSoFarThisSweep_ );
             elseif scanIndex<self.NScansAcquiredSoFarThisSweep_ ,
+                %fprintf('About to error in samplesAcquired_()\n');
+                %keyboard
                 error('Weird.  The data timestamp is earlier than expected.  Timestamp: %d, expected: %d.',scanIndex,self.NScansAcquiredSoFarThisSweep_);
             else
                 % All is well, so just update self.NScansAcquiredSoFarThisSweep_
@@ -1301,18 +1306,25 @@ classdef WavesurferModel < ws.Model
             % Add the new data to the storage buffer
             self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             
-            if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
+            nScansInBuffer = self.SamplesBuffer_.nScansInBuffer() ;
+            nScansPerUpdate = self.NScansPerUpdate_ ;
+            %fprintf('nScansInBuffer, nScansPerUpdate: %10d, %10d\n',nScansInBuffer,nScansPerUpdate);
+            if nScansInBuffer >= nScansPerUpdate ,
                 %profile resume
                 ticId = tic() ;
                 self.dataAvailable_() ;
                 durationOfDataAvailableCall = toc(ticId) ;
                 % Update NScansPerUpdate to make sure we don't fall behind,
-                % but must update at least 1/sec
+                % but must update no slower than 10x slower than desired.
+                % (The buffer size is set to 100x
+                % self.DesiredNScansPerUpdate_, and it's important that the
+                % buffer be larger than the largest possible
+                % nScansPerUpdate)
                 fs = self.Acquisition.SampleRate ;
-                nScansPerUpdate = min(round(fs), ...
-                                      max(2*round(durationOfDataAvailableCall*fs), ...
-                                          self.DesiredNScansPerUpdate_ ) ) ;
-                self.NScansPerUpdate_= nScansPerUpdate ;
+                nScansPerUpdateNew = min(10*self.DesiredNScansPerUpdate_ , ...
+                                         max(2*round(durationOfDataAvailableCall*fs), ...
+                                             self.DesiredNScansPerUpdate_ ) ) ;                                      
+                self.NScansPerUpdate_= nScansPerUpdateNew ;
                 %profile off
             end
         end
