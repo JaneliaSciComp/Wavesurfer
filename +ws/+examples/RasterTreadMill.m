@@ -42,22 +42,22 @@ classdef RasterTreadMill < ws.UserClass
     
     methods
         
-        function self = RasterTreadMill(wsModel)
+        function self = RasterTreadMill(wsModel) %#ok<INUSD>
         end
         
-        function startingSweep(self,wsModel,eventName)
+        function startingSweep(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function completingSweep(self,wsModel,eventName)
+        function completingSweep(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function stoppingSweep(self,wsModel,eventName)
+        function stoppingSweep(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function abortingSweep(self,wsModel,eventName)
+        function abortingSweep(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function startingRun(self,wsModel,eventName)
+        function startingRun(self,wsModel,eventName) %#ok<INUSD>
             self.BinWidth = self.TreadMillLength / self.NBins;
             self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
             self.SampleRate = wsModel.Acquisition.SampleRate;
@@ -109,27 +109,27 @@ classdef RasterTreadMill < ws.UserClass
             self.AllBinSubthresholds=cell(1,self.NBins);
         end
         
-        function completingRun(self,wsModel,eventName)
+        function completingRun(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function stoppingRun(self,wsModel,eventName)
+        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function abortingRun(self,wsModel,eventName)
+        function abortingRun(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function dataAvailable(self,wsModel,eventName)
+        function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
 
             % get data
             analogData = wsModel.Acquisition.getLatestAnalogData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData();
 
-            % output TTL pulse
-            if median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold
-                wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 1;
-            else
-                wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 0;
-            end
+%             % output TTL pulse
+%             if median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold
+%                 wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 1;
+%             else
+%                 wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 0;
+%             end
 
             % has a lap been completed in current data?
             boundary = find(bitget(digitalData,self.LEDChannel)==0, 1);
@@ -141,7 +141,7 @@ classdef RasterTreadMill < ws.UserClass
             ticks = find(diff(analogData(:,self.ElectrodeChannel)>self.SpikeThreshold)==1);
             integratedVelocity = cumsum(analogData(:,self.VelocityChannel)*self.VelocityScale/self.SampleRate);
             self.RasterLine = [self.RasterLine; ...
-                    self.InitialPosition+integratedVelocity(find(ticks<boundary))];
+                    self.InitialPosition+integratedVelocity(ticks<boundary)];
             self.BinDwellTimes = self.BinDwellTimes + hist(self.InitialPosition+integratedVelocity, self.BinCenters)./self.SampleRate;
             for i=1:length(self.BinCenters)
               self.BinVelocities{i} = [self.BinVelocities{i}; ...
@@ -176,8 +176,8 @@ classdef RasterTreadMill < ws.UserClass
                 meanVelocities = cellfun(@(x) mean(x),self.BinVelocities);
                 plot(self.VelocityAxes,self.BinCenters,meanVelocities,'k.-');
                 uistack(self.VelocityAverageLine,'top');
-                axis(self.VelocityAxes);
-                axis(self.VelocityAxes, [0 self.TreadMillLength 0 max([ans(4) allMeanVelocities meanVelocities])+eps]);
+                lim = axis(self.VelocityAxes);
+                axis(self.VelocityAxes, [0 self.TreadMillLength 0 max([lim(4) allMeanVelocities meanVelocities])+eps]);
 
                 self.AllBinDwellTimes = self.AllBinDwellTimes + self.BinDwellTimes;
                 set(self.SpikeRateAverageLine, 'ydata', allNSpikesData./self.AllBinDwellTimes);
@@ -185,8 +185,8 @@ classdef RasterTreadMill < ws.UserClass
                 arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(spikeRateLines,self.SpikeRateAverageLine));
                 plot(self.SpikeRateAxes,self.BinCenters,nSpikesData./self.BinDwellTimes,'k.-');
                 uistack(self.SpikeRateAverageLine,'top');
-                axis(self.SpikeRateAxes);
-                axis(self.SpikeRateAxes, [0 self.TreadMillLength 0 max([ans(4) allNSpikesData./self.AllBinDwellTimes nSpikesData./self.BinDwellTimes])+eps]);
+                lim = axis(self.SpikeRateAxes);
+                axis(self.SpikeRateAxes, [0 self.TreadMillLength 0 max([lim(4) allNSpikesData./self.AllBinDwellTimes nSpikesData./self.BinDwellTimes])+eps]);
 
                 for i=1:length(self.BinCenters)
                   self.AllBinSubthresholds{i} = [self.AllBinSubthresholds{i}; self.BinSubthresholds{i}];
@@ -198,20 +198,40 @@ classdef RasterTreadMill < ws.UserClass
                 meanSubthresholds = cellfun(@(x) median(x),self.BinSubthresholds);
                 plot(self.SubthresholdAxes,self.BinCenters,meanSubthresholds,'k.-');
                 uistack(self.SubthresholdAverageLine,'top');
-                axis(self.SubthresholdAxes);
+                lim = axis(self.SubthresholdAxes) ;
                 axis(self.SubthresholdAxes, [0 self.TreadMillLength ...
-                    min([ans(4) allMeanSubthresholds meanSubthresholds]) max([ans(4) allMeanSubthresholds meanSubthresholds])+eps]);
+                    min([lim(4) allMeanSubthresholds meanSubthresholds]) max([lim(4) allMeanSubthresholds meanSubthresholds])+eps]);
 
                 self.Lap = self.Lap + 1;
                 self.InitialPosition = -integratedVelocity(boundary);
                 self.BinDwellTimes=zeros(1,self.NBins);
                 self.BinVelocities=cell(1,self.NBins);
                 self.BinSubthresholds=cell(1,self.NBins);
-                self.RasterLine = self.InitialPosition + integratedVelocity(find(ticks>=boundary));
+                self.RasterLine = self.InitialPosition + integratedVelocity(ticks>=boundary);
             end
 
             self.InitialPosition = self.InitialPosition + integratedVelocity(end);
         end
+        
+        % this one is called in the looper process
+        function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSL,INUSD>
+            % output TTL pulse
+            newValue = median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold ;
+            looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newValue) ;
+        end
+        
+        % these are are called in the refiller process
+        function startingEpisode(self,refiller,eventName) %#ok<INUSD>
+        end
+        
+        function completingEpisode(self,refiller,eventName) %#ok<INUSD>
+        end
+        
+        function stoppingEpisode(self,refiller,eventName)     %#ok<INUSD>
+        end
+        
+        function abortingEpisode(self,refiller,eventName) %#ok<INUSD>
+        end        
         
     end  % methods
     
