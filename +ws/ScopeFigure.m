@@ -996,7 +996,7 @@ classdef ScopeFigure < ws.MCOSFigure
             if self.Model.NChannels==0 ,
                 ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10);
             else
-                %firstChannelName=self.Model.ChannelNames{1};
+                firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
                 units=self.Model.YUnits;
@@ -1005,7 +1005,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 else
                     unitsString = units ;
                 end
-                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color,'FontSize',10);
+                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10);
             end
         end  % function
         
