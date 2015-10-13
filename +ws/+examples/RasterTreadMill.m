@@ -3,14 +3,16 @@ classdef RasterTreadMill < ws.UserClass
     % public parameters
     properties
         SpikeThreshold = -15;  % mV
-        LaserOnThreshold = -50;  %mV
+        LaserOnThreshold = -50;  % mV
         NBins = 20;
         TreadMillLength = 185;  % cm
         ElectrodeChannel = 1;
         VelocityChannel = 2;
         LEDChannel = 1;
         LaserChannel = 2;
-        VelocityScale = 10;  % cm/s/V;  from steve: 100 mm/sec per volt
+        %VelocityScale = 1;  % cm/s/V;  from steve: 100 mm/sec per volt
+          % with this version, must set the velocity AO to 1 V/V, the
+          % velocity AI to 0.01 V/(cm/s)        
     end
 
     % local variables
@@ -146,18 +148,20 @@ classdef RasterTreadMill < ws.UserClass
             isSpiking = (v>self.SpikeThreshold) ;
             isSpikeStart = diff(isSpiking)==1 ;
             indicesOfSpikeStarts = find(isSpikeStart);
-            rawVelocity = analogData(:,self.VelocityChannel) ;
-            integratedVelocity = cumsum(rawVelocity*self.VelocityScale/self.SampleRate);
+            velocity = analogData(:,self.VelocityChannel) ;
+            %velocity = rawVelocity*self.VelocityScale ;
+            dt = 1/self.SampleRate ;   % s
+            deltaPosition = cumsum(velocity*dt);  % cm
             self.RasterLine = [self.RasterLine; ...
-                               self.InitialPosition+integratedVelocity(find(indicesOfSpikeStarts<indexOfLapReset))];
-            self.BinDwellTimes = self.BinDwellTimes + hist(self.InitialPosition+integratedVelocity, self.BinCenters)./self.SampleRate;
+                               self.InitialPosition+deltaPosition(find(indicesOfSpikeStarts<indexOfLapReset))];
+            self.BinDwellTimes = self.BinDwellTimes + hist(self.InitialPosition+deltaPosition, self.BinCenters)./self.SampleRate;
             for i=1:length(self.BinCenters)
                 self.BinVelocities{i} = [self.BinVelocities{i}; ...
-                                         analogData(abs(self.InitialPosition+integratedVelocity-self.BinCenters(i))<self.BinWidth,self.VelocityChannel)];
+                                         analogData(abs(self.InitialPosition+deltaPosition-self.BinCenters(i))<self.BinWidth,self.VelocityChannel)];
             end
             for i=1:length(self.BinCenters)
                 self.BinSubthresholds{i} = [self.BinSubthresholds{i}; ...
-                                            analogData(abs(self.InitialPosition+integratedVelocity-self.BinCenters(i))<self.BinWidth,self.ElectrodeChannel)];
+                                            analogData(abs(self.InitialPosition+deltaPosition-self.BinCenters(i))<self.BinWidth,self.ElectrodeChannel)];
             end
 
             % plot data
@@ -211,14 +215,14 @@ classdef RasterTreadMill < ws.UserClass
                     min([lim(4) allMeanSubthresholds meanSubthresholds]) max([lim(4) allMeanSubthresholds meanSubthresholds])+eps]);
 
                 self.Lap = self.Lap + 1;
-                self.InitialPosition = -integratedVelocity(indexOfLapReset);
+                self.InitialPosition = -deltaPosition(indexOfLapReset);
                 self.BinDwellTimes=zeros(1,self.NBins);
                 self.BinVelocities=cell(1,self.NBins);
                 self.BinSubthresholds=cell(1,self.NBins);
-                self.RasterLine = self.InitialPosition + integratedVelocity(find(indicesOfSpikeStarts>=indexOfLapReset));
+                self.RasterLine = self.InitialPosition + deltaPosition(find(indicesOfSpikeStarts>=indexOfLapReset));
             end
 
-            self.InitialPosition = self.InitialPosition + integratedVelocity(end);
+            self.InitialPosition = self.InitialPosition + deltaPosition(end);
         end
         
         % this one is called in the looper process
