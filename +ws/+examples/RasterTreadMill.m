@@ -2,14 +2,14 @@ classdef RasterTreadMill < ws.UserClass
 
     % public parameters
     properties
-        SpikeThreshold = -15;  % mV
-        LaserOnThreshold = -50;  % mV
-        NBins = 20;
-        TreadMillLength = 185;  % cm
-        ElectrodeChannel = 1;
-        VelocityChannel = 2;
-        LEDChannel = 1;
-        LaserChannel = 2;
+        SpikeThreshold = -15  % mV
+        LaserOnThreshold = -35  % mV
+        NBins = 20
+        TreadMillLength = 185  % cm
+        ElectrodeChannel = 1
+        VelocityChannel = 2
+        LEDChannel = 1
+        LaserChannel = 2
         %VelocityScale = 1;  % cm/s/V;  from steve: 100 mm/sec per volt
           % with this version, must set the velocity AO to 1 V/V, the
           % velocity AI to 0.01 V/(cm/s)        
@@ -25,7 +25,7 @@ classdef RasterTreadMill < ws.UserClass
         Lap
         InitialPosition
         RasterAxes
-        RasterLine
+        PositionAtSpike
         NSpikesAxes
         NSpikesBars
         VelocityAxes
@@ -40,6 +40,7 @@ classdef RasterTreadMill < ws.UserClass
         SubthresholdAverageLine
         BinSubthresholds
         AllBinSubthresholds
+        LastLED
     end
     
     methods
@@ -102,13 +103,14 @@ classdef RasterTreadMill < ws.UserClass
 
             self.Lap=1;
             self.InitialPosition=0;
-            self.RasterLine=[];
+            self.PositionAtSpike=[];
             self.BinDwellTimes=zeros(1,self.NBins);
             self.AllBinDwellTimes=zeros(1,self.NBins);
             self.BinVelocities=cell(1,self.NBins);
             self.AllBinVelocities=cell(1,self.NBins);
             self.BinSubthresholds=cell(1,self.NBins);
             self.AllBinSubthresholds=cell(1,self.NBins);
+            self.LastLED = 0 ;
         end
         
         function completingRun(self,wsModel,eventName) %#ok<INUSD>
@@ -136,47 +138,60 @@ classdef RasterTreadMill < ws.UserClass
 %             end
 
             % has a lap been completed in current data?
+            % A falling edge of led indicates position==0, i.e. the start
+            % of a new lap.  A rising edge we ignore
             led = bitget(digitalData,self.LEDChannel) ;
-            isLEDBlocked = (led==0) ;
-            indexOfLapReset = find(isLEDBlocked, 1) ;  % the index where the animal started a new lap, at position = 0
-            if isempty(indexOfLapReset) ,
-                indexOfLapReset = size(digitalData,1)+1;
-            end
+            ledOneSampleInPast = [self.LastLED;led(1:end-1)] ;
+            isLapStart = ~led & ledOneSampleInPast ;
+            indexOfNewLapStart = find(isLapStart, 1) ;  % the index where the animal started a new lap, at position = 0
+            didCompleteALap = isscalar(indexOfNewLapStart) ;
+            %if isempty(indexOfLapReset) ,
+            %    indexOfLapReset = size(digitalData,1)+1;
+            %end
 
             % analyze data
             v = analogData(:,self.ElectrodeChannel) ;
             isSpiking = (v>self.SpikeThreshold) ;
             isSpikeStart = diff(isSpiking)==1 ;
-            indicesOfSpikeStarts = find(isSpikeStart);
+            dt = 1/self.SampleRate ;   % s
+            isSpikeStartFiltered = ws.examples.RasterTreadMill.filterSpikeStarts(isSpikeStart,dt) ;
+            indicesOfSpikes = find(isSpikeStartFiltered);
             velocity = analogData(:,self.VelocityChannel) ;
             %velocity = rawVelocity*self.VelocityScale ;
-            dt = 1/self.SampleRate ;   % s
             deltaPosition = cumsum(velocity*dt);  % cm
-            self.RasterLine = [self.RasterLine; ...
-                               self.InitialPosition+deltaPosition(find(indicesOfSpikeStarts<indexOfLapReset))];
-            self.BinDwellTimes = self.BinDwellTimes + hist(self.InitialPosition+deltaPosition, self.BinCenters)./self.SampleRate;
-            for i=1:length(self.BinCenters)
-                self.BinVelocities{i} = [self.BinVelocities{i}; ...
-                                         analogData(abs(self.InitialPosition+deltaPosition-self.BinCenters(i))<self.BinWidth,self.VelocityChannel)];
+            position = self.InitialPosition+deltaPosition ;
+            %maxPosition = max(position)
+            if didCompleteALap ,
+                isSpikeInCurrentLap = (indicesOfSpikes<indexOfNewLapStart) ;
+            else
+                isSpikeInCurrentLap = true(size(indicesOfSpikes)) ;
             end
-            for i=1:length(self.BinCenters)
+                
+            indicesOfSpikeStartsBeforeLapReset = indicesOfSpikes(isSpikeInCurrentLap) ;
+            self.PositionAtSpike = [self.PositionAtSpike; ...
+                                    position(indicesOfSpikeStartsBeforeLapReset)];
+            self.BinDwellTimes = self.BinDwellTimes + dt*hist(position, self.BinCenters) ;
+            for i=1:length(self.BinCenters) ,
+                isPositionInThisBin = abs(position-self.BinCenters(i))<self.BinWidth ;
+                self.BinVelocities{i} = [self.BinVelocities{i}; ...
+                                         velocity(isPositionInThisBin)];
                 self.BinSubthresholds{i} = [self.BinSubthresholds{i}; ...
-                                            analogData(abs(self.InitialPosition+deltaPosition-self.BinCenters(i))<self.BinWidth,self.ElectrodeChannel)];
+                                            v(isPositionInThisBin)];
             end
 
-            % plot data
-            if indexOfLapReset < size(analogData,1)+1 ,
-                len = length(self.RasterLine);
+            % plot data if a lap completed
+            if didCompleteALap ,
+                nSpikes = length(self.PositionAtSpike);
                 plot(self.RasterAxes, ...
-                        reshape([repmat(self.RasterLine,1,2) nan(len,1)]',3*len,1), ...
-                        reshape([repmat(self.Lap,len,1) repmat(self.Lap-1,len,1) nan(len,1)]',3*len,1), ...
+                        reshape([repmat(self.PositionAtSpike,1,2) nan(nSpikes,1)]',3*nSpikes,1), ...
+                        reshape([repmat(self.Lap,nSpikes,1) repmat(self.Lap-1,nSpikes,1) nan(nSpikes,1)]',3*nSpikes,1), ...
                         'k-');
                 axis(self.RasterAxes, [0 self.TreadMillLength 0 self.Lap+eps]);
 
-                nSpikesData = hist(self.RasterLine, self.BinCenters);
-                allNSpikesData = get(self.NSpikesBars, 'YData') + nSpikesData;
-                set(self.NSpikesBars, 'YData', allNSpikesData);
-                axis(self.NSpikesAxes, [0 self.TreadMillLength 0 max([allNSpikesData 0])+eps]);
+                nSpikesPerBinInCurrentLap = hist(self.PositionAtSpike, self.BinCenters);  % current lap == just-completed lap
+                nSpikesPerBinOverall = get(self.NSpikesBars, 'YData') + nSpikesPerBinInCurrentLap;
+                set(self.NSpikesBars, 'YData', nSpikesPerBinOverall);
+                axis(self.NSpikesAxes, [0 self.TreadMillLength 0 max([nSpikesPerBinOverall 0])+eps]);
 
                 for i=1:length(self.BinCenters)
                     self.AllBinVelocities{i} = [self.AllBinVelocities{i}; self.BinVelocities{i}];
@@ -192,13 +207,13 @@ classdef RasterTreadMill < ws.UserClass
                 axis(self.VelocityAxes, [0 self.TreadMillLength 0 max([lim(4) allMeanVelocities meanVelocities])+eps]);
 
                 self.AllBinDwellTimes = self.AllBinDwellTimes + self.BinDwellTimes;
-                set(self.SpikeRateAverageLine, 'ydata', allNSpikesData./self.AllBinDwellTimes);
+                set(self.SpikeRateAverageLine, 'ydata', nSpikesPerBinOverall./self.AllBinDwellTimes);
                 spikeRateLines=get(self.SpikeRateAxes,'children');
                 arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(spikeRateLines,self.SpikeRateAverageLine));
-                plot(self.SpikeRateAxes,self.BinCenters,nSpikesData./self.BinDwellTimes,'k.-');
+                plot(self.SpikeRateAxes,self.BinCenters,nSpikesPerBinInCurrentLap./self.BinDwellTimes,'k.-');
                 uistack(self.SpikeRateAverageLine,'top');
                 lim = axis(self.SpikeRateAxes);
-                axis(self.SpikeRateAxes, [0 self.TreadMillLength 0 max([lim(4) allNSpikesData./self.AllBinDwellTimes nSpikesData./self.BinDwellTimes])+eps]);
+                axis(self.SpikeRateAxes, [0 self.TreadMillLength 0 max([lim(4) nSpikesPerBinOverall./self.AllBinDwellTimes nSpikesPerBinInCurrentLap./self.BinDwellTimes])+eps]);
 
                 for i=1:length(self.BinCenters)
                     self.AllBinSubthresholds{i} = [self.AllBinSubthresholds{i}; self.BinSubthresholds{i}];
@@ -215,14 +230,21 @@ classdef RasterTreadMill < ws.UserClass
                     min([lim(4) allMeanSubthresholds meanSubthresholds]) max([lim(4) allMeanSubthresholds meanSubthresholds])+eps]);
 
                 self.Lap = self.Lap + 1;
-                self.InitialPosition = -deltaPosition(indexOfLapReset);
+                self.InitialPosition = deltaPosition(end) - deltaPosition(indexOfNewLapStart) ;
                 self.BinDwellTimes=zeros(1,self.NBins);
                 self.BinVelocities=cell(1,self.NBins);
                 self.BinSubthresholds=cell(1,self.NBins);
-                self.RasterLine = self.InitialPosition + deltaPosition(find(indicesOfSpikeStarts>=indexOfLapReset));
+                %self.PositionAtSpike = self.InitialPosition + deltaPosition(find(indicesOfSpikeStarts>=indexOfLapReset));
+                
+                isSpikeInNewLap = (indicesOfSpikes>=indexOfNewLapStart) ;
+                indicesOfSpikesInNewLap = indicesOfSpikes(isSpikeInNewLap) ;
+                self.PositionAtSpike = position(indicesOfSpikesInNewLap) ;
+            else
+                self.InitialPosition = position(end);
             end
-
-            self.InitialPosition = self.InitialPosition + deltaPosition(end);
+            
+            % Prepare for next iteration
+            self.LastLED = led(end) ;
         end
         
         % this one is called in the looper process
@@ -249,5 +271,23 @@ classdef RasterTreadMill < ws.UserClass
         
     end  % methods
     
+    methods (Static=true)
+        function isSpikeStartFiltered = filterSpikeStarts(isSpikeStart,dt) 
+            % Hopefully this gets JIT-accelerated
+            minSpikeDt = 0.01 ;  % => 100 Hz max
+            n = length(isSpikeStart) ;
+            isSpikeStartFiltered = false(size(isSpikeStart)) ;
+            timeSinceLastSpike = inf ;
+            for i = 1:n ,
+                if isSpikeStart(i) && timeSinceLastSpike>minSpikeDt ,
+                    isSpikeStartFiltered(i) = true ;
+                    timeSinceLastSpike = dt ;
+                else
+                    timeSinceLastSpike = timeSinceLastSpike+dt ;
+                end
+            end
+        end  % function            
+    end
+      
 end
 
