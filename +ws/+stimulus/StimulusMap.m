@@ -541,24 +541,24 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
             
             % Get the channel names
-            channelNames=self.ChannelNames;
+            channelNamesInThisMap=self.ChannelNames;
             
             % Try to determine whether channels are analog or digital.  Fallback to analog, if needed.
-            nChannels = length(channelNames) ;
-            isChannelAnalog = true(1,nChannels) ;
+            nChannelsInThisMap = length(channelNamesInThisMap) ;
+            isChannelAnalog = true(1,nChannelsInThisMap) ;
             stimulusLibrary = self.Parent ;
             if ~isempty(stimulusLibrary) ,
                 stimulation = stimulusLibrary.Parent ;
                 if ~isempty(stimulation) ,                                    
-                    for i = 1:nChannels ,
-                        channelName = channelNames{i} ;
+                    for i = 1:nChannelsInThisMap ,
+                        channelName = channelNamesInThisMap{i} ;
                         isChannelAnalog(i) = stimulation.isAnalogChannelName(channelName) ;
                     end
                 end
             end
             
             % calculate the signals
-            data = self.calculateSignals(sampleRate,channelNames,isChannelAnalog);
+            data = self.calculateSignals(sampleRate,channelNamesInThisMap,isChannelAnalog);
             
             %[data, channelNames] = self.calculateSignals(sampleRate, varargin{:});
             n=size(data,1);
@@ -569,19 +569,28 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             dt=1/sampleRate;  % s
             time = dt*(0:(n-1))';
             
-            clist = 'bgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmk';
+            %clist = 'bgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmk';
+            clist = ws.utility.make_color_sequence() ;
             
             %set(ax, 'NextPlot', 'Add');
+
+            % Get the list of all the channels in the stimulation subsystem
+            stimulation=stimulusLibrary.Parent;
+            channelNames=stimulation.ChannelNames;
             
             for idx = 1:nSignals ,
+                % Determine the index of the output channel among all the
+                % output channels
+                thisChannelName = channelNamesInThisMap{idx} ;
+                indexOfThisChannelInOverallList = find(strcmp(thisChannelName,channelNames),1) ;                
                 lines(idx) = line('Parent',ax, ...
                                   'XData',time, ...
                                   'YData',data(:,idx), ...
-                                  'Color',clist(idx));
+                                  'Color',clist(indexOfThisChannelInOverallList,:));
             end
             
             ws.utility.setYAxisLimitsToAccomodateLinesBang(ax,lines);
-            legend(ax, channelNames, 'Interpreter', 'None');
+            legend(ax, channelNamesInThisMap, 'Interpreter', 'None');
             %title(ax,sprintf('Stimulus Map: %s', self.Name));
             xlabel(ax,'Time (s)','FontSize',10);
             ylabel(ax,self.Name,'FontSize',10);
