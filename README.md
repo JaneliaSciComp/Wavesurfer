@@ -242,3 +242,5 @@ Version History
             run).  Note that this is a beta release, so is likely
             somewhat buggier than a regular release.
 
+0.9-beta-2: (October 15, 2015) Fixed several bugs.
+
