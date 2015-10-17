@@ -1,3 +1,3 @@
 function result=versionString()
-    result='0.9-beta-2';
+    result='0.9-beta-4';
 end

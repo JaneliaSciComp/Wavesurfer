@@ -246,3 +246,5 @@ Version History
 
 0.9-beta-3: (October 15, 2015) Fixed capitalization issues in the
             README.
+
+0.9-beta-4: (October 17, 2015) Fixed another silly cosmetic bug.
