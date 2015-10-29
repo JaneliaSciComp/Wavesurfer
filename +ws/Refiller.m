@@ -704,8 +704,9 @@ classdef Refiller < ws.Model
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
-                %self.changeReadiness(+1);
-                me.rethrow();
+                self.IPCPublisher_.send('refillerAbortedRun',me) ;
+                %self.changeReadiness(+1) ;
+                me.rethrow() ;
             end
             
             % Initialize timing variables

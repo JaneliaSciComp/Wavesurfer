@@ -168,7 +168,7 @@ classdef WavesurferModel < ws.Model
 
                 % Start the other Matlab processes
                 system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -nojvm -minimize -r "refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"');
+                system('start matlab -r "refiller=ws.Refiller(); dbstop if error; refiller.runMainLoop(); clear; quit()"');
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');

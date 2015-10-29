@@ -60,7 +60,19 @@ classdef IPCSubscriber < ws.ZMQConnecter
                 error('IPCSubscriber:noDelegate', ...
                       'Couldn''t call the method because Delegate is empty or invalid');
             else
-                feval(methodName,self.Delegate,arguments{:});
+                % This function is typically called in a message-processing
+                % loop.  Even if there's an uncaught error during method
+                % execution, we don't want that to *ever* disrupt the
+                % message-processing loop, so we wrap it in try-catch.
+                try                    
+                    feval(methodName,self.Delegate,arguments{:});
+                catch me
+                    % Barf up a message to the console, as much as that
+                    % pains me.
+                    warning('IPCSubscriber:uncaughtErrorInMessageMethod', 'Error in message-handling method %s', methodName);
+                    fprintf('Stack trace for method error:\n');
+                    display(me.getReport());
+                end
             end
         end  % function
         
