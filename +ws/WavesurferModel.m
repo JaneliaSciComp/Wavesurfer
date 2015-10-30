@@ -166,9 +166,20 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
                 self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
 
-                % Start the other Matlab processes
-                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -r "refiller=ws.Refiller(); dbstop if error; refiller.runMainLoop(); clear; quit()"');
+                % Start the other Matlab processes, passing the relevant
+                % path information to make sure they can find all the .m
+                % files they need.
+                [pathToRepoRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+                looperLaunchString = ...
+                    sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                            pathToRepoRoot , ...
+                            pathToMatlabZmqLib ) ;
+                system(looperLaunchString) ;
+                refillerLaunchString = ...
+                    sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                            pathToRepoRoot , ...
+                            pathToMatlabZmqLib ) ;
+                system(refillerLaunchString) ;
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -176,7 +187,7 @@ classdef WavesurferModel < ws.Model
 
                 % Start broadcasting pings until the satellite processes
                 % respond
-                nPingsMax=60 ;
+                nPingsMax=20 ;
                 isLooperAlive=false;
                 isRefillerAlive=false;
                 for iPing = 1:nPingsMax ,
@@ -2128,6 +2139,21 @@ classdef WavesurferModel < ws.Model
             self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
     end  % public methods block
+    
+    methods (Static)
+        function [pathToRepoRoot,pathToMatlabZmqLib] = pathNamesThatNeedToBeOnSearchPath()
+            % Allow user to invoke Wavesurfer from the Matlab command line, for
+            % this Matlab session only.  Modifies the user's Matlab path, but does
+            % not safe the modified path.
+
+            pathToWavesurferModel = mfilename('fullpath') ;
+            pathToWsModulerFolder = fileparts(pathToWavesurferModel) ;  % should be +ws folder
+            pathToRepoRoot = fileparts(pathToWsModulerFolder) ;  % should be repo root
+            pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
+            
+            %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
+        end
+    end  % static methods block
     
 end  % classdef
 
