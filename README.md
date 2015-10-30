@@ -248,3 +248,8 @@ Version History
             README.
 
 0.9-beta-4: (October 17, 2015) Fixed another silly cosmetic bug.
+
+0.9-beta-5: (October 29, 2015) Added missing DLL.
+
+0.9-beta-6: (October 30, 2015) Fixed bug where satellite processes 
+            didn't have proper search path.

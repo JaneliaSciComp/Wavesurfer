@@ -3,16 +3,16 @@ function installWavesurferForNow()
     % this Matlab session only.  Modifies the user's Matlab path, but does
     % not safe the modified path.
 
-    wavesurferPath = which('wavesurfer');
+    %wavesurferPath = which('wavesurfer');
+    pathToInstallWavesurferForNow = mfilename('fullpath');
+    
+%     % This really shouldn't happen given that this function is distributed in the
+%     % same directory as wavesurfer.m.
+%     if isempty(pathToInstallWavesurferForNow) ,
+%         error('wavesurfer:configureFailure', 'Wavesurfer does not appear to be installed correctly.  wavesurfer.m is missing.\n');
+%     end
 
-    % This really shouldn't happen given that this function is distributed in the
-    % same directory as wavesurfer.m.
-    if isempty(wavesurferPath) ,
-        error('wavesurfer:configureFailure', 'Wavesurfer does not appear to be installed correctly.  wavesurfer.m is missing.\n');
-    end
-
-    wavesurferParentFolder=fileparts(wavesurferPath);
-    addpath(wavesurferParentFolder);
-    %addpath(fullfile(wavesurferParentFolder,'wavesurfer_guis'));
-    addpath(fullfile(wavesurferParentFolder,'matlab-zmq','lib'));
+    repoRootFolderName=fileparts(pathToInstallWavesurferForNow);
+    addpath(repoRootFolderName);
+    addpath(fullfile(repoRootFolderName,'matlab-zmq','lib'));
 end
