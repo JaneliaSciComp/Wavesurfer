@@ -369,7 +369,7 @@ classdef WavesurferModel < ws.Model
     end
     
     methods  % These are all the methods that get called in response to ZMQ messages
-        function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
             
             % If we are not performing sweeps, just ignore.  This can
@@ -379,67 +379,79 @@ classdef WavesurferModel < ws.Model
                 %fprintf('About to call samplesAcquired_()\n') ;
                 self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             end
+            result = [] ;
         end  % function
         
-        function looperCompletedSweep(self)
+        function result = looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
             self.IsSweepComplete_ = true ;
+            result = [] ;
         end
         
-        function looperStoppedRun(self)
+        function result = looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
             %fprintf('WavesurferModel::looperStoppedRun()\n');
             self.WasRunStoppedInLooper_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
+            result = [] ;
         end
         
-        function looperReadyForRun(self) %#ok<MANU>
+        function result = looperReadyForRunOrPerhapsNot(self, err)  %#ok<INUSL>
             % Call by the Looper, via ZMQ pub-sub, when it has finished its
             % preparations for a run.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = err ;
         end
         
-        function looperReadyForSweep(self) %#ok<MANU>
+        function result = looperReadyForSweep(self) %#ok<MANU>
             % Call by the Looper, via ZMQ pub-sub, when it has finished its
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = [] ;
         end        
         
-        function looperIsAlive(self)  %#ok<MANU>
+        function result = looperIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
             %fprintf('WavesurferModel::looperIsAlive()\n');
+            result = [] ;
         end
         
-        function refillerReadyForRun(self) %#ok<MANU>
+        function result = refillerReadyForRunOrPerhapsNot(self, err) %#ok<INUSL>
             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
             % preparations for a run.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = err ;
         end
         
-        function refillerReadyForSweep(self) %#ok<MANU>
+        function result = refillerReadyForSweep(self) %#ok<MANU>
             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = [] ;
         end        
         
-        function refillerStoppedRun(self)
+        function result = refillerStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
             %fprintf('WavesurferModel::refillerStoppedRun()\n');
             self.WasRunStoppedInRefiller_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
+            result = [] ;
         end
         
-        function refillerIsAlive(self)  %#ok<MANU>
+        function result = refillerIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
             %fprintf('WavesurferModel::refillerIsAlive()\n');
+            result = [] ;
         end
         
-        function looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
+        function result = looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
+            result = [] ;
         end
         
-        function refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
+        function result = refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
+            result = [] ;
         end        
     end  % methods
     
@@ -820,15 +832,15 @@ classdef WavesurferModel < ws.Model
             
             % Wait for the looper to respond
             timeout = 10 ;  % s
-            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
-            if ~gotMessage ,
+            err = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
+            if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end
             
             % Wait for the refiller to respond
-            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
-            if ~gotMessage ,
+            err = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
+            if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end            
@@ -930,25 +942,44 @@ classdef WavesurferModel < ws.Model
             %fprintf('About to send startingRun\n');
             self.IPCPublisher_.send('startingRun',wavesurferModelSettings) ;
             
+            % Isn't the code below a race condition?  What if the refiller
+            % responds first?  No, it's not a race, because one is waiting
+            % on the LooperIPCSubscriber_, the other on the
+            % RefillerIPCSubscriber_.
+            
             % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
-            if ~gotMessage ,
+            [err,looperError] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
+            if isempty(err) ,
+                compositeError = looperError ;
+            else
+                compositeError = err ;
+            end
+            if ~isempty(compositeError) ,
                 % Something went wrong
                 self.abortOngoingRun_();
                 self.changeReadiness(+1);
-                error('wavesurfer:looperDidntRespond', ...
-                      'Looper didn''t respond within the timeout period');
+                me = MException('wavesurfer:looperDidntGetReady', ...
+                                'The looper encountered a problem while getting ready for the run');
+                me = me.addCause(compositeError) ;
+                throw(me) ;
             end
             
             % Wait for the refiller to respond that it is ready
-            gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRun',timeout) ;
-            if ~gotMessage ,
+            [err, refillerError] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRunOrPerhapsNot', timeout) ;
+            if isempty(err) ,
+                compositeError = refillerError ;
+            else
+                compositeError = err ;
+            end
+            if ~isempty(compositeError) ,
                 % Something went wrong
                 self.abortOngoingRun_();
                 self.changeReadiness(+1);
-                error('wavesurfer:refillerDidntRespond', ...
-                      'Refiller didn''t respond within the timeout period');
+                me = MException('wavesurfer:refillerDidntGetReady', ...
+                                'The refiller encountered a problem while getting ready for the run');
+                me = me.addCause(compositeError) ;
+                throw(me) ;
             end
             
             % Change our own state to running
@@ -1045,8 +1076,8 @@ classdef WavesurferModel < ws.Model
                 
                 % Wait for the looper to respond
                 timeout = 10 ;  % s
-                [didGetMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
-                if ~didGetMessage ,
+                err = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep', timeout) ;
+                if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
@@ -1054,8 +1085,8 @@ classdef WavesurferModel < ws.Model
                 end
                 
                 % Wait for the refiller to respond
-                [didGetMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep',timeout) ;
-                if ~didGetMessage ,
+                err = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep', timeout) ;
+                if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
