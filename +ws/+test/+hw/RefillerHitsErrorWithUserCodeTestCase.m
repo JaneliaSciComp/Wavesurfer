@@ -21,7 +21,7 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
         function theTest(self)
             isCommandLineOnly=true ;
             thisDirName=fileparts(mfilename('fullpath'));
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_6_AIs_2_DIs_4_AOs_2_DOs.m'), ...
+            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
                                isCommandLineOnly);
 
             %wsModel.Acquisition.SampleRate=20000;  % Hz
@@ -32,6 +32,8 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
 
             wsModel.AreSweepsContinuous = true ;
 
+            wsModel.UserCodeManager.ClassName = 'ws.examples.TemplateUserClass' ;
+            
             aTimer = timer('ExecutionMode', 'singleShot', ...
                            'StartDelay', 10, ...
                            'TimerFcn', @(event,arg2)(wsModel.stop()) ) ;
