@@ -1524,9 +1524,14 @@ classdef WavesurferModel < ws.Model
     methods
         function initializeFromMDFFileName(self,mdfFileName)
             self.changeReadiness(-1);
-            mdfStructure = ws.readMachineDataFile(mdfFileName);
-            ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
-            self.initializeFromMDFStructure_(mdfStructure);
+            try
+                mdfStructure = ws.readMachineDataFile(mdfFileName);
+                ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
+                self.initializeFromMDFStructure_(mdfStructure);
+            catch me
+                self.changeReadiness(+1);
+                rethrow(me) ;
+            end
             self.changeReadiness(+1);
         end
     end  % methods block
