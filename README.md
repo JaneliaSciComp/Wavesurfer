@@ -253,3 +253,6 @@ Version History
 
 0.9-beta-6: (October 30, 2015) Fixed bug where satellite processes 
             didn't have proper search path.
+
+0.9-beta-7: (November 3, 2015) Fixed bug where zero digital inputs 
+            caused eventual error during acquisition. 
