@@ -20,11 +20,11 @@ classdef IPCSubscriber < ws.ZMQConnecter
         function processMessagesIfAvailable(self)
             wasMessageAvailable=true;
             while wasMessageAvailable ,
-                wasMessageAvailable=self.processMessageIfAvailable();
+                wasMessageAvailable=self.processMessageIfAvailable();  % discard method results, if any
             end
         end
         
-        function [isMessageAvailable,methodName] = processMessageIfAvailable(self)
+        function [isMessageAvailable, methodName, methodError, methodResult] = processMessageIfAvailable(self)
             try
                 %fprintf('Just before recv\n');
                 %fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
@@ -38,6 +38,8 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     %fprintf('No message available.\n');
                     isMessageAvailable = false;
                     methodName = '' ;
+                    methodError = [] ;
+                    methodResult = [] ;
                     return
                 elseif isequal(me.identifier,'zmq:core:recv:bufferTooSmall') ,
                     % serializedMessage will be truncated, and thus not
@@ -45,6 +47,8 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     warning('Got a message too long for the buffer in IPCSubscriber');
                     isMessageAvailable = false;
                     methodName = '' ;
+                    methodError = [] ;
+                    methodResult = [] ;
                     return
                 else
                     %fprintf('There was an interesting error calling zmq.core.recv.  self.Socket: %d\n',self.Socket);
@@ -60,11 +64,25 @@ classdef IPCSubscriber < ws.ZMQConnecter
                 error('IPCSubscriber:noDelegate', ...
                       'Couldn''t call the method because Delegate is empty or invalid');
             else
-                feval(methodName,self.Delegate,arguments{:});
+                % This function is typically called in a message-processing
+                % loop.  Even if there's an uncaught error during method
+                % execution, we don't want that to *ever* disrupt the
+                % message-processing loop, so we wrap it in try-catch.
+                try                    
+                    methodResult = feval(methodName,self.Delegate,arguments{:}) ;
+                    methodError = [] ;
+                catch methodError
+                    % Barf up a message to the console, as much as that
+                    % pains me.
+                    warning('IPCSubscriber:uncaughtErrorInMessageMethod', 'Error in message-handling method %s', methodName);
+                    fprintf('Stack trace for method error:\n');
+                    display(methodError.getReport());
+                    methodResult = [] ;
+                end
             end
         end  % function
         
-        function [didGetMessage,err] = waitForMessage(self, expectedMessageName, timeout)
+        function [err, methodResult] = waitForMessage(self, expectedMessageName, timeout)
             % timeout is in sec
             ticId = tic() ;
             timeAtStart = toc(ticId) ;
@@ -72,12 +90,16 @@ classdef IPCSubscriber < ws.ZMQConnecter
             didGetMessage = false ;
             while ~didGetMessage && timeSpentWaitingSoFar<timeout ,
                 timeSpentWaitingSoFar = toc(ticId) - timeAtStart ;
-                [didGetMessage,messageName] = self.processMessageIfAvailable() ;
+                [didGetMessage,messageName,methodError,methodResult] = self.processMessageIfAvailable() ;
                 pause(0.010) ;
             end
             if didGetMessage ,
                 if isequal(messageName,expectedMessageName) ,
-                    err = [] ;
+                    if isempty(methodError) ,
+                        err = [] ;
+                    else
+                        err = methodError ;
+                    end
                 else
                     err = MException('ws:unexpectedMessageName', ...
                                      'Expected message name %s, got message name %s', ...

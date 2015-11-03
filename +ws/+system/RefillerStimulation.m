@@ -453,9 +453,14 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         function abortingRun(self)
             self.SelectedOutputableCache_ = [];
             
-            % Disarm the tasks
-            self.TheFiniteAnalogOutputTask_.disarm();
-            self.TheFiniteDigitalOutputTask_.disarm();            
+            % Disarm the tasks (check that they exist first, since this
+            % gets called in situations where something has gone wrong)
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
+                self.TheFiniteAnalogOutputTask_.disarm();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
+                self.TheFiniteDigitalOutputTask_.disarm();
+            end
             
             %self.IsWithinRun_=false;
         end  % function

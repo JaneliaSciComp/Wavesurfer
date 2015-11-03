@@ -265,12 +265,13 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function initializeFromMDFStructure(self,mdfStructure)
+        function result = initializeFromMDFStructure(self,mdfStructure)
             self.initializeFromMDFStructure_(mdfStructure) ;
             self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+            result = [] ;
         end  % function
 
-        function startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self,wavesurferModelSettings)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -279,33 +280,37 @@ classdef Looper < ws.Model
 
             % Prepare for the run
             self.prepareForRun_(wavesurferModelSettings) ;
+            result = [] ;
         end  % function
 
-        function completingRun(self)
+        function result = completingRun(self)
             % Called by the WSM when the run is completed.
 
             % Cleanup after run
             self.completeTheOngoingRun_() ;
+            result = [] ;
         end  % function
         
-        function frontendWantsToStopRun(self)
+        function result = frontendWantsToStopRun(self)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
             % Actually stop the ongoing run
             self.DoesFrontendWantToStopRun_ = true ;
+            result = [] ;
         end
         
-        function abortingRun(self)
+        function result = abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
 
             % Cleanup after run
             if self.IsPerformingRun_ ,
                 self.abortTheOngoingRun_() ;
             end
+            result = [] ;
         end  % function        
         
-        function startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -316,9 +321,10 @@ classdef Looper < ws.Model
 
             % Prepare for the run
             self.prepareForSweep_(indexOfSweepWithinRun) ;
+            result = [] ;
         end  % function
 
-        function frontendIsBeingDeleted(self) 
+        function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
             
             % We tell ourselves to stop running the main loop.  This should
@@ -327,30 +333,35 @@ classdef Looper < ws.Model
             % line that says "quit()".  So this should causes the looper
             % process to terminate.
             self.DoKeepRunningMainLoop_ = false ;
+            result = [] ;
         end
         
-        function areYallAliveQ(self)
+        function result = areYallAliveQ(self)
             %fprintf('Looper::areYallAlive()\n') ;
             self.IPCPublisher_.send('looperIsAlive');
+            result = [] ;
         end  % function        
         
-        function satellitesReleaseTimedHardwareResources(self)
+        function result = satellitesReleaseTimedHardwareResources(self)
             self.releaseTimedHardwareResources_();
             self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+            result = [] ;
         end  % function
         
-        function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
         end  % function
         
-        function isDigitalChannelTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
         end  % function
         
     end  % RPC methods block
@@ -759,6 +770,7 @@ classdef Looper < ws.Model
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
+                self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',me) ;
                 %self.changeReadiness(+1);
                 me.rethrow() ;
             end
@@ -768,7 +780,7 @@ classdef Looper < ws.Model
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForRun') ;
+            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',[]) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
