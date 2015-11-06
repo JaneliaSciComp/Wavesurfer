@@ -101,7 +101,7 @@ classdef WavesurferModel < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         %IsDeeplyIntoPerformingSweep_ = false
-        TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
+        %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
     end
     
 %     events
@@ -1322,7 +1322,7 @@ classdef WavesurferModel < ws.Model
         
         function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             % Record the time
-            self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
+            %self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
             
             % Get the number of scans
             nScans = size(rawAnalogData,1) ;
@@ -1432,8 +1432,7 @@ classdef WavesurferModel < ws.Model
                 
                 % Do a drawnow(), to make sure user sees the changes, and
                 % to process any button presses, etc.
-                %fprintf('About to do drawnow()\n');
-                drawnow();  
+                %drawnow();
             end
             %toc(tHere)
         end  % function
@@ -2073,12 +2072,18 @@ classdef WavesurferModel < ws.Model
             self.WasRunStoppedInLooper_ = false ;
             self.WasRunStoppedInRefiller_ = false ;
             self.WasRunStopped_ = false ;
+            drawnowTicId = tic() ;
+            timeOfLastDrawnow = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
             while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
                 %fprintf('At top of within-sweep loop...\n') ;
                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                  % drawnow()'ing will have to happen at times of updates
-                  % in new scheme...
                 self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                % do a drawnow() if it's been too long...
+                timeSinceLastDrawNow = toc(drawnowTicId) - timeOfLastDrawnow ;
+                if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                    drawnow() ;
+                    timeOfLastDrawnow = toc(drawnowTicId) ;
+                end
             end    
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
