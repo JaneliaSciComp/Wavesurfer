@@ -330,12 +330,13 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             % duration or our own internal duration
             stimulusLibrary=self.Parent;
             stimulationSubsystem=stimulusLibrary.Parent;
-            wavesurferModel=stimulationSubsystem.Parent;
-            triggeringSubsystem=wavesurferModel.Triggering;
-            acquisitionSubsystem=wavesurferModel.Acquisition;            
-            isSweepBased=wavesurferModel.AreSweepsFiniteDuration;
+            rootModel=stimulationSubsystem.Parent;
+            triggeringSubsystem=rootModel.Triggering;
+            %acquisitionSubsystem=rootModel.Acquisition;  % problematic: refiller doesn't have this subsystem      
+            isSweepBased=rootModel.AreSweepsFiniteDuration;
             doesStimulusUseAcquisitionTriggerScheme=triggeringSubsystem.StimulationUsesAcquisitionTriggerScheme;
-            acquisitionDuration=acquisitionSubsystem.Duration;
+            %acquisitionDuration=acquisitionSubsystem.Duration;
+            acquisitionDuration=rootModel.SweepDuration;
         end   % function
         
         function out = containsStimulus(self, stimuliOrStimulus)
@@ -455,7 +456,8 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
             
             % Create a timeline
-            sampleCount = round(self.Duration * sampleRate);
+            duration = self.Duration ;
+            sampleCount = round(duration * sampleRate);
             dt=1/sampleRate;
             t0=0;  % initial sample time
             t=(t0+dt/2)+dt*(0:(sampleCount-1))';            

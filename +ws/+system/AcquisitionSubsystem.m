@@ -43,7 +43,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         
     properties (Access = protected) 
         SampleRate_ = 20000  % Hz
-        Duration_ = 1  % s
+        %Duration_ = 1  % s
         DeviceNames_ = cell(1,0) ;
         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
@@ -57,13 +57,13 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsDigitalChannelActive_ = true(1,0)
     end
 
-    properties (Access=protected, Constant=true)
-        CoreFieldNames_ = { 'SampleRate_' , 'Duration_', 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
-                            'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
-                            'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
-            % The "core" settings are the ones that get transferred to
-            % other processes for running a sweep.
-    end
+%     properties (Access=protected, Constant=true)
+%         CoreFieldNames_ = { 'SampleRate_' , 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
+%                             'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
+%                             'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
+%             % The "core" settings are the ones that get transferred to
+%             % other processes for running a sweep.
+%     end
     
     properties (Access = protected, Transient=true)
         LatestAnalogData_ = [] ;
@@ -368,25 +368,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.Duration(self)
-            out = self.Duration_ ;
+            out = self.Parent.SweepDurationIfFinite ;
         end  % function
         
         function set.Duration(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            if ws.utility.isASettableValue(value) , 
-                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
-                    valueToSet = max(value,0.1);
-                    self.Parent.willSetAcquisitionDuration();
-                    self.Duration_ = valueToSet;
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.Parent.didSetAcquisitionDuration();
-                else
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.Parent.didSetAcquisitionDuration();
-                    error('most:Model:invalidPropVal', ...
-                          'Duration must be a (scalar) positive finite value');
-                end
-            end
+            self.Parent.SweepDurationIfFinite = value ;
         end  % function
         
         function out = get.ExpectedScanCount(self)
@@ -523,12 +510,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            wavesurferModel=self.Parent;
-            if ~isempty(wavesurferModel) ,
-                wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end  % function
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             wavesurferModel=self.Parent;
+%             if ~isempty(wavesurferModel) ,
+%                 wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end  % function
 
         function debug(self) %#ok<MANU>
             keyboard

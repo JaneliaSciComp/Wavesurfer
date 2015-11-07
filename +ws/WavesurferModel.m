@@ -25,7 +25,8 @@ classdef WavesurferModel < ws.Model
         SweepDuration  % the sweep duration, in s
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
-        NSweepsPerRun  
+        NSweepsPerRun
+        SweepDurationIfFinite
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
         IsYokedToScanImage
         NTimesDataAvailableCalledSinceRunStart
@@ -52,6 +53,7 @@ classdef WavesurferModel < ws.Model
         IsYokedToScanImage_ = false
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
+        SweepDurationIfFinite_ = 1  % s
 
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
@@ -568,35 +570,59 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end  % function
         
+        function out = get.SweepDurationIfFinite(self)
+            out = self.SweepDurationIfFinite_ ;
+        end  % function
+        
+        function set.SweepDurationIfFinite(self, value)
+            %fprintf('Acquisition::set.Duration()\n');
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.willSetAcquisitionDuration();
+                    self.SweepDurationIfFinite_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetAcquisitionDuration();
+                else
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetAcquisitionDuration();
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDurationIfFinite must be a (scalar) positive finite value');
+                end
+            end
+        end  % function
+        
         function value = get.SweepDuration(self)
             if self.AreSweepsContinuous ,
                 value=inf;
             else
-                value=self.Acquisition.Duration;
+                value=self.SweepDurationIfFinite_ ;
             end
         end  % function
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
-                % Do nothing if in continuous mode
-                if self.AreSweepsFiniteDuration ,
-                    % Check value and set if valid
-                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                        % If get here, newValue is a valid value for this prop
-                        self.Acquisition.Duration = newValue;
-                    else
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'SweepDuration must be a (scalar) positive finite value');
-                    end
+                % Check value and set if valid
+                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+                    % If get here, newValue is a valid value for this prop
+                    if isfinite(newValue) ,
+                        self.AreSweepsFiniteDuration = true ;
+                        self.SweepDurationIfFinite = newValue ;
+                    else                        
+                        self.AreSweepsContinuous = true ;
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDuration must be a (scalar) positive value');
                 end
             end
             self.broadcast('Update');
         end  % function
         
         function value=get.AreSweepsFiniteDuration(self)
-            value=self.AreSweepsFiniteDuration_;
+            value = self.AreSweepsFiniteDuration_ ;
         end
         
         function set.AreSweepsFiniteDuration(self,newValue)
@@ -616,8 +642,8 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end
         
-        function value=get.AreSweepsContinuous(self)
-            value=~self.AreSweepsFiniteDuration_;
+        function value = get.AreSweepsContinuous(self)
+            value = ~self.AreSweepsFiniteDuration_ ;
         end
         
         function set.AreSweepsContinuous(self,newValue)
