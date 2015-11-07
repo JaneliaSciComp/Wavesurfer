@@ -429,13 +429,13 @@ classdef Looper < ws.Model
             if ws.utility.isASettableValue(value) , 
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
-                    self.willSetAcquisitionDuration();
+                    self.willSetSweepDuration();
                     self.SweepDurationIfFinite_ = valueToSet;
                     self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetAcquisitionDuration();
+                    self.didSetSweepDuration();
                 else
                     self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetAcquisitionDuration();
+                    self.didSetSweepDuration();
                     error('most:Model:invalidPropVal', ...
                           'SweepDurationIfFinite must be a (scalar) positive finite value');
                 end
@@ -704,14 +704,14 @@ classdef Looper < ws.Model
 %             %profile off
 %         end
         
-        function willSetAcquisitionDuration(self)
-            self.Triggering.willSetAcquisitionDuration();
+        function willSetSweepDuration(self)
+            self.Triggering.willSetSweepDuration();
         end
         
-        function didSetAcquisitionDuration(self)
+        function didSetSweepDuration(self)
             %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetAcquisitionDuration();
-            %self.Display.didSetAcquisitionDuration();
+            self.Triggering.didSetSweepDuration();
+            %self.Display.didSetSweepDuration();
         end        
     end
        

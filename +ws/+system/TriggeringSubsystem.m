@@ -232,12 +232,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
-        function willSetAcquisitionDuration(self)
+        function willSetSweepDuration(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
 
-        function didSetAcquisitionDuration(self)
+        function didSetSweepDuration(self)
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         

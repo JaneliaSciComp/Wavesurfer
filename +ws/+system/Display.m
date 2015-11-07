@@ -357,7 +357,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             %fprintf('Time in Display.dataAvailable(): %7.3f s\n',T);
         end
         
-        function didSetAcquisitionDuration(self)
+        function didSetSweepDuration(self)
             % Called by the parent to notify of a change to the acquisition
             % duration
             
