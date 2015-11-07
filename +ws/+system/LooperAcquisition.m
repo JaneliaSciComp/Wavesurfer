@@ -56,7 +56,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                                           activeAnalogPhysicalChannelNames, ...
                                           activeAnalogChannelNames);
                 % Set other things in the Task object
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
@@ -71,7 +71,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                                           activeDigitalPhysicalChannelNames, ...
                                           activeDigitalChannelNames);
                 % Set other things in the Task object
-                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);

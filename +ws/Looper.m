@@ -10,6 +10,7 @@ classdef Looper < ws.Model
         UserCodeManager
         %Ephys
         SweepDuration  % the sweep duration, in s
+        SweepDurationIfFinite
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
         NSweepsPerRun  
@@ -35,6 +36,7 @@ classdef Looper < ws.Model
         %Ephys_
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
+        SweepDurationIfFinite_ = 1  % s
     end
 
     properties (Access=protected, Transient=true)
@@ -418,32 +420,83 @@ classdef Looper < ws.Model
             self.broadcast('Update');
         end  % function
         
+        function out = get.SweepDurationIfFinite(self)
+            out = self.SweepDurationIfFinite_ ;
+        end  % function
+        
+        function set.SweepDurationIfFinite(self, value)
+            %fprintf('Acquisition::set.Duration()\n');
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.willSetAcquisitionDuration();
+                    self.SweepDurationIfFinite_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetAcquisitionDuration();
+                else
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetAcquisitionDuration();
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDurationIfFinite must be a (scalar) positive finite value');
+                end
+            end
+        end  % function
+        
         function value = get.SweepDuration(self)
             if self.AreSweepsContinuous ,
                 value=inf;
             else
-                value=self.Acquisition.Duration;
+                value=self.SweepDurationIfFinite_ ;
             end
         end  % function
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
-                % Do nothing if in continuous mode
-                if self.AreSweepsFiniteDuration ,
-                    % Check value and set if valid
-                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                        % If get here, newValue is a valid value for this prop
-                        self.Acquisition.Duration = newValue;
-                    else
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'SweepDuration must be a (scalar) positive finite value');
-                    end
+                % Check value and set if valid
+                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+                    % If get here, newValue is a valid value for this prop
+                    if isfinite(newValue) ,
+                        self.AreSweepsFiniteDuration = true ;
+                        self.SweepDurationIfFinite = newValue ;
+                    else                        
+                        self.AreSweepsContinuous = true ;
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDuration must be a (scalar) positive value');
                 end
             end
             self.broadcast('Update');
         end  % function
+        
+%         function value = get.SweepDuration(self)
+%             if self.AreSweepsContinuous ,
+%                 value=inf;
+%             else
+%                 value=self.Acquisition.Duration;
+%             end
+%         end  % function
+%         
+%         function set.SweepDuration(self, newValue)
+%             % Fail quietly if a nonvalue
+%             if ws.utility.isASettableValue(newValue),             
+%                 % Do nothing if in continuous mode
+%                 if self.AreSweepsFiniteDuration ,
+%                     % Check value and set if valid
+%                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+%                         % If get here, newValue is a valid value for this prop
+%                         self.Acquisition.Duration = newValue;
+%                     else
+%                         self.broadcast('Update');
+%                         error('most:Model:invalidPropVal', ...
+%                               'SweepDuration must be a (scalar) positive finite value');
+%                     end
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
         
         function value=get.AreSweepsFiniteDuration(self)
             value=self.AreSweepsFiniteDuration_;
@@ -658,7 +711,7 @@ classdef Looper < ws.Model
         function didSetAcquisitionDuration(self)
             %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
             self.Triggering.didSetAcquisitionDuration();
-            self.Display.didSetAcquisitionDuration();
+            %self.Display.didSetAcquisitionDuration();
         end        
     end
        
