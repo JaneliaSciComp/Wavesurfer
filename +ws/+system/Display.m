@@ -85,11 +85,11 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                     return
                 end
-                acquisition=wavesurferModel.Acquisition;
-                if isempty(acquisition) || ~isvalid(acquisition),
-                    return
-                end
-                duration=acquisition.Duration;  % broadcaster is Acquisition subsystem
+%                 acquisition=wavesurferModel.Acquisition;
+%                 if isempty(acquisition) || ~isvalid(acquisition),
+%                     return
+%                 end
+                duration=wavesurferModel.SweepDuration;
                 value=fif(isfinite(duration),duration,1);
             else
                 value = self.XSpan_;
@@ -362,12 +362,12 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             % duration
             
             % Want any listeners on XSpan set to get called
-            if self.IsXSpanSlavedToAcquistionDuration ,
-                for idx = 1:numel(self.Scopes) ,
-                    self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                end
-                self.broadcast('UpdateXSpan');
-            end    
+            %if self.IsXSpanSlavedToAcquistionDuration ,
+            for idx = 1:numel(self.Scopes) ,
+                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            end
+            self.broadcast('UpdateXSpan');
+            %end    
             %self.XSpan = nan;
         end
         
