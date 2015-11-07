@@ -232,12 +232,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
-        function willSetSweepDuration(self)
+        function willSetSweepDurationIfFinite(self)
             % Have to release the relvant parts of the trigger scheme
             self.releaseCurrentTriggerSources_();
         end  % function
 
-        function didSetSweepDuration(self)
+        function didSetSweepDurationIfFinite(self)
             self.syncTriggerSourcesFromTriggeringState_();            
         end  % function        
         
@@ -249,11 +249,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function didSetAreSweepsFiniteDuration(self)
             %fprintf('Triggering::didSetAreSweepsFiniteDuration()\n');
             self.syncTriggerSourcesFromTriggeringState_();
-            self.stimulusMapDurationPrecursorMayHaveChanged_();  
+            %self.stimulusMapDurationPrecursorMayHaveChanged_();  
                 % Have to do b/c changing this can change
                 % StimulationUsesAcquisitionTriggerScheme.  (But why does
                 % that matter?  That can't change the stim map duration
                 % any more, I don't think...)
+            self.broadcast('Update');    
         end  % function         
     end
     

@@ -357,7 +357,21 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             %fprintf('Time in Display.dataAvailable(): %7.3f s\n',T);
         end
         
-        function didSetSweepDuration(self)
+        function didSetAreSweepsFiniteDuration(self)
+            % Called by the parent to notify of a change to the acquisition
+            % duration
+            
+            % Want any listeners on XSpan set to get called
+            %if self.IsXSpanSlavedToAcquistionDuration ,
+            for idx = 1:numel(self.Scopes) ,
+                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            end
+            self.broadcast('UpdateXSpan');
+            %end    
+            %self.XSpan = nan;
+        end
+        
+        function didSetSweepDurationIfFinite(self)
             % Called by the parent to notify of a change to the acquisition
             % duration
             

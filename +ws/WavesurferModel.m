@@ -129,7 +129,7 @@ classdef WavesurferModel < ws.Model
         DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
-        DidSetAreSweepsFiniteDurationOrContinuous
+        %DidSetAreSweepsFiniteDurationOrContinuous
         UpdateForNewData
         DidCompleteSweep
     end
@@ -579,17 +579,19 @@ classdef WavesurferModel < ws.Model
             if ws.utility.isASettableValue(value) , 
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
-                    self.willSetSweepDuration();
+                    self.willSetSweepDurationIfFinite();
                     self.SweepDurationIfFinite_ = valueToSet;
                     self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDuration();
+                    self.didSetSweepDurationIfFinite();
                 else
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDuration();
+                    %self.stimulusMapDurationPrecursorMayHaveChanged();
+                    %self.didSetSweepDurationIfFinite();
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'SweepDurationIfFinite must be a (scalar) positive finite value');
                 end
             end
+            self.broadcast('Update');
         end  % function
         
         function value = get.SweepDuration(self)
@@ -630,15 +632,15 @@ classdef WavesurferModel < ws.Model
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.Triggering.willSetAreSweepsFiniteDuration();
+                self.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetAreSweepsFiniteDuration();
+                self.didSetAreSweepsFiniteDuration();
             end
-            self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
+            %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
         end
         
@@ -825,16 +827,25 @@ classdef WavesurferModel < ws.Model
 %             self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
 %             %profile off
 %         end
-        
-        function willSetSweepDuration(self)
-            self.Triggering.willSetSweepDuration();
+
+        function willSetAreSweepsFiniteDuration(self)
+            self.Triggering.willSetAreSweepsFiniteDuration();
         end
         
-        function didSetSweepDuration(self)
-            self.broadcast('Update');
+        function didSetAreSweepsFiniteDuration(self)
+            self.Triggering.didSetAreSweepsFiniteDuration();
+            self.Display.didSetAreSweepsFiniteDuration();
+        end        
+
+        function willSetSweepDurationIfFinite(self)
+            self.Triggering.willSetSweepDurationIfFinite();
+        end
+        
+        function didSetSweepDurationIfFinite(self)
+            %self.broadcast('Update');
             %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetSweepDuration();
-            self.Display.didSetSweepDuration();
+            self.Triggering.didSetSweepDurationIfFinite();
+            self.Display.didSetSweepDurationIfFinite();
         end        
         
         function releaseTimedHardwareResources_(self)

@@ -604,7 +604,7 @@ classdef TriggersFigure < ws.MCOSFigure
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                model.Parent.subscribeMe(self,'DidSetAreSweepsFiniteDurationOrContinuous','','update');
+                %model.Parent.subscribeMe(self,'DidSetAreSweepsFiniteDurationOrContinuous','','update');
                 model.subscribeMe(self,'Update','','update');
                 %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
                 %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
