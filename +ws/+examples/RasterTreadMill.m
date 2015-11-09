@@ -48,6 +48,16 @@ classdef RasterTreadMill < ws.UserClass
         function self = RasterTreadMill(wsModel) %#ok<INUSD>
         end
         
+        function delete(self)
+            fprintf('RasterTreadMill::delete()\n') ;
+            if ~isempty(self.RasterFig) ,
+                if ishghandle(self.RasterFig) ,
+                    close(self.RasterFig) ;
+                end
+                self.RasterFig = [] ;
+            end                
+        end
+        
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
         end
         
@@ -65,9 +75,11 @@ classdef RasterTreadMill < ws.UserClass
             self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
             self.SampleRate = wsModel.Acquisition.SampleRate;
 
-            self.RasterFig = figure();
-            position = get(self.RasterFig,'position');
-            set(self.RasterFig,'position',position.*[1 0 1 2]);
+            if isempty(self.RasterFig) || ~ishghandle(self.RasterFig) ,
+                self.RasterFig = figure('Name','Spike Raster','NumberTitle','off');
+                position = get(self.RasterFig,'position');
+                set(self.RasterFig,'position',position.*[1 0 1 2]);
+            end
 
             clf(self.RasterFig);
 
