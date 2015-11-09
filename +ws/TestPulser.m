@@ -622,8 +622,8 @@ classdef TestPulser < ws.Model
             n=length(commandUnitsPerElectrode);
             result=false(1,n);
             for i=1:n ,
-                commandUnits = commandUnitsPerElectrode(i) ;
-                monitorUnits = monitorUnitsPerElectrode(i) ;
+                commandUnits = commandUnitsPerElectrode{i} ;
+                monitorUnits = monitorUnitsPerElectrode{i} ;
                 areCommandUnitsCommensurateWithVolts = ~isempty(commandUnits) && isequal(commandUnits(end),'V') ;
                 if areCommandUnitsCommensurateWithVolts ,
                     areMonitorUnitsCommensurateWithAmps = ~isempty(monitorUnits) && isequal(monitorUnits(end),'A') ;
@@ -739,7 +739,7 @@ classdef TestPulser < ws.Model
                 value = self.GainOrResistanceUnitsPerElectrodeCached_ ;
             else
                 valueIfCC = ws.utility.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
-                valueIfVC = ws.utility.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
+                valueIfVC = ws.utility.divideUnits(self.CommandUnitsPerElectrode,self.MonitorUnitsPerElectrode);
                 isVCPerElectrode=self.IsVCPerElectrode;
                 value = ws.utility.fif(isVCPerElectrode,valueIfVC,valueIfCC);
                 %value(isVCPerElectrode)=1./value(isVCPerElectrode);
@@ -1122,7 +1122,8 @@ classdef TestPulser < ws.Model
                 self.InputTask_.everyNSamplesEventCallbacks=@(varargin)(self.completingSweep());
 
                 % Cache some things for speed during sweeps
-                self.IsVCPerElectrodeCached_=self.IsVCPerElectrode;
+                isVCPerElectrode = self.IsVCPerElectrode ;
+                self.IsVCPerElectrodeCached_ = isVCPerElectrode ;
                 self.IsCCPerElectrodeCached_=self.IsCCPerElectrode;
                 self.MonitorChannelInverseScalePerElectrodeCached_=1./self.MonitorChannelScalePerElectrode;
                 %self.CommandChannelScalePerElectrodeCached_=self.CommandChannelScalePerElectrode;
