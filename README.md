@@ -256,3 +256,7 @@ Version History
 
 0.9-beta-7: (November 3, 2015) Fixed bug where zero digital inputs 
             caused eventual error during acquisition. 
+
+0.9-beta-8: (November 9, 2015) Fixed several bugs.
+
+0.9-beta-9: (November 9, 2015) Cosmetic fix.
