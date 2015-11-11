@@ -260,3 +260,7 @@ Version History
 0.9-beta-8: (November 9, 2015) Fixed several bugs.
 
 0.9-beta-9: (November 9, 2015) Cosmetic fix.
+
+0.9-beta-10: (November 11, 2015) Test Pulser now reports resistance 
+             in VC mode, instead of conductance.  Minor improvements 
+             to ws.example.RasterTreadMill.
