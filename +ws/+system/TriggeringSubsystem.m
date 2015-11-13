@@ -1,9 +1,9 @@
 classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
-        Sources  % this is a cell array with all elements of type ws.TriggerSource
-        Destinations  % this is a cell array with all elements of type ws.TriggerDestination
-        Schemes  % This is [Sources Destinatations], a cell array
+        Sources  % this is a cell col array with all elements of type ws.TriggerSource
+        Destinations  % this is a cell col array with all elements of type ws.TriggerDestination
+        Schemes  % This is [Sources ; Destinatations], a cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
         AcquisitionTriggerScheme
@@ -19,8 +19,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access = protected)
-        Sources_  % this is a cell array with all elements of type ws.TriggerSource
-        Destinations_  % this is a cell array with all elements of type ws.TriggerDestination
+        Sources_  % this is a cell col array with all elements of type ws.TriggerSource
+        Destinations_  % this is a cell col array with all elements of type ws.TriggerDestination
         StimulationUsesAcquisitionTriggerScheme_
         AcquisitionTriggerSchemeIndex_
         StimulationTriggerSchemeIndex_
@@ -101,7 +101,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.Schemes(self)
-            out = [ self.Sources self.Destinations ] ;
+            out = [ self.Sources ; self.Destinations ] ;
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)
