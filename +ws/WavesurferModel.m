@@ -940,14 +940,14 @@ classdef WavesurferModel < ws.Model
                 try
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
-                    self.abortRun_('problem');
+                    self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     rethrow(excp);
                 end
                 [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
                 if ~isScanImageReady ,
                     self.ensureYokingFilesAreGone_();
-                    self.abortRun_('problem');
+                    self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     error('WavesurferModel:ScanImageNotReady', ...
                           errorMessage);
@@ -1738,6 +1738,8 @@ classdef WavesurferModel < ws.Model
             
             for iCheck=1:nChecks ,
                 % pause for dtBetweenChecks without relinquishing control
+                % I assume this means we don't let UI callback run.  But
+                % not clear why that's important here...
                 timerVal=tic();
                 while (toc(timerVal)<dtBetweenChecks)
                     x=1+1; %#ok<NASGU>
