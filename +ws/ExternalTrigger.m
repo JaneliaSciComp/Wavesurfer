@@ -6,7 +6,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
     % and an edge type (rising or falling).  ALT, 2014-05-24
     
     properties (Constant=true)
-        IsInternal = false
+        %IsInternal = false
         %IsExternal = true
     end
     
@@ -35,7 +35,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
-            self.Edge_ = 'DAQmx_Val_Rising';            
+            self.Edge_ = 'rising';            
         end
         
         function value=get.Name(self)
@@ -101,7 +101,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
-                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                          'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
             self.broadcast('Update');            

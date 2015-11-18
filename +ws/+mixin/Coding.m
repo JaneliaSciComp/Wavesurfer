@@ -294,7 +294,7 @@ classdef (Abstract) Coding < handle
             % Utility function for copying a cell array of ws.mixin.Coding
             % entities, given a parent.
             nElements = length(source) ;
-            target = cell(nElements,1) ;
+            target = cell(size(source)) ;
             for j=1:nElements ,
                 target{j} = source{j}.copyGivenParent(parent);
             end

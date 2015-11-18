@@ -1,18 +1,13 @@
 classdef TriggersFigure < ws.MCOSFigure
     properties
-        SweepBasedAcquisitionPanel
-        %UseASAPTriggeringCheckbox
-        SweepBasedAcquisitionSchemeText
-        SweepBasedAcquisitionSchemePopupmenu
+        AcquisitionPanel
+        AcquisitionSchemeText
+        AcquisitionSchemePopupmenu
         
-        SweepBasedStimulationPanel
+        StimulationPanel
         UseAcquisitionTriggerCheckbox
-        SweepBasedStimulationSchemeText
-        SweepBasedStimulationSchemePopupmenu
-        
-%         ContinuousPanel
-%         ContinuousSchemeText
-%         ContinuousSchemePopupmenu
+        StimulationSchemeText
+        StimulationSchemePopupmenu
         
         CounterTriggersPanel
         CounterTriggersTable
@@ -72,61 +67,45 @@ classdef TriggersFigure < ws.MCOSFigure
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
             
-            % Sweep-based Acquisition Panel
-            self.SweepBasedAcquisitionPanel = ...
+            % Acquisition Panel
+            self.AcquisitionPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Acquisition');
 %             self.UseASAPTriggeringCheckbox = ...
-%                 uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
+%                 uicontrol('Parent',self.AcquisitionPanel, ...
 %                           'Style','checkbox', ...
 %                           'String','Use ASAP triggering');
-            self.SweepBasedAcquisitionSchemeText = ...
-                uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
+            self.AcquisitionSchemeText = ...
+                uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
                           'String','Scheme:');
-            self.SweepBasedAcquisitionSchemePopupmenu = ...
-                uicontrol('Parent',self.SweepBasedAcquisitionPanel, ...
+            self.AcquisitionSchemePopupmenu = ...
+                uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
                           
-            % Sweep-based Stimulation Panel
-            self.SweepBasedStimulationPanel = ...
+            % Stimulation Panel
+            self.StimulationPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Stimulation');
             self.UseAcquisitionTriggerCheckbox = ...
-                uicontrol('Parent',self.SweepBasedStimulationPanel, ...
+                uicontrol('Parent',self.StimulationPanel, ...
                           'Style','checkbox', ...
                           'String','Use acquisition scheme');
-            self.SweepBasedStimulationSchemeText = ...
-                uicontrol('Parent',self.SweepBasedStimulationPanel, ...
+            self.StimulationSchemeText = ...
+                uicontrol('Parent',self.StimulationPanel, ...
                           'Style','text', ...
                           'String','Scheme:');
-            self.SweepBasedStimulationSchemePopupmenu = ...
-                uicontrol('Parent',self.SweepBasedStimulationPanel, ...
+            self.StimulationSchemePopupmenu = ...
+                uicontrol('Parent',self.StimulationPanel, ...
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
-
-%             % Continuous Acqusition+Stimulation Panel
-%             self.ContinuousPanel = ...
-%                 uipanel('Parent',self.FigureGH, ...
-%                         'Units','pixels', ...
-%                         'BorderType','none', ...
-%                         'FontWeight','bold', ...
-%                         'Title','Continuous Acquisition+Stimulation');
-%             self.ContinuousSchemeText = ...
-%                 uicontrol('Parent',self.ContinuousPanel, ...
-%                           'Style','text', ...
-%                           'String','Scheme:');
-%             self.ContinuousSchemePopupmenu = ...
-%                 uicontrol('Parent',self.ContinuousPanel, ...
-%                           'Style','popupmenu', ...
-%                           'String',{'Thing 1';'Thing 2'});
 
             % Trigger Sources Panel
             self.CounterTriggersPanel = ...
@@ -223,7 +202,7 @@ classdef TriggersFigure < ws.MCOSFigure
 
             sweepBasedAcquisitionPanelAreaHeight=78;
             sweepBasedStimulationPanelAreaHeight=78;
-            continuousPanelAreaHeight=56;
+            %continuousPanelAreaHeight=56;
             spaceBetweenPanelsHeight=30;
             
             
@@ -233,35 +212,25 @@ classdef TriggersFigure < ws.MCOSFigure
             %
             panelInset=3;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
             
-            % The Sweep-based Acquisition panel
+            % The Acquisition panel
             sweepBasedAcquisitionPanelXOffset=panelInset;
             sweepBasedAcquisitionPanelWidth=schemesAreaWidth-panelInset-panelInset;
             sweepBasedAcquisitionPanelAreaYOffset=figureHeight-topPadHeight-sweepBasedAcquisitionPanelAreaHeight;
             sweepBasedAcquisitionPanelYOffset=sweepBasedAcquisitionPanelAreaYOffset+panelInset;            
             sweepBasedAcquisitionPanelHeight=sweepBasedAcquisitionPanelAreaHeight-panelInset-panelInset;
-            set(self.SweepBasedAcquisitionPanel, ...
+            set(self.AcquisitionPanel, ...
                 'Position',[sweepBasedAcquisitionPanelXOffset sweepBasedAcquisitionPanelYOffset ...
                             sweepBasedAcquisitionPanelWidth sweepBasedAcquisitionPanelHeight]);
 
-            % The Sweep-based Stimulation panel
+            % The Stimulation panel
             sweepBasedStimulationPanelXOffset=panelInset;
             sweepBasedStimulationPanelWidth=schemesAreaWidth-panelInset-panelInset;
             sweepBasedStimulationPanelAreaYOffset=sweepBasedAcquisitionPanelAreaYOffset-sweepBasedStimulationPanelAreaHeight-spaceBetweenPanelsHeight;
             sweepBasedStimulationPanelYOffset=sweepBasedStimulationPanelAreaYOffset+panelInset;            
             sweepBasedStimulationPanelHeight=sweepBasedStimulationPanelAreaHeight-panelInset-panelInset;
-            set(self.SweepBasedStimulationPanel, ...
+            set(self.StimulationPanel, ...
                 'Position',[sweepBasedStimulationPanelXOffset sweepBasedStimulationPanelYOffset ...
                             sweepBasedStimulationPanelWidth sweepBasedStimulationPanelHeight]);
-
-            % The Continuous Acquisition+Stimulation panel
-            continuousPanelXOffset=panelInset;
-            continuousPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            continuousPanelAreaYOffset=sweepBasedStimulationPanelAreaYOffset-continuousPanelAreaHeight-spaceBetweenPanelsHeight;
-            continuousPanelYOffset=continuousPanelAreaYOffset+panelInset;            
-            continuousPanelHeight=continuousPanelAreaHeight-panelInset-panelInset;
-%             set(self.ContinuousPanel, ...
-%                 'Position',[continuousPanelXOffset continuousPanelYOffset ...
-%                             continuousPanelWidth continuousPanelHeight]);
 
             % The Trigger Sources panel
             tablesAreaXOffset=schemesAreaWidth;
@@ -304,15 +273,15 @@ classdef TriggersFigure < ws.MCOSFigure
             % Dimensions
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightFromTopToPopupmenu=6;
-            heightFromPopupmenuToRest=4;
+            %heightFromPopupmenuToRest=4;
             rulerXOffset=60;
             popupmenuWidth=200;
             
             % Source popupmenu
-            position=get(self.SweepBasedAcquisitionSchemePopupmenu,'Position');
+            position=get(self.AcquisitionSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-height;  %checkboxYOffset-heightFromPopupmenuToRest-height;
-            positionPopupmenuAndLabelBang(self.SweepBasedAcquisitionSchemeText,self.SweepBasedAcquisitionSchemePopupmenu, ...
+            positionPopupmenuAndLabelBang(self.AcquisitionSchemeText,self.AcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
 
 %             % Checkbox
@@ -354,10 +323,10 @@ classdef TriggersFigure < ws.MCOSFigure
                             checkboxWidth checkboxHeight]);
             
             % Source popupmenu
-            position=get(self.SweepBasedStimulationSchemePopupmenu,'Position');
+            position=get(self.StimulationSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=checkboxYOffset-heightFromCheckboxToRest-height;
-            positionPopupmenuAndLabelBang(self.SweepBasedStimulationSchemeText,self.SweepBasedStimulationSchemePopupmenu, ...
+            positionPopupmenuAndLabelBang(self.StimulationSchemeText,self.StimulationSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
         end  % function
     end
@@ -481,14 +450,14 @@ classdef TriggersFigure < ws.MCOSFigure
             
             import ws.utility.onIff
             
-            set(self.SweepBasedAcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
+            set(self.AcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
             
             %acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
             isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
             %isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
             %set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
             set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~isSweepBased));
-            set(self.SweepBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
+            set(self.StimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
@@ -503,15 +472,14 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            import ws.utility.setPopupMenuItemsAndSelectionBang
-            import ws.utility.onIff
-            %set(self.UseASAPTriggeringCheckbox,'Value',model.AcquisitionUsesASAPTriggering);
-            schemes = model.Schemes ;
+            %import ws.utility.setPopupMenuItemsAndSelectionBang
+            %import ws.utility.onIff
+            schemes = model.AcquisitionSchemes ;
             rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
             rawCurrentItem=model.AcquisitionTriggerScheme.Name;
-            setPopupMenuItemsAndSelectionBang(self.SweepBasedAcquisitionSchemePopupmenu, ...
-                                              rawMenuItems, ...
-                                              rawCurrentItem);
+            ws.utility.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
+                                                         rawMenuItems, ...
+                                                         rawCurrentItem);
         end  % function       
     end  % methods
     
@@ -521,15 +489,15 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            import ws.utility.setPopupMenuItemsAndSelectionBang
-            import ws.utility.onIff
+            %import ws.utility.setPopupMenuItemsAndSelectionBang
+            %import ws.utility.onIff
             set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
             schemes = model.Schemes ;
             rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
             rawCurrentItem=model.StimulationTriggerScheme.Name;
-            setPopupMenuItemsAndSelectionBang(self.SweepBasedStimulationSchemePopupmenu, ...
-                                              rawMenuItems, ...
-                                              rawCurrentItem);
+            ws.utility.setPopupMenuItemsAndSelectionBang(self.StimulationSchemePopupmenu, ...
+                                                         rawMenuItems, ...
+                                                         rawCurrentItem);
         end  % function       
     end  % methods
     

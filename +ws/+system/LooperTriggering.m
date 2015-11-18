@@ -1,7 +1,7 @@
 classdef LooperTriggering < ws.system.TriggeringSubsystem 
 
     properties (Access=protected, Transient=true)
-        AcquisitionCounterTask_  % a ws.ni.CounterTriggerTask, or []
+        %AcquisitionCounterTask_  % a ws.ni.CounterTriggerTask, or []
         StimulationCounterTask_  % a ws.ni.CounterTriggerTask, or []
     end
     
@@ -53,30 +53,33 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
 %                 end                    
 %                 thisTriggerScheme.start();
 %             end        
-            acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
+            %acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
             stimulationTriggerScheme = self.StimulationTriggerScheme ;
-            if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,
-                % There's an internal acq trigger scheme
-                self.AcquisitionCounterTask_.start() ;
-                if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
-                    % There's an internal stim trigger scheme
-                    if stimulationTriggerScheme==acquisitionTriggerScheme ,
-                        % acq and stim share a trigger, so no need to do
-                        % anything else
-                    else
-                        self.StimulationCounterTask_.start() ;
-                    end
-                else
-                    % stim trigger scheme is external, so nothing to do
-                end                        
-            else
-                % acq trigger scheme is external
-                if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
-                    self.StimulationCounterTask_.start() ;
-                else
-                    % both acq & stim trigger schemes are external, so nothing to do
-                end                                                        
-            end            
+            if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+                self.StimulationCounterTask_.start() ;
+            end
+%             if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,
+%                 % There's an internal acq trigger scheme
+%                 self.AcquisitionCounterTask_.start() ;
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                     % There's an internal stim trigger scheme
+%                     if stimulationTriggerScheme==acquisitionTriggerScheme ,
+%                         % acq and stim share a trigger, so no need to do
+%                         % anything else
+%                     else
+%                         self.StimulationCounterTask_.start() ;
+%                     end
+%                 else
+%                     % stim trigger scheme is external, so nothing to do
+%                 end                        
+%             else
+%                 % acq trigger scheme is external
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                     self.StimulationCounterTask_.start() ;
+%                 else
+%                     % both acq & stim trigger schemes are external, so nothing to do
+%                 end                                                        
+%             end            
         end  % function
         
         function startingRun(self) %#ok<MANU>
@@ -110,7 +113,6 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             self.teardownInternalTriggers_();
         end  % function
         
-        
 %         function triggerSourceDone(self,triggerSource)
 %             % Called "from below" when the counter trigger task finishes
 %             %fprintf('Triggering::triggerSourceDone()\n');
@@ -125,48 +127,39 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
 
     methods (Access = protected)
         function setupInternalTriggers_(self)        
-            acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
+            %acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
             stimulationTriggerScheme = self.StimulationTriggerScheme ;
-            if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,
-                % There's an internal acq trigger scheme
-                self.teardownAcquisitionCounterTask_() ;
-                self.AcquisitionCounterTask_ = self.createCounterTask_(acquisitionTriggerScheme) ;
-                if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
-                    % There's an internal stim trigger scheme
-                    if stimulationTriggerScheme==acquisitionTriggerScheme ,
-                        % acq and stim share a trigger, so no need to do
-                        % anything else
-                    else
-                        self.teardownStimulationCounterTask_() ;
-                        self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
-                    end
-                else
-                    % stim trigger scheme is external, so nothing to do
-                end                        
-            else
-                % acq trigger scheme is external
-                if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
-                    self.teardownStimulationCounterTask_() ;
-                    self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
-                else
-                    % stim trigger scheme is external, so nothing to do
-                end                                                        
-            end
-%             
-%             triggerSchemes = self.getUniqueInternalTriggersInOrderForStarting_();
-%             for idx = 1:numel(triggerSchemes) ,
-%                 thisTriggerScheme=triggerSchemes{idx};
-%                 thisTriggerScheme.setup();
-% %                 % Each trigger output is generated by a nidaqmx counter
-% %                 % task.  These tasks can themselves be configured to start
-% %                 % when they receive a trigger.  Here, we set the non-acq
-% %                 % trigger outputs to start when they receive a trigger edge on the
-% %                 % same PFI line that triggers the acquisition task.
-% %                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
-% %                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
-% %                 end                
-%                 thisTriggerScheme.configureStartTrigger(self.SweepTriggerPFIID_, self.SweepTriggerEdge_);                                
-%             end  % function            
+            
+%             if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,
+%                 % There's an internal acq trigger scheme
+%                 self.teardownAcquisitionCounterTask_() ;
+%                 self.AcquisitionCounterTask_ = self.createCounterTask_(acquisitionTriggerScheme) ;
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                     % There's an internal stim trigger scheme
+%                     if stimulationTriggerScheme==acquisitionTriggerScheme ,
+%                         % acq and stim share a trigger, so no need to do
+%                         % anything else
+%                     else
+%                         self.teardownStimulationCounterTask_() ;
+%                         self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
+%                     end
+%                 else
+%                     % stim trigger scheme is external, so nothing to do
+%                 end                        
+%             else
+%                 % acq trigger scheme is external
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                     self.teardownStimulationCounterTask_() ;
+%                     self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
+%                 else
+%                     % stim trigger scheme is external, so nothing to do
+%                 end                                                        
+%             end
+            
+            if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+                self.teardownStimulationCounterTask_() ;
+                self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
+            end            
         end  % function
         
         function task = createCounterTask_(self,triggerSource)
@@ -175,9 +168,9 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             taskName = sprintf('WaveSurfer Counter Trigger Task %d',triggerSource.CounterID) ;
             task = ...
                 ws.ni.CounterTriggerTask(triggerSource, ...
-                                               triggerSource.DeviceName, ...
-                                               counterID, ...
-                                               taskName);
+                                         triggerSource.DeviceName, ...
+                                         counterID, ...
+                                         taskName);
             
             % Set freq, repeat count                               
             interval=triggerSource.Interval;
@@ -193,25 +186,25 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             
             % TODO: Need to set the edge polarity!!!
             
-            % Set it up to trigger off the master trigger
-            task.configureStartTrigger(self.SweepTriggerPFIID_, self.SweepTriggerEdge_);
+            % Set it up to trigger off the sweep trigger
+            task.configureStartTrigger(self.SweepTrigger.PFIID, self.SweepTrigger.Edge);
         end
         
 %         function configureStartTrigger(self, pfiID, edge)
 %             self.CounterTask_.configureStartTrigger(pfiID, edge);
 %         end
         
-        function teardownAcquisitionCounterTask_(self)
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                try
-                    self.AcquisitionCounterTask_.stop();
-                catch me  %#ok<NASGU>
-                    % if there's a problem, can't really do much about
-                    % it...
-                end
-            end
-            self.AcquisitionCounterTask_ = [];
-        end
+%         function teardownAcquisitionCounterTask_(self)
+%             if ~isempty(self.AcquisitionCounterTask_) ,
+%                 try
+%                     self.AcquisitionCounterTask_.stop();
+%                 catch me  %#ok<NASGU>
+%                     % if there's a problem, can't really do much about
+%                     % it...
+%                 end
+%             end
+%             self.AcquisitionCounterTask_ = [];
+%         end
     
         function teardownStimulationCounterTask_(self)
             if ~isempty(self.StimulationCounterTask_) ,
@@ -268,11 +261,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
 %         end  % function
         
         function teardownInternalTriggers_(self)
-%             triggerSchemes = self.getUniqueInternalTriggersInOrderForStarting_();
-%             for idx = 1:numel(triggerSchemes)
-%                 triggerSchemes{idx}.teardown();
-%             end            
-            self.teardownAcquisitionCounterTask_() ;
+            %self.teardownAcquisitionCounterTask_() ;
             self.teardownStimulationCounterTask_() ;            
         end  % function
     end  % protected methods block

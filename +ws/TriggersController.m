@@ -175,7 +175,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             self.Model.AcquisitionUsesASAPTriggering=value;
 %         end  % function
 
-        function SweepBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function AcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
             selectionIndex = get(source,'Value');
             self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
@@ -186,7 +186,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             self.Model.StimulationUsesAcquisitionTriggerScheme=value;
         end  % function
 
-        function SweepBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function StimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
             selectionIndex = get(source,'Value');
             self.Model.StimulationTriggerSchemeIndex = selectionIndex ;

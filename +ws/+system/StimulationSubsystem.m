@@ -16,6 +16,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
+        DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogPhysicalChannelNames % the physical channel name for each analog channel
         DigitalPhysicalChannelNames  % the physical channel name for each digital channel
         PhysicalChannelNames
@@ -231,6 +232,10 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         
         function output = get.TriggerScheme(self)
             output = self.Parent.Triggering.StimulationTriggerScheme ;
+        end
+        
+        function output = get.DeviceNames(self)
+            output = ws.utility.deviceNamesFromPhysicalChannelNames(self.PhysicalChannelNames) ;
         end
         
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>

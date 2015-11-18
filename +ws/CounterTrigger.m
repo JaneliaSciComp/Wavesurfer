@@ -6,7 +6,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
     % output), and an Edge (the edge polarity used).
     
     properties (Constant=true)
-        IsInternal = true
+        %IsInternal = true
         %IsExternal = false
     end
     
@@ -86,25 +86,25 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
             self.broadcast('Update');
         end
         
-        function overrideRepeatCount(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                % self.validatePropArg('RepeatCount', newValue);            
-                self.validateRepeatCount_(newValue);
-                self.RepeatCountOverride_ = newValue;
-                self.IsRepeatCountOverridden_=true;
-            end
-            %self.RepeatCount=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');
-        end
-        
-        function releaseRepeatCount(self)
-            %fprintf('releaseRepeatCount()\n');
-            %dbstack
-            self.IsRepeatCountOverridden_=false;
-            self.RepeatCountOverride_ = [];  % for tidiness
-            %self.RepeatCount=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');
-        end
+%         function overrideRepeatCount(self,newValue)
+%             if ws.utility.isASettableValue(newValue) ,
+%                 % self.validatePropArg('RepeatCount', newValue);            
+%                 self.validateRepeatCount_(newValue);
+%                 self.RepeatCountOverride_ = newValue;
+%                 self.IsRepeatCountOverridden_=true;
+%             end
+%             %self.RepeatCount=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');
+%         end
+%         
+%         function releaseRepeatCount(self)
+%             %fprintf('releaseRepeatCount()\n');
+%             %dbstack
+%             self.IsRepeatCountOverridden_=false;
+%             self.RepeatCountOverride_ = [];  % for tidiness
+%             %self.RepeatCount=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');
+%         end
         
     end
 
@@ -129,24 +129,24 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
             self.broadcast('Update');                
         end
         
-        function overrideInterval(self,newValue)
-            %fprintf('overrideInterval()\n');
-            %dbstack
-            self.validateInterval_(newValue);
-            self.IntervalOverride_ = newValue;
-            self.IsIntervalOverridden_=true;
-            %self.Interval=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');                
-        end
-        
-        function releaseInterval(self)
-            %fprintf('releaseInterval()\n');
-            %dbstack
-            self.IsIntervalOverridden_=false;
-            self.IntervalOverride_ = [];  % for tidiness
-            %self.Interval=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');                
-        end
+%         function overrideInterval(self,newValue)
+%             %fprintf('overrideInterval()\n');
+%             %dbstack
+%             self.validateInterval_(newValue);
+%             self.IntervalOverride_ = newValue;
+%             self.IsIntervalOverridden_=true;
+%             %self.Interval=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');                
+%         end
+%         
+%         function releaseInterval(self)
+%             %fprintf('releaseInterval()\n');
+%             %dbstack
+%             self.IsIntervalOverridden_=false;
+%             self.IntervalOverride_ = [];  % for tidiness
+%             %self.Interval=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');                
+%         end
 
 %         function placeLowerLimitOnInterval(self,newValue)
 %             self.validatePropArg('Interval', newValue);            
@@ -236,7 +236,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
-                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                          'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
             self.broadcast('Update');            

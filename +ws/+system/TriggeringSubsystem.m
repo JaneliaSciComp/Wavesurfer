@@ -1,28 +1,35 @@
 classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
+        SweepTrigger  % a ws.SweepTrigger (not a cell array)
         CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
-        Schemes  % This is [CounterTriggers Destinatations], a row cell array
+        Schemes  % This is [{SweepTrigger} CounterTriggers ExternalTriggers], a row cell array
+        AcquisitionSchemes  % This is [{SweepTrigger} ExternalTriggers], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
-        AcquisitionTriggerScheme
+        AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
         StimulationTriggerScheme
-        AcquisitionTriggerSchemeIndex
-        StimulationTriggerSchemeIndex
+        AcquisitionTriggerSchemeIndex  % this is an index into AcquisitionSchemes, not Schemes
+        StimulationTriggerSchemeIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
+          % if StimulationUsesAcquisitionTriggerScheme is true, this
+          % returns the index into Schemes that points to the trigger
+          % scheme that will be in effect if and when
+          % StimulationUsesAcquisitionTriggerScheme gets set to false.
     end
     
     properties (Access=protected, Constant=true)
-        SweepTriggerPhysicalChannelName_ = 'pfi8'
-        SweepTriggerPFIID_ = 8
-        SweepTriggerEdge_ = 'rising'
+        %SweepTriggerPhysicalChannelName_ = 'pfi8'
+        %SweepTriggerPFIID_ = 8
+        %SweepTriggerEdge_ = 'rising'
     end
     
     properties (Access = protected)
+        SweepTrigger_  % a ws.SweepTrigger (not a cell array)
         CounterTriggers_  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers_  % this is a cell row array with all elements of type ws.ExternalTrigger
         StimulationUsesAcquisitionTriggerScheme_
-        AcquisitionTriggerSchemeIndex_
+        AcquisitionTriggerSchemeIndex_  % this is an index into AcquisitionSchemes
         StimulationTriggerSchemeIndex_
     end
 
@@ -37,11 +44,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function self = TriggeringSubsystem(parent)
             self@ws.system.Subsystem(parent) ;            
             self.IsEnabled = true ;
+            self.SweepTrigger_ = ws.SweepTrigger(self) ; 
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
             self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
-            self.AcquisitionTriggerSchemeIndex_ = [] ;
-            self.StimulationTriggerSchemeIndex_ = [] ;
+            self.AcquisitionTriggerSchemeIndex_ = 1 ;
+            self.StimulationTriggerSchemeIndex_ = 1 ;
         end  % function
                         
         function initializeFromMDFStructure(self,mdfStructure)
@@ -92,6 +100,10 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             end  % for loop            
         end  % function
         
+        function out = get.SweepTrigger(self)
+            out = self.SweepTrigger_;
+        end  % function
+        
         function out = get.ExternalTriggers(self)
             out = self.ExternalTriggers_;
         end  % function
@@ -100,8 +112,16 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             out = self.CounterTriggers_;
         end  % function
         
+        function out = get.AcquisitionSchemes(self)
+            sweepTrigger = self.SweepTrigger ;
+            externalTriggers = self.ExternalTriggers ;
+            wrappedSweepTrigger = {sweepTrigger} ;
+            whos
+            out = horzcat(wrappedSweepTrigger,externalTriggers) ;
+        end  % function
+        
         function out = get.Schemes(self)
-            out = [ self.CounterTriggers self.ExternalTriggers ] ;
+            out = [ {self.SweepTrigger} self.CounterTriggers self.ExternalTriggers ] ;
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)
@@ -109,25 +129,23 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             if isempty(index) ,
                 out = [] ;
             else
-                out = self.Schemes{index} ;
+                out = self.AcquisitionSchemes{index} ;
             end
         end  % function
         
-        function out = get.AcquisitionTriggerSchemeIndex(self)
-            out = self.AcquisitionTriggerSchemeIndex_ ;
+        function result = get.AcquisitionTriggerSchemeIndex(self)            
+            result = self.AcquisitionTriggerSchemeIndex_ ;
         end  % function
 
         function set.AcquisitionTriggerSchemeIndex(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                nSchemes = length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
+                nSchemes = 1 + length(self.ExternalTriggers_) ;
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                    self.releaseCurrentCounterTriggers_() ;
                     self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
-                    self.syncCounterTriggersFromTriggeringState_() ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
-                          'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
+                          'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes, and cannot refer to a counter trigger');
                 end
             end
             self.broadcast('Update');                        
@@ -139,13 +157,18 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
 
         function set.StimulationTriggerSchemeIndex(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                nSchemes = length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
-                if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                    self.StimulationTriggerSchemeIndex_ = double(newValue) ;
-                else
-                    self.broadcast('Update');
+                if self.StimulationUsesAcquisitionTriggerScheme ,
                     error('most:Model:invalidPropVal', ...
-                          'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
+                          'Can''t set StimulationTriggerSchemeIndex when StimulationUsesAcquisitionTriggerScheme is true');                    
+                else
+                    nSchemes = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
+                    if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
+                        self.StimulationTriggerSchemeIndex_ = double(newValue) ;
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
+                    end
                 end
             end
             self.broadcast('Update');                        
@@ -223,37 +246,31 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end  % protected methods block
     
     methods
-        function willSetNSweepsPerRun(self)
+        function willSetNSweepsPerRun(self) %#ok<MANU>
             % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentCounterTriggers_();
+            %self.releaseCurrentCounterTriggers_();
         end  % function
 
-        function didSetNSweepsPerRun(self)
-            self.syncCounterTriggersFromTriggeringState_();            
+        function didSetNSweepsPerRun(self) %#ok<MANU>
+            %self.syncCounterTriggersFromTriggeringState_();            
         end  % function        
         
-        function willSetSweepDurationIfFinite(self)
+        function willSetSweepDurationIfFinite(self) %#ok<MANU>
             % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentCounterTriggers_();
+            %self.releaseCurrentCounterTriggers_();
         end  % function
 
-        function didSetSweepDurationIfFinite(self)
-            self.syncCounterTriggersFromTriggeringState_();            
+        function didSetSweepDurationIfFinite(self) %#ok<MANU>
+            %self.syncCounterTriggersFromTriggeringState_();            
         end  % function        
         
-        function willSetAreSweepsFiniteDuration(self)
+        function willSetAreSweepsFiniteDuration(self) %#ok<MANU>
             % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentCounterTriggers_();
+            %self.releaseCurrentCounterTriggers_();
         end  % function
         
         function didSetAreSweepsFiniteDuration(self)
-            %fprintf('Triggering::didSetAreSweepsFiniteDuration()\n');
-            self.syncCounterTriggersFromTriggeringState_();
-            %self.stimulusMapDurationPrecursorMayHaveChanged_();  
-                % Have to do b/c changing this can change
-                % StimulationUsesAcquisitionTriggerScheme.  (But why does
-                % that matter?  That can't change the stim map duration
-                % any more, I don't think...)
+            %self.syncCounterTriggersFromTriggeringState_();
             self.broadcast('Update');    
         end  % function         
     end
@@ -266,19 +283,19 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             end
         end  % function        
 
-        function releaseCurrentCounterTriggers_(self)
-            if self.AcquisitionTriggerScheme.IsInternal ,
-                self.AcquisitionTriggerScheme.releaseInterval();
-                self.AcquisitionTriggerScheme.releaseRepeatCount();
-            end
-        end  % function
+%         function releaseCurrentCounterTriggers_(self)
+%             if self.AcquisitionTriggerScheme.IsInternal ,
+%                 self.AcquisitionTriggerScheme.releaseInterval();
+%                 self.AcquisitionTriggerScheme.releaseRepeatCount();
+%             end
+%         end  % function
         
-        function syncCounterTriggersFromTriggeringState_(self)
-            if self.AcquisitionTriggerScheme.IsInternal ,
-                self.AcquisitionTriggerScheme.overrideInterval(0.01);
-                self.AcquisitionTriggerScheme.overrideRepeatCount(1);
-            end
-        end  % function        
+%         function syncCounterTriggersFromTriggeringState_(self)
+%             if self.AcquisitionTriggerScheme.IsInternal ,
+%                 self.AcquisitionTriggerScheme.overrideInterval(0.01);
+%                 self.AcquisitionTriggerScheme.overrideRepeatCount(1);
+%             end
+%         end  % function        
     end  % protected methods block
 
     methods
