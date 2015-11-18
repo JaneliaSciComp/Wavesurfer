@@ -267,6 +267,9 @@ Version History
 
 0.9-beta-11: (November 13, 2015) Fixes to WS-SI coordination code.
 
-0.9-beta-12: (November 13, 2015) Fixed bug with triggering schemes, 
+0.9-beta-12: (November 18, 2015) Fixed bug with triggering schemes, 
              fixed bug with loading older WS data files.
+
+0.9-beta-13: (November 18, 2015) Fixed bug with mimic()'ing cell 
+             arrays.
 
