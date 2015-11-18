@@ -20,7 +20,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
         function setupSweepTriggerTask(self) 
             if isempty(self.SweepTriggerDABSTask_) ,
                 self.SweepTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Sweep Trigger Task');
-                self.SweepTriggerDABSTask_.createDOChan(self.Sources{1}.DeviceName, self.SweepTriggerPhysicalChannelName_);
+                self.SweepTriggerDABSTask_.createDOChan(self.CounterTriggers{1}.DeviceName, self.SweepTriggerPhysicalChannelName_);
                 self.SweepTriggerDABSTask_.writeDigitalData(false);
             end
         end  % function

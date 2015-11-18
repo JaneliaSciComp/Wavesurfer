@@ -13,7 +13,7 @@ classdef CounterTriggerTask < handle    % & ws.mixin.AttributableProperties
         Parent_
         DeviceName_ = '';  % NI device name to use
         CounterID_ = 0;  % Index of NI counter (CTR) to use (zero-based)
-        TaskName_ = 'Counter Trigger Source Task';        
+        TaskName_ = 'Counter Trigger Task';        
         DabsDaqTask_ = []
         RepeatCount_ = 1
         RepeatFrequency_ = 1  % Hz

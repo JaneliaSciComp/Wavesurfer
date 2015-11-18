@@ -134,7 +134,7 @@ classdef TriggersFigure < ws.MCOSFigure
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
-                        'Title','Internal Trigger Schemes');
+                        'Title','Counter Triggers');
             self.CounterTriggersTable = ...
                 uitable('Parent',self.CounterTriggersPanel, ...
                         'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'}, ...
@@ -147,7 +147,7 @@ classdef TriggersFigure < ws.MCOSFigure
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
-                        'Title','External Trigger Schemes');
+                        'Title','External Triggers');
             self.ExternalTriggersTable = ...
                 uitable('Parent',self.ExternalTriggersPanel, ...
                         'ColumnName',{'Name' 'Device' 'PFI' 'Edge'}, ...
@@ -541,7 +541,7 @@ classdef TriggersFigure < ws.MCOSFigure
 %             end
 %             import ws.utility.setPopupMenuItemsAndSelectionBang
 %             import ws.utility.onIff
-%             rawMenuItems={model.Sources.Name};
+%             rawMenuItems={model.CounterTriggers.Name};
 %             rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
 %             setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...
 %                                               rawMenuItems, ...
@@ -555,11 +555,11 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            nRows=length(model.Sources);
+            nRows=length(model.CounterTriggers);
             nColumns=7;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                source=model.Sources{i};
+                source=model.CounterTriggers{i};
                 data{i,1}=source.Name;
                 data{i,2}=source.DeviceName;
                 data{i,3}=source.CounterID;
@@ -578,11 +578,11 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            nRows=length(model.Destinations);
+            nRows=length(model.ExternalTriggers);
             nColumns=4;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                destination=model.Destinations{i};
+                destination=model.ExternalTriggers{i};
                 data{i,1}=destination.Name;
                 data{i,2}=destination.DeviceName;
                 data{i,3}=destination.PFIID;
@@ -610,7 +610,7 @@ classdef TriggersFigure < ws.MCOSFigure
                 %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
 
                 % Add subscriptions for the changeable fields of each element
-                % of model.Sources
+                % of model.CounterTriggers
                 self.updateSubscriptionsToSourceProperties_();
             end
         end
@@ -618,7 +618,7 @@ classdef TriggersFigure < ws.MCOSFigure
         function updateSubscriptionsToSourceProperties_(self,varargin)
             % Add subscriptions for the changeable fields of each source
             model=self.Model;
-            sources = model.Sources;            
+            sources = model.CounterTriggers;            
             for i = 1:length(sources) ,
                 source=sources{i};
                 source.unsubscribeMeFromAll(self);

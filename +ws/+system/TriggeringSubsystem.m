@@ -1,9 +1,9 @@
 classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
-        Sources  % this is a cell row array with all elements of type ws.CounterTrigger
-        Destinations  % this is a cell row array with all elements of type ws.ExternalTrigger
-        Schemes  % This is [Sources Destinatations], a row cell array
+        CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
+        ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
+        Schemes  % This is [CounterTriggers Destinatations], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
         AcquisitionTriggerScheme
@@ -19,15 +19,15 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access = protected)
-        Sources_  % this is a cell row array with all elements of type ws.CounterTrigger
-        Destinations_  % this is a cell row array with all elements of type ws.ExternalTrigger
+        CounterTriggers_  % this is a cell row array with all elements of type ws.CounterTrigger
+        ExternalTriggers_  % this is a cell row array with all elements of type ws.ExternalTrigger
         StimulationUsesAcquisitionTriggerScheme_
         AcquisitionTriggerSchemeIndex_
         StimulationTriggerSchemeIndex_
     end
 
 %     properties (Access=protected, Constant=true)
-%         CoreFieldNames_ = { 'Sources_' , 'Destinations_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
+%         CoreFieldNames_ = { 'CounterTriggers_' , 'ExternalTriggers_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
 %                             'StimulationTriggerSchemeIndex_' } ;
 %             % The "core" settings are the ones that get transferred to
 %             % other processes for running a sweep.
@@ -37,8 +37,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function self = TriggeringSubsystem(parent)
             self@ws.system.Subsystem(parent) ;            
             self.IsEnabled = true ;
-            self.Sources_ = cell(1,0) ;  % want zero-length row
-            self.Destinations_ = cell(1,0) ;  % want zero-length row       
+            self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
+            self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
             self.AcquisitionTriggerSchemeIndex_ = [] ;
             self.StimulationTriggerSchemeIndex_ = [] ;
@@ -92,16 +92,16 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             end  % for loop            
         end  % function
         
-        function out = get.Destinations(self)
-            out = self.Destinations_;
+        function out = get.ExternalTriggers(self)
+            out = self.ExternalTriggers_;
         end  % function
         
-        function out = get.Sources(self)
-            out = self.Sources_;
+        function out = get.CounterTriggers(self)
+            out = self.CounterTriggers_;
         end  % function
         
         function out = get.Schemes(self)
-            out = [ self.Sources self.Destinations ] ;
+            out = [ self.CounterTriggers self.ExternalTriggers ] ;
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)
@@ -119,7 +119,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
 
         function set.AcquisitionTriggerSchemeIndex(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                nSchemes = length(self.Sources_) + length(self.Destinations_) ;
+                nSchemes = length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
                     self.releaseCurrentCounterTriggers_() ;
                     self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
@@ -139,7 +139,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
 
         function set.StimulationTriggerSchemeIndex(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
-                nSchemes = length(self.Sources_) + length(self.Destinations_) ;
+                nSchemes = length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
                     self.StimulationTriggerSchemeIndex_ = double(newValue) ;
                 else
@@ -174,12 +174,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     methods
         function source = addNewCounterTrigger(self)
             source = ws.CounterTrigger(self);
-            self.Sources_{1,end + 1} = source;
+            self.CounterTriggers_{1,end + 1} = source;
         end  % function
                 
         function destination = addNewExternalTrigger(self)
             destination = ws.ExternalTrigger(self);
-            self.Destinations_{1,end + 1} = destination;
+            self.ExternalTriggers_{1,end + 1} = destination;
         end  % function
                         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
@@ -291,7 +291,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Sources_', 'Destinations_'})) ,
+                if any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
                     target = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
                     self.(thisPropertyName) = target ;
