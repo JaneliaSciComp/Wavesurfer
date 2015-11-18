@@ -1,4 +1,4 @@
-classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
     % A class that represents a trigger destination, i.e. a digital input
     % to the daq board that could potentially be used to trigger
     % acquisition, etc.  A trigger destination has a name, a device ID, 
@@ -30,7 +30,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
     end
     
     methods
-        function self=TriggerDestination(parent)
+        function self=ExternalTrigger(parent)
             self@ws.Model(parent) ;
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';

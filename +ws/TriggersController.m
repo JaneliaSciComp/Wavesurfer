@@ -216,7 +216,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             end
         end  % function
         
-        % No method TriggerDestinationsTableActuated() b/c can't change
+        % No method ExternalTriggersTableActuated() b/c can't change
         % anything in that table
     end  % methods block    
 

@@ -2,7 +2,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
         Sources  % this is a cell row array with all elements of type ws.CounterTrigger
-        Destinations  % this is a cell row array with all elements of type ws.TriggerDestination
+        Destinations  % this is a cell row array with all elements of type ws.ExternalTrigger
         Schemes  % This is [Sources Destinatations], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
@@ -20,7 +20,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Access = protected)
         Sources_  % this is a cell row array with all elements of type ws.CounterTrigger
-        Destinations_  % this is a cell row array with all elements of type ws.TriggerDestination
+        Destinations_  % this is a cell row array with all elements of type ws.ExternalTrigger
         StimulationUsesAcquisitionTriggerScheme_
         AcquisitionTriggerSchemeIndex_
         StimulationTriggerSchemeIndex_
@@ -77,18 +77,18 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             % specified in the MDF.
             triggerDestinationSpecs=mdfStructure.triggerDestination;
             for idx = 1:length(triggerDestinationSpecs) ,
-                thisTriggerDestinationSpec=triggerDestinationSpecs(idx);
+                thisExternalTriggerSpec=triggerDestinationSpecs(idx);
                 
                 % Create the trigger destination, set params
-                %destination = ws.TriggerDestination();
-                destination = self.addNewTriggerDestination();
-                destination.Name = thisTriggerDestinationSpec.Name;
-                destination.DeviceName = thisTriggerDestinationSpec.DeviceName;
-                destination.PFIID = thisTriggerDestinationSpec.PFIID;
-                destination.Edge = lower(thisTriggerDestinationSpec.Edge);
+                %destination = ws.ExternalTrigger();
+                destination = self.addNewExternalTrigger();
+                destination.Name = thisExternalTriggerSpec.Name;
+                destination.DeviceName = thisExternalTriggerSpec.DeviceName;
+                destination.PFIID = thisExternalTriggerSpec.PFIID;
+                destination.Edge = lower(thisExternalTriggerSpec.Edge);
                 
                 % add the trigger destination to the subsystem
-                %self.addTriggerDestination(destination);
+                %self.addExternalTrigger(destination);
             end  % for loop            
         end  % function
         
@@ -177,8 +177,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.Sources_{1,end + 1} = source;
         end  % function
                 
-        function destination = addNewTriggerDestination(self)
-            destination = ws.TriggerDestination(self);
+        function destination = addNewExternalTrigger(self)
+            destination = ws.ExternalTrigger(self);
             self.Destinations_{1,end + 1} = destination;
         end  % function
                         

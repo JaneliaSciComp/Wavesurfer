@@ -17,8 +17,8 @@ classdef TriggersFigure < ws.MCOSFigure
         CounterTriggersPanel
         CounterTriggersTable
         
-        TriggerDestinationsPanel
-        TriggerDestinationsTable
+        ExternalTriggersPanel
+        ExternalTriggersTable
     end  % properties
     
     methods
@@ -142,14 +142,14 @@ classdef TriggersFigure < ws.MCOSFigure
                         'ColumnEditable',[false false false true true false false]);
             
             % Trigger Destinations Panel
-            self.TriggerDestinationsPanel = ...
+            self.ExternalTriggersPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','External Trigger Schemes');
-            self.TriggerDestinationsTable = ...
-                uitable('Parent',self.TriggerDestinationsPanel, ...
+            self.ExternalTriggersTable = ...
+                uitable('Parent',self.ExternalTriggersPanel, ...
                         'ColumnName',{'Name' 'Device' 'PFI' 'Edge'}, ...
                         'ColumnFormat',{'char' 'char' 'numeric' {'Rising' 'Falling'}}, ...
                         'ColumnEditable',[false false false false]);
@@ -265,31 +265,31 @@ classdef TriggersFigure < ws.MCOSFigure
 
             % The Trigger Sources panel
             tablesAreaXOffset=schemesAreaWidth;
-            triggerSourcesPanelXOffset=tablesAreaXOffset+panelInset;
-            triggerSourcesPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
-            triggerSourcesPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
-            triggerSourcesPanelYOffset=triggerSourcesPanelAreaYOffset+panelInset;            
-            triggerSourcesPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            counterTriggersPanelXOffset=tablesAreaXOffset+panelInset;
+            counterTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
+            counterTriggersPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
+            counterTriggersPanelYOffset=counterTriggersPanelAreaYOffset+panelInset;            
+            counterTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
             set(self.CounterTriggersPanel, ...
-                'Position',[triggerSourcesPanelXOffset triggerSourcesPanelYOffset ...
-                            triggerSourcesPanelWidth triggerSourcesPanelHeight]);
+                'Position',[counterTriggersPanelXOffset counterTriggersPanelYOffset ...
+                            counterTriggersPanelWidth counterTriggersPanelHeight]);
             
             % The Trigger Destinations panel
-            triggerDestinationsPanelXOffset=tablesAreaXOffset+panelInset;
-            triggerDestinationsPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
-            triggerDestinationsPanelAreaYOffset=0;
-            triggerDestinationsPanelYOffset=triggerDestinationsPanelAreaYOffset+panelInset;            
-            triggerDestinationsPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
-            set(self.TriggerDestinationsPanel, ...
-                'Position',[triggerDestinationsPanelXOffset triggerDestinationsPanelYOffset ...
-                            triggerDestinationsPanelWidth triggerDestinationsPanelHeight]);
+            externalTriggersPanelXOffset=tablesAreaXOffset+panelInset;
+            externalTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
+            externalTriggersPanelAreaYOffset=0;
+            externalTriggersPanelYOffset=externalTriggersPanelAreaYOffset+panelInset;            
+            externalTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            set(self.ExternalTriggersPanel, ...
+                'Position',[externalTriggersPanelXOffset externalTriggersPanelYOffset ...
+                            externalTriggersPanelWidth externalTriggersPanelHeight]);
 
             % Contents of panels
             self.layoutSweepBasedAcquisitionPanel_(sweepBasedAcquisitionPanelWidth,sweepBasedAcquisitionPanelHeight);
             self.layoutSweepBasedStimulationPanel_(sweepBasedStimulationPanelWidth,sweepBasedStimulationPanelHeight);
             %self.layoutContinuousPanel_(continuousPanelWidth,continuousPanelHeight);
-            self.layoutCounterTriggersPanel_(triggerSourcesPanelWidth,triggerSourcesPanelHeight);
-            self.layoutTriggerDestinationsPanel_(triggerDestinationsPanelWidth,triggerDestinationsPanelHeight);
+            self.layoutCounterTriggersPanel_(counterTriggersPanelWidth,counterTriggersPanelHeight);
+            self.layoutExternalTriggersPanel_(externalTriggersPanelWidth,externalTriggersPanelHeight);
                         
             % We return the figure size
             figureSize=[figureWidth figureHeight];
@@ -412,7 +412,7 @@ classdef TriggersFigure < ws.MCOSFigure
     end
     
     methods (Access = protected)
-        function layoutTriggerDestinationsPanel_(self,panelWidth,panelHeight)
+        function layoutExternalTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
             leftPad=10;
@@ -431,7 +431,7 @@ classdef TriggersFigure < ws.MCOSFigure
             nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+34);  % 34 for the row titles col
                         
             % 'Name' 'PFI' 'Edge'
-            set(self.TriggerDestinationsTable, ...
+            set(self.ExternalTriggersTable, ...
                 'Position', [leftPad bottomPad tableWidth tableHeight], ...
                 'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth});
         end
@@ -465,7 +465,7 @@ classdef TriggersFigure < ws.MCOSFigure
             self.updateSweepBasedStimulationControls();
             %self.updateContinuousModeControls();
             self.updateCounterTriggersTable();
-            self.updateTriggerDestinationsTable();                   
+            self.updateExternalTriggersTable();                   
         end  % function
     end  % methods
     
@@ -493,7 +493,7 @@ classdef TriggersFigure < ws.MCOSFigure
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
             set(self.CounterTriggersTable,'Enable',onIff(isIdle));
-            set(self.TriggerDestinationsTable,'Enable',onIff(isIdle));
+            set(self.ExternalTriggersTable,'Enable',onIff(isIdle));
         end  % function
     end
     
@@ -573,7 +573,7 @@ classdef TriggersFigure < ws.MCOSFigure
     end  % methods
     
     methods
-        function updateTriggerDestinationsTable(self,varargin)
+        function updateExternalTriggersTable(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
@@ -588,7 +588,7 @@ classdef TriggersFigure < ws.MCOSFigure
                 data{i,3}=destination.PFIID;
                 data{i,4}=char(destination.Edge);
             end
-            set(self.TriggerDestinationsTable,'Data',data);
+            set(self.ExternalTriggersTable,'Data',data);
         end  % function
     end  % methods
     
