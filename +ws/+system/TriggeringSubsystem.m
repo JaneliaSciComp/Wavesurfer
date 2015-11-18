@@ -1,9 +1,9 @@
 classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
-        Sources  % this is a cell col array with all elements of type ws.TriggerSource
-        Destinations  % this is a cell col array with all elements of type ws.TriggerDestination
-        Schemes  % This is [Sources ; Destinatations], a cell array
+        Sources  % this is a cell row array with all elements of type ws.TriggerSource
+        Destinations  % this is a cell row array with all elements of type ws.TriggerDestination
+        Schemes  % This is [Sources Destinatations], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
         AcquisitionTriggerScheme
@@ -19,8 +19,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access = protected)
-        Sources_  % this is a cell col array with all elements of type ws.TriggerSource
-        Destinations_  % this is a cell col array with all elements of type ws.TriggerDestination
+        Sources_  % this is a cell row array with all elements of type ws.TriggerSource
+        Destinations_  % this is a cell row array with all elements of type ws.TriggerDestination
         StimulationUsesAcquisitionTriggerScheme_
         AcquisitionTriggerSchemeIndex_
         StimulationTriggerSchemeIndex_
@@ -37,8 +37,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function self = TriggeringSubsystem(parent)
             self@ws.system.Subsystem(parent) ;            
             self.IsEnabled = true ;
-            self.Sources_ = cell(0,1) ;
-            self.Destinations_ = cell(0,1) ;       
+            self.Sources_ = cell(1,0) ;  % want zero-length row
+            self.Destinations_ = cell(1,0) ;  % want zero-length row       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
             self.AcquisitionTriggerSchemeIndex_ = [] ;
             self.StimulationTriggerSchemeIndex_ = [] ;
@@ -101,7 +101,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.Schemes(self)
-            out = [ self.Sources ; self.Destinations ] ;
+            out = [ self.Sources self.Destinations ] ;
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)
@@ -174,12 +174,12 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     methods
         function source = addNewTriggerSource(self)
             source = ws.TriggerSource(self);
-            self.Sources_{end + 1} = source;
+            self.Sources_{1,end + 1} = source;
         end  % function
                 
         function destination = addNewTriggerDestination(self)
             destination = ws.TriggerDestination(self);
-            self.Destinations_{end + 1} = destination;
+            self.Destinations_{1,end + 1} = destination;
         end  % function
                         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
