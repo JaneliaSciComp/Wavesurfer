@@ -14,8 +14,8 @@ classdef TriggersFigure < ws.MCOSFigure
 %         ContinuousSchemeText
 %         ContinuousSchemePopupmenu
         
-        TriggerSourcesPanel
-        TriggerSourcesTable
+        CounterTriggersPanel
+        CounterTriggersTable
         
         TriggerDestinationsPanel
         TriggerDestinationsTable
@@ -129,14 +129,14 @@ classdef TriggersFigure < ws.MCOSFigure
 %                           'String',{'Thing 1';'Thing 2'});
 
             % Trigger Sources Panel
-            self.TriggerSourcesPanel = ...
+            self.CounterTriggersPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Internal Trigger Schemes');
-            self.TriggerSourcesTable = ...
-                uitable('Parent',self.TriggerSourcesPanel, ...
+            self.CounterTriggersTable = ...
+                uitable('Parent',self.CounterTriggersPanel, ...
                         'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'}, ...
                         'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'Rising' 'Falling'}}, ...
                         'ColumnEditable',[false false false true true false false]);
@@ -270,7 +270,7 @@ classdef TriggersFigure < ws.MCOSFigure
             triggerSourcesPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
             triggerSourcesPanelYOffset=triggerSourcesPanelAreaYOffset+panelInset;            
             triggerSourcesPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
-            set(self.TriggerSourcesPanel, ...
+            set(self.CounterTriggersPanel, ...
                 'Position',[triggerSourcesPanelXOffset triggerSourcesPanelYOffset ...
                             triggerSourcesPanelWidth triggerSourcesPanelHeight]);
             
@@ -288,7 +288,7 @@ classdef TriggersFigure < ws.MCOSFigure
             self.layoutSweepBasedAcquisitionPanel_(sweepBasedAcquisitionPanelWidth,sweepBasedAcquisitionPanelHeight);
             self.layoutSweepBasedStimulationPanel_(sweepBasedStimulationPanelWidth,sweepBasedStimulationPanelHeight);
             %self.layoutContinuousPanel_(continuousPanelWidth,continuousPanelHeight);
-            self.layoutTriggerSourcesPanel_(triggerSourcesPanelWidth,triggerSourcesPanelHeight);
+            self.layoutCounterTriggersPanel_(triggerSourcesPanelWidth,triggerSourcesPanelHeight);
             self.layoutTriggerDestinationsPanel_(triggerDestinationsPanelWidth,triggerDestinationsPanelHeight);
                         
             % We return the figure size
@@ -383,7 +383,7 @@ classdef TriggersFigure < ws.MCOSFigure
     end
     
     methods (Access = protected)
-        function layoutTriggerSourcesPanel_(self,panelWidth,panelHeight)
+        function layoutCounterTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
             leftPad=10;
@@ -405,7 +405,7 @@ classdef TriggersFigure < ws.MCOSFigure
             nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+34);  % 30 for the row titles col
             
             % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'
-            set(self.TriggerSourcesTable, ...
+            set(self.CounterTriggersTable, ...
                 'Position', [leftPad bottomPad tableWidth tableHeight], ...
                 'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth});
         end
@@ -464,7 +464,7 @@ classdef TriggersFigure < ws.MCOSFigure
             self.updateSweepBasedAcquisitionControls();
             self.updateSweepBasedStimulationControls();
             %self.updateContinuousModeControls();
-            self.updateTriggerSourcesTable();
+            self.updateCounterTriggersTable();
             self.updateTriggerDestinationsTable();                   
         end  % function
     end  % methods
@@ -492,7 +492,7 @@ classdef TriggersFigure < ws.MCOSFigure
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
-            set(self.TriggerSourcesTable,'Enable',onIff(isIdle));
+            set(self.CounterTriggersTable,'Enable',onIff(isIdle));
             set(self.TriggerDestinationsTable,'Enable',onIff(isIdle));
         end  % function
     end
@@ -550,7 +550,7 @@ classdef TriggersFigure < ws.MCOSFigure
     end  % methods
 
     methods
-        function updateTriggerSourcesTable(self,varargin)
+        function updateCounterTriggersTable(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
@@ -568,7 +568,7 @@ classdef TriggersFigure < ws.MCOSFigure
                 data{i,6}=source.PFIID;
                 data{i,7}=char(source.Edge);
             end
-            set(self.TriggerSourcesTable,'Data',data);
+            set(self.CounterTriggersTable,'Data',data);
         end  % function
     end  % methods
     
@@ -622,9 +622,9 @@ classdef TriggersFigure < ws.MCOSFigure
             for i = 1:length(sources) ,
                 source=sources{i};
                 source.unsubscribeMeFromAll(self);
-                %source.subscribeMe(self, 'PostSet', 'Interval', 'updateTriggerSourcesTable');
-                %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateTriggerSourcesTable');
-                source.subscribeMe(self, 'Update', '', 'updateTriggerSourcesTable');
+                %source.subscribeMe(self, 'PostSet', 'Interval', 'updateCounterTriggersTable');
+                %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateCounterTriggersTable');
+                source.subscribeMe(self, 'Update', '', 'updateCounterTriggersTable');
             end
         end
     end

@@ -93,15 +93,15 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %                     case 0
 %                         source.Name = value;
 %                     case 1
-%                         error('Wavesurfer:cantSetTriggerSourceCounter','Can''t set CTR');
+%                         error('Wavesurfer:cantSetCounterTriggerCounter','Can''t set CTR');
 %                     case 2
 %                         source.RepeatCount = str2num(value);  %#ok<ST2NM> Want '' to return empty not NaN (str2double)
 %                     case 3
 %                         source.Interval = str2num(value); %#ok<ST2NM> Want '' to return empty not NaN (str2double)
 %                     case 4
-%                         error('Wavesurfer:cantSetTriggerSourcePFIID','Can''t set PFIID');
+%                         error('Wavesurfer:cantSetCounterTriggerPFIID','Can''t set PFIID');
 %                     case 5
-%                         error('Wavesurfer:cantSetTriggerSourceEdge','Can''t set Edge');
+%                         error('Wavesurfer:cantSetCounterTriggerEdge','Can''t set Edge');
 %                 end
 %             catch me  %#ok<NASGU>
 %                 %ws.ui.controller.ErrorWindow.showError(me, 'Invalid Property Value', true);
@@ -196,8 +196,8 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
 %         end
         
-        function TriggerSourcesTableActuated(self,source,event)  %#ok<INUSL>
-            % Called when a cell of TriggerSourcesTable is edited
+        function CounterTriggersTableActuated(self,source,event)  %#ok<INUSL>
+            % Called when a cell of CounterTriggersTable is edited
             indices=event.Indices;
             newString=event.EditData;
             rowIndex=indices(1);

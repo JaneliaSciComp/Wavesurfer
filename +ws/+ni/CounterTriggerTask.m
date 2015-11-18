@@ -1,4 +1,4 @@
-classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributableProperties
+classdef CounterTriggerTask < handle    % & ws.mixin.AttributableProperties
         
     properties (Dependent = true, SetAccess=immutable)
         Parent
@@ -24,7 +24,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
 %     end
     
     methods
-        function self = CounterTriggerSourceTask(parent, deviceName, counterID, taskName)            
+        function self = CounterTriggerTask(parent, deviceName, counterID, taskName)            
             self.Parent_ = parent;
             self.DeviceName_ = deviceName;
             self.CounterID_ = counterID;
@@ -57,7 +57,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         end
         
         function start(self)
-            %fprintf('CounterTriggerSourceTask::start(), CTR %d\n',self.CounterID_);
+            %fprintf('CounterTriggerTask::start(), CTR %d\n',self.CounterID_);
             if ~isempty(self.DabsDaqTask_) ,
                 %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
                 self.DabsDaqTask_.start();
@@ -65,7 +65,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         end
         
         function stop(self)
-            %fprintf('CounterTriggerSourceTask::stop(), CTR %d\n', self.CounterID_);
+            %fprintf('CounterTriggerTask::stop(), CTR %d\n', self.CounterID_);
             if ~isempty(self.DabsDaqTask_) && isvalid(self.DabsDaqTask_) ,
                 self.DabsDaqTask_.stop();
 %                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
@@ -81,7 +81,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
         end
         
         function configureStartTrigger(self, pfiId, edge)
-            %fprintf('CounterTriggerSourceTask::configureStartTrigger()\n');
+            %fprintf('CounterTriggerTask::configureStartTrigger()\n');
             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(edge) ;
             self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), dabsTriggerEdge);
         end        
@@ -119,7 +119,7 @@ classdef CounterTriggerSourceTask < handle    % & ws.mixin.AttributablePropertie
 %                 %self.DabsDaqTask_.doneEventCallbacks = {};
 %                 if ~isempty(self.Parent) && isvalid(self.Parent) ,
 %                     %feval(self.DoneCallback_,self);
-%                     self.Parent.counterTriggerSourceTaskDone();
+%                     self.Parent.counterCounterTriggerTaskDone();
 %                 end
 %             end
 %         end  % function

@@ -52,10 +52,10 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 % %             end        
 %             acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
 %             stimulationTriggerScheme = self.StimulationTriggerScheme ;
-%             if isa(acquisitionTriggerScheme,'ws.TriggerSource') ,
+%             if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,
 %                 % There's an internal acq trigger scheme
 %                 self.AcquisitionCounterTask_.start() ;
-%                 if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
 %                     % There's an internal stim trigger scheme
 %                     if stimulationTriggerScheme==acquisitionTriggerScheme ,
 %                         % acq and stim share a trigger, so no need to do
@@ -68,7 +68,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %                 end                        
 %             else
 %                 % acq trigger scheme is external
-%                 if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
 %                     self.StimulationCounterTask_.start() ;
 %                 else
 %                     % both acq & stim trigger schemes are external, so nothing to do
@@ -124,11 +124,11 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %         function setupInternalTriggers_(self)        
 %             acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
 %             stimulationTriggerScheme = self.StimulationTriggerScheme ;
-%             if isa(acquisitionTriggerScheme,'ws.TriggerSource') ,
+%             if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,
 %                 % There's an internal acq trigger scheme
 %                 self.teardownAcquisitionCounterTask_() ;
 %                 self.AcquisitionCounterTask_ = self.createCounterTask_(acquisitionTriggerScheme) ;
-%                 if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
 %                     % There's an internal stim trigger scheme
 %                     if stimulationTriggerScheme==acquisitionTriggerScheme ,
 %                         % acq and stim share a trigger, so no need to do
@@ -142,7 +142,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %                 end                        
 %             else
 %                 % acq trigger scheme is external
-%                 if isa(stimulationTriggerScheme,'ws.TriggerSource') ,
+%                 if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
 %                     self.teardownStimulationCounterTask_() ;
 %                     self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
 %                 else
@@ -171,7 +171,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %             counterID = triggerSource.CounterID ;
 %             taskName = sprintf('Wavesurfer Counter Trigger Task %d',triggerSource.CounterID) ;
 %             task = ...
-%                 ws.ni.CounterTriggerSourceTask(triggerSource, ...
+%                 ws.ni.CounterTriggerTask(triggerSource, ...
 %                                                triggerSource.DeviceName, ...
 %                                                counterID, ...
 %                                                taskName);

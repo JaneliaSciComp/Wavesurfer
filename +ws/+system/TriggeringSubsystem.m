@@ -1,7 +1,7 @@
 classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
-        Sources  % this is a cell row array with all elements of type ws.TriggerSource
+        Sources  % this is a cell row array with all elements of type ws.CounterTrigger
         Destinations  % this is a cell row array with all elements of type ws.TriggerDestination
         Schemes  % This is [Sources Destinatations], a row cell array
         StimulationUsesAcquisitionTriggerScheme
@@ -19,7 +19,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access = protected)
-        Sources_  % this is a cell row array with all elements of type ws.TriggerSource
+        Sources_  % this is a cell row array with all elements of type ws.CounterTrigger
         Destinations_  % this is a cell row array with all elements of type ws.TriggerDestination
         StimulationUsesAcquisitionTriggerScheme_
         AcquisitionTriggerSchemeIndex_
@@ -49,21 +49,21 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             % in the MDF.
             triggerSourceSpecs=mdfStructure.triggerSource;
             for idx = 1:length(triggerSourceSpecs) ,
-                thisTriggerSourceSpec=triggerSourceSpecs(idx);
+                thisCounterTriggerSpec=triggerSourceSpecs(idx);
                 
                 % Create the trigger source, set params
-                source = self.addNewTriggerSource() ;
-                %source = ws.TriggerSource();                
-                source.Name=thisTriggerSourceSpec.Name;
-                source.DeviceName=thisTriggerSourceSpec.DeviceName;
-                source.CounterID=thisTriggerSourceSpec.CounterID;                
+                source = self.addNewCounterTrigger() ;
+                %source = ws.CounterTrigger();                
+                source.Name=thisCounterTriggerSpec.Name;
+                source.DeviceName=thisCounterTriggerSpec.DeviceName;
+                source.CounterID=thisCounterTriggerSpec.CounterID;                
                 source.RepeatCount = 1;
                 source.Interval = 1;  % s
-                source.PFIID = thisTriggerSourceSpec.CounterID + 12;                
+                source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
                 source.Edge = 'rising';                                
                 
                 % add the trigger source to the subsystem
-                %self.addTriggerSource(source);
+                %self.addCounterTrigger(source);
                 
                 % If the first source, set things to point to it
                 if idx==1 ,
@@ -121,9 +121,9 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             if ws.utility.isASettableValue(newValue) ,
                 nSchemes = length(self.Sources_) + length(self.Destinations_) ;
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                    self.releaseCurrentTriggerSources_() ;
+                    self.releaseCurrentCounterTriggers_() ;
                     self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
-                    self.syncTriggerSourcesFromTriggeringState_() ;
+                    self.syncCounterTriggersFromTriggeringState_() ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
@@ -172,8 +172,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end  % methods block
     
     methods
-        function source = addNewTriggerSource(self)
-            source = ws.TriggerSource(self);
+        function source = addNewCounterTrigger(self)
+            source = ws.CounterTrigger(self);
             self.Sources_{1,end + 1} = source;
         end  % function
                 
@@ -225,30 +225,30 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     methods
         function willSetNSweepsPerRun(self)
             % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
+            self.releaseCurrentCounterTriggers_();
         end  % function
 
         function didSetNSweepsPerRun(self)
-            self.syncTriggerSourcesFromTriggeringState_();            
+            self.syncCounterTriggersFromTriggeringState_();            
         end  % function        
         
         function willSetSweepDurationIfFinite(self)
             % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
+            self.releaseCurrentCounterTriggers_();
         end  % function
 
         function didSetSweepDurationIfFinite(self)
-            self.syncTriggerSourcesFromTriggeringState_();            
+            self.syncCounterTriggersFromTriggeringState_();            
         end  % function        
         
         function willSetAreSweepsFiniteDuration(self)
             % Have to release the relvant parts of the trigger scheme
-            self.releaseCurrentTriggerSources_();
+            self.releaseCurrentCounterTriggers_();
         end  % function
         
         function didSetAreSweepsFiniteDuration(self)
             %fprintf('Triggering::didSetAreSweepsFiniteDuration()\n');
-            self.syncTriggerSourcesFromTriggeringState_();
+            self.syncCounterTriggersFromTriggeringState_();
             %self.stimulusMapDurationPrecursorMayHaveChanged_();  
                 % Have to do b/c changing this can change
                 % StimulationUsesAcquisitionTriggerScheme.  (But why does
@@ -266,14 +266,14 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             end
         end  % function        
 
-        function releaseCurrentTriggerSources_(self)
+        function releaseCurrentCounterTriggers_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
                 self.AcquisitionTriggerScheme.releaseInterval();
                 self.AcquisitionTriggerScheme.releaseRepeatCount();
             end
         end  % function
         
-        function syncTriggerSourcesFromTriggeringState_(self)
+        function syncCounterTriggersFromTriggeringState_(self)
             if self.AcquisitionTriggerScheme.IsInternal ,
                 self.AcquisitionTriggerScheme.overrideInterval(0.01);
                 self.AcquisitionTriggerScheme.overrideRepeatCount(1);
