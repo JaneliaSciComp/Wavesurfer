@@ -934,7 +934,7 @@ classdef Looper < ws.Model
 %             % Pulse the master trigger, dealing with any errors
 %             try
 %                 self.IsSweepComplete_ = false ;
-%                 self.Triggering.pulseMasterTrigger();
+%                 self.Triggering.pulseSweepTrigger();
 %                 self.IsPerformingSweep_ = true ;
 %             catch me
 %                 err = me ;

@@ -13,9 +13,9 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access=protected, Constant=true)
-        MasterTriggerPhysicalChannelName_ = 'pfi8'
-        MasterTriggerPFIID_ = 8
-        MasterTriggerEdge_ = 'rising'
+        SweepTriggerPhysicalChannelName_ = 'pfi8'
+        SweepTriggerPFIID_ = 8
+        SweepTriggerEdge_ = 'rising'
     end
     
     properties (Access = protected)

@@ -162,7 +162,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 % % %                 if thisTriggerScheme.Target ~= self.AcquisitionTriggerScheme.Target ,
 % % %                     thisTriggerScheme.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
 % % %                 end                
-% %                 thisTriggerScheme.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);                                
+% %                 thisTriggerScheme.configureStartTrigger(self.SweepTriggerPFIID_, self.SweepTriggerEdge_);                                
 % %             end  % function            
 %         end  % function
 %         
@@ -191,7 +191,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %             % TODO: Need to set the edge polarity!!!
 %             
 %             % Set it up to trigger off the master trigger
-%             task.configureStartTrigger(self.MasterTriggerPFIID_, self.MasterTriggerEdge_);
+%             task.configureStartTrigger(self.SweepTriggerPFIID_, self.SweepTriggerEdge_);
 %         end
 %         
 % %         function configureStartTrigger(self, pfiID, edge)

@@ -1139,7 +1139,7 @@ classdef WavesurferModel < ws.Model
                 % Any system waiting for an internal or external trigger was armed and waiting
                 % in the subsystem startingSweep() above.
                 %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
-                %self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
+                %self.Triggering.startAllTriggerTasksAndPulseSweepTrigger();
 
                 % Pulse the master trigger to start the sweep!
                 %fprintf('About to pulse the master trigger!\n');
@@ -1148,7 +1148,7 @@ classdef WavesurferModel < ws.Model
                     % samplesAcquired messages are ignored when we're
                     % waiting for looperReadyForSweep and
                     % refillerReadyForSweep messages above.
-                self.Triggering.pulseMasterTrigger();
+                self.Triggering.pulseSweepTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,

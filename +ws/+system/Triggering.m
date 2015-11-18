@@ -1,7 +1,7 @@
 classdef Triggering < ws.system.TriggeringSubsystem 
     
     properties (Access=protected, Transient=true)
-        MasterTriggerDABSTask_
+        SweepTriggerDABSTask_
     end
         
     methods
@@ -17,19 +17,19 @@ classdef Triggering < ws.system.TriggeringSubsystem
 %             end
 %         end
         
-        function setupMasterTriggerTask(self) 
-            if isempty(self.MasterTriggerDABSTask_) ,
-                self.MasterTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Master Trigger Task');
-                self.MasterTriggerDABSTask_.createDOChan(self.Sources{1}.DeviceName, self.MasterTriggerPhysicalChannelName_);
-                self.MasterTriggerDABSTask_.writeDigitalData(false);
+        function setupSweepTriggerTask(self) 
+            if isempty(self.SweepTriggerDABSTask_) ,
+                self.SweepTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Sweep Trigger Task');
+                self.SweepTriggerDABSTask_.createDOChan(self.Sources{1}.DeviceName, self.SweepTriggerPhysicalChannelName_);
+                self.SweepTriggerDABSTask_.writeDigitalData(false);
             end
         end  % function
     end
     
     methods (Access=protected)
-        function teardownMasterTriggerTask_(self) 
-            ws.utility.deleteIfValidHandle(self.MasterTriggerDABSTask_);  % have to delete b/c DABS task
-            self.MasterTriggerDABSTask_ = [] ;
+        function teardownSweepTriggerTask_(self) 
+            ws.utility.deleteIfValidHandle(self.SweepTriggerDABSTask_);  % have to delete b/c DABS task
+            self.SweepTriggerDABSTask_ = [] ;
         end
     end
     
@@ -40,7 +40,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
         end  % function
 
         function releaseTimedHardwareResources(self)
-            self.teardownMasterTriggerTask_();
+            self.teardownSweepTriggerTask_();
         end  % function
         
         function delete(self)
@@ -55,15 +55,15 @@ classdef Triggering < ws.system.TriggeringSubsystem
     end  % methods block
     
     methods
-        function pulseMasterTrigger(self)
+        function pulseSweepTrigger(self)
             % Produce a pulse on the master trigger, which will truly start things
-            self.MasterTriggerDABSTask_.writeDigitalData(true);            
+            self.SweepTriggerDABSTask_.writeDigitalData(true);            
             %pause(0.010);  % TODO: get rid of once done debugging
-            self.MasterTriggerDABSTask_.writeDigitalData(false);            
+            self.SweepTriggerDABSTask_.writeDigitalData(false);            
         end  % function
                 
         function startingRun(self)
-            self.setupMasterTriggerTask();            
+            self.setupSweepTriggerTask();            
         end  % function
         
         function startingSweep(self) %#ok<MANU>
