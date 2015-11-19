@@ -315,6 +315,17 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                     end
                 end
             end
+            
+            % To ensure backwards-compatibility when loading an old .cfg
+            % file, check that AcquisitionTriggerSchemeIndex_ is in-range
+            nAcquisitionSchemes = length(self.AcquisitionSchemes) ;
+            if 1<=self.AcquisitionTriggerSchemeIndex_ && self.AcquisitionTriggerSchemeIndex_<=nAcquisitionSchemes ,
+                % all is well
+            else
+                % Current value is illegal, so fix it.
+                self.AcquisitionTriggerSchemeIndex_ = 1 ;  % Just set it to the built-in trigger, which always exists
+            end
+            
         end  % function
     end  % public methods block
     
