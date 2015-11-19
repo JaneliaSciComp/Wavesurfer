@@ -680,7 +680,7 @@ classdef Looper < ws.Model
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
                     self.completeSweep_();
                 end
-%             end            
+%             end
         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)

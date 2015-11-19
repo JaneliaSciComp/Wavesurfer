@@ -86,7 +86,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
         end  % function
         
         function startingSweep(self)
-            self.setupInternalTriggers_();
+            self.setupCounterTriggers_();
         end  % function
 
         function completingSweep(self)
@@ -126,7 +126,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
     end  % methods block
 
     methods (Access = protected)
-        function setupInternalTriggers_(self)        
+        function setupCounterTriggers_(self)        
             %acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
             stimulationTriggerScheme = self.StimulationTriggerScheme ;
             
@@ -165,7 +165,7 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
         function task = createCounterTask_(self,triggerSource)
             % Create the counter task
             counterID = triggerSource.CounterID ;
-            taskName = sprintf('WaveSurfer Counter Trigger Task %d',triggerSource.CounterID) ;
+            taskName = sprintf('WaveSurfer Counter Trigger Task (CTR%d)',triggerSource.CounterID) ;
             task = ...
                 ws.ni.CounterTriggerTask(triggerSource, ...
                                          triggerSource.DeviceName, ...

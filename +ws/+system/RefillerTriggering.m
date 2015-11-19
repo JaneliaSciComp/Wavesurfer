@@ -80,7 +80,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %         end  % function
 %         
 %         function startingSweep(self)
-%             self.setupInternalTriggers_();
+%             self.setupCounterTriggers_();
 %         end  % function
 % 
 %         function completingSweep(self)
@@ -121,7 +121,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 %     end  % methods block
 % 
 %     methods (Access = protected)
-%         function setupInternalTriggers_(self)        
+%         function setupCounterTriggers_(self)        
 %             acquisitionTriggerScheme = self.AcquisitionTriggerScheme ;
 %             stimulationTriggerScheme = self.StimulationTriggerScheme ;
 %             if isa(acquisitionTriggerScheme,'ws.CounterTrigger') ,

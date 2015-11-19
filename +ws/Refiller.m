@@ -46,7 +46,7 @@ classdef Refiller < ws.Model
         IPCSubscriber_
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
-        %NSweepsCompletedInThisRun_ = 0
+        NSweepsCompletedSoFarThisRun_ = 0
         t_
         NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_  
@@ -66,7 +66,8 @@ classdef Refiller < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsPerformingEpisode_ = false
-        NEpisodesPerRun_
+        NEpisodesPerSweep_
+        NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
     end
     
@@ -231,8 +232,10 @@ classdef Refiller < ws.Model
                                 if areTasksDone ,
                                     self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                                     %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
-                                    if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                                    if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
                                         self.startEpisode_() ;
+                                    else
+                                        self.completeTheOngoingSweep_() ;
                                     end
                                 end                                
                             end
@@ -388,7 +391,7 @@ classdef Refiller < ws.Model
         end
         
 %         function out = get.NSweepsCompletedInThisRun(self)
-%             out = self.NSweepsCompletedInThisRun_ ;
+%             out = self.NSweepsCompletedSoFarThisRun_ ;
 %         end
 % 
 %         function val = get.NSweepsPerRun(self)
@@ -726,23 +729,23 @@ classdef Refiller < ws.Model
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
                 % This means one episode per sweep, always
-                self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;
+                self.NEpisodesPerSweep_ = 1 ;
             else
                 % Means continuous acq, so need to consult stim trigger
                 if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
-                    self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
+                    self.NEpisodesPerSweep_ = 1 ;                    
                 elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
                     % stim trigger scheme is a counter trigger
-                    self.NEpisodesPerRun_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                    self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
                 else
                     % stim trigger scheme is an external trigger
-                    self.NEpisodesPerRun_ = inf ;  % by convention
+                    self.NEpisodesPerSweep_ = inf ;  % by convention
                 end
             end
 
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
-            %self.NSweepsCompletedInThisRun_ = 0 ;
+            self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
             
@@ -792,6 +795,7 @@ classdef Refiller < ws.Model
             % start.                
                 
             % Almost-Final preparations...
+            self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             self.IsPerformingSweep_ = true ;
 
             % Start an episode
@@ -809,10 +813,11 @@ classdef Refiller < ws.Model
                 end
             end
             
-            % Bump the number of completed sweeps
-            %self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
-
+            % Note that we are no longer performing a sweep
             self.IsPerformingSweep_ = false ;            
+
+            % Bump the number of completed sweeps
+            self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
             
             % Notify the front end
             self.IPCPublisher_.send('refillerCompletedSweep') ;
@@ -974,14 +979,15 @@ classdef Refiller < ws.Model
 
             % Update state
             self.IsPerformingEpisode_ = false;
+            self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
 %             % If we might have more episodes to deliver, arm for next one
-%             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+%             if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerRun_ ,
 %                 self.armForEpisode_() ;
 %             end                                    
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
-            %fprintf('    self.NEpisodesCompletedSoFarThisRun_: %d\n',self.NEpisodesCompletedSoFarThisRun_);
+            %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
         end  % function
         
         function stopTheOngoingEpisode_(self)
