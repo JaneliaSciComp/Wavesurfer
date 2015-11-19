@@ -113,11 +113,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.AcquisitionSchemes(self)
-            sweepTrigger = self.SweepTrigger ;
-            externalTriggers = self.ExternalTriggers ;
-            wrappedSweepTrigger = {sweepTrigger} ;
-            whos
-            out = horzcat(wrappedSweepTrigger,externalTriggers) ;
+            out = [ {self.SweepTrigger} self.ExternalTriggers ] ;
         end  % function
         
         function out = get.Schemes(self)

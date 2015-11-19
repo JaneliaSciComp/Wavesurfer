@@ -186,8 +186,11 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             
             % TODO: Need to set the edge polarity!!!
             
-            % Set it up to trigger off the sweep trigger
-            task.configureStartTrigger(self.SweepTrigger.PFIID, self.SweepTrigger.Edge);
+            % Note that this counter *must* be the stim trigger, since
+            % can't use a counter for acq trigger.
+            % Set it up to trigger off the acq trigger, since don't want to
+            % fire anything until we've started acquiring.
+            task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
         end
         
 %         function configureStartTrigger(self, pfiID, edge)
