@@ -1,11 +1,11 @@
 classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     properties (Dependent = true)
-        SweepTrigger  % a ws.SweepTrigger (not a cell array)
+        BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
         CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
-        Schemes  % This is [{SweepTrigger} CounterTriggers ExternalTriggers], a row cell array
-        AcquisitionSchemes  % This is [{SweepTrigger} ExternalTriggers], a row cell array
+        Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
+        AcquisitionSchemes  % This is [{BuiltinTrigger} ExternalTriggers], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
         AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
@@ -25,7 +25,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access = protected)
-        SweepTrigger_  % a ws.SweepTrigger (not a cell array)
+        BuiltinTrigger_  % a ws.BuiltinTrigger (not a cell array)
         CounterTriggers_  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers_  % this is a cell row array with all elements of type ws.ExternalTrigger
         StimulationUsesAcquisitionTriggerScheme_
@@ -44,7 +44,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function self = TriggeringSubsystem(parent)
             self@ws.system.Subsystem(parent) ;            
             self.IsEnabled = true ;
-            self.SweepTrigger_ = ws.SweepTrigger(self) ; 
+            self.BuiltinTrigger_ = ws.BuiltinTrigger(self) ; 
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
             self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
@@ -100,8 +100,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             end  % for loop            
         end  % function
         
-        function out = get.SweepTrigger(self)
-            out = self.SweepTrigger_;
+        function out = get.BuiltinTrigger(self)
+            out = self.BuiltinTrigger_;
         end  % function
         
         function out = get.ExternalTriggers(self)
@@ -113,11 +113,11 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.AcquisitionSchemes(self)
-            out = [ {self.SweepTrigger} self.ExternalTriggers ] ;
+            out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
         end  % function
         
         function out = get.Schemes(self)
-            out = [ {self.SweepTrigger} self.CounterTriggers self.ExternalTriggers ] ;
+            out = [ {self.BuiltinTrigger} self.CounterTriggers self.ExternalTriggers ] ;
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)

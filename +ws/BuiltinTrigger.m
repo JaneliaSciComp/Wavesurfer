@@ -1,8 +1,11 @@
-classdef SweepTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
-    % A class that represents the sweep trigger, a built-in trigger on
-    % PFI8, that we "manually" throw at the start of each sweep.  This
+classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+    % A class that represents the built-in trigger, a trigger on
+    % PFI8, that we "manually" throw at the start of each leg of the run.  This
     % trigger can trigger AI/AO/DI/DO tasks directly, and can also trigger
-    % counter trigger tasks, which can then trigger AO/DO tasks.
+    % counter trigger tasks, which can then trigger AO/DO tasks.  Note that
+    % this trigger gets fired at the start of each leg of the run, whether
+    % or not it's actually used to trigger either the acquisition or the
+    % stimulation.
     
     properties (Dependent=true)
         Name
@@ -21,9 +24,9 @@ classdef SweepTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Hete
     end
     
     methods
-        function self=SweepTrigger(parent)
+        function self=BuiltinTrigger(parent)
             self@ws.Model(parent) ;
-            self.Name_ = 'Sweep Trigger (built-in)' ;
+            self.Name_ = 'Built-in Trigger (PFI8)' ;
             %self.DeviceName_ = '' ;
             self.PFIID_ = 8 ;
             self.Edge_ = 'rising' ;

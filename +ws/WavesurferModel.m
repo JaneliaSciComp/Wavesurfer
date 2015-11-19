@@ -1148,7 +1148,7 @@ classdef WavesurferModel < ws.Model
                     % samplesAcquired messages are ignored when we're
                     % waiting for looperReadyForSweep and
                     % refillerReadyForSweep messages above.
-                self.Triggering.pulseSweepTrigger();
+                self.Triggering.pulseBuiltinTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,

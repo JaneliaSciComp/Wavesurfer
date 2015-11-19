@@ -729,7 +729,7 @@ classdef Refiller < ws.Model
                 self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;
             else
                 % Means continuous acq, so need to consult stim trigger
-                if isa(self.Stimulation.TriggerScheme, 'ws.SweepTrigger') ,
+                if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
                     self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
                 elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
                     % stim trigger scheme is a counter trigger
