@@ -76,15 +76,15 @@ classdef CounterTriggerTask < handle    % & ws.mixin.AttributableProperties
             end
         end
         
-%         function result = isDone(self)
-%             if isempty(self.DabsDaqTask_) ,
-%                 % This means there is no assigned CTR device, so just
-%                 % return true
-%                 result = true ;  % things work out better if you use this convention
-%             else
-%                 result = self.DabsDaqTask_.isTaskDoneQuiet() ;
-%             end
-%         end  % function
+        function result = isDone(self)
+            if isempty(self.DabsDaqTask_) ,
+                % This means there is no assigned CTR device, so just
+                % return true
+                result = true ;  % things work out better if you use this convention
+            else
+                result = self.DabsDaqTask_.isTaskDoneQuiet() ;
+            end
+        end  % function
         
         function exportSignal(self, terminalList)
             self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)

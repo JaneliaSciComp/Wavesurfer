@@ -228,17 +228,31 @@ classdef Refiller < ws.Model
                             % Check the finite outputs, refill them if
                             % needed.
                             if self.IsPerformingEpisode_ ,
-                                areTasksDone = self.Stimulation.areTasksDone() ;
+                                %areTasksDone = self.Stimulation.areTasksDone() ;
+                                areStimulationTasksDone = self.Stimulation.areTasksDone() ;
                                 %areTasksDone = self.Stimulation.areTasksDone() && self.Triggering.areTasksDone() ;
-                                if areTasksDone ,
+                                if areStimulationTasksDone ,
                                     self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                                     %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
                                     if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
                                         self.startEpisode_() ;
                                     else
+                                        areTriggeringTasksDone = self.Triggering.areTasksDone() ;
+                                        if areTriggeringTasksDone ,
+                                            self.completeTheOngoingSweep_() ;
+                                        end
+                                    end                                        
+                                end                                
+                            else
+                                % If we're in a sweep, but not performing
+                                % an episode, check to see if the counter
+                                % task is done, if there is one.
+                                if self.NEpisodesCompletedSoFarThisSweep_ >= self.NEpisodesPerSweep_ ,
+                                    areTriggeringTasksDone = self.Triggering.areTasksDone() ;
+                                    if areTriggeringTasksDone ,
                                         self.completeTheOngoingSweep_() ;
                                     end
-                                end                                
+                                end
                             end
                         end
                     else
@@ -794,7 +808,8 @@ classdef Refiller < ws.Model
             % hardware-timed AI, AO, DI, and DO tasks.  But the counter
             % timer tasks will not start running until they themselves
             % are triggered by the master trigger.
-            self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
+            %self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
+              % We now do this this RefillerTriggering::startingSweep()
             
             % At this point, all the hardware-timed tasks the refiller is
             % responsible for should be "started" (in the DAQmx sense)
