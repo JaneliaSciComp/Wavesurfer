@@ -273,3 +273,5 @@ Version History
 0.9-beta-13: (November 18, 2015) Fixed bug with mimic()'ing cell 
              arrays.
 
+0.9-beta-14: (November 20, 2015) Fixed bug where didn't work if no 
+             input channels were defined.
