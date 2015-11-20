@@ -168,7 +168,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end  % function
 
         function startingSweep(self)
-            %fprintf('Acquisition::startingSweep()\n');
+            %fprintf('LooperAcquisition::startingSweep()\n');
             self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
@@ -273,7 +273,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end  % function
         
     end  % protected methods block
-                
+    
     methods
         function [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
                 poll(self, timeSinceSweepStart, fromRunStartTicId)
@@ -283,7 +283,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring_ ,
-                %fprintf('IsArmedOrAcquiring\n') ;
+                %fprintf('LooperAcquisition::poll(): In self.IsArmedOrAcquiring_==true branch\n') ;
                 % Check for task doneness
                 if self.AreSweepsContinuous_ ,  
                     % if doing continuous acq, no need to check.  This is
@@ -312,13 +312,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
 
                 % If we were done before reading the data, act accordingly
                 if areTasksDone ,
-                    %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisSweep_);
-                
-                    % Stop tasks, notify rest of system
+                    % Stop tasks, set flag to reflect that we're no longer
+                    % armed nor acquiring
                     self.AnalogInputTask_.stop();
                     self.DigitalInputTask_.stop();
                     self.IsArmedOrAcquiring_ = false ;
-                    %self.acquisitionSweepComplete_();
                 end
             else
                 %fprintf('~IsArmedOrAcquiring\n') ;

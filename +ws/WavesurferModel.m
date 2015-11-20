@@ -388,6 +388,7 @@ classdef WavesurferModel < ws.Model
         
         function result = looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
+            %fprintf('WavesurferModel::looperCompletedSweep()\n');
             self.DidLooperCompleteSweep_ = true ;
             self.IsSweepComplete_ = self.DidRefillerCompleteSweep_ ;
             result = [] ;
@@ -395,6 +396,7 @@ classdef WavesurferModel < ws.Model
         
         function result = refillerCompletedSweep(self)
             % Call by the Refiller, via ZMQ pub-sub, when it has completed a sweep
+            %fprintf('WavesurferModel::refillerCompletedSweep()\n');
             self.DidRefillerCompleteSweep_ = true ;
             self.IsSweepComplete_ = self.DidLooperCompleteSweep_ ;
             result = [] ;
@@ -2119,7 +2121,7 @@ classdef WavesurferModel < ws.Model
             
             self.IsSweepComplete_ = false ;
             self.DidLooperCompleteSweep_ = false ;
-            self.DidRefillerCompleteSweep_ = false ;
+            self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
             self.WasRunStoppedInLooper_ = false ;
             self.WasRunStoppedInRefiller_ = false ;
             self.WasRunStopped_ = false ;
