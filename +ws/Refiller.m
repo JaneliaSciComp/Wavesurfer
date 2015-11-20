@@ -229,6 +229,7 @@ classdef Refiller < ws.Model
                             % needed.
                             if self.IsPerformingEpisode_ ,
                                 areTasksDone = self.Stimulation.areTasksDone() ;
+                                %areTasksDone = self.Stimulation.areTasksDone() && self.Triggering.areTasksDone() ;
                                 if areTasksDone ,
                                     self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                                     %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
@@ -706,7 +707,7 @@ classdef Refiller < ws.Model
         function releaseTimedHardwareResources_(self)
             %self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
-            %self.Triggering.releaseHardwareResources();
+            self.Triggering.releaseHardwareResources();
             %self.Ephys.releaseHardwareResources();
         end
         
@@ -789,6 +790,12 @@ classdef Refiller < ws.Model
                 end
             end
                         
+            % Start the counter timer tasks, which will trigger the
+            % hardware-timed AI, AO, DI, and DO tasks.  But the counter
+            % timer tasks will not start running until they themselves
+            % are triggered by the master trigger.
+            self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
+            
             % At this point, all the hardware-timed tasks the refiller is
             % responsible for should be "started" (in the DAQmx sense)
             % and simply waiting for their trigger to go high to truly
