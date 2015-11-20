@@ -557,16 +557,16 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         
         function stoppingEpisode(self)
             if self.IsArmedOrStimulating_ ,
-                self.TheFiniteAnalogOutputTask_.abort() ;
-                self.TheFiniteDigitalOutputTask_.abort() ;                
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;                
                 self.IsArmedOrStimulating_ = false ;
             end
         end  % function
                 
         function abortingEpisode(self)
             if self.IsArmedOrStimulating_ ,
-                self.TheFiniteAnalogOutputTask_.abort() ;
-                self.TheFiniteDigitalOutputTask_.abort() ;                
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;                
                 self.IsArmedOrStimulating_ = false ;
             end
         end  % function

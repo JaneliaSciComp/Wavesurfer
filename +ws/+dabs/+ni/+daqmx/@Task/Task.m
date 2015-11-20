@@ -165,7 +165,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             try
                 % abort if task is not done
                 if ~obj.isTaskDoneQuiet()
-                    obj.abort();
+                    obj.stop();
                 end        
             catch me %#ok<NASGU>
                 % If this fails for whatever reason, want to just proceed
@@ -212,8 +212,14 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             
             % Filter Error  -200018: "DAC conversion attempted before data to be converted was available". Not relevant on stop.
 
+            % Modified 11/20/2015 to ignore Warning 20010, thus making this
+            % identical to abort().  I never care about that warning, and I
+            % don't like that you can "abort()" a DABS task, but that means something
+            % very different than when you "abort" a task in DAQmx.  So
+            % Task.abort() is hereby deprecated.  --ALT
+            
             for i=1:length(obj)
-                obj(i).apiCallFiltered('DAQmxStopTask',[-200621 -200018], obj(i).taskID);
+                obj(i).apiCallFiltered('DAQmxStopTask',[200010 -200621 -200018], obj(i).taskID);
             end
         end
         
@@ -222,6 +228,10 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             %Unlike stop(), irrelevant DAQmx Warnings & Errors are suppressed:
             %  Warning 200010: Occurs when stop() is called to terminate a Finite acquisition/generation prior to the specified number of samples.
             %VECTORIZED
+
+            % I don't like that you can "abort()" a DABS task, but that
+            % means something very different than when you "abort" a task
+            % in DAQmx.  So Task.abort() is hereby deprecated.  --ALT
             
             % Filter Error  -200018: "DAC conversion attempted before data to be converted was available". Not relevant on abort.            
             for i=1:length(obj)

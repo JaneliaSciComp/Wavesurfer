@@ -122,11 +122,11 @@ classdef InputTask < handle
             end
         end
         
-        function abort(self)
-            if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.abort();
-            end
-        end
+%         function abort(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.abort();
+%             end
+%         end
         
         function stop(self)
             if ~isempty(self.DabsDaqTask_) ,   %&& ~self.DabsDaqTask_.isTaskDoneQuiet()

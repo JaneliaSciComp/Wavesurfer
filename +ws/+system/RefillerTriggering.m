@@ -125,8 +125,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
-    end  % protected methods block
-    
+    end  % protected methods block    
     
     methods (Access = protected)
         function setupCounterTriggers_(self)        
@@ -134,7 +133,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
 
             stimulationTriggerScheme = self.StimulationTriggerScheme ;
             
-            if isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+            if self.Parent.Stimulation.IsEnabled && isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
                 self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
             end            
         end  % function

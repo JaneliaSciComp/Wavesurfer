@@ -1290,7 +1290,7 @@ classdef TestPulser < ws.Model
             else
                 if isvalid(self.OutputTask_) ,
                     try
-                        self.OutputTask_.abort();
+                        self.OutputTask_.stop();
                         delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
                           % this delete() can throw, if, e.g. the daq board has
                           % been turned off.  We discard the error because we're
@@ -1310,7 +1310,7 @@ classdef TestPulser < ws.Model
             else
                 if isvalid(self.InputTask_) ,
                     try
-                        self.InputTask_.abort();
+                        self.InputTask_.stop();
                         delete(self.InputTask_);  % it's a DABS task, so have to manually delete
                           % this delete() can throw, if, e.g. the daq board has
                           % been turned off.  We discard the error because we're

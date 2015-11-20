@@ -184,15 +184,19 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end
         
         function stoppingSweep(self)
-            self.AnalogInputTask_.abort();
-            self.DigitalInputTask_.abort();
+            self.AnalogInputTask_.stop();
+            self.DigitalInputTask_.stop();
             self.IsArmedOrAcquiring_ = false ;
         end  % function
 
         function abortingSweep(self)
             try
-                self.AnalogInputTask_.abort();
-                self.DigitalInputTask_.abort();
+                self.AnalogInputTask_.stop();  
+                    % this is correct, we stop() the task, even though we're aborting the sweep.  
+                    % stop and abort mean
+                    % different things when
+                    % we're talking about sweeps versus tasks
+                self.DigitalInputTask_.stop();
             catch me %#ok<NASGU>
                 % abortingSweep() cannot throw an error, so we ignore any
                 % errors that arise here.

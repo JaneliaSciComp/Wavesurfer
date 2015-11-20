@@ -102,17 +102,17 @@ classdef FiniteOutputTask < handle
             end
         end  % function
         
-        function abort(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::abort()\n');
+%         function abort(self)
+% %             if isa(self,'ws.ni.AnalogInputTask') ,
+% %                 fprintf('AnalogInputTask::abort()\n');
+% %             end
+% %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
+% %                 fprintf('FiniteAnalogOutputTask::abort()\n');
+% %             end
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.abort();
 %             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::abort()\n');
-%             end
-            if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.abort();
-            end
-        end  % function
+%         end  % function
         
         function stop(self)
             %if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
@@ -291,8 +291,8 @@ classdef FiniteOutputTask < handle
                     % Unregister callbacks
                     %self.DabsDaqTask_.doneEventCallbacks = {};
 
-                    % Abort the task
-                    self.DabsDaqTask_.abort();
+                    % Stop the task
+                    self.DabsDaqTask_.stop();
                     
                     % Unreserve resources (abort should do this for us)
                     %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
