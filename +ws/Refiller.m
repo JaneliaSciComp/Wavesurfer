@@ -237,10 +237,7 @@ classdef Refiller < ws.Model
                                     if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
                                         self.startEpisode_() ;
                                     else
-                                        areTriggeringTasksDone = self.Triggering.areTasksDone() ;
-                                        if areTriggeringTasksDone ,
-                                            self.completeTheOngoingSweep_() ;
-                                        end
+                                        self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
                                     end                                        
                                 end                                
                             else
@@ -248,10 +245,7 @@ classdef Refiller < ws.Model
                                 % an episode, check to see if the counter
                                 % task is done, if there is one.
                                 if self.NEpisodesCompletedSoFarThisSweep_ >= self.NEpisodesPerSweep_ ,
-                                    areTriggeringTasksDone = self.Triggering.areTasksDone() ;
-                                    if areTriggeringTasksDone ,
-                                        self.completeTheOngoingSweep_() ;
-                                    end
+                                    self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
                                 end
                             end
                         end
@@ -603,58 +597,58 @@ classdef Refiller < ws.Model
 %             self.checkIfReadyToCompleteOngoingSweep_();            
 %         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('Refiller::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfReadyToCompleteOngoingSweep_();
-        end  % function
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('Refiller::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfReadyToCompleteOngoingSweep_();
+%         end  % function
+%         
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfReadyToCompleteOngoingSweep_();
+%         end
         
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfReadyToCompleteOngoingSweep_();
-        end
-        
-        function checkIfReadyToCompleteOngoingSweep_(self)
-            % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
-            % depending on the states of the Acquisition, Stimulation, and
-            % Triggering subsystems.  Generally speaking, we want to make
-            % sure that all three subsystems are done with the sweep before
-            % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            %keyboard
-            if self.Stimulation.IsEnabled ,
-                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-                    % acq and stim trig sources are identical
-                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.completeTheOngoingSweep_();
-                    end
-                else
-                    % acq and stim trig sources are distinct
-                    % this means the stim trigger basically runs on
-                    % its own until it's done
-                    if self.Acquisition.IsArmedOrAcquiring ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.completeTheOngoingSweep_();
-                    end
-                end
-            else
-                % Stimulation subsystem is disabled
-                if self.Acquisition.IsArmedOrAcquiring , 
-                    % do nothing
-                else
-                    %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.completeTheOngoingSweep_();
-                end
-            end            
-        end  % function
+%         function checkIfReadyToCompleteOngoingSweep_(self)
+%             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the sweep before
+%             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
+%             %keyboard
+%             if self.Stimulation.IsEnabled ,
+%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
+%                     % acq and stim trig sources are identical
+%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.completeTheOngoingSweep_();
+%                     end
+%                 else
+%                     % acq and stim trig sources are distinct
+%                     % this means the stim trigger basically runs on
+%                     % its own until it's done
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.completeTheOngoingSweep_();
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                     self.completeTheOngoingSweep_();
+%                 end
+%             end            
+%         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
 %             % Called "from below" when data is available
@@ -827,6 +821,17 @@ classdef Refiller < ws.Model
             self.IPCPublisher_.send('refillerReadyForSweep') ;
         end  % function
 
+        function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
+            if self.AreSweepsFiniteDuration_ ,
+                areTriggeringTasksDone = true ;
+            else
+                areTriggeringTasksDone = self.Triggering.areTasksDone() ;
+            end
+            if areTriggeringTasksDone ,
+                self.completeTheOngoingSweep_() ;
+            end        
+        end
+        
         function completeTheOngoingSweep_(self)
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)

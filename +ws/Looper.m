@@ -630,20 +630,20 @@ classdef Looper < ws.Model
             self.checkIfSweepIsComplete_();            
         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('Looper::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfSweepIsComplete_();
-        end  % function
-        
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfSweepIsComplete_();
-        end
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('Looper::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfSweepIsComplete_();
+%         end  % function
+%         
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfSweepIsComplete_();
+%         end
         
         function checkIfSweepIsComplete_(self)
             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
