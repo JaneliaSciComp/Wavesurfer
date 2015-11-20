@@ -232,7 +232,7 @@ classdef Looper < ws.Model
 %                                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
 %                                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
 %                                 if areTasksDone ,
-%                                     self.completeSweep_() ;
+%                                     self.completeTheOngoingSweep_() ;
 %                                     %self.acquisitionSweepComplete() ;
 %                                 end
 %                             end                        
@@ -314,14 +314,14 @@ classdef Looper < ws.Model
         
         function result = startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
-            % to run a sweep.  But the sweep doesn't start until the
-            % WavesurferModel calls startSweep().
+            % for a sweep.
             %
             % This is called via RPC, so must return exactly one return
             % value.  If a runtime error occurs, it will cause the frontend
             % process to hang.
 
-            % Prepare for the run
+            % Prepare for the sweep
+            %fprintf('Looper::startingSweep()\n');            
             self.prepareForSweep_(indexOfSweepWithinRun) ;
             result = [] ;
         end  % function
@@ -630,20 +630,20 @@ classdef Looper < ws.Model
             self.checkIfSweepIsComplete_();            
         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('Looper::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfSweepIsComplete_();
-        end  % function
-        
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfSweepIsComplete_();
-        end
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('Looper::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfSweepIsComplete_();
+%         end  % function
+%         
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfSweepIsComplete_();
+%         end
         
         function checkIfSweepIsComplete_(self)
             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
@@ -659,7 +659,7 @@ classdef Looper < ws.Model
 %                         % do nothing
 %                     else
 %                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.completeSweep_();
+%                         self.completeTheOngoingSweep_();
 %                     end
 %                 else
 %                     % acq and stim trig sources are distinct
@@ -669,7 +669,7 @@ classdef Looper < ws.Model
 %                         % do nothing
 %                     else
 %                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.completeSweep_();
+%                         self.completeTheOngoingSweep_();
 %                     end
 %                 end
 %             else
@@ -678,9 +678,9 @@ classdef Looper < ws.Model
                     % do nothing
                 else
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.completeSweep_();
+                    self.completeTheOngoingSweep_();
                 end
-%             end            
+%             end
         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -727,7 +727,7 @@ classdef Looper < ws.Model
        
     methods (Access=protected)
         function performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
-            %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
+            %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
             self.IPCSubscriber_.processMessagesIfAvailable() ;
 
@@ -741,7 +741,7 @@ classdef Looper < ws.Model
                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
                 if areTasksDone ,
-                    self.completeSweep_() ;
+                    self.completeTheOngoingSweep_() ;
                     %self.acquisitionSweepComplete() ;
                 end
             end                        
@@ -751,7 +751,7 @@ classdef Looper < ws.Model
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseTimedHardwareResources();
             %self.Stimulation.releaseOnDemandHardwareResources();
-            self.Triggering.releaseHardwareResources();
+            %self.Triggering.releaseHardwareResources();
             %self.Ephys.releaseHardwareResources();
         end
 
@@ -763,13 +763,13 @@ classdef Looper < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-        function releaseAllHardwareResources_(self)
-            self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseTimedHardwareResources();
-            self.Stimulation.releaseOnDemandHardwareResources();
-            self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
-        end
+%         function releaseAllHardwareResources_(self)
+%             self.Acquisition.releaseHardwareResources();
+%             self.Stimulation.releaseTimedHardwareResources();
+%             self.Stimulation.releaseOnDemandHardwareResources();
+%             %self.Triggering.releaseHardwareResources();
+%             %self.Ephys.releaseHardwareResources();
+%         end
     end
 
     methods
@@ -878,6 +878,7 @@ classdef Looper < ws.Model
             % Get everything set up for the Looper to run a sweep, but
             % don't pulse the master trigger yet.
             
+            %fprintf('Looper::prepareForSweep_()\n') ;
             % Set the fallback err value, which gets returned if nothing
             % goes wrong
             err = [] ;
@@ -886,36 +887,26 @@ classdef Looper < ws.Model
             %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
                         
-            % Call startingSweep() on all the enabled subsystems, and
-            % start the counter timer tasks
-%             try
-                for i = 1:numel(self.Subsystems_) ,
-                    if self.Subsystems_{i}.IsEnabled ,
-                        self.Subsystems_{i}.startingSweep();
-                    end
+            % Call startingSweep() on all the enabled subsystems
+            for i = 1:numel(self.Subsystems_) ,
+                if self.Subsystems_{i}.IsEnabled ,
+                    %fprintf('About to call startingSweep() on subsystem %d\n',i) ;
+                    self.Subsystems_{i}.startingSweep();
                 end
+            end
 
-                % Start the counter timer tasks, which will trigger the
-                % hardware-timed AI, AO, DI, and DO tasks.  But the counter
-                % timer tasks will not start running until they themselves
-                % are triggered by the master trigger.
-                self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
+%             % Start the counter timer tasks, which will trigger the
+%             % hardware-timed AI, AO, DI, and DO tasks.  But the counter
+%             % timer tasks will not start running until they themselves
+%             % are triggered by the master trigger.
+%             self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
 
-                % At this point, all the hardware-timed tasks the looper is
-                % responsible for should be "started" (in the DAQmx sense)
-                % and simply waiting for their trigger to go high to truly
-                % start.                
+            % At this point, all the hardware-timed tasks the looper is
+            % responsible for should be "started" (in the DAQmx sense)
+            % and simply waiting for their triggers to truly
+            % start.                
                 
-                %self.PollingTicId_ = tic() ;
-                %self.TimeOfLastPoll_ = toc(self.PollingTidId_) ;  % fake, but need to get things started
-%             catch me
-%                 err = me ;
-%                 dbstack
-%                 keyboard
-%             end
-            
             % Final preparations...
-            %self.IsSweepComplete_ = false ;
             self.IsPerformingSweep_ = true ;
             %profile on
             
@@ -934,14 +925,14 @@ classdef Looper < ws.Model
 %             % Pulse the master trigger, dealing with any errors
 %             try
 %                 self.IsSweepComplete_ = false ;
-%                 self.Triggering.pulseMasterTrigger();
+%                 self.Triggering.pulseSweepTrigger();
 %                 self.IsPerformingSweep_ = true ;
 %             catch me
 %                 err = me ;
 %             end
 %         end  % function
         
-        function completeSweep_(self)
+        function completeTheOngoingSweep_(self)
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');
             %dbstack
             

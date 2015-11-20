@@ -89,6 +89,8 @@ classdef WavesurferModel < ws.Model
         TimeOfLastPollInSweep_
         ClockAtRunStart_
         %DoContinuePolling_
+        DidLooperCompleteSweep_
+        DidRefillerCompleteSweep_
         IsSweepComplete_
         WasRunStopped_        
         WasRunStoppedInLooper_        
@@ -386,7 +388,17 @@ classdef WavesurferModel < ws.Model
         
         function result = looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
-            self.IsSweepComplete_ = true ;
+            %fprintf('WavesurferModel::looperCompletedSweep()\n');
+            self.DidLooperCompleteSweep_ = true ;
+            self.IsSweepComplete_ = self.DidRefillerCompleteSweep_ ;
+            result = [] ;
+        end
+        
+        function result = refillerCompletedSweep(self)
+            % Call by the Refiller, via ZMQ pub-sub, when it has completed a sweep
+            %fprintf('WavesurferModel::refillerCompletedSweep()\n');
+            self.DidRefillerCompleteSweep_ = true ;
+            self.IsSweepComplete_ = self.DidLooperCompleteSweep_ ;
             result = [] ;
         end
         
@@ -748,64 +760,64 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
         
-        function acquisitionSweepComplete(self)
-            % Called by the acq subsystem when it's done acquiring for the
-            % sweep.
-            %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
-            self.checkIfSweepIsComplete_();            
-        end  % function
+%         function acquisitionSweepComplete(self)
+%             % Called by the acq subsystem when it's done acquiring for the
+%             % sweep.
+%             %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
+%             self.checkIfSweepIsComplete_();            
+%         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfSweepIsComplete_();
-        end  % function
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfSweepIsComplete_();
+%         end  % function
         
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfSweepIsComplete_();
-        end
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfSweepIsComplete_();
+%         end
         
-        function checkIfSweepIsComplete_(self)
-            % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
-            % depending on the states of the Acquisition, Stimulation, and
-            % Triggering subsystems.  Generally speaking, we want to make
-            % sure that all three subsystems are done with the sweep before
-            % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            if self.Stimulation.IsEnabled ,
-                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-                    % acq and stim trig sources are identical
-                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.IsSweepComplete_ = true ;
-                    end
-                else
-                    % acq and stim trig sources are distinct
-                    % this means the stim trigger basically runs on
-                    % its own until it's done
-                    if self.Acquisition.IsArmedOrAcquiring ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.IsSweepComplete_ = true ;
-                    end
-                end
-            else
-                % Stimulation subsystem is disabled
-                if self.Acquisition.IsArmedOrAcquiring , 
-                    % do nothing
-                else
-                    %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.IsSweepComplete_ = true ;
-                end
-            end            
-        end  % function
+%         function checkIfSweepIsComplete_(self)
+%             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the sweep before
+%             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
+%             if self.Stimulation.IsEnabled ,
+%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
+%                     % acq and stim trig sources are identical
+%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.IsSweepComplete_ = true ;
+%                     end
+%                 else
+%                     % acq and stim trig sources are distinct
+%                     % this means the stim trigger basically runs on
+%                     % its own until it's done
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.IsSweepComplete_ = true ;
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                     self.IsSweepComplete_ = true ;
+%                 end
+%             end            
+%         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
 %             % Called "from below" when data is available
@@ -1139,7 +1151,7 @@ classdef WavesurferModel < ws.Model
                 % Any system waiting for an internal or external trigger was armed and waiting
                 % in the subsystem startingSweep() above.
                 %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
-                %self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
+                %self.Triggering.startAllTriggerTasksAndPulseSweepTrigger();
 
                 % Pulse the master trigger to start the sweep!
                 %fprintf('About to pulse the master trigger!\n');
@@ -1148,7 +1160,7 @@ classdef WavesurferModel < ws.Model
                     % samplesAcquired messages are ignored when we're
                     % waiting for looperReadyForSweep and
                     % refillerReadyForSweep messages above.
-                self.Triggering.pulseMasterTrigger();
+                self.Triggering.pulseBuiltinTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,
@@ -2108,6 +2120,8 @@ classdef WavesurferModel < ws.Model
             % Runs the main message-processing loop during a sweep.
             
             self.IsSweepComplete_ = false ;
+            self.DidLooperCompleteSweep_ = false ;
+            self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
             self.WasRunStoppedInLooper_ = false ;
             self.WasRunStoppedInRefiller_ = false ;
             self.WasRunStopped_ = false ;
