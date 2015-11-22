@@ -111,6 +111,7 @@ classdef InputTask < handle
                     self.NScansReadSoFar_ = 0 ;                    
                     timeNow = toc(self.TicId_) ;
                     self.TimeAtTaskStart_ = timeNow ;                    
+                    self.TimeAtLastRead_ = timeNow ;
                 else                    
                     %fprintf('About to start InputTask named %s\n',self.TaskName);
                     self.DabsDaqTask_.start();
@@ -121,11 +122,11 @@ classdef InputTask < handle
             end
         end
         
-        function abort(self)
-            if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.abort();
-            end
-        end
+%         function abort(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.abort();
+%             end
+%         end
         
         function stop(self)
             if ~isempty(self.DabsDaqTask_) ,   %&& ~self.DabsDaqTask_.isTaskDoneQuiet()
@@ -167,17 +168,24 @@ classdef InputTask < handle
                     % the acquisition of a reasonable number of samples,
                     % given the timing and acq duration.
                     if isempty(nScansToRead) ,
-                        nScansRequested = +inf ;
+                        timeNow = toc(self.TicId_) ;                        
+                        nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                        nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                        nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                        nScans = nScansPossible ;
+                        rawData = zeros(nScans,0,'int16');
+                        self.TimeAtLastRead_ = timeNow ;
                     else
-                        nScansRequested = nScansToRead ;
+                        %nScansRequested = nScansToRead ;
+                        timeNow = toc(self.TicId_) ;                        
+                        %nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                        %nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                        %nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                        %nScans = min(nScansPossible,nScansRequested) ;
+                        %nScans = nScansRequested ;
+                        rawData = zeros(nScansToRead,0,'int16');
+                        self.TimeAtLastRead_ = timeNow ;
                     end
-                    timeNow = toc(self.TicId_) ;                        
-                    nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
-                    nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
-                    nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
-                    nScans = min(nScansPossible,nScansRequested) ;
-                    rawData = zeros(nScans,0,'int16');
-                    self.TimeAtLastRead_ = timeNow ;
                 else
                     if isempty(nScansToRead) ,
                         rawData = self.queryUntilEnoughThenRead_();
@@ -191,17 +199,24 @@ classdef InputTask < handle
                     % the acquisition of a reasonable number of samples,
                     % given the timing and acq duration.
                     if isempty(nScansToRead) ,
-                        nScansRequested = +inf ;
+                        timeNow = toc(self.TicId_) ;                        
+                        nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                        nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                        nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                        nScans = nScansPossible ;
+                        packedData = zeros(nScans,0,'uint32');
+                        self.TimeAtLastRead_ = timeNow ;
                     else
-                        nScansRequested = nScansToRead ;
+                        %nScansRequested = nScansToRead ;
+                        timeNow = toc(self.TicId_) ;                        
+                        %nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                        %nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                        %nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                        %nScans = min(nScansPossible,nScansRequested) ;
+                        %nScans = nScansRequested ;
+                        packedData = zeros(nScansToRead,0,'uint32');
+                        self.TimeAtLastRead_ = timeNow ;
                     end
-                    timeNow = toc(self.TicId_) ;                        
-                    nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
-                    nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
-                    nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
-                    nScans = min(nScansPossible,nScansRequested) ;
-                    packedData = zeros(nScans,0,'uint32');
-                    self.TimeAtLastRead_ = timeNow ;
                 else       
                     if isempty(nScansToRead) ,
                         readData = self.queryUntilEnoughThenRead_();

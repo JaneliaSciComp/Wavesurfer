@@ -2,13 +2,24 @@
 
 %% Wavesurfer
 
-physicalInputChannelNames = {'Dev1/ai0' 'Dev1/ai1' 'Dev2/ai0' 'Dev2/ai1'} ;  % Cell array of strings, each string an NI physical channel name
-inputChannelNames = {'Mon1' 'Mon2' 'Mon3' 'Mon4'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
+%inputDeviceNames = {'Dev1' 'Dev1' 'Dev1' 'Dev1'}; % Cellstring identifying NI board used for the input channels.
+%inputChannelIDs = 0:3; % Array of channel numbers, e.g. 0:1
+physicalInputChannelNames = {'Dev1/ai0' 'Dev1/ai1' 'Dev1/ai2' 'Dev1/ai3' 'Dev1/ai4' 'Dev1/ai5' ...
+                             'Dev1/line0' 'Dev1/line1'} ;  % Cell array of strings, each string an NI physical channel name
+inputChannelNames = {'V1' 'V2' 'V3' 'I1' 'I2' 'I3' ...
+                     'di0' 'di1'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
 
-physicalOutputChannelNames = {'Dev1/ao0' 'Dev2/ao0'} ;  % Cell array of strings, each string an NI physical channel name
-outputChannelNames = {'Cmd1' 'Cmd2'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
+%outputDeviceNames = {'Dev1' 'Dev1'}; % Cellstring identifying NI board used for the output channels.
+%outputAnalogChannelIDs = 0:1; % Array of AO channel numbers, e.g. 0:1.
+%outputAnalogChannelNames = {'Cmd1' 'Cmd2'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
 %outputDigitalChannelIDs = []; % Array of DO channel numbers, e.g. 0:1.
 %outputDigitalChannelNames = {}; %String cell array of channel identifiers. If left empty, default NI channel names will be used.
+physicalOutputChannelNames = {'Dev1/ao0' 'Dev1/ao1' 'Dev1/ao2' 'Dev1/ao3' ...
+                              'Dev1/line2' 'Dev1/line3'} ;  % Cell array of strings, each string an NI physical channel name
+outputChannelNames = {'Cmd1' 'Cmd2' 'Cmd3' 'Cmd4' ...
+                      'do2' 'do3'};  % String cell array of channel identifiers. If left empty, default NI channel names will be used.
+
+
 
 % % This part sets up a "trigger source" -- An internally-generated trigger.
 % % In this case, it uses Counter 0 (CTR0) on the NI board.  By default, this
@@ -43,4 +54,3 @@ triggerDestination(2).Name = 'External Trigger 2';
 triggerDestination(2).DeviceName = 'Dev1';
 triggerDestination(2).PFIID = 1; 
 triggerDestination(2).Edge = 'Rising'; 
-

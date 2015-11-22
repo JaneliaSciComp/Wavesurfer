@@ -10,6 +10,7 @@ classdef Looper < ws.Model
         UserCodeManager
         %Ephys
         SweepDuration  % the sweep duration, in s
+        SweepDurationIfFinite
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
         NSweepsPerRun  
@@ -35,6 +36,7 @@ classdef Looper < ws.Model
         %Ephys_
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
+        SweepDurationIfFinite_ = 1  % s
     end
 
     properties (Access=protected, Transient=true)
@@ -230,7 +232,7 @@ classdef Looper < ws.Model
 %                                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
 %                                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
 %                                 if areTasksDone ,
-%                                     self.completeSweep_() ;
+%                                     self.completeTheOngoingSweep_() ;
 %                                     %self.acquisitionSweepComplete() ;
 %                                 end
 %                             end                        
@@ -265,12 +267,13 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function initializeFromMDFStructure(self,mdfStructure)
+        function result = initializeFromMDFStructure(self,mdfStructure)
             self.initializeFromMDFStructure_(mdfStructure) ;
             self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+            result = [] ;
         end  % function
 
-        function startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self,wavesurferModelSettings)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -279,46 +282,51 @@ classdef Looper < ws.Model
 
             % Prepare for the run
             self.prepareForRun_(wavesurferModelSettings) ;
+            result = [] ;
         end  % function
 
-        function completingRun(self)
+        function result = completingRun(self)
             % Called by the WSM when the run is completed.
 
             % Cleanup after run
             self.completeTheOngoingRun_() ;
+            result = [] ;
         end  % function
         
-        function frontendWantsToStopRun(self)
+        function result = frontendWantsToStopRun(self)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
             % Actually stop the ongoing run
             self.DoesFrontendWantToStopRun_ = true ;
+            result = [] ;
         end
         
-        function abortingRun(self)
+        function result = abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
 
             % Cleanup after run
             if self.IsPerformingRun_ ,
                 self.abortTheOngoingRun_() ;
             end
+            result = [] ;
         end  % function        
         
-        function startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
-            % to run a sweep.  But the sweep doesn't start until the
-            % WavesurferModel calls startSweep().
+            % for a sweep.
             %
             % This is called via RPC, so must return exactly one return
             % value.  If a runtime error occurs, it will cause the frontend
             % process to hang.
 
-            % Prepare for the run
+            % Prepare for the sweep
+            %fprintf('Looper::startingSweep()\n');            
             self.prepareForSweep_(indexOfSweepWithinRun) ;
+            result = [] ;
         end  % function
 
-        function frontendIsBeingDeleted(self) 
+        function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
             
             % We tell ourselves to stop running the main loop.  This should
@@ -327,30 +335,35 @@ classdef Looper < ws.Model
             % line that says "quit()".  So this should causes the looper
             % process to terminate.
             self.DoKeepRunningMainLoop_ = false ;
+            result = [] ;
         end
         
-        function areYallAliveQ(self)
+        function result = areYallAliveQ(self)
             %fprintf('Looper::areYallAlive()\n') ;
             self.IPCPublisher_.send('looperIsAlive');
+            result = [] ;
         end  % function        
         
-        function satellitesReleaseTimedHardwareResources(self)
+        function result = satellitesReleaseTimedHardwareResources(self)
             self.releaseTimedHardwareResources_();
             self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+            result = [] ;
         end  % function
         
-        function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
         end  % function
         
-        function isDigitalChannelTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
         end  % function
         
     end  % RPC methods block
@@ -407,32 +420,83 @@ classdef Looper < ws.Model
             self.broadcast('Update');
         end  % function
         
+        function out = get.SweepDurationIfFinite(self)
+            out = self.SweepDurationIfFinite_ ;
+        end  % function
+        
+        function set.SweepDurationIfFinite(self, value)
+            %fprintf('Acquisition::set.Duration()\n');
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.willSetSweepDurationIfFinite();
+                    self.SweepDurationIfFinite_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetSweepDurationIfFinite();
+                else
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetSweepDurationIfFinite();
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDurationIfFinite must be a (scalar) positive finite value');
+                end
+            end
+        end  % function
+        
         function value = get.SweepDuration(self)
             if self.AreSweepsContinuous ,
                 value=inf;
             else
-                value=self.Acquisition.Duration;
+                value=self.SweepDurationIfFinite_ ;
             end
         end  % function
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
-                % Do nothing if in continuous mode
-                if self.AreSweepsFiniteDuration ,
-                    % Check value and set if valid
-                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                        % If get here, newValue is a valid value for this prop
-                        self.Acquisition.Duration = newValue;
-                    else
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'SweepDuration must be a (scalar) positive finite value');
-                    end
+                % Check value and set if valid
+                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+                    % If get here, newValue is a valid value for this prop
+                    if isfinite(newValue) ,
+                        self.AreSweepsFiniteDuration = true ;
+                        self.SweepDurationIfFinite = newValue ;
+                    else                        
+                        self.AreSweepsContinuous = true ;
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDuration must be a (scalar) positive value');
                 end
             end
             self.broadcast('Update');
         end  % function
+        
+%         function value = get.SweepDuration(self)
+%             if self.AreSweepsContinuous ,
+%                 value=inf;
+%             else
+%                 value=self.Acquisition.Duration;
+%             end
+%         end  % function
+%         
+%         function set.SweepDuration(self, newValue)
+%             % Fail quietly if a nonvalue
+%             if ws.utility.isASettableValue(newValue),             
+%                 % Do nothing if in continuous mode
+%                 if self.AreSweepsFiniteDuration ,
+%                     % Check value and set if valid
+%                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+%                         % If get here, newValue is a valid value for this prop
+%                         self.Acquisition.Duration = newValue;
+%                     else
+%                         self.broadcast('Update');
+%                         error('most:Model:invalidPropVal', ...
+%                               'SweepDuration must be a (scalar) positive finite value');
+%                     end
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
         
         function value=get.AreSweepsFiniteDuration(self)
             value=self.AreSweepsFiniteDuration_;
@@ -443,15 +507,15 @@ classdef Looper < ws.Model
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.Triggering.willSetAreSweepsFiniteDuration();
+                self.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetAreSweepsFiniteDuration();
+                self.didSetAreSweepsFiniteDuration();
             end
-            self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
+            %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
         end
         
@@ -566,20 +630,20 @@ classdef Looper < ws.Model
             self.checkIfSweepIsComplete_();            
         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('Looper::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfSweepIsComplete_();
-        end  % function
-        
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfSweepIsComplete_();
-        end
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('Looper::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfSweepIsComplete_();
+%         end  % function
+%         
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfSweepIsComplete_();
+%         end
         
         function checkIfSweepIsComplete_(self)
             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
@@ -595,7 +659,7 @@ classdef Looper < ws.Model
 %                         % do nothing
 %                     else
 %                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.completeSweep_();
+%                         self.completeTheOngoingSweep_();
 %                     end
 %                 else
 %                     % acq and stim trig sources are distinct
@@ -605,7 +669,7 @@ classdef Looper < ws.Model
 %                         % do nothing
 %                     else
 %                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.completeSweep_();
+%                         self.completeTheOngoingSweep_();
 %                     end
 %                 end
 %             else
@@ -614,9 +678,9 @@ classdef Looper < ws.Model
                     % do nothing
                 else
                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.completeSweep_();
+                    self.completeTheOngoingSweep_();
                 end
-%             end            
+%             end
         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -640,20 +704,30 @@ classdef Looper < ws.Model
 %             %profile off
 %         end
         
-        function willSetAcquisitionDuration(self)
-            self.Triggering.willSetAcquisitionDuration();
+        function willSetAreSweepsFiniteDuration(self)
+            self.Triggering.willSetAreSweepsFiniteDuration();
         end
         
-        function didSetAcquisitionDuration(self)
-            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetAcquisitionDuration();
-            self.Display.didSetAcquisitionDuration();
+        function didSetAreSweepsFiniteDuration(self)
+            self.Triggering.didSetAreSweepsFiniteDuration();
+            %self.Display.didSetAreSweepsFiniteDuration();
         end        
+
+        function willSetSweepDurationIfFinite(self)
+            self.Triggering.willSetSweepDurationIfFinite();
+        end
+        
+        function didSetSweepDurationIfFinite(self)
+            %self.broadcast('Update');
+            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
+            self.Triggering.didSetSweepDurationIfFinite();
+            %self.Display.didSetSweepDurationIfFinite();
+        end                
     end
        
     methods (Access=protected)
         function performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
-            %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
+            %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
             self.IPCSubscriber_.processMessagesIfAvailable() ;
 
@@ -667,7 +741,7 @@ classdef Looper < ws.Model
                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
                 if areTasksDone ,
-                    self.completeSweep_() ;
+                    self.completeTheOngoingSweep_() ;
                     %self.acquisitionSweepComplete() ;
                 end
             end                        
@@ -677,7 +751,7 @@ classdef Looper < ws.Model
             self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseTimedHardwareResources();
             %self.Stimulation.releaseOnDemandHardwareResources();
-            self.Triggering.releaseHardwareResources();
+            %self.Triggering.releaseHardwareResources();
             %self.Ephys.releaseHardwareResources();
         end
 
@@ -689,13 +763,13 @@ classdef Looper < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-        function releaseAllHardwareResources_(self)
-            self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseTimedHardwareResources();
-            self.Stimulation.releaseOnDemandHardwareResources();
-            self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
-        end
+%         function releaseAllHardwareResources_(self)
+%             self.Acquisition.releaseHardwareResources();
+%             self.Stimulation.releaseTimedHardwareResources();
+%             self.Stimulation.releaseOnDemandHardwareResources();
+%             %self.Triggering.releaseHardwareResources();
+%             %self.Ephys.releaseHardwareResources();
+%         end
     end
 
     methods
@@ -759,6 +833,7 @@ classdef Looper < ws.Model
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
+                self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',me) ;
                 %self.changeReadiness(+1);
                 me.rethrow() ;
             end
@@ -768,7 +843,7 @@ classdef Looper < ws.Model
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForRun') ;
+            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',[]) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
@@ -803,6 +878,7 @@ classdef Looper < ws.Model
             % Get everything set up for the Looper to run a sweep, but
             % don't pulse the master trigger yet.
             
+            %fprintf('Looper::prepareForSweep_()\n') ;
             % Set the fallback err value, which gets returned if nothing
             % goes wrong
             err = [] ;
@@ -811,36 +887,26 @@ classdef Looper < ws.Model
             %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
                         
-            % Call startingSweep() on all the enabled subsystems, and
-            % start the counter timer tasks
-%             try
-                for i = 1:numel(self.Subsystems_) ,
-                    if self.Subsystems_{i}.IsEnabled ,
-                        self.Subsystems_{i}.startingSweep();
-                    end
+            % Call startingSweep() on all the enabled subsystems
+            for i = 1:numel(self.Subsystems_) ,
+                if self.Subsystems_{i}.IsEnabled ,
+                    %fprintf('About to call startingSweep() on subsystem %d\n',i) ;
+                    self.Subsystems_{i}.startingSweep();
                 end
+            end
 
-                % Start the counter timer tasks, which will trigger the
-                % hardware-timed AI, AO, DI, and DO tasks.  But the counter
-                % timer tasks will not start running until they themselves
-                % are triggered by the master trigger.
-                self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
+%             % Start the counter timer tasks, which will trigger the
+%             % hardware-timed AI, AO, DI, and DO tasks.  But the counter
+%             % timer tasks will not start running until they themselves
+%             % are triggered by the master trigger.
+%             self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
 
-                % At this point, all the hardware-timed tasks the looper is
-                % responsible for should be "started" (in the DAQmx sense)
-                % and simply waiting for their trigger to go high to truly
-                % start.                
+            % At this point, all the hardware-timed tasks the looper is
+            % responsible for should be "started" (in the DAQmx sense)
+            % and simply waiting for their triggers to truly
+            % start.                
                 
-                %self.PollingTicId_ = tic() ;
-                %self.TimeOfLastPoll_ = toc(self.PollingTidId_) ;  % fake, but need to get things started
-%             catch me
-%                 err = me ;
-%                 dbstack
-%                 keyboard
-%             end
-            
             % Final preparations...
-            %self.IsSweepComplete_ = false ;
             self.IsPerformingSweep_ = true ;
             %profile on
             
@@ -859,14 +925,14 @@ classdef Looper < ws.Model
 %             % Pulse the master trigger, dealing with any errors
 %             try
 %                 self.IsSweepComplete_ = false ;
-%                 self.Triggering.pulseMasterTrigger();
+%                 self.Triggering.pulseSweepTrigger();
 %                 self.IsPerformingSweep_ = true ;
 %             catch me
 %                 err = me ;
 %             end
 %         end  % function
         
-        function completeSweep_(self)
+        function completeTheOngoingSweep_(self)
             %fprintf('WavesurferModel::cleanUpAfterSweep_()\n');
             %dbstack
             

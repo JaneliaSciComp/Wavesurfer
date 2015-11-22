@@ -9,7 +9,8 @@ classdef Refiller < ws.Model
         %Logging
         UserCodeManager
         %Ephys
-%         SweepDuration  % the sweep duration, in s
+        SweepDuration  % the sweep duration, in s
+        SweepDurationIfFinite
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
 %         NSweepsPerRun  
@@ -35,6 +36,7 @@ classdef Refiller < ws.Model
         %Ephys_
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
+        SweepDurationIfFinite_ = 1  % s
     end
 
     properties (Access=protected, Transient=true)
@@ -44,7 +46,7 @@ classdef Refiller < ws.Model
         IPCSubscriber_
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
-        %NSweepsCompletedInThisRun_ = 0
+        NSweepsCompletedSoFarThisRun_ = 0
         t_
         NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_  
@@ -64,7 +66,8 @@ classdef Refiller < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsPerformingEpisode_ = false
-        NEpisodesPerRun_
+        NEpisodesPerSweep_
+        NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
     end
     
@@ -225,14 +228,25 @@ classdef Refiller < ws.Model
                             % Check the finite outputs, refill them if
                             % needed.
                             if self.IsPerformingEpisode_ ,
-                                areTasksDone = self.Stimulation.areTasksDone() ;
-                                if areTasksDone ,
+                                %areTasksDone = self.Stimulation.areTasksDone() ;
+                                areStimulationTasksDone = self.Stimulation.areTasksDone() ;
+                                %areTasksDone = self.Stimulation.areTasksDone() && self.Triggering.areTasksDone() ;
+                                if areStimulationTasksDone ,
                                     self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                                     %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
-                                    if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                                    if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
                                         self.startEpisode_() ;
-                                    end
+                                    else
+                                        self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
+                                    end                                        
                                 end                                
+                            else
+                                % If we're in a sweep, but not performing
+                                % an episode, check to see if the counter
+                                % task is done, if there is one.
+                                if self.NEpisodesCompletedSoFarThisSweep_ >= self.NEpisodesPerSweep_ ,
+                                    self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
+                                end
                             end
                         end
                     else
@@ -265,11 +279,12 @@ classdef Refiller < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function initializeFromMDFStructure(self,mdfStructure)
+        function result = initializeFromMDFStructure(self,mdfStructure)
             self.initializeFromMDFStructure_(mdfStructure) ;
+            result = [] ;
         end  % function
         
-        function startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self,wavesurferModelSettings)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -278,24 +293,27 @@ classdef Refiller < ws.Model
 
             % Prepare for the run
             self.prepareForRun_(wavesurferModelSettings) ;
+            result = [] ;
         end  % function
 
-        function completingRun(self)
+        function result = completingRun(self)
             % Called by the WSM when the run is completed.
 
             % Cleanup after run
             self.completeTheOngoingRun_() ;
+            result = [] ;
         end  % function
         
-        function frontendWantsToStopRun(self)
+        function result = frontendWantsToStopRun(self)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
             % Actually stop the ongoing run
             self.DoesFrontendWantToStopRun_ = true ;
+            result = [] ;
         end
         
-        function abortingRun(self)
+        function result = abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
 
             if self.IsPerformingEpisode_ ,
@@ -309,9 +327,11 @@ classdef Refiller < ws.Model
             if self.IsPerformingRun_ ,
                 self.abortTheOngoingRun_() ;
             end
+            
+            result = [] ;
         end  % function        
         
-        function startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Refiller to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -322,9 +342,11 @@ classdef Refiller < ws.Model
 
             % Prepare for the run
             self.prepareForSweep_(indexOfSweepWithinRun) ;
+
+            result = [] ;
         end  % function
 
-        function frontendIsBeingDeleted(self) 
+        function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
             
             % We tell ourselves to stop running the main loop.  This should
@@ -333,27 +355,33 @@ classdef Refiller < ws.Model
             % line that says "quit()".  So this should causes the refiller
             % process to terminate.
             self.DoKeepRunningMainLoop_ = false ;
+            
+            result = [] ;
         end
         
-        function areYallAliveQ(self)
+        function result = areYallAliveQ(self)
             %fprintf('Refiller::areYallAlive()\n') ;            
             self.IPCPublisher_.send('refillerIsAlive');
+            result = [] ;
         end  % function        
         
-        function satellitesReleaseTimedHardwareResources(self)
+        function result = satellitesReleaseTimedHardwareResources(self)
             self.releaseTimedHardwareResources_();
             self.IPCPublisher_.send('refillerDidReleaseTimedHardwareResources');            
+            result = [] ;
         end
         
-        function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue) %#ok<INUSD>
+        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue) %#ok<INUSD>
             % Refiller doesn't need to do anything in response to this
+            result = [] ;
         end
         
-        function isDigitalChannelTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
         end  % function
         
     end  % RPC methods block
@@ -372,7 +400,7 @@ classdef Refiller < ws.Model
         end
         
 %         function out = get.NSweepsCompletedInThisRun(self)
-%             out = self.NSweepsCompletedInThisRun_ ;
+%             out = self.NSweepsCompletedSoFarThisRun_ ;
 %         end
 % 
 %         function val = get.NSweepsPerRun(self)
@@ -406,33 +434,57 @@ classdef Refiller < ws.Model
 %             self.broadcast('Update');
 %         end  % function
         
-%         function value = get.SweepDuration(self)
-%             if self.AreSweepsContinuous ,
-%                 value=inf;
-%             else
-%                 value=self.Acquisition.Duration;
-%             end
-%         end  % function
-%         
-%         function set.SweepDuration(self, newValue)
-%             % Fail quietly if a nonvalue
-%             if ws.utility.isASettableValue(newValue),             
-%                 % Do nothing if in continuous mode
-%                 if self.AreSweepsFiniteDuration ,
-%                     % Check value and set if valid
-%                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-%                         % If get here, newValue is a valid value for this prop
-%                         self.Acquisition.Duration = newValue;
-%                     else
-%                         self.broadcast('Update');
-%                         error('most:Model:invalidPropVal', ...
-%                               'SweepDuration must be a (scalar) positive finite value');
-%                     end
-%                 end
-%             end
-%             self.broadcast('Update');
-%         end  % function
+        function out = get.SweepDurationIfFinite(self)
+            out = self.SweepDurationIfFinite_ ;
+        end  % function
         
+        function set.SweepDurationIfFinite(self, value)
+            %fprintf('Acquisition::set.Duration()\n');
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.willSetSweepDurationIfFinite();
+                    self.SweepDurationIfFinite_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetSweepDurationIfFinite();
+                else
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetSweepDurationIfFinite();
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDurationIfFinite must be a (scalar) positive finite value');
+                end
+            end
+        end  % function
+        
+        function value = get.SweepDuration(self)
+            if self.AreSweepsContinuous ,
+                value=inf;
+            else
+                value=self.SweepDurationIfFinite_ ;
+            end
+        end  % function
+        
+        function set.SweepDuration(self, newValue)
+            % Fail quietly if a nonvalue
+            if ws.utility.isASettableValue(newValue),             
+                % Check value and set if valid
+                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+                    % If get here, newValue is a valid value for this prop
+                    if isfinite(newValue) ,
+                        self.AreSweepsFiniteDuration = true ;
+                        self.SweepDurationIfFinite = newValue ;
+                    else                        
+                        self.AreSweepsContinuous = true ;
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDuration must be a (scalar) positive value');
+                end
+            end
+            self.broadcast('Update');
+        end  % function
+
         function value=get.AreSweepsFiniteDuration(self)
             value=self.AreSweepsFiniteDuration_;
         end
@@ -442,15 +494,15 @@ classdef Refiller < ws.Model
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.Triggering.willSetAreSweepsFiniteDuration();
+                self.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetAreSweepsFiniteDuration();
+                self.didSetAreSweepsFiniteDuration();
             end
-            self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
+            %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
         end
         
@@ -545,58 +597,58 @@ classdef Refiller < ws.Model
 %             self.checkIfReadyToCompleteOngoingSweep_();            
 %         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('Refiller::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfReadyToCompleteOngoingSweep_();
-        end  % function
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('Refiller::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfReadyToCompleteOngoingSweep_();
+%         end  % function
+%         
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfReadyToCompleteOngoingSweep_();
+%         end
         
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfReadyToCompleteOngoingSweep_();
-        end
-        
-        function checkIfReadyToCompleteOngoingSweep_(self)
-            % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
-            % depending on the states of the Acquisition, Stimulation, and
-            % Triggering subsystems.  Generally speaking, we want to make
-            % sure that all three subsystems are done with the sweep before
-            % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            %keyboard
-            if self.Stimulation.IsEnabled ,
-                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-                    % acq and stim trig sources are identical
-                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.completeTheOngoingSweep_();
-                    end
-                else
-                    % acq and stim trig sources are distinct
-                    % this means the stim trigger basically runs on
-                    % its own until it's done
-                    if self.Acquisition.IsArmedOrAcquiring ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.completeTheOngoingSweep_();
-                    end
-                end
-            else
-                % Stimulation subsystem is disabled
-                if self.Acquisition.IsArmedOrAcquiring , 
-                    % do nothing
-                else
-                    %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.completeTheOngoingSweep_();
-                end
-            end            
-        end  % function
+%         function checkIfReadyToCompleteOngoingSweep_(self)
+%             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the sweep before
+%             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
+%             %keyboard
+%             if self.Stimulation.IsEnabled ,
+%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
+%                     % acq and stim trig sources are identical
+%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.completeTheOngoingSweep_();
+%                     end
+%                 else
+%                     % acq and stim trig sources are distinct
+%                     % this means the stim trigger basically runs on
+%                     % its own until it's done
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.completeTheOngoingSweep_();
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                     self.completeTheOngoingSweep_();
+%                 end
+%             end            
+%         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
 %             % Called "from below" when data is available
@@ -619,16 +671,26 @@ classdef Refiller < ws.Model
 %             %profile off
 %         end
         
-        function willSetAcquisitionDuration(self)
-            self.Triggering.willSetAcquisitionDuration();
+        function willSetAreSweepsFiniteDuration(self)
+            self.Triggering.willSetAreSweepsFiniteDuration();
         end
         
-        function didSetAcquisitionDuration(self)
-            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetAcquisitionDuration();
-            self.Display.didSetAcquisitionDuration();
+        function didSetAreSweepsFiniteDuration(self)
+            self.Triggering.didSetAreSweepsFiniteDuration();
+            %self.Display.didSetAreSweepsFiniteDuration();
         end        
+
+        function willSetSweepDurationIfFinite(self)
+            self.Triggering.willSetSweepDurationIfFinite();
+        end
         
+        function didSetSweepDurationIfFinite(self)
+            %self.broadcast('Update');
+            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
+            self.Triggering.didSetSweepDurationIfFinite();
+            %self.Display.didSetSweepDurationIfFinite();
+        end        
+                
 %         function result=get.FastProtocols(self)
 %             result = self.FastProtocols_;
 %         end
@@ -653,7 +715,7 @@ classdef Refiller < ws.Model
         function releaseTimedHardwareResources_(self)
             %self.Acquisition.releaseHardwareResources();
             self.Stimulation.releaseHardwareResources();
-            %self.Triggering.releaseHardwareResources();
+            self.Triggering.releaseHardwareResources();
             %self.Ephys.releaseHardwareResources();
         end
         
@@ -666,7 +728,7 @@ classdef Refiller < ws.Model
             if self.IsPerformingRun_ ,
                 return
             end
-                        
+            
             % Make our own settings mimic those of wavesurferModelSettings
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
@@ -676,21 +738,23 @@ classdef Refiller < ws.Model
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
                 % This means one episode per sweep, always
-                self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;
+                self.NEpisodesPerSweep_ = 1 ;
             else
                 % Means continuous acq, so need to consult stim trigger
-                if self.Stimulation.TriggerScheme.IsInternal ,
-                    % stim trigger scheme is internal
-                    self.NEpisodesPerRun_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
+                    self.NEpisodesPerSweep_ = 1 ;                    
+                elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
+                    % stim trigger scheme is a counter trigger
+                    self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
                 else
-                    % stim trigger scheme is external
-                    self.NEpisodesPerRun_ = inf ;  % by convention
+                    % stim trigger scheme is an external trigger
+                    self.NEpisodesPerSweep_ = inf ;  % by convention
                 end
             end
 
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
-            %self.NSweepsCompletedInThisRun_ = 0 ;
+            self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
             
@@ -704,8 +768,9 @@ classdef Refiller < ws.Model
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
-                %self.changeReadiness(+1);
-                me.rethrow();
+                self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',me) ;
+                %self.changeReadiness(+1) ;
+                me.rethrow() ;
             end
             
             % Initialize timing variables
@@ -713,7 +778,7 @@ classdef Refiller < ws.Model
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('refillerReadyForRun') ;
+            self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',[]) ;  % empty matrix signals no error
             %keyboard            
         end  % function
         
@@ -733,12 +798,20 @@ classdef Refiller < ws.Model
                 end
             end
                         
+            % Start the counter timer tasks, which will trigger the
+            % hardware-timed AI, AO, DI, and DO tasks.  But the counter
+            % timer tasks will not start running until they themselves
+            % are triggered by the master trigger.
+            %self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
+              % We now do this this RefillerTriggering::startingSweep()
+            
             % At this point, all the hardware-timed tasks the refiller is
             % responsible for should be "started" (in the DAQmx sense)
             % and simply waiting for their trigger to go high to truly
             % start.                
                 
             % Almost-Final preparations...
+            self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             self.IsPerformingSweep_ = true ;
 
             % Start an episode
@@ -748,6 +821,17 @@ classdef Refiller < ws.Model
             self.IPCPublisher_.send('refillerReadyForSweep') ;
         end  % function
 
+        function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
+            if self.AreSweepsFiniteDuration_ ,
+                areTriggeringTasksDone = true ;
+            else
+                areTriggeringTasksDone = self.Triggering.areTasksDone() ;
+            end
+            if areTriggeringTasksDone ,
+                self.completeTheOngoingSweep_() ;
+            end        
+        end
+        
         function completeTheOngoingSweep_(self)
             % Notify all the subsystems that the sweep is done
             for idx = 1: numel(self.Subsystems_)
@@ -756,10 +840,11 @@ classdef Refiller < ws.Model
                 end
             end
             
-            % Bump the number of completed sweeps
-            %self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
-
+            % Note that we are no longer performing a sweep
             self.IsPerformingSweep_ = false ;            
+
+            % Bump the number of completed sweeps
+            self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
             
             % Notify the front end
             self.IPCPublisher_.send('refillerCompletedSweep') ;
@@ -921,14 +1006,15 @@ classdef Refiller < ws.Model
 
             % Update state
             self.IsPerformingEpisode_ = false;
+            self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
 %             % If we might have more episodes to deliver, arm for next one
-%             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+%             if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerRun_ ,
 %                 self.armForEpisode_() ;
 %             end                                    
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
-            %fprintf('    self.NEpisodesCompletedSoFarThisRun_: %d\n',self.NEpisodesCompletedSoFarThisRun_);
+            %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
         end  % function
         
         function stopTheOngoingEpisode_(self)

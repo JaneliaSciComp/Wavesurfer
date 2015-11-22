@@ -1,4 +1,4 @@
-classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
+classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
     % This class represents a trigger source, i.e. an internally-generated
     % trigger output.  A trigger source has a device (e.g. 'Dev1'), a
     % counter (the index of the NI DAQmx counter), an inter-trigger
@@ -6,7 +6,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     % output), and an Edge (the edge polarity used).
     
     properties (Constant=true)
-        IsInternal = true
+        %IsInternal = true
         %IsExternal = false
     end
     
@@ -35,7 +35,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
     end
 
 %     properties (Access = protected, Transient=true)
-%         CounterTask_  % of type ws.ni.CounterTriggerSourceTask, or empty        
+%         CounterTask_  % of type ws.ni.CounterTriggerTask, or empty        
 %           % if setup() method is never called, this will always be empty
 %     end
     
@@ -44,9 +44,9 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %     end
     
     methods
-        function self = TriggerSource(parent)
+        function self = CounterTrigger(parent)
             self = self@ws.Model(parent) ;
-            self.Name_ = 'TriggerSource' ;
+            self.Name_ = 'CounterTrigger' ;
             self.RepeatCount_ = 1 ;
             self.DeviceName_ = 'Dev1' ;
             self.CounterID_ = 0 ;
@@ -86,25 +86,25 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             self.broadcast('Update');
         end
         
-        function overrideRepeatCount(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                % self.validatePropArg('RepeatCount', newValue);            
-                self.validateRepeatCount_(newValue);
-                self.RepeatCountOverride_ = newValue;
-                self.IsRepeatCountOverridden_=true;
-            end
-            %self.RepeatCount=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');
-        end
-        
-        function releaseRepeatCount(self)
-            %fprintf('releaseRepeatCount()\n');
-            %dbstack
-            self.IsRepeatCountOverridden_=false;
-            self.RepeatCountOverride_ = [];  % for tidiness
-            %self.RepeatCount=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');
-        end
+%         function overrideRepeatCount(self,newValue)
+%             if ws.utility.isASettableValue(newValue) ,
+%                 % self.validatePropArg('RepeatCount', newValue);            
+%                 self.validateRepeatCount_(newValue);
+%                 self.RepeatCountOverride_ = newValue;
+%                 self.IsRepeatCountOverridden_=true;
+%             end
+%             %self.RepeatCount=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');
+%         end
+%         
+%         function releaseRepeatCount(self)
+%             %fprintf('releaseRepeatCount()\n');
+%             %dbstack
+%             self.IsRepeatCountOverridden_=false;
+%             self.RepeatCountOverride_ = [];  % for tidiness
+%             %self.RepeatCount=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');
+%         end
         
     end
 
@@ -129,24 +129,24 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
             self.broadcast('Update');                
         end
         
-        function overrideInterval(self,newValue)
-            %fprintf('overrideInterval()\n');
-            %dbstack
-            self.validateInterval_(newValue);
-            self.IntervalOverride_ = newValue;
-            self.IsIntervalOverridden_=true;
-            %self.Interval=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');                
-        end
-        
-        function releaseInterval(self)
-            %fprintf('releaseInterval()\n');
-            %dbstack
-            self.IsIntervalOverridden_=false;
-            self.IntervalOverride_ = [];  % for tidiness
-            %self.Interval=nan.The;  % just to cause set listeners to fire
-            self.broadcast('Update');                
-        end
+%         function overrideInterval(self,newValue)
+%             %fprintf('overrideInterval()\n');
+%             %dbstack
+%             self.validateInterval_(newValue);
+%             self.IntervalOverride_ = newValue;
+%             self.IsIntervalOverridden_=true;
+%             %self.Interval=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');                
+%         end
+%         
+%         function releaseInterval(self)
+%             %fprintf('releaseInterval()\n');
+%             %dbstack
+%             self.IsIntervalOverridden_=false;
+%             self.IntervalOverride_ = [];  % for tidiness
+%             %self.Interval=nan.The;  % just to cause set listeners to fire
+%             self.broadcast('Update');                
+%         end
 
 %         function placeLowerLimitOnInterval(self,newValue)
 %             self.validatePropArg('Interval', newValue);            
@@ -236,7 +236,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
-                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                          'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
             self.broadcast('Update');            
@@ -265,7 +265,7 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %             self.teardown();
 %             
 %             self.CounterTask_ = ...
-%                 ws.ni.CounterTriggerSourceTask(self, ...
+%                 ws.ni.CounterTriggerTask(self, ...
 %                                                self.DeviceName, ...
 %                                                self.CounterID, ...
 %                                                ['Wavesurfer Counter Self Trigger Task ' num2str(self.CounterID)]);
@@ -307,8 +307,8 @@ classdef TriggerSource < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.He
 %             end
 %         end
 
-%         function counterTriggerSourceTaskDone(self)
-%             %fprintf('TriggerSource::doneCallback_()\n');
+%         function counterCounterTriggerTaskDone(self)
+%             %fprintf('CounterTrigger::doneCallback_()\n');
 %             if ~isempty(self.Parent) ,
 %                 %feval(self.DoneCallback,self);
 %                 self.Parent.triggerSourceDone(self);

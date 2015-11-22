@@ -11,7 +11,7 @@ classdef YLimDialogController < ws.Controller
             self = self@ws.Controller(scopeController,scopeModel);
 
             % Create the figure, store a pointer to it
-            fig = ws.YLimDialogFigureFigure(wavesurferModel,self) ;
+            fig = ws.YLimDialogFigure(scopeModel,self) ;
             self.Figure_ = fig ;                                    
             
             % Do stuff specific to dialog boxes

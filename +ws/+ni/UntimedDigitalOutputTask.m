@@ -74,11 +74,11 @@ classdef UntimedDigitalOutputTask < handle
             self.DabsDaqTask_.start();
         end  % function
         
-        function abort(self)
-            if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.abort();
-            end
-        end  % function
+%         function abort(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.abort();
+%             end
+%         end  % function
         
         function stop(self)
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()

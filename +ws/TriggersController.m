@@ -46,15 +46,15 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             if idx < 1 ,
 %                 triggerScheme.Target = [];
 %             else
-%                 nSources=length(self.Model.Triggering.Sources);
+%                 nSources=length(self.Model.Triggering.CounterTriggers);
 %                 if idx <= nSources ,
-%                     triggerScheme.Target = self.Model.Triggering.Sources(idx);
+%                     triggerScheme.Target = self.Model.Triggering.CounterTriggers(idx);
 %                     % should set triggerScheme.Destination to the
 %                     % pre-defined dest in the source
 %                 else
 %                     destinationIndex = idx-nSources;
 %                     %triggerScheme.Source = [];
-%                     triggerScheme.Target = self.Model.Triggering.Destinations(destinationIndex);
+%                     triggerScheme.Target = self.Model.Triggering.ExternalTriggers(destinationIndex);
 %                 end
 %             end
 %         end  % function
@@ -63,9 +63,9 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             % Called when one of the destinations in the destination
 %             % datagrid is changed.
 %             theDestination=event.AffectedObject;
-%             idx = find(self.Model.Triggering.Destinations == theDestination);
+%             idx = find(self.Model.Triggering.ExternalTriggers == theDestination);
 %             dotNetIndex = idx - 1;  % .NET is zero-based.
-%             row = self.DestinationsDataGridDataTable_.Rows.Item(dotNetIndex);
+%             row = self.ExternalTriggersDataGridDataTable_.Rows.Item(dotNetIndex);
 %             row.ItemArray = {theDestination.Name, theDestination.PFIID, char(theDestination.Edge)};
 %         end  % function
         
@@ -86,22 +86,22 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             items = cell(event.Row.ItemArray);
 %             value = char(items{colIdx + 1});
 %             
-%             source = self.Model.Triggering.Sources(rowIdx + 1); % +1 for .NET being zero-based
+%             source = self.Model.Triggering.CounterTriggers(rowIdx + 1); % +1 for .NET being zero-based
 %             
 %             try
 %                 switch colIdx
 %                     case 0
 %                         source.Name = value;
 %                     case 1
-%                         error('Wavesurfer:cantSetTriggerSourceCounter','Can''t set CTR');
+%                         error('Wavesurfer:cantSetCounterTriggerCounter','Can''t set CTR');
 %                     case 2
 %                         source.RepeatCount = str2num(value);  %#ok<ST2NM> Want '' to return empty not NaN (str2double)
 %                     case 3
 %                         source.Interval = str2num(value); %#ok<ST2NM> Want '' to return empty not NaN (str2double)
 %                     case 4
-%                         error('Wavesurfer:cantSetTriggerSourcePFIID','Can''t set PFIID');
+%                         error('Wavesurfer:cantSetCounterTriggerPFIID','Can''t set PFIID');
 %                     case 5
-%                         error('Wavesurfer:cantSetTriggerSourceEdge','Can''t set Edge');
+%                         error('Wavesurfer:cantSetCounterTriggerEdge','Can''t set Edge');
 %                 end
 %             catch me  %#ok<NASGU>
 %                 %ws.ui.controller.ErrorWindow.showError(me, 'Invalid Property Value', true);
@@ -129,7 +129,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             items = cell(event.Row.ItemArray);
 %             value = char(items{colIdx + 1});
 %             
-%             destination = self.Model.Triggering.Destinations(rowIdx + 1); % +1 for .NET being zero-based.
+%             destination = self.Model.Triggering.ExternalTriggers(rowIdx + 1); % +1 for .NET being zero-based.
 %             
 %             try
 %                 switch colIdx
@@ -175,7 +175,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             self.Model.AcquisitionUsesASAPTriggering=value;
 %         end  % function
 
-        function SweepBasedAcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function AcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
             selectionIndex = get(source,'Value');
             self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
@@ -186,7 +186,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             self.Model.StimulationUsesAcquisitionTriggerScheme=value;
         end  % function
 
-        function SweepBasedStimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function StimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
             selectionIndex = get(source,'Value');
             self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
@@ -196,8 +196,8 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
 %         end
         
-        function TriggerSourcesTableActuated(self,source,event)  %#ok<INUSL>
-            % Called when a cell of TriggerSourcesTable is edited
+        function CounterTriggersTableActuated(self,source,event)  %#ok<INUSL>
+            % Called when a cell of CounterTriggersTable is edited
             indices=event.Indices;
             newString=event.EditData;
             rowIndex=indices(1);
@@ -206,17 +206,17 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             if (columnIndex==4) ,
                 % this is the Repeats column
                 newValue=str2double(newString);
-                theSource=self.Model.Sources{sourceIndex};
+                theSource=self.Model.CounterTriggers{sourceIndex};
                 ws.Controller.setWithBenefits(theSource,'RepeatCount',newValue);
             elseif (columnIndex==5) ,
                 % this is the Interval column
                 newValue=str2double(newString);
-                theSource=self.Model.Sources{sourceIndex};
+                theSource=self.Model.CounterTriggers{sourceIndex};
                 ws.Controller.setWithBenefits(theSource,'Interval',newValue);
             end
         end  % function
         
-        % No method TriggerDestinationsTableActuated() b/c can't change
+        % No method ExternalTriggersTableActuated() b/c can't change
         % anything in that table
     end  % methods block    
 
@@ -226,13 +226,13 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             % given triggerScheme (part of the model) to be updated appropriately.
 %             selectionIndex = get(source,'Value');
 %             
-%             nSources=length(self.Model.Sources);
-%             nDestinations=length(self.Model.Destinations);
+%             nSources=length(self.Model.CounterTriggers);
+%             nDestinations=length(self.Model.ExternalTriggers);
 %             if 1<=selectionIndex && selectionIndex<=nSources ,
-%                 triggerScheme.Target = self.Model.Sources(selectionIndex);
+%                 triggerScheme.Target = self.Model.CounterTriggers(selectionIndex);
 %             elseif nSources+1<=selectionIndex && selectionIndex<=nSources+nDestinations ,
 %                 destinationIndex = selectionIndex-nSources;
-%                 triggerScheme.Target = self.Model.Destinations(destinationIndex);
+%                 triggerScheme.Target = self.Model.ExternalTriggers(destinationIndex);
 %             end
 %         end  % function
 %     end

@@ -42,7 +42,9 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         fieldNames = fieldnames(dataFileAsStruct);
         for i=1:length(fieldNames) ,
             fieldName = fieldNames{i};
-            if length(fieldName)>=5 && isequal(fieldName(1:5),'sweep') ,
+            if length(fieldName)>=5 && (isequal(fieldName(1:5),'sweep') || isequal(fieldName(1:5),'trial')) ,  
+                % We check for "trial" for backward-compatibility with
+                % data files produced by older versions of WS.
                 rawAnalogData = dataFileAsStruct.(fieldName).analogScans;
                 if isempty(rawAnalogData) ,
                     if doesUserWantSingle ,

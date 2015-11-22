@@ -1,9 +1,9 @@
-classdef RasterTreadMill < ws.UserClass
+classdef RasterTreadMill2 < ws.UserClass
 
     % public parameters
     properties
         SpikeThreshold = -15  % mV
-        LaserOnThreshold = -35  % mV
+        %LaserOnThreshold = -15  % mV
         NBins = 20
         TreadMillLength = 185  % cm
         ElectrodeChannel = 1
@@ -13,6 +13,8 @@ classdef RasterTreadMill < ws.UserClass
         %VelocityScale = 1;  % cm/s/V;  from steve: 100 mm/sec per volt
           % with this version, must set the velocity AO to 1 V/V, the
           % velocity AI to 0.01 V/(cm/s)        
+        MaxNumberOfSpikesToKeep = 100
+        LaserDigitalInputChannelIndex = 2
     end
 
     % local variables
@@ -22,6 +24,13 @@ classdef RasterTreadMill < ws.UserClass
         SampleRate
         
         RasterFig
+        
+        LatencyFig
+        ElectrodeAxes
+        ElectrodeLines
+        LaserAxes
+        LaserLines
+        
         Lap
         InitialPosition
         RasterAxes
@@ -45,17 +54,24 @@ classdef RasterTreadMill < ws.UserClass
     
     methods
         
-        function self = RasterTreadMill(wsModel) %#ok<INUSD>
+        function self = RasterTreadMill2(wsModel) %#ok<INUSD>
         end
         
         function delete(self)
-            fprintf('RasterTreadMill::delete()\n') ;
+            %fprintf('RasterTreadMill::delete()\n') ;
             if ~isempty(self.RasterFig) ,
                 if ishghandle(self.RasterFig) ,
                     close(self.RasterFig) ;
                 end
                 self.RasterFig = [] ;
             end                
+            if ~isempty(self.LatencyFig) ,
+                if ishghandle(self.LatencyFig) ,
+                    close(self.LatencyFig) ;
+                end
+                self.LatencyFig = [] ;
+            end                
+
         end
         
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
@@ -76,9 +92,9 @@ classdef RasterTreadMill < ws.UserClass
             self.SampleRate = wsModel.Acquisition.SampleRate;
 
             if isempty(self.RasterFig) || ~ishghandle(self.RasterFig) ,
-                self.RasterFig = figure('Name','Spike Raster','NumberTitle','off');
-                position = get(self.RasterFig,'position');
-                set(self.RasterFig,'position',position.*[1 0 1 2]);
+                self.RasterFig = figure('Name','Spike Raster','NumberTitle','off','Units','pixels');
+                %position = get(self.RasterFig,'position');
+                set(self.RasterFig,'position',[807    85   542   901]);
             end
 
             clf(self.RasterFig);
@@ -88,22 +104,28 @@ classdef RasterTreadMill < ws.UserClass
             axis(self.RasterAxes, 'ij');
             ylabel(self.RasterAxes, 'lap #');
             title(self.RasterAxes, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);
-
+            set(self.RasterAxes,'XTickLabel',{});
+            set(self.RasterAxes,'YLim',[0.5 1.5+eps]);
+            set(self.RasterAxes,'YTick',1);
+            
             self.NSpikesAxes = subplot(10,1,4,'parent',self.RasterFig);
             hold(self.NSpikesAxes, 'on');
             self.NSpikesBars = bar(self.NSpikesAxes,self.BinCenters,zeros(1,self.NBins),1);
             set(self.NSpikesBars,'EdgeColor','none','facecolor',[1 0 0]);
             ylabel(self.NSpikesAxes, '# spikes');
+            set(self.NSpikesAxes,'XTickLabel',{});
 
             self.VelocityAxes = subplot(10,1,[5 6],'parent',self.RasterFig);
             hold(self.VelocityAxes, 'on');
             self.VelocityAverageLine = plot(self.VelocityAxes,self.BinCenters,nan(1,length(self.BinCenters)),'ro-');
             ylabel(self.VelocityAxes, 'velocity (cm/s)');
+            set(self.VelocityAxes,'XTickLabel',{});
 
             self.SpikeRateAxes = subplot(10,1,[7 8],'parent',self.RasterFig);
             hold(self.SpikeRateAxes, 'on');
             self.SpikeRateAverageLine = plot(self.SpikeRateAxes,self.BinCenters,nan(1,length(self.BinCenters)),'ro-');
             ylabel(self.SpikeRateAxes, 'spike rate (/s)');
+            set(self.SpikeRateAxes,'XTickLabel',{});
 
             self.SubthresholdAxes = subplot(10,1,[9 10],'parent',self.RasterFig);
             hold(self.SubthresholdAxes, 'on');
@@ -113,6 +135,35 @@ classdef RasterTreadMill < ws.UserClass
 
             linkaxes([self.RasterAxes self.NSpikesAxes self.SpikeRateAxes],'x');
 
+            if isempty(self.LatencyFig) || ~ishghandle(self.LatencyFig) ,
+                self.LatencyFig = figure('Name','Latency','NumberTitle','off','Units','pixels');
+                %position = get(self.LatencyFig,'position');
+                set(self.LatencyFig,'position',[  1384         85         504         897]);
+            end
+            
+            clf(self.LatencyFig);            
+
+            self.ElectrodeAxes = subplot(2,1,1,'Parent',self.LatencyFig,'Box','on');
+            %xlabel(self.ElectrodeAxes,'Time (ms)') ;
+            ylabel(self.ElectrodeAxes,'Electrode (mV)');
+            xlim([-20 +20]);  % ms
+            ylim([-55 +25]);  % mV
+            set(self.ElectrodeAxes,'XTickLabel',{});
+
+            self.LaserAxes = subplot(2,1,2,'Parent',self.LatencyFig,'Box','on');
+            xlabel(self.LaserAxes,'Time (ms)') ;
+            ylabel(self.LaserAxes,'Laser (binary)');
+            xlim([-20 +20]);  % ms
+            ylim([-0.05 +1.05]);  % pure
+            
+            self.ElectrodeLines = zeros(1,0) ; 
+            self.LaserLines = zeros(1,0) ; 
+            
+            hold(self.RasterAxes, 'on');
+            axis(self.RasterAxes, 'ij');
+            ylabel(self.RasterAxes, 'lap #');
+            title(self.RasterAxes, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);
+            
             self.Lap=1;
             self.InitialPosition=0;
             self.PositionAtSpike=[];
@@ -140,7 +191,7 @@ classdef RasterTreadMill < ws.UserClass
             digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             
             nScans = size(analogData,1) ;
-            fprintf('RasterTreadMill::dataAvailable(): nScans: %d\n',nScans) ;
+            %fprintf('RasterTreadMill::dataAvailable(): nScans: %d\n',nScans) ;
 
 %             % output TTL pulse
 %             if median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold
@@ -196,9 +247,11 @@ classdef RasterTreadMill < ws.UserClass
                 nSpikes = length(self.PositionAtSpike);
                 plot(self.RasterAxes, ...
                         reshape([repmat(self.PositionAtSpike,1,2) nan(nSpikes,1)]',3*nSpikes,1), ...
-                        reshape([repmat(self.Lap,nSpikes,1) repmat(self.Lap-1,nSpikes,1) nan(nSpikes,1)]',3*nSpikes,1), ...
+                        reshape([repmat(self.Lap+0.5,nSpikes,1) repmat(self.Lap-0.5,nSpikes,1) nan(nSpikes,1)]',3*nSpikes,1), ...
                         'k-');
-                axis(self.RasterAxes, [0 self.TreadMillLength 0 self.Lap+eps]);
+                set(self.RasterAxes,'XLim',[0 self.TreadMillLength]);
+                set(self.RasterAxes,'YLim',[0.5 self.Lap+0.5+eps]);
+                set(self.RasterAxes,'YTick',1:self.Lap);
 
                 nSpikesPerBinInCurrentLap = hist(self.PositionAtSpike, self.BinCenters);  % current lap == just-completed lap
                 nSpikesPerBinOverall = get(self.NSpikesBars, 'YData') + nSpikesPerBinInCurrentLap;
@@ -255,6 +308,67 @@ classdef RasterTreadMill < ws.UserClass
                 self.InitialPosition = position(end);
             end
             
+            % Add laser-triggered traces to the latency figure
+            gray = 0.7*[1 1 1] ;
+            laser = bitget(digitalData,self.LaserDigitalInputChannelIndex) ;
+            TPre = 0.020 ;  % s
+            TPost = 0.020 ;  % s
+            nPre = round(TPre/dt) ;  % samples before to grab
+            nPost = round(TPost/dt) ;  % sample after to grab
+            isDeepEnoughIn = (nPre+1<=indicesOfSpikes) & (indicesOfSpikes<=nScans-nPost) ;
+              % Spike has to have enough samples both before and after.
+              % As is, we'll miss spikes near the boundary, but that's ok
+            indicesOfNewSpikesDeepEnoughIn = indicesOfSpikes(isDeepEnoughIn) ; 
+            nNewSpikesDeepEnoughIn = length(indicesOfNewSpikesDeepEnoughIn) ;
+            newElectrodeLines = zeros(1,nNewSpikesDeepEnoughIn) ;
+            newLaserLines = zeros(1,nNewSpikesDeepEnoughIn) ;
+            t = 1000*dt*(-nPre:+nPost)' ;  % ms
+            nNewSpikesSoFar = 0 ;
+            for i=1:nNewSpikesDeepEnoughIn ,
+                indexOfThisSpike = indicesOfNewSpikesDeepEnoughIn(i) ;
+                vPeri = v(indexOfThisSpike-nPre:indexOfThisSpike+nPost) ;
+                laserPeri = laser(indexOfThisSpike-nPre:indexOfThisSpike+nPost) ;
+                if all(~laserPeri(1:nPre)) ,
+                    nNewSpikesSoFar = nNewSpikesSoFar + 1 ;
+                    newElectrodeLines(nNewSpikesSoFar) = ...
+                        line('Parent',self.ElectrodeAxes, ...
+                             'XData',t, ...
+                             'YData',vPeri, ...
+                             'Color',gray) ;
+                    newLaserLines(nNewSpikesSoFar) = ...
+                        line('Parent',self.LaserAxes, ...
+                             'XData',t, ...
+                             'YData',laserPeri, ...
+                             'Color',gray) ;
+                end
+            end
+            nNewSpikes = nNewSpikesSoFar ;             
+            newElectrodeLines = newElectrodeLines(1:nNewSpikes) ;  % trim the unused spaces off
+            newLaserLines = newLaserLines(1:nNewSpikes) ;  % trim the unused spaces off
+            nOldSpikes = length(self.ElectrodeLines) ;
+            if nNewSpikes>0 ,
+                if nOldSpikes>0 ,
+                    % turn what used to be that latest spike gray
+                    set(self.ElectrodeLines(end),'Color',gray,'LineWidth',0.5);  % 0.5 is the default
+                    set(self.LaserLines(end),'Color',gray,'LineWidth',0.5);  % 0.5 is the default
+                end
+                % turn the now-latest spike black
+                set(newElectrodeLines(end),'Color','k','LineWidth',1);
+                set(newLaserLines(end),'Color','k','LineWidth',1);
+            end                
+            newAndOldElectrodeLines = [self.ElectrodeLines newElectrodeLines] ;
+            newAndOldLaserLines = [self.LaserLines newLaserLines] ;
+            nNewAndOldSpikes = length(newAndOldElectrodeLines) ;
+            if nNewAndOldSpikes > self.MaxNumberOfSpikesToKeep ,
+                nSpikesToDelete = nNewAndOldSpikes - self.MaxNumberOfSpikesToKeep ;
+                delete(newAndOldElectrodeLines(1:nSpikesToDelete)) ;
+                newAndOldElectrodeLines(1:nSpikesToDelete) = [] ;
+                delete(newAndOldLaserLines(1:nSpikesToDelete)) ;
+                newAndOldLaserLines(1:nSpikesToDelete) = [] ;
+            end
+            self.ElectrodeLines = newAndOldElectrodeLines ;
+            self.LaserLines = newAndOldLaserLines ;
+            
             % Prepare for next iteration
             self.LastLED = led(end) ;
         end
@@ -262,9 +376,9 @@ classdef RasterTreadMill < ws.UserClass
         % this one is called in the looper process
         function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSL,INUSD>
             % output TTL pulse
-            fprintf('RasterTreadMill::samplesAcquired(): nScans: %d\n',size(analogData,1)) ;
+            %fprintf('RasterTreadMill::samplesAcquired(): nScans: %d\n',size(analogData,1)) ;
             v = analogData(:,self.ElectrodeChannel) ;
-            newValue = median(v)>self.LaserOnThreshold ;
+            newValue = any(v>=self.SpikeThreshold) ;
             looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newValue) ;
         end
         

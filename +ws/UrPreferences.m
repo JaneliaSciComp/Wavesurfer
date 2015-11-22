@@ -179,8 +179,15 @@ classdef UrPreferences < handle
         end
         
         function writePreferences_(self,preferencesStruct) %#ok<INUSD>
+            % Make sure that dir exists
+            absoluteDirName = self.getAbsoluteDirName() ;
+            if ~exist(absoluteDirName, 'dir') ,
+                mkdir(absoluteDirName) ;
+            end
+            % Save the file
             absoluteFileName = self.getAbsoluteFileName() ;
             save(absoluteFileName,'-struct','preferencesStruct');
-        end        
+        end
     end
 end
+

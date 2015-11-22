@@ -43,7 +43,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         
     properties (Access = protected) 
         SampleRate_ = 20000  % Hz
-        Duration_ = 1  % s
+        %Duration_ = 1  % s
         DeviceNames_ = cell(1,0) ;
         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
@@ -57,13 +57,13 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsDigitalChannelActive_ = true(1,0)
     end
 
-    properties (Access=protected, Constant=true)
-        CoreFieldNames_ = { 'SampleRate_' , 'Duration_', 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
-                            'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
-                            'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
-            % The "core" settings are the ones that get transferred to
-            % other processes for running a sweep.
-    end
+%     properties (Access=protected, Constant=true)
+%         CoreFieldNames_ = { 'SampleRate_' , 'DeviceNames_', 'AnalogPhysicalChannelNames_', ...
+%                             'DigitalPhysicalChannelNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogChannelIDs_' ...
+%                             'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
+%             % The "core" settings are the ones that get transferred to
+%             % other processes for running a sweep.
+%     end
     
     properties (Access = protected, Transient=true)
         LatestAnalogData_ = [] ;
@@ -91,43 +91,43 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end
         
         function initializeFromMDFStructure(self, mdfStructure)
-            if ~isempty(mdfStructure.physicalInputChannelNames) ,
-                physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
-                inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
-                uniqueInputDeviceNames=unique(inputDeviceNames);
-                if ~isscalar(uniqueInputDeviceNames) ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                self.DeviceNames_ = inputDeviceNames;
-                channelNames = mdfStructure.inputChannelNames;
-
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
-                isAnalog = strcmp(channelTypes,'ai');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names
-                analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
-                digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
-                self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
-                self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
-                self.AnalogChannelNames_ = channelNames(isAnalog) ;
-                self.DigitalChannelNames_ = channelNames(isDigital) ;
-                self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
-                                
-                nAnalogChannels = length(self.AnalogPhysicalChannelNames_);
-                nDigitalChannels = length(self.DigitalPhysicalChannelNames_);                
-                %nChannels=length(physicalInputChannelNames);
-                self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                %self.ChannelScales(2)=0.1  % to test
-                self.AnalogChannelUnits_=repmat({'V'},[1 nAnalogChannels]);  % by default, the units are volts                
-                %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
-                self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
-                self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
-                
-                self.IsEnabled = true;
+            physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
+            channelNames = mdfStructure.inputChannelNames;
+            
+            inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
+            uniqueInputDeviceNames=unique(inputDeviceNames);
+            if length(uniqueInputDeviceNames)>1 ,
+                error('ws:MoreThanOneDeviceName', ...
+                      'WaveSurfer only supports a single NI card at present.');                      
             end
+            self.DeviceNames_ = inputDeviceNames;
+            %channelNames = mdfStructure.inputChannelNames;
+
+            % Figure out which are analog and which are digital
+            channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
+            isAnalog = strcmp(channelTypes,'ai');
+            isDigital = ~isAnalog;
+
+            % Sort the channel names
+            analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
+            digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
+            self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
+            self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
+            self.AnalogChannelNames_ = channelNames(isAnalog) ;
+            self.DigitalChannelNames_ = channelNames(isDigital) ;
+            self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
+
+            nAnalogChannels = length(analogPhysicalChannelNames);
+            nDigitalChannels = length(digitalPhysicalChannelNames);                
+            %nChannels=length(physicalInputChannelNames);
+            self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
+            %self.ChannelScales(2)=0.1  % to test
+            self.AnalogChannelUnits_=repmat({'V'},[1 nAnalogChannels]);  % by default, the units are volts                
+            %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
+            self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
+            self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
+
+            self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels
         end  % function
         
         function result = get.AnalogPhysicalChannelNames(self)
@@ -368,25 +368,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.Duration(self)
-            out = self.Duration_ ;
+            out = self.Parent.SweepDurationIfFinite ;
         end  % function
         
         function set.Duration(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            if ws.utility.isASettableValue(value) , 
-                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
-                    valueToSet = max(value,0.1);
-                    self.Parent.willSetAcquisitionDuration();
-                    self.Duration_ = valueToSet;
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.Parent.didSetAcquisitionDuration();
-                else
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.Parent.didSetAcquisitionDuration();
-                    error('most:Model:invalidPropVal', ...
-                          'Duration must be a (scalar) positive finite value');
-                end
-            end
+            self.Parent.SweepDurationIfFinite = value ;
         end  % function
         
         function out = get.ExpectedScanCount(self)
@@ -523,12 +510,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            wavesurferModel=self.Parent;
-            if ~isempty(wavesurferModel) ,
-                wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end  % function
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             wavesurferModel=self.Parent;
+%             if ~isempty(wavesurferModel) ,
+%                 wavesurferModel.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end  % function
 
         function debug(self) %#ok<MANU>
             keyboard

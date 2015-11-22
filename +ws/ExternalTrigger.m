@@ -1,4 +1,4 @@
-classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
     % A class that represents a trigger destination, i.e. a digital input
     % to the daq board that could potentially be used to trigger
     % acquisition, etc.  A trigger destination has a name, a device ID, 
@@ -6,7 +6,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
     % and an edge type (rising or falling).  ALT, 2014-05-24
     
     properties (Constant=true)
-        IsInternal = false
+        %IsInternal = false
         %IsExternal = true
     end
     
@@ -30,12 +30,12 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
     end
     
     methods
-        function self=TriggerDestination(parent)
+        function self=ExternalTrigger(parent)
             self@ws.Model(parent) ;
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
-            self.Edge_ = 'DAQmx_Val_Rising';            
+            self.Edge_ = 'rising';            
         end
         
         function value=get.Name(self)
@@ -101,7 +101,7 @@ classdef TriggerDestination < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixi
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
-                          'Edge must be ''DAQmx_Val_Rising'' or ''DAQmx_Val_Falling''');                  
+                          'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
             self.broadcast('Update');            

@@ -1,6 +1,6 @@
 classdef UserClass < ws.mixin.Coding
 
-    methods
+    methods (Abstract=true)
         % these are called in the frontend process
         startingRun(self,wsModel,eventName)
         completingRun(self,wsModel,eventName)

@@ -56,7 +56,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                                           activeAnalogPhysicalChannelNames, ...
                                           activeAnalogChannelNames);
                 % Set other things in the Task object
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
@@ -71,7 +71,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                                           activeDigitalPhysicalChannelNames, ...
                                           activeDigitalChannelNames);
                 % Set other things in the Task object
-                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration_;
+                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
                 %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
                 %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
@@ -168,7 +168,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end  % function
 
         function startingSweep(self)
-            %fprintf('Acquisition::startingSweep()\n');
+            %fprintf('LooperAcquisition::startingSweep()\n');
             self.IsArmedOrAcquiring_ = true;
             self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
@@ -184,15 +184,19 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end
         
         function stoppingSweep(self)
-            self.AnalogInputTask_.abort();
-            self.DigitalInputTask_.abort();
+            self.AnalogInputTask_.stop();
+            self.DigitalInputTask_.stop();
             self.IsArmedOrAcquiring_ = false ;
         end  % function
 
         function abortingSweep(self)
             try
-                self.AnalogInputTask_.abort();
-                self.DigitalInputTask_.abort();
+                self.AnalogInputTask_.stop();  
+                    % this is correct, we stop() the task, even though we're aborting the sweep.  
+                    % stop and abort mean
+                    % different things when
+                    % we're talking about sweeps versus tasks
+                self.DigitalInputTask_.stop();
             catch me %#ok<NASGU>
                 % abortingSweep() cannot throw an error, so we ignore any
                 % errors that arise here.
@@ -273,7 +277,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
         end  % function
         
     end  % protected methods block
-                
+    
     methods
         function [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
                 poll(self, timeSinceSweepStart, fromRunStartTicId)
@@ -283,7 +287,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
 
             % Call the task to do the real work
             if self.IsArmedOrAcquiring_ ,
-                %fprintf('IsArmedOrAcquiring\n') ;
+                %fprintf('LooperAcquisition::poll(): In self.IsArmedOrAcquiring_==true branch\n') ;
                 % Check for task doneness
                 if self.AreSweepsContinuous_ ,  
                     % if doing continuous acq, no need to check.  This is
@@ -312,13 +316,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
 
                 % If we were done before reading the data, act accordingly
                 if areTasksDone ,
-                    %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisSweep_);
-                
-                    % Stop tasks, notify rest of system
+                    % Stop tasks, set flag to reflect that we're no longer
+                    % armed nor acquiring
                     self.AnalogInputTask_.stop();
                     self.DigitalInputTask_.stop();
                     self.IsArmedOrAcquiring_ = false ;
-                    %self.acquisitionSweepComplete_();
                 end
             else
                 %fprintf('~IsArmedOrAcquiring\n') ;

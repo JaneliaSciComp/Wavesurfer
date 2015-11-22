@@ -346,7 +346,14 @@ classdef Controller < handle
 %                     id = me.identifier
 %                     msg = me.message
 %                     report = me.getReport()
-                    errordlg(me.message,'Error','modal');
+                 if isempty(me.cause) 
+                     errordlg(me.message,'Error','modal');
+                 else
+                     firstCause = me.cause{1} ;
+                     errorString = sprintf('%s:\n%s',me.message,firstCause.message) ;
+                     errordlg(errorString, ...
+                              'Error','modal');
+                 end                     
 %                end
             end
         end  % function       

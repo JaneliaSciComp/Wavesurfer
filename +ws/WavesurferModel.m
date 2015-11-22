@@ -25,7 +25,8 @@ classdef WavesurferModel < ws.Model
         SweepDuration  % the sweep duration, in s
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
-        NSweepsPerRun  
+        NSweepsPerRun
+        SweepDurationIfFinite
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
         IsYokedToScanImage
         NTimesDataAvailableCalledSinceRunStart
@@ -34,6 +35,7 @@ classdef WavesurferModel < ws.Model
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
         State
+        VersionString
     end
     
     %
@@ -51,12 +53,14 @@ classdef WavesurferModel < ws.Model
         IsYokedToScanImage_ = false
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
+        SweepDurationIfFinite_ = 1  % s
 
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
         
         % Not saved to either protocol or .usr file
         Logging_
+        VersionString_
     end
 
     properties (Access=protected, Transient=true)
@@ -85,6 +89,8 @@ classdef WavesurferModel < ws.Model
         TimeOfLastPollInSweep_
         ClockAtRunStart_
         %DoContinuePolling_
+        DidLooperCompleteSweep_
+        DidRefillerCompleteSweep_
         IsSweepComplete_
         WasRunStopped_        
         WasRunStoppedInLooper_        
@@ -99,7 +105,7 @@ classdef WavesurferModel < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         %IsDeeplyIntoPerformingSweep_ = false
-        TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
+        %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
     end
     
 %     events
@@ -125,7 +131,7 @@ classdef WavesurferModel < ws.Model
         DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
-        DidSetAreSweepsFiniteDurationOrContinuous
+        %DidSetAreSweepsFiniteDurationOrContinuous
         UpdateForNewData
         DidCompleteSweep
     end
@@ -141,6 +147,8 @@ classdef WavesurferModel < ws.Model
             self@ws.Model(parent);
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
+            
+            self.VersionString_ = ws.versionString() ;
             
             % We only set up the sockets if we are the one true
             % WavesurferModel, and not some blasted pretender!
@@ -162,9 +170,20 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
                 self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
 
-                % Start the other Matlab processes
-                system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); clear; quit()"');
-                system('start matlab -nojvm -minimize -r "refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"');
+                % Start the other Matlab processes, passing the relevant
+                % path information to make sure they can find all the .m
+                % files they need.
+                [pathToRepoRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+                looperLaunchString = ...
+                    sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                            pathToRepoRoot , ...
+                            pathToMatlabZmqLib ) ;
+                system(looperLaunchString) ;
+                refillerLaunchString = ...
+                    sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                            pathToRepoRoot , ...
+                            pathToMatlabZmqLib ) ;
+                system(refillerLaunchString) ;
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
                 %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -172,7 +191,7 @@ classdef WavesurferModel < ws.Model
 
                 % Start broadcasting pings until the satellite processes
                 % respond
-                nPingsMax=60 ;
+                nPingsMax=20 ;
                 isLooperAlive=false;
                 isRefillerAlive=false;
                 for iPing = 1:nPingsMax ,
@@ -354,80 +373,107 @@ classdef WavesurferModel < ws.Model
     end
     
     methods  % These are all the methods that get called in response to ZMQ messages
-        function samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
             
             % If we are not performing sweeps, just ignore.  This can
             % happen after stopping a run and then starting another, where some old messages from the last run are
             % still in the queue
             if self.IsPerformingSweep_ ,
+                %fprintf('About to call samplesAcquired_()\n') ;
                 self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             end
+            result = [] ;
         end  % function
         
-        function looperCompletedSweep(self)
+        function result = looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
-            self.IsSweepComplete_ = true ;
+            %fprintf('WavesurferModel::looperCompletedSweep()\n');
+            self.DidLooperCompleteSweep_ = true ;
+            self.IsSweepComplete_ = self.DidRefillerCompleteSweep_ ;
+            result = [] ;
         end
         
-        function looperStoppedRun(self)
+        function result = refillerCompletedSweep(self)
+            % Call by the Refiller, via ZMQ pub-sub, when it has completed a sweep
+            %fprintf('WavesurferModel::refillerCompletedSweep()\n');
+            self.DidRefillerCompleteSweep_ = true ;
+            self.IsSweepComplete_ = self.DidLooperCompleteSweep_ ;
+            result = [] ;
+        end
+        
+        function result = looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
             %fprintf('WavesurferModel::looperStoppedRun()\n');
             self.WasRunStoppedInLooper_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
+            result = [] ;
         end
         
-        function looperReadyForRun(self) %#ok<MANU>
+        function result = looperReadyForRunOrPerhapsNot(self, err)  %#ok<INUSL>
             % Call by the Looper, via ZMQ pub-sub, when it has finished its
             % preparations for a run.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = err ;
         end
         
-        function looperReadyForSweep(self) %#ok<MANU>
+        function result = looperReadyForSweep(self) %#ok<MANU>
             % Call by the Looper, via ZMQ pub-sub, when it has finished its
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = [] ;
         end        
         
-        function looperIsAlive(self)  %#ok<MANU>
+        function result = looperIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
             %fprintf('WavesurferModel::looperIsAlive()\n');
+            result = [] ;
         end
         
-        function refillerReadyForRun(self) %#ok<MANU>
+        function result = refillerReadyForRunOrPerhapsNot(self, err) %#ok<INUSL>
             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
             % preparations for a run.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = err ;
         end
         
-        function refillerReadyForSweep(self) %#ok<MANU>
+        function result = refillerReadyForSweep(self) %#ok<MANU>
             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
             % preparations for a sweep.  Currrently does nothing, we just
             % need a message to tell us it's OK to proceed.
+            result = [] ;
         end        
         
-        function refillerStoppedRun(self)
+        function result = refillerStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
             %fprintf('WavesurferModel::refillerStoppedRun()\n');
             self.WasRunStoppedInRefiller_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
+            result = [] ;
         end
         
-        function refillerIsAlive(self)  %#ok<MANU>
+        function result = refillerIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
             %fprintf('WavesurferModel::refillerIsAlive()\n');
+            result = [] ;
         end
         
-        function looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
+        function result = looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
+            result = [] ;
         end
         
-        function refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
+        function result = refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
+            result = [] ;
         end        
     end  % methods
     
     methods
+        function value=get.VersionString(self)
+            value=self.VersionString_ ;
+        end  % function
+        
         function value=get.State(self)
             value=self.State_;
         end  % function
@@ -536,35 +582,61 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end  % function
         
+        function out = get.SweepDurationIfFinite(self)
+            out = self.SweepDurationIfFinite_ ;
+        end  % function
+        
+        function set.SweepDurationIfFinite(self, value)
+            %fprintf('Acquisition::set.Duration()\n');
+            if ws.utility.isASettableValue(value) , 
+                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                    valueToSet = max(value,0.1);
+                    self.willSetSweepDurationIfFinite();
+                    self.SweepDurationIfFinite_ = valueToSet;
+                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.didSetSweepDurationIfFinite();
+                else
+                    %self.stimulusMapDurationPrecursorMayHaveChanged();
+                    %self.didSetSweepDurationIfFinite();
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDurationIfFinite must be a (scalar) positive finite value');
+                end
+            end
+            self.broadcast('Update');
+        end  % function
+        
         function value = get.SweepDuration(self)
             if self.AreSweepsContinuous ,
                 value=inf;
             else
-                value=self.Acquisition.Duration;
+                value=self.SweepDurationIfFinite_ ;
             end
         end  % function
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
             if ws.utility.isASettableValue(newValue),             
-                % Do nothing if in continuous mode
-                if self.AreSweepsFiniteDuration ,
-                    % Check value and set if valid
-                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                        % If get here, newValue is a valid value for this prop
-                        self.Acquisition.Duration = newValue;
-                    else
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'SweepDuration must be a (scalar) positive finite value');
-                    end
+                % Check value and set if valid
+                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+                    % If get here, newValue is a valid value for this prop
+                    if isfinite(newValue) ,
+                        self.AreSweepsFiniteDuration = true ;
+                        self.SweepDurationIfFinite = newValue ;
+                    else                        
+                        self.AreSweepsContinuous = true ;
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'SweepDuration must be a (scalar) positive value');
                 end
             end
             self.broadcast('Update');
         end  % function
         
         function value=get.AreSweepsFiniteDuration(self)
-            value=self.AreSweepsFiniteDuration_;
+            value = self.AreSweepsFiniteDuration_ ;
         end
         
         function set.AreSweepsFiniteDuration(self,newValue)
@@ -572,20 +644,20 @@ classdef WavesurferModel < ws.Model
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.Triggering.willSetAreSweepsFiniteDuration();
+                self.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.Triggering.didSetAreSweepsFiniteDuration();
+                self.didSetAreSweepsFiniteDuration();
             end
-            self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
+            %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
         end
         
-        function value=get.AreSweepsContinuous(self)
-            value=~self.AreSweepsFiniteDuration_;
+        function value = get.AreSweepsContinuous(self)
+            value = ~self.AreSweepsFiniteDuration_ ;
         end
         
         function set.AreSweepsContinuous(self,newValue)
@@ -688,64 +760,64 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
         
-        function acquisitionSweepComplete(self)
-            % Called by the acq subsystem when it's done acquiring for the
-            % sweep.
-            %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
-            self.checkIfSweepIsComplete_();            
-        end  % function
+%         function acquisitionSweepComplete(self)
+%             % Called by the acq subsystem when it's done acquiring for the
+%             % sweep.
+%             %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
+%             self.checkIfSweepIsComplete_();            
+%         end  % function
         
-        function stimulationEpisodeComplete(self)
-            % Called by the stimulation subsystem when it is done outputting
-            % the sweep
-            
-            %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
-            %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-            self.checkIfSweepIsComplete_();
-        end  % function
+%         function stimulationEpisodeComplete(self)
+%             % Called by the stimulation subsystem when it is done outputting
+%             % the sweep
+%             
+%             %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
+%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
+%             self.checkIfSweepIsComplete_();
+%         end  % function
         
-        function internalStimulationCounterTriggerTaskComplete(self)
-            %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-            %dbstack
-            self.checkIfSweepIsComplete_();
-        end
+%         function internalStimulationCounterTriggerTaskComplete(self)
+%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
+%             %dbstack
+%             self.checkIfSweepIsComplete_();
+%         end
         
-        function checkIfSweepIsComplete_(self)
-            % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
-            % depending on the states of the Acquisition, Stimulation, and
-            % Triggering subsystems.  Generally speaking, we want to make
-            % sure that all three subsystems are done with the sweep before
-            % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-            if self.Stimulation.IsEnabled ,
-                if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-                    % acq and stim trig sources are identical
-                    if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.IsSweepComplete_ = true ;
-                    end
-                else
-                    % acq and stim trig sources are distinct
-                    % this means the stim trigger basically runs on
-                    % its own until it's done
-                    if self.Acquisition.IsArmedOrAcquiring ,
-                        % do nothing
-                    else
-                        %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                        self.IsSweepComplete_ = true ;
-                    end
-                end
-            else
-                % Stimulation subsystem is disabled
-                if self.Acquisition.IsArmedOrAcquiring , 
-                    % do nothing
-                else
-                    %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                    self.IsSweepComplete_ = true ;
-                end
-            end            
-        end  % function
+%         function checkIfSweepIsComplete_(self)
+%             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
+%             % depending on the states of the Acquisition, Stimulation, and
+%             % Triggering subsystems.  Generally speaking, we want to make
+%             % sure that all three subsystems are done with the sweep before
+%             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
+%             if self.Stimulation.IsEnabled ,
+%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
+%                     % acq and stim trig sources are identical
+%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.IsSweepComplete_ = true ;
+%                     end
+%                 else
+%                     % acq and stim trig sources are distinct
+%                     % this means the stim trigger basically runs on
+%                     % its own until it's done
+%                     if self.Acquisition.IsArmedOrAcquiring ,
+%                         % do nothing
+%                     else
+%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                         self.IsSweepComplete_ = true ;
+%                     end
+%                 end
+%             else
+%                 % Stimulation subsystem is disabled
+%                 if self.Acquisition.IsArmedOrAcquiring , 
+%                     % do nothing
+%                 else
+%                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
+%                     self.IsSweepComplete_ = true ;
+%                 end
+%             end            
+%         end  % function
                 
 %         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
 %             % Called "from below" when data is available
@@ -767,16 +839,25 @@ classdef WavesurferModel < ws.Model
 %             self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
 %             %profile off
 %         end
-        
-        function willSetAcquisitionDuration(self)
-            self.Triggering.willSetAcquisitionDuration();
+
+        function willSetAreSweepsFiniteDuration(self)
+            self.Triggering.willSetAreSweepsFiniteDuration();
         end
         
-        function didSetAcquisitionDuration(self)
-            self.broadcast('Update');
+        function didSetAreSweepsFiniteDuration(self)
+            self.Triggering.didSetAreSweepsFiniteDuration();
+            self.Display.didSetAreSweepsFiniteDuration();
+        end        
+
+        function willSetSweepDurationIfFinite(self)
+            self.Triggering.willSetSweepDurationIfFinite();
+        end
+        
+        function didSetSweepDurationIfFinite(self)
+            %self.broadcast('Update');
             %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetAcquisitionDuration();
-            self.Display.didSetAcquisitionDuration();
+            self.Triggering.didSetSweepDurationIfFinite();
+            self.Display.didSetSweepDurationIfFinite();
         end        
         
         function releaseTimedHardwareResources_(self)
@@ -800,15 +881,15 @@ classdef WavesurferModel < ws.Model
             
             % Wait for the looper to respond
             timeout = 10 ;  % s
-            [gotMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
-            if ~gotMessage ,
+            err = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
+            if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end
             
             % Wait for the refiller to respond
-            [gotMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
-            if ~gotMessage ,
+            err = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
+            if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end            
@@ -871,14 +952,14 @@ classdef WavesurferModel < ws.Model
                 try
                     self.writeAcqSetParamsToScanImageCommandFile_();
                 catch excp
-                    self.abortRun_('problem');
+                    self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     rethrow(excp);
                 end
                 [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
                 if ~isScanImageReady ,
                     self.ensureYokingFilesAreGone_();
-                    self.abortRun_('problem');
+                    self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     error('WavesurferModel:ScanImageNotReady', ...
                           errorMessage);
@@ -910,25 +991,44 @@ classdef WavesurferModel < ws.Model
             %fprintf('About to send startingRun\n');
             self.IPCPublisher_.send('startingRun',wavesurferModelSettings) ;
             
+            % Isn't the code below a race condition?  What if the refiller
+            % responds first?  No, it's not a race, because one is waiting
+            % on the LooperIPCSubscriber_, the other on the
+            % RefillerIPCSubscriber_.
+            
             % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRun',timeout) ;
-            if ~gotMessage ,
+            [err,looperError] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
+            if isempty(err) ,
+                compositeError = looperError ;
+            else
+                compositeError = err ;
+            end
+            if ~isempty(compositeError) ,
                 % Something went wrong
                 self.abortOngoingRun_();
                 self.changeReadiness(+1);
-                error('wavesurfer:looperDidntRespond', ...
-                      'Looper didn''t respond within the timeout period');
+                me = MException('wavesurfer:looperDidntGetReady', ...
+                                'The looper encountered a problem while getting ready for the run');
+                me = me.addCause(compositeError) ;
+                throw(me) ;
             end
             
             % Wait for the refiller to respond that it is ready
-            gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRun',timeout) ;
-            if ~gotMessage ,
+            [err, refillerError] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRunOrPerhapsNot', timeout) ;
+            if isempty(err) ,
+                compositeError = refillerError ;
+            else
+                compositeError = err ;
+            end
+            if ~isempty(compositeError) ,
                 % Something went wrong
                 self.abortOngoingRun_();
                 self.changeReadiness(+1);
-                error('wavesurfer:refillerDidntRespond', ...
-                      'Refiller didn''t respond within the timeout period');
+                me = MException('wavesurfer:refillerDidntGetReady', ...
+                                'The refiller encountered a problem while getting ready for the run');
+                me = me.addCause(compositeError) ;
+                throw(me) ;
             end
             
             % Change our own state to running
@@ -945,7 +1045,7 @@ classdef WavesurferModel < ws.Model
             self.NScansPerUpdate_ = self.DesiredNScansPerUpdate_ ;  % at start, will be modified depending on how long stuff takes
             
             % Set up the samples buffer
-            bufferSizeInScans = 10*self.DesiredNScansPerUpdate_ ;
+            bufferSizeInScans = 30*self.DesiredNScansPerUpdate_ ;
             self.SamplesBuffer_ = ws.SamplesBuffer(self.Acquisition.NActiveAnalogChannels, ...
                                                    self.Acquisition.NActiveDigitalChannels, ...
                                                    bufferSizeInScans) ;
@@ -1025,8 +1125,8 @@ classdef WavesurferModel < ws.Model
                 
                 % Wait for the looper to respond
                 timeout = 10 ;  % s
-                [didGetMessage,err] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep',timeout) ;
-                if ~didGetMessage ,
+                err = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep', timeout) ;
+                if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
@@ -1034,8 +1134,8 @@ classdef WavesurferModel < ws.Model
                 end
                 
                 % Wait for the refiller to respond
-                [didGetMessage,err] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep',timeout) ;
-                if ~didGetMessage ,
+                err = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep', timeout) ;
+                if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
@@ -1051,7 +1151,7 @@ classdef WavesurferModel < ws.Model
                 % Any system waiting for an internal or external trigger was armed and waiting
                 % in the subsystem startingSweep() above.
                 %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
-                %self.Triggering.startAllTriggerTasksAndPulseMasterTrigger();
+                %self.Triggering.startAllTriggerTasksAndPulseSweepTrigger();
 
                 % Pulse the master trigger to start the sweep!
                 %fprintf('About to pulse the master trigger!\n');
@@ -1060,7 +1160,7 @@ classdef WavesurferModel < ws.Model
                     % samplesAcquired messages are ignored when we're
                     % waiting for looperReadyForSweep and
                     % refillerReadyForSweep messages above.
-                self.Triggering.pulseMasterTrigger();
+                self.Triggering.pulseBuiltinTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,
@@ -1271,7 +1371,7 @@ classdef WavesurferModel < ws.Model
         
         function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             % Record the time
-            self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
+            %self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
             
             % Get the number of scans
             nScans = size(rawAnalogData,1) ;
@@ -1279,11 +1379,15 @@ classdef WavesurferModel < ws.Model
             % Check that we didn't miss any data
             if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
                 nScansMissed = scanIndex - self.NScansAcquiredSoFarThisSweep_ ;
+                %fprintf('About to error in samplesAcquired_()\n');
+                %keyboard
                 error('We apparently missed %d scans: the index of the first scan in this acquire is %d, but we''ve only seen %d scans.', ...
                       nScansMissed, ...
                       scanIndex, ...
                       self.NScansAcquiredSoFarThisSweep_ );
             elseif scanIndex<self.NScansAcquiredSoFarThisSweep_ ,
+                %fprintf('About to error in samplesAcquired_()\n');
+                %keyboard
                 error('Weird.  The data timestamp is earlier than expected.  Timestamp: %d, expected: %d.',scanIndex,self.NScansAcquiredSoFarThisSweep_);
             else
                 % All is well, so just update self.NScansAcquiredSoFarThisSweep_
@@ -1293,18 +1397,25 @@ classdef WavesurferModel < ws.Model
             % Add the new data to the storage buffer
             self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
             
-            if self.SamplesBuffer_.nScansInBuffer() >= self.NScansPerUpdate_ ,
+            nScansInBuffer = self.SamplesBuffer_.nScansInBuffer() ;
+            nScansPerUpdate = self.NScansPerUpdate_ ;
+            %fprintf('nScansInBuffer, nScansPerUpdate: %10d, %10d\n',nScansInBuffer,nScansPerUpdate);
+            if nScansInBuffer >= nScansPerUpdate ,
                 %profile resume
                 ticId = tic() ;
                 self.dataAvailable_() ;
                 durationOfDataAvailableCall = toc(ticId) ;
                 % Update NScansPerUpdate to make sure we don't fall behind,
-                % but must update at least 1/sec
+                % but must update no slower than 10x slower than desired.
+                % (The buffer size is set to 100x
+                % self.DesiredNScansPerUpdate_, and it's important that the
+                % buffer be larger than the largest possible
+                % nScansPerUpdate)
                 fs = self.Acquisition.SampleRate ;
-                nScansPerUpdate = min(round(fs), ...
-                                      max(2*round(durationOfDataAvailableCall*fs), ...
-                                          self.DesiredNScansPerUpdate_ ) ) ;
-                self.NScansPerUpdate_= nScansPerUpdate ;
+                nScansPerUpdateNew = min(10*self.DesiredNScansPerUpdate_ , ...
+                                         max(2*round(durationOfDataAvailableCall*fs), ...
+                                             self.DesiredNScansPerUpdate_ ) ) ;                                      
+                self.NScansPerUpdate_= nScansPerUpdateNew ;
                 %profile off
             end
         end
@@ -1370,8 +1481,7 @@ classdef WavesurferModel < ws.Model
                 
                 % Do a drawnow(), to make sure user sees the changes, and
                 % to process any button presses, etc.
-                %fprintf('About to do drawnow()\n');
-                drawnow();  
+                %drawnow();
             end
             %toc(tHere)
         end  % function
@@ -1462,9 +1572,14 @@ classdef WavesurferModel < ws.Model
     methods
         function initializeFromMDFFileName(self,mdfFileName)
             self.changeReadiness(-1);
-            mdfStructure = ws.readMachineDataFile(mdfFileName);
-            ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
-            self.initializeFromMDFStructure_(mdfStructure);
+            try
+                mdfStructure = ws.readMachineDataFile(mdfFileName);
+                ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
+                self.initializeFromMDFStructure_(mdfStructure);
+            catch me
+                self.changeReadiness(+1);
+                rethrow(me) ;
+            end
             self.changeReadiness(+1);
         end
     end  % methods block
@@ -1635,6 +1750,8 @@ classdef WavesurferModel < ws.Model
             
             for iCheck=1:nChecks ,
                 % pause for dtBetweenChecks without relinquishing control
+                % I assume this means we don't let UI callback run.  But
+                % not clear why that's important here...
                 timerVal=tic();
                 while (toc(timerVal)<dtBetweenChecks)
                     x=1+1; %#ok<NASGU>
@@ -2003,15 +2120,23 @@ classdef WavesurferModel < ws.Model
             % Runs the main message-processing loop during a sweep.
             
             self.IsSweepComplete_ = false ;
+            self.DidLooperCompleteSweep_ = false ;
+            self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
             self.WasRunStoppedInLooper_ = false ;
             self.WasRunStoppedInRefiller_ = false ;
             self.WasRunStopped_ = false ;
+            drawnowTicId = tic() ;
+            timeOfLastDrawnow = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
             while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
                 %fprintf('At top of within-sweep loop...\n') ;
                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                  % drawnow()'ing will have to happen at times of updates
-                  % in new scheme...
                 self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                % do a drawnow() if it's been too long...
+                timeSinceLastDrawNow = toc(drawnowTicId) - timeOfLastDrawnow ;
+                if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                    drawnow() ;
+                    timeOfLastDrawnow = toc(drawnowTicId) ;
+                end
             end    
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
@@ -2108,6 +2233,21 @@ classdef WavesurferModel < ws.Model
             self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
     end  % public methods block
+    
+    methods (Static)
+        function [pathToRepoRoot,pathToMatlabZmqLib] = pathNamesThatNeedToBeOnSearchPath()
+            % Allow user to invoke Wavesurfer from the Matlab command line, for
+            % this Matlab session only.  Modifies the user's Matlab path, but does
+            % not safe the modified path.
+
+            pathToWavesurferModel = mfilename('fullpath') ;
+            pathToWsModulerFolder = fileparts(pathToWavesurferModel) ;  % should be +ws folder
+            pathToRepoRoot = fileparts(pathToWsModulerFolder) ;  % should be repo root
+            pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
+            
+            %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
+        end
+    end  % static methods block
     
 end  % classdef
 

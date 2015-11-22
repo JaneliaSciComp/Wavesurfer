@@ -892,10 +892,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
-        function changeDataFileLocation(self, varargin)
-            
-            folderName = uigetfile(self.Model.Logging.FileLocation, 'Change Data Folder...');
-            if folderName
+        function changeDataFileLocation(self, varargin)            
+            folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
+            if ~isempty(folderName) ,
                 self.Model.Logging.FileLocation = folderName;
             end
         end  % function

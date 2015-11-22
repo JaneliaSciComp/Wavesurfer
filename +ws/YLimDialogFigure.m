@@ -260,7 +260,7 @@ classdef YLimDialogFigure < ws.MCOSFigure
             
             % Update the relevant controls
             yl=self.Model.YLim;
-            unitsString=string(self.Model.YUnits);
+            unitsString = self.Model.YUnits ;
             set(self.YMaxEdit     ,'String',sprintf('%0.3g',yl(2)));
             set(self.YMaxUnitsText,'String',unitsString);
             set(self.YMinEdit     ,'String',sprintf('%0.3g',yl(1)));
