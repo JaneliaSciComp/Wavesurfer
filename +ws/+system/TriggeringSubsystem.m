@@ -52,53 +52,53 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.StimulationTriggerSchemeIndex_ = 1 ;
         end  % function
                         
-        function initializeFromMDFStructure(self,mdfStructure)
-            % Set up the trigger sources (i.e. internal triggers) specified
-            % in the MDF.
-            triggerSourceSpecs=mdfStructure.triggerSource;
-            for idx = 1:length(triggerSourceSpecs) ,
-                thisCounterTriggerSpec=triggerSourceSpecs(idx);
-                
-                % Create the trigger source, set params
-                source = self.addNewCounterTrigger() ;
-                %source = ws.CounterTrigger();                
-                source.Name=thisCounterTriggerSpec.Name;
-                source.DeviceName=thisCounterTriggerSpec.DeviceName;
-                source.CounterID=thisCounterTriggerSpec.CounterID;                
-                source.RepeatCount = 1;
-                source.Interval = 1;  % s
-                source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
-                source.Edge = 'rising';                                
-                
-                % add the trigger source to the subsystem
-                %self.addCounterTrigger(source);
-                
-                % If the first source, set things to point to it
-                if idx==1 ,
-                    self.AcquisitionTriggerSchemeIndex_ = 1 ;
-                    self.StimulationTriggerSchemeIndex_ = 1 ;  
-                    self.StimulationUsesAcquisitionTriggerScheme = true;
-                end                    
-            end  % for loop
-            
-            % Set up the trigger destinations (i.e. external triggers)
-            % specified in the MDF.
-            triggerDestinationSpecs=mdfStructure.triggerDestination;
-            for idx = 1:length(triggerDestinationSpecs) ,
-                thisExternalTriggerSpec=triggerDestinationSpecs(idx);
-                
-                % Create the trigger destination, set params
-                %destination = ws.ExternalTrigger();
-                destination = self.addNewExternalTrigger();
-                destination.Name = thisExternalTriggerSpec.Name;
-                destination.DeviceName = thisExternalTriggerSpec.DeviceName;
-                destination.PFIID = thisExternalTriggerSpec.PFIID;
-                destination.Edge = lower(thisExternalTriggerSpec.Edge);
-                
-                % add the trigger destination to the subsystem
-                %self.addExternalTrigger(destination);
-            end  % for loop            
-        end  % function
+%         function initializeFromMDFStructure(self,mdfStructure)
+%             % Set up the trigger sources (i.e. internal triggers) specified
+%             % in the MDF.
+%             triggerSourceSpecs=mdfStructure.triggerSource;
+%             for idx = 1:length(triggerSourceSpecs) ,
+%                 thisCounterTriggerSpec=triggerSourceSpecs(idx);
+%                 
+%                 % Create the trigger source, set params
+%                 source = self.addCounterTrigger() ;
+%                 %source = ws.CounterTrigger();                
+%                 source.Name=thisCounterTriggerSpec.Name;
+%                 source.DeviceName=thisCounterTriggerSpec.DeviceName;
+%                 source.CounterID=thisCounterTriggerSpec.CounterID;                
+%                 source.RepeatCount = 1;
+%                 source.Interval = 1;  % s
+%                 source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
+%                 source.Edge = 'rising';                                
+%                 
+%                 % add the trigger source to the subsystem
+%                 %self.addCounterTrigger(source);
+%                 
+%                 % If the first source, set things to point to it
+%                 if idx==1 ,
+%                     self.AcquisitionTriggerSchemeIndex_ = 1 ;
+%                     self.StimulationTriggerSchemeIndex_ = 1 ;  
+%                     self.StimulationUsesAcquisitionTriggerScheme = true;
+%                 end                    
+%             end  % for loop
+%             
+%             % Set up the trigger destinations (i.e. external triggers)
+%             % specified in the MDF.
+%             triggerDestinationSpecs=mdfStructure.triggerDestination;
+%             for idx = 1:length(triggerDestinationSpecs) ,
+%                 thisExternalTriggerSpec=triggerDestinationSpecs(idx);
+%                 
+%                 % Create the trigger destination, set params
+%                 %destination = ws.ExternalTrigger();
+%                 destination = self.addExternalTrigger();
+%                 destination.Name = thisExternalTriggerSpec.Name;
+%                 destination.DeviceName = thisExternalTriggerSpec.DeviceName;
+%                 destination.PFIID = thisExternalTriggerSpec.PFIID;
+%                 destination.Edge = lower(thisExternalTriggerSpec.Edge);
+%                 
+%                 % add the trigger destination to the subsystem
+%                 %self.addExternalTrigger(destination);
+%             end  % for loop            
+%         end  % function
         
         function out = get.BuiltinTrigger(self)
             out = self.BuiltinTrigger_;
@@ -191,16 +191,73 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end  % methods block
     
     methods
-        function source = addNewCounterTrigger(self)
-            source = ws.CounterTrigger(self);
-            self.CounterTriggers_{1,end + 1} = source;
+        function trigger = addCounterTrigger(self)
+            deviceName = self.Parent.DeviceName ;
+            counterIDs = cellfun(self.CounterTriggers, ...
+                                 @(c)(c.CounterID)) ;
+            if isempty(counterIDs) ,
+                counterID = 0 ;
+            else
+                counterID = max(counterIDs) + 1 ;
+            end
+            
+            trigger = ws.CounterTrigger(self);
+
+            trigger.Name = sprintf('Counter %d',counterID) ;
+            trigger.DeviceName = deviceName ; 
+            trigger.CounterID = counterID ;
+            trigger.RepeatCount = 1 ;
+            trigger.Interval = 1 ;  % s
+            trigger.PFIID = counterID + 12 ;  % this is the NI default
+            trigger.Edge = 'rising' ;
+            
+            self.CounterTriggers_{1,end + 1} = trigger ;
         end  % function
-                
-        function destination = addNewExternalTrigger(self)
-            destination = ws.ExternalTrigger(self);
-            self.ExternalTriggers_{1,end + 1} = destination;
+
+        function removeCounterTrigger(self, index)
+            triggers = self.CounterTriggers_ ;
+            doKeep = true(size(triggers)) ;
+            doKeep(index) = false ;
+            self.CounterTriggers_ = triggers(doKeep) ;
+        end
+
+        function removeLastCounterTrigger(self)
+            nTriggers = length(self.CounterTriggers_) ;
+            self.removeCounterTrigger(nTriggers) ;
+        end
+        
+        function trigger = addExternalTrigger(self)
+            deviceName = self.Parent.DeviceName ;
+            pfiIDs = cellfun(self.ExternalTriggers, ...
+                             @(e)(e.PFIID)) ;
+            if isempty(pfiIDs) ,
+                pfiID = 0 ;
+            else
+                pfiID = max(pfiIDs) + 1 ;
+            end
+            
+            trigger = ws.ExternalTrigger(self);
+            
+            trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
+            trigger.DeviceName = deviceName ;
+            trigger.PFIID = pfiID ;
+            trigger.Edge = 'rising' ;
+            
+            self.ExternalTriggers_{1,end + 1} = trigger ;
         end  % function
                         
+        function removeExternalTrigger(self, index)
+            triggers = self.ExternalTriggers_ ;
+            doKeep = true(size(triggers)) ;
+            doKeep(index) = false ;
+            self.ExternalTriggers_ = triggers(doKeep) ;
+        end
+
+        function removeLastExternalTrigger(self)
+            nTriggers = length(self.ExternalTriggers_) ;
+            self.removeExternalTrigger(nTriggers) ;
+        end
+        
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if self.Parent.AreSweepsFiniteDuration ,
@@ -227,6 +284,20 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                 value = self.StimulationUsesAcquisitionTriggerScheme_ ;
             end
         end  % function
+        
+        function didSetDeviceName(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            schemes = self.Schemes ;
+            nTriggers = length(schemes) ;            
+            for i = 1:nTriggers ,
+                trigger = schemes{i} ;
+                trigger.DeviceName = deviceName ;
+            end
+                        
+            self.broadcast('Update');
+        end
+        
     end  % methods block
     
     methods (Access = protected)

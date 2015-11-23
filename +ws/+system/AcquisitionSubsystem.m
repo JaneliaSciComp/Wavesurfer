@@ -44,12 +44,14 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     properties (Access = protected) 
         SampleRate_ = 20000  % Hz
         %Duration_ = 1  % s
-        DeviceNames_ = cell(1,0) ;
+        AnalogDeviceNames_ = cell(1,0) ;
+        DigitalDeviceNames_ = cell(1,0) ;
         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
         AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+        DigitalChannelIDs_ = zeros(1,0)  % Store for the digital channel IDs, zero-based port0 channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
         AnalogChannelUnits_ = cell(1,0)
             % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
@@ -88,47 +90,48 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     methods
         function self = AcquisitionSubsystem(parent)
             self@ws.system.Subsystem(parent) ;
+            self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)
-            physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
-            channelNames = mdfStructure.inputChannelNames;
-            
-            inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
-            uniqueInputDeviceNames=unique(inputDeviceNames);
-            if length(uniqueInputDeviceNames)>1 ,
-                error('ws:MoreThanOneDeviceName', ...
-                      'WaveSurfer only supports a single NI card at present.');                      
-            end
-            self.DeviceNames_ = inputDeviceNames;
-            %channelNames = mdfStructure.inputChannelNames;
-
-            % Figure out which are analog and which are digital
-            channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
-            isAnalog = strcmp(channelTypes,'ai');
-            isDigital = ~isAnalog;
-
-            % Sort the channel names
-            analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
-            digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
-            self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
-            self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
-            self.AnalogChannelNames_ = channelNames(isAnalog) ;
-            self.DigitalChannelNames_ = channelNames(isDigital) ;
-            self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
-
-            nAnalogChannels = length(analogPhysicalChannelNames);
-            nDigitalChannels = length(digitalPhysicalChannelNames);                
-            %nChannels=length(physicalInputChannelNames);
-            self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-            %self.ChannelScales(2)=0.1  % to test
-            self.AnalogChannelUnits_=repmat({'V'},[1 nAnalogChannels]);  % by default, the units are volts                
-            %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
-            self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
-            self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
-
-            self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels
-        end  % function
+%         function initializeFromMDFStructure(self, mdfStructure)
+%             physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
+%             channelNames = mdfStructure.inputChannelNames;
+%             
+%             inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
+%             uniqueInputDeviceNames=unique(inputDeviceNames);
+%             if length(uniqueInputDeviceNames)>1 ,
+%                 error('ws:MoreThanOneDeviceName', ...
+%                       'WaveSurfer only supports a single NI card at present.');                      
+%             end
+%             self.DeviceNames_ = inputDeviceNames;
+%             %channelNames = mdfStructure.inputChannelNames;
+% 
+%             % Figure out which are analog and which are digital
+%             channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
+%             isAnalog = strcmp(channelTypes,'ai');
+%             isDigital = ~isAnalog;
+% 
+%             % Sort the channel names
+%             analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
+%             digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
+%             self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
+%             self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
+%             self.AnalogChannelNames_ = channelNames(isAnalog) ;
+%             self.DigitalChannelNames_ = channelNames(isDigital) ;
+%             self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
+% 
+%             nAnalogChannels = length(analogPhysicalChannelNames);
+%             nDigitalChannels = length(digitalPhysicalChannelNames);                
+%             %nChannels=length(physicalInputChannelNames);
+%             self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
+%             %self.ChannelScales(2)=0.1  % to test
+%             self.AnalogChannelUnits_=repmat({'V'},[1 nAnalogChannels]);  % by default, the units are volts                
+%             %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
+%             self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
+%             self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
+% 
+%             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels
+%         end  % function
         
         function result = get.AnalogPhysicalChannelNames(self)
             result = self.AnalogPhysicalChannelNames_ ;
@@ -385,7 +388,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end  % function
         
         function out = get.DeviceNames(self)
-            out = self.DeviceNames_ ;
+            out = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
         end  % function
         
         function set.SampleRate(self, newValue)
@@ -831,6 +834,91 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         function result = getNScansReadThisSweep(self)
             result  = self.NScansReadThisSweep_ ;
         end        
+        
+        function addAnalogChannel(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            newChannelID = ws.utility.fif(isempty(self.AnalogChannelIDs), ...
+                                          0, ...
+                                          max(self.AnalogChannelIDs)+1) ;
+            newChannelPhysicalName = sprintf('AI%d',newChannelID) ;
+            newChannelName = newChannelPhysicalName ;
+            
+            self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
+            self.AnalogChannelIDs_ = [self.AnalogChannelIDs_ newChannelID] ;
+            self.AnalogPhysicalChannelNames_ =  [self.AnalogPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
+            self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
+            self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
+            self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
+            
+            self.Parent.didChangeNumberOfInputChannels() ;
+        end  % function
+
+        function removeAnalogChannel(self,channelIndex)
+            nChannels = length(self.AnalogChannelIDs) ;
+            isKeeper = true(1,nChannels) ;
+            isKeeper(channelIndex) = false ;
+            self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+            self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
+            self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
+            self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+            self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+            self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+            self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+            
+            self.Parent.didChangeNumberOfInputChannels() ;
+        end  % function
+        
+        function removeLastAnalogChannel(self)
+            nChannels = length(self.AnalogChannelIDs) ;
+            self.removeAnalogChannel(nChannels) ;
+        end  % function
+
+        function addDigitalChannel(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            newChannelID = ws.utility.fif(isempty(self.DigitalChannelIDs), ...
+                                          0, ...
+                                          max(self.DigitalChannelIDs)+1) ;
+            newChannelPhysicalName = sprintf('line%d',newChannelID) ;
+            newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
+            self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
+            
+            self.Parent.didChangeNumberOfInputChannels() ;
+        end  % function
+        
+        function removeDigitalChannel(self,channelIndex)
+            nChannels = length(self.DigitalChannelIDs) ;
+            isKeeper = true(1,nChannels) ;
+            isKeeper(channelIndex) = false ;
+            self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+            self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+            self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
+            self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+            self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+
+            self.Parent.didChangeNumberOfInputChannels() ;
+        end  % function
+        
+        function removeLastDigitalChannel(self)
+            nChannels = length(self.DigitalChannelIDs) ;
+            self.removeDigitalChannel(nChannels) ;
+        end  % function
+
+        function didSetDeviceName(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.broadcast('Update');
+        end
     end
     
 %     methods (Access=protected)

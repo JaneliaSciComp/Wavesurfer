@@ -36,6 +36,7 @@ classdef WavesurferModel < ws.Model
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
+        DeviceName
     end
     
     %
@@ -61,6 +62,7 @@ classdef WavesurferModel < ws.Model
         % Not saved to either protocol or .usr file
         Logging_
         VersionString_
+        DeviceName_
     end
 
     properties (Access=protected, Transient=true)
@@ -128,7 +130,7 @@ classdef WavesurferModel < ws.Model
         %DidSetAbsoluteProtocolFileName
         %DidSetAbsoluteUserSettingsFileName        
         DidLoadProtocolFile
-        DidSetStateAwayFromNoMDF
+        DidChangeNumberOfInputChannels
         WillSetState
         DidSetState
         %DidSetAreSweepsFiniteDurationOrContinuous
@@ -287,7 +289,7 @@ classdef WavesurferModel < ws.Model
             
             % The object is now initialized, but not very useful until an
             % MDF is specified.
-            self.setState_('no_mdf');
+            self.setState_('no_device');
         end
         
         function delete(self)
@@ -470,6 +472,46 @@ classdef WavesurferModel < ws.Model
     end  % methods
     
     methods
+        function value = get.DeviceName(self)
+            value = self.DeviceName_ ;
+        end  % function
+
+        function set.DeviceName(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,                
+                if ws.utility.isString(newValue) && ~isempty(newValue) ,
+                    deviceNames = ws.WavesurferModel.getAllDeviceNames() ;
+                    isAMatch = strcmpi(newValue,deviceNames) ;
+                    if any(isAMatch) ,
+                        iMatch = find(isAMatch,1) ;
+                        deviceName = deviceNames{iMatch} ;
+                        self.DeviceName_ = deviceName ;
+                        self.Acquisition.didSetDeviceName() ;
+                        self.Stimulation.didSetDeviceName() ;
+                        self.Triggering.didSetDeviceName() ;
+                        self.Display.didSetDeviceName() ;
+                        
+                        % Change our state to reflect the presence of the
+                        % device
+                        self.setState_('idle');
+
+                        % Notify the satellites
+                        if self.IsITheOneTrueWavesurferModel_ ,
+                            self.IPCPublisher_.send('didSetDevice') ;
+                        end                        
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'DeviceName must be the name of an NI DAQmx device');       
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DeviceName must be a nonempty string');       
+                end
+            end
+            self.broadcast('Update');
+        end  % function
+
         function value=get.VersionString(self)
             value=self.VersionString_ ;
         end  % function
@@ -914,11 +956,11 @@ classdef WavesurferModel < ws.Model
             self.broadcast('WillSetState');
             if ws.isAnApplicationState(newValue) ,
                 if ~isequal(self.State_,newValue) ,
-                    oldValue = self.State_ ;
+%                     oldValue = self.State_ ;
                     self.State_ = newValue ;
-                    if isequal(oldValue,'no_mdf') && ~isequal(newValue,'no_mdf') ,
-                        self.broadcast('DidSetStateAwayFromNoMDF');
-                    end
+%                     if isequal(oldValue,'no_device') && ~isequal(newValue,'no_device') ,
+%                         self.broadcast('DidSetStateAwayFromNoDevice');
+%                     end
                 end
             end
 %             if isequal(newValue,'running') ,
@@ -1569,44 +1611,44 @@ classdef WavesurferModel < ws.Model
 
     end  % methods ( Access = protected )
     
-    methods
-        function initializeFromMDFFileName(self,mdfFileName)
-            self.changeReadiness(-1);
-            try
-                mdfStructure = ws.readMachineDataFile(mdfFileName);
-                ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
-                self.initializeFromMDFStructure_(mdfStructure);
-            catch me
-                self.changeReadiness(+1);
-                rethrow(me) ;
-            end
-            self.changeReadiness(+1);
-        end
-    end  % methods block
+%     methods
+%         function initializeFromMDFFileName(self,mdfFileName)
+%             self.changeReadiness(-1);
+%             try
+%                 mdfStructure = ws.readMachineDataFile(mdfFileName);
+%                 ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
+%                 self.initializeFromMDFStructure_(mdfStructure);
+%             catch me
+%                 self.changeReadiness(+1);
+%                 rethrow(me) ;
+%             end
+%             self.changeReadiness(+1);
+%         end
+%     end  % methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            self.Display.initializeScopes();
-            
-            % Change our state to reflect the presence of the MDF file
-            self.setState_('idle');
-            
-            % Notify the satellites
-            if self.IsITheOneTrueWavesurferModel_ ,
-                self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
-            end
-        end  % function
-    end  % methods block
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)
+%             % Initialize the acquisition subsystem given the MDF data
+%             self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             self.Display.initializeScopes();
+%             
+%             % Change our state to reflect the presence of the MDF file
+%             self.setState_('idle');
+%             
+%             % Notify the satellites
+%             if self.IsITheOneTrueWavesurferModel_ ,
+%                 self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
+%             end
+%         end  % function
+%     end  % methods block
         
     methods (Access = protected)        
 %         % Allows ws.mixin.DependentProperties to initiate registered dependencies on
@@ -2103,6 +2145,10 @@ classdef WavesurferModel < ws.Model
             value = self.Stimulation.IsDigitalChannelTimed ;
             self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',value) ;
         end
+        
+        function didChangeNumberOfInputChannels(self)
+            self.broadcast('DidChangeNumberOfInputChannels');
+        end
     end
     
 %     methods
@@ -2246,6 +2292,13 @@ classdef WavesurferModel < ws.Model
             pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
             
             %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
+        end
+        
+        function deviceNames = getAllDeviceNames()
+            daqmxSystem = ws.dabs.ni.daqmx.System() ;
+            deviceNameAsCommaSeparatedList = daqmxSystem.devNames ;
+            deviceNameWithWhitespace = strsplit(deviceNameAsCommaSeparatedList,',') ;
+            deviceNames = strtrim(deviceNameWithWhitespace) ;
         end
     end  % static methods block
     

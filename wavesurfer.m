@@ -1,4 +1,4 @@
-function varargout = wavesurfer(mdfFileName,isCommandLineOnly)
+function varargout = wavesurfer(protocolFileName,isCommandLineOnly)
     %wavesurfer  Launch Wavesurfer
     %
     %   wavesurfer(isCommandLineOnly,mdfFileName) launches
@@ -22,11 +22,11 @@ function varargout = wavesurfer(mdfFileName,isCommandLineOnly)
     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
         isCommandLineOnly=false;
     end
-    if ~exist('mdfFileName','var') || isempty(mdfFileName),
-        wasMDFFileNameGivenAtCommandLine=false;
-        mdfFileName='';
+    if ~exist('protocolFileName','var') || isempty(protocolFileName),
+        wasProtocolFileNameGivenAtCommandLine=false;
+        protocolFileName='';
     else
-        wasMDFFileNameGivenAtCommandLine=true;
+        wasProtocolFileNameGivenAtCommandLine=true;
     end
 
     % Create the application (model) object.
@@ -44,13 +44,13 @@ function varargout = wavesurfer(mdfFileName,isCommandLineOnly)
 %           % Why does this not happen automatically when you create the controller?
     end
 
-    % Load the MDF file, maybe
-    if wasMDFFileNameGivenAtCommandLine ,
+    % Load the protocol file, maybe
+    if wasProtocolFileNameGivenAtCommandLine ,
         if isempty(controller) ,
-            model.initializeFromMDFFileName(mdfFileName);
+            model.loadConfigFileForRealsSrsly(protocolFileName);
         else
             % Need to do via controller, to keep the figure updated
-            controller.initializeGivenMDFFileName(mdfFileName);
+            controller.loadConfigFileForRealsSrsly(protocolFileName);
         end
     end
 

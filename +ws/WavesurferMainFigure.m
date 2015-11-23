@@ -1179,7 +1179,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %figureObject=self.Figure; 
             %window=self.hGUIData.WavesurferWindow;
             
-            isNoMDF = isequal(model.State,'no_mdf') ;
+            isNoDevice = isequal(model.State,'no_device') ;
             isIdle=isequal(model.State,'idle');
             isSweepBased=model.AreSweepsFiniteDuration;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
@@ -1187,14 +1187,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
-            set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
+            set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
             set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveProtocolMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveProtocolAsMenuItem,'Enable',onIff(isIdle));            
             set(self.LoadUserSettingsMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveUserSettingsMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveUserSettingsAsMenuItem,'Enable',onIff(isIdle));            
-            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoMDF));
+            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoDevice));
             %set(self.QuitMenuItem,'Enable',onIff(true));  % always available          
             
             %% Run Menu
@@ -1214,7 +1214,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
             
             % Help menu
-            set(self.AboutMenuItem,'Enable',onIff(isIdle||isNoMDF));
+            set(self.AboutMenuItem,'Enable',onIff(isIdle||isNoDevice));
             
             % Toolbar buttons
             set(self.PlayButton,'Enable',onIff(isIdle));
@@ -1425,7 +1425,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.OriginalModelState_=[];
             
             % If we're switching out of the "no MDF" mode, update the scope menu            
-            if isequal(originalModelState,'no_mdf') && ~isequal(self.Model.State,'no_mdf') ,
+            if isequal(originalModelState,'no_device') && ~isequal(self.Model.State,'no_device') ,
                 self.update();
             else
                 % More limited update is sufficient

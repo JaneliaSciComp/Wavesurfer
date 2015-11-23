@@ -267,8 +267,8 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function result = initializeFromMDFStructure(self,mdfStructure)
-            self.initializeFromMDFStructure_(mdfStructure) ;
+        function result = didSetDevice(self)
+            %self.initializeFromMDFStructure_(mdfStructure) ;
             self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
             result = [] ;
         end  % function
@@ -1630,23 +1630,23 @@ classdef Looper < ws.Model
         end  % function
     end  % public methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            %self.Display.initializeScopes();
-            
-            % Change our state to reflect the presence of the MDF file
-            %self.setState_('idle');            
-        end  % function
-    end  % methods block        
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)                        
+%             % Initialize the acquisition subsystem given the MDF data
+%             self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             %self.Display.initializeScopes();
+%             
+%             % Change our state to reflect the presence of the MDF file
+%             %self.setState_('idle');            
+%         end  % function
+%     end  % methods block        
     
 end  % classdef

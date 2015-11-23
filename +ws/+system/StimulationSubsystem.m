@@ -34,6 +34,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     
     properties (Access = protected)
         SampleRate_ = 20000  % Hz
+        AnalogDeviceNames_ = cell(1,0)
+        DigitalDeviceNames_ = cell(1,0)        
         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
@@ -72,50 +74,50 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)            
-            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
-                % Get the list of physical channel names
-                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
-                channelNames = mdfStructure.outputChannelNames ;                                
-                
-                % Check that they're all on the same device (for now)
-                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
-                uniqueDeviceNames = unique(deviceNames);
-                if ~isscalar(uniqueDeviceNames) ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
-                isAnalog = strcmp(channelTypes,'ao');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names
-                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
-                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
-                self.AnalogChannelNames_ = channelNames(isAnalog) ;
-                self.DigitalChannelNames_ = channelNames(isDigital) ;
-                
-                % Set the analog channel scales, units
-                nAnalogChannels = sum(isAnalog) ;
-                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                %V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
-                
-                % Set defaults for digital channels
-                nDigitalChannels = sum(isDigital) ;
-                self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
-                self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
-
-                % Intialized the stimulus library
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
-                
-%                 % Set up the untimed channels
-%                 self.syncTasksToChannelMembership_();
-                
-            end
-        end  % function
+%         function initializeFromMDFStructure(self, mdfStructure)            
+%             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
+%                 % Get the list of physical channel names
+%                 physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+%                 channelNames = mdfStructure.outputChannelNames ;                                
+%                 
+%                 % Check that they're all on the same device (for now)
+%                 deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+%                 uniqueDeviceNames = unique(deviceNames);
+%                 if ~isscalar(uniqueDeviceNames) ,
+%                     error('ws:MoreThanOneDeviceName', ...
+%                           'WaveSurfer only supports a single NI card at present.');                      
+%                 end
+%                 
+%                 % Figure out which are analog and which are digital
+%                 channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+%                 isAnalog = strcmp(channelTypes,'ao');
+%                 isDigital = ~isAnalog;
+% 
+%                 % Sort the channel names
+%                 self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
+%                 self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
+%                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
+%                 self.DigitalChannelNames_ = channelNames(isDigital) ;
+%                 
+%                 % Set the analog channel scales, units
+%                 nAnalogChannels = sum(isAnalog) ;
+%                 self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
+%                 %V=ws.utility.SIUnit('V');  % by default, the units are volts                
+%                 self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
+%                 
+%                 % Set defaults for digital channels
+%                 nDigitalChannels = sum(isDigital) ;
+%                 self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
+%                 self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
+% 
+%                 % Intialized the stimulus library
+%                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
+%                 
+% %                 % Set up the untimed channels
+% %                 self.syncTasksToChannelMembership_();
+%                 
+%             end
+%         end  % function
 
         function value=get.StimulusLibrary(self)
             value=self.StimulusLibrary_;
@@ -235,7 +237,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end
         
         function output = get.DeviceNames(self)
-            output = ws.utility.deviceNamesFromPhysicalChannelNames(self.PhysicalChannelNames) ;
+            output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
         end
         
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
@@ -441,8 +443,86 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 result = ...
                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
             end
-        end  % function                
-    end  % methods block
+        end  % function       
+        
+        function addAnalogChannel(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            newChannelID = ws.utility.fif(isempty(self.AnalogChannelIDs), ...
+                                          0, ...
+                                          max(self.AnalogChannelIDs)+1) ;
+            newChannelPhysicalName = sprintf('AI%d',newChannelID) ;
+            newChannelName = newChannelPhysicalName ;
+            
+            self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
+            self.AnalogChannelIDs_ = [self.AnalogChannelIDs_ newChannelID] ;
+            self.AnalogPhysicalChannelNames_ =  [self.AnalogPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
+            self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
+            self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
+            self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
+        end  % function
+
+        function removeAnalogChannel(self,channelIndex)
+            nChannels = length(self.AnalogChannelIDs) ;
+            isKeeper = true(1,nChannels) ;
+            isKeeper(channelIndex) = false ;
+            self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+            self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
+            self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
+            self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+            self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+            self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+            self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+        end  % function
+        
+        function removeLastAnalogChannel(self)
+            nChannels = length(self.AnalogChannelIDs) ;
+            self.removeAnalogChannel(nChannels) ;
+        end  % function
+
+        function addDigitalChannel(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            newChannelID = ws.utility.fif(isempty(self.DigitalChannelIDs), ...
+                                          0, ...
+                                          max(self.DigitalChannelIDs)+1) ;
+            newChannelPhysicalName = sprintf('line%d',newChannelID) ;
+            newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
+            self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
+        end  % function
+        
+        function removeDigitalChannel(self,channelIndex)
+            nChannels = length(self.DigitalChannelIDs) ;
+            isKeeper = true(1,nChannels) ;
+            isKeeper(channelIndex) = false ;
+            self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+            self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+            self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
+            self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+            self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+        end  % function
+        
+        function removeLastDigitalChannel(self)
+            nChannels = length(self.DigitalChannelIDs) ;
+            self.removeDigitalChannel(nChannels) ;
+        end  % function
+        
+        function didSetDeviceName(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;            
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.broadcast('Update');
+        end
+        
+end  % methods block
 
     methods (Access = protected)        
         function analogChannelScales=getAnalogChannelScales_(self)

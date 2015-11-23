@@ -171,20 +171,9 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             end
         end       
         
-        function initializeScopes(self)
-            % Set up the initial set of scope models, one per AI channel,
-            % and one for all channels.
-            activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
-            for iChannel = 1:length(activeChannelNames) ,
-                thisChannelName=activeChannelNames{iChannel};
-                prototypeScopeTag=sprintf('Channel_%s', thisChannelName);
-                scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
-                scopeTitle=sprintf('Channel %s', thisChannelName);
-                channelNames={thisChannelName};
-                self.addScope(scopeTag, scopeTitle, channelNames);
-            end
-            %self.addScope('All_Channels','All Channels', activeChannelNames);            
-        end        
+        function didSetDeviceName(self)
+            self.initializeScopes_() ;
+        end
         
         function addScope(self, scopeTag, scopeTitle, channelNames)
             if isempty(scopeTag)
@@ -273,6 +262,21 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 self.XSpan = self.CachedDisplayXSpan_;
             end
             self.CachedDisplayXSpan_ = [];
+        end        
+        
+        function initializeScopes_(self)
+            % Set up the initial set of scope models, one per AI channel,
+            % and one for all channels.
+            activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
+            for iChannel = 1:length(activeChannelNames) ,
+                thisChannelName=activeChannelNames{iChannel};
+                prototypeScopeTag=sprintf('Channel_%s', thisChannelName);
+                scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
+                scopeTitle=sprintf('Channel %s', thisChannelName);
+                channelNames={thisChannelName};
+                self.addScope(scopeTag, scopeTitle, channelNames);
+            end
+            %self.addScope('All_Channels','All Channels', activeChannelNames);            
         end        
     end
         

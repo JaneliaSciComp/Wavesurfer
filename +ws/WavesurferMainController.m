@@ -773,7 +773,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 end                                
                 %self.Model.subscribeMe(self,'PreSet','State','willSetModelState');
                 %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
-                self.Model.subscribeMe(self,'DidSetStateAwayFromNoMDF','','nukeAndRepaveScopeControllers');
+                self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','nukeAndRepaveScopeControllers');
                 %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
                 %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
                 %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
@@ -2029,6 +2029,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 self.applyFastProtocol(index);
             end
         end
-    end  % methods        
+    end  % methods
     
 end  % classdef
