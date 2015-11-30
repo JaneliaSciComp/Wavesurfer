@@ -109,6 +109,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
            wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');
            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                wavesurferModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
+               %wavesurferModel.subscribeMe(self,'DidChangeNumberOfOutputChannels','','update');
            end
         end  % constructor
     end

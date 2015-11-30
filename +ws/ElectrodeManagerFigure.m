@@ -104,20 +104,30 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 %model.Ephys.subscribeMe(self,'PreSet','Electrodes','willChangeElectrodes');  % need to know if electrode is added/removed
                 %model.Ephys.subscribeMe(self,'PostSet','Electrodes','didChangeElectrodesChanged');  % need to know if electrode is added/removed
                 model.subscribeMe(self,'Update','','update');
-                ephys=model.Parent;
-                wavesurferModel=[];
-                if ~isempty(ephys) ,
-                    ephys.subscribeMe(self,'Update','','update');
-                    wavesurferModel=ephys.Parent;
-                end
-                if ~isempty(wavesurferModel) ,
-                    %wavesurferModel.subscribeMe(self,'PostSet','State','updateControlProperties');
-                    wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                    acquisition=wavesurferModel.Acquisition;
-                    if ~isempty(acquisition) ,
-                        %acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
-                    end
-                end                
+                model.subscribeMe(self,'DidSetIsInputChannelActive','','updateControlProperties');
+                model.subscribeMe(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
+                model.subscribeMe(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
+                model.subscribeMe(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
+%                 ephys=model.Parent;
+%                 wavesurferModel=[];
+%                 if ~isempty(ephys) ,
+%                     ephys.subscribeMe(self,'Update','','update');
+%                     wavesurferModel=ephys.Parent;
+%                 end
+%                 if ~isempty(wavesurferModel) ,
+%                     wavesurferModel.subscribeMe(self,'DidSetState','','update');
+%                     acquisition=wavesurferModel.Acquisition;
+%                     if ~isempty(acquisition) ,
+%                         %acquisition.subscribeMe(self,'DidChangeNumberOfChannels','','updateControlProperties');
+%                         %acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
+%                     end
+%                     stimulation=wavesurferModel.Stimulation ;
+%                     if ~isempty(stimulation) ,
+%                         %stimulation.subscribeMe(self,'DidChangeNumberOfChannels','','updateControlProperties');
+%                         %stimulation.subscribeMe(self,'DidSetIsDigitalChannelTimed','','updateControlProperties');
+%                         %stimulation.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
+%                     end
+%                 end                
             end
             
             % make the figure visible

@@ -125,17 +125,19 @@ classdef WavesurferModel < ws.Model
     
     events
         % These events _are_ used by WS itself.
+        UpdateChannels
         UpdateFastProtocols
+        UpdateForNewData
         UpdateIsYokedToScanImage
         %DidSetAbsoluteProtocolFileName
         %DidSetAbsoluteUserSettingsFileName        
         DidLoadProtocolFile
-        DidChangeNumberOfInputChannels
         WillSetState
         DidSetState
         %DidSetAreSweepsFiniteDurationOrContinuous
-        UpdateForNewData
         DidCompleteSweep
+        UpdateDigitalOutputStateIfUntimed
+        DidChangeNumberOfInputChannels
     end
     
     methods
@@ -750,6 +752,21 @@ classdef WavesurferModel < ws.Model
             if ~isempty(ephys)
                 ephys.didSetAnalogChannelUnitsOrScales();
             end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetIsInputChannelActive(self) 
+            self.Ephys.didSetIsInputChannelActive() ;
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetIsDigitalOutputTimed(self)
+            self.Ephys.didSetIsDigitalOutputTimed() ;
+            self.broadcast('UpdateChannels') ;            
+        end
+        
+        function didSetDigitalOutputStateIfUntimed(self)
+            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
         end
         
         function set.IsYokedToScanImage(self,newValue)
@@ -2147,7 +2164,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function didChangeNumberOfInputChannels(self)
-            self.broadcast('DidChangeNumberOfInputChannels');
+            self.Ephys.didChangeNumberOfInputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scopes to be nuked and repaved
+        end
+        
+        function didChangeNumberOfOutputChannels(self)
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');
         end
     end
     

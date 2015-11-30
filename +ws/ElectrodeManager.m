@@ -39,6 +39,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
     end
 
+    events
+        DidSetIsInputChannelActive
+        DidSetIsDigitalOutputTimed
+        DidChangeNumberOfInputChannels
+        DidChangeNumberOfOutputChannels
+    end
+    
     methods
         function self = ElectrodeManager(parent,varargin)
             % General initialization
@@ -906,6 +913,22 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             %self.State_
 %         end  % function
 
+        function didSetIsInputChannelActive(self) 
+            self.broadcast('DidSetIsInputChannelActive');
+        end
+
+        function didSetIsDigitalOutputTimed(self)
+            self.broadcast('DidSetIsDigitalOutputTimed');
+        end
+        
+        function didChangeNumberOfInputChannels(self)
+            self.broadcast('DidChangeNumberOfInputChannels');
+        end
+        
+        function didChangeNumberOfOutputChannels(self)
+            self.broadcast('DidChangeNumberOfOutputChannels');
+        end
+        
         function debug(self) %#ok<MANU>
             keyboard
         end

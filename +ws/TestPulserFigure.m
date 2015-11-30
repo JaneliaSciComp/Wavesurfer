@@ -85,6 +85,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                 self.Model.subscribeMe(self,'Update','','update');
                 %self.Model.subscribeMe(self,'UpdateIsReady','','updateIsReady');
                 self.Model.subscribeMe(self,'UpdateTrace','','updateTrace');
+                self.Model.subscribeMe(self,'DidSetIsInputChannelActive','','update');
                 ephys=self.Model.Parent;
                 if ~isempty(ephys) && isvalid(ephys) ,
                     electrodeManager=ephys.ElectrodeManager;
@@ -94,10 +95,10 @@ classdef TestPulserFigure < ws.MCOSFigure
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                         wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
-                        acquisition=wavesurferModel.Acquisition;
-                        if ~isempty(acquisition) && isvalid(acquisition) ,
-                            acquisition.subscribeMe(self,'DidSetIsChannelActive','','update');
-                        end                        
+%                         acquisition=wavesurferModel.Acquisition;
+%                         if ~isempty(acquisition) && isvalid(acquisition) ,
+%                             acquisition.subscribeMe(self,'DidSetIsChannelActive','','update');
+%                         end                        
                     end
                 end                
             end

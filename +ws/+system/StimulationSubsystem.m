@@ -13,6 +13,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
           % for each stimulus channel.
         IsDigitalChannelTimed
         DigitalOutputStateIfUntimed
+        AnalogChannelIDs
+        DigitalChannelIDs
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -49,6 +51,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         IsDigitalChannelTimed_ = false(1,0)
         DigitalOutputStateIfUntimed_ = false(1,0)
+        AnalogChannelIDs_ = zeros(1,0)
+        DigitalChannelIDs_ = zeros(1,0)
     end
         
 %     properties (Access=protected, Constant=true)
@@ -60,12 +64,13 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
 %     end
     
     events 
-        DidSetAnalogChannelUnitsOrScales
+        %DidChangeNumberOfChannels
+        %DidSetAnalogChannelUnitsOrScales
         DidSetStimulusLibrary
         DidSetSampleRate
         DidSetDoRepeatSequence
-        DidSetIsDigitalChannelTimed
-        DidSetDigitalOutputStateIfUntimed
+        %DidSetIsDigitalChannelTimed
+        %DidSetDigitalOutputStateIfUntimed
     end
     
     methods
@@ -240,6 +245,14 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
         end
         
+        function result = get.AnalogChannelIDs(self)
+            result = self.AnalogChannelIDs_;
+        end
+        
+        function result = get.DigitalChannelIDs(self)
+            result = self.DigitalChannelIDs_;
+        end
+        
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
             % Called by the parent to notify that the electrode
             % may have changed.
@@ -251,12 +264,12 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 return
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();                        
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
         function electrodesRemoved(self)
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
@@ -377,7 +390,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             editedNewValue=fif(isChangeable,newValue,oldValue);
             self.AnalogChannelUnits_=editedNewValue;
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
@@ -387,7 +400,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             editedNewValue=fif(isChangeable,newValue,oldValue);
             self.AnalogChannelScales_=editedNewValue;
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
@@ -401,7 +414,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelUnits_=editedNewUnits;
             self.AnalogChannelScales_=editedNewScales;
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelUnits(self,i,newValue)
@@ -411,7 +424,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 self.AnalogChannelUnits_{i}=strtrim(newValue);
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelScale(self,i,newValue)
@@ -421,7 +434,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 self.AnalogChannelScales_(i)=newValue;
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function result=getNumberOfElectrodesClaimingChannel(self)
@@ -452,7 +465,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             newChannelID = ws.utility.fif(isempty(self.AnalogChannelIDs), ...
                                           0, ...
                                           max(self.AnalogChannelIDs)+1) ;
-            newChannelPhysicalName = sprintf('AI%d',newChannelID) ;
+            newChannelPhysicalName = sprintf('AO%d',newChannelID) ;
             newChannelName = newChannelPhysicalName ;
             
             self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
@@ -461,7 +474,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
-            self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
+            %self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
+
+            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+            
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
 
         function removeAnalogChannel(self,channelIndex)
@@ -474,7 +491,10 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
             self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
             self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-            self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+            %self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+
+            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
         function removeLastAnalogChannel(self)
@@ -496,7 +516,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
             self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
+            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true ];
+            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
+
+            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
         function removeDigitalChannel(self,channelIndex)
@@ -507,7 +531,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
             self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
             self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-            self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+            self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+            self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+
+            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
         function removeLastDigitalChannel(self)
@@ -593,14 +621,16 @@ end  % methods block
                         wasSet = false ;
                     end
                 else
-                    self.broadcast('DidSetIsDigitalChannelTimed');
+                    self.Parent.didSetIsDigitalOutputTimed();
+                    %self.broadcast('DidSetIsDigitalChannelTimed');
                     error('most:Model:invalidPropVal', ...
                           'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
                 end
             else
                 wasSet = false ;
             end
-            self.broadcast('DidSetIsDigitalChannelTimed');
+            self.Parent.didSetIsDigitalOutputTimed();
+            %self.broadcast('DidSetIsDigitalChannelTimed');
         end  % function
         
         function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
@@ -611,15 +641,26 @@ end  % methods block
                     self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
                     wasSet = true ;
                 else
-                    self.broadcast('DidSetDigitalOutputStateIfUntimed');
+                    %self.broadcast('DidSetDigitalOutputStateIfUntimed');
+                    self.Parent.didSetDigitalOutputStateIfUntimed() ;
                     error('most:Model:invalidPropVal', ...
                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
                 end
             else
                 wasSet = false ;
             end
-            self.broadcast('DidSetDigitalOutputStateIfUntimed');
+            self.Parent.didSetDigitalOutputStateIfUntimed() ;
+            %self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
+        
+        function notifyOthersThatDidChangeNumberOfOutputChannels_(self)
+            self.Parent.didChangeNumberOfOutputChannels() ;
+            stimulusLibrary = self.StimulusLibrary ;
+            if ~isempty(stimulusLibrary) ,
+                stimulusLibrary.didChangeNumberOfOutputChannels() ;
+            end
+        end
+
     end
     
 %     properties (Hidden, SetAccess=protected)

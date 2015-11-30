@@ -939,6 +939,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
 %             end
 %             self.broadcast('Update');
 %         end  % function
+
+        function didChangeNumberOfOutputChannels(self)
+            self.broadcast('Update') ;
+        end
     end  % public methods block
     
     methods (Access = protected)        

@@ -125,6 +125,7 @@ classdef TestPulser < ws.Model
     end    
     
     events
+        DidSetIsInputChannelActive
         UpdateTrace
         %UpdateReadiness
     end
@@ -1475,7 +1476,12 @@ classdef TestPulser < ws.Model
         function didSetAcquisitionSampleRate(self,newValue)
             % newValue has already been validated
             self.setSamplingRate_(newValue) ;  % This will fire Update, etc.
-        end                
+        end       
+        
+        function didSetIsInputChannelActive(self) 
+            self.broadcast('DidSetIsInputChannelActive');
+        end
+        
     end  % methods
         
     methods (Access=protected)

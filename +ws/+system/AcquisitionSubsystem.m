@@ -21,6 +21,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogPhysicalChannelNames % the physical channel name for each analog channel
         DigitalPhysicalChannelNames  % the physical channel name for each digital channel
         PhysicalChannelNames
@@ -35,6 +37,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         NDigitalChannels
         IsChannelAnalog
         AnalogChannelIDs  % zero-based AI channel IDs for all available channels
+        DigitalChannelIDs  % zero-based DI channel IDs (on P0) for all available channels
         IsChannelActive
         ExpectedScanCount
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
@@ -82,8 +85,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     end    
     
     events 
-        DidSetAnalogChannelUnitsOrScales
-        DidSetIsChannelActive
+        %DidChangeNumberOfChannels
+        %DidSetAnalogChannelUnitsOrScales
+        %DidSetIsChannelActive
         DidSetSampleRate
     end
     
@@ -161,6 +165,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result = self.AnalogChannelIDs_;
         end
         
+        function result = get.DigitalChannelIDs(self)
+            result = self.DigitalChannelIDs_;
+        end
+        
         function result = get.ActiveChannelNames(self)         
             result = self.ChannelNames(self.IsChannelActive);
         end
@@ -184,7 +192,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 % Set the setting
                 self.IsAnalogChannelActive_ = newIsAnalogChannelActive;
             end
-            self.broadcast('DidSetIsChannelActive');
+            self.Parent.didSetIsInputChannelActive() ;
+            %self.broadcast('DidSetIsChannelActive');
         end
         
         function result=get.IsDigitalChannelActive(self)
@@ -215,7 +224,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %                     end
 %                 end
             end
-            self.broadcast('DidSetIsChannelActive');
+            self.Parent.didSetIsInputChannelActive() ;            
+            %self.broadcast('DidSetIsChannelActive');            
         end
         
         function value = get.NActiveChannels(self)
@@ -300,7 +310,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             self.AnalogChannelUnits_=fif(isChangeable,newValue,self.AnalogChannelUnits_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
@@ -308,7 +318,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             self.AnalogChannelScales_=fif(isChangeable,newValue,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setAnalogChannelUnitsAndScales(self,newUnitsRaw,newScales)
@@ -318,7 +328,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelUnits_=fif(isChangeable,newUnits,self.AnalogChannelUnits_);
             self.AnalogChannelScales_=fif(isChangeable,newScales,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelUnits(self,i,newValueRaw)
@@ -328,7 +338,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             newValue = strtrim(newValueRaw) ;
             self.AnalogChannelUnits_{i}=fif(isChangeable,newValue,self.AnalogChannelUnits_{i});
             self.Parent.didSetAnalogChannelUnitsOrScales();
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelScale(self,i,newValue)
@@ -337,7 +347,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             isChangeable= ~isChangeableFull(i);
             self.AnalogChannelScales_(i)=fif(isChangeable,newValue,self.AnalogChannelScales_(i));
             self.Parent.didSetAnalogChannelUnitsOrScales();
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function value=isChannelName(self,putativeName)
@@ -385,6 +395,14 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         
         function out = get.SampleRate(self)
             out = self.SampleRate_ ;
+        end  % function
+        
+        function out = get.AnalogDeviceNames(self)
+            out = self.AnalogDeviceNames_ ;
+        end  % function
+        
+        function out = get.DigitalDeviceNames(self)
+            out = self.DigitalDeviceNames_ ;
         end  % function
         
         function out = get.DeviceNames(self)
@@ -496,7 +514,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 
         function electrodesRemoved(self)
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
 
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
@@ -510,7 +528,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 return
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
-            self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
 %         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
@@ -854,6 +872,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             
             self.Parent.didChangeNumberOfInputChannels() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
 
         function removeAnalogChannel(self,channelIndex)
@@ -869,6 +888,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
             
             self.Parent.didChangeNumberOfInputChannels() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
         function removeLastAnalogChannel(self)
@@ -893,6 +913,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
             
             self.Parent.didChangeNumberOfInputChannels() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
         function removeDigitalChannel(self,channelIndex)
@@ -906,6 +927,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
 
             self.Parent.didChangeNumberOfInputChannels() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
         function removeLastDigitalChannel(self)
