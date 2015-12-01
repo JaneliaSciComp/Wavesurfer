@@ -275,3 +275,6 @@ Version History
 
 0.9-beta-14: (November 20, 2015) Fixed bug where didn't work if no 
              input channels were defined.
+
+0.9: (December 1, 2015) Rechristened 0.9-beta-14 as 0.9.
+
