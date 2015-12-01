@@ -483,18 +483,20 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
 
         function removeAnalogChannel(self,channelIndex)
             nChannels = length(self.AnalogChannelIDs) ;
-            isKeeper = true(1,nChannels) ;
-            isKeeper(channelIndex) = false ;
-            self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-            self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
-            self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
-            self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
-            self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
-            self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-            %self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+            if 1<=channelIndex && channelIndex<=nChannels ,
+                isKeeper = true(1,nChannels) ;
+                isKeeper(channelIndex) = false ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+                self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
+                self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
+                self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+                self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+                self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+                %self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
 
-            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
+                self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+                %self.broadcast('DidChangeNumberOfChannels');            
+            end
         end  % function
         
         function removeLastAnalogChannel(self)
@@ -523,17 +525,19 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         
         function removeDigitalChannel(self,channelIndex)
             nChannels = length(self.DigitalChannelIDs) ;
-            isKeeper = true(1,nChannels) ;
-            isKeeper(channelIndex) = false ;
-            self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-            self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
-            self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
-            self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-            self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-            self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+            if 1<=channelIndex && channelIndex<=nChannels ,
+                isKeeper = true(1,nChannels) ;
+                isKeeper(channelIndex) = false ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+                self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
 
-            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
+                self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+                %self.broadcast('DidChangeNumberOfChannels');            
+            end
         end  % function
         
         function removeLastDigitalChannel(self)

@@ -868,6 +868,13 @@ classdef ChannelsFigure < ws.MCOSFigure
                                   'Callback',@(src,evt)(self.controlActuated('AIIsActiveCheckboxes',src,evt)));                          
                 end                
             elseif nAIsBefore>nAIs 
+                % delete the objects
+                delete(self.AILabelTexts(nAIs+1:end)) ;
+                delete(self.AIScaleEdits(nAIs+1:end)) ;
+                delete(self.AIUnitsTexts(nAIs+1:end)) ;
+                delete(self.AIUnitsEdits(nAIs+1:end)) ;
+                delete(self.AIIsActiveCheckboxes(nAIs+1:end)) ;                
+                
                 % need to trim the arrays
                 self.AILabelTexts(nAIs+1:end) = [] ;
                 self.AIScaleEdits(nAIs+1:end) = [] ;
@@ -928,11 +935,17 @@ classdef ChannelsFigure < ws.MCOSFigure
                                   'HorizontalAlignment','left');
                 end
             elseif nAOsBefore>nAOs 
+                % delete the objects
+                delete(self.AOLabelTexts(nAOs+1:end)) ;
+                delete(self.AOScaleEdits(nAOs+1:end)) ;
+                delete(self.AOUnitsTexts(nAOs+1:end)) ;
+                delete(self.AOUnitsEdits(nAOs+1:end)) ;
+                
                 % need to trim the arrays
-                self.AOLabelTexts(nAIs+1:end) = [] ;
-                self.AOScaleEdits(nAIs+1:end) = [] ;
-                self.AOUnitsTexts(nAIs+1:end) = [] ;
-                self.AOUnitsEdits(nAIs+1:end) = [] ;
+                self.AOLabelTexts(nAOs+1:end) = [] ;
+                self.AOScaleEdits(nAOs+1:end) = [] ;
+                self.AOUnitsTexts(nAOs+1:end) = [] ;
+                self.AOUnitsEdits(nAOs+1:end) = [] ;
             end
                     
             % Populate the DI channel rows        
@@ -965,6 +978,10 @@ classdef ChannelsFigure < ws.MCOSFigure
                                   'Callback',@(src,evt)(self.controlActuated('DIIsActiveCheckboxes',src,evt)));                          
                 end
             elseif nDIsBefore>nDIs ,
+                % delete the objects
+                delete(self.DILabelTexts(nDIs+1:end)) ;
+                delete(self.DIIsActiveCheckboxes(nDIs+1:end)) ;                
+                
                 % need to trim the arrays
                 self.DILabelTexts(nDIs+1:end) = [] ;
                 self.DIIsActiveCheckboxes(nDIs+1:end) = [] ;                
@@ -1010,10 +1027,15 @@ classdef ChannelsFigure < ws.MCOSFigure
                                   'Callback',@(src,evt)(self.controlActuated('DOIsOnRadiobuttons',src,evt)));
                 end
             elseif nDOsBefore>nDOs ,
+                % delete the widgets
+                delete(self.DOLabelTexts(nDOs+1:end)) ;
+                delete(self.DOIsTimedCheckboxes(nDOs+1:end)) ;                
+                delete(self.DOIsOnRadiobuttons(nDOs+1:end)) ;                
+                
                 % need to trim the arrays
-                self.DOLabelTexts(nDIs+1:end) = [] ;
-                self.DOIsTimedCheckboxes(nDIs+1:end) = [] ;                
-                self.DOIsOnRadiobuttons(nDIs+1:end) = [] ;                
+                self.DOLabelTexts(nDOs+1:end) = [] ;
+                self.DOIsTimedCheckboxes(nDOs+1:end) = [] ;                
+                self.DOIsOnRadiobuttons(nDOs+1:end) = [] ;                
             end
         end  % function
     end  % protected methods block

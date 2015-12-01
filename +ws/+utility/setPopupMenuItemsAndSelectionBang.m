@@ -7,7 +7,7 @@ function setPopupMenuItemsAndSelectionBang(popupGH,rawMenuItems,rawCurrentItem,f
     % string), an optional fallbackItem (a string), and an optional
     % emptyItem (a string).  Returns a list of menu items, and the index of
     % the current item, suitable for passage to a popupmenu uicontrol as
-    % the String and the Value, respectively.  If rawMenuItem is empty, a
+    % the String and the Value, respectively.  If rawMenuItems is empty, a
     % singleton list containing only the emptyItem is returned, and the
     % returned index is 1.  Othewise, if rawCurrentItem does not match any
     % of the entries in rawMenuItems, the fallback item is added to the end
@@ -22,14 +22,14 @@ function setPopupMenuItemsAndSelectionBang(popupGH,rawMenuItems,rawCurrentItem,f
     % errors are not thrown even when the rawCurrentItem is not in the list
     % of rawMenuItems.
 
-    if ~exist('fallbackItem','var') || isempty(fallbackItem), ...
-        fallbackItem='(Invalid)';
+    if ~exist('fallbackItem','var') || isempty(fallbackItem) , ...
+        fallbackItem = '(Invalid)' ;
     end
-    if ~exist('emptyItem','var') || isempty(emptyItem), ...
-        emptyItem='(None)';
+    if ~exist('emptyItem','var') || isempty(emptyItem) , ...
+        emptyItem = '(None)' ;
     end
-    if ~exist('alwaysShowFallbackItem','var') || isempty(alwaysShowFallbackItem), ...
-        alwaysShowFallbackItem=false;
+    if ~exist('alwaysShowFallbackItem','var') || isempty(alwaysShowFallbackItem) , ...
+        alwaysShowFallbackItem = false ;
     end
     
     if isempty(rawMenuItems) ,
