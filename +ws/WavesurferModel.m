@@ -1879,7 +1879,7 @@ classdef WavesurferModel < ws.Model
             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
             if ~isScanImageReady ,
                 self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
+                error('EphusModel:ProblemCommandingScanImageToSaveProtocolFile', ...
                       errorMessage);
             end            
         end  % function
@@ -1906,7 +1906,7 @@ classdef WavesurferModel < ws.Model
             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
             if ~isScanImageReady ,
                 self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
+                error('EphusModel:ProblemCommandingScanImageToOpenProtocolFile', ...
                       errorMessage);
             end            
         end  % function
@@ -2001,7 +2001,7 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function saveStruct = loadConfigFileForRealsSrsly(self, fileName)
+        function saveStruct = loadProtocolFileForRealsSrsly(self, fileName)
             % Actually loads the named config file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -2020,8 +2020,9 @@ classdef WavesurferModel < ws.Model
             self.mimicProtocol_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
+            self.setState_('idle');
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
-            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+            ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);       
@@ -2030,7 +2031,7 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+        function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForPersistence();
@@ -2044,7 +2045,7 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
-            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+            ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
             self.changeReadiness(+1);            
             self.broadcast('Update');
@@ -2172,6 +2173,17 @@ classdef WavesurferModel < ws.Model
         function didChangeNumberOfOutputChannels(self)
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');
+        end
+        
+        function result = nextFreeDigitalChannelID(self)
+            inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
+            outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
+            digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
+            if isempty(digitalChannelIDs) ,
+                result = 0 ;
+            else
+                result = max(digitalChannelIDs) + 1 ;
+            end            
         end
     end
     

@@ -43,7 +43,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
        	TriggerScheme        
     end
-        
+    
     properties (Access = protected) 
         SampleRate_ = 20000  % Hz
         %Duration_ = 1  % s
@@ -900,9 +900,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
-            newChannelID = ws.utility.fif(isempty(self.DigitalChannelIDs), ...
-                                          0, ...
-                                          max(self.DigitalChannelIDs)+1) ;
+            newChannelID = self.Parent.nextFreeDigitalChannelID() ;
             newChannelPhysicalName = sprintf('line%d',newChannelID) ;
             newChannelName = newChannelPhysicalName ;
             

@@ -47,10 +47,10 @@ function varargout = wavesurfer(protocolFileName,isCommandLineOnly)
     % Load the protocol file, maybe
     if wasProtocolFileNameGivenAtCommandLine ,
         if isempty(controller) ,
-            model.loadConfigFileForRealsSrsly(protocolFileName);
+            model.loadProtocolFileForRealsSrsly(protocolFileName);
         else
             % Need to do via controller, to keep the figure updated
-            controller.loadConfigFileForRealsSrsly(protocolFileName);
+            controller.loadProtocolFileForRealsSrsly(protocolFileName);
         end
     end
 

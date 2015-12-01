@@ -506,9 +506,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
-            newChannelID = ws.utility.fif(isempty(self.DigitalChannelIDs), ...
-                                          0, ...
-                                          max(self.DigitalChannelIDs)+1) ;
+            newChannelID = self.Parent.nextFreeDigitalChannelID() ;
             newChannelPhysicalName = sprintf('line%d',newChannelID) ;
             newChannelName = newChannelPhysicalName ;
             

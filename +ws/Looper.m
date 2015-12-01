@@ -1318,7 +1318,7 @@ classdef Looper < ws.Model
 %             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
 %             if ~isScanImageReady ,
 %                 self.ensureYokingFilesAreGone_();
-%                 error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
+%                 error('EphusModel:ProblemCommandingScanImageToSaveProtocolFile', ...
 %                       errorMessage);
 %             end            
 %         end  % function
@@ -1345,7 +1345,7 @@ classdef Looper < ws.Model
 %             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
 %             if ~isScanImageReady ,
 %                 self.ensureYokingFilesAreGone_();
-%                 error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
+%                 error('EphusModel:ProblemCommandingScanImageToOpenProtocolFile', ...
 %                       errorMessage);
 %             end            
 %         end  % function
@@ -1432,7 +1432,7 @@ classdef Looper < ws.Model
 %     end
     
 %     methods
-%         function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+%         function saveStruct=loadProtocolFileForRealsSrsly(self, fileName)
 %             % Actually loads the named config file.  fileName should be a
 %             % file name referring to a file that is known to be
 %             % present, at least as of a few milliseconds ago.
@@ -1449,7 +1449,7 @@ classdef Looper < ws.Model
 %             self.decodeProperties(wavesurferModelSettings);
 %             self.AbsoluteProtocolFileName=absoluteFileName;
 %             self.HasUserSpecifiedProtocolFileName=true;            
-%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
 %             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
 %             self.broadcast('DidLoadProtocolFile');
 %             self.changeReadiness(+1);       
@@ -1457,7 +1457,7 @@ classdef Looper < ws.Model
 %     end
 %     
 %     methods
-%         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+%         function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
 %             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
 %             self.changeReadiness(-1);            
 %             wavesurferModelSettings=self.encodeForFileType('cfg');
@@ -1469,7 +1469,7 @@ classdef Looper < ws.Model
 %             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
 %             self.AbsoluteProtocolFileName=absoluteFileName;
 %             self.HasUserSpecifiedProtocolFileName=true;
-%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
 %             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
 %             self.changeReadiness(+1);            
 %         end

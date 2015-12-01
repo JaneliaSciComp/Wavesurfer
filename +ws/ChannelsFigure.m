@@ -720,8 +720,9 @@ classdef ChannelsFigure < ws.MCOSFigure
             % update the AIs
             normalBackgroundColor=[1 1 1];
             warningBackgroundColor=[1 0.8 0.8];
-            deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            channelIDs=model.Acquisition.AnalogChannelIDs;  % zero-based NI channel index
+            %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
+            physicalChannelNames = model.Acquisition.AnalogPhysicalChannelNames ;
+            %channelIDs=model.Acquisition.AnalogChannelIDs;  % zero-based NI channel index
             channelNames=model.Acquisition.AnalogChannelNames;
             channelScales=model.Acquisition.AnalogChannelScales;
             channelUnits=model.Acquisition.AnalogChannelUnits;
@@ -729,7 +730,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAIs ,
-                set(self.AILabelTexts(i),'String',sprintf('%s/ai%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
+                set(self.AILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));

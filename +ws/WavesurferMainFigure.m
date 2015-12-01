@@ -1188,7 +1188,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % File menu items
             set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
-            set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
+            % set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
+            set(self.OpenProtocolMenuItem,'Enable',onIff(true));            
             set(self.SaveProtocolMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveProtocolAsMenuItem,'Enable',onIff(isIdle));            
             set(self.LoadUserSettingsMenuItem,'Enable',onIff(isIdle));            
