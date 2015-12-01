@@ -60,10 +60,10 @@ classdef Channel < ws.dabs.ni.daqmx.private.DAQmxClass
             %   varargin (createFuncArgs): Additional function arguments, not determined/determinable from arguments 1-4, to supply to DAQmx channel creation function
             
             %Handle case where superclass construction was aborted
-            if obj.cancelConstruct
-                delete(obj);
-                return;
-            end            
+%             if obj.cancelConstruct
+%                 delete(obj);
+%                 return;
+%             end            
            
             %Handle case of empty 
             if nargin==0

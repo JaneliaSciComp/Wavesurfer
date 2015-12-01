@@ -1,10 +1,10 @@
 classdef TestPulser < ws.Model 
     properties (Dependent=true)  % do we need *so* many public properties?
-        Parent
+        %Parent
         Electrode
         ElectrodeName
-        Amplitude  % a DoubleString, in units of the electrode command channel
-        PulseDurationInMsAsString  % the duration of the pulse, in ms.  The trial duration is twice this.
+        Amplitude  % a double, in units of the electrode command channel
+        PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline
         IsAutoY
         IsAutoYRepeating
@@ -50,7 +50,7 @@ classdef TestPulser < ws.Model
         %AutomaticYLimits
         Electrodes
         NElectrodes
-        AmplitudeAsDoublePerElectrode
+        AmplitudePerElectrode
         CommandPerElectrode
         CommandChannelScalePerElectrode
         MonitorChannelScalePerElectrode
@@ -74,7 +74,7 @@ classdef TestPulser < ws.Model
           % a local place to store the ElectrodeName, which gets persisted, unlike Electrode_
           % Invariant: isempty(self.Electrode_) ||
           %            isequal(self.Electrode_.Name,self.ElectrodeName_)
-        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The trial duration is twice this.
+        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline_
         SamplingRate_  % in Hz
         YLimits_
@@ -91,7 +91,7 @@ classdef TestPulser < ws.Model
     end
     
     properties  (Access=protected, Transient=true)
-        Parent_  % an Ephys object
+        %Parent_  % an Ephys object
         Electrode_  % the current electrode, or empty if there isn't one.  We persist ElectrodeName_, not this.  
         IsRunning_
         UpdateRate_
@@ -104,7 +104,7 @@ classdef TestPulser < ws.Model
         ElectrodeIndexCached_
         %IsCCCached_  % true iff the electrode is in current-clamp mode, cached for speed when acquiring data
         %IsVCCached_  % true iff the electrode is in voltage-clamp mode, cached for speed when acquiring data
-        AmplitudeAsDoublePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during trials
+        AmplitudePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during sweeps
         IsCCPerElectrodeCached_  
         IsVCPerElectrodeCached_  
         MonitorChannelInverseScalePerElectrodeCached_
@@ -130,11 +130,12 @@ classdef TestPulser < ws.Model
     end
     
     methods
-        function self = TestPulser(varargin)
+        function self = TestPulser(parent,varargin)
             % Process args
-            validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            self@ws.Model(parent);
+            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -168,7 +169,7 @@ classdef TestPulser < ws.Model
 
             self.PulseDurationInMsAsString_='10';  % ms
             %self.Amplitude_='10';  % units determined by electrode mode, channel units
-            %self.AmplitudeAsDouble_=self.Amplitude.toDouble();  % keep around in this form for speed during trials
+            %self.AmplitudeAsDouble_=self.Amplitude.toDouble();  % keep around in this form for speed during sweeps
             self.DoSubtractBaseline_=true;
             self.IsAutoY_=true;
             self.IsAutoYRepeating_=false;
@@ -190,9 +191,9 @@ classdef TestPulser < ws.Model
             %                   ws.stimulus.function.TestPulse('PulseDuration', self.PulseDuration, ...
             %                                                     'PulseAmplitude', self.Amplitude ));
             self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
-            %self.nScansInMonitor=nan;  % only matters in the midst of an experiment
-            %self.IsCCCached_=nan;  % only matters in the midst of an experiment
-            %self.IsVCCached_=nan;  % only matters in the midst of an experiment            
+            %self.nScansInMonitor=nan;  % only matters in the midst of a run
+            %self.IsCCCached_=nan;  % only matters in the midst of a run
+            %self.IsVCCached_=nan;  % only matters in the midst of a run            
             %self.IsStopping_=false;
             %self.IsReady_ = true ;
             
@@ -230,15 +231,15 @@ classdef TestPulser < ws.Model
             self.Parent_=[];  % not necessary, but harmless
         end
         
-        function value=get.Parent(self)
-            value=self.Parent_;
-        end
-
-        function set.Parent(self,newValue)
-            if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
-                self.Parent_=newValue;
-            end
-        end
+%         function value=get.Parent(self)
+%             value=self.Parent_;
+%         end
+% 
+%         function set.Parent(self,newValue)
+%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%                 self.Parent_=newValue;
+%             end
+%         end
         
 %         function value = get.IsReady(self)
 %             value = self.IsReady_ ;
@@ -368,38 +369,46 @@ classdef TestPulser < ws.Model
             end
         end
         
-        function result=get.AmplitudeAsDoublePerElectrode(self)
+        function result=get.AmplitudePerElectrode(self)
             % Get the amplitudes of the test pulse for all the
             % marked-for-test-pulsing electrodes, as a double array.            
             ephys=self.Parent_;
             electrodeManager=ephys.ElectrodeManager;
             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
             %resultAsCellArray={testPulseElectrodes.TestPulseAmplitude};
-            resultAsCellArray=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
-                                      testPulseElectrodes, ...
-                                      'UniformOutput',false);
-            result=cellfun(@(doubleString)(doubleString.toDouble()), ...
-                           resultAsCellArray);
+            result=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
+                           testPulseElectrodes);
         end
         
         function value=get.Amplitude(self)
             if isempty(self.Electrode_)
-                value=ws.utility.DoubleString('');
+                %value=ws.utility.DoubleString('');
+                value=nan;
             else
                 value=self.Electrode_.TestPulseAmplitude;
             end
         end
         
-        function set.Amplitude(self,newString)  % in units of the electrode command channel
+        function set.Amplitude(self, newValue)  % in units of the electrode command channel
             if ~isempty(self.Electrode_) ,
-                newValue=str2double(newString);
-                if isfinite(newValue) ,
-                    self.Electrode_.TestPulseAmplitude=newString;
-                    %self.AmplitudeAsDouble_=newValue;
-                    self.clearExistingSweepIfPresent_();
+                if ws.utility.isString(newValue) ,
+                    newValueAsDouble = str2double(newValue) ;
+                elseif isnumeric(newValue) && isscalar(newValue) ,
+                    newValueAsDouble = double(newValue) ;
+                else
+                    newValueAsDouble = nan ;  % isfinite(nan) is false
                 end
-            end
-            self.broadcast('Update');
+                if isfinite(newValueAsDouble) ,
+                    self.Electrode_.TestPulseAmplitude = newValueAsDouble ;
+                    %self.AmplitudeAsDouble_=newValue;
+                    self.clearExistingSweepIfPresent_() ;
+                else
+                    self.broadcast('Update') ;
+                    error('most:Model:invalidPropVal', ...
+                          'Amplitude must be a finite scalar');
+                end
+            end                
+            self.broadcast('Update') ;
         end
         
         function value=get.PulseDuration(self)  % s
@@ -410,7 +419,7 @@ classdef TestPulser < ws.Model
             value=self.PulseDurationInMsAsString_;
         end
         
-        function set.PulseDurationInMsAsString(self,newString)  % the duration of the pulse, in seconds.  The trial duration is twice this.
+        function set.PulseDurationInMsAsString(self,newString)  % the duration of the pulse, in seconds.  The sweep duration is twice this.
             newValue=str2double(newString);
             if ~isnan(newValue) && 5<=newValue && newValue<=500,
                 self.PulseDurationInMsAsString_=strtrim(newString);
@@ -434,7 +443,7 @@ classdef TestPulser < ws.Model
             % of the Stimulation object
             t=self.Time;  % col vector
             delay=self.PulseDuration/2;
-            amplitudes=self.AmplitudeAsDoublePerElectrode;  % row vector
+            amplitudes=self.AmplitudePerElectrode;  % row vector
             unscaledCommand=(delay<=t)&(t<delay+self.PulseDuration);  % col vector
             commands=bsxfun(@times,amplitudes,unscaledCommand);
         end  
@@ -560,12 +569,14 @@ classdef TestPulser < ws.Model
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
             stimulus=wavesurferModel.Stimulation;
-            result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            %result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            result = cell(1,n) ;
             for i=1:n ,
                 unit=stimulus.channelUnitsFromName(commandChannelNames{i});
-                if ~isempty(unit) ,
-                    result(i)=unit;
-                end
+                result{i} = unit ;
+%                 if ~isempty(unit) ,
+%                     result(i)=unit;
+%                 end
             end
         end  % function
         
@@ -585,12 +596,14 @@ classdef TestPulser < ws.Model
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
             acquisition=wavesurferModel.Acquisition;
-            result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            %result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            result = cell(1,n) ;
             for i=1:n ,
-                unit=acquisition.analogChannelUnitsFromName(monitorChannelNames{i});
-                if ~isempty(unit) ,
-                    result(i)=unit;
-                end
+                unit = acquisition.analogChannelUnitsFromName(monitorChannelNames{i}) ;
+                result{i} = unit ;
+%                 if ~isempty(unit) ,
+%                     result(i)=unit;
+%                 end
             end
         end  % function
         
@@ -609,12 +622,21 @@ classdef TestPulser < ws.Model
             n=length(commandUnitsPerElectrode);
             result=false(1,n);
             for i=1:n ,
-                if i==1 , 
-                    volts=ws.utility.SIUnit('V');
-                    amps=ws.utility.SIUnit('A');
+                commandUnits = commandUnitsPerElectrode{i} ;
+                monitorUnits = monitorUnitsPerElectrode{i} ;
+                areCommandUnitsCommensurateWithVolts = ~isempty(commandUnits) && isequal(commandUnits(end),'V') ;
+                if areCommandUnitsCommensurateWithVolts ,
+                    areMonitorUnitsCommensurateWithAmps = ~isempty(monitorUnits) && isequal(monitorUnits(end),'A') ;
+                    result(i) = areMonitorUnitsCommensurateWithAmps ;
+                else
+                    result(i) = false ;
                 end
-                result(i)=areSummable(commandUnitsPerElectrode(i),volts) && ...
-                          areSummable(monitorUnitsPerElectrode(i),amps) ;
+%                 if i==1 , 
+%                     volts=ws.utility.SIUnit('V');
+%                     amps=ws.utility.SIUnit('A');
+%                 end
+%                 result(i)=areSummable(commandUnitsPerElectrode(i),volts) && ...
+%                           areSummable(monitorUnitsPerElectrode(i),amps) ;
             end
         end  % function
 
@@ -633,12 +655,21 @@ classdef TestPulser < ws.Model
             n=length(commandUnitsPerElectrode);
             result=false(1,n);
             for i=1:n ,
-                if i==1 , 
-                    volts=ws.utility.SIUnit('V');
-                    amps=ws.utility.SIUnit('A');
-                end
-                result(i)=areSummable(commandUnitsPerElectrode(i),amps) && ...
-                          areSummable(monitorUnitsPerElectrode(i),volts) ;
+                commandUnits = commandUnitsPerElectrode(i) ;
+                monitorUnits = monitorUnitsPerElectrode(i) ;
+                areCommandUnitsCommensurateWithAmps = ~isempty(commandUnits) && isequal(commandUnits(end),'A') ;
+                if areCommandUnitsCommensurateWithAmps ,
+                    areMonitorUnitsCommensurateWithVolts = ~isempty(monitorUnits) && isequal(monitorUnits(end),'V') ;
+                    result(i) = areMonitorUnitsCommensurateWithVolts ;
+                else
+                    result(i) = false ;
+                end                
+%                 if i==1 , 
+%                     volts=ws.utility.SIUnit('V');
+%                     amps=ws.utility.SIUnit('A');
+%                 end
+%                 result(i)=areSummable(commandUnitsPerElectrode(i),amps) && ...
+%                           areSummable(monitorUnitsPerElectrode(i),volts) ;
             end
         end  % function
 
@@ -648,8 +679,9 @@ classdef TestPulser < ws.Model
             if isempty(commandUnits) || isempty(monitorUnits) ,
                 value=false;
             else
-                value=areSummable(commandUnits,ws.utility.SIUnit('V')) && ...
-                      areSummable(monitorUnits,ws.utility.SIUnit('A')) ;
+                value = isequal(commandUnits(end),'V') && isequal(monitorUnits(end),'A') ;
+%                 areSummable(commandUnits,ws.utility.SIUnit('V')) && ...
+%                       areSummable(monitorUnits,ws.utility.SIUnit('A')) ;
             end
         end  % function
 
@@ -659,8 +691,9 @@ classdef TestPulser < ws.Model
             if isempty(commandUnits) || isempty(monitorUnits) ,
                 value=false;
             else
-                value=areSummable(commandUnits,ws.utility.SIUnit('A')) && ...
-                      areSummable(monitorUnits,ws.utility.SIUnit('V')) ;
+                value = isequal(commandUnits(end),'A') && isequal(monitorUnits(end),'V') ;
+%                 value=areSummable(commandUnits,ws.utility.SIUnit('A')) && ...
+%                       areSummable(monitorUnits,ws.utility.SIUnit('V')) ;
             end
         end
 
@@ -705,9 +738,11 @@ classdef TestPulser < ws.Model
             if self.IsRunning_ ,
                 value = self.GainOrResistanceUnitsPerElectrodeCached_ ;
             else
-                value=(self.MonitorUnitsPerElectrode./self.CommandUnitsPerElectrode);
+                valueIfCC = ws.utility.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
+                valueIfVC = ws.utility.divideUnits(self.CommandUnitsPerElectrode,self.MonitorUnitsPerElectrode);
                 isVCPerElectrode=self.IsVCPerElectrode;
-                value(isVCPerElectrode)=1./value(isVCPerElectrode);
+                value = ws.utility.fif(isVCPerElectrode,valueIfVC,valueIfCC);
+                %value(isVCPerElectrode)=1./value(isVCPerElectrode);
                 % for elements that are not convertible to resistance, just
                 % leave as gain
             end
@@ -718,9 +753,11 @@ classdef TestPulser < ws.Model
         end
         
         function [gainOrResistance,gainOrResistanceUnits] = getGainOrResistancePerElectrodeWithNiceUnits(self)
-            rawGainOrResistance = self.GainOrResistancePerElectrode;
+            rawGainOrResistance = self.GainOrResistancePerElectrode ;
             rawGainOrResistanceUnits = self.GainOrResistanceUnitsPerElectrode ;
-            [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;            
+            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+            [gainOrResistanceUnits,gainOrResistance] = ...
+                ws.utility.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
         
         function value=get.UpdateRate(self)
@@ -1027,11 +1064,11 @@ classdef TestPulser < ws.Model
                 end
 
                 % Check that we can start, and if not, return
-                canStart= ...
+                canStart = ...
                     ~isempty(electrode) && ...
                     electrodeManager.areAllElectrodesTestPulsable() && ...
                     electrodeManager.areAllMonitorAndCommandChannelNamesDistinct() && ...
-                    (isempty(wavesurferModel) || wavesurferModel.State==ws.ApplicationState.Idle);
+                    (isempty(wavesurferModel) || isequal(wavesurferModel.State,'idle')) ;
                 if ~canStart,
                     return
                 end
@@ -1043,7 +1080,7 @@ classdef TestPulser < ws.Model
 
                 % Free up resources we will need for test pulsing
                 if ~isempty(wavesurferModel) ,
-                    wavesurferModel.releaseHardwareResources();
+                    wavesurferModel.testPulserIsAboutToStartTestPulsing();
                 end
                 
                 % Get the stimulus
@@ -1076,20 +1113,21 @@ classdef TestPulser < ws.Model
                 % Limit the stimulus to the allowable range
                 limitedCommandsInVolts=max(-10,min(commandsInVolts,+10));
 
-                % Write the command to the output task
+                % Write the command to the output task                
                 self.OutputTask_.writeAnalogData(limitedCommandsInVolts);
 
                 % Set up the input task callback
                 %nSamplesPerSweep=nScans*nElectrodes;
                 self.InputTask_.everyNSamples=nScans;
-                self.InputTask_.everyNSamplesEventCallbacks=@(varargin)(self.didPerformSweep());
+                self.InputTask_.everyNSamplesEventCallbacks=@(varargin)(self.completingSweep());
 
                 % Cache some things for speed during sweeps
-                self.IsVCPerElectrodeCached_=self.IsVCPerElectrode;
+                isVCPerElectrode = self.IsVCPerElectrode ;
+                self.IsVCPerElectrodeCached_ = isVCPerElectrode ;
                 self.IsCCPerElectrodeCached_=self.IsCCPerElectrode;
                 self.MonitorChannelInverseScalePerElectrodeCached_=1./self.MonitorChannelScalePerElectrode;
                 %self.CommandChannelScalePerElectrodeCached_=self.CommandChannelScalePerElectrode;
-                self.AmplitudeAsDoublePerElectrodeCached_=self.AmplitudeAsDoublePerElectrode;
+                self.AmplitudePerElectrodeCached_ = self.AmplitudePerElectrode ;
                 self.ElectrodeIndexCached_=self.ElectrodeIndex;
                 self.NScansInSweepCached_ = self.NScansInSweep;
                 self.NElectrodesCached_ = self.NElectrodes;
@@ -1211,8 +1249,8 @@ classdef TestPulser < ws.Model
                 % Continue with stopping stuff
                 % fprintf('About to delete the tasks...\n');
                 %self
-                delete(self.InputTask_);
-                delete(self.OutputTask_);
+                delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
+                delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
                 self.InputTask_=[];
                 self.OutputTask_=[];
                 % maybe need to do more here...
@@ -1252,7 +1290,7 @@ classdef TestPulser < ws.Model
             else
                 if isvalid(self.OutputTask_) ,
                     try
-                        self.OutputTask_.abort();
+                        self.OutputTask_.stop();
                         delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
                           % this delete() can throw, if, e.g. the daq board has
                           % been turned off.  We discard the error because we're
@@ -1272,7 +1310,7 @@ classdef TestPulser < ws.Model
             else
                 if isvalid(self.InputTask_) ,
                     try
-                        self.InputTask_.abort();
+                        self.InputTask_.stop();
                         delete(self.InputTask_);  % it's a DABS task, so have to manually delete
                           % this delete() can throw, if, e.g. the daq board has
                           % been turned off.  We discard the error because we're
@@ -1325,11 +1363,11 @@ classdef TestPulser < ws.Model
             end
         end  % function
         
-        function didPerformSweep(self,varargin)
+        function completingSweep(self,varargin)
             % compute resistance
             % compute delta in monitor
             % Specify the time windows for measuring the baseline and the pulse amplitude
-            %fprintf('Inside TestPulser::didPerformTrial()\n');
+            %fprintf('Inside TestPulser::completingSweep()\n');
             rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
                 % We now read exactly the number of scans we expect.  Not
                 % doing this seemed to work fine on ALT's machine, but caused
@@ -1350,7 +1388,7 @@ classdef TestPulser < ws.Model
             base=mean(scaledMonitor(i0Base:ifBase,:),1);
             pulse=mean(scaledMonitor(i0Pulse:ifPulse,:),1);
             monitorDelta=pulse-base;
-            self.GainPerElectrode_=monitorDelta./self.AmplitudeAsDoublePerElectrodeCached_;
+            self.GainPerElectrode_=monitorDelta./self.AmplitudePerElectrodeCached_;
             % Compute resistance per electrode
             self.GainOrResistancePerElectrode_=self.GainPerElectrode_;
             self.GainOrResistancePerElectrode_(self.IsVCPerElectrodeCached_)= ...
@@ -1386,7 +1424,7 @@ classdef TestPulser < ws.Model
             self.LastToc_=thisToc;
             
             self.broadcast('UpdateTrace');
-            %fprintf('About to exit TestPulser::didPerformTrial()\n');            
+            %fprintf('About to exit TestPulser::completingSweep()\n');            
         end  % function
         
 %         function mimic(self, other)
@@ -1512,18 +1550,18 @@ classdef TestPulser < ws.Model
         end
     end  % protected methods block
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();
-        mdlHeaderExcludeProps = {};
-    end    
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();
+%         mdlHeaderExcludeProps = {};
+%     end    
     
     % These next two methods allow access to private and protected variables from ws.mixin.Coding. 
     methods (Access=protected)
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end

@@ -11,13 +11,13 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
     end
     
     properties (Access=protected)
-        Expression_ = ''  % matlab expression, possibly containing i, which is replaced by the trial number, and t, which is a vector of times
+        Expression_ = ''  % matlab expression, possibly containing i, which is replaced by the sweep number, and t, which is a vector of times
     end
     
     methods
         function self = ExpressionStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'Expression'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'Expression'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -29,7 +29,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
-                test = ws.stimulus.Stimulus.evaluateStringTrialTemplate(valueWithoutBackslashes,1);
+                test = ws.stimulus.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set
                     self.Expression_ = valueWithoutBackslashes;
@@ -45,19 +45,19 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         % digital signals should be returned as doubles and are thresholded at 0.5
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)  %#ok<INUSL>
-            %eval(['i=trialIndexWithinSet; fileNameAfterEvaluation=' self.Expression ';']);
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  %#ok<INUSL>
+            %eval(['i=sweepIndexWithinSet; fileNameAfterEvaluation=' self.Expression ';']);
             expression = self.Expression ;
             if ischar(expression) && isrow(expression) ,
                 % value should be a string representing an
-                % expression involving 'i', which stands for the trial
+                % expression involving 'i', which stands for the sweep
                 % index, and 't', a vector if times (in seconds) e.g. '10*(i-1)*(3<=t & t<4)'                
                 try
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     stringToEval=sprintf('@(t,i)(%s)',expression);
                     expressionAsFunction=eval(stringToEval);
-                    y=expressionAsFunction(t,trialIndexWithinSet);
+                    y=expressionAsFunction(t,sweepIndexWithinSet);
                 catch me %#ok<NASGU>
                     y=zeros(size(t));
                 end
@@ -67,14 +67,14 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function        
     end  % public methods block
 
-    methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.stimulus.StimulusDelegate(self);
-            self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     %
     % Implementations of methods needed to be a ws.mixin.ValueComparable
@@ -91,6 +91,17 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
             propertyNamesToCompare={'Expression'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
+    end
+    
+    methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
     end
     
 end

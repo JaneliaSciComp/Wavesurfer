@@ -1,12 +1,18 @@
 classdef ChannelsController < ws.Controller
     methods
         function self=ChannelsController(wavesurferController,wavesurferModel)
-            %self = self@ws.Controller(parent,model,figureClassNames,[],[],[]);            
-            self = self@ws.Controller(wavesurferController,wavesurferModel, {'channelsFigureWrapper'});
-            figureObject=self.Figure;
-            figureGH=figureObject.FigureGH;
-            set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));
-            self.initialize();
+%             self = self@ws.Controller(wavesurferController,wavesurferModel, {'channelsFigureWrapper'});
+%             figureObject=self.Figure;
+%             figureGH=figureObject.FigureGH;
+%             set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));
+%             self.initialize();
+
+            % Call superclass constructor
+            self = self@ws.Controller(wavesurferController,wavesurferModel);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.ChannelsFigure(wavesurferModel,self) ;
+            self.Figure_ = fig ;
         end
         
         function aiScaleEditActuated(self,source)
@@ -28,16 +34,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.AIUnitsEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AIUnitsEdits(i),'String');
-            try
-                newValue=ws.utility.SIUnit(newString);
-                self.Model.Acquisition.setSingleAnalogChannelUnits(i,newValue);
-            catch excp, 
-                if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
-                    self.Figure.update();
-                else
-                    rethrow(excp);
-                end
-            end
+            self.Model.Acquisition.setSingleAnalogChannelUnits(i,newString);
         end
         
         function aiIsActiveCheckboxActuated(self,source)
@@ -74,16 +71,8 @@ classdef ChannelsController < ws.Controller
             isTheChannel=(source==self.Figure.AOUnitsEdits);
             i=find(isTheChannel);            
             newString=get(self.Figure.AOUnitsEdits(i),'String');
-            try
-                newValue=ws.utility.SIUnit(newString);
-                self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
-            catch excp, 
-                if isequal(excp.identifier,'SIUnits:badConstructorArgs') ,
-                    self.Figure.update();
-                else
-                    rethrow(excp);
-                end
-            end
+            newValue=strtrim(newString);
+            self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
         end
         
         function doTimedCheckboxActuated(self,source)
@@ -162,7 +151,7 @@ classdef ChannelsController < ws.Controller
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if ~isIdle ,
                     shouldStayPut=true;
                     return

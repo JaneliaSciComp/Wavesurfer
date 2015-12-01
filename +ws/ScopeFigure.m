@@ -1,7 +1,4 @@
-classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
-    % This is an EventBroadcaster only so that changes to it via the
-    % default Matlab figure controls can be communicated to the model (via
-    % the controller)
+classdef ScopeFigure < ws.MCOSFigure
     
     properties (Dependent=true)
         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
@@ -38,7 +35,9 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         
         ScopeMenuGH_
         YZoomInMenuItemGH_
-        YZoomOutMenuItemGH_
+        YZoomOutMenuItemGH_        
+        SetYLimTightToDataMenuItemGH_
+        SetYLimTightToDataLockedMenuItemGH_        
         YScrollUpMenuItemGH_
         YScrollDownMenuItemGH_
         YLimitsMenuItemGH_
@@ -74,7 +73,8 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 'NumberTitle', 'off',...
                 'Units', 'pixels',...
                 'HandleVisibility', 'on',...
-                'Toolbar','figure', ...
+                'Menubar','none', ...
+                'Toolbar','none', ...
                 'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
                 'ResizeFcn',@(sourse,event)(self.layout_()));
 %                'Renderer','OpenGL', ...            
@@ -123,6 +123,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
+            %fprintf('ScopeFigure::delete()\n');
             ws.utility.deleteIfValidHGHandle(self.LineGHs_);
             ws.utility.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function
@@ -158,9 +159,9 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 
                 % Unsubsribe from events in the master model
                 display=model.Parent;
-                if ~isempty(display) ,
+                if ~isempty(display) && isvalid(display) ,
                     wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) ,
+                    if ~isempty(wavesurferModel) && isvalid(display) ,
                         wavesurferModel.unsubscribeMeFromAll(self);
                     end
                 end
@@ -183,6 +184,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             % Subscribe to some model events
             if ~isempty(model) ,
                 model.subscribeMe(self,'Update','','update');
+                model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
                 model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
                 model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
                 model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
@@ -222,7 +224,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.XLim_=newValue;
                 set(self.AxesGH_,'XLim',newValue);
             end
-            self.broadcast('DidSetXLim');
+            %self.broadcast('DidSetXLim');
         end  % function
         
         function value=get.XLim(self)
@@ -235,7 +237,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 self.YLim_=newValue;
                 set(self.AxesGH_,'YLim',newValue);
             end
-            self.broadcast('DidSetYLim');
+            %self.broadcast('DidSetYLim');
         end  % function
             
         function value=get.YLim(self)
@@ -270,7 +272,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %             end
 %         end
         
-        function modelXAxisLimitSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+        function updateXAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateXAxisLimits_();
         end  % function
         
@@ -482,29 +484,42 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %                 self.addChannelLineToAxes_();
 %             end
 
-            % Load some icons
-            wavesurferDirName=fileparts(which('wavesurfer'));
-            
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-            setYLimTightToDataIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-                                     
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-            setYLimTightToDataLockedIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-
-            % Add a toolbar button
-            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
-            self.SetYLimTightToDataButtonGH_ = ...
-                uipushtool(toolbarGH, ...
-                           'CData', setYLimTightToDataIcon , ...
-                           'TooltipString', 'Set y-axis limits tight to data', ....
-                           'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
-                         
-            % Add a second toolbar button           
-            self.SetYLimTightToDataLockedButtonGH_ = ...
-                uitoggletool(toolbarGH, ...
-                             'CData', setYLimTightToDataLockedIcon , ...
-                             'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
-                             'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
+%             % Load some icons
+%             wavesurferDirName=fileparts(which('wavesurfer'));
+%             
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+% %            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
+% %             self.SetYLimTightToDataButtonGH_ = ...
+% %                 uipushtool(toolbarGH, ...
+% %                            'CData', cdata, ...
+% %                            'TooltipString', 'Set y-axis limits tight to data', ....
+% %                            'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
+%             self.SetYLimTightToDataButtonGH_ = ...
+%                 uicontrol('Parent',self.FigureGH, ...
+%                           'Style','pushbutton', ...
+%                           'Units','pixels', ...
+%                           'FontSize',9, ...
+%                           'TooltipString', 'Set y-axis limits tight to data', ....
+%                           'CData', cdata, ...
+%                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
+%                        
+%             % Add a second toolbar button           
+%             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+% %             self.SetYLimTightToDataLockedButtonGH_ = ...
+% %                 uitoggletool(toolbarGH, ...
+% %                              'CData', cdata, ...
+% %                              'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+% %                              'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
+%             self.SetYLimTightToDataLockedButtonGH_ = ...
+%                 uicontrol('Parent',self.FigureGH, ...
+%                           'Style','togglebutton', ...
+%                           'Units','pixels', ...
+%                           'FontSize',9, ...
+%                           'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+%                           'CData', cdata, ...
+%                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
                        
             % Add a menu, and a single menu item
             self.ScopeMenuGH_ = ...
@@ -518,6 +533,16 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 uimenu('Parent',self.ScopeMenuGH_, ...
                        'Label','Scroll Down Y-Axis', ...
                        'Callback',@(source,event)self.controlActuated('YScrollDownMenuItemGH',source,event));                               
+
+            self.SetYLimTightToDataMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Y Limits Tight to Data', ...
+                       'Callback',@(source,event)self.controlActuated('SetYLimTightToDataMenuItemGH',source,event));            
+            self.SetYLimTightToDataLockedMenuItemGH_ = ...
+                uimenu('Parent',self.ScopeMenuGH_, ...
+                       'Label','Lock Y Limits Tight to Data', ...
+                       'Callback',@(source,event)self.controlActuated('SetYLimTightToDataLockedMenuItemGH',source,event));            
+                   
             self.YZoomInMenuItemGH_ = ...
                 uimenu('Parent',self.ScopeMenuGH_, ...
                        'Label','Zoom In Y-Axis', ...
@@ -571,6 +596,29 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                           'Units','pixels', ...
                           'FontSize',9, ...
                           'Callback',@(source,event)(self.controlActuated('YScrollDownButtonGH',source,event)));
+            self.SetYLimTightToDataButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'TooltipString', 'Set y-axis limits tight to data', ....
+                          'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
+            % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
+            % we want to do with this button when we change to
+            % green-on-black mode.  Also, there's a checked menu item that
+            % shows when this toggle is engaged or diengaged, so hopefully
+            % it won't be too jarring to the user when this button doesn't
+            % look toggled after she presses it.  I think it should be OK
+            % --- sometimes it's hard to tell even when a togglebutton is
+            % toggled.
+            self.SetYLimTightToDataLockedButtonGH_ = ...
+                uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'FontSize',9, ...
+                          'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+                          'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));                      
+                      
         end  % function            
 
         function updateControlsInExistance_(self)            
@@ -606,13 +654,31 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             persistent persistentYScrollDownIcon
             if isempty(persistentYScrollDownIcon) ,
                 wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
                 persistentYScrollDownIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+
+            persistent persistentYTightToDataIcon
+            if isempty(persistentYTightToDataIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+                persistentYTightToDataIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            end
+            
+            persistent persistentYTightToDataLockedIcon
+            if isempty(persistentYTightToDataLockedIcon) ,
+                wavesurferDirName=fileparts(which('wavesurfer'));
+                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+                persistentYTightToDataLockedIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             end
             
             % Update the togglebutton
+            %dbstack
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-            set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
+            %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
+            
+            %set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
+            set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.utility.onIff(areYLimitsLockedTightToData));            
 
             % Update the Show Grid togglemenu
             isGridOn = self.Model.IsGridOn ;
@@ -675,17 +741,25 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
             set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
             set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
             
             % Set the button scroll up/down button images
             if areColorsNormal ,
                 yScrollUpIcon   = persistentYScrollUpIcon   ;
                 yScrollDownIcon = persistentYScrollDownIcon ;
+                yTightToDataIcon = persistentYTightToDataIcon ;
+                yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;
             else
                 yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
                 yScrollDownIcon = 1-persistentYScrollDownIcon ;                
+                yTightToDataIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
+                yTightToDataLockedIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
             end                
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
+            set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
+            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
             
             % Update the axes grid on/off
             set(self.AxesGH_, ...
@@ -714,6 +788,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             onIffNotAreYLimitsLockedTightToData = ws.utility.onIff(~areYLimitsLockedTightToData) ;
             set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
@@ -765,6 +840,7 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             yRangeButtonSize = 20 ;  % those buttons are square
             spaceBetweenScrollButtons=5;
             spaceBetweenZoomButtons=5;
+            spaceBetweenZoomToDataButtons=5;
             minHeightBetweenButtonBanks = 5 ;
             
             % Show buttons only if user wants them
@@ -858,6 +934,21 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
                 'Visible',ws.utility.onIff(doShowButtons) , ...
                 'Position',[scrollDownButtonX scrollDownButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
+                        
+            % the zoom-to-data buttons
+            zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
+            zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
+            setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
+            set(self.SetYLimTightToDataButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
+            set(self.SetYLimTightToDataLockedButtonGH_, ...
+                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            
         end  % function
         
     end
@@ -905,16 +996,16 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
             if self.Model.NChannels==0 ,
                 ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10);
             else
-                %firstChannelName=self.Model.ChannelNames{1};
+                firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
                 units=self.Model.YUnits;
-                if units.isPure() ,
+                if isempty(units) ,
                     unitsString = 'pure' ;
                 else
-                    unitsString = string(units) ;
+                    unitsString = units ;
                 end
-                ylabel(self.AxesGH_,sprintf('Signal (%s)',unitsString),'Color',color,'FontSize',10);
+                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10);
             end
         end  % function
         
@@ -1030,6 +1121,13 @@ classdef ScopeFigure < ws.MCOSFigure & ws.EventSubscriber & ws.EventBroadcaster
 %         end  % function
 %     end
     
+    methods
+        function castOffAllAttachments(self)
+            self.unsubscribeFromAll() ;
+            self.deleteFigureGH() ;
+        end
+    end
+
     methods (Static=true)
         function result=getWidthInPixels(ax)
             % Gets the x span of the given axes, in pixels.

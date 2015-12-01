@@ -1,32 +1,4 @@
-classdef ScopeModel < ws.Model     % & ws.EventBroadcaster 
-%     properties (Constant=true)
-%         BackgroundColor = [0 0 0];
-%         ForegroundColor = [.15 .9 .15];
-%         FontSize = 10;
-%         FontWeight = 'normal';
-%         LineStyle = '-';
-%         Marker = 'none';
-%         %GridOn = true
-%     end
-
-    properties (Dependent=true, SetAccess=protected)
-        Parent  % the parent Display object
-          % this is SetAccess=protected for historical reasons
-          % would be nice to change it to immutable at some point
-    end
-    
-    properties (Dependent=true, SetAccess=immutable)
-        Tag        % This should be a unique tag that identifies this ScopeModel.
-                   % This is used as the Tag for any ScopeFigure that uses
-                   % this ScopeModel as its model, and should be usable as
-                   % a field name in a structure, for saving/loading
-                   % purposes.
-        ChannelNames   % row vector, the channel names shown in this scope
-        ChannelColorIndex  
-        NChannels
-        XData
-        YData
-    end
+classdef ScopeModel < ws.Model
     
     properties (Dependent=true)  %(SetObservable = true)
         Title        % This is the window title used by any ScopeFigures that use this
@@ -42,9 +14,6 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         IsGridOn
         AreColorsNormal        
         DoShowButtons
-    end
-
-    properties (Dependent=true, Transient=true)  % not sure this needs to be transient, since it's dependent...
         IsVisibleWhenDisplayEnabled
           % Indicates whether scope is visible when the Display subsystem
           % is enabled.  If display subsystem is disabled, the scopes are
@@ -58,9 +27,45 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
           % things are stored, not confuse them by having some aspects of
           % window visibilty stored in .usr, and some in .cfg.
     end
+
+    properties (Dependent=true, SetAccess=immutable)
+        %Parent  % the parent Display object
+        Tag        % This should be a unique tag that identifies this ScopeModel.
+                   % This is used as the Tag for any ScopeFigure that uses
+                   % this ScopeModel as its model, and should be usable as
+                   % a field name in a structure, for saving/loading
+                   % purposes.
+        ChannelNames   % row vector, the channel names shown in this scope
+        ChannelColorIndex  
+        NChannels
+        XData
+        YData
+    end
     
+    properties (Access = protected)
+        Tag_ = ''  % This should be a unique tag that identifies this ScopeModel.
+                   % This is used as the Tag for any ScopeFigure that uses
+                   % this ScopeModel as its model, and should be usable as
+                   % a field name in a structure, for saving/loading
+                   % purposes.
+        Title_ = ''  % This is the window title used by any ScopeFigures that use this
+                     % ScopeModel as their Model.        
+        XUnits_ = 's'
+        YUnits_ = ''  % pure, which is correct for digital lines
+        YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
+        AreYLimitsLockedTightToData_ = false
+        XOffset_ = 0
+        XSpan_ = 1
+        YLim_ = [-10 +10]
+        ChannelNames_ = cell(1,0)  % row vector
+        ChannelColorIndex_ = zeros(1,0)
+        IsGridOn_ = true
+        AreColorsNormal_ = true  % if false, colors are inverted, approximately
+        DoShowButtons_ = true % if false, don't show buttons in the figure
+    end
+
     properties (Access = protected, Transient=true)
-        Parent_
+        %Parent_
         XData_  % a double array, holding x data for each channel
         YData_ = cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
           % Invariant: For all i,j length(YData{i})==length(YData{j})        
@@ -74,44 +79,24 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
           % store it here, it seems to me.
     end
     
-    properties (Access = protected)
-        Tag_ = ''  % This should be a unique tag that identifies this ScopeModel.
-                   % This is used as the Tag for any ScopeFigure that uses
-                   % this ScopeModel as its model, and should be usable as
-                   % a field name in a structure, for saving/loading
-                   % purposes.
-        Title_ = ''  % This is the window title used by any ScopeFigures that use this
-                     % ScopeModel as their Model.        
-        XUnits_ = ws.utility.SIUnit('s')
-        YUnits_ = ws.utility.SIUnit()  % pure, which is correct for digital lines
-        YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
-        AreYLimitsLockedTightToData_ = false
-        XOffset_ = 0
-        XSpan_ = 1
-        YLim_ = [-10 +10]
-        ChannelNames_ = cell(1,0)  % row vector
-        ChannelColorIndex_ = zeros(1,0)
-        IsGridOn_ = true
-        AreColorsNormal_ = true  % if false, colors are inverted, approximately
-        DoShowButtons_ = true % if false, don't show buttons in the figure
-    end
-    
     events
         ChannelAdded
         DataAdded
         DataCleared
         DidSetChannelUnits
         WindowVisibilityNeedsToBeUpdated
+        UpdateXAxisLimits
         UpdateYAxisLimits
         UpdateAreYLimitsLockedTightToData
     end  % events
     
     methods
-        function self = ScopeModel(varargin)
+        function self = ScopeModel(parent,varargin)
             % Creates a ScopeModel object.  The 'Tag' property is
             % required.  In almost all cases, the 'WavesurferModel' property
             % should also be specified, although occasionally it is useful
             % to leave it out while debugging or testing.
+            self@ws.Model(parent);
             
             self.IsVisibleWhenDisplayEnabled_=true;
             %
@@ -119,10 +104,10 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             %
             
             % Filter out not-publically-settable props
-            validPropNames=[ws.most.util.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
+            validPropNames=[ws.utility.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
             %mandatoryPropNames={'Tag'};
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
 
             % Make sure there's the same number of props as vals
             propNamesRaw = pvArgs(1:2:end);
@@ -143,19 +128,20 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             end
         end  % constructor
         
-%         function delete(self)
-%             %self.Parent=[];  % get rid of ref to WavesurferModel
-%         end
+        function delete(self) %#ok<INUSD>
+            %self.Parent=[];  % get rid of ref to WavesurferModel
+            %fprintf('ScopeModel delete() called\n') ;
+        end
     end  % methods
     
     methods
-        function set.Parent(self, newValue)
-            self.Parent_ = newValue;
-        end
+%         function set.Parent(self, newValue)
+%             self.Parent_ = newValue;
+%         end
         
-        function result = get.Parent(self)
-            result = self.Parent_ ;
-        end
+%         function result = get.Parent(self)
+%             result = self.Parent_ ;
+%         end
         
         function set.Title(self, newValue)            
             self.Title_ = newValue ;
@@ -240,6 +226,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.IsGridOn_ = logical(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'IsGridOn must be a scalar, and must be logical, 0, or 1');
                 end
@@ -256,6 +243,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.AreColorsNormal_ = logical(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
                 end
@@ -272,6 +260,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.DoShowButtons_ = logical(newValue) ;
                 else
+                    self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
                           'DoShowButtons must be a scalar, and must be logical, 0, or 1');
                 end
@@ -286,9 +275,8 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         function set.XOffset(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.XOffset_ = newValue;
-                %self.XLim=ws.most.util.Nonvalue.The;
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateXAxisLimits');
         end
 
         function value=get.XOffset(self)
@@ -298,7 +286,6 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         function set.XSpan(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                 self.XSpan_ = newValue ;
-                %self.XLim=ws.most.util.Nonvalue.The;
             end
             self.broadcast('Update');
         end
@@ -406,15 +393,15 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
         end
         
         function set.XUnits(self,newValue)
-            if isa(newValue,'ws.utility.SIUnit') && isscalar(newValue) ,
-                self.XUnits_ = newValue;
+            if ws.utility.isString(newValue) ,
+                self.XUnits_ = strtrim(newValue) ;
             end
             self.broadcast('Update');
         end
         
         function set.YUnits(self,newValue)
-            if isa(newValue,'ws.utility.SIUnit') && isscalar(newValue) ,
-                self.YUnits_ = newValue;
+            if ws.utility.isString(newValue) ,
+                self.YUnits_ = strtrim(newValue) ;
             end
             self.broadcast('Update');
         end
@@ -442,8 +429,10 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
     
     methods
         function addChannel(self, newChannelName)
-            assert(ischar(newChannelName) && ~isempty(newChannelName), ...
-                   'A new, valid channel name must be supplied to addChannel()');
+            % If newChannelName is not a string, or is empty, just return
+            if ~ws.utility.isString(newChannelName) || isempty(newChannelName) ,
+                return
+            end
             
             % If channel already on scope, just return   
             if any(strcmp(newChannelName,self.ChannelNames)) ,
@@ -602,7 +591,7 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
             firstChannelName=self.ChannelNames{1};
             iFirstChannel=acquisition.iAnalogChannelFromName(firstChannelName);
             if isfinite(iFirstChannel) ,
-                newChannelUnits=acquisition.AnalogChannelUnits(iFirstChannel);  
+                newChannelUnits=acquisition.AnalogChannelUnits{iFirstChannel};  
                 newScale=acquisition.AnalogChannelScales(iFirstChannel);  % V/newChannelUnits
                 %yLimitsAtADCBeforeChange=(self.YScale)*self.YLim;  % V
                 %newYLimits=(1/newScale)*yLimitsAtADCBeforeChange;
@@ -666,8 +655,8 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
     end  % methods
     
     methods (Access = protected)        
-%         function defineDefaultPropertyTags(self)
-%             defineDefaultPropertyTags@ws.system.Subsystem(self);            
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
 %             self.setPropertyTags('XOffset', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('XSpan', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('YLim', 'IncludeInFileTypes', {'cfg'});
@@ -706,36 +695,62 @@ classdef ScopeModel < ws.Model     % & ws.EventBroadcaster
     end
 
     methods (Access=protected)        
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
-    end
-    
-    methods (Access=protected)        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('CanEnable', 'ExcludeFromFileTypes', {'*'});
-%             self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});            
-%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'*'});            
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            % YData_ is transient, so we have to set it to make it
+            % consistent with the current number of channels
+            %fprintf('ScopeModel::synchronizeTransientStateToPersistedState_()\n');
+            %dbstack
+            %self
+            nChannels = length(self.ChannelNames_) ;  % self.ChannelNames_ is persisted
+            yData = cell(1,nChannels) ;
+            for i = 1:nChannels ,
+                yData{i} = zeros(0,1) ;
+            end
+            self.YData_ = yData ;
+            %keyboard
         end
-    end    
-    
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.ScopeModel.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
+        
     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            s.Parent = struct('Classes', 'ws.system.Display', 'AllowEmpty', true);
-        end  % function
-    end  % class methods block
+%     methods (Access=protected)        
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+% %             self.setPropertyTags('CanEnable', 'ExcludeFromFileTypes', {'*'});
+% %             self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'}, 'ExcludeFromFileTypes', {'usr'});            
+% %             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'*'});            
+%         end
+%     end    
+    
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();        
+%         mdlHeaderExcludeProps = {};
+%     end
+    
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             s.Parent = struct('Classes', 'ws.system.Display', 'AllowEmpty', true);
+%         end  % function
+%     end  % class methods block
 
 end

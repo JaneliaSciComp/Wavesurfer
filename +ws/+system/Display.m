@@ -1,120 +1,75 @@
-classdef Display < ws.system.Subsystem & ws.EventSubscriber
+classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
     %Display Manages the display and update of one or more Scope objects.
     
     properties (Dependent = true)
         UpdateRate  % the rate at which the scopes are updated, in Hz
-    end
-    
-    properties    
-        XAutoScroll = false  % if true, x limits of all scopes will change to accomodate the data as it is acquired
-    end
-    
-    properties (Dependent = true)
         XOffset  % the x coord at the left edge of the scope windows
-    end
-
-    properties (Dependent = true)
         XSpan  % the trace duration shown in the scope windows
-    end
-    
-    properties (Dependent=true)
         IsXSpanSlavedToAcquistionDuration
           % if true, the x span for all the scopes is set to the acquisiton
-          % trial duration
-    end
-    
-    properties (Access=protected)
-        IsXSpanSlavedToAcquistionDuration_ = true
-          % if true, the x span for all the scopes is set to the acquisiton
-          % trial duration
-    end
-    
-    properties (Dependent = true, SetAccess = immutable)
+          % sweep duration
+        IsXSpanSlavedToAcquistionDurationSettable
+          % true iff IsXSpanSlavedToAcquistionDuration is currently
+          % settable
+        Scopes  % a cell array of ws.ScopeModel objects
         NScopes
     end
-    
-%     properties (Transient = true)
-%         IsScopeVisibleWhenDisplayEnabled = true(1,0);  % logical row vector  
-%           % A boolean array of length NScopes, indicates which scopes are
-%           % visible when the Display subsystem is enabled.  If display
-%           % subsystem is disabled, the scopes are all made invisible, but
-%           % this stores who will be made immediately visible if the display
-%           % system is reenabled.  Note that this is not persisted ---
-%           % persistence of window visibility is all stored in the .usr
-%           % file, and the WavesurferModel properties (of which Display is one)
-%           % are all persisted in the .cfg file.  We want it to be clear to
-%           % user where different kinds of things are stored, not confuse
-%           % them by having some aspects of window visibilty stored in .usr,
-%           % and some in .cfg.  The automatic hiding and restoring
-%           % of windows when you check enable/disable display is just viewed
-%           % as a convenience.
-%     end
-    
-    properties (SetAccess = protected)
-        Scopes = ws.ScopeModel.empty();
+
+    properties (Access = protected)
+        Scopes_  % a cell array of ws.ScopeModel objects
+        XSpan_ 
+        UpdateRate_
+        XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
+        IsXSpanSlavedToAcquistionDuration_
+          % if true, the x span for all the scopes is set to the acquisiton
+          % sweep duration
     end
     
     properties (Access = protected, Transient=true)
         XOffset_
-    end
-
-    properties (Access = protected)
-        XSpan_ 
-        UpdateRate_
-    end
-    
-    properties (Access = protected, Transient=true)
-        prvClearOnNextData = false
-        prvCachedDisplayXSpan
+        ClearOnNextData_
+        CachedDisplayXSpan_
     end
     
     events
         NScopesMayHaveChanged
-    end
-    
-    events
-        %EnablementMayHaveChanged
         DidSetScopeIsVisibleWhenDisplayEnabled
-        DidSetIsXSpanSlavedToAcquistionDuration
+        %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
     end
 
     methods
         function self = Display(parent)
-            self.CanEnable=true;
-            self.Parent=parent;  % the parent WavesurferModel object
-            %self.Enabled=false;
-            %self.addlistener('Enabled', 'PostSet', @self.enabledWasSet);
-                % We now handle this by overriding the implementation of
-                % set.Enabled
+            self@ws.system.Subsystem(parent) ;
+            self.Scopes_ = cell(1,0) ;
             self.XOffset_ = 0;  % s
             self.XSpan_ = 1;  % s
             self.UpdateRate_ = 10;  % Hz
-            
-            %self.registerDependentPropertiesForProperty('IsAutoRate', 'UpdateRate', @self.skip_set_update_rate);
-            %self.registerDependentPropertiesForProperty('IsXSpanSlavedToAcquistionDuration', 'XSpan', @self.fireXSpanPostSetEvent);
-            
-            %parent.Acquisition.subscribeMe(self,'PostSet','Duration','fireXSpanPostSetEvent');  % TODO_ALT: Don't use events for this
+            self.XAutoScroll_ = false ;
+            self.IsXSpanSlavedToAcquistionDuration_ = true ;
         end
         
         function delete(self)
-            self.removeScopes();
-            self.Parent=[];
+            %self.removeScopes();
+            self.Scopes_ = cell(1,0) ;
         end
         
         function value = get.UpdateRate(self)
             value = self.UpdateRate_;
         end
         
+        function value = get.Scopes(self)
+            value = self.Scopes_ ;
+        end
+        
         function set.UpdateRate(self, newValue)
-            if isfloat(newValue) && isscalar(newValue) && isnan(newValue) , % used by MOST to "fake" a set
-                % do nothing
-            else
+            if ws.utility.isASettableValue(newValue) ,
                 if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                     newValue = max(0.1,min(newValue,10)) ;
                     self.UpdateRate_ = newValue;
                 else
+                    self.broadcast('DidSetUpdateRate');
                     error('most:Model:invalidPropVal', ...
                           'UpdateRate must be a scalar finite positive number') ;
                 end
@@ -130,11 +85,11 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                     return
                 end
-                acquisition=wavesurferModel.Acquisition;
-                if isempty(acquisition) || ~isvalid(acquisition),
-                    return
-                end
-                duration=acquisition.Duration;  % broadcaster is Acquisition subsystem
+%                 acquisition=wavesurferModel.Acquisition;
+%                 if isempty(acquisition) || ~isvalid(acquisition),
+%                     return
+%                 end
+                duration=wavesurferModel.SweepDuration;
                 value=fif(isfinite(duration),duration,1);
             else
                 value = self.XSpan_;
@@ -142,60 +97,77 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end
         
         function set.XSpan(self, newValue)            
-            if ~isnan(newValue) ,  % used by MOST to "fake" a set
-                self.validatePropArg('XSpan', newValue);
-                if ~self.IsXSpanSlavedToAcquistionDuration ,
-                    self.XSpan_ = newValue;
+            if ws.utility.isASettableValue(newValue) ,
+                if self.IsXSpanSlavedToAcquistionDuration ,
+                    % don't set anything
+                else
+                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                        self.XSpan_ = double(newValue);
+                        for idx = 1:numel(self.Scopes) ,
+                            self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                        end
+                    else
+                        self.broadcast('UpdateXSpan');
+                        error('most:Model:invalidPropVal', ...
+                              'XSpan must be a scalar finite positive number') ;
+                    end
                 end
-                for idx = 1:numel(self.Scopes) ,
-                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                end
-            end    
+            end
             self.broadcast('UpdateXSpan');            
         end  % function
                 
         function value = get.XOffset(self)
             value = self.XOffset_;
         end
-        
-        function set.XOffset(self, value)
-            if isa(value,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('XOffset', value);
-            
-            self.XOffset_ = value;
-            
-            for idx = 1:numel(self.Scopes)
-                self.Scopes(idx).XOffset = value;
+                
+        function set.XOffset(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                    self.XOffset_ = double(newValue);
+                    for idx = 1:numel(self.Scopes)
+                        self.Scopes_{idx}.XOffset = newValue;
+                    end
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'XOffset must be a scalar finite number') ;
+                end
             end
-        end
-        
-        function set.XAutoScroll(self, newValue)
-            if isa(newValue,'ws.most.util.Nonvalue'), return, end            
-            self.validatePropArg('XAutoScroll',newValue);
-            self.XAutoScroll = newValue;
+            self.broadcast('Update');
         end
         
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
-            value = self.IsXSpanSlavedToAcquistionDuration_;
-        end
+            if self.Parent.AreSweepsContinuous ,
+                value = false ;
+            else
+                value = self.IsXSpanSlavedToAcquistionDuration_;
+            end
+        end  % function
         
         function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                self.validatePropArg('IsXSpanSlavedToAcquistionDuration',newValue);
-                self.IsXSpanSlavedToAcquistionDuration_=newValue;
-                %self.XSpan=ws.most.util.Nonvalue.The;  % fake a set to XSpan to generate the appropriate events
-                for idx = 1:numel(self.Scopes) ,
-                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            if self.IsXSpanSlavedToAcquistionDurationSettable ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                    self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
+                    for idx = 1:numel(self.Scopes) ,
+                        self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                    end
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
                 end
-                self.broadcast('UpdateXSpan');                
             end
-            self.broadcast('DidSetIsXSpanSlavedToAcquistionDuration');
+            self.broadcast('Update');            
         end
+        
+        function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
+            value = self.Parent.AreSweepsFiniteDuration ;
+        end  % function       
         
         function self=didSetAnalogChannelUnitsOrScales(self)
             scopes=self.Scopes;
             for i=1:length(scopes) ,
-                scopes(i).didSetAnalogChannelUnitsOrScales();
+                scopes{i}.didSetAnalogChannelUnitsOrScales();
             end
         end       
         
@@ -215,8 +187,6 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end        
         
         function addScope(self, scopeTag, scopeTitle, channelNames)
-            narginchk(4, 4);
-            
             if isempty(scopeTag)
                 scopeTag = sprintf('Scope_%d', self.NScopes + 1);
             end
@@ -225,7 +195,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             end
             
             % Create the scope model
-            scopeModel = ws.ScopeModel('Parent', self, ...
+            scopeModel = ws.ScopeModel(self, ...
                                        'Tag', scopeTag, ...
                                        'Title', scopeTitle);
             
@@ -237,7 +207,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             end
             
             % Add the new scope to Scopes
-            self.Scopes(end + 1) = scopeModel;
+            self.Scopes_{end + 1} = scopeModel;
             %self.IsScopeVisibleWhenDisplayEnabled(end+1) = true;
 
             % We want to know if the visibility of the scope changes
@@ -254,67 +224,79 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
 %          end
 
         function removeScope(self, index)
-            self.Scopes(index) = [];
+            self.Scopes_(index) = [];
             self.broadcast('NScopesMayHaveChanged');
         end
         
         function removeScopes(self)
-            if ~isempty(self.Scopes) ,
-                self.Scopes = ws.ScopeModel.empty();
+            if ~isempty(self.Scopes_) ,
+                self.Scopes_ = cell(1,0);
                 self.broadcast('NScopesMayHaveChanged');
             end
         end
         
-        function willPerformExperiment(self, wavesurferModel, experimentMode) %#ok<INUSL>
-%             if experimentMode == ws.ApplicationState.TestPulsing ,
-%                 self.prvCachedDisplayXSpan = self.XSpan;
-%                 self.XSpan = wavesurferObj.Ephys.MinTestPeriod;
-%             else
-            self.XOffset = 0;
-            self.XSpan=self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-%             end
-            self.XAutoScroll= (experimentMode == ws.ApplicationState.AcquiringContinuously);
-        end  % function
-        
-        function didPerformExperiment(self, wavesurferModel)
-            self.didPerformOrAbortExperiment_(wavesurferModel);
+        function toggleIsVisibleWhenDisplayEnabled(self,scopeIndex)
+            originalState = self.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled ;
+            % self.Scopes_{scopeIndex}.IsVisibleWhenDisplayEnabled = ~originalState ;  
+            %   Doing things with the single line above doesn't work, b/c
+            %   self.Scopes_{scopeIndex} is set to empty for a time, and
+            %   that causes havoc for the some of the event handlers that
+            %   fire when IsVisibleWhenDisplayEnabled is set.  I don't
+            %   understand why that element is briefly set to empty, but
+            %   doing things as below fixes it.  -- ALT, 2015-08-04
+            theScopeModel = self.Scopes_{scopeIndex} ;
+            theScopeModel.IsVisibleWhenDisplayEnabled = ~originalState ;
         end
         
-        function didAbortExperiment(self, wavesurferModel)
-            self.didPerformOrAbortExperiment_(wavesurferModel);
+        function startingRun(self)
+            self.XOffset = 0;
+            self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
+            self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
+        end  % function
+        
+        function completingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
+        end
+        
+        function stoppingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
+        end
+        
+        function abortingRun(self)
+            self.completingOrStoppingOrAbortingRun_();
         end
     end
     
     methods (Access=protected)
-        function didPerformOrAbortExperiment_(self, wavesurferModel) %#ok<INUSD>
-            if ~isempty(self.prvCachedDisplayXSpan)
-                self.XSpan = self.prvCachedDisplayXSpan;
+        function completingOrStoppingOrAbortingRun_(self)
+            if ~isempty(self.CachedDisplayXSpan_)
+                self.XSpan = self.CachedDisplayXSpan_;
             end
-            self.prvCachedDisplayXSpan = [];
+            self.CachedDisplayXSpan_ = [];
         end        
     end
         
     methods    
-        function willPerformTrial(self, ~)
-            self.prvClearOnNextData = true;
+        function startingSweep(self)
+            self.ClearOnNextData_ = true;
         end
         
-        function dataIsAvailable(self, state, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceExperimentStartAtStartOfData) %#ok<INUSL,INUSD>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
             %fprintf('Display::dataAvailable()\n');
             %dbstack
             %T=zeros(4,1);
             %ticId=tic();                     
-            if self.prvClearOnNextData
+            if self.ClearOnNextData_
                 %fprintf('About to clear scopes...\n');
                 for sdx = 1:numel(self.Scopes)
-                    self.Scopes(sdx).clearData();
+                    self.Scopes{sdx}.clearData();
                 end
             end            
-            self.prvClearOnNextData = false;
+            self.ClearOnNextData_ = false;
             %T(1)=toc(ticId);
             
             % update the x offset
-            if self.XAutoScroll ,                
+            if self.XAutoScroll_ ,                
                 scale=min(1,self.XSpan);
                 tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
                 xOffsetNudged=tNudged-self.XSpan;
@@ -343,7 +325,7 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 for cdx = 1:length(activeInputChannelNames)
                     %channelName = sprintf('Acq_%d', inputChannelIDs(cdx));
                     channelName=activeInputChannelNames{cdx};
-                    if any(strcmp(channelName, self.Scopes(sdx).ChannelNames)) ,
+                    if any(strcmp(channelName, self.Scopes{sdx}.ChannelNames)) ,
                         channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
                         if isActiveChannelAnalog(cdx)
                             jInAnalogData(end + 1) = cdx; %#ok<AGROW>
@@ -357,11 +339,11 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
                 % Add the data for the appropriate channels to this scope
                 if ~isempty(jInAnalogData) ,
                     dataForThisScope=scaledAnalogData(:, jInAnalogData);
-                    self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    self.Scopes{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 if ~isempty(jInDigitalData) ,
                     dataForThisScope=bitget(rawDigitalData, jInDigitalData);
-                    self.Scopes(sdx).addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    self.Scopes{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);
             %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);
@@ -375,17 +357,31 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
             %fprintf('Time in Display.dataAvailable(): %7.3f s\n',T);
         end
         
-        function didSetAcquisitionDuration(self)
+        function didSetAreSweepsFiniteDuration(self)
             % Called by the parent to notify of a change to the acquisition
             % duration
             
             % Want any listeners on XSpan set to get called
-            if self.IsXSpanSlavedToAcquistionDuration ,
-                for idx = 1:numel(self.Scopes) ,
-                    self.Scopes(idx).XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                end
-                self.broadcast('UpdateXSpan');
-            end    
+            %if self.IsXSpanSlavedToAcquistionDuration ,
+            for idx = 1:numel(self.Scopes) ,
+                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            end
+            self.broadcast('UpdateXSpan');
+            %end    
+            %self.XSpan = nan;
+        end
+        
+        function didSetSweepDurationIfFinite(self)
+            % Called by the parent to notify of a change to the acquisition
+            % duration
+            
+            % Want any listeners on XSpan set to get called
+            %if self.IsXSpanSlavedToAcquistionDuration ,
+            for idx = 1:numel(self.Scopes) ,
+                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            end
+            self.broadcast('UpdateXSpan');
+            %end    
             %self.XSpan = nan;
         end
         
@@ -437,23 +433,19 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function out = getPropertyValue(self, name)            
+        function out = getPropertyValue_(self, name)            
             out = self.(name);
         end
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
-        function setPropertyValue(self, name, value)
-            if nargin < 3
-                value = [];
-            end
-            
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
-            if isequal(name,'Scopes') ,
-                % Make sure they back-reference to the right Display (i.e. self)
-                for i=1:length(self.Scopes)
-                    setPropertyValue(self.Scopes(i),'Parent',self);
-                end                
-            end                
+%             if isequal(name,'Scopes') ,
+%                 % Make sure they back-reference to the right Display (i.e. self)
+%                 for i=1:length(self.Scopes)
+%                     setPropertyValue_(self.Scopes(i),'Parent',self);
+%                 end                
+%             end                
         end  % function
         
     end  % protected methods
@@ -485,23 +477,33 @@ classdef Display < ws.system.Subsystem & ws.EventSubscriber
         end  % function
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.system.Display.propertyAttributes();
-        
-        mdlHeaderExcludeProps = {};
-    end
-    
-    methods (Static)
-        function s = propertyAttributes()
-            s = ws.system.Subsystem.propertyAttributes();
-
-            s.UpdateRate = struct('Attributes',{{'positive' 'finite' 'scalar'}});
-            s.XOffset = struct('Attributes',{{'finite' 'scalar'}});
-            s.XSpan = struct('Attributes',{{'positive' 'finite' 'scalar'}}, ...
-                             'DependsOn','IsXSpanSlavedToAcquistionDuration');              
-            s.IsXSpanSlavedToAcquistionDuration = struct('Classes','binarylogical');
-            s.XAutoScroll = struct('Classes','binarylogical');            
+    methods
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'Scopes_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+                    self.(thisPropertyName) = target ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
         end  % function
-    end  % class methods block
+    end  % public methods block
     
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct() ;
+%         mdlHeaderExcludeProps = {};
+%     end
+        
 end

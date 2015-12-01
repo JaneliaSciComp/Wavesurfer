@@ -1,22 +1,21 @@
-classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
-    properties (Access = protected, Transient=true)
-        Parent_  % the parent Ephys object
-    end    
+classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
     
-    properties (Access = protected)
-        Electrodes_ = cell(1,0);  % row vector of electrodes
-        IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
-        IsElectrodeMarkedForRemoval_ = false(1,0)  % boolean row vector, same length as Electrodes_
-        LargestElectrodeIndexUsed_ = -inf
-        %IdleHeartbeatTimer_  
-           % A timer that runs at ~1 Hz when WS is idle, does stuff that
-           % needs doing regularly.
-        EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
-        MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
-        AreSoftpanelsEnabled_
-        DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
+    properties (Dependent=true)
+        %Parent  % public access to parent property
+        IsElectrodeMarkedForTestPulse  % provides public access to IsElectrodeMarkedForTestPulse_; settable as long as you don't change its shape
+        IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
+        AreSoftpanelsEnabled
+        IsInControlOfSoftpanelModeAndGains
     end
-    
+
+    properties (Dependent=true, SetAccess=immutable)
+        NElectrodes
+        TestPulseElectrodes  % the electrodes that are marked for test pulsing.
+        TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
+        Electrodes
+        DidLastElectrodeUpdateWork
+    end
+
     % TODO: Consider getting rid of public Electrodes, TestPulseElectrodes
     % properties.  These return handle arrays, so they allow for direct
     % manipulation of Electrodes.  Might be a better design to require all
@@ -26,31 +25,26 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
     % EPCMasterSocket in some cases.  This would be a good deal of work,
     % though.
     
-    properties (Dependent=true, SetAccess=immutable)
-        NElectrodes
-        TestPulseElectrodes  % the electrodes that are marked for test pulsing.
-        TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
-        Electrodes
-        DidLastElectrodeUpdateWork
+    properties (Access = protected)
+        Electrodes_ = cell(1,0);  % row vector of electrodes
+        IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
+        IsElectrodeMarkedForRemoval_ = false(1,0)  % boolean row vector, same length as Electrodes_
+        LargestElectrodeIndexUsed_ = -inf
+        AreSoftpanelsEnabled_
+        DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
+        MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
     end
-    
-    properties (Dependent=true)
-        Parent  % public access to parent property
-        IsElectrodeMarkedForTestPulse  % provides public access to IsElectrodeMarkedForTestPulse_; settable as long as you don't change its shape
-        IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
-        AreSoftpanelsEnabled
-        IsInControlOfSoftpanelModeAndGains
+
+    properties (Access = protected, Transient = true)
+        EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
     end
-    
-%     events
-%         MayHaveChanged
-%     end
 
     methods
-        function self = ElectrodeManager(varargin)
+        function self = ElectrodeManager(parent,varargin)
             % General initialization
+            self@ws.Model(parent);
             self.EPCMasterSocket_=ws.EPCMasterSocket();
-            self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket();
+            self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket(self);
             self.AreSoftpanelsEnabled_=true;
 
             % Create the heartbeat timer
@@ -61,9 +55,9 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %                                            'ErrorFcn',@(object,event,varargin)(self.heartbeatError(object,event)));            
             
             % Process args
-            validPropNames=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.most.util.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -133,15 +127,15 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             self.broadcast('Update');
         end
         
-        function out=get.Parent(self)
-            out=self.Parent_;
-        end
-        
-        function set.Parent(self,newValue)
-            if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
-                self.Parent_=newValue;
-            end
-        end
+%         function out=get.Parent(self)
+%             out=self.Parent_;
+%         end
+%         
+%         function set.Parent(self,newValue)
+%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%                 self.Parent_=newValue;
+%             end
+%         end
         
         function out=get.AreSoftpanelsEnabled(self)
             out=self.AreSoftpanelsEnabled_;
@@ -194,8 +188,8 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             
             % Make an electrode
             electrode= ...
-                ws.Electrode('Parent',self, ...
-                                'Name',name);
+                ws.Electrode(self, ...
+                             'Name',name);
             
             % We now leave the channel names blank until the user selects them.                      
 %             % Get initial values for the channel names, set them in the
@@ -563,16 +557,16 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             value=sum(isMatchBig,1);
         end  % function
         
-        function [queryChannelUnits,isQueryChannelScaleManaged] = getCommandUnitsByName(self,queryChannelNamesRaw)
-            if ischar(queryChannelNamesRaw) ,
-                queryChannelNames={queryChannelNamesRaw};
-            else
-                queryChannelNames=queryChannelNamesRaw;
-            end
+        function [queryChannelUnits,isQueryChannelScaleManaged] = getCommandUnitsByName(self,queryChannelNames)
+%             if ischar(queryChannelNamesRaw) ,
+%                 queryChannelNames={queryChannelNamesRaw};
+%             else
+%                 queryChannelNames=queryChannelNamesRaw;
+%             end
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
             isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
             nQueryChannels=length(queryChannelNames);
-            queryChannelUnits=repmat(ws.utility.SIUnit(),[1 nQueryChannels]);
+            queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
@@ -580,7 +574,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1); 
                         electrode=self.Electrodes{iElectrode};
-                        queryChannelUnits(i)=electrode.getCommandUnitsByName(queryChannelNames{i});
+                        queryChannelUnits{i}=electrode.getCommandUnitByName(queryChannelNames{i});
                     end                    
                 end                    
             end
@@ -653,7 +647,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             isMatchBig = self.getMatrixOfMatchesToMonitorChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
             isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
             nQueryChannels=length(queryChannelNames);
-            queryChannelUnits=repmat(ws.utility.SIUnit(),[1 nQueryChannels]);
+            queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
@@ -661,7 +655,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
-                        queryChannelUnits(i)=electrode.getMonitorUnitsByName(queryChannelNames{i});
+                        queryChannelUnits{i}=electrode.getMonitorUnitsByName(queryChannelNames{i});
                     else
                         % do nothing, thus falling back to dimensionless
                     end                    
@@ -921,7 +915,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %         function defineDefaultPropertyAttributes(self) %#ok<MANU>
 %         end  % function
         
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 % %             self.setPropertyTags('Electrodes', 'ExcludeFromFileTypes', {'*'});
 % %             self.setPropertyTags('Electrodes_', 'IncludeInFileTypes', {'cfg'});
 % %             self.setPropertyTags('Electrodes_', 'ExcludeFromFileTypes', {'usr','header'});            
@@ -941,7 +935,7 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 % %             self.setPropertyTags('Parent_', 'ExcludeFromFileTypes', {'*'});
 %             
 %             % First: Exclude everything from all file types.
-%             propertyNames=ws.most.util.findPropertiesSuchThat(self);
+%             propertyNames=ws.utility.findPropertiesSuchThat(self);
 %             for i=1:length(propertyNames)
 %                 propertyName=propertyNames{i};
 %                 self.setPropertyTags(propertyName, 'ExcludeFromFileTypes', {'*'});
@@ -960,19 +954,15 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
 %             
 %         end
 %         
-%         % Allows access to protected and protected variables from ws.mixin.Coding.
-%         function out = getPropertyValue(self, name)
-%             out = self.(name);
-%         end
-%         
-%         % Allows access to protected and protected variables from ws.mixin.Coding.
-%         function setPropertyValue(self, name, value)
-%             if nargin < 3
-%                 value = [];
-%             end
-%             self.(name) = value;
-%             self.broadcast('Update');
-%         end
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end
     end  % protected methods block
         
     methods (Access=public)        
@@ -1038,6 +1028,12 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
             self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_);
         end  % function
         
+%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%             className=class(self);
+%             other=feval(className,parent);
+%             other.mimic(self);
+%         end  % function
+        
     end % methods
     
     methods
@@ -1096,30 +1092,30 @@ classdef ElectrodeManager < ws.Model & ws.Mimic  % & ws.EventBroadcaster (was be
         end  % function
     end
     
-    methods (Access=protected)        
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)        
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
+%             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = ws.ElectrodeManager.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = ws.ElectrodeManager.propertyAttributes();        
+%         mdlHeaderExcludeProps = {};
+%     end
     
-    methods (Static)
-        function s = propertyAttributes()
-            s = struct();
-            
-            s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
-            s.Electrodes = struct('Classes', 'cell', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.IsElectrodeMarkedForTestPulse = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.IsElectrodeMarkedForRemoval = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-            s.AreSoftpanelsEnabled = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
-            s.IsInControlOfSoftpanelModeAndGains = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
-        end  % function
-    end
+%     methods (Static)
+%         function s = propertyAttributes()
+%             s = struct();
+%             
+%             s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
+%             s.Electrodes = struct('Classes', 'cell', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             s.IsElectrodeMarkedForTestPulse = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             s.IsElectrodeMarkedForRemoval = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
+%             s.AreSoftpanelsEnabled = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
+%             s.IsInControlOfSoftpanelModeAndGains = struct('Classes', 'logical', 'Attributes', {{'scalar'}});
+%         end  % function
+%     end
 
     methods (Static, Access=protected)
         function socketPropertyName=socketPropertyNameFromElectrodeType_(electrodeType)

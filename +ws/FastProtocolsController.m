@@ -2,7 +2,14 @@ classdef FastProtocolsController < ws.Controller
     
     methods
         function self = FastProtocolsController(wavesurferController,wavesurferModel)
-            self = self@ws.Controller(wavesurferController, wavesurferModel, {'fastProtocolsFigureWrapper'});
+%             self = self@ws.Controller(wavesurferController, wavesurferModel, {'fastProtocolsFigureWrapper'});
+            
+            % Call the superclass constructor
+            self = self@ws.Controller(wavesurferController,wavesurferModel); 
+
+            % Create the figure, store a pointer to it
+            fig = ws.FastProtocolsFigure(wavesurferModel,self) ;
+            self.Figure_ = fig ;
         end  % function        
     end  % public methods block
 
@@ -12,8 +19,9 @@ classdef FastProtocolsController < ws.Controller
             if isempty(selectedIndex) ,
                 return
             end
-            self.Model.FastProtocols(selectedIndex).ProtocolFileName = '';
-            self.Model.FastProtocols(selectedIndex).AutoStartType = ws.fastprotocol.StartType.DoNothing;
+            theFastProtocol = self.Model.FastProtocols{selectedIndex} ;
+            theFastProtocol.ProtocolFileName = '';
+            theFastProtocol.AutoStartType = 'do_nothing';
         end  % function
         
         function SelectFileButtonActuated(self, varargin)
@@ -24,7 +32,7 @@ classdef FastProtocolsController < ws.Controller
             
             % By default start in the location of the current file.  If it is empty it will
             % just start in the current directory.
-            originalFileName = self.Model.FastProtocols(selectedIndex).ProtocolFileName;
+            originalFileName = self.Model.FastProtocols{selectedIndex}.ProtocolFileName;
             [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', originalFileName);
             
             % If the user cancels, just exit.
@@ -33,7 +41,7 @@ classdef FastProtocolsController < ws.Controller
             end
             
             newFileName=fullfile(dirName, filename);
-            theFastProtocol=self.Model.FastProtocols(selectedIndex);
+            theFastProtocol=self.Model.FastProtocols{selectedIndex};
             ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newFileName);
         end  % function
         
@@ -54,13 +62,14 @@ classdef FastProtocolsController < ws.Controller
             if (columnIndex==1) ,
                 % this is the Protocol File column
                 if isempty(newString) || exist(newString,'file') ,
-                    theFastProtocol=self.Model.FastProtocols(fastProtocolIndex);
+                    theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
                     ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newString);
                 end
             elseif (columnIndex==2) ,
                 % this is the Action column
-                newValue=ws.fastprotocol.StartType.str2num(newString);
-                theFastProtocol=self.Model.FastProtocols(fastProtocolIndex);
+                newValue=ws.startTypeFromTitleString(newString);  
+                % newValue=ws.fastprotocol.StartType.str2num(newString);
+                theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
             end            
         end  % function        
@@ -79,7 +88,7 @@ classdef FastProtocolsController < ws.Controller
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end            
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             if ~isIdle ,
                 shouldStayPut=true;
             end

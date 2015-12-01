@@ -7,7 +7,7 @@ classdef DisplayerOfState < handle & matlab.mixin.CustomDisplay
     
     methods (Access = protected)
         function propertyGroups=getPropertyGroups(self)
-            propertyNameList=ws.most.util.findPropertiesSuchThat(self,'Dependent',false);
+            propertyNameList=ws.utility.findPropertiesSuchThat(self,'Dependent',false);
             propertyGroups=matlab.mixin.util.PropertyGroup(propertyNameList);
         end  % function
     end  % methods

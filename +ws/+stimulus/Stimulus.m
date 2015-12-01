@@ -9,24 +9,16 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Ramp','Sine','Chirp','Expression','File'}
     end
     
-%     properties (SetAccess = protected, Hidden = true)
-%         UUID  % a unique id so that things can be re-linked after loading from disk
-%     end
-    
-    properties
-        Parent  % the parent StimulusLibrary, or empty
-    end
-    
     % Invariant: All the values in Delay, Duration, Amplitude, DCOffset and
     % the subclass parameter properties are s.t.
-    % ~isempty(evaluateTrialExpression(self.(propertyName),1)).  That is,
+    % ~isempty(evaluateSweepExpression(self.(propertyName),1)).  That is,
     % each is a _string_ which represents either a valid double, or an
     % arithmetic expression in 'i' s.t. the expression evaluates to a valid
     % double for i==1.
     
     properties (Dependent=true)
         Name
-        Delay  % this and all below are string trial expressions, in seconds
+        Delay  % this and all below are string sweep expressions, in seconds
         Duration % s
             % this is the duration of the "support" of the stimulus.  I.e.
             % the stim is zero for the delay period, generally nonzero for
@@ -57,9 +49,10 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     end
     
     methods
-        function self = Stimulus(varargin)
+        function self = Stimulus(parent,varargin)
+            self@ws.Model(parent) ;
             self.Delegate_ = ws.stimulus.SquarePulseStimulusDelegate(self);  
-            pvArgs = ws.most.util.filterPVArgs(varargin, { 'Parent', 'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
             for idx = 1:length(vals)
@@ -69,10 +62,6 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             %    error('wavesurfer:stimulusMustHaveParent','A stimulus has to have a parent StimulusLibrary');
             %end
             %self.UUID = rand();
-        end
-        
-        function delete(self)
-            self.Parent=[];
         end
         
         function set.Name(self,newValue)
@@ -96,7 +85,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
 
         function set.Delay(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.Delay_ = value;
@@ -107,7 +96,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function set.Duration(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isreal(test) && isfinite(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.Duration_ = value;
@@ -118,7 +107,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function set.Amplitude(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
@@ -129,7 +118,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
         
         function set.DCOffset(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.DCOffset_ = value;
@@ -160,21 +149,21 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function val = get.EndTime(self)
-            val = ws.stimulus.Stimulus.evaluateTrialExpression(self.Delay,1) + ws.stimulus.Stimulus.evaluateTrialExpression(self.Duration,1);
+            val = ws.stimulus.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.stimulus.Stimulus.evaluateSweepExpression(self.Duration,1);
         end
         
         function output = get.Delegate(self)
             output = self.Delegate_ ;
         end
         
-        function data = calculateSignal(self, t, trialIndexWithinSet)
+        function data = calculateSignal(self, t, sweepIndexWithinSet)
             % Process args
-            if ~exist('trialIndexWithinSet','var') || isempty(trialIndexWithinSet) ,
-                trialIndexWithinSet=1;
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
             end
                         
             % Compute the delay from the expression for it
-            delay = ws.stimulus.Stimulus.evaluateTrialExpression(self.Delay,trialIndexWithinSet) ;
+            delay = ws.stimulus.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(delay) || ~isnumeric(delay) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
                 data=zeros(size(t));
@@ -186,11 +175,11 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             
             % Call a likely-overloaded method to generate the raw output data
             delegate=self.Delegate_;
-            data = delegate.calculateCoreSignal(self,tShiftedByDelay,trialIndexWithinSet);
+            data = delegate.calculateCoreSignal(self,tShiftedByDelay,sweepIndexWithinSet);
                 % data should be same size as t at this point
             
             % Compute the amplitude from the expression for it
-            amplitude = ws.stimulus.Stimulus.evaluateTrialExpression(self.Amplitude,trialIndexWithinSet) ;
+            amplitude = ws.stimulus.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(amplitude) || ~isnumeric(amplitude) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
                 data=zeros(size(t));
@@ -198,7 +187,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
 
             % Compute the delay from the expression for it
-            dcOffset = ws.stimulus.Stimulus.evaluateTrialExpression(self.DCOffset,trialIndexWithinSet) ;
+            dcOffset = ws.stimulus.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(dcOffset) || ~isnumeric(dcOffset) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
                 data=zeros(size(t));
@@ -209,7 +198,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             data = amplitude*data + dcOffset;
 
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateTrialExpression(self.Duration,trialIndexWithinSet) ;
+            duration = ws.stimulus.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 data=zeros(size(t));
@@ -255,14 +244,14 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     end  % public methods block
     
     methods (Access = protected)
-        function data = calculateCoreSignal(self, t, trialIndexWithinSet) %#ok<INUSD,INUSL>
+        function data = calculateCoreSignal(self, t, sweepIndexWithinSet) %#ok<INUSD,INUSL>
             % This calculates a non-time shifted, non-scaled "core"
             % version of the signal, and is meant to be overridden by
             % subclasses.
             data = zeros(size(t));
         end
         
-%         function defineDefaultPropertyTags(self)
+%         function defineDefaultPropertyTags_(self)
 %             self.setPropertyTags('Name', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Delay', 'IncludeInFileTypes', {'*'});
 %             self.setPropertyTags('Duration', 'IncludeInFileTypes', {'*'});
@@ -290,16 +279,15 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             % Don't need to compare as StimLibraryItem's, b/c only property
             % of that is UUID, which we want to ignore
             propertyNamesToCompare={'Name' 'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Delegate'};
-            %propertyNamesToCompare=ws.most.util.findPropertiesSuchThat(self,'SetAccess','public');
+            %propertyNamesToCompare=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end
     
     methods 
-        function other = copy(self)
-            other=ws.stimulus.Stimulus();
+        function other = copyGivenParent(self,parent)
+            other=ws.stimulus.Stimulus(parent);
             
-            % leave Parent empty
             other.Name_ = self.Name_ ;
             other.Delay_ = self.Delay_ ;
             other.Duration_ = self.Duration_ ;
@@ -319,42 +307,26 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
     end
     
-    properties (Hidden, SetAccess=protected)
-        mdlPropAttributes = struct();    
-        %mdlPropAttributes = ws.stimulus.Stimulus.propertyAttributes();        
-        mdlHeaderExcludeProps = {};
-    end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-%             s.Name = struct('Classes', 'char');
-%             s.Delay = struct('Classes', 'numeric', ...
-%                              'Attributes', {{'scalar', 'real', 'finite'}});
-%             s.Duration = struct('Classes', 'numeric', ...
-%                                 'Attributes', {{'scalar', 'nonnegative', 'real', 'finite'}});
-%             s.Amplitude = struct('Classes', 'char', ...
-%                                  'Attributes', {{'row'}});
-%             s.DCOffset = struct('Classes', 'numeric', ...
-%                                 'Attributes', {{'scalar', 'real', 'finite'}});
-%         end  % function
-%     end  % class methods block
+%     properties (Hidden, SetAccess=protected)
+%         mdlPropAttributes = struct();    
+%         mdlHeaderExcludeProps = {};
+%     end
     
     methods (Static)
-        function output = evaluateTrialExpression(expression,trialIndex)
-            % Evaluates a putative trial expression for i==trialIndex, and returns
+        function output = evaluateSweepExpression(expression,sweepIndex)
+            % Evaluates a putative sweep expression for i==sweepIndex, and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty matrix.
             if ischar(expression) && isrow(expression) ,
                 % value should be a string representing an
-                % expression involving 'i', which stands for the trial
+                % expression involving 'i', which stands for the sweep
                 % index, e.g. '-30+10*(i-1)'                
                 try
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     evalString=sprintf('@(i)(%s)',expression);
                     lambda=eval(evalString);
-                    output=lambda(trialIndex);
+                    output=lambda(sweepIndex);
                 catch me %#ok<NASGU>
                     output=[];
                 end
@@ -363,15 +335,15 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
         end
         
-        function output = evaluateStringTrialTemplate(template,trialIndex)
-            % Evaluates sprintf(template,trialIndex), and returns
+        function output = evaluateStringSweepTemplate(template,sweepIndex)
+            % Evaluates sprintf(template,sweepIndex), and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty string.
             if ischar(template) && isrow(template) ,
                 % value should be a string, possibly containing a %d or %02d or whatever.
-                % the trialIndex is used for the %d value
+                % the sweepIndex is used for the %d value
                 try
-                    output=sprintf(template,trialIndex);
+                    output=sprintf(template,sweepIndex);
                 catch me %#ok<NASGU>
                     output='';
                 end
@@ -380,20 +352,20 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
         end
 
-        function output = evaluateTrialTimeExpression(expression,trialIndex,t)
-            % Evaluates a putative trial expression for i==trialIndex, t==t, and returns
+        function output = evaluateSweepTimeExpression(expression,sweepIndex,t)
+            % Evaluates a putative sweep expression for i==sweepIndex, t==t, and returns
             % the result.  If expression is not a string, or the expression
             % doesn't evaluate, returns the empty matrix.
             if ischar(expression) && isrow(expression) ,
                 % value should be a string representing an
-                % expression involving 'i', which stands for the trial
+                % expression involving 'i', which stands for the sweep
                 % index, e.g. '-30+10*(i-1)'                
                 try
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     evalString=sprintf('@(i,t)(%s)',expression);
                     expressionAsFunction=eval(evalString);
-                    output=expressionAsFunction(trialIndex,t);
+                    output=expressionAsFunction(sweepIndex,t);
                 catch me %#ok<NASGU>
                     output=zeros(size(t));
                 end
@@ -438,13 +410,34 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
 %     end  % static methods    
 
     methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.Model(self);
-            self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
-        end
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
     end
+
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.Model(self);
+%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
+    
+    methods         
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            % delete some property names that are defined in subclasses
+            % that don't need to go into the header file
+            propNames=setdiff(propNamesRaw, ...
+                              {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
+        end  % function 
+    end  % public methods block    
     
 end
 

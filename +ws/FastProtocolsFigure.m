@@ -1,4 +1,4 @@
-classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef FastProtocolsFigure < ws.MCOSFigure
     properties
         Table        
         ClearRowButton
@@ -185,9 +185,9 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
             nColumns=2;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                fastProtocol=model.FastProtocols(i);
+                fastProtocol=model.FastProtocols{i};
                 data{i,1}=fastProtocol.ProtocolFileName;
-                data{i,2}=char(fastProtocol.AutoStartType);
+                data{i,2}=ws.titleStringFromStartType(fastProtocol.AutoStartType);
             end
             set(self.Table,'Data',data);
         end  % function
@@ -200,7 +200,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end            
             import ws.utility.onIff
-            isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+            isIdle=isequal(wavesurferModel.State,'idle');
             selectedIndex = wavesurferModel.IndexOfSelectedFastProtocol;
             isARowSelected= ~isempty(selectedIndex);
 
@@ -221,13 +221,12 @@ classdef FastProtocolsFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end
 
-            fastProtocols = model.FastProtocols;            
-            for i = 1:numel(fastProtocols) ,
-                thisFastProtocol=fastProtocols(i);
-                %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','update');
-                %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','update');
-                thisFastProtocol.subscribeMe(self,'Update','','update');
-            end
+            %fastProtocols = model.FastProtocols;            
+            %for i = 1:numel(fastProtocols) ,
+            %    thisFastProtocol=fastProtocols{i};
+            %    thisFastProtocol.subscribeMe(self,'Update','','update');
+            %end
+            model.subscribeMe(self,'UpdateFastProtocols','','update');
                         
             model.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % function                

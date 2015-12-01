@@ -1,8 +1,16 @@
 classdef TestPulserController < ws.Controller
     methods            
         function self=TestPulserController(wavesurferController,wavesurferModel)
+%             testPulser=wavesurferModel.Ephys.TestPulser;
+%             self = self@ws.Controller(wavesurferController, testPulser, {'testPulserFigureWrapper'});            
+            
+            % Call the superclass constructor
             testPulser=wavesurferModel.Ephys.TestPulser;
-            self = self@ws.Controller(wavesurferController, testPulser, {'testPulserFigureWrapper'});            
+            self = self@ws.Controller(wavesurferController,testPulser);  
+
+            % Create the figure, store a pointer to it
+            fig = ws.TestPulserFigure(testPulser,self) ;
+            self.Figure_ = fig ;            
         end
         
         function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>
@@ -135,7 +143,7 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
 
             % Change the setting
-            self.Model.ElectrodeMode=ws.ElectrodeMode.VC;
+            self.Model.ElectrodeMode='vc';
         end  % function
         
         function ccTogglePressed(self)
@@ -144,7 +152,7 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
             
             % Change the setting           
-            self.Model.ElectrodeMode=ws.ElectrodeMode.CC;
+            self.Model.ElectrodeMode='cc';
         end  % function
     end  % methods
     
@@ -162,7 +170,7 @@ classdef TestPulserController < ws.Controller
                 if ~isempty(ephys) && isvalid(ephys) ,
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                        isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                        isIdle=isequal(wavesurferModel.State,'idle');
                         if ~isIdle ,
                             shouldStayPut=true;
                             return

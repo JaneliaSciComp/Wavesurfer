@@ -1,6 +1,6 @@
 function t=fileModificationTime(fileName)
     % Returns [] is unable to get file mod time
-    if ws.most.util.isFileNameAbsolute(fileName) ,
+    if ws.utility.isFileNameAbsolute(fileName) ,
         absoluteFileName=fileName;
     else
         absoluteFileName=fullfile(pwd(),fileName);

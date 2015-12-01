@@ -3,23 +3,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     % main wavesurfer window.  You get a handle to the singleton by calling the
     % class method sharedController().
     
-%     properties (SetAccess = protected, GetAccess = public, Transient = true)
-%         HasUserSpecifiedProtocolFileName = false
-%         AbsoluteProtocolFileName = ''
-%         HasUserSpecifiedUserSettingsFileName = false
-%         AbsoluteUserSettingsFileName = ''
-%     end
-     
-%     properties (Access=protected, Transient=true)
-%         OriginalModelState_  % used to store the previous model state when model state is being set
-%     end
-    
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
         TriggersController = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
-        UserFunctionsController = [];
+        UserCodeManagerController = [];
         ChannelsController = [];
         TestPulserController = [];
         ElectrodeManagerController= [];
@@ -32,32 +21,20 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         % etc.  See createControllerSpecs() method
         ControllerSpecs
         
-        % Data view model for the current stimulus library.
-        %LibraryViewModel;
-        
-        % Command bindings for dynamic menu items.
-        %ScopeCommandBindings = {};
-        %FastProtocolCommandBindings = {};
-        
         % Keeps track of where we are in the exit process.
         IsExitingMATLAB = false
-        
-        %Listeners = event.listener.empty();
-        % EnableListeners = event.listener.empty();
-        % DisplayListener = event.listener.empty();
-        %ScopeVisibleListeners = event.listener.empty();
-%         IsSelectedOutputableBeingFutzedWithInternally_ = false
     end
-    
-%     properties (SetAccess=immutable, Dependent=true)
-%         Figure  % the associated WavesurferMainFigure instance (i.e. a handle handle, not a hande graphics handle)
-%     end
     
     methods
         function self = WavesurferMainController(model)
-            parentController=[];
-            self = self@ws.Controller(parentController,model,{'wavesurferMainFigureWrapper'});
-                        
+            % Call superclass constructor
+            %self = self@ws.Controller([],model,{'wavesurferMainFigureWrapper'});  % this controller has no parent
+            self = self@ws.Controller([],model);  % this controller has no parent
+
+            % Create the figure, store a pointer to it
+            fig = ws.WavesurferMainFigure(model,self) ;
+            self.Figure_ = fig ;
+            
             %self.HideWindowOnClose = false;
             
             self.ControllerSpecs = self.createControllerSpecs();
@@ -130,9 +107,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     methods
         function delete(self)
             % Delete all child controllers.
-            for i=1:length(self.ChildControllers) ,
-                ws.utility.deleteIfValidHandle(self.ChildControllers{i});
-            end
+%             for i=1:length(self.ChildControllers) ,
+%                 ws.utility.deleteIfValidHandle(self.ChildControllers{i});
+%             end
             self.ChildControllers={};
             self.ScopeControllers={};
         end
@@ -144,12 +121,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function play(self, varargin)
             %self.Figure.changeReadiness(-1);
             try
-                self.Model.Logging.Enabled=false;
-                if self.Model.IsTrialBased ,
-                    self.startTrialBasedAcquisition_(varargin{:});
-                else
-                    self.startContinuousAcquisition_(varargin{:});
-                end
+                self.Model.play();
             catch me
                 %self.Figure.changeReadiness(+1);
                 rethrow(me)
@@ -161,12 +133,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %profile on
             %self.Figure.changeReadiness(-1);            
             try
-                self.Model.Logging.Enabled=true;
-                if self.Model.IsTrialBased ,
-                    self.startTrialBasedAcquisition_(varargin{:});
-                else
-                    self.startContinuousAcquisition_(varargin{:});
-                end
+                self.Model.record();
             catch me
                 %self.Figure.changeReadiness(+1);
                 rethrow(me)
@@ -281,14 +248,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             self.updateEnablementAndVisibilityOfControls();
 %         end            
         
-        function TrialBasedRadiobuttonActuated(self,source,event) %#ok<INUSD>
+        function SweepBasedRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model,'IsTrialBased',newValue);
+            ws.Controller.setWithBenefits(self.Model,'AreSweepsFiniteDuration',newValue);
         end
 
         function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model,'IsContinuous',newValue);
+            ws.Controller.setWithBenefits(self.Model,'AreSweepsContinuous',newValue);
         end
 
         function AcquisitionSampleRateEditActuated(self,source,event) %#ok<INUSD>
@@ -297,21 +264,21 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Acquisition,'SampleRate',newValue);
         end
 
-        function NTrialsEditActuated(self,source,event) %#ok<INUSD>
+        function NSweepsEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model,'ExperimentTrialCount',newValue);
+            ws.Controller.setWithBenefits(self.Model,'NSweepsPerRun',newValue);
         end
 
-        function TrialDurationEditActuated(self,source,event) %#ok<INUSD>
+        function SweepDurationEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model,'TrialDuration',newValue);
+            ws.Controller.setWithBenefits(self.Model,'SweepDuration',newValue);
         end
 
         function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model.Stimulation,'Enabled',newValue);
+            ws.Controller.setWithBenefits(self.Model.Stimulation,'IsEnabled',newValue);
         end
         
         function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
@@ -327,7 +294,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model.Display,'Enabled',newValue);
+            ws.Controller.setWithBenefits(self.Model.Display,'IsEnabled',newValue);
         end
         
         function UpdateRateEditActuated(self,source,event) %#ok<INUSD>
@@ -373,10 +340,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Logging,'SessionIndex',newValue);
         end
         
-        function NextTrialEditActuated(self,source,event) %#ok<INUSD>
+        function NextSweepEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            ws.Controller.setWithBenefits(self.Model.Logging,'NextTrialIndex',newValue);
+            ws.Controller.setWithBenefits(self.Model.Logging,'NextSweepIndex',newValue);
         end
 
         function OverwriteCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -403,7 +370,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 if ischar(fileName) && ~isempty(fileName) && isrow(fileName) ,
                     doesFileExist=ws.utility.fileStatus(fileName);
                     if doesFileExist ,
-                        if ws.most.util.isFileNameAbsolute(fileName) ,
+                        if ws.utility.isFileNameAbsolute(fileName) ,
                             absoluteFileName=fileName;
                         else
                             absoluteFileName=fullfile(pwd(),fileName);
@@ -437,7 +404,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             if isempty(self.Model.Display) || ~isvalid(self.Model.Display),
 %                 return
 %             end
-%             if self.Model.Display.Enabled ,
+%             if self.Model.Display.IsEnabled ,
 %                 nScopes=length(self.ScopeControllers);
 %                 if self.Model.Display.NScopes ~= nScopes ,
 %                     % something's not right...
@@ -478,7 +445,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % save the user settings, whatever else happens
             %self.saveUser();
             
-            if ~self.IsExitingMATLAB
+            if ~self.IsExitingMATLAB ,
                 % First verify that the user really meant to exit, and whether to just exit
                 % Wavesurfer or MATLAB.
                 %exitDialog = Wavesurfer.ExitDialog;
@@ -520,12 +487,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             %self.Figure.changeReadiness(-1);
-            if ws.most.util.isFileNameAbsolute(fileName) ,
+            if ws.utility.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end            
-            saveStruct=self.Model.loadConfigFileForRealsSrsly(absoluteFileName);
+            saveStruct = self.Model.loadConfigFileForRealsSrsly(absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
             %wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -558,7 +525,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function saveOrSaveAsConfig(self, isSaveAs)
             % Figure out the file name, or leave empty for save as
-            lastConfigFileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
             if isSaveAs ,
                 isFileNameKnown=false;
                 fileName='';  % not used
@@ -581,6 +547,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % config file name
                     isFileNameKnown=false;
                     fileName='';  % not used
+                    lastConfigFileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
                     if isempty(lastConfigFileName)
                         fileChooserInitialFileName = fullfile(pwd(),'untitled.cfg');
                     else
@@ -688,124 +655,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     
     
     methods (Access = protected)
-%         function expose_default_commands(self)
-%             % File Menu
-%             commands = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'OpenMenu'}}, ...
-%                 'Action', @self.loadConfig, ...
-%                 'Gestures', {'Key', 'O', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'SaveMenu'}}, ...
-%                 'Action', @self.saveConfig, ...
-%                 'Gestures', {'Key', 'S', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'SaveAsMenu'}}, ...
-%                 'Action', @self.saveConfigAs);
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'OpenUserMenu'}}, ...
-%                 'Action', @self.loadUser);
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'SaveUserMenu'}}, ...
-%                 'Action', @self.saveUser);
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'SaveAsUserMenu'}}, ...
-%                 'Action', @self.saveUserAs);
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'AssignMenu'}}, ...
-%                 'Action', @self.assignModelAndControllerToWorkspaceVariables);
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'QuitMenu'}}, ...
-%                 'Action', @self.windowCloseRequested, ...
-%                 'Gestures', {'Key', 'Q', 'Modifiers', 'Control'});
-% 
-%             % Tools Menu
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'AddScopeMenu'}}, ...
-%                 'Action', @self.addScope);
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'StimulusSequenceMenu'}, {'WavesurferWindow', 'CycleButton'}}, ...
-% %                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.stimulus.StimulusCycleChooserController'));
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'CycleButton'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.stimulus.StimulusLibraryEditorController'));            
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'StimLibraryEditorMenu'}}, ...
-%                 'Action', @(src, evt)self.showLibraryEditor('ws.ui.controller.stimulus.StimulusLibraryEditorController'), ...
-%                 'Gestures', {'Key', 'D', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'TriggerMenu'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.TriggerSettingsController'), ...
-%                 'Gestures', {'Key', 'T', 'Modifiers', 'Control'});
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'ActiveChannelsMenu'}}, ...
-% %                 'Action', @(src, evt)self.showChildFigure('ws.ActiveChannelsController'), ...
-% %                 'Gestures', {'Key', 'A', 'Modifiers', 'Control'});
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'LoggingMenu'}}, ...
-% %                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.Logging'), ...
-% %                 'Gestures', {'Key', 'L', 'Modifiers', 'Control'});
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'ElectrodesMenu'}}, ...
-% %                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.ephys.Electrodes'), ...
-% %                 'Gestures', {'Key', 'E', 'Modifiers', 'Control'});
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'TestPulseMenu'}}, ...
-% %                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.ephys.TestPulse'), ...
-% %                 'Gestures', {'Key', 'H', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'UserFunctionsMenu'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.UserFunctionEditor'), ...
-%                 'Gestures', {'Key', 'U', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'FastProtocolsEditorMenuItem'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.FastProtocolsController'), ...
-%                 'Gestures', {'Key', 'F', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'ChannelsMenuItem'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ChannelsController'));
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'TestPulserMenuItem'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.TestPulserController'));
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'ElectrodeManagerMenuItem'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ElectrodeManagerController'));
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'YokeToScanImageMenuItem'}}, ...
-%                 'Action', @self.yokeToScanImageMenuItemActuated );
-% 
-%             % Help Menu
-%             % commands(end + 1) = ws.most.app.CommandBinding('Sources', {{'WavesurferWindow', 'AboutMenu'}}, ...
-%             %     'Action', @(varargin)self.AboutWindowController.showWindows());
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'AboutMenu'}}, ...
-%                 'Action', @(src, evt)self.showChildFigure('ws.ui.controller.AboutWindow'));
-% 
-%             % --- Buttons and other controls.
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'StartMenu'}, {'WavesurferWindow', 'StartToolbarButton'}}, ...
-%                 'Action', @self.startControlActuated, ...
-%                 'Gestures', {'Key', 'R', 'Modifiers', 'Control'});
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'PreviewMenu'}, {'WavesurferWindow', 'PreviewToolbarButton'}}, ...
-% %                 'Action', @self.previewControlActuated, ...
-% %                 'Gestures', {'Key', 'P', 'Modifiers', 'Control'});
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'StopMenu'}, {'WavesurferWindow', 'StopToolbarButton'}}, ...
-%                 'Action', @self.stopControlActuated, 'Name', 'StopExperiment', ...
-%                 'Gestures', {'Key', 'OemPeriod', 'Modifiers', 'Control', 'Text', 'Ctrl+.'});
-% %             commands(end + 1) = ws.most.app.CommandBinding( ...
-% %                 'Sources', {{'WavesurferWindow', 'TestPulseExpMenu'}}, ...
-% %                 'Action', @self.testpulse, 'Name', 'TestPulse');
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'LogLocationButton'}}, ...
-%                 'Action', @self.changeDataFileLocation);
-%             commands(end + 1) = ws.most.app.CommandBinding( ...
-%                 'Sources', {{'WavesurferWindow', 'LogShowButton'}}, ...
-%                 'Action', @self.showDataFileLocation);
-% 
-%             self.expose_commands(commands);
-%         end  % function
-        
         function out = loadUserSettings(self, fullpath, startLoc)
             if ~exist('startLoc','var') ,
                 startLoc='';
@@ -900,86 +749,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(+1);            
         end
         
-%         function expose_default_bindings(self)
-%             bindings=ws.most.app.PropertyBinding.empty();
-% %             bindings(end+11) = ws.most.app.PropertyBinding('SourceProperty', 'TrialDurations', ...
-% %                                                         'Target', 'WavesurferWindow.DurationLabel', ...
-% %                                                         'ValueTransformer', 'ws.app.TrialDurationTransformer', ...
-% %                                                         'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsTrialBased', ...
-%                                                          'Target', 'WavesurferWindow.IsTrialBased');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsContinuous', ...
-%                                                          'Target', 'WavesurferWindow.IsContinuous');
-% %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.Enabled', ...
-% %                                                          'Target', 'WavesurferWindow.AcqEnabled');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Acquisition.SampleRate', ...
-%                                                          'Target', 'WavesurferWindow.AcqSampleRate');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'TrialDuration', ...
-%                                                          'Target', 'WavesurferWindow.AcqTraceLength');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.CanEnable', ...
-%                                                          'Target', 'WavesurferWindow.StimEnabled', ...
-%                                                          'TargetProperty', 'IsEnabled', ...
-%                                                          'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.Enabled', 'Target', 'WavesurferWindow.StimEnabled');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.SampleRate', 'Target', 'WavesurferWindow.StimSampleRate');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Stimulation.DoRepeatSequence', 'Target', 'WavesurferWindow.StimRepeat');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.Enabled', 'Target', 'WavesurferWindow.DisplayEnabled');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.UpdateRate', 'Target', 'WavesurferWindow.DisplayUpdateRate');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.XSpan', 'Target', 'WavesurferWindow.DisplayWindow');
-%             %bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.IsAutoRate', 'Target', 'WavesurferWindow.AutomaticRate');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Display.IsXSpanSlavedToAcquistionDuration', ...
-%                                                          'Target', 'WavesurferWindow.AutomaticWindow');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.Enabled', 'Target', 'WavesurferWindow.LoggingEnabled');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.FileBaseName', 'Target', 'WavesurferWindow.LogFileName');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.FileLocation', ...
-%                                                          'Target', 'WavesurferWindow.LogFileLocation', ...
-%                                                          'Mode', ws.most.app.BindingMode.OneWay);
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'Logging.NextTrialIndex', 'Target', 'WavesurferWindow.NextTrialId');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'ExperimentTrialCount', 'Target', 'WavesurferWindow.TrialsPerExperiment');
-%             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'State', ...
-%                                                          'Target', 'WavesurferWindow.StatusLabel', ...
-%                                                          'Mode', ws.most.app.BindingMode.OneWay);
-% %             bindings(end + 1) = ws.most.app.PropertyBinding('SourceProperty', 'IsYokedToScanImage', ...
-% %                                                          'Target', 'WavesurferWindow.YokeToScanImageMenuItem.IsChecked');
-%             
-%             self.expose_bindings(bindings);
-%         end  % function
-        
-        function out = getPropertyValue(self, name)
+        function out = getPropertyValue_(self, name)
             out = self.(name);
         end  
         
-        function setPropertyValue(self, name, value)
+        function setPropertyValue_(self, name, value)
             self.(name) = value;
         end
         
-%         function syncVariousThingsFromModel_(self)
-%             fprintf('WavesurferController.syncVariousThingsFromModel_()\n');
-%             
-%             keyboard
-%             self.unsubscribeFromAll();
-%             % delete(self.Listeners);
-%             
-%             if isempty(self.Model)                
-%                 % If there's no model, not much to configure
-%             else
-%                 % Additional bindings for (dis/en)abled control states not supported in
-%                 % controller.
-%                 self.nukeAndRepaveScopeControllers();
-%                 self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
-%                 self.updateEnablementAndVisibilityOfControls();                
-%                 self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-%                 self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
-%                 self.Model.subscribeMe(self,'PostSet','IsTrialBased','updateEnablementAndVisibilityOfControls');
-%                 self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
-%                 self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
-%                 self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
-%                 self.Model.Logging.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfLoggingControls');
-%             end
-%             
-%             self.updateScopeMenu();  % Shouldn't we update everything here?  The model was just set!
-%         end  % function
-
         function updateSubscriptionsToModel_(self)
             self.unsubscribeFromAll();
             
@@ -998,7 +775,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
                 self.Model.subscribeMe(self,'DidSetStateAwayFromNoMDF','','nukeAndRepaveScopeControllers');
                 %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-                %self.Model.subscribeMe(self,'PostSet','IsTrialBased','updateEnablementAndVisibilityOfControls');
+                %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
                 %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
                 %self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
                 %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
@@ -1017,7 +794,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(-1);
             %self.Window.Cursor=System.Windows.Input.Cursors.Wait;
             try
-                fastProtocol = self.Model.FastProtocols(index);
+                fastProtocol = self.Model.FastProtocols{index};
                 fileName=fastProtocol.ProtocolFileName;
                 if ~isempty(fileName) , ...                        
                     if exist(fileName, 'file') ,
@@ -1034,10 +811,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     end
                 end
                 %self.Figure.changeReadiness(+1);
-                %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;  % go to normal cursor before starting trial
-                if isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Play) ,
+                %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;  % go to normal cursor before starting sweep
+                if isequal(fastProtocol.AutoStartType,'play') ,
                     self.play();
-                elseif isequal(fastProtocol.AutoStartType,ws.fastprotocol.StartType.Record) ,
+                elseif isequal(fastProtocol.AutoStartType,'record') ,
                     self.record();
                 end
             catch me
@@ -1115,35 +892,35 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
-        function changeDataFileLocation(self, varargin)
+        function changeDataFileLocation(self, varargin)            
             folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
-            if folderName
+            if ~isempty(folderName) ,
                 self.Model.Logging.FileLocation = folderName;
             end
         end  % function
         
-        function startTrialBasedAcquisition_(self, varargin)
-            % Action for the Start button.
-%             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
-%             progressBar.IsIndeterminate = false;
-%             progressBar.Maximum = self.Model.ExperimentTrialCount;
-%             progressBar.Value = 0;
-            
-%             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
-%             if isa(f, 'System.Windows.Controls.TextBox')
-%                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, []);
-%                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, f);
-%             end
-            
-            self.Model.start();
-        end  % function
+%         function startSweepBasedAcquisition_(self, varargin)
+%             % Action for the Start button.
+% %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
+% %             progressBar.IsIndeterminate = false;
+% %             progressBar.Maximum = self.Model.NSweepsPerRun;
+% %             progressBar.Value = 0;
+%             
+% %             f = System.Windows.Input.FocusManager.GetFocusedElement(self.hGUIs.WavesurferWindow);
+% %             if isa(f, 'System.Windows.Controls.TextBox')
+% %                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, []);
+% %                 System.Windows.Input.FocusManager.SetFocusedElement(self.hGUIs.WavesurferWindow, f);
+% %             end
+%             
+%             self.Model.start();
+%         end  % function
         
-        function startContinuousAcquisition_(self, varargin)
-            % Action method for the Preview button
-            %progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
-            %progressBar.IsIndeterminate = true;
-            self.Model.start();
-        end  % function
+%         function startContinuousAcquisition_(self, varargin)
+%             % Action method for the Preview button
+%             %progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
+%             %progressBar.IsIndeterminate = true;
+%             self.Model.start();
+%         end  % function
                 
     end  % protected methods block
         
@@ -1200,7 +977,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %             
 %             % Set the enablement of the Scopes submenu            
-%             scopesMenu.IsEnabled = (self.Model.Display.NScopes>0) && self.Model.Display.Enabled;
+%             scopesMenu.IsEnabled = (self.Model.Display.NScopes>0) && self.Model.Display.IsEnabled;
 %             
 %             % Set the Visibility of the Remove item in the Scope submenu
 %             if self.Model.Display.NScopes>0 ,
@@ -1262,8 +1039,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
             
             % Make that change
-            originalState=self.Model.Display.Scopes(scopeIndex).IsVisibleWhenDisplayEnabled;
-            self.Model.Display.Scopes(scopeIndex).IsVisibleWhenDisplayEnabled=~originalState;
+            self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
+            %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
+            %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
             % should automatically uopdate now
         end        
     end
@@ -1282,7 +1060,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             thisScopeController=self.ScopeControllers{scopeIndex};
             isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
             
-            thisScopeController.delete();
+            % thisScopeController.delete();
+            thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
             self.ScopeControllers(scopeIndex)=[];
             self.ChildControllers(isMatchAsChild)=[];
             
@@ -1305,12 +1084,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             nScopes=self.Model.Display.NScopes;
             for iScope=1:nScopes ,
-                scopeModel=self.Model.Display.Scopes(iScope);
+                scopeModel=self.Model.Display.Scopes{iScope};
                 self.createChildControllerIfNonexistant('ScopeController',scopeModel);                
             end
         end
     end
-       
+
     methods (Access = protected)    
         function deleteAllScopeControllers(self)
             % Deletes all the scope controllers/views, leaving the models alone.
@@ -1320,11 +1099,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 scopeController=self.ScopeControllers{scopeIndex};
                 isMatch=cellfun(@(childController)(scopeController==childController),self.ChildControllers);
                 childIndex=find(isMatch,1);
-                %childIndex=find(scopeController==self.ChildControllers);
-                scopeController.delete();  
-                self.ScopeControllers(scopeIndex)=[];
+                %scopeController.delete();  % NEED TO DO SOMETHING DIFFERENT HERE!!!
+                scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%                 scopeController.deleteFigureGH() ;
+%                 scopeController.unsubscribeFromAll() ;
+%                 scopeController.Figure.unsubscribeFromAll() ;
+                self.ScopeControllers(scopeIndex)=[];  % delete an element from the cell array
                 if ~isempty(childIndex) ,
-                    self.ChildControllers(childIndex)=[];
+                    self.ChildControllers(childIndex)=[];  % delete an element from the cell array
                 end
             end
                 
@@ -1351,10 +1133,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             %window=self.hGUIData.WavesurferWindow;
 %             
 %             isNoMDF=(model.State == ws.ApplicationState.NoMDF);
-%             isIdle=(model.State == ws.ApplicationState.Idle);
-%             isTrialBased=model.IsTrialBased;
+%             isIdle=isequal(model.State,'idle');
+%             isSweepBased=model.AreSweepsFiniteDuration;
 %             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
-%             isAcquiring= (model.State == ws.ApplicationState.AcquiringTrialBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
+%             isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
 %             
 %             % File menu items
 %             set(figureObject.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
@@ -1367,18 +1149,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             set(figureObject.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoMDF));
 %             %set(figureObject.QuitMenuItem,'Enable',onIff(true));  % always available          
 %             
-%             %% Experiment Menu
+%             %% Run Menu
 %             %window.StartMenu.IsEnabled=isIdle;
 %             %%window.PreviewMenu.IsEnabled=isIdle;
 %             %window.StopMenu.IsEnabled= isAcquiring;
 %             
 %             % Tools Menu
 %             set(figureObject.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-%             set(figureObject.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.Enabled));
+%             set(figureObject.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
 %             set(figureObject.ChannelsMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.TriggersMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
-%             set(figureObject.UserFunctionsMenuItem,'Enable',onIff(isIdle));            
+%             set(figureObject.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
 %             set(figureObject.ElectrodesMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.TestPulseMenuItem,'Enable',onIff(isIdle));
 %             set(figureObject.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
@@ -1398,14 +1180,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 % 
 %             % Acquisition controls
-%             set(figureObject.TrialBasedRadiobutton,'Enable',onIff(isIdle));
+%             set(figureObject.SweepBasedRadiobutton,'Enable',onIff(isIdle));
 %             set(figureObject.ContinuousRadiobutton,'Enable',onIff(isIdle));            
 %             set(figureObject.AcquisitionSampleRateEdit,'Enable',onIff(isIdle));
-%             set(figureObject.NTrialsEdit,'Enable',onIff(isIdle&&isTrialBased));
-%             set(figureObject.TrialDurationEdit,'Enable',onIff(isIdle&&isTrialBased));
+%             set(figureObject.NSweepsEdit,'Enable',onIff(isIdle&&isSweepBased));
+%             set(figureObject.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
 %             
 %             % Stimulation controls
-%             isStimulusEnabled=model.Stimulation.Enabled;
+%             isStimulusEnabled=model.Stimulation.IsEnabled;
 %             stimulusLibrary=model.Stimulation.StimulusLibrary;            
 %             isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
 %             set(figureObject.StimulationEnabledCheckbox,'Enable',onIff(isIdle));
@@ -1454,12 +1236,22 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % upper-right close button.
             %figureObject=self.Figure;
             %figureObject.delete();
-            self.delete();
+
+            % Delete the figure GHs for all the child controllers
+            for i=1:length(self.ChildControllers) ,
+                thisChildController = self.ChildControllers{i} ;
+                if isvalid(thisChildController) ,
+                    thisChildController.deleteFigureGH();
+                end
+            end
+
+            self.tellFigureToDeleteFigureGH_() ;
+            %self.delete();
         end  % function
         
 %         function tellScopeControllersThatDisplayEnablementWasSet(self)
 %             % This has to be done in a well-defined order, so we don't
-%             % just have the scope controllers listen on Display.Enabled
+%             % just have the scope controllers listen on Display.IsEnabled
 %             % directly.
 %             for i=1:length(self.ScopeControllers) ,
 %                 scopeController=self.ScopeControllers{i};
@@ -1757,7 +1549,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=(wavesurferModel.State==ws.ApplicationState.Idle);
+                isIdle=isequal(wavesurferModel.State,'idle');
                 if ~isIdle ,
                     isOKToQuit=false;
                     return
@@ -1802,8 +1594,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             specs.FastProtocolsController.className = 'ws.FastProtocolsController';
             %specs.FastProtocolsController.controlName = 'FastProtocolsFigure';
             
-            specs.UserFunctionsController.className = 'ws.UserFunctionsController';
-            %specs.UserFunctionsController.controlName = 'UserFunctionFigure';
+            specs.UserCodeManagerController.className = 'ws.UserCodeManagerController';
+            %specs.UserCodeManagerController.controlName = 'UserFunctionFigure';
             
             specs.ChannelsController.className = 'ws.ChannelsController';
             %specs.ChannelsController.controlName = 'ChannelsFigure';
@@ -1968,12 +1760,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else                
                 if isequal(loadOrSave,'load')
                     [f,p] = ...
-                        uigetfile({sprintf('*.%s', cfgOrUsr), sprintf('Wavesurfer %s File',fileTypeString)}, ...
+                        uigetfile({sprintf('*.%s', cfgOrUsr), sprintf('WaveSurfer %s File',fileTypeString)}, ...
                                   sprintf('Open %s...', fileTypeString), ...
                                   fileChooserInitialFileName);
                 elseif isequal(loadOrSave,'save')
                     [f,p] = ...
-                        uiputfile({sprintf('*.%s', cfgOrUsr), sprintf('Wavesurfer %s File',fileTypeString)}, ...
+                        uiputfile({sprintf('*.%s', cfgOrUsr), sprintf('WaveSurfer %s File',fileTypeString)}, ...
                                   sprintf('Save %s As...', fileTypeString), ...
                                   fileChooserInitialFileName);
                 else
@@ -2007,7 +1799,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             
             % Obtain an absolute file name
             [localFileName,dirName] = ...
-                uigetfile({sprintf('*.m'), sprintf('Wavesurfer %s File','Machine Data')}, ...
+                uigetfile({sprintf('*.m'), sprintf('WaveSurfer %s File','Machine Data')}, ...
                           sprintf('Load Machine Data File...'), ...
                           fileChooserInitialFileName);
             if isnumeric(localFileName) ,
@@ -2027,25 +1819,25 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %     methods (Static=true)
 %         function s=initialPropertyBindings()
 %             s = struct();
-%             s.IsTrialBased = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialBasedRadiobutton'}});
-%             s.IsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.ExperimentTrialCount = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NTrialsEdit'}});
+%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
+%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
+%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
 %             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
-%             s.TrialDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'TrialDurationEdit'}});
+%             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
 %             
 %             % Need to handle stim.CanEnable
-%             s.Stimulation.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
+%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
 %             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
 %             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
 %             
-%             s.Display.Enabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
+%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
 %             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
 %             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
 %             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
-%             s.Logging.NextTrialIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextTrialEdit'}});
+%             s.Logging.NextSweepIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextSweepEdit'}});
 %             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
 %             
 %             %s.State = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StatusText'}});            
@@ -2067,13 +1859,13 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         % File menu items
         function LoadMachineDataFileMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.pickMDFFileAndInitializeUsingIt();
+            self.pickMDFFileAndInitializeUsingIt() ;
         end
         
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');            
-            fileName = '';
-            self.loadConfigSettings(fileName,startLoc);
+            startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath') ;
+            fileName = '' ;
+            self.loadConfigSettings(fileName,startLoc) ;
         end
 
         function SaveProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -2124,8 +1916,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.showChildFigure('StimulusLibraryController');
         end
         
-        function UserFunctionsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('UserFunctionsController');
+        function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.showChildFigure('UserCodeManagerController');
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -2166,7 +1958,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showChildFigure('ws.ui.controller.AboutWindow');
-            msgbox(sprintf('This is Wavesurfer %s.',ws.versionString()),'About','modal');
+            msgbox(sprintf('This is WaveSurfer %s.',ws.versionString()),'About','modal');
         end
         
         % Buttons

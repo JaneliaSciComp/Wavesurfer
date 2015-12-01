@@ -25,13 +25,13 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
-            nTrials=3;
-            wsModel.ExperimentTrialCount=nTrials;
+            nSweeps=3;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
@@ -63,14 +63,14 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
-            absoluteFileName = wsModel.Logging.NextTrialSetAbsoluteFileName ;
+            absoluteFileName = wsModel.Logging.NextRunAbsoluteFileName ;
             
             pause(1);
-            wsModel.start();  % blocking, now
+            wsModel.record();  % blocking, now
             pause(0.5);
 
             % Make sure that worked
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
             
             % Try to read the data file
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
@@ -81,9 +81,9 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
             analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
             digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
-            analogData = dataAsStruct.trial_0003.analogScans ;   %#ok<NASGU>
+            analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
             %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
-            digitalData = dataAsStruct.trial_0003.digitalScans ;   %#ok<NASGU>
+            digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>
             %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
             %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
             

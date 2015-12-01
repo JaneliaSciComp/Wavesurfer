@@ -169,12 +169,14 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
             try
                 ziniGetAPICurrentVersion();
             catch ME
-                obj.cancelConstruct = true;
+                %obj.cancelConstruct = true;
                 rethrow(ME);
             end
             if isempty(obj.apiCurrentVersion) %A cancellation or error occurred
-                obj.cancelConstruct = true; %Signal to subclasses that construction should be aborted
-                return;
+                %obj.cancelConstruct = true; %Signal to subclasses that construction should be aborted
+                %return;
+                error('most:APIWrapper:noSupportedAPIVersionsAvailable' , ...
+                      'No supported versions of API %s available',obj.apiPrettyName);
             end
             
             %Ensure/Initialize API Data file

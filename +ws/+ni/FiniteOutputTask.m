@@ -1,6 +1,6 @@
 classdef FiniteOutputTask < handle
     properties (Dependent = true, SetAccess = immutable)
-        Parent
+        %Parent
         IsAnalog
         IsDigital
         TaskName
@@ -18,7 +18,7 @@ classdef FiniteOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        Parent_
+        %Parent_
         DabsDaqTask_ = [];  % Can be empty if there are zero channels
     end
     
@@ -39,20 +39,14 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
+        function self = FiniteOutputTask(taskType, taskName, physicalChannelNames, channelNames)
             nChannels=length(physicalChannelNames);
             
-            % Store the parent
-            self.Parent_ = parent ;
+%             % Store the parent
+%             self.Parent_ = parent ;
                                     
             % Determine the task type, digital or analog
-            if isequal(taskType,'analog') ,
-                self.IsAnalog_ = true ;
-            elseif isequal(taskType,'digital') ,
-                self.IsAnalog_ = false ;
-            else
-                error('Illegal output task type');
-            end                
+            self.IsAnalog_ = ~isequal(taskType,'digital') ;
             
             % Create the task, channels
             if nChannels==0 ,
@@ -92,7 +86,7 @@ classdef FiniteOutputTask < handle
                 delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
             self.DabsDaqTask_=[];
-            self.Parent_ = [] ;  % prob not needed
+            %self.Parent_ = [] ;  % prob not needed
         end  % function
         
         function start(self)
@@ -108,35 +102,28 @@ classdef FiniteOutputTask < handle
             end
         end  % function
         
-        function abort(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::abort()\n');
+%         function abort(self)
+% %             if isa(self,'ws.ni.AnalogInputTask') ,
+% %                 fprintf('AnalogInputTask::abort()\n');
+% %             end
+% %             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
+% %                 fprintf('FiniteAnalogOutputTask::abort()\n');
+% %             end
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.abort();
 %             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::abort()\n');
-%             end
-            if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.abort();
-            end
-        end  % function
+%         end  % function
         
         function stop(self)
-%             if isa(self,'ws.ni.AnalogInputTask') ,
-%                 fprintf('AnalogInputTask::stop()\n');
-%             end
-%             if isa(self,'ws.ni.FiniteAnalogOutputTask') ,
-%                 fprintf('FiniteAnalogOutputTask::stop()\n');
-%             end
-            %fprintf('FiniteOutputTask::stop()\n');
-            %dbstack
-            if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
+            %if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
+            if ~isempty(self.DabsDaqTask_) ,
                 self.DabsDaqTask_.stop();
             end
         end  % function
         
-        function value = get.Parent(self)
-            value = self.Parent_;
-        end  % function
+%         function value = get.Parent(self)
+%             value = self.Parent_;
+%         end  % function
         
         function value = get.IsArmed(self)
             value = self.IsArmed_;
@@ -222,7 +209,8 @@ classdef FiniteOutputTask < handle
                     catch me
                         self.DabsDaqTask_.sampClkRate = originalSampleRate;
                         self.SampleRate_ = originalSampleRate;
-                        error('Invalid sample rate value');
+                        error('most:Model:invalidPropVal', ...
+                              'Unable to set task sample rate to the given value');
                     end
                 else
                     self.SampleRate_ = newValue;
@@ -256,11 +244,11 @@ classdef FiniteOutputTask < handle
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
                 self.TriggerEdge_ = [];
-            elseif isa(newValue,'ws.ni.TriggerEdge') && isscalar(newValue) ,
+            elseif ws.isAnEdgeType(newValue) ,
                 self.TriggerEdge_ = newValue;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerEdge must be empty or a scalar ws.ni.TriggerEdge');       
+                      'TriggerEdge must be empty, or ''rising'', or ''falling''');       
             end            
         end  % function
         
@@ -284,7 +272,8 @@ classdef FiniteOutputTask < handle
 
                 % Set up triggering
                 if ~isempty(self.TriggerPFIID)
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), self.TriggerEdge.daqmxName());
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), dabsTriggerEdge);
                 else
                     self.DabsDaqTask_.disableStartTrig();
                 end
@@ -302,8 +291,8 @@ classdef FiniteOutputTask < handle
                     % Unregister callbacks
                     %self.DabsDaqTask_.doneEventCallbacks = {};
 
-                    % Abort the task
-                    self.DabsDaqTask_.abort();
+                    % Stop the task
+                    self.DabsDaqTask_.stop();
                     
                     % Unreserve resources (abort should do this for us)
                     %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
@@ -314,22 +303,26 @@ classdef FiniteOutputTask < handle
             end
         end  % function   
         
-        function pollingTimerFired(self,timeSinceTrialStart) %#ok<INUSD>
-            %fprintf('FiniteOutputTask::pollingTimerFired()\n');
-            if isempty(self.DabsDaqTask_)
+        function result = isDone(self)
+            %fprintf('FiniteOutputTask::poll()\n');
+            if isempty(self.DabsDaqTask_) ,
                 % This means there are no channels, so nothing to do
+                result = true ;  % things work out better if you use this convention
             else
-                if self.DabsDaqTask_.isTaskDoneQuiet() ,
-                    self.DabsDaqTask_.stop();
-                    parent = self.Parent ;
-                    if ~isempty(parent) && isvalid(parent) ,
-                        if self.IsAnalog ,
-                            parent.analogEpisodeCompleted();
-                        else
-                            parent.digitalEpisodeCompleted();
-                        end
-                    end
-                end
+                result = self.DabsDaqTask_.isTaskDoneQuiet() ;
+%                     self.DabsDaqTask_.stop() ;
+%                     isTaskDone = true ;
+%                     parent = self.Parent ;
+%                     if ~isempty(parent) && isvalid(parent) ,
+%                         if self.IsAnalog ,
+%                             parent.analogEpisodeCompleted() ;
+%                         else
+%                             parent.digitalEpisodeCompleted() ;
+%                         end
+%                     end
+%                 else
+%                     isTaskDone = false ;                    
+%                 end
             end
         end  % function
     end  % public methods

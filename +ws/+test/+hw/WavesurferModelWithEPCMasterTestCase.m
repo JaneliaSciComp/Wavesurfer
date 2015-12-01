@@ -38,7 +38,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=true;
             
             % Using the Test Pulser, set the electrode mode
-            electrodeMode=ws.ElectrodeMode.CC;
+            electrodeMode='cc';
             model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
@@ -46,7 +46,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             self.verifyEqual(electrodeModeCheck,electrodeMode);
             
             % Using the Test Pulser, set the electrode mode
-            electrodeMode=ws.ElectrodeMode.VC;
+            electrodeMode='vc';
             model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
@@ -83,7 +83,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=true;
             
             % Using the Test Pulser, set the electrode mode
-            electrodeMode=ws.ElectrodeMode.CC;
+            electrodeMode='cc';
             model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
@@ -91,7 +91,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             self.verifyEqual(electrodeModeCheck,electrodeMode);
             
             % Using the Test Pulser, set the electrode mode
-            electrodeMode=ws.ElectrodeMode.VC;
+            electrodeMode='vc';
             model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
             
             % Check the electrode Mode

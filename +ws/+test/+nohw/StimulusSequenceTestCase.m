@@ -9,20 +9,17 @@ classdef StimulusSequenceTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function testContainsElement(self)
-            self.verifyTrue(self.DefaultSequence.containsMaps(self.DefaultMap1), 'The sequence does contain the specified element.');
-            self.verifyTrue(self.DefaultSequence.containsMaps(self.DefaultMap2), 'The sequence does contain the specified element.');
+            self.verifyTrue(self.DefaultSequence.containsMap(self.DefaultMap1), 'The sequence does contain the specified element.');
+            self.verifyTrue(self.DefaultSequence.containsMap(self.DefaultMap2), 'The sequence does contain the specified element.');
             
             map3 = self.DefaultLibrary.addNewMap();
-            self.verifyFalse(self.DefaultSequence.containsMaps(map3), 'The sequence does not contain the specified element.');
-            
-            self.verifyEqual(self.DefaultSequence.containsMaps({self.DefaultMap1, map3, self.DefaultMap2, map3, map3}), ...
-                [true false true false false], 'Incorrect output for vector containsMaps.');
+            self.verifyFalse(self.DefaultSequence.containsMap(map3), 'The sequence does not contain the specified element.');
         end
     end
     
     methods (TestMethodSetup)
         function createDefaultSequence(self)
-            stimLib = ws.stimulus.StimulusLibrary();            
+            stimLib = ws.stimulus.StimulusLibrary([]);  % no parent
             
             %st1 = ws.stimulus.SquarePulseTrainStimulus('PulseDuration', 0.25, 'Period', 0.5);
             st1 = stimLib.addNewStimulus('SquarePulseTrain');

@@ -26,6 +26,10 @@ classdef UntimedDigitalOutputTask < handle
 
     methods
         function self = UntimedDigitalOutputTask(parent, taskName, physicalChannelNames, channelNames)
+            %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
+            %physicalChannelNames
+            %channelNames
+           
             nChannels=length(physicalChannelNames);
                                     
             % Store the parent
@@ -70,11 +74,11 @@ classdef UntimedDigitalOutputTask < handle
             self.DabsDaqTask_.start();
         end  % function
         
-        function abort(self)
-            if ~isempty(self.DabsDaqTask_)
-                self.DabsDaqTask_.abort();
-            end
-        end  % function
+%         function abort(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 self.DabsDaqTask_.abort();
+%             end
+%         end  % function
         
         function stop(self)
             if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
@@ -93,15 +97,24 @@ classdef UntimedDigitalOutputTask < handle
         
         function set.ChannelData(self, newValue)
             if ws.utility.isASettableValue(newValue),
-                if islogical(newValue) && isrow(newValue) && length(newValue)==length(self.ChannelNames) ,
+                nChannels = length(self.ChannelNames) ;
+                if islogical(newValue) && isrow(newValue) && length(newValue)==nChannels ,
                     self.ChannelData_ = newValue;
                     self.syncOutputBufferToChannelData_();
                 else
                     error('most:Model:invalidPropVal', ...
-                          'ChannelData must be an 1xR matrix, R the number of channels, of the appropriate type.');
+                          'ChannelData must be an 1x%d matrix, of the appropriate type.',nChannels);
                 end
             end
         end  % function        
+        
+        function setChannelDataQuicklyAndDirtily(self,newValue)
+            % Set the channel data as fast as possible, for minimum
+            % latency.  Note that there's no error checking here, so if
+            % newValue is a bad value, that's on you.  No free lunch, etc.
+            self.ChannelData_ = newValue ;
+            self.DabsDaqTask_.writeDigitalData(newValue);
+        end
         
         function debug(self) %#ok<MANU>
             keyboard

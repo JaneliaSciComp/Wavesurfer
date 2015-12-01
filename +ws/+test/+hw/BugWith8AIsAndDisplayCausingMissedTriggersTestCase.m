@@ -25,13 +25,13 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
                                isCommandLineOnly);
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.Enabled=true;
+            wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.Enabled=true;
-            wsModel.Logging.Enabled=true;
+            wsModel.Display.IsEnabled=true;
+            %wsModel.Logging.IsEnabled=true;
 
-            nTrials=10;
-            wsModel.ExperimentTrialCount=nTrials;
+            nSweeps=10;
+            wsModel.NSweepsPerRun=nSweeps;
 
             % set the data file name
             thisFileName=mfilename();
@@ -44,14 +44,14 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.start();
+            wsModel.record();
 
             dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nTrials;  % s
+            maxTimeToWait=2.5*nSweeps;  % s
             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
             for i=1:nTimesToCheck ,
                 pause(dtBetweenChecks);
-                if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
                     break
                 end
             end                   
@@ -59,7 +59,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
-            self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
             
             %wsController.quit();
             %drawnow();  % close all the windows promptly, before running more tests
@@ -72,13 +72,13 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %                                               isCommandLineOnly);
 % 
 %             wsModel.Acquisition.SampleRate=20000;  % Hz
-%             wsModel.Stimulation.Enabled=true;
+%             wsModel.Stimulation.IsEnabled=true;
 %             wsModel.Stimulation.SampleRate=20000;  % Hz
-%             wsModel.Display.Enabled=true;
-%             wsModel.Logging.Enabled=true;
+%             wsModel.Display.IsEnabled=true;
+%             wsModel.Logging.IsEnabled=true;
 % 
-%             nTrials=10;
-%             wsModel.ExperimentTrialCount=nTrials;
+%             nSweeps=10;
+%             wsModel.NSweepsPerRun=nSweeps;
 % 
 %             % set the data file name
 %             thisFileName=mfilename();
@@ -94,16 +94,16 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 %             wsModel.start();
 % 
 %             dtBetweenChecks=1;  % s
-%             maxTimeToWait=2.5*nTrials;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
 %             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
 %             for i=1:nTimesToCheck ,
 %                 pause(dtBetweenChecks);
-%                 if wsModel.ExperimentCompletedTrialCount>=nTrials ,
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
 %                     break
 %                 end
 %             end                   
 % 
-%             self.verifyEqual(wsModel.ExperimentCompletedTrialCount,nTrials);
+%             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
 %             
 %             wsController.quit();
 %             drawnow();  % close all the windows promptly, before running more tests

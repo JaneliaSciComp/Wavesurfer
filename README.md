@@ -1,7 +1,7 @@
-Wavesurfer
+WaveSurfer
 ==========
 
-Wavesurfer is an application for acquiring electrophysiology
+WaveSurfer is an application for acquiring electrophysiology
 data.  It runs within Matlab R2013b and later (64-bit only).  At
 present, you must have a Matlab license to use it.
 
@@ -34,39 +34,39 @@ Installation
 
 4.  At the Matlab command line, execute "installWavesurfer".  This
     will permanently modify your Matlab path so that all components
-    needed by Wavesurfer are on it.  (If you don't want to permanently
+    needed by WaveSurfer are on it.  (If you don't want to permanently
     modify the path, execute "installWavesruferForNow" instead of the
     above.  This modifies the path only for the current Matlab
     session.)
 
-5.  To use Wavesurfer, you must create a "machine data file".  This
+5.  To use WaveSurfer, you must create a "machine data file".  This
     file specifies which National Instruments board you want to use
-    with Wavesurfer, and which channels, and a few other things.  An
+    with WaveSurfer, and which channels, and a few other things.  An
     example machine data file is located at:
 
         +ws/+test/+hw/Machine_Data_File_WS_Test.m
 
-    within the Wavesurfer directory.  You should copy this file to a
+    within the WaveSurfer directory.  You should copy this file to a
     convenient location, and customize it as needed.
 
 6.  At the Matlab command line, execute "wavesurfer".  You should now
-    be presented with the Wavesurfer UI, but almost all the controls
+    be presented with the WaveSurfer UI, but almost all the controls
     will be grayed.
 
 7.  Go to File > Load Machine Data File... and select the file you
     created in step 5 above.
 
-8.  Most of the Wavesurfer controls will ungray, and at this point
+8.  Most of the WaveSurfer controls will ungray, and at this point
     everything should be more-or-less self-explanatory.
 
-9.  If you have questions, please contact the Wavesurfer developer(s).
+9.  If you have questions, please contact the WaveSurfer developer(s).
 
 
 Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in Wavesurfer is copyright 2013-2015 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2015 by the Howard Hughes Medical 
 Institute.
 
 
@@ -104,15 +104,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Authors
 -------
 
-Wavesurfer started out as version 3 of Ephus, another
+WaveSurfer started out as version 3 of Ephus, another
 electrophysiology package largely authored by Vijay Iyer, with
 contributions by Tim O'Connor and others.  Vijay is also the primary
 author of the DABS library, from which the code in +ws/+dabs/+ni was
 taken, and of the MOST library, in +ws/+most.
 
-The original developer of Wavesurfer was Patrick Edson.  
+The original developer of WaveSurfer was Patrick Edson.  
 
-Wavesurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
+WaveSurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
 
 
 Maintainers
@@ -230,4 +230,51 @@ Version History
 
 0.805: (July 23, 2015) Fixed bug that made it impossible to record if 
        a user class was in use.
+
+0.9-beta-1: (October 12, 2015) Major redesign of WaveSurfer to support
+            low-latency (< 5 ms) real-time feedback loops.  WaveSurfer
+            now spawns two additional Matlab processes when you lauch
+            it: one to aquire data and run real-time feedback loop
+            code, and another to ensure that the sweep-based output
+            buffer is refilled properly.  Also some streamlining of
+            the triggering settings, and changes in terminology
+            (e.g. "trials" are now sweeps, an "experiment" is now a
+            run).  Note that this is a beta release, so is likely
+            somewhat buggier than a regular release.
+
+0.9-beta-2: (October 15, 2015) Fixed several bugs.
+
+0.9-beta-3: (October 15, 2015) Fixed capitalization issues in the
+            README.
+
+0.9-beta-4: (October 17, 2015) Fixed another silly cosmetic bug.
+
+0.9-beta-5: (October 29, 2015) Added missing DLL.
+
+0.9-beta-6: (October 30, 2015) Fixed bug where satellite processes 
+            didn't have proper search path.
+
+0.9-beta-7: (November 3, 2015) Fixed bug where zero digital inputs 
+            caused eventual error during acquisition. 
+
+0.9-beta-8: (November 9, 2015) Fixed several bugs.
+
+0.9-beta-9: (November 9, 2015) Cosmetic fix.
+
+0.9-beta-10: (November 11, 2015) Test Pulser now reports resistance 
+             in VC mode, instead of conductance.  Minor improvements 
+             to ws.example.RasterTreadMill.
+
+0.9-beta-11: (November 13, 2015) Fixes to WS-SI coordination code.
+
+0.9-beta-12: (November 18, 2015) Fixed bug with triggering schemes, 
+             fixed bug with loading older WS data files.
+
+0.9-beta-13: (November 18, 2015) Fixed bug with mimic()'ing cell 
+             arrays.
+
+0.9-beta-14: (November 20, 2015) Fixed bug where didn't work if no 
+             input channels were defined.
+
+0.9: (December 1, 2015) Rechristened 0.9-beta-14 as 0.9.
 

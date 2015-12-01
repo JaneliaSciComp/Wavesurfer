@@ -1,24 +1,19 @@
-classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
+classdef TriggersFigure < ws.MCOSFigure
     properties
-        TrialBasedAcquisitionPanel
-        UseASAPTriggeringCheckbox
-        TrialBasedAcquisitionSchemeText
-        TrialBasedAcquisitionSchemePopupmenu
+        AcquisitionPanel
+        AcquisitionSchemeText
+        AcquisitionSchemePopupmenu
         
-        TrialBasedStimulationPanel
+        StimulationPanel
         UseAcquisitionTriggerCheckbox
-        TrialBasedStimulationSchemeText
-        TrialBasedStimulationSchemePopupmenu
+        StimulationSchemeText
+        StimulationSchemePopupmenu
         
-%         ContinuousPanel
-%         ContinuousSchemeText
-%         ContinuousSchemePopupmenu
+        CounterTriggersPanel
+        CounterTriggersTable
         
-        TriggerSourcesPanel
-        TriggerSourcesTable
-        
-        TriggerDestinationsPanel
-        TriggerDestinationsTable
+        ExternalTriggersPanel
+        ExternalTriggersTable
     end  % properties
     
     methods
@@ -72,84 +67,68 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
             
-            % Trial-based Acquisition Panel
-            self.TrialBasedAcquisitionPanel = ...
+            % Acquisition Panel
+            self.AcquisitionPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Acquisition');
-            self.UseASAPTriggeringCheckbox = ...
-                uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
-                          'Style','checkbox', ...
-                          'String','Use ASAP triggering');
-            self.TrialBasedAcquisitionSchemeText = ...
-                uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
+%             self.UseASAPTriggeringCheckbox = ...
+%                 uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Use ASAP triggering');
+            self.AcquisitionSchemeText = ...
+                uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
                           'String','Scheme:');
-            self.TrialBasedAcquisitionSchemePopupmenu = ...
-                uicontrol('Parent',self.TrialBasedAcquisitionPanel, ...
+            self.AcquisitionSchemePopupmenu = ...
+                uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
                           
-            % Trial-based Stimulation Panel
-            self.TrialBasedStimulationPanel = ...
+            % Stimulation Panel
+            self.StimulationPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Stimulation');
             self.UseAcquisitionTriggerCheckbox = ...
-                uicontrol('Parent',self.TrialBasedStimulationPanel, ...
+                uicontrol('Parent',self.StimulationPanel, ...
                           'Style','checkbox', ...
                           'String','Use acquisition scheme');
-            self.TrialBasedStimulationSchemeText = ...
-                uicontrol('Parent',self.TrialBasedStimulationPanel, ...
+            self.StimulationSchemeText = ...
+                uicontrol('Parent',self.StimulationPanel, ...
                           'Style','text', ...
                           'String','Scheme:');
-            self.TrialBasedStimulationSchemePopupmenu = ...
-                uicontrol('Parent',self.TrialBasedStimulationPanel, ...
+            self.StimulationSchemePopupmenu = ...
+                uicontrol('Parent',self.StimulationPanel, ...
                           'Style','popupmenu', ...
                           'String',{'Thing 1';'Thing 2'});
 
-%             % Continuous Acqusition+Stimulation Panel
-%             self.ContinuousPanel = ...
-%                 uipanel('Parent',self.FigureGH, ...
-%                         'Units','pixels', ...
-%                         'BorderType','none', ...
-%                         'FontWeight','bold', ...
-%                         'Title','Continuous Acquisition+Stimulation');
-%             self.ContinuousSchemeText = ...
-%                 uicontrol('Parent',self.ContinuousPanel, ...
-%                           'Style','text', ...
-%                           'String','Scheme:');
-%             self.ContinuousSchemePopupmenu = ...
-%                 uicontrol('Parent',self.ContinuousPanel, ...
-%                           'Style','popupmenu', ...
-%                           'String',{'Thing 1';'Thing 2'});
-
             % Trigger Sources Panel
-            self.TriggerSourcesPanel = ...
+            self.CounterTriggersPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
-                        'Title','Internal Trigger Schemes');
-            self.TriggerSourcesTable = ...
-                uitable('Parent',self.TriggerSourcesPanel, ...
+                        'Title','Counter Triggers');
+            self.CounterTriggersTable = ...
+                uitable('Parent',self.CounterTriggersPanel, ...
                         'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'}, ...
                         'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'Rising' 'Falling'}}, ...
                         'ColumnEditable',[false false false true true false false]);
             
             % Trigger Destinations Panel
-            self.TriggerDestinationsPanel = ...
+            self.ExternalTriggersPanel = ...
                 uipanel('Parent',self.FigureGH, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
-                        'Title','External Trigger Schemes');
-            self.TriggerDestinationsTable = ...
-                uitable('Parent',self.TriggerDestinationsPanel, ...
+                        'Title','External Triggers');
+            self.ExternalTriggersTable = ...
+                uitable('Parent',self.ExternalTriggersPanel, ...
                         'ColumnName',{'Name' 'Device' 'PFI' 'Edge'}, ...
                         'ColumnFormat',{'char' 'char' 'numeric' {'Rising' 'Falling'}}, ...
                         'ColumnEditable',[false false false false]);
@@ -221,75 +200,65 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             figureWidth=schemesAreaWidth+tablePanelsAreaWidth;
             figureHeight=tablePanelAreaHeight+heightBetweenTableAreas+tablePanelAreaHeight+topPadHeight;
 
-            trialBasedAcquisitionPanelAreaHeight=78;
-            trialBasedStimulationPanelAreaHeight=78;
-            continuousPanelAreaHeight=56;
+            sweepBasedAcquisitionPanelAreaHeight=78;
+            sweepBasedStimulationPanelAreaHeight=78;
+            %continuousPanelAreaHeight=56;
             spaceBetweenPanelsHeight=30;
             
             
             %
-            % The schemes area containing the trial-based acq, trial-based
+            % The schemes area containing the sweep-based acq, sweep-based
             % stim, and continuous panels, arranged in a column
             %
             panelInset=3;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
             
-            % The Trial-based Acquisition panel
-            trialBasedAcquisitionPanelXOffset=panelInset;
-            trialBasedAcquisitionPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            trialBasedAcquisitionPanelAreaYOffset=figureHeight-topPadHeight-trialBasedAcquisitionPanelAreaHeight;
-            trialBasedAcquisitionPanelYOffset=trialBasedAcquisitionPanelAreaYOffset+panelInset;            
-            trialBasedAcquisitionPanelHeight=trialBasedAcquisitionPanelAreaHeight-panelInset-panelInset;
-            set(self.TrialBasedAcquisitionPanel, ...
-                'Position',[trialBasedAcquisitionPanelXOffset trialBasedAcquisitionPanelYOffset ...
-                            trialBasedAcquisitionPanelWidth trialBasedAcquisitionPanelHeight]);
+            % The Acquisition panel
+            sweepBasedAcquisitionPanelXOffset=panelInset;
+            sweepBasedAcquisitionPanelWidth=schemesAreaWidth-panelInset-panelInset;
+            sweepBasedAcquisitionPanelAreaYOffset=figureHeight-topPadHeight-sweepBasedAcquisitionPanelAreaHeight;
+            sweepBasedAcquisitionPanelYOffset=sweepBasedAcquisitionPanelAreaYOffset+panelInset;            
+            sweepBasedAcquisitionPanelHeight=sweepBasedAcquisitionPanelAreaHeight-panelInset-panelInset;
+            set(self.AcquisitionPanel, ...
+                'Position',[sweepBasedAcquisitionPanelXOffset sweepBasedAcquisitionPanelYOffset ...
+                            sweepBasedAcquisitionPanelWidth sweepBasedAcquisitionPanelHeight]);
 
-            % The Trial-based Stimulation panel
-            trialBasedStimulationPanelXOffset=panelInset;
-            trialBasedStimulationPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            trialBasedStimulationPanelAreaYOffset=trialBasedAcquisitionPanelAreaYOffset-trialBasedStimulationPanelAreaHeight-spaceBetweenPanelsHeight;
-            trialBasedStimulationPanelYOffset=trialBasedStimulationPanelAreaYOffset+panelInset;            
-            trialBasedStimulationPanelHeight=trialBasedStimulationPanelAreaHeight-panelInset-panelInset;
-            set(self.TrialBasedStimulationPanel, ...
-                'Position',[trialBasedStimulationPanelXOffset trialBasedStimulationPanelYOffset ...
-                            trialBasedStimulationPanelWidth trialBasedStimulationPanelHeight]);
-
-            % The Continuous Acquisition+Stimulation panel
-            continuousPanelXOffset=panelInset;
-            continuousPanelWidth=schemesAreaWidth-panelInset-panelInset;
-            continuousPanelAreaYOffset=trialBasedStimulationPanelAreaYOffset-continuousPanelAreaHeight-spaceBetweenPanelsHeight;
-            continuousPanelYOffset=continuousPanelAreaYOffset+panelInset;            
-            continuousPanelHeight=continuousPanelAreaHeight-panelInset-panelInset;
-%             set(self.ContinuousPanel, ...
-%                 'Position',[continuousPanelXOffset continuousPanelYOffset ...
-%                             continuousPanelWidth continuousPanelHeight]);
+            % The Stimulation panel
+            sweepBasedStimulationPanelXOffset=panelInset;
+            sweepBasedStimulationPanelWidth=schemesAreaWidth-panelInset-panelInset;
+            sweepBasedStimulationPanelAreaYOffset=sweepBasedAcquisitionPanelAreaYOffset-sweepBasedStimulationPanelAreaHeight-spaceBetweenPanelsHeight;
+            sweepBasedStimulationPanelYOffset=sweepBasedStimulationPanelAreaYOffset+panelInset;            
+            sweepBasedStimulationPanelHeight=sweepBasedStimulationPanelAreaHeight-panelInset-panelInset;
+            set(self.StimulationPanel, ...
+                'Position',[sweepBasedStimulationPanelXOffset sweepBasedStimulationPanelYOffset ...
+                            sweepBasedStimulationPanelWidth sweepBasedStimulationPanelHeight]);
 
             % The Trigger Sources panel
             tablesAreaXOffset=schemesAreaWidth;
-            triggerSourcesPanelXOffset=tablesAreaXOffset+panelInset;
-            triggerSourcesPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
-            triggerSourcesPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
-            triggerSourcesPanelYOffset=triggerSourcesPanelAreaYOffset+panelInset;            
-            triggerSourcesPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
-            set(self.TriggerSourcesPanel, ...
-                'Position',[triggerSourcesPanelXOffset triggerSourcesPanelYOffset ...
-                            triggerSourcesPanelWidth triggerSourcesPanelHeight]);
+            counterTriggersPanelXOffset=tablesAreaXOffset+panelInset;
+            counterTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
+            counterTriggersPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
+            counterTriggersPanelYOffset=counterTriggersPanelAreaYOffset+panelInset;            
+            counterTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            set(self.CounterTriggersPanel, ...
+                'Position',[counterTriggersPanelXOffset counterTriggersPanelYOffset ...
+                            counterTriggersPanelWidth counterTriggersPanelHeight]);
             
             % The Trigger Destinations panel
-            triggerDestinationsPanelXOffset=tablesAreaXOffset+panelInset;
-            triggerDestinationsPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
-            triggerDestinationsPanelAreaYOffset=0;
-            triggerDestinationsPanelYOffset=triggerDestinationsPanelAreaYOffset+panelInset;            
-            triggerDestinationsPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
-            set(self.TriggerDestinationsPanel, ...
-                'Position',[triggerDestinationsPanelXOffset triggerDestinationsPanelYOffset ...
-                            triggerDestinationsPanelWidth triggerDestinationsPanelHeight]);
+            externalTriggersPanelXOffset=tablesAreaXOffset+panelInset;
+            externalTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
+            externalTriggersPanelAreaYOffset=0;
+            externalTriggersPanelYOffset=externalTriggersPanelAreaYOffset+panelInset;            
+            externalTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            set(self.ExternalTriggersPanel, ...
+                'Position',[externalTriggersPanelXOffset externalTriggersPanelYOffset ...
+                            externalTriggersPanelWidth externalTriggersPanelHeight]);
 
             % Contents of panels
-            self.layoutTrialBasedAcquisitionPanel_(trialBasedAcquisitionPanelWidth,trialBasedAcquisitionPanelHeight);
-            self.layoutTrialBasedStimulationPanel_(trialBasedStimulationPanelWidth,trialBasedStimulationPanelHeight);
+            self.layoutSweepBasedAcquisitionPanel_(sweepBasedAcquisitionPanelWidth,sweepBasedAcquisitionPanelHeight);
+            self.layoutSweepBasedStimulationPanel_(sweepBasedStimulationPanelWidth,sweepBasedStimulationPanelHeight);
             %self.layoutContinuousPanel_(continuousPanelWidth,continuousPanelHeight);
-            self.layoutTriggerSourcesPanel_(triggerSourcesPanelWidth,triggerSourcesPanelHeight);
-            self.layoutTriggerDestinationsPanel_(triggerDestinationsPanelWidth,triggerDestinationsPanelHeight);
+            self.layoutCounterTriggersPanel_(counterTriggersPanelWidth,counterTriggersPanelHeight);
+            self.layoutExternalTriggersPanel_(externalTriggersPanelWidth,externalTriggersPanelHeight);
                         
             % We return the figure size
             figureSize=[figureWidth figureHeight];
@@ -297,40 +266,40 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods (Access = protected)
-        function layoutTrialBasedAcquisitionPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
+        function layoutSweepBasedAcquisitionPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
             import ws.utility.positionEditLabelAndUnitsBang
             import ws.utility.positionPopupmenuAndLabelBang
 
             % Dimensions
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightFromTopToPopupmenu=6;
-            heightFromPopupmenuToRest=4;
+            %heightFromPopupmenuToRest=4;
             rulerXOffset=60;
             popupmenuWidth=200;
             
             % Source popupmenu
-            position=get(self.TrialBasedAcquisitionSchemePopupmenu,'Position');
+            position=get(self.AcquisitionSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-height;  %checkboxYOffset-heightFromPopupmenuToRest-height;
-            positionPopupmenuAndLabelBang(self.TrialBasedAcquisitionSchemeText,self.TrialBasedAcquisitionSchemePopupmenu, ...
+            positionPopupmenuAndLabelBang(self.AcquisitionSchemeText,self.AcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
 
-            % Checkbox
-            checkboxFullExtent=get(self.UseASAPTriggeringCheckbox,'Extent');
-            checkboxExtent=checkboxFullExtent(3:4);
-            checkboxPosition=get(self.UseASAPTriggeringCheckbox,'Position');
-            checkboxXOffset=rulerXOffset;
-            checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
-            checkboxHeight=checkboxPosition(4);
-            checkboxYOffset=popupmenuYOffset-heightFromPopupmenuToRest-checkboxHeight;  % panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-checkboxHeight;            
-            set(self.UseASAPTriggeringCheckbox, ...
-                'Position',[checkboxXOffset checkboxYOffset ...
-                            checkboxWidth checkboxHeight]);            
+%             % Checkbox
+%             checkboxFullExtent=get(self.UseASAPTriggeringCheckbox,'Extent');
+%             checkboxExtent=checkboxFullExtent(3:4);
+%             checkboxPosition=get(self.UseASAPTriggeringCheckbox,'Position');
+%             checkboxXOffset=rulerXOffset;
+%             checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
+%             checkboxHeight=checkboxPosition(4);
+%             checkboxYOffset=popupmenuYOffset-heightFromPopupmenuToRest-checkboxHeight;  % panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-checkboxHeight;            
+%             set(self.UseASAPTriggeringCheckbox, ...
+%                 'Position',[checkboxXOffset checkboxYOffset ...
+%                             checkboxWidth checkboxHeight]);            
         end  % function
     end
 
     methods (Access = protected)
-        function layoutTrialBasedStimulationPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
+        function layoutSweepBasedStimulationPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
             import ws.utility.positionEditLabelAndUnitsBang
             import ws.utility.positionPopupmenuAndLabelBang
 
@@ -354,10 +323,10 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                             checkboxWidth checkboxHeight]);
             
             % Source popupmenu
-            position=get(self.TrialBasedStimulationSchemePopupmenu,'Position');
+            position=get(self.StimulationSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=checkboxYOffset-heightFromCheckboxToRest-height;
-            positionPopupmenuAndLabelBang(self.TrialBasedStimulationSchemeText,self.TrialBasedStimulationSchemePopupmenu, ...
+            positionPopupmenuAndLabelBang(self.StimulationSchemeText,self.StimulationSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
         end  % function
     end
@@ -383,7 +352,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end
     
     methods (Access = protected)
-        function layoutTriggerSourcesPanel_(self,panelWidth,panelHeight)
+        function layoutCounterTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
             leftPad=10;
@@ -405,14 +374,14 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+34);  % 30 for the row titles col
             
             % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'
-            set(self.TriggerSourcesTable, ...
+            set(self.CounterTriggersTable, ...
                 'Position', [leftPad bottomPad tableWidth tableHeight], ...
                 'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth});
         end
     end
     
     methods (Access = protected)
-        function layoutTriggerDestinationsPanel_(self,panelWidth,panelHeight)
+        function layoutExternalTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
             leftPad=10;
@@ -431,7 +400,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+34);  % 34 for the row titles col
                         
             % 'Name' 'PFI' 'Edge'
-            set(self.TriggerDestinationsTable, ...
+            set(self.ExternalTriggersTable, ...
                 'Position', [leftPad bottomPad tableWidth tableHeight], ...
                 'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth});
         end
@@ -461,11 +430,11 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             if isempty(self.Model) ,
                 return
             end            
-            self.updateTrialBasedAcquisitionControls();
-            self.updateTrialBasedStimulationControls();
+            self.updateSweepBasedAcquisitionControls();
+            self.updateSweepBasedStimulationControls();
             %self.updateContinuousModeControls();
-            self.updateTriggerSourcesTable();
-            self.updateTriggerDestinationsTable();                   
+            self.updateCounterTriggersTable();
+            self.updateExternalTriggersTable();                   
         end  % function
     end  % methods
     
@@ -476,58 +445,59 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                 return
             end            
             wsModel=triggeringModel.Parent;  % this is the WavesurferModel
-            isIdle=(wsModel.State==ws.ApplicationState.Idle);
-            isTrialBased = wsModel.IsTrialBased;
+            isIdle=isequal(wsModel.State,'idle');
+            isSweepBased = wsModel.AreSweepsFiniteDuration;
             
             import ws.utility.onIff
             
-            set(self.TrialBasedAcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
+            set(self.AcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
             
-            acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
+            %acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
             isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
-            isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
-            set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isTrialBased&&isAcquisitionSchemeInternal));
-            set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~acquisitionUsesASAPTriggering));
-            set(self.TrialBasedStimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
+            %isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
+            %set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
+            set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~isSweepBased));
+            set(self.StimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
-            set(self.TriggerSourcesTable,'Enable',onIff(isIdle));
-            set(self.TriggerDestinationsTable,'Enable',onIff(isIdle));
+            set(self.CounterTriggersTable,'Enable',onIff(isIdle));
+            set(self.ExternalTriggersTable,'Enable',onIff(isIdle));
         end  % function
     end
     
     methods
-        function updateTrialBasedAcquisitionControls(self,varargin)
+        function updateSweepBasedAcquisitionControls(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
             end
-            import ws.utility.setPopupMenuItemsAndSelectionBang
-            import ws.utility.onIff
-            set(self.UseASAPTriggeringCheckbox,'Value',model.AcquisitionUsesASAPTriggering);
-            rawMenuItems={model.Sources.Name model.Destinations.Name};
-            rawCurrentItem=model.AcquisitionTriggerScheme.Target.Name;
-            setPopupMenuItemsAndSelectionBang(self.TrialBasedAcquisitionSchemePopupmenu, ...
-                                              rawMenuItems, ...
-                                              rawCurrentItem);
+            %import ws.utility.setPopupMenuItemsAndSelectionBang
+            %import ws.utility.onIff
+            schemes = model.AcquisitionSchemes ;
+            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
+            rawCurrentItem=model.AcquisitionTriggerScheme.Name;
+            ws.utility.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
+                                                         rawMenuItems, ...
+                                                         rawCurrentItem);
         end  % function       
     end  % methods
     
     methods
-        function updateTrialBasedStimulationControls(self,varargin)
+        function updateSweepBasedStimulationControls(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
             end
-            import ws.utility.setPopupMenuItemsAndSelectionBang
-            import ws.utility.onIff
+            %import ws.utility.setPopupMenuItemsAndSelectionBang
+            %import ws.utility.onIff
             set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
-            rawMenuItems={model.Sources.Name model.Destinations.Name};
-            rawCurrentItem=model.StimulationTriggerScheme.Target.Name;
-            setPopupMenuItemsAndSelectionBang(self.TrialBasedStimulationSchemePopupmenu, ...
-                                              rawMenuItems, ...
-                                              rawCurrentItem);
+            schemes = model.Schemes ;
+            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
+            rawCurrentItem=model.StimulationTriggerScheme.Name;
+            ws.utility.setPopupMenuItemsAndSelectionBang(self.StimulationSchemePopupmenu, ...
+                                                         rawMenuItems, ...
+                                                         rawCurrentItem);
         end  % function       
     end  % methods
     
@@ -539,7 +509,7 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
 %             end
 %             import ws.utility.setPopupMenuItemsAndSelectionBang
 %             import ws.utility.onIff
-%             rawMenuItems={model.Sources.Name};
+%             rawMenuItems={model.CounterTriggers.Name};
 %             rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
 %             setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...
 %                                               rawMenuItems, ...
@@ -548,16 +518,16 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
     end  % methods
 
     methods
-        function updateTriggerSourcesTable(self,varargin)
+        function updateCounterTriggersTable(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
             end
-            nRows=length(model.Sources);
+            nRows=length(model.CounterTriggers);
             nColumns=7;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                source=model.Sources(i);
+                source=model.CounterTriggers{i};
                 data{i,1}=source.Name;
                 data{i,2}=source.DeviceName;
                 data{i,3}=source.CounterID;
@@ -566,27 +536,27 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
                 data{i,6}=source.PFIID;
                 data{i,7}=char(source.Edge);
             end
-            set(self.TriggerSourcesTable,'Data',data);
+            set(self.CounterTriggersTable,'Data',data);
         end  % function
     end  % methods
     
     methods
-        function updateTriggerDestinationsTable(self,varargin)
+        function updateExternalTriggersTable(self,varargin)
             model=self.Model;
             if isempty(model) ,
                 return
             end
-            nRows=length(model.Destinations);
+            nRows=length(model.ExternalTriggers);
             nColumns=4;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                destination=model.Destinations(i);
+                destination=model.ExternalTriggers{i};
                 data{i,1}=destination.Name;
                 data{i,2}=destination.DeviceName;
                 data{i,3}=destination.PFIID;
                 data{i,4}=char(destination.Edge);
             end
-            set(self.TriggerDestinationsTable,'Data',data);
+            set(self.ExternalTriggersTable,'Data',data);
         end  % function
     end  % methods
     
@@ -597,31 +567,18 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
             %self.unsubscribeFromAll();
             model=self.Model;
             if ~isempty(model) && isvalid(model) ,
-                % Sources and Destinations setters did nothing, and those
-                % are set in the MDF file, so don't think these are needed
-%                 model.subscribeMe(self, 'PostSet', 'Sources', 'updateTriggerSourcesTable');
-%                 model.subscribeMe(self, 'PostSet', 'Sources', 'updateSupscriptionsToSourceProperties_');
-%                 model.subscribeMe(self, 'PostSet', 'Destinations', 'updateTriggerDestinationsTable');
-                
-
-%                 model.AcquisitionTriggerScheme.subscribeMe(self,'PostSet','Target','updateTrialBasedAcquisitionControls');  
-%                 model.StimulationTriggerScheme.subscribeMe(self,'PostSet','Target','updateTrialBasedStimulationControls');  
-%                 model.ContinuousModeTriggerScheme.subscribeMe(self,'PostSet','Target','updateContinuousModeControls');  
-                model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateTrialBasedAcquisitionControls');
-                model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateTrialBasedStimulationControls');  
-                %model.ContinuousModeTriggerScheme.subscribeMe(self,'DidSetTarget','','updateContinuousModeControls');  
+                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedAcquisitionControls');
+                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedStimulationControls');  
 
                 % Add subscriptions for updating control enablement
                 model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                model.Parent.subscribeMe(self,'DidSetIsTrialBasedContinuous','','update');
-%                 model.subscribeMe(self,'PostSet','AcquisitionUsesASAPTriggering','update');
-%                 model.subscribeMe(self,'PostSet','StimulationUsesAcquisitionTriggerScheme','update');
+                %model.Parent.subscribeMe(self,'DidSetAreSweepsFiniteDurationOrContinuous','','update');
                 model.subscribeMe(self,'Update','','update');
-                model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
-                model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
+                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
+                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
 
                 % Add subscriptions for the changeable fields of each element
-                % of model.Sources
+                % of model.CounterTriggers
                 self.updateSubscriptionsToSourceProperties_();
             end
         end
@@ -629,13 +586,13 @@ classdef TriggersFigure < ws.MCOSFigure & ws.EventSubscriber
         function updateSubscriptionsToSourceProperties_(self,varargin)
             % Add subscriptions for the changeable fields of each source
             model=self.Model;
-            sources = model.Sources;            
+            sources = model.CounterTriggers;            
             for i = 1:length(sources) ,
-                source=sources(i);
+                source=sources{i};
                 source.unsubscribeMeFromAll(self);
-                %source.subscribeMe(self, 'PostSet', 'Interval', 'updateTriggerSourcesTable');
-                %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateTriggerSourcesTable');
-                source.subscribeMe(self, 'Update', '', 'updateTriggerSourcesTable');
+                %source.subscribeMe(self, 'PostSet', 'Interval', 'updateCounterTriggersTable');
+                %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateCounterTriggersTable');
+                source.subscribeMe(self, 'Update', '', 'updateCounterTriggersTable');
             end
         end
     end

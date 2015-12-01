@@ -19,7 +19,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function self = ChirpStimulusDelegate(parent,varargin)
             self=self@ws.stimulus.StimulusDelegate(parent);
-            pvArgs = ws.most.util.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
+            pvArgs = ws.utility.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -28,7 +28,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.InitialFrequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.InitialFrequency_ = value;
@@ -43,7 +43,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.FinalFrequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateTrialExpression(value,1) ;
+            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.FinalFrequency_ = value;
@@ -71,23 +71,23 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
 %     end
     
     methods
-        function y = calculateCoreSignal(self, stimulus, t, trialIndexWithinSet)
+        function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateTrialExpression(stimulus.Duration,trialIndexWithinSet) ;
+            duration = ws.stimulus.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 y=zeros(size(t));
                 return
             end   
             
             % Compute the duration from the expression for it
-            f0 = ws.stimulus.Stimulus.evaluateTrialExpression(self.InitialFrequency,trialIndexWithinSet) ;
+            f0 = ws.stimulus.Stimulus.evaluateSweepExpression(self.InitialFrequency,sweepIndexWithinSet) ;
             if isempty(f0) || ~isnumeric(f0) || ~isscalar(f0) || ~isreal(f0) || ~isfinite(f0) || f0<0 ,
                 y=zeros(size(t));
                 return
             end   
             
             % Compute the duration from the expression for it
-            ff = ws.stimulus.Stimulus.evaluateTrialExpression(self.FinalFrequency,trialIndexWithinSet) ;
+            ff = ws.stimulus.Stimulus.evaluateSweepExpression(self.FinalFrequency,sweepIndexWithinSet) ;
             if isempty(ff) || ~isnumeric(ff) || ~isscalar(ff) || ~isreal(ff) || ~isfinite(ff) || ff<0 ,
                 y=zeros(size(t));
                 return
@@ -119,14 +119,14 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
 %         end
     end
 
-    methods (Access=protected)
-        function defineDefaultPropertyTags(self)
-            defineDefaultPropertyTags@ws.stimulus.StimulusDelegate(self);
-            self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-            self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-        end
-    end
+%     methods (Access=protected)
+%         function defineDefaultPropertyTags_(self)
+%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
+%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
+%         end
+%     end
     
     %
     % Implementations of methods needed to be a ws.mixin.ValueComparable
@@ -143,6 +143,17 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
             propertyNamesToCompare={'InitialFrequency' 'FinalFrequency'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
+    end
+    
+    methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.mixin.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
     end
     
 end
