@@ -830,13 +830,13 @@ classdef TestPulser < ws.Model
         end
         
         function value=get.InputDeviceNames(self)
-            wavesurferModel=self.Parent_.Parent;            
-            value=wavesurferModel.Acquisition.DeviceNames;
+            wavesurferModel=self.Parent.Parent;            
+            value=wavesurferModel.Acquisition.AnalogDeviceNames ;
         end
         
         function value=get.OutputDeviceNames(self)
-            wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.DeviceNamePerAnalogChannel;
+            wavesurferModel=self.Parent.Parent;
+            value=wavesurferModel.Stimulation.AnalogDeviceNames ;
         end
         
         function result=get.CommandChannelIDPerElectrode(self)
@@ -852,7 +852,9 @@ classdef TestPulser < ws.Model
             stimulationSubsystem=wavesurferModel.Stimulation;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=stimulationSubsystem.analogChannelIDFromName(commandChannelNames{i});
+                thisCommandChannelName = commandChannelNames{i} ;
+                thisChannelID = stimulationSubsystem.analogChannelIDFromName(thisCommandChannelName) ;
+                result(i) = thisChannelID ;
             end
         end
         
@@ -1105,7 +1107,8 @@ classdef TestPulser < ws.Model
                 for i=1:nElectrodes
                     self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorChannelIDs(i));  % defaults to differential
                 end
-                clockString=sprintf('/%s/ao/SampleClock',self.OutputDeviceNames{1});  % Output device name is something like 'Dev3'
+                deviceName = self.Parent.Parent.DeviceName ;
+                clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
                 self.InputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',[],clockString);
                   % set the sampling rate, and use the AO sample clock to keep
                   % acquisiton synced with analog output
@@ -1115,8 +1118,9 @@ classdef TestPulser < ws.Model
                 % fprintf('About to create the output task...\n');
                 self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
                 commandChannelIDs=self.CommandChannelIDPerElectrode;
+                outputDeviceNames = self.OutputDeviceNames ;
                 for i=1:nElectrodes ,
-                    self.OutputTask_.createAOVoltageChan(self.OutputDeviceNames{i},commandChannelIDs(i));
+                    self.OutputTask_.createAOVoltageChan(outputDeviceNames{i},commandChannelIDs(i));
                 end
                 self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
 

@@ -519,44 +519,44 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
             self.StimulusLibrary.SelectedOutputable = cycle;
         end  % function
         
-        function channelID=analogChannelIDFromName(self,channelName)
-            % Get the channel ID, given the name.
-            % This returns a channel ID, e.g. if the channel is ao2,
-            % it returns 2.
-            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
-            if isnan(iChannel) ,
-                channelID = nan ;
-            else
-                physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
-                channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-            end
-        end  % function
-
-        function value=channelScaleFromName(self,channelName)
-            value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
-        end  % function
-
-        function iChannel=indexOfAnalogChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
-            if isempty(iChannels) ,
-                iChannel=nan;
-            else
-                iChannel=iChannels(1);
-            end
-        end  % function
-
-        function result=channelUnitsFromName(self,channelName)
-            if isempty(channelName) ,
-                result='';
-            else
-                iChannel=self.indexOfAnalogChannelFromName(channelName);
-                if isempty(iChannel) ,
-                    result='';
-                else
-                    result=self.AnalogChannelUnits{iChannel};
-                end
-            end
-        end  % function
+%         function channelID=analogChannelIDFromName(self,channelName)
+%             % Get the channel ID, given the name.
+%             % This returns a channel ID, e.g. if the channel is ao2,
+%             % it returns 2.
+%             iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+%             if isnan(iChannel) ,
+%                 channelID = nan ;
+%             else
+%                 physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
+%                 channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+%             end
+%         end  % function
+% 
+%         function value=channelScaleFromName(self,channelName)
+%             value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
+%         end  % function
+% 
+%         function iChannel=indexOfAnalogChannelFromName(self,channelName)
+%             iChannels=find(strcmp(channelName,self.AnalogChannelNames));
+%             if isempty(iChannels) ,
+%                 iChannel=nan;
+%             else
+%                 iChannel=iChannels(1);
+%             end
+%         end  % function
+% 
+%         function result=channelUnitsFromName(self,channelName)
+%             if isempty(channelName) ,
+%                 result='';
+%             else
+%                 iChannel=self.indexOfAnalogChannelFromName(channelName);
+%                 if isempty(iChannel) ,
+%                     result='';
+%                 else
+%                     result=self.AnalogChannelUnits{iChannel};
+%                 end
+%             end
+%         end  % function
         
 %         function channelUnits=get.AnalogChannelUnits(self)
 %             import ws.utility.*

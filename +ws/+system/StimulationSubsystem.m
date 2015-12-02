@@ -18,9 +18,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
-        AnalogPhysicalChannelNames % the physical channel name for each analog channel
-        DigitalPhysicalChannelNames  % the physical channel name for each digital channel
+        %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        AnalogDeviceNames
+        DigitalDeviceNames
+        AnalogPhysicalChannelNames % the physical channel name for each analog channel, e.g. 'AO0'
+        DigitalPhysicalChannelNames  % the physical channel name for each digital channel, e.g. 'line0'
         PhysicalChannelNames
         AnalogChannelNames
         DigitalChannelNames
@@ -29,7 +31,6 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         NDigitalChannels
         NTimedDigitalChannels        
         NChannels
-        DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
         IsChannelAnalog
         TriggerScheme
     end
@@ -208,9 +209,9 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             result = [self.AnalogChannelNames self.DigitalChannelNames] ;
         end
     
-        function result = get.DeviceNamePerAnalogChannel(self)
-            result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
-        end
+%         function result = get.DeviceNamePerAnalogChannel(self)
+%             result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
+%         end
                 
         function value = get.NAnalogChannels(self)
             value = length(self.AnalogChannelNames_);
@@ -241,10 +242,19 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             output = self.Parent.Triggering.StimulationTriggerScheme ;
         end
         
-        function output = get.DeviceNames(self)
-            output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
-        end
+%         function output = get.DeviceNames(self)
+%             output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
+%         end
         
+        function out = get.AnalogDeviceNames(self)
+            out = self.AnalogDeviceNames_ ;
+        end  % function
+        
+        function out = get.DigitalDeviceNames(self)
+            out = self.DigitalDeviceNames_ ;
+        end  % function
+        
+
         function result = get.AnalogChannelIDs(self)
             result = self.AnalogChannelIDs_;
         end
@@ -319,12 +329,13 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is ao2,
             % it returns 2.
-            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
-            if isnan(iChannel) ,
+            channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
+            if isnan(channelIndex) ,
                 channelID = nan ;
             else
-                physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
-                channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+                channelID = self.AnalogChannelIDs_(channelIndex) ;
+                %physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
+                %channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
             end
         end  % function
 
@@ -349,7 +360,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 if isempty(iChannel) ,
                     result='';
                 else
-                    result=self.AnalogChannelUnits(iChannel);
+                    result=self.AnalogChannelUnits{iChannel};
                 end
             end
         end  % function

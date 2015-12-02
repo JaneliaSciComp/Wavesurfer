@@ -20,7 +20,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogPhysicalChannelNames % the physical channel name for each analog channel
@@ -368,11 +368,11 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end
         
         function result=analogChannelScaleFromName(self,channelName)
-            if isempty(channelName) || isnan(iChannel) ,
+            if isempty(channelName) ,
                 result='';
             else
                 iChannel=self.iAnalogChannelFromName(channelName);
-                if isempty(iChannel) ,
+                if isempty(iChannel) || isnan(iChannel) ,
                     result='';
                 else
                     result=self.AnalogChannelScales(iChannel);
@@ -405,9 +405,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             out = self.DigitalDeviceNames_ ;
         end  % function
         
-        function out = get.DeviceNames(self)
-            out = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
-        end  % function
+%         function out = get.DeviceNames(self)
+%             out = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
+%         end  % function
         
         function set.SampleRate(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
