@@ -190,10 +190,12 @@ classdef Ephys < ws.system.Subsystem
         
         function didChangeNumberOfInputChannels(self)
             self.ElectrodeManager.didChangeNumberOfInputChannels();
+            self.TestPulser.didChangeNumberOfInputChannels();
         end        
         
         function didChangeNumberOfOutputChannels(self)
             self.ElectrodeManager.didChangeNumberOfOutputChannels();
+            self.TestPulser.didChangeNumberOfOutputChannels();
         end        
         
     end  % methods block

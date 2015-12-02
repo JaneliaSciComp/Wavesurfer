@@ -227,7 +227,16 @@ classdef TestPulser < ws.Model
             self.clearExistingSweepIfPresent_();
             self.broadcast('Update');            
         end
-                
+           
+        function didChangeNumberOfInputChannels(self)
+            self.broadcast('Update');
+        end
+        
+        function didChangeNumberOfOutputChannels(self)
+            self.broadcast('Update');
+        end
+        
+        
         function delete(self)
             self.Parent_=[];  % not necessary, but harmless
         end

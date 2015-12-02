@@ -359,7 +359,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 result='';
             else
                 iChannel=self.iAnalogChannelFromName(channelName);
-                if isempty(iChannel) ,
+                if isempty(iChannel) || isnan(iChannel) ,
                     result='';
                 else
                     result=self.AnalogChannelUnits{iChannel};
@@ -368,7 +368,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end
         
         function result=analogChannelScaleFromName(self,channelName)
-            if isempty(channelName) ,
+            if isempty(channelName) || isnan(iChannel) ,
                 result='';
             else
                 iChannel=self.iAnalogChannelFromName(channelName);
