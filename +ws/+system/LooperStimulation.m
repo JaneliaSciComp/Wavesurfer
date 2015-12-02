@@ -98,14 +98,22 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         
         function acquireOnDemandHardwareResources(self)            
             if isempty(self.TheUntimedDigitalOutputTask_) ,
-                 self.TheUntimedDigitalOutputTask_ = ...
-                     ws.ni.UntimedDigitalOutputTask(self, ...
-                                                    'WaveSurfer Untimed Digital Output Task', ...
-                                                    self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
-                                                    self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
-                 if ~all(self.IsDigitalChannelTimed)
-                     self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
-                 end
+                isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+                %untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+                untimedDigitalDeviceNames = self.DigitalDeviceNames(isDigitalChannelUntimed) ;
+                untimedDigitalChannelIDs = self.DigitalChannelIDs(isDigitalChannelUntimed) ;
+                untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+                self.TheUntimedDigitalOutputTask_ = ...
+                    ws.ni.UntimedDigitalOutputTask(self, ...
+                                                   'WaveSurfer Untimed Digital Output Task', ...
+                                                   untimedDigitalDeviceNames, ...
+                                                   untimedDigitalChannelIDs, ...
+                                                   untimedDigitalChannelNames) ;
+                % Set the outputs to the proper values, now that we have a task                               
+                if any(isDigitalChannelUntimed) ,
+                    untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
+                    self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+                end                
             end
         end
         
@@ -409,28 +417,29 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     end  % protected methods block
     
     methods (Access = protected)
-        function syncTasksToChannelMembership_(self)
-            % Clear the timed digital output task, will be recreated when acq is
-            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
-            % And have to do it first to avoid a temporary collision.
-            
-            %self.TheFiniteDigitalOutputTask_ = [] ;
-            % Set the untimed output task appropriately
-            self.TheUntimedDigitalOutputTask_ = [] ;
-            isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-            untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
-            untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
-            self.TheUntimedDigitalOutputTask_ = ...
-                ws.ni.UntimedDigitalOutputTask(self, ...
-                                               'WaveSurfer Untimed Digital Output Task', ...
-                                               untimedDigitalPhysicalChannelNames, ...
-                                               untimedDigitalChannelNames) ;
-            % Set the outputs to the proper values, now that we have a task                               
-            if any(isDigitalChannelUntimed) ,
-                untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
-                self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
-            end
-        end  % function
+%         function syncTasksToChannelMembership_(self)
+%             % Clear the timed digital output task, will be recreated when acq is
+%             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+%             % And have to do it first to avoid a temporary collision.
+%             
+%             %self.TheFiniteDigitalOutputTask_ = [] ;
+%             % Set the untimed output task appropriately
+%             self.TheUntimedDigitalOutputTask_ = [] ;
+%             self.acquireOnDemandHardwareResources() ;
+% %             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+% %             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+% %             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+% %             self.TheUntimedDigitalOutputTask_ = ...
+% %                 ws.ni.UntimedDigitalOutputTask(self, ...
+% %                                                'WaveSurfer Untimed Digital Output Task', ...
+% %                                                untimedDigitalPhysicalChannelNames, ...
+% %                                                untimedDigitalChannelNames) ;
+% %             % Set the outputs to the proper values, now that we have a task                               
+% %             if any(isDigitalChannelUntimed) ,
+% %                 untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
+% %                 self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+% %             end
+%         end  % function
         
 %         function stimulusMap = getCurrentStimulusMap_(self)
 %             % Calculate the episode index
@@ -656,7 +665,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         function setIsDigitalChannelTimed_(self,newValue)
             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
             if wasSet ,
-                self.syncTasksToChannelMembership_() ;
+                self.TheUntimedDigitalOutputTask_ = [] ;  % clear the existing task
+                self.acquireOnDemandHardwareResources() ;  % this makes a new task, and sets everything appropriately
             end  
             %self.broadcast('DidSetIsDigitalChannelTimed');
         end  % function

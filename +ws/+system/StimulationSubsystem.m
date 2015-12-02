@@ -39,8 +39,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         SampleRate_ = 20000  % Hz
         AnalogDeviceNames_ = cell(1,0)
         DigitalDeviceNames_ = cell(1,0)        
-        AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
-        DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+        %AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
+        %DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
@@ -186,11 +186,21 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end
         
         function result = get.AnalogPhysicalChannelNames(self)
-            result = self.AnalogPhysicalChannelNames_ ;
+            %result = self.AnalogPhysicalChannelNames_ ;
+            channelIDs = self.AnalogChannelIDs_ ;
+            function name = physicalChannelNameFromID(id)
+                name = sprintf('AO%d',id);
+            end            
+            result = arrayfun(@physicalChannelNameFromID,channelIDs,'UniformOutput',false);
         end
     
         function result = get.DigitalPhysicalChannelNames(self)
-            result = self.DigitalPhysicalChannelNames_ ;
+            %result = self.DigitalPhysicalChannelNames_ ;
+            channelIDs = self.DigitalChannelIDs_ ;
+            function name = physicalChannelNameFromID(id)
+                name = sprintf('P0.%d',id);
+            end            
+            result = arrayfun(@physicalChannelNameFromID,channelIDs,'UniformOutput',false);
         end
 
         function result = get.PhysicalChannelNames(self)
@@ -339,25 +349,30 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             end
         end  % function
 
-        function value=channelScaleFromName(self,channelName)
-            value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
+        function value = channelScaleFromName(self,channelName)
+            channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
+            if isnan(channelIndex) ,
+                value = nan ;
+            else
+                value = self.AnalogChannelScales(channelIndex) ;
+            end
         end  % function
 
-        function iChannel=indexOfAnalogChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
-            if isempty(iChannels) ,
-                iChannel=nan;
+        function result=indexOfAnalogChannelFromName(self,channelName)            
+            iChannel=find(strcmp(channelName,self.AnalogChannelNames),1);
+            if isempty(iChannel) ,
+                result = nan ;
             else
-                iChannel=iChannels(1);
+                result = iChannel ;
             end
         end  % function
 
         function result=channelUnitsFromName(self,channelName)
             if isempty(channelName) ,
-                result='';
+                result = '' ;
             else
                 iChannel=self.indexOfAnalogChannelFromName(channelName);
-                if isempty(iChannel) ,
+                if isnan(iChannel) ,
                     result='';
                 else
                     result=self.AnalogChannelUnits{iChannel};
@@ -481,7 +496,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             
             self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
             self.AnalogChannelIDs_ = [self.AnalogChannelIDs_ newChannelID] ;
-            self.AnalogPhysicalChannelNames_ =  [self.AnalogPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            %self.AnalogPhysicalChannelNames_ =  [self.AnalogPhysicalChannelNames_ {newChannelPhysicalName}] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
@@ -499,7 +514,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 isKeeper(channelIndex) = false ;
                 self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
-                self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
+                %self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
@@ -520,12 +535,12 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             
             newChannelDeviceName = deviceName ;
             newChannelID = self.Parent.nextFreeDigitalChannelID() ;
-            newChannelPhysicalName = sprintf('line%d',newChannelID) ;
+            newChannelPhysicalName = sprintf('P0.%d',newChannelID) ;
             newChannelName = newChannelPhysicalName ;
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
-            self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            %self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true ];
             self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
@@ -541,7 +556,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 isKeeper(channelIndex) = false ;
                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
-                self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
+                %self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                 self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
                 self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;

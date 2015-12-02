@@ -1,7 +1,9 @@
 classdef UntimedDigitalOutputTask < handle
     properties (Dependent = true, SetAccess = immutable)
         TaskName
-        PhysicalChannelNames
+        %PhysicalChannelNames
+        DeviceNames
+        ChannelIDs
         ChannelNames
     end
     
@@ -15,7 +17,9 @@ classdef UntimedDigitalOutputTask < handle
     end
     
     properties (Access = protected)
-        PhysicalChannelNames_ = cell(1,0)
+        %PhysicalChannelNames_ = cell(1,0)
+        DeviceNames_ = cell(1,0)
+        ChannelIDs_ = zeros(1,0)        
         ChannelNames_ = cell(1,0)
         ChannelData_
     end
@@ -25,12 +29,12 @@ classdef UntimedDigitalOutputTask < handle
 %     end
 
     methods
-        function self = UntimedDigitalOutputTask(parent, taskName, physicalChannelNames, channelNames)
+        function self = UntimedDigitalOutputTask(parent, taskName, deviceNames, channelIDs, channelNames)
             %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
             %physicalChannelNames
             %channelNames
            
-            nChannels=length(physicalChannelNames);
+            nChannels=length(channelIDs);
                                     
             % Store the parent
             self.Parent_ = parent ;
@@ -43,17 +47,23 @@ classdef UntimedDigitalOutputTask < handle
             end            
             
             % Store this stuff
-            self.PhysicalChannelNames_ = physicalChannelNames ;
+            %self.PhysicalChannelNames_ = physicalChannelNames ;
+            self.DeviceNames_ = deviceNames ;
+            self.ChannelIDs_ = channelIDs ;
             self.ChannelNames_ = channelNames ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
                 for i=1:nChannels ,
-                    physicalChannelName = physicalChannelNames{i};
-                    deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                    restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
-                    self.DabsDaqTask_.createDOChan(deviceName, restOfName);
+                    %physicalChannelName = physicalChannelNames{i};
+                    %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
+                    %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
+                    deviceName = deviceNames{i} ;
+                    channelID = channelIDs(i) ;
+                    channelName = channelNames{i} ;
+                    lineName = sprintf('line%d',channelID) ;
+                    self.DabsDaqTask_.createDOChan(deviceName, lineName, channelName);
                 end                
             end            
         end  % function
@@ -122,9 +132,9 @@ classdef UntimedDigitalOutputTask < handle
     end  % methods
     
     methods                
-        function out = get.PhysicalChannelNames(self)
-            out = self.PhysicalChannelNames_ ;
-        end  % function
+%         function out = get.PhysicalChannelNames(self)
+%             out = self.PhysicalChannelNames_ ;
+%         end  % function
 
         function out = get.ChannelNames(self)
             out = self.ChannelNames_ ;

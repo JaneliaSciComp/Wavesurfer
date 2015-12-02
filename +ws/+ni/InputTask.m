@@ -5,7 +5,9 @@ classdef InputTask < handle
         IsAnalog
         IsDigital
         TaskName
-        PhysicalChannelNames        
+        %PhysicalChannelNames        
+        DeviceNames
+        ChannelIDs
         ChannelNames
         IsArmed
         % These are not directly settable
@@ -35,7 +37,9 @@ classdef InputTask < handle
     
     properties (Access = protected)
         IsAnalog_
-        PhysicalChannelNames_ = cell(1,0)
+        %PhysicalChannelNames_ = cell(1,0)
+        DeviceNames_ = cell(1,0)
+        ChannelIDs_ = zeros(1,0)
         ChannelNames_ = cell(1,0)
         %IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
@@ -53,8 +57,8 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, physicalChannelNames, channelNames)
-            nChannels=length(physicalChannelNames);
+        function self = InputTask(parent, taskType, taskName, deviceNames, channelIDs, channelNames)
+            nChannels=length(channelIDs);
             
             % Store the parent
             self.Parent_ = parent ;
@@ -73,7 +77,9 @@ classdef InputTask < handle
             self.TicId_ = tic();
             
             % Store this stuff
-            self.PhysicalChannelNames_ = physicalChannelNames ;
+            %self.PhysicalChannelNames_ = physicalChannelNames ;
+            self.DeviceNames_ = deviceNames ;
+            self.ChannelIDs_ = channelIDs ;
             self.ChannelNames_ = channelNames ;
             %self.IsChannelActive_ = true(1,nChannels);
             
@@ -81,18 +87,21 @@ classdef InputTask < handle
             % after adding channels)
             if nChannels>0 ,
                 for i=1:nChannels ,
-                    physicalChannelName = physicalChannelNames{i} ;
+                    %physicalChannelName = physicalChannelNames{i} ;
+                    deviceName = deviceNames{i} ;
+                    channelID = channelIDs(i) ;
                     channelName = channelNames{i} ;
                     if self.IsAnalog ,
-                        deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                        channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID, channelName);
+                        %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
+                        %channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
+                        self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID, channelName) ;
                     else
-                        deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                        restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createDIChan(deviceName, restOfName, channelName);
+                        %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
+                        %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
+                        lineName = sprintf('line%d',channelID) ;
+                        self.DabsDaqTask_.createDIChan(deviceName, lineName, channelName) ;
                     end
-                end                
+                end
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
             end
         end  % function
@@ -223,7 +232,8 @@ classdef InputTask < handle
                     else
                         readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
                     end
-                    shiftBy = cellfun(@(x) ws.utility.channelIDFromPhysicalChannelName(x), self.PhysicalChannelNames_);
+                    %shiftBy = cellfun(@(x) ws.utility.channelIDFromPhysicalChannelName(x), self.PhysicalChannelNames_);
+                    shiftBy = self.ChannelIDs_ ;
                     shiftedData = bsxfun(@bitshift,readData,(0:(length(shiftBy)-1))-shiftBy);
                     packedData = zeros(size(readData,1),1,'uint32');
                     for column = 1:size(readData,2)
@@ -332,8 +342,12 @@ classdef InputTask < handle
 %             self.ActiveChannels_ = availableActive;
 %         end  % function
         
-        function out = get.PhysicalChannelNames(self)
-            out = self.PhysicalChannelNames_ ;
+        function out = get.DeviceNames(self)
+            out = self.DeviceNames_ ;
+        end  % function
+
+        function out = get.ChannelIDs(self)
+            out = self.ChannelIDs_ ;
         end  % function
 
         function out = get.ChannelNames(self)
@@ -623,11 +637,13 @@ classdef InputTask < handle
 %             self.ActiveChannels = self.AvailableChannels;
 %         end
 
-        function unpackedData = unpackDigitalData_(self,packedData)
+        function unpackedData = unpackDigitalData_(self, packedData)
             % Only used for digital data.
             nScans = size(packedData,1);
-            nChannels = length(self.PhysicalChannelNames);
-            channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
+            %nChannels = length(self.PhysicalChannelNames);
+            %channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);            
+            channelIDs = self.ChannelIDs_ ;
+            nChannels = length(channelIDs) ;            
             unpackedData = zeros(nScans,nChannels,'uint8');
             for j=1:nChannels ,
                 channelID = channelIDs(j);
