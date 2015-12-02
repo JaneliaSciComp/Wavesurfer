@@ -814,6 +814,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             import ws.utility.fif
             import ws.utility.onIff
 
+            %invalidColor = [ 1 0.8 0.8 ] ;
+            
             % Update the name and duration            
             selectedMap=stimulusLibrary.SelectedMap;
             if isempty(selectedMap) ,
@@ -848,7 +850,12 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                     if isempty(channelName) ,
                         data{i,1}='(Unspecified)';
                     else
-                        data{i,1}=channelName;
+                        isValid = ismember(channelName,channelNames) ;
+                        if isValid ,
+                            data{i,1}=channelName;
+                        else
+                            data{i,1}=sprintf('%s (!)', channelName) ;
+                        end
                     end
                     stimulus=selectedMap.Stimuli{i};
                     if isempty(stimulus) ,

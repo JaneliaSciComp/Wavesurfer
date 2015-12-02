@@ -2,6 +2,10 @@ function setPopupMenuItemsAndSelectionBang(popupGH,listOfValidValues,value,alway
     % Set popupGH String and Value to a "sanitized" version of
     % listOfValidValues.
     
+    if ~exist('alwaysShowUnspecifiedItemInMenu','var') || isempty(alwaysShowUnspecifiedItemInMenu) ,
+        alwaysShowUnspecifiedItemInMenu = false ;
+    end
+    
     normalBackgroundColor = [0.94 0.94 0.94] ;
     invalidBackgroundColor = [1 0.8 0.8] ;
         
