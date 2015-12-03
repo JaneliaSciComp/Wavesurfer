@@ -254,6 +254,53 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         function abortingRun(self)
             self.completingOrStoppingOrAbortingRun_();
         end
+        
+        function didAddAnalogInputChannel(self)
+            % Add a scope to match the new channel (newly added channels
+            % are always active)
+            channelNames = self.Parent.Acquisition.AnalogChannelNames ;            
+            newChannelName = channelNames{end} ;
+            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
+            scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
+            scopeTitle=sprintf('Channel %s', newChannelName);
+            channelNamesForNewScope={thisChannelName};
+            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+        end
+        
+        function didAddDigitalInputChannel(self)
+            % Add a scope to match the new channel (newly added channels
+            % are always active)
+            channelNames = self.Parent.Acquisition.DigitalChannelNames ;            
+            newChannelName = channelNames{end} ;
+            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
+            scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
+            scopeTitle=sprintf('Channel %s', newChannelName);
+            channelNamesForNewScope={thisChannelName};
+            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+        end
+
+        function didRemoveAnalogInputChannel(self, nameOfRemovedChannel)
+            self.removeScopeByName(nameOfRemovedChannel) ;
+        end
+        
+        function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
+            self.removeScopeByName(nameOfRemovedChannel) ;
+        end
+        
+        function removeScopeByName(self, nameOfChannelToRemove)
+            nScopes = self.NScopes ;
+            for i = 1:nScopes ,
+                thisScope = self.Scopes{i} ;
+                channelNames = thisScope.ChannelNames ;
+                if ~isempty(channelNames) ,                    
+                    channelName = channelNames{1} ;
+                    if isequal(channelName,nameOfChannelToRemove) ,                        
+                        self.removeScope(i) ;
+                        break
+                    end
+                end
+            end                        
+        end
     end
     
     methods (Access=protected)
@@ -265,8 +312,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         end        
         
         function initializeScopes_(self)
-            % Set up the initial set of scope models, one per AI channel,
-            % and one for all channels.
+            % Set up the initial set of scope models, one per AI channel
             activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
             for iChannel = 1:length(activeChannelNames) ,
                 thisChannelName=activeChannelNames{iChannel};

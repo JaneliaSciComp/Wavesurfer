@@ -97,45 +97,60 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-%         function initializeFromMDFStructure(self, mdfStructure)
-%             physicalInputChannelNames = mdfStructure.physicalInputChannelNames ;
-%             channelNames = mdfStructure.inputChannelNames;
-%             
-%             inputDeviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalInputChannelNames);
-%             uniqueInputDeviceNames=unique(inputDeviceNames);
-%             if length(uniqueInputDeviceNames)>1 ,
-%                 error('ws:MoreThanOneDeviceName', ...
-%                       'WaveSurfer only supports a single NI card at present.');                      
-%             end
-%             self.DeviceNames_ = inputDeviceNames;
-%             %channelNames = mdfStructure.inputChannelNames;
-% 
-%             % Figure out which are analog and which are digital
-%             channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalInputChannelNames);
-%             isAnalog = strcmp(channelTypes,'ai');
-%             isDigital = ~isAnalog;
-% 
-%             % Sort the channel names
-%             analogPhysicalChannelNames = physicalInputChannelNames(isAnalog) ;
-%             digitalPhysicalChannelNames = physicalInputChannelNames(isDigital) ;
-%             self.AnalogPhysicalChannelNames_ = analogPhysicalChannelNames ;
-%             self.DigitalPhysicalChannelNames_ = digitalPhysicalChannelNames ;
-%             self.AnalogChannelNames_ = channelNames(isAnalog) ;
-%             self.DigitalChannelNames_ = channelNames(isDigital) ;
-%             self.AnalogChannelIDs_ = ws.utility.channelIDsFromPhysicalChannelNames(analogPhysicalChannelNames) ;
-% 
-%             nAnalogChannels = length(analogPhysicalChannelNames);
-%             nDigitalChannels = length(digitalPhysicalChannelNames);                
-%             %nChannels=length(physicalInputChannelNames);
-%             self.AnalogChannelScales_=ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-%             %self.ChannelScales(2)=0.1  % to test
-%             self.AnalogChannelUnits_=repmat({'V'},[1 nAnalogChannels]);  % by default, the units are volts                
-%             %self.ChannelUnits(2)=ws.utility.SIUnit('A')  % to test
-%             self.IsAnalogChannelActive_ = true(1,nAnalogChannels);
-%             self.IsDigitalChannelActive_ = true(1,nDigitalChannels);
-% 
-%             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels
-%         end  % function
+        function initializeFromMDFStructure(self, mdfStructure)
+            physicalChannelNames = mdfStructure.physicalInputChannelNames ;
+            
+            if ~isempty(physicalChannelNames) ,
+                channelNames = mdfStructure.inputChannelNames;
+
+                % Deal with the device names, setting the WSM DeviceName if
+                % it's not set yet.
+                deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+                uniqueDeviceNames=unique(deviceNames);
+                if length(uniqueDeviceNames)>1 ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'WaveSurfer only supports a single NI card at present.');                      
+                end
+                deviceName = uniqueDeviceNames{1} ;                
+                if isempty(self.Parent.DeviceName) ,
+                    self.Parent.DeviceName = deviceName ;
+                end
+
+                % Get the channel IDs
+                channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(physicalChannelNames);
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+                isAnalog = strcmp(channelTypes,'ai');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names, etc
+                %analogDeviceNames = deviceNames(isAnalog) ;
+                %digitalDeviceNames = deviceNames(isDigital) ;
+                analogChannelIDs = channelIDs(isAnalog) ;
+                digitalChannelIDs = channelIDs(isDigital) ;            
+                analogChannelNames = channelNames(isAnalog) ;
+                digitalChannelNames = channelNames(isDigital) ;
+
+                % add the analog channels
+                nAnalogChannels = length(analogChannelNames);
+                for i = 1:nAnalogChannels ,
+                    self.addAnalogChannel() ;
+                    indexOfChannelInSelf = self.NAnalogChannels ;
+                    self.setAnalogChannelID(indexOfChannelInSelf, analogChannelIDs(i)) ;
+                    self.setAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                end
+                
+                % add the digital channels
+                nDigitalChannels = length(analogChannelNames);
+                for i = 1:nDigitalChannels ,
+                    self.addDigitalChannel() ;
+                    indexOfChannelInSelf = self.NDigitalChannels ;
+                    self.setDigitalChannelID(indexOfChannelInSelf, digitalChannelIDs(i)) ;
+                    self.setDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                end                
+            end
+        end  % function
         
 %         function result = get.AnalogPhysicalChannelNames(self)
 %             result = self.AnalogPhysicalChannelNames_ ;
@@ -170,6 +185,14 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result = self.AnalogChannelNames_ ;
         end
     
+        function setAnalogChannelName(self, i, newValue)
+            if ws.utility.isString(newValue) && ~isempty(newValue) && ~self.isAnalogChannelName(newValue) && 1<=i && i<=self.NAnalogChannels ,
+                self.AnalogChannelNames_{i} = newValue ;
+                self.Parent.didChangeAnalogChannelName(i, newValue) ;
+            end
+            self.broadcast('Update') ;
+        end
+                
         function result = get.DigitalChannelNames(self)
             result = self.DigitalChannelNames_ ;
         end
@@ -369,6 +392,14 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         
         function value=isChannelName(self,putativeName)
             value=any(strcmp(putativeName,self.ChannelNames));
+        end
+                
+        function value=isAnalogChannelName(self,putativeName)
+            value=any(strcmp(putativeName,self.AnalogChannelNames));
+        end
+                
+        function value=isDigitalChannelName(self,putativeName)
+            value=any(strcmp(putativeName,self.DigitalChannelNames));
         end
                 
         function result=analogChannelUnitsFromName(self,channelName)
@@ -888,15 +919,16 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             
-            self.Parent.didChangeNumberOfInputChannels() ;
+            self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
 
         function removeAnalogChannel(self,channelIndex)
             nChannels = length(self.AnalogChannelIDs) ;
             if 1<=channelIndex && channelIndex<=nChannels ,
-                isKeeper = true(1,nChannels) ;
+                isKeeper = true(1,nChannels) ;                
                 isKeeper(channelIndex) = false ;
+                channelName = self.AnalogChannelNames_(channelIndex) ;  % save this for later
                 self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
                 %self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
@@ -905,7 +937,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
 
-                self.Parent.didChangeNumberOfInputChannels() ;
+                self.Parent.didRemoveAnalogInputChannel(channelName) ;
                 %self.broadcast('DidChangeNumberOfChannels');            
             end
         end  % function
@@ -929,7 +961,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
             
-            self.Parent.didChangeNumberOfInputChannels() ;
+            self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
@@ -938,13 +970,14 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             if 1<=channelIndex && channelIndex<=nChannels ,            
                 isKeeper = true(1,nChannels) ;
                 isKeeper(channelIndex) = false ;
+                channelName = self.DigitalChannelNames_(channelIndex) ;  % save this for later
                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
                 %self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
 
-                self.Parent.didChangeNumberOfInputChannels() ;
+                self.Parent.didRemoveDigitalInputChannel(channelName) ;
                 %self.broadcast('DidChangeNumberOfChannels');            
             end
         end  % function

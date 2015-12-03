@@ -52,53 +52,53 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.StimulationTriggerSchemeIndex_ = 1 ;
         end  % function
                         
-%         function initializeFromMDFStructure(self,mdfStructure)
-%             % Set up the trigger sources (i.e. internal triggers) specified
-%             % in the MDF.
-%             triggerSourceSpecs=mdfStructure.triggerSource;
-%             for idx = 1:length(triggerSourceSpecs) ,
-%                 thisCounterTriggerSpec=triggerSourceSpecs(idx);
-%                 
-%                 % Create the trigger source, set params
-%                 source = self.addCounterTrigger() ;
-%                 %source = ws.CounterTrigger();                
-%                 source.Name=thisCounterTriggerSpec.Name;
-%                 source.DeviceName=thisCounterTriggerSpec.DeviceName;
-%                 source.CounterID=thisCounterTriggerSpec.CounterID;                
-%                 source.RepeatCount = 1;
-%                 source.Interval = 1;  % s
-%                 source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
-%                 source.Edge = 'rising';                                
-%                 
-%                 % add the trigger source to the subsystem
-%                 %self.addCounterTrigger(source);
-%                 
+        function initializeFromMDFStructure(self,mdfStructure)
+            % Set up the trigger sources (i.e. internal triggers) specified
+            % in the MDF.
+            triggerSourceSpecs=mdfStructure.triggerSource;
+            for idx = 1:length(triggerSourceSpecs) ,
+                thisCounterTriggerSpec=triggerSourceSpecs(idx);
+                
+                % Create the trigger source, set params
+                source = self.addCounterTrigger() ;
+                %source = ws.CounterTrigger();                
+                source.Name=thisCounterTriggerSpec.Name;
+                source.DeviceName=thisCounterTriggerSpec.DeviceName;
+                source.CounterID=thisCounterTriggerSpec.CounterID;                
+                source.RepeatCount = 1;
+                source.Interval = 1;  % s
+                source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
+                source.Edge = 'rising';                                
+                
+                % add the trigger source to the subsystem
+                %self.addCounterTrigger(source);
+                
 %                 % If the first source, set things to point to it
 %                 if idx==1 ,
 %                     self.AcquisitionTriggerSchemeIndex_ = 1 ;
 %                     self.StimulationTriggerSchemeIndex_ = 1 ;  
 %                     self.StimulationUsesAcquisitionTriggerScheme = true;
 %                 end                    
-%             end  % for loop
-%             
-%             % Set up the trigger destinations (i.e. external triggers)
-%             % specified in the MDF.
-%             triggerDestinationSpecs=mdfStructure.triggerDestination;
-%             for idx = 1:length(triggerDestinationSpecs) ,
-%                 thisExternalTriggerSpec=triggerDestinationSpecs(idx);
-%                 
-%                 % Create the trigger destination, set params
-%                 %destination = ws.ExternalTrigger();
-%                 destination = self.addExternalTrigger();
-%                 destination.Name = thisExternalTriggerSpec.Name;
-%                 destination.DeviceName = thisExternalTriggerSpec.DeviceName;
-%                 destination.PFIID = thisExternalTriggerSpec.PFIID;
-%                 destination.Edge = lower(thisExternalTriggerSpec.Edge);
-%                 
-%                 % add the trigger destination to the subsystem
-%                 %self.addExternalTrigger(destination);
-%             end  % for loop            
-%         end  % function
+            end  % for loop
+            
+            % Set up the trigger destinations (i.e. external triggers)
+            % specified in the MDF.
+            triggerDestinationSpecs=mdfStructure.triggerDestination;
+            for idx = 1:length(triggerDestinationSpecs) ,
+                thisExternalTriggerSpec=triggerDestinationSpecs(idx);
+                
+                % Create the trigger destination, set params
+                %destination = ws.ExternalTrigger();
+                destination = self.addExternalTrigger();
+                destination.Name = thisExternalTriggerSpec.Name;
+                destination.DeviceName = thisExternalTriggerSpec.DeviceName;
+                destination.PFIID = thisExternalTriggerSpec.PFIID;
+                destination.Edge = lower(thisExternalTriggerSpec.Edge);
+                
+                % add the trigger destination to the subsystem
+                %self.addExternalTrigger(destination);
+            end  % for loop            
+        end  % function
         
         function out = get.BuiltinTrigger(self)
             out = self.BuiltinTrigger_;
