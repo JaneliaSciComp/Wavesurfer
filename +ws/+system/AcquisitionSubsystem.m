@@ -137,8 +137,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 for i = 1:nAnalogChannels ,
                     self.addAnalogChannel() ;
                     indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setAnalogChannelID(indexOfChannelInSelf, analogChannelIDs(i)) ;
-                    self.setAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                    self.setSingleAnalogChannelID(indexOfChannelInSelf, analogChannelIDs(i)) ;
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
                 end
                 
                 % add the digital channels
@@ -146,8 +146,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 for i = 1:nDigitalChannels ,
                     self.addDigitalChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setDigitalChannelID(indexOfChannelInSelf, digitalChannelIDs(i)) ;
-                    self.setDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                    self.setSingleDigitalChannelID(indexOfChannelInSelf, digitalChannelIDs(i)) ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
                 end                
             end
         end  % function
@@ -389,6 +389,52 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
+        
+        function setSingleAnalogChannelName(self, i, newValue)
+            oldValue = self.AnalogChannelNames_{i} ;
+            if 1<=i && i<=self.NAnalogChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AnalogChannelNames) ,
+                self.AnalogChannelNames_{i} = newValue ;
+                didSucceed = true ;
+            else
+                didSucceed = false ;
+            end
+            self.Parent.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
+        end
+        
+        function setSingleDigitalChannelName(self, i, newValue)
+            oldValue = self.DigitalChannelNames_{i} ;
+            if 1<=i && i<=self.NDigitalChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.DigitalChannelNames) ,
+                self.DigitalChannelNames_{i} = newValue ;
+                didSucceed = true ;
+            else
+                didSucceed = false ;
+            end
+            self.Parent.didSetDigitalInputChannelName(didSucceed,oldValue,newValue);
+        end
+        
+        function setSingleAnalogChannelID(self, i, newValue)
+            if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    if ~ismember(newValueAsDouble,self.AnalogChannelIDs) ,
+                        self.AnalogChannelIDs_(i) = newValueAsDouble ;
+                    end
+                end
+            end
+            self.Parent.didSetAnalogInputChannelID();
+        end
+        
+        function setSingleDigitalChannelID(self, i, newValue)
+            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    if ~self.Parent.isDigitalChannelIDInUse(newValueAsDouble) ,
+                        self.DigitalChannelIDs_(i) = newValueAsDouble ;
+                    end
+                end
+            end
+            self.Parent.didSetDigitalInputChannelID();
+        end
         
         function value=isChannelName(self,putativeName)
             value=any(strcmp(putativeName,self.ChannelNames));

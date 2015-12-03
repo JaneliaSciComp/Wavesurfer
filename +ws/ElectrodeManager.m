@@ -929,6 +929,24 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.broadcast('DidChangeNumberOfOutputChannels');
         end
         
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            if didSucceed ,
+                for i=1:self.NElectrodes ,                
+                    electrode=self.Electrodes{i};
+                    electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
+                end            
+            end
+        end        
+        
+        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+            if didSucceed ,
+                for i=1:self.NElectrodes ,                
+                    electrode=self.Electrodes{i};
+                    electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
+                end            
+            end
+        end        
+        
         function debug(self) %#ok<MANU>
             keyboard
         end

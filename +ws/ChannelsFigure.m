@@ -730,7 +730,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAIs ,
-                set(self.AILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
+                set(self.AILabelTexts(i),'String',sprintf('%s (%s):',channelNames{i},physicalChannelNames{i}));                
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
@@ -753,7 +753,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             isChannelOvercommited=(nElectrodesClaimingChannel>1);
             for i=1:nAOs ,
                 %set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
-                set(self.AOLabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
+                set(self.AOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i},physicalChannelNames{i}));                
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'BackgroundColor',fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
@@ -766,7 +766,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             physicalChannelNames = model.Acquisition.DigitalPhysicalChannelNames ;
             channelNames=model.Acquisition.DigitalChannelNames;
             for i=1:nDIs ,
-                set(self.DILabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
+                set(self.DILabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, physicalChannelNames{i}));                
                 set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelActive(i), ...
                                                  'Enable',onIff(isWavesurferIdle));                                     
             end
@@ -776,7 +776,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             channelNames=model.Stimulation.DigitalChannelNames;
             isTimed=model.Stimulation.IsDigitalChannelTimed;
             for i=1:nDOs ,
-                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',physicalChannelNames{i},channelNames{i}));                
+                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, physicalChannelNames{i}));                
                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
                                                 'enable',onIff(isWavesurferIdle));
                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...

@@ -197,7 +197,17 @@ classdef Ephys < ws.system.Subsystem
             self.ElectrodeManager.didChangeNumberOfOutputChannels();
             self.TestPulser.didChangeNumberOfOutputChannels();
         end        
-        
+
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            self.ElectrodeManager.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+            %self.TestPulser.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+        end        
+
+        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+            self.ElectrodeManager.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue) ;
+            %self.TestPulser.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+        end        
+
     end  % methods block
     
     methods         

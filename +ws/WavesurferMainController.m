@@ -95,7 +95,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.updateSubscriptionsToModel_()
             
             % Bring the scopes into sync
-            self.nukeAndRepaveScopeControllers();
+            %self.nukeAndRepaveScopeControllers();
+            self.syncScopeControllersWithScopeModels() ;
             
             % Update all the controls
             %self.Figure.updateControlsInExistance();
@@ -773,7 +774,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 end                                
                 %self.Model.subscribeMe(self,'PreSet','State','willSetModelState');
                 %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
-                self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','nukeAndRepaveScopeControllers');
+                self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
                 %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
                 %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
                 %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
@@ -781,7 +782,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
                 %self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
                 %self.Model.Logging.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfLoggingControls');
-                self.Model.subscribeMe(self,'DidLoadProtocolFile','','nukeAndRepaveScopeControllers');
+                self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
             end            
         end  % function
     end  % protected methods
@@ -1074,45 +1075,101 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end  % public methods block
     
     methods
-        function nukeAndRepaveScopeControllers(self,varargin)
+%         function nukeAndRepaveScopeControllers(self,varargin)
+%             % Creates a controller and a window for each ScopeModel
+%             % in the WavesurferModel Display subsystem.
+%             
+%             self.deleteAllScopeControllers_();
+%             if isempty(self.Model) ,
+%                 return
+%             end
+%             nScopes=self.Model.Display.NScopes;
+%             for iScope=1:nScopes ,
+%                 scopeModel=self.Model.Display.Scopes{iScope};
+%                 self.createChildControllerIfNonexistant('ScopeController',scopeModel);                
+%             end
+%         end
+        
+        function syncScopeControllersWithScopeModels(self,varargin)
             % Creates a controller and a window for each ScopeModel
             % in the WavesurferModel Display subsystem.
             
-            self.deleteAllScopeControllers();
-            if isempty(self.Model) ,
-                return
-            end
-            nScopes=self.Model.Display.NScopes;
-            for iScope=1:nScopes ,
-                scopeModel=self.Model.Display.Scopes{iScope};
-                self.createChildControllerIfNonexistant('ScopeController',scopeModel);                
-            end
-        end
-    end
-
-    methods (Access = protected)    
-        function deleteAllScopeControllers(self)
-            % Deletes all the scope controllers/views, leaving the models alone.
+            % Figure out which scope controllers go with which models
+            scopeModels = self.Model.Display.Scopes ;
+            scopeControllers = self.ScopeControllers ;            
+            isMatch = ws.WavesurferMainController.doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers) ;
             
-            nScopeControllers=length(self.ScopeControllers);
-            for scopeIndex=nScopeControllers:-1:1 ,  % delete off end so low-index ones don't change index
-                scopeController=self.ScopeControllers{scopeIndex};
-                isMatch=cellfun(@(childController)(scopeController==childController),self.ChildControllers);
-                childIndex=find(isMatch,1);
-                %scopeController.delete();  % NEED TO DO SOMETHING DIFFERENT HERE!!!
-                scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-%                 scopeController.deleteFigureGH() ;
-%                 scopeController.unsubscribeFromAll() ;
-%                 scopeController.Figure.unsubscribeFromAll() ;
-                self.ScopeControllers(scopeIndex)=[];  % delete an element from the cell array
-                if ~isempty(childIndex) ,
-                    self.ChildControllers(childIndex)=[];  % delete an element from the cell array
+            % Delete controllers with no model
+            nModelsForController = sum(isMatch,1) ;
+            nControllers = length(scopeControllers) ;
+            for indexOfScopeController = nControllers:-1:1 ,  % delete from last to first so low-index ones don't change index
+                if nModelsForController(indexOfScopeController)==0 ,
+                    self.deleteScopeController_(indexOfScopeController) ;
                 end
             end
-                
-            % Update the scope menu (think we should do this elsewhere)
-            %self.updateScopeMenu();
+            
+            % If a model has no controller, create one
+            nControllersForModel = sum(isMatch,2)' ;
+            nModels = length(scopeModels) ;
+            for indexOfScopeModel = 1:nModels ,
+                if nControllersForModel(indexOfScopeModel)==0 ,
+                    scopeModel=self.Model.Display.Scopes{indexOfScopeModel};
+                    self.createChildControllerIfNonexistant('ScopeController',scopeModel);
+                end
+            end
+        end  % function
+        
+    end
+
+    methods (Static)    
+        function isMatch = doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers)
+            % Looks at all the scope models, and all the scope controllers,
+            % and returns an nScopeModels x nScopeControllers matrix which
+            % is 1 if that model goes with that controller, and 0
+            % otherwise.  So all-zero rows of the matrix correspond to
+            % models with no controller, and all-zero columns correspond to
+            % controllers with no model among the current scope models
+            
+            %scopeModels = self.Model.Display.Scopes ;
+            %scopeControllers = self.ScopeControllers ;
+            controllerModels = cellfun(@(controller)(controller.Model),scopeControllers,'UniformOutput',false) ;
+%             isMatch = bsxfun(@(scopeModelCell,scopeControllerModelCell)(scopeModelCell{1}==scopeControllerModelCell{1}), ...
+%                              scopeModels' , ...
+%                              scopeControllerModels) ;
+            nModels = length(scopeModels) ;
+            nControllers = length(scopeControllers) ;
+            isMatch = zeros(nModels,nControllers) ;
+            for i = 1:nModels ,
+                for j = 1:nControllers ,
+                    isMatch(i,j) = (scopeModels{i}==controllerModels{j}) ;
+                end
+            end
+        end        
+    end
+        
+    methods (Access = protected)    
+%         function deleteAllScopeControllers_(self)
+%             % Deletes all the scope controllers/views, leaving the models alone.
+%             
+%             nScopeControllers=length(self.ScopeControllers);
+%             for indexInScopeControllers=nScopeControllers:-1:1 ,  % delete off end so low-index ones don't change index
+%                 self.deleteScopeController_(indexInScopeControllers) ;
+%             end
+%         end
+        
+        function deleteScopeController_(self, indexInScopeControllers)
+            % Deletes a single scope controller+view, leaving the model alone.
+            
+            scopeController = self.ScopeControllers{indexInScopeControllers} ;
+            isMatch = cellfun(@(childController)(scopeController==childController), self.ChildControllers) ;
+            scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+            self.ScopeControllers(indexInScopeControllers) = [] ;  % delete an element from the cell array
+            indexInChildControllers = find(isMatch,1) ;
+            if ~isempty(indexInChildControllers) ,
+                self.ChildControllers(indexInChildControllers) = [] ;  % delete an element from the cell array
+            end
         end
+        
     end
     
     methods

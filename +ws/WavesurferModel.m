@@ -755,6 +755,64 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end
         
+        function didSetAnalogInputChannelID(self)
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetDigitalInputChannelID(self)
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            display=self.Display;
+            if ~isempty(display)
+                display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+            end            
+            ephys=self.Ephys;
+            if ~isempty(ephys)
+                ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+            end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
+            self.Display.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+%             ephys=self.Ephys;
+%             if ~isempty(ephys)
+%                 ephys.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetAnalogOutputChannelID(self)
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetDigitalOutputChannelID(self)
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+%             display=self.Display;
+%             if ~isempty(display)
+%                 display.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            ephys=self.Ephys;
+            if ~isempty(ephys)
+                ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
+            end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue)
+%             self.Display.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
+%             ephys=self.Ephys;
+%             if ~isempty(ephys)
+%                 ephys.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
         function didSetIsInputChannelActive(self) 
             self.Ephys.didSetIsInputChannelActive() ;
             self.broadcast('UpdateChannels') ;
@@ -1653,9 +1711,11 @@ classdef WavesurferModel < ws.Model
 
             % Initialize the triggering subsystem given the MDF
             self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
+                        
             % Add the default scopes to the display
-            self.Display.initializeScopes();
+            %self.Display.initializeScopes();
+            % Don't need this anymore --- Display keeps itself in sync as
+            % channels are added.
             
             % Change our state to reflect the presence of the MDF file            
             %self.setState_('idle');
@@ -2168,28 +2228,28 @@ classdef WavesurferModel < ws.Model
             self.Display.didAddAnalogInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scopes to be nuked and repaved
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
         function didAddDigitalInputChannel(self)
             self.Display.didAddDigitalInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scopes to be nuked and repaved
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
         function didRemoveAnalogInputChannel(self, nameOfRemovedChannel)
             self.Display.didRemoveAnalogInputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scopes to be nuked and repaved
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
             self.Display.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scopes to be nuked and repaved
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
         function didChangeNumberOfOutputChannels(self)
@@ -2207,6 +2267,14 @@ classdef WavesurferModel < ws.Model
                 result = max(digitalChannelIDs) + 1 ;
             end            
         end
+        
+        function result = isDigitalChannelIDInUse(self, channelID)
+            inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
+            outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
+            digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
+            result = ismember(channelID, digitalChannelIDs) ;
+        end
+        
     end
     
 %     methods

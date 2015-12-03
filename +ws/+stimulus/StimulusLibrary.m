@@ -884,6 +884,15 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             result=find(self.isStimulusAMatch(queryStimulus),1);
         end
         
+        function didSetChannelName(self, oldValue, newValue)
+            maps = self.Maps ;
+            for i = 1:length(maps) ,
+                map = maps{i} ;
+                map.didSetChannelName(oldValue, newValue) ;               
+            end
+            self.broadcast('Update');            
+        end
+        
         function debug(self) %#ok<MANU>
             keyboard
         end
