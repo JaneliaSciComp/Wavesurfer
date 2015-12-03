@@ -137,8 +137,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 for i = 1:nAnalogChannels ,
                     self.addAnalogChannel() ;
                     indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelID(indexOfChannelInSelf, analogChannelIDs(i)) ;
                     self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                    self.setSingleAnalogChannelID(indexOfChannelInSelf, analogChannelIDs(i)) ;
                 end
                 
                 % add the digital channels
@@ -146,8 +146,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 for i = 1:nDigitalChannels ,
                     self.addDigitalChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelID(indexOfChannelInSelf, digitalChannelIDs(i)) ;
                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                    self.setSingleDigitalChannelID(indexOfChannelInSelf, digitalChannelIDs(i)) ;
                 end                
             end
         end  % function

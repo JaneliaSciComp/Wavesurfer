@@ -55,48 +55,55 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function initializeFromMDFStructure(self,mdfStructure)
             % Set up the trigger sources (i.e. internal triggers) specified
             % in the MDF.
-            triggerSourceSpecs=mdfStructure.triggerSource;
-            for idx = 1:length(triggerSourceSpecs) ,
-                thisCounterTriggerSpec=triggerSourceSpecs(idx);
-                
+            
+            % Read the specs out of the MDF structure
+            triggerSourceSpecs = mdfStructure.triggerSource ;
+            triggerDestinationSpecs = mdfStructure.triggerDestination ;
+
+            % Deal with the device names, setting the WSM DeviceName if
+            % it's not set yet.
+            triggerSourceDeviceNames = { triggerSourceSpecs.DeviceName } ;
+            triggerDestinationDeviceNames = { triggerDestinationSpecs.DeviceName } ;
+            deviceNames = [ triggerSourceDeviceNames triggerDestinationDeviceNames ] ;
+            uniqueDeviceNames=unique(deviceNames);
+            if length(uniqueDeviceNames)>1 ,
+                error('ws:MoreThanOneDeviceName', ...
+                      'WaveSurfer only supports a single NI card at present.');                      
+            end
+            deviceName = uniqueDeviceNames{1} ;
+            globalDeviceName = self.Parent.DeviceName ;
+            if isempty(globalDeviceName) ,
+                self.Parent.DeviceName = deviceName ;
+            else
+                if ~isequal(deviceName, globalDeviceName) ,
+                    error('ws:TriggeringDeviceNameConflictsWithOtherDeviceNames', ...
+                          'WaveSurfer only supports a single NI card at present.');
+                end                      
+            end
+            
+            % Set up the counter triggers specified in the MDF
+            for i = 1:length(triggerSourceSpecs) ,
                 % Create the trigger source, set params
+                thisCounterTriggerSpec=triggerSourceSpecs(i);                
                 source = self.addCounterTrigger() ;
-                %source = ws.CounterTrigger();                
-                source.Name=thisCounterTriggerSpec.Name;
-                source.DeviceName=thisCounterTriggerSpec.DeviceName;
-                source.CounterID=thisCounterTriggerSpec.CounterID;                
-                source.RepeatCount = 1;
-                source.Interval = 1;  % s
-                source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
-                source.Edge = 'rising';                                
-                
-                % add the trigger source to the subsystem
-                %self.addCounterTrigger(source);
-                
-%                 % If the first source, set things to point to it
-%                 if idx==1 ,
-%                     self.AcquisitionTriggerSchemeIndex_ = 1 ;
-%                     self.StimulationTriggerSchemeIndex_ = 1 ;  
-%                     self.StimulationUsesAcquisitionTriggerScheme = true;
-%                 end                    
+                source.Name = thisCounterTriggerSpec.Name ;
+                %source.DeviceName=thisCounterTriggerSpec.DeviceName;
+                source.CounterID = thisCounterTriggerSpec.CounterID ;  % PFIID will be set automatically
+                %source.PFIID = thisCounterTriggerSpec.CounterID + 12 ;  % the NI default
+                source.RepeatCount = 1 ;
+                source.Interval = 1 ;  % s
+                source.Edge = 'rising';                                                
             end  % for loop
             
-            % Set up the trigger destinations (i.e. external triggers)
-            % specified in the MDF.
-            triggerDestinationSpecs=mdfStructure.triggerDestination;
-            for idx = 1:length(triggerDestinationSpecs) ,
-                thisExternalTriggerSpec=triggerDestinationSpecs(idx);
-                
+            % Set up the external triggers specified in the MDF
+            for i = 1:length(triggerDestinationSpecs) ,
                 % Create the trigger destination, set params
-                %destination = ws.ExternalTrigger();
-                destination = self.addExternalTrigger();
-                destination.Name = thisExternalTriggerSpec.Name;
-                destination.DeviceName = thisExternalTriggerSpec.DeviceName;
-                destination.PFIID = thisExternalTriggerSpec.PFIID;
-                destination.Edge = lower(thisExternalTriggerSpec.Edge);
-                
-                % add the trigger destination to the subsystem
-                %self.addExternalTrigger(destination);
+                thisExternalTriggerSpec = triggerDestinationSpecs(i) ;
+                destination = self.addExternalTrigger() ;
+                destination.Name = thisExternalTriggerSpec.Name ;
+                %destination.DeviceName = thisExternalTriggerSpec.DeviceName;
+                destination.PFIID = thisExternalTriggerSpec.PFIID ;
+                destination.Edge = lower(thisExternalTriggerSpec.Edge) ;
             end  % for loop            
         end  % function
         
@@ -256,6 +263,62 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function removeLastExternalTrigger(self)
             nTriggers = length(self.ExternalTriggers_) ;
             self.removeExternalTrigger(nTriggers) ;
+        end
+        
+        function result = pfiIDsInUse(self)
+            counterTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.CounterTriggers) ;
+            externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers) ;
+            result = [counterTriggerPFIIDs externalTriggerPFIIDs] ;
+        end
+        
+        function result = freePFIIDs(self)
+            inUsePFIIDs = self.pfiIDsInUse() ;
+            nPFIIDsInHardware = 16 ;  % TODO: Fix this to get the actual number of PFIIDs
+            allPFIIDs = 0:(nPFIIDsInHardware-1) ;  
+            result = setminus(allPFIIDs, inUsePFIIDs) ;
+        end
+        
+        function result = nextFreePFIID(self, startingWith)
+            freePFIIDs = self.freePFIIDs() ;
+            isEligible = (freePFIIDs >= startingWith) ;
+            eligibleFreePFIIDs = freePFIIDs(isEligible) ;
+            if isempty(eligibleFreePFIIDs) ,
+                result = [] ;
+            else
+                result = eligibleFreePFIIDs(1) ;
+            end
+        end
+        
+        function result = isPFIIDInUse(self, pfiID)
+            inUsePFIIDs = self.pfiIDsInUse() ;
+            result = ismember(pfiID, inUsePFIIDs) ;
+        end
+        
+        function result = counterIDsInUse(self)
+            result = cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers) ;
+        end
+        
+        function result = freeCounterIDs(self)
+            inUseCounterIDs = self.counterIDsInUse() ;
+            nCounterIDsInHardware = 4 ;  % TODO: Fix this to get the actual number of CounterIDs
+            allCounterIDs = 0:(nCounterIDsInHardware-1) ;  
+            result = setminus(allCounterIDs, inUseCounterIDs) ;
+        end
+        
+        function result = nextFreeCounterID(self, startingWith)
+            freeCounterIDs = self.freeCounterIDs() ;
+            isEligible = (freeCounterIDs >= startingWith) ;
+            eligibleFreeCounterIDs = freeCounterIDs(isEligible) ;
+            if isempty(eligibleFreeCounterIDs) ,
+                result = [] ;
+            else
+                result = eligibleFreeCounterIDs(1) ;
+            end
+        end
+        
+        function result = isCounterIDInUse(self, counterID)
+            inUseCounterIDs = self.getCounterIDsInUse() ;
+            result = ismember(counterID, inUseCounterIDs) ;
         end
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)

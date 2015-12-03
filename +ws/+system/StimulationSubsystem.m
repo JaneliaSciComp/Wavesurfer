@@ -80,48 +80,62 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)            
-            if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
-                % Get the list of physical channel names
-                physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
-                channelNames = mdfStructure.outputChannelNames ;                                
-                
-                % Check that they're all on the same device (for now)
+        function initializeFromMDFStructure(self, mdfStructure)       
+            physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+            
+            if ~isempty(physicalChannelNames) ,
+                channelNames = mdfStructure.outputChannelNames;
+
+                % Deal with the device names, setting the WSM DeviceName if
+                % it's not set yet.
                 deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
-                uniqueDeviceNames = unique(deviceNames);
-                if ~isscalar(uniqueDeviceNames) ,
+                uniqueDeviceNames=unique(deviceNames);
+                if length(uniqueDeviceNames)>1 ,
                     error('ws:MoreThanOneDeviceName', ...
                           'WaveSurfer only supports a single NI card at present.');                      
                 end
+                deviceName = uniqueDeviceNames{1} ;                
+                if isempty(self.Parent.DeviceName) ,
+                    self.Parent.DeviceName = deviceName ;
+                end
+
+                % Get the channel IDs
+                channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(physicalChannelNames);
                 
                 % Figure out which are analog and which are digital
                 channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
                 isAnalog = strcmp(channelTypes,'ao');
                 isDigital = ~isAnalog;
 
-                % Sort the channel names
-                self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
-                self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
-                self.AnalogChannelNames_ = channelNames(isAnalog) ;
-                self.DigitalChannelNames_ = channelNames(isDigital) ;
-                
-                % Set the analog channel scales, units
-                nAnalogChannels = sum(isAnalog) ;
-                self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-                %V=ws.utility.SIUnit('V');  % by default, the units are volts                
-                self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
-                
-                % Set defaults for digital channels
-                nDigitalChannels = sum(isDigital) ;
-                self.IsDigitalChannelTimed_ = true(1,nDigitalChannels);
-                self.DigitalOutputStateIfUntimed_ = false(1,nDigitalChannels);
+                % Sort the channel names, etc
+                %analogDeviceNames = deviceNames(isAnalog) ;
+                %digitalDeviceNames = deviceNames(isDigital) ;
+                analogChannelIDs = channelIDs(isAnalog) ;
+                digitalChannelIDs = channelIDs(isDigital) ;            
+                analogChannelNames = channelNames(isAnalog) ;
+                digitalChannelNames = channelNames(isDigital) ;
 
-                % Intialize the stimulus library
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);
+                % add the analog channels
+                nAnalogChannels = length(analogChannelNames);
+                for i = 1:nAnalogChannels ,
+                    self.addAnalogChannel() ;
+                    indexOfChannelInSelf = self.NAnalogChannels ;
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                    self.setSingleAnalogChannelID(indexOfChannelInSelf, analogChannelIDs(i)) ;
+                end
                 
-%                 % Set up the untimed channels
-%                 self.syncTasksToChannelMembership_();
+                % add the digital channels
+                nDigitalChannels = length(analogChannelNames);
+                for i = 1:nDigitalChannels ,
+                    self.addDigitalChannel() ;
+                    indexOfChannelInSelf = self.NDigitalChannels ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                    self.setSingleDigitalChannelID(indexOfChannelInSelf, digitalChannelIDs(i)) ;
+                end                
                 
+                % Intialize the stimulus library, just to keep compatible
+                % with the old behavior
+                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);                
             end
         end  % function
 
