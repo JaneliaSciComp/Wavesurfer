@@ -85,25 +85,41 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             for i = 1:length(triggerSourceSpecs) ,
                 % Create the trigger source, set params
                 thisCounterTriggerSpec=triggerSourceSpecs(i);                
-                source = self.addCounterTrigger() ;
+                counterID = thisCounterTriggerSpec.CounterID ;  % PFIID will be set automatically
+                source = self.addCounterTrigger(counterID) ;
+                if isempty(source) ,
+                    error('ws:CantUseCounterID', ...
+                          'Counter ID %d is either in use or not supported by the device', counterID);
+                end
                 source.Name = thisCounterTriggerSpec.Name ;
                 %source.DeviceName=thisCounterTriggerSpec.DeviceName;
-                source.CounterID = thisCounterTriggerSpec.CounterID ;  % PFIID will be set automatically
+                %source.CounterID = thisCounterTriggerSpec.CounterID ;  % PFIID will be set automatically
                 %source.PFIID = thisCounterTriggerSpec.CounterID + 12 ;  % the NI default
                 source.RepeatCount = 1 ;
                 source.Interval = 1 ;  % s
-                source.Edge = 'rising';                                                
+                if isfield(thisCounterTriggerSpec,'Edge') ,
+                    source.Edge = lower(thisCounterTriggerSpec.Edge) ;
+                else                    
+                    source.Edge = 'rising' ;
+                end
             end  % for loop
             
             % Set up the external triggers specified in the MDF
             for i = 1:length(triggerDestinationSpecs) ,
                 % Create the trigger destination, set params
                 thisExternalTriggerSpec = triggerDestinationSpecs(i) ;
-                destination = self.addExternalTrigger() ;
+                pfiID = thisExternalTriggerSpec.PFIID ;
+                destination = self.addExternalTrigger(pfiID) ;
+                if isempty(destination) ,
+                    error('ws:CantUsePFIID', ...
+                          'PFI%d is either in use or not supported by the device', pfiID);
+                end                    
                 destination.Name = thisExternalTriggerSpec.Name ;
-                %destination.DeviceName = thisExternalTriggerSpec.DeviceName;
-                destination.PFIID = thisExternalTriggerSpec.PFIID ;
-                destination.Edge = lower(thisExternalTriggerSpec.Edge) ;
+                if isfield(thisExternalTriggerSpec,'Edge') ,
+                    destination.Edge = lower(thisExternalTriggerSpec.Edge) ;
+                else                    
+                    destination.Edge = 'rising' ;
+                end
             end  % for loop            
         end  % function
         
@@ -198,26 +214,37 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end  % methods block
     
     methods
-        function trigger = addCounterTrigger(self)
-            deviceName = self.Parent.DeviceName ;
-            counterIDs = cellfun(self.CounterTriggers, ...
-                                 @(c)(c.CounterID)) ;
-            if isempty(counterIDs) ,
-                counterID = 0 ;
-            else
-                counterID = max(counterIDs) + 1 ;
+        function trigger = addCounterTrigger(self, counterID)
+            % If no counter ID is given, try to find one that is not in use
+            if ~exist('counterID','var') || isempty(counterID) ,
+                % Need to pick a counterID.
+                % We find the lowest counterID that is not in use.
+                counterID = self.nextFreeCounterID() ;
+                if isempty(counterID) ,
+                    % this means there is no free counter
+                    trigger = [] ;
+                    return
+                end
             end
             
-            trigger = ws.CounterTrigger(self);
+            % Check that the counterID is free
+            if self.isCounterIDInUse(counterID) ,
+                trigger = [] ;
+                return
+            end
 
+            % Create the trigger
+            trigger = ws.CounterTrigger(self);  % self is parent of the CounterTrigger
+
+            % Set the trigger parameters
             trigger.Name = sprintf('Counter %d',counterID) ;
-            trigger.DeviceName = deviceName ; 
+            trigger.DeviceName = self.Parent.DeviceName ; 
             trigger.CounterID = counterID ;
             trigger.RepeatCount = 1 ;
             trigger.Interval = 1 ;  % s
-            trigger.PFIID = counterID + 12 ;  % this is the NI default
             trigger.Edge = 'rising' ;
             
+            % Add the just-created trigger to thel list of counter triggers
             self.CounterTriggers_{1,end + 1} = trigger ;
         end  % function
 
@@ -233,23 +260,35 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.removeCounterTrigger(nTriggers) ;
         end
         
-        function trigger = addExternalTrigger(self)
-            deviceName = self.Parent.DeviceName ;
-            pfiIDs = cellfun(self.ExternalTriggers, ...
-                             @(e)(e.PFIID)) ;
-            if isempty(pfiIDs) ,
-                pfiID = 0 ;
-            else
-                pfiID = max(pfiIDs) + 1 ;
+        function trigger = addExternalTrigger(self, pfiID)
+            % If no PFI ID is given, try to find one that is not in use
+            if ~exist('pfiID','var') || isempty(pfiID) ,
+                % Need to pick a counterID.
+                % We find the lowest counterID that is not in use.
+                pfiID = self.nextFreePFIID() ;
+                if isempty(pfiID) ,
+                    % this means there is no free PFI line
+                    trigger = [] ;
+                    return
+                end
             end
             
-            trigger = ws.ExternalTrigger(self);
-            
+            % Check that the pfiID is free
+            if self.isPFIIDInUse(pfiID) ,
+                trigger = [] ;
+                return
+            end
+
+            % Create the trigger
+            trigger = ws.ExternalTrigger(self);  % self is parent of the ExternalTrigger
+
+            % Set the trigger parameters
             trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
-            trigger.DeviceName = deviceName ;
+            trigger.DeviceName = self.Parent.DeviceName ; 
             trigger.PFIID = pfiID ;
             trigger.Edge = 'rising' ;
             
+            % Add the just-created trigger to thel list of counter triggers
             self.ExternalTriggers_{1,end + 1} = trigger ;
         end  % function
                         
@@ -265,17 +304,57 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.removeExternalTrigger(nTriggers) ;
         end
         
+        function result = allCounterIDs(self)
+            nCounterIDsInHardware = self.Parent.getNumberOfCounters() ;
+            result = 0:(nCounterIDsInHardware-1) ;              
+        end
+        
+        function result = counterIDsInUse(self)
+            result = sort(cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers)) ;
+        end
+        
+        function result = freeCounterIDs(self)
+            allCounterIDs = self.allCounterIDs() ;  
+            inUseCounterIDs = self.counterIDsInUse() ;
+            result = setminus(allCounterIDs, inUseCounterIDs) ;
+        end
+        
+        function result = nextFreeCounterID(self)
+            freeCounterIDs = self.freeCounterIDs() ;
+            if isempty(freeCounterIDs) ,
+                result = [] ;
+            else
+                result = freeCounterIDs(1) ;
+            end
+        end
+        
+        function result = isCounterIDInUse(self, counterID)
+            inUseCounterIDs = self.counterIDsInUse() ;
+            result = ismember(counterID, inUseCounterIDs) ;
+        end
+
+        function result = allPFIIDs(self)
+            [~,nPFIIDsInHardware] = self.getNumberOfDIOChannelsAndPFILines() ;
+            result = 0:(nPFIIDsInHardware-1) ;              
+        end
+        
         function result = pfiIDsInUse(self)
-            counterTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.CounterTriggers) ;
+            %counterTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.CounterTriggers) ;
             externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers) ;
-            result = [counterTriggerPFIIDs externalTriggerPFIIDs] ;
+            
+            % We consider all the default counter PFIs to be "in use",
+            % regardless of whether any of the counters are in use.
+            [~,nPFIIDsInHardware] = self.Parent.getNumberOfDIOChannelsAndPFILines() ;
+            nCounterIDsInHardware = self.Parent.getNumberOfCounters() ;
+            counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
+
+            result = sort([externalTriggerPFIIDs counterTriggerPFIIDs]) ;
         end
         
         function result = freePFIIDs(self)
-            inUsePFIIDs = self.pfiIDsInUse() ;
-            nPFIIDsInHardware = 16 ;  % TODO: Fix this to get the actual number of PFIIDs
-            allPFIIDs = 0:(nPFIIDsInHardware-1) ;  
-            result = setminus(allPFIIDs, inUsePFIIDs) ;
+            allIDs = self.allPFIIDs() ;  
+            inUseIDs = self.pfiIDsInUse() ;
+            result = setminus(allIDs, inUseIDs) ;
         end
         
         function result = nextFreePFIID(self, startingWith)
@@ -292,33 +371,6 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function result = isPFIIDInUse(self, pfiID)
             inUsePFIIDs = self.pfiIDsInUse() ;
             result = ismember(pfiID, inUsePFIIDs) ;
-        end
-        
-        function result = counterIDsInUse(self)
-            result = cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers) ;
-        end
-        
-        function result = freeCounterIDs(self)
-            inUseCounterIDs = self.counterIDsInUse() ;
-            nCounterIDsInHardware = 4 ;  % TODO: Fix this to get the actual number of CounterIDs
-            allCounterIDs = 0:(nCounterIDsInHardware-1) ;  
-            result = setminus(allCounterIDs, inUseCounterIDs) ;
-        end
-        
-        function result = nextFreeCounterID(self, startingWith)
-            freeCounterIDs = self.freeCounterIDs() ;
-            isEligible = (freeCounterIDs >= startingWith) ;
-            eligibleFreeCounterIDs = freeCounterIDs(isEligible) ;
-            if isempty(eligibleFreeCounterIDs) ,
-                result = [] ;
-            else
-                result = eligibleFreeCounterIDs(1) ;
-            end
-        end
-        
-        function result = isCounterIDInUse(self, counterID)
-            inUseCounterIDs = self.getCounterIDsInUse() ;
-            result = ismember(counterID, inUseCounterIDs) ;
         end
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
@@ -357,7 +409,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                 trigger = schemes{i} ;
                 trigger.DeviceName = deviceName ;
             end
-                        
+            
             self.broadcast('Update');
         end
         

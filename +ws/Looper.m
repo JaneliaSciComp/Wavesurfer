@@ -1,4 +1,4 @@
-classdef Looper < ws.Model
+classdef Looper < ws.RootModel
     % The main Looper model object.
     
     properties (Dependent = true)
@@ -96,19 +96,14 @@ classdef Looper < ws.Model
     end
     
     methods
-        function self = Looper(parent)
+        function self = Looper()
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Deal with arguments
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;  % no parent by default
-            end
-            
             % Call the superclass constructor
-            self@ws.Model(parent);
+            self@ws.RootModel();
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
@@ -117,14 +112,14 @@ classdef Looper < ws.Model
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Looper
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(self.LooperIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
 
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Looper::Looper(): About to send looperIsAlive\n') ;

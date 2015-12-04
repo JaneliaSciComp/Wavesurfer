@@ -48,7 +48,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
                 isAnalogChannelActive = self.IsAnalogChannelActive ;
-                activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;
+                %activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;
                 %activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;
                 activeAnalogDeviceNames = self.AnalogDeviceNames(isAnalogChannelActive) ;
                 activeAnalogChannelIDs = self.AnalogChannelIDs(isAnalogChannelActive) ;
@@ -56,8 +56,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     ws.ni.InputTask(self, 'analog', ...
                                           'WaveSurfer Analog Acquisition Task', ...
                                           activeAnalogDeviceNames, ...
-                                          activeAnalogChannelIDs, ...
-                                          activeAnalogChannelNames);
+                                          activeAnalogChannelIDs);
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
@@ -66,7 +65,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             end
             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
                 isDigitalChannelActive = self.IsDigitalChannelActive ;
-                activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
+                %activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
                 %activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
                 activeDigitalDeviceNames = self.DigitalDeviceNames(isDigitalChannelActive) ;
                 activeDigitalChannelIDs = self.DigitalChannelIDs(isDigitalChannelActive) ;
@@ -74,8 +73,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     ws.ni.InputTask(self, 'digital', ...
                                           'WaveSurfer Digital Acquisition Task', ...
                                           activeDigitalDeviceNames, ...
-                                          activeDigitalChannelIDs, ...
-                                          activeDigitalChannelNames);
+                                          activeDigitalChannelIDs);
                 % Set other things in the Task object
                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                

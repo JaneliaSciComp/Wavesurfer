@@ -1,4 +1,4 @@
-classdef Refiller < ws.Model
+classdef Refiller < ws.RootModel
     % The main Refiller model object.
     
     properties (Dependent = true)
@@ -99,19 +99,14 @@ classdef Refiller < ws.Model
     end
     
     methods
-        function self = Refiller(parent)
+        function self = Refiller()
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Deal with arguments
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;  % no parent by default
-            end
-            
             % Call the superclass constructor
-            self@ws.Model(parent);
+            self@ws.RootModel();
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.RefillerRPCPortNumber) ;
@@ -120,14 +115,14 @@ classdef Refiller < ws.Model
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Refiller
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(self.RefillerIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
             
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;

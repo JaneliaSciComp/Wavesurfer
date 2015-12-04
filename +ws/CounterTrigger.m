@@ -46,12 +46,13 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
     methods
         function self = CounterTrigger(parent)
             self = self@ws.Model(parent) ;
+            self.DeviceName_ = 'Dev1' ;
             self.Name_ = 'CounterTrigger' ;
             self.RepeatCount_ = 1 ;
-            self.DeviceName_ = 'Dev1' ;
             self.CounterID_ = 0 ;
             self.Interval_ = 1 ; % s
-            self.PFIID_ = 12 ;
+            self.syncPFIIDToCounterID_() ;
+            %self.PFIID_ = 12 ;
             self.Edge_ = 'rising' ;
             %self.CounterTask_=[];  % set in setup() method
         end
@@ -206,6 +207,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
             if ws.utility.isASettableValue(value) ,
                 if ws.utility.isString(value) ,
                     self.DeviceName_ = value ;
+                    self.syncPFIIDToCounterID_() ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
@@ -215,19 +217,19 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
             self.broadcast('Update');            
         end
         
-        function set.PFIID(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
-                    value = double(value) ;
-                    self.PFIID_ = value ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'PFIID must be a (scalar) nonnegative integer');                  
-                end                    
-            end
-            self.broadcast('Update');            
-        end
+%         function set.PFIID(self, value)
+%             if ws.utility.isASettableValue(value) ,
+%                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+%                     value = double(value) ;
+%                     self.PFIID_ = value ;
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'PFIID must be a (scalar) nonnegative integer');                  
+%                 end                    
+%             end
+%             self.broadcast('Update');            
+%         end
         
         function set.Edge(self, value)
             if ws.utility.isASettableValue(value) ,
@@ -247,6 +249,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
                     value = double(value) ;
                     self.CounterID_ = value ;
+                    self.syncPFIIDToCounterID_() ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
@@ -398,6 +401,14 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
                 error('most:Model:invalidPropVal', ...
                       'Interval must be a (scalar) positive integer');       
             end
+        end
+        
+        function syncPFIIDToCounterID_(self)
+            rootModel = self.Parent.Parent ;
+            [~,numberOfPFILines] = rootModel.getNumberOfDIOChannelsAndPFILines() ;
+            nCounters = rootModel.getNumberOfCounters() ;
+            pfiID = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
+            self.PFIID_ = pfiID ;
         end
         
     end  % static methods

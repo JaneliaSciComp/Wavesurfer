@@ -125,7 +125,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 end
                 
                 % add the digital channels
-                nDigitalChannels = length(analogChannelNames);
+                nDigitalChannels = length(digitalChannelNames);
                 for i = 1:nDigitalChannels ,
                     self.addDigitalChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
@@ -549,8 +549,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             
             newChannelDeviceName = deviceName ;
             newChannelID = self.Parent.nextFreeDigitalChannelID() ;
-            newChannelPhysicalName = sprintf('P0.%d',newChannelID) ;
-            newChannelName = newChannelPhysicalName ;
+            newChannelName = sprintf('P0.%d',newChannelID) ;
+            %newChannelName = newChannelPhysicalName ;
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;

@@ -142,7 +142,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 end
                 
                 % add the digital channels
-                nDigitalChannels = length(analogChannelNames);
+                nDigitalChannels = length(digitalChannelNames);
                 for i = 1:nDigitalChannels ,
                     self.addDigitalChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
@@ -175,7 +175,6 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             end            
             result = arrayfun(@physicalChannelNameFromID,channelIDs,'UniformOutput',false);
         end
-
         
         function result = get.PhysicalChannelNames(self)
             result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
@@ -998,8 +997,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             
             newChannelDeviceName = deviceName ;
             newChannelID = self.Parent.nextFreeDigitalChannelID() ;
-            newChannelPhysicalName = sprintf('P0.%d',newChannelID) ;
-            newChannelName = newChannelPhysicalName ;
+            newChannelName = sprintf('P0.%d',newChannelID) ;
+            %newChannelName = newChannelPhysicalName ;
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;

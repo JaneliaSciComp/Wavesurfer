@@ -7,7 +7,7 @@ classdef FiniteOutputTask < handle
         %PhysicalChannelNames
         DeviceNames
         ChannelIDs
-        ChannelNames
+        %ChannelNames
         IsArmed  % generally shouldn't set props, etc when armed (but setting ChannelData is actually OK)
         OutputDuration
     end
@@ -33,7 +33,7 @@ classdef FiniteOutputTask < handle
         %PhysicalChannelNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
         ChannelIDs_ = zeros(1,0)        
-        ChannelNames_ = cell(1,0)
+        %ChannelNames_ = cell(1,0)
         ChannelData_
         IsOutputBufferSyncedToChannelData_ = false
     end
@@ -43,7 +43,7 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, deviceNames, channelIDs, channelNames)
+        function self = FiniteOutputTask(taskType, taskName, deviceNames, channelIDs)
             nChannels=length(channelIDs);
             
 %             % Store the parent
@@ -63,7 +63,7 @@ classdef FiniteOutputTask < handle
             %self.PhysicalChannelNames_ = physicalChannelNames ;
             self.DeviceNames_ = deviceNames ;
             self.ChannelIDs_ = channelIDs ;
-            self.ChannelNames_ = channelNames ;
+            %self.ChannelNames_ = channelNames ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -72,17 +72,17 @@ classdef FiniteOutputTask < handle
                     %physicalChannelName = physicalChannelNames{i} ;
                     deviceName = deviceNames{i} ;
                     channelID = channelIDs(i) ;                    
-                    channelName = channelNames{i} ;
+                    %channelName = channelNames{i} ;
                     if self.IsAnalog ,
                         %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         %channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createAOVoltageChan(deviceName, channelID, channelName) ;
+                        self.DabsDaqTask_.createAOVoltageChan(deviceName, channelID) ;
                     else
                         %physicalChannelName = physicalChannelNames{i} ;
                         %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
                         lineName = sprintf('line%d',channelID) ;                        
-                        self.DabsDaqTask_.createDOChan(deviceName, lineName, channelName) ;
+                        self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
                     end
                 end
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
@@ -146,7 +146,7 @@ classdef FiniteOutputTask < handle
         end  % function
         
         function clearChannelData(self)
-            nChannels=length(self.ChannelNames);
+            nChannels=length(self.ChannelIDs);
             if self.IsAnalog ,
                 self.ChannelData_ = zeros(0,nChannels);  
             else
@@ -160,7 +160,7 @@ classdef FiniteOutputTask < handle
         end  % function
         
         function set.ChannelData(self, value)
-            nChannels=length(self.ChannelNames);
+            nChannels=length(self.ChannelIDs);
             if self.IsAnalog ,
                 requiredType = 'double' ;
             else
@@ -198,9 +198,9 @@ classdef FiniteOutputTask < handle
             out = self.ChannelIDs_ ;
         end  % function
 
-        function out = get.ChannelNames(self)
-            out = self.ChannelNames_ ;
-        end  % function
+%         function out = get.ChannelNames(self)
+%             out = self.ChannelNames_ ;
+%         end  % function
         
         function value = get.SampleRate(self)
             value = self.SampleRate_;

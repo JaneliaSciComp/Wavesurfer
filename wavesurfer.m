@@ -1,4 +1,4 @@
-function varargout = wavesurfer(protocolFileName,isCommandLineOnly)
+function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     %wavesurfer  Launch Wavesurfer
     %
     %   wavesurfer(isCommandLineOnly,mdfFileName) launches
@@ -22,15 +22,15 @@ function varargout = wavesurfer(protocolFileName,isCommandLineOnly)
     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
         isCommandLineOnly=false;
     end
-    if ~exist('protocolFileName','var') || isempty(protocolFileName),
-        wasProtocolFileNameGivenAtCommandLine=false;
-        protocolFileName='';
+    if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName),
+        wasProtocolOrMDFFileNameGivenAtCommandLine=false;
+        protocolOrMDFFileName='';
     else
-        wasProtocolFileNameGivenAtCommandLine=true;
+        wasProtocolOrMDFFileNameGivenAtCommandLine=true;
     end
 
     % Create the application (model) object.
-    model = ws.WavesurferModel([],true);
+    model = ws.WavesurferModel(true);
       % 1st arg is parent, 2nd is isITheOneTrueWavesurferModel
 
     % Start the controller, if desired
@@ -44,13 +44,27 @@ function varargout = wavesurfer(protocolFileName,isCommandLineOnly)
 %           % Why does this not happen automatically when you create the controller?
     end
 
-    % Load the protocol file, maybe
-    if wasProtocolFileNameGivenAtCommandLine ,
-        if isempty(controller) ,
-            model.loadProtocolFileForRealsSrsly(protocolFileName);
+    % Load the protocol/MDF file, if one was given
+    if wasProtocolOrMDFFileNameGivenAtCommandLine ,
+        [~,~,extension] = fileparts(protocolOrMDFFileName) ;
+        if isequal(extension,'.m') ,
+            % it's an MDF file
+            if isempty(controller) ,
+                model.initializeFromMDFFileName(protocolOrMDFFileName);
+            else
+                % Need to do via controller, to keep the figure updated
+                controller.initializeGivenMDFFileName(protocolOrMDFFileName);
+            end            
+        elseif isequal(extension,'.cfg')
+            % it's a protocol file
+            if isempty(controller) ,
+                model.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
+            else
+                % Need to do via controller, to keep the figure updated
+                controller.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
+            end
         else
-            % Need to do via controller, to keep the figure updated
-            controller.loadProtocolFileForRealsSrsly(protocolFileName);
+            % do nothing
         end
     end
 

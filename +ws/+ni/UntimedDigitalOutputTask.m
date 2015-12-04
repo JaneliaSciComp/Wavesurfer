@@ -4,7 +4,7 @@ classdef UntimedDigitalOutputTask < handle
         %PhysicalChannelNames
         DeviceNames
         ChannelIDs
-        ChannelNames
+        %ChannelNames
     end
     
     properties (Dependent = true)
@@ -20,7 +20,7 @@ classdef UntimedDigitalOutputTask < handle
         %PhysicalChannelNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
         ChannelIDs_ = zeros(1,0)        
-        ChannelNames_ = cell(1,0)
+        %ChannelNames_ = cell(1,0)
         ChannelData_
     end
     
@@ -29,7 +29,7 @@ classdef UntimedDigitalOutputTask < handle
 %     end
 
     methods
-        function self = UntimedDigitalOutputTask(parent, taskName, deviceNames, channelIDs, channelNames)
+        function self = UntimedDigitalOutputTask(parent, taskName, deviceNames, channelIDs)
             %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
             %physicalChannelNames
             %channelNames
@@ -50,7 +50,7 @@ classdef UntimedDigitalOutputTask < handle
             %self.PhysicalChannelNames_ = physicalChannelNames ;
             self.DeviceNames_ = deviceNames ;
             self.ChannelIDs_ = channelIDs ;
-            self.ChannelNames_ = channelNames ;
+            %self.ChannelNames_ = channelNames ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -61,9 +61,9 @@ classdef UntimedDigitalOutputTask < handle
                     %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
                     deviceName = deviceNames{i} ;
                     channelID = channelIDs(i) ;
-                    channelName = channelNames{i} ;
+                    %channelName = channelNames{i} ;
                     lineName = sprintf('line%d',channelID) ;
-                    self.DabsDaqTask_.createDOChan(deviceName, lineName, channelName);
+                    self.DabsDaqTask_.createDOChan(deviceName, lineName);
                 end                
             end            
         end  % function
@@ -97,7 +97,7 @@ classdef UntimedDigitalOutputTask < handle
         end  % function
         
         function clearChannelData(self)
-            nChannels=length(self.ChannelNames);
+            nChannels=length(self.ChannelIDs);
             self.ChannelData = false(1,nChannels);  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function
         
@@ -107,7 +107,7 @@ classdef UntimedDigitalOutputTask < handle
         
         function set.ChannelData(self, newValue)
             if ws.utility.isASettableValue(newValue),
-                nChannels = length(self.ChannelNames) ;
+                nChannels = length(self.ChannelIDs) ;
                 if islogical(newValue) && isrow(newValue) && length(newValue)==nChannels ,
                     self.ChannelData_ = newValue;
                     self.syncOutputBufferToChannelData_();
@@ -136,9 +136,9 @@ classdef UntimedDigitalOutputTask < handle
 %             out = self.PhysicalChannelNames_ ;
 %         end  % function
 
-        function out = get.ChannelNames(self)
-            out = self.ChannelNames_ ;
-        end  % function
+%         function out = get.ChannelNames(self)
+%             out = self.ChannelNames_ ;
+%         end  % function
                     
         function out = get.TaskName(self)
             if isempty(self.DabsDaqTask_) ,
@@ -166,14 +166,14 @@ classdef UntimedDigitalOutputTask < handle
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)
             % Get the channel data into a local
-            outputData=self.ChannelData;
+            outputData = self.ChannelData ;
             
             % Actually set up the task, if present
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else            
                 % Write the data to the output buffer
-                self.DabsDaqTask_.writeDigitalData(outputData);
+                self.DabsDaqTask_.writeDigitalData(outputData) ;
             end
         end  % function
     end  % Static methods

@@ -1,12 +1,12 @@
-classdef WavesurferModel < ws.Model
+classdef WavesurferModel < ws.RootModel
     % The main Wavesurfer model object.
 
-    properties (Constant = true, Transient=true)
-        NFastProtocols = 6        
-        FrontendIPCPublisherPortNumber = 8081
-        LooperIPCPublisherPortNumber = 8082
-        RefillerIPCPublisherPortNumber = 8083        
-    end
+%     properties (Constant = true, Transient=true)
+%         NFastProtocols = 6        
+%         FrontendIPCPublisherPortNumber = 8081
+%         LooperIPCPublisherPortNumber = 8082
+%         RefillerIPCPublisherPortNumber = 8083        
+%     end
     
     properties (Dependent = true)
         HasUserSpecifiedProtocolFileName
@@ -36,7 +36,7 @@ classdef WavesurferModel < ws.Model
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
-        DeviceName
+        %DeviceName
     end
     
     %
@@ -62,7 +62,7 @@ classdef WavesurferModel < ws.Model
         % Not saved to either protocol or .usr file
         Logging_
         VersionString_
-        DeviceName_
+        %DeviceName_
     end
 
     properties (Access=protected, Transient=true)
@@ -141,14 +141,12 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function self = WavesurferModel(parent,isITheOneTrueWavesurferModel)
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;
-            end
+        function self = WavesurferModel(isITheOneTrueWavesurferModel)
+            self@ws.RootModel();  % we have no parent
+            
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
-            self@ws.Model(parent);
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
@@ -161,18 +159,18 @@ classdef WavesurferModel < ws.Model
             if isITheOneTrueWavesurferModel ,
                 % Set up the object to broadcast messages to the satellite
                 % processes
-                self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_ = ws.IPCPublisher(self.FrontendIPCPublisherPortNumber) ;
                 self.IPCPublisher_.bind() ;
 
                 % Subscribe the the looper boradcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+                self.LooperIPCSubscriber_.connect(self.LooperIPCPublisherPortNumber) ;
 
                 % Subscribe the the refiller broadcaster
                 self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
+                self.RefillerIPCSubscriber_.connect(self.RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
@@ -474,46 +472,6 @@ classdef WavesurferModel < ws.Model
     end  % methods
     
     methods
-        function value = get.DeviceName(self)
-            value = self.DeviceName_ ;
-        end  % function
-
-        function set.DeviceName(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,                
-                if ws.utility.isString(newValue) && ~isempty(newValue) ,
-                    deviceNames = ws.WavesurferModel.getAllDeviceNames() ;
-                    isAMatch = strcmpi(newValue,deviceNames) ;
-                    if any(isAMatch) ,
-                        iMatch = find(isAMatch,1) ;
-                        deviceName = deviceNames{iMatch} ;
-                        self.DeviceName_ = deviceName ;
-                        self.Acquisition.didSetDeviceName() ;
-                        self.Stimulation.didSetDeviceName() ;
-                        self.Triggering.didSetDeviceName() ;
-                        self.Display.didSetDeviceName() ;
-                        
-                        % Change our state to reflect the presence of the
-                        % device
-                        self.setState_('idle');
-
-                        % Notify the satellites
-                        if self.IsITheOneTrueWavesurferModel_ ,
-                            self.IPCPublisher_.send('didSetDevice') ;
-                        end                        
-                    else
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'DeviceName must be the name of an NI DAQmx device');       
-                    end                        
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'DeviceName must be a nonempty string');       
-                end
-            end
-            self.broadcast('Update');
-        end  % function
-
         function value=get.VersionString(self)
             value=self.VersionString_ ;
         end  % function
@@ -987,7 +945,93 @@ classdef WavesurferModel < ws.Model
         function testPulserIsAboutToStartTestPulsing(self)
             self.releaseTimedHardwareResourcesOfAllProcesses_();
         end
-    end
+        
+        function result = getNumberOfAIChannels(self)
+            % The number of AI channels available, if you used them all in
+            % single-ended mode.  If you want them to be differential, you
+            % only get half as many.
+            deviceName = self.DeviceName ;
+            if isempty(deviceName) ,
+                result = nan ;
+            else
+                device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+                aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
+                    % cellstring, each element of the form '<device name>/ai<channel ID>'
+                result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
+            end
+        end
+        
+        function result = getNumberOfAOChannels(self)
+            % The number of AO channels available.
+            deviceName = self.DeviceName ;
+            if isempty(deviceName) ,
+                result = nan ;
+            else
+                device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+                channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+                    % cellstring, each element of the form '<device name>/ao<channel ID>'
+                result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
+            end
+        end
+        
+        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
+            % The number of DIO channels available.  We only count the DIO
+            % channels capable of timed operation, i.e. the P0.x channels.
+            % This is a conscious design choice.  We treat the PFIn/Pm.x
+            % channels as being only PFIn channels.
+            deviceName = self.DeviceName ;
+            if isempty(deviceName) ,
+                numberOfDIOChannels = nan ;
+                numberOfPFILines = nan ;
+            else
+                device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+                channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+                    % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
+                % We only want to count the port0 lines, since those are
+                % the only ones that can be used for timed operations.
+                splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
+                lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
+                if any(lengthOfEachSplit<2) ,
+                    numberOfDIOChannels = nan ;  % should we throw an error here instead?
+                    numberOfPFILines = nan ;
+                else
+                    portNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
+                    isAPort0Channel = strcmp(portNames,'port0') ;
+                    numberOfDIOChannels = sum(isAPort0Channel) ;
+                    numberOfPFILines = sum(~isAPort0Channel) ;
+                end
+            end
+        end  % function
+        
+        function result = getNumberOfCounters(self)
+            % The number of counters (CTRs) on the board.
+            deviceName = self.DeviceName ;
+            if isempty(deviceName) ,
+                result = nan ;
+            else
+                device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+                channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+                    % cellstring, each element of the form '<device
+                    % name>/<counter name>', where a <counter name> is of
+                    % the form 'ctr<n>' or 'freqout'.
+                % We only want to count the ctr<n> lines, since those are
+                % the general-purpose CTRs.
+                splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
+                lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
+                if any(lengthOfEachSplit<2) ,
+                    result = nan ;  % should we throw an error here instead?
+                else
+                    counterOutputNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
+                    isAGeneralPurposeCounterOutput = strncmp(counterOutputNames,'ctr',3) ;
+                    result = sum(isAGeneralPurposeCounterOutput) ;
+                end
+            end
+        end  % function
+    end  % public methods block
     
     methods (Access=protected)
         function releaseTimedHardwareResourcesOfAllProcesses_(self)
@@ -2404,6 +2448,42 @@ classdef WavesurferModel < ws.Model
             source = other.getPropertyValue_('FastProtocols_') ;
             self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
+        
+        function setDeviceName_(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if ws.utility.isString(newValue) && ~isempty(newValue) ,
+                    deviceNames = ws.WavesurferModel.getAllDeviceNames() ;
+                    isAMatch = strcmpi(newValue,deviceNames) ;
+                    if any(isAMatch) ,
+                        iMatch = find(isAMatch,1) ;
+                        deviceName = deviceNames{iMatch} ;
+                        self.DeviceName_ = deviceName ;
+                        self.Acquisition.didSetDeviceName() ;
+                        self.Stimulation.didSetDeviceName() ;
+                        self.Triggering.didSetDeviceName() ;
+                        self.Display.didSetDeviceName() ;
+                        
+                        % Change our state to reflect the presence of the
+                        % device
+                        self.setState_('idle');
+
+                        % Notify the satellites
+                        if self.IsITheOneTrueWavesurferModel_ ,
+                            self.IPCPublisher_.send('didSetDevice') ;
+                        end                        
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'DeviceName must be the name of an NI DAQmx device');       
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DeviceName must be a nonempty string');       
+                end
+            end
+            self.broadcast('Update');
+        end  % function        
     end  % public methods block
     
     methods (Static)

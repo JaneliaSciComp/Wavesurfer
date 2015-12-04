@@ -8,7 +8,7 @@ classdef InputTask < handle
         %PhysicalChannelNames        
         DeviceNames
         ChannelIDs
-        ChannelNames
+        %ChannelNames
         IsArmed
         % These are not directly settable
         ExpectedScanCount
@@ -40,7 +40,7 @@ classdef InputTask < handle
         %PhysicalChannelNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
         ChannelIDs_ = zeros(1,0)
-        ChannelNames_ = cell(1,0)
+        %ChannelNames_ = cell(1,0)
         %IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
         AcquisitionDuration_ = 1     % Seconds
@@ -57,7 +57,7 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, deviceNames, channelIDs, channelNames)
+        function self = InputTask(parent, taskType, taskName, deviceNames, channelIDs)
             nChannels=length(channelIDs);
             
             % Store the parent
@@ -80,7 +80,7 @@ classdef InputTask < handle
             %self.PhysicalChannelNames_ = physicalChannelNames ;
             self.DeviceNames_ = deviceNames ;
             self.ChannelIDs_ = channelIDs ;
-            self.ChannelNames_ = channelNames ;
+            %self.ChannelNames_ = channelNames ;
             %self.IsChannelActive_ = true(1,nChannels);
             
             % Create the channels, set the timing mode (has to be done
@@ -90,16 +90,16 @@ classdef InputTask < handle
                     %physicalChannelName = physicalChannelNames{i} ;
                     deviceName = deviceNames{i} ;
                     channelID = channelIDs(i) ;
-                    channelName = channelNames{i} ;
+                    %channelName = channelNames{i} ;
                     if self.IsAnalog ,
                         %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         %channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID, channelName) ;
+                        self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID) ;
                     else
                         %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
                         %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
                         lineName = sprintf('line%d',channelID) ;
-                        self.DabsDaqTask_.createDIChan(deviceName, lineName, channelName) ;
+                        self.DabsDaqTask_.createDIChan(deviceName, lineName) ;
                     end
                 end
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
@@ -240,7 +240,7 @@ classdef InputTask < handle
                         packedData = bitor(packedData,shiftedData(:,column));
                     end
                 end
-                nChannels = length(self.ChannelNames_);
+                nChannels = length(self.ChannelIDs_);
                 if nChannels<=8
                     rawData = uint8(packedData);
                 elseif nChannels<=16
@@ -350,9 +350,9 @@ classdef InputTask < handle
             out = self.ChannelIDs_ ;
         end  % function
 
-        function out = get.ChannelNames(self)
-            out = self.ChannelNames_ ;
-        end  % function
+%         function out = get.ChannelNames(self)
+%             out = self.ChannelNames_ ;
+%         end  % function
         
 %         function out = get.ChannelNames(self)
 %             if ~isempty(self.DabsDaqTask_)
