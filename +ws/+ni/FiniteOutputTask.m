@@ -358,7 +358,7 @@ classdef FiniteOutputTask < handle
             % enough, and all zeros
             nScansInChannelData = size(channelData,1) ;            
             if nScansInChannelData<2 ,
-                nChannels = length(self.ChannelNames) ;
+                nChannels = length(self.ChannelIDs) ;
                 if self.IsAnalog ,
                     outputData=zeros(2,nChannels);
                 else
