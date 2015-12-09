@@ -232,6 +232,9 @@ classdef RootModel < ws.Model
                 end
             end
         end  % function
+        
+        function didSetIsDigitalOutputTimed(self) %#ok<MANU>
+        end
     end  % public methods block
     
     methods (Access=protected)
