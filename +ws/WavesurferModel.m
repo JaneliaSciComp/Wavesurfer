@@ -2301,23 +2301,55 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels');
         end
         
-        function result = nextFreeDigitalChannelID(self)
-            inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
-            outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
-            digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
-            if isempty(digitalChannelIDs) ,
-                result = 0 ;
-            else
-                result = max(digitalChannelIDs) + 1 ;
-            end            
+%         function result = nextFreeDigitalChannelID(self)
+%             inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
+%             outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
+%             digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
+%             if isempty(digitalChannelIDs) ,
+%                 result = 0 ;
+%             else
+%                 result = max(digitalChannelIDs) + 1 ;
+%             end            
+%         end
+        
+%         function result = isDigitalChannelIDInUse(self, channelID)
+%             inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
+%             outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
+%             digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
+%             result = ismember(channelID, digitalChannelIDs) ;
+%         end
+        
+        function result = allDigitalChannelIDs(self)
+            nDigitalChannelIDsInHardware = self.getNumberOfDIOChannelsAndPFILines() ;
+            result = 0:(nDigitalChannelIDsInHardware-1) ;              
         end
         
-        function result = isDigitalChannelIDInUse(self, channelID)
+        function result = digitalChannelIDsInUse(self)
             inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
             outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
-            digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
-            result = ismember(channelID, digitalChannelIDs) ;
+            result = sort([inputDigitalChannelIDs outputDigitalChannelIDs]) ;
         end
+        
+        function result = freeDigitalChannelIDs(self)
+            allIDs = self.allDigitalChannelIDs() ;  
+            inUseIDs = self.digitalChannelIDsInUse() ;
+            result = setdiff(allIDs, inUseIDs) ;
+        end
+        
+%         function result = nextFreePFIID(self)
+%             freePFIIDs = self.freePFIIDs() ;
+%             if isempty(freePFIIDs) ,
+%                 result = [] ;
+%             else
+%                 result = freePFIIDs(1) ;
+%             end
+%         end
+        
+        function result = isDigitalChannelIDInUse(self, DigitalChannelID)
+            inUseDigitalChannelIDs = self.DigitalChannelIDsInUse() ;
+            result = ismember(DigitalChannelID, inUseDigitalChannelIDs) ;
+        end
+        
         
     end
     

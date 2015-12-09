@@ -996,7 +996,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
-            newChannelID = self.Parent.nextFreeDigitalChannelID() ;
+            freeChannelIDs = self.Parent.freeDigitalChannelIDs() ;
+            if isempty(freeChannelIDs) ,
+                return  % can't add a new one, because no free IDs
+            else
+                newChannelID = freeChannelIDs(1) ;
+            end
             newChannelName = sprintf('P0.%d',newChannelID) ;
             %newChannelName = newChannelPhysicalName ;
             

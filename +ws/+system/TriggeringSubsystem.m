@@ -219,11 +219,13 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             if ~exist('counterID','var') || isempty(counterID) ,
                 % Need to pick a counterID.
                 % We find the lowest counterID that is not in use.
-                counterID = self.nextFreeCounterID() ;
-                if isempty(counterID) ,
+                counterIDs = self.freeCounterIDs() ;
+                if isempty(counterIDs) ,
                     % this means there is no free counter
                     trigger = [] ;
                     return
+                else
+                    counterID = counterIDs(1) ;
                 end
             end
             
@@ -246,6 +248,8 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             
             % Add the just-created trigger to thel list of counter triggers
             self.CounterTriggers_{1,end + 1} = trigger ;
+            
+            self.broadcast('Update') ;
         end  % function
 
         function removeCounterTrigger(self, index)
@@ -253,6 +257,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             doKeep = true(size(triggers)) ;
             doKeep(index) = false ;
             self.CounterTriggers_ = triggers(doKeep) ;
+            self.broadcast('Update') ;
         end
 
         function removeLastCounterTrigger(self)
@@ -265,11 +270,13 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             if ~exist('pfiID','var') || isempty(pfiID) ,
                 % Need to pick a counterID.
                 % We find the lowest counterID that is not in use.
-                pfiID = self.nextFreePFIID() ;
-                if isempty(pfiID) ,
+                pfiIDs = self.freePFIIDs() ;
+                if isempty(pfiIDs) ,
                     % this means there is no free PFI line
                     trigger = [] ;
                     return
+                else
+                    pfiID = pfiIDs(1) ;
                 end
             end
             
@@ -290,6 +297,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             
             % Add the just-created trigger to thel list of counter triggers
             self.ExternalTriggers_{1,end + 1} = trigger ;
+            self.broadcast('Update') ;
         end  % function
                         
         function removeExternalTrigger(self, index)
@@ -297,6 +305,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             doKeep = true(size(triggers)) ;
             doKeep(index) = false ;
             self.ExternalTriggers_ = triggers(doKeep) ;
+            self.broadcast('Update') ;
         end
 
         function removeLastExternalTrigger(self)
@@ -319,14 +328,14 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             result = setdiff(allCounterIDs, inUseCounterIDs) ;
         end
         
-        function result = nextFreeCounterID(self)
-            freeCounterIDs = self.freeCounterIDs() ;
-            if isempty(freeCounterIDs) ,
-                result = [] ;
-            else
-                result = freeCounterIDs(1) ;
-            end
-        end
+%         function result = nextFreeCounterID(self)
+%             freeCounterIDs = self.freeCounterIDs() ;
+%             if isempty(freeCounterIDs) ,
+%                 result = [] ;
+%             else
+%                 result = freeCounterIDs(1) ;
+%             end
+%         end
         
         function result = isCounterIDInUse(self, counterID)
             inUseCounterIDs = self.counterIDsInUse() ;
@@ -357,16 +366,14 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             result = setdiff(allIDs, inUseIDs) ;
         end
         
-        function result = nextFreePFIID(self, startingWith)
-            freePFIIDs = self.freePFIIDs() ;
-            isEligible = (freePFIIDs >= startingWith) ;
-            eligibleFreePFIIDs = freePFIIDs(isEligible) ;
-            if isempty(eligibleFreePFIIDs) ,
-                result = [] ;
-            else
-                result = eligibleFreePFIIDs(1) ;
-            end
-        end
+%         function result = nextFreePFIID(self)
+%             freePFIIDs = self.freePFIIDs() ;
+%             if isempty(freePFIIDs) ,
+%                 result = [] ;
+%             else
+%                 result = freePFIIDs(1) ;
+%             end
+%         end
         
         function result = isPFIIDInUse(self, pfiID)
             inUsePFIIDs = self.pfiIDsInUse() ;
