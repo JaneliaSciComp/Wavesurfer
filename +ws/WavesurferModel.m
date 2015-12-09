@@ -946,91 +946,91 @@ classdef WavesurferModel < ws.RootModel
             self.releaseTimedHardwareResourcesOfAllProcesses_();
         end
         
-        function result = getNumberOfAIChannels(self)
-            % The number of AI channels available, if you used them all in
-            % single-ended mode.  If you want them to be differential, you
-            % only get half as many.
-            deviceName = self.DeviceName ;
-            if isempty(deviceName) ,
-                result = nan ;
-            else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
-                aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
-                    % cellstring, each element of the form '<device name>/ai<channel ID>'
-                result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
-            end
-        end
-        
-        function result = getNumberOfAOChannels(self)
-            % The number of AO channels available.
-            deviceName = self.DeviceName ;
-            if isempty(deviceName) ,
-                result = nan ;
-            else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
-                channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-                    % cellstring, each element of the form '<device name>/ao<channel ID>'
-                result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
-            end
-        end
-        
-        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
-            % The number of DIO channels available.  We only count the DIO
-            % channels capable of timed operation, i.e. the P0.x channels.
-            % This is a conscious design choice.  We treat the PFIn/Pm.x
-            % channels as being only PFIn channels.
-            deviceName = self.DeviceName ;
-            if isempty(deviceName) ,
-                numberOfDIOChannels = nan ;
-                numberOfPFILines = nan ;
-            else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
-                channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-                    % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
-                % We only want to count the port0 lines, since those are
-                % the only ones that can be used for timed operations.
-                splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
-                lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
-                if any(lengthOfEachSplit<2) ,
-                    numberOfDIOChannels = nan ;  % should we throw an error here instead?
-                    numberOfPFILines = nan ;
-                else
-                    portNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
-                    isAPort0Channel = strcmp(portNames,'port0') ;
-                    numberOfDIOChannels = sum(isAPort0Channel) ;
-                    numberOfPFILines = sum(~isAPort0Channel) ;
-                end
-            end
-        end  % function
-        
-        function result = getNumberOfCounters(self)
-            % The number of counters (CTRs) on the board.
-            deviceName = self.DeviceName ;
-            if isempty(deviceName) ,
-                result = nan ;
-            else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
-                channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-                    % cellstring, each element of the form '<device
-                    % name>/<counter name>', where a <counter name> is of
-                    % the form 'ctr<n>' or 'freqout'.
-                % We only want to count the ctr<n> lines, since those are
-                % the general-purpose CTRs.
-                splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
-                lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
-                if any(lengthOfEachSplit<2) ,
-                    result = nan ;  % should we throw an error here instead?
-                else
-                    counterOutputNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
-                    isAGeneralPurposeCounterOutput = strncmp(counterOutputNames,'ctr',3) ;
-                    result = sum(isAGeneralPurposeCounterOutput) ;
-                end
-            end
-        end  % function
+%         function result = getNumberOfAIChannels(self)
+%             % The number of AI channels available, if you used them all in
+%             % single-ended mode.  If you want them to be differential, you
+%             % only get half as many.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 result = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+%                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
+%                     % cellstring, each element of the form '<device name>/ai<channel ID>'
+%                 result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
+%             end
+%         end
+%         
+%         function result = getNumberOfAOChannels(self)
+%             % The number of AO channels available.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 result = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+%                     % cellstring, each element of the form '<device name>/ao<channel ID>'
+%                 result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
+%             end
+%         end
+%         
+%         function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
+%             % The number of DIO channels available.  We only count the DIO
+%             % channels capable of timed operation, i.e. the P0.x channels.
+%             % This is a conscious design choice.  We treat the PFIn/Pm.x
+%             % channels as being only PFIn channels.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 numberOfDIOChannels = nan ;
+%                 numberOfPFILines = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+%                     % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
+%                 % We only want to count the port0 lines, since those are
+%                 % the only ones that can be used for timed operations.
+%                 splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
+%                 lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
+%                 if any(lengthOfEachSplit<2) ,
+%                     numberOfDIOChannels = nan ;  % should we throw an error here instead?
+%                     numberOfPFILines = nan ;
+%                 else
+%                     portNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
+%                     isAPort0Channel = strcmp(portNames,'port0') ;
+%                     numberOfDIOChannels = sum(isAPort0Channel) ;
+%                     numberOfPFILines = sum(~isAPort0Channel) ;
+%                 end
+%             end
+%         end  % function
+%         
+%         function result = getNumberOfCounters(self)
+%             % The number of counters (CTRs) on the board.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 result = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+%                     % cellstring, each element of the form '<device
+%                     % name>/<counter name>', where a <counter name> is of
+%                     % the form 'ctr<n>' or 'freqout'.
+%                 % We only want to count the ctr<n> lines, since those are
+%                 % the general-purpose CTRs.
+%                 splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
+%                 lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
+%                 if any(lengthOfEachSplit<2) ,
+%                     result = nan ;  % should we throw an error here instead?
+%                 else
+%                     counterOutputNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
+%                     isAGeneralPurposeCounterOutput = strncmp(counterOutputNames,'ctr',3) ;
+%                     result = sum(isAGeneralPurposeCounterOutput) ;
+%                 end
+%             end
+%         end  % function
     end  % public methods block
     
     methods (Access=protected)

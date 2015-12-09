@@ -316,7 +316,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function result = freeCounterIDs(self)
             allCounterIDs = self.allCounterIDs() ;  
             inUseCounterIDs = self.counterIDsInUse() ;
-            result = setminus(allCounterIDs, inUseCounterIDs) ;
+            result = setdiff(allCounterIDs, inUseCounterIDs) ;
         end
         
         function result = nextFreeCounterID(self)
@@ -334,7 +334,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end
 
         function result = allPFIIDs(self)
-            [~,nPFIIDsInHardware] = self.getNumberOfDIOChannelsAndPFILines() ;
+            [~,nPFIIDsInHardware] = self.Parent.getNumberOfDIOChannelsAndPFILines() ;
             result = 0:(nPFIIDsInHardware-1) ;              
         end
         
@@ -354,7 +354,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function result = freePFIIDs(self)
             allIDs = self.allPFIIDs() ;  
             inUseIDs = self.pfiIDsInUse() ;
-            result = setminus(allIDs, inUseIDs) ;
+            result = setdiff(allIDs, inUseIDs) ;
         end
         
         function result = nextFreePFIID(self, startingWith)
