@@ -20,6 +20,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         Edge
             % Whether rising edges or falling edges constitute a trigger
             % event.
+        IsMarkedForDeletion
     end
     
     properties (Access=protected)
@@ -27,6 +28,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         DeviceName_
         PFIID_
         Edge_
+        IsMarkedForDeletion_
     end
     
     methods
@@ -35,7 +37,8 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
-            self.Edge_ = 'rising';            
+            self.Edge_ = 'rising';  
+            self.IsMarkedForDeletion_ = false ;
         end
         
         function value=get.Name(self)
@@ -106,6 +109,24 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
             end
             self.broadcast('Update');            
         end  % function 
+        
+        function value = get.IsMarkedForDeletion(self)
+            value = self.IsMarkedForDeletion_ ;
+        end
+
+        function set.IsMarkedForDeletion(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+                    self.IsMarkedForDeletion_ = logical(value) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'IsMarkedForDeletion must be a truthy scalar');                  
+                end                    
+            end
+            self.broadcast('Update');            
+        end
+        
     end  % methods
     
     methods (Access=protected)        

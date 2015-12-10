@@ -11,9 +11,13 @@ classdef TriggersFigure < ws.MCOSFigure
         
         CounterTriggersPanel
         CounterTriggersTable
+        AddCounterTriggerButton
+        RemoveCounterTriggersButton        
         
         ExternalTriggersPanel
         ExternalTriggersTable
+        AddExternalTriggerButton
+        RemoveExternalTriggersButton        
     end  % properties
     
     methods
@@ -119,7 +123,17 @@ classdef TriggersFigure < ws.MCOSFigure
                         'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'}, ...
                         'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'Rising' 'Falling'}}, ...
                         'ColumnEditable',[false false false true true false false]);
-            
+            self.AddCounterTriggerButton= ...
+                uicontrol('Parent',self.CounterTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Add');                      
+            self.RemoveCounterTriggersButton= ...
+                uicontrol('Parent',self.CounterTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Remove');
+                    
             % Trigger Destinations Panel
             self.ExternalTriggersPanel = ...
                 uipanel('Parent',self.FigureGH, ...
@@ -132,6 +146,17 @@ classdef TriggersFigure < ws.MCOSFigure
                         'ColumnName',{'Name' 'Device' 'PFI' 'Edge'}, ...
                         'ColumnFormat',{'char' 'char' 'numeric' {'Rising' 'Falling'}}, ...
                         'ColumnEditable',[false false false false]);
+            self.AddExternalTriggerButton= ...
+                uicontrol('Parent',self.ExternalTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Add');                      
+            self.RemoveExternalTriggersButton= ...
+                uicontrol('Parent',self.ExternalTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Remove');
+                    
         end  % function
     end  % singleton methods block
     
@@ -355,13 +380,18 @@ classdef TriggersFigure < ws.MCOSFigure
         function layoutCounterTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
+            buttonWidth = 80 ;
+            buttonHeight = 20 ;
+            interButtonSpaceWidth = 10 ;
+            heightBetweenTableAndButtonRow = 8 ;
+            
             leftPad=10;
             rightPad=10;
             bottomPad=10;
             topPad=2;
             
             tableWidth=panelWidth-leftPad-rightPad;
-            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad;
+            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad-heightBetweenTableAndButtonRow-buttonHeight;
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
@@ -375,8 +405,29 @@ classdef TriggersFigure < ws.MCOSFigure
             
             % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'
             set(self.CounterTriggersTable, ...
-                'Position', [leftPad bottomPad tableWidth tableHeight], ...
+                'Position', [leftPad bottomPad+buttonHeight+heightBetweenTableAndButtonRow tableWidth tableHeight], ...
                 'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth});
+
+            % Position the buttons
+            buttonRowXOffset = leftPad ;
+            buttonRowYOffset = bottomPad ;
+            buttonRowWidth = tableWidth ;
+            
+            % Remove button is flush right
+            removeButtonXOffset = buttonRowXOffset + buttonRowWidth - buttonWidth ;
+            removeButtonYOffset = buttonRowYOffset ;
+            removeButtonWidth = buttonWidth ;
+            removeButtonHeight = buttonHeight ;
+            set(self.RemoveCounterTriggersButton, ...
+                'Position', [removeButtonXOffset removeButtonYOffset removeButtonWidth removeButtonHeight]);
+
+            % Add button is to the left of the remove button
+            addButtonXOffset = removeButtonXOffset - interButtonSpaceWidth - buttonWidth ;
+            addButtonYOffset = buttonRowYOffset ;
+            addButtonWidth = buttonWidth ;
+            addButtonHeight = buttonHeight ;
+            set(self.AddCounterTriggerButton, ...
+                'Position', [addButtonXOffset addButtonYOffset addButtonWidth addButtonHeight]);            
         end
     end
     
@@ -384,13 +435,18 @@ classdef TriggersFigure < ws.MCOSFigure
         function layoutExternalTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
+            buttonWidth = 80 ;
+            buttonHeight = 20 ;
+            interButtonSpaceWidth = 10 ;
+            heightBetweenTableAndButtonRow = 8 ;
+            
             leftPad=10;
             rightPad=10;
             bottomPad=10;
             topPad=2;
             
             tableWidth=panelWidth-leftPad-rightPad;
-            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad;
+            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad-topPad-heightBetweenTableAndButtonRow-buttonHeight;
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
@@ -401,8 +457,29 @@ classdef TriggersFigure < ws.MCOSFigure
                         
             % 'Name' 'PFI' 'Edge'
             set(self.ExternalTriggersTable, ...
-                'Position', [leftPad bottomPad tableWidth tableHeight], ...
+                'Position', [leftPad bottomPad+buttonHeight+heightBetweenTableAndButtonRow tableWidth tableHeight], ...
                 'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth});
+            
+            % Position the buttons
+            buttonRowXOffset = leftPad ;
+            buttonRowYOffset = bottomPad ;
+            buttonRowWidth = tableWidth ;
+            
+            % Remove button is flush right
+            removeButtonXOffset = buttonRowXOffset + buttonRowWidth - buttonWidth ;
+            removeButtonYOffset = buttonRowYOffset ;
+            removeButtonWidth = buttonWidth ;
+            removeButtonHeight = buttonHeight ;
+            set(self.RemoveExternalTriggersButton, ...
+                'Position', [removeButtonXOffset removeButtonYOffset removeButtonWidth removeButtonHeight]);
+
+            % Add button is to the left of the remove button
+            addButtonXOffset = removeButtonXOffset - interButtonSpaceWidth - buttonWidth ;
+            addButtonYOffset = buttonRowYOffset ;
+            addButtonWidth = buttonWidth ;
+            addButtonHeight = buttonHeight ;
+            set(self.AddExternalTriggerButton, ...
+                'Position', [addButtonXOffset addButtonYOffset addButtonWidth addButtonHeight]);            
         end
     end
     

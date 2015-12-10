@@ -216,8 +216,23 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             end
         end  % function
         
-        % No method ExternalTriggersTableActuated() b/c can't change
-        % anything in that table
+        function AddCounterTriggerButtonActuated(self,source,event)
+            self.Model.addCounterTrigger() ;
+        end
+
+        function RemoveCounterTriggersButtonActuated(self,source,event)
+        end
+        
+        function ExternalTriggersTableActuated(self,source,event)
+        end
+
+        function AddExternalTriggerButtonActuated(self,source,event)
+            self.Model.addExternalTrigger() ;
+        end
+
+        function RemoveExternalTriggersButtonActuated(self,source,event)
+        end
+        
     end  % methods block    
 
 %     methods (Access=protected)

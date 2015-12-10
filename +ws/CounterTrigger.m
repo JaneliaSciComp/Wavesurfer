@@ -18,6 +18,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         Interval  % the inter-trigger interval, in seconds
         PFIID
         Edge
+        IsMarkedForDeletion
     end
     
     properties (Access=protected)
@@ -32,6 +33,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         CounterID_
         PFIID_
         Edge_
+        IsMarkedForDeletion_
     end
 
 %     properties (Access = protected, Transient=true)
@@ -55,6 +57,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
             %self.PFIID_ = 12 ;
             self.Edge_ = 'rising' ;
             %self.CounterTask_=[];  % set in setup() method
+            self.IsMarkedForDeletion_ = false ;
         end
     end
     
@@ -188,6 +191,23 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         
         function value=get.Edge(self)
             value=self.Edge_;
+        end
+        
+        function value = get.IsMarkedForDeletion(self)
+            value = self.IsMarkedForDeletion_ ;
+        end
+
+        function set.IsMarkedForDeletion(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+                    self.IsMarkedForDeletion_ = logical(value) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'IsMarkedForDeletion must be a truthy scalar');                  
+                end                    
+            end
+            self.broadcast('Update');            
         end
         
         function set.Name(self, value)
