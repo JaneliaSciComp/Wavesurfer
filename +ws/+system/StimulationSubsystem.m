@@ -516,7 +516,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             %self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
 
-            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+            self.Parent.didAddAnalogOutputChannel() ;
+            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
@@ -524,6 +525,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         function removeAnalogChannel(self,channelIndex)
             nChannels = length(self.AnalogChannelIDs) ;
             if 1<=channelIndex && channelIndex<=nChannels ,
+                %channelName = self.AnalogChannelNames_{channelIndex} ;
                 isKeeper = true(1,nChannels) ;
                 isKeeper(channelIndex) = false ;
                 self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
@@ -534,7 +536,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 %self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
 
-                self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
+                self.Parent.didRemoveAnalogOutputChannel() ;
+                self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 %self.broadcast('DidChangeNumberOfChannels');            
             end
         end  % function
@@ -545,44 +548,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end  % function
 
         function addDigitalChannel(self)
-            deviceName = self.Parent.DeviceName ;
-            
-            newChannelDeviceName = deviceName ;
-            freeChannelIDs = self.Parent.freeDigitalChannelIDs() ;
-            if isempty(freeChannelIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newChannelID = freeChannelIDs(1) ;
-            end
-            newChannelName = sprintf('P0.%d',newChannelID) ;
-            %newChannelName = newChannelPhysicalName ;
-            
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
-            self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
-            %self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
-            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true ];
-            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
-
-            self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
+            self.addDigitalChannel_() ;
         end  % function
         
-        function removeDigitalChannel(self,channelIndex)
-            nChannels = length(self.DigitalChannelIDs) ;
-            if 1<=channelIndex && channelIndex<=nChannels ,
-                isKeeper = true(1,nChannels) ;
-                isKeeper(channelIndex) = false ;
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
-                %self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
-
-                self.notifyOthersThatDidChangeNumberOfOutputChannels_() ;
-                %self.broadcast('DidChangeNumberOfChannels');            
-            end
+        function removeDigitalChannel(self, channelIndex)
+            self.removeDigitalChannel_(channelIndex) ;
         end  % function
         
         function removeLastDigitalChannel(self)
@@ -748,8 +718,56 @@ end  % methods block
             %self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
         
-        function notifyOthersThatDidChangeNumberOfOutputChannels_(self)
-            self.Parent.didChangeNumberOfOutputChannels() ;
+        function addDigitalChannel_(self)
+            fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            freeChannelIDs = self.Parent.freeDigitalChannelIDs() ;
+            if isempty(freeChannelIDs) ,
+                return  % can't add a new one, because no free IDs
+            else
+                newChannelID = freeChannelIDs(1) ;
+            end
+            newChannelName = sprintf('P0.%d',newChannelID) ;
+            %newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
+            %self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            isNewChannelTimed = true ;
+            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ isNewChannelTimed  ];
+            newChannelStateIfUntimed = false ;
+            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ];
+
+            self.Parent.didAddDigitalOutputChannel(newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) ;
+            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
+            fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
+        end  % function
+        
+        function removeDigitalChannel_(self,channelIndex)
+            nChannels = length(self.DigitalChannelIDs) ;
+            if 1<=channelIndex && channelIndex<=nChannels ,
+                %channelName = self.AnalogChannelNames_{channelIndex} ;
+                isKeeper = true(1,nChannels) ;
+                isKeeper(channelIndex) = false ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+                %self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+
+                self.Parent.didRemoveDigitalOutputChannel(channelIndex) ;
+                self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+                %self.broadcast('DidChangeNumberOfChannels');            
+            end
+        end  % function
+        
+        function notifyLibraryThatDidChangeNumberOfOutputChannels_(self)
+            %self.Parent.didChangeNumberOfOutputChannels() ;
             stimulusLibrary = self.StimulusLibrary ;
             if ~isempty(stimulusLibrary) ,
                 stimulusLibrary.didChangeNumberOfOutputChannels() ;

@@ -136,9 +136,9 @@ classdef UntimedDigitalOutputTask < handle
 %             out = self.PhysicalChannelNames_ ;
 %         end  % function
 
-%         function out = get.ChannelNames(self)
-%             out = self.ChannelNames_ ;
-%         end  % function
+        function out = get.ChannelIDs(self)
+            out = self.ChannelIDs_ ;
+        end  % function
                     
         function out = get.TaskName(self)
             if isempty(self.DabsDaqTask_) ,

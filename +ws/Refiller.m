@@ -371,14 +371,20 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end
         
-        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.IsDigitalChannelTimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue) %#ok<INUSD>
+            %self.Stimulation.IsDigitalChannelTimed = newValue ;
             result = [] ;
         end  % function
         
+        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) %#ok<INUSD>
+            %self.Stimulation.addDigitalChannel() ;
+            result = [] ;
+        end  % function
+        
+        function result = didRemoveDigitalOutputChannelInFrontend(self, removedChannelIndex) %#ok<INUSD>
+            %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
+            result = [] ;
+        end  % function
     end  % RPC methods block
     
     methods

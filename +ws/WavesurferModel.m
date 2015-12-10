@@ -762,7 +762,7 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue)
+        function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
 %             self.Display.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
 %             ephys=self.Ephys;
 %             if ~isempty(ephys)
@@ -2258,6 +2258,30 @@ classdef WavesurferModel < ws.RootModel
     end
 
     methods
+        function result = allDigitalChannelIDs(self)
+            nDigitalChannelIDsInHardware = self.getNumberOfDIOChannelsAndPFILines() ;
+            result = 0:(nDigitalChannelIDsInHardware-1) ;              
+        end
+        
+        function result = digitalChannelIDsInUse(self)
+            inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
+            outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
+            result = sort([inputDigitalChannelIDs outputDigitalChannelIDs]) ;
+        end
+        
+        function result = freeDigitalChannelIDs(self)
+            allIDs = self.allDigitalChannelIDs() ;  
+            inUseIDs = self.digitalChannelIDsInUse() ;
+            result = setdiff(allIDs, inUseIDs) ;
+        end
+        
+        function result = isDigitalChannelIDInUse(self, DigitalChannelID)
+            inUseDigitalChannelIDs = self.DigitalChannelIDsInUse() ;
+            result = ismember(DigitalChannelID, inUseDigitalChannelIDs) ;
+        end
+    end
+    
+    methods
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.DigitalOutputStateIfUntimed ;
             self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
@@ -2296,60 +2320,40 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didChangeNumberOfOutputChannels(self)
+%         function didChangeNumberOfOutputChannels(self)
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');
+%         end
+        
+        function didAddAnalogOutputChannel(self)
+            %self.Display.didAddAnalogOutputChannel() ;
             self.Ephys.didChangeNumberOfOutputChannels();
-            self.broadcast('UpdateChannels');
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
         
-%         function result = nextFreeDigitalChannelID(self)
-%             inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
-%             outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
-%             digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
-%             if isempty(digitalChannelIDs) ,
-%                 result = 0 ;
-%             else
-%                 result = max(digitalChannelIDs) + 1 ;
-%             end            
-%         end
-        
-%         function result = isDigitalChannelIDInUse(self, channelID)
-%             inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
-%             outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
-%             digitalChannelIDs = [inputDigitalChannelIDs outputDigitalChannelIDs] ;
-%             result = ismember(channelID, digitalChannelIDs) ;
-%         end
-        
-        function result = allDigitalChannelIDs(self)
-            nDigitalChannelIDsInHardware = self.getNumberOfDIOChannelsAndPFILines() ;
-            result = 0:(nDigitalChannelIDsInHardware-1) ;              
+        function didAddDigitalOutputChannel(self, newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed)
+            %self.Display.didAddDigitalOutputChannel() ;
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+            self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) ;
         end
         
-        function result = digitalChannelIDsInUse(self)
-            inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
-            outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
-            result = sort([inputDigitalChannelIDs outputDigitalChannelIDs]) ;
+        function didRemoveAnalogOutputChannel(self)
+            %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function result = freeDigitalChannelIDs(self)
-            allIDs = self.allDigitalChannelIDs() ;  
-            inUseIDs = self.digitalChannelIDsInUse() ;
-            result = setdiff(allIDs, inUseIDs) ;
+        function didRemoveDigitalOutputChannel(self, indexOfRemovedChannel)
+            %self.Display.didRemoveDigitalOutputChannel(nameOfRemovedChannel) ;
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+            self.IPCPublisher_.send('didRemoveDigitalOutputChannelInFrontend', indexOfRemovedChannel) ;
         end
-        
-%         function result = nextFreePFIID(self)
-%             freePFIIDs = self.freePFIIDs() ;
-%             if isempty(freePFIIDs) ,
-%                 result = [] ;
-%             else
-%                 result = freePFIIDs(1) ;
-%             end
-%         end
-        
-        function result = isDigitalChannelIDInUse(self, DigitalChannelID)
-            inUseDigitalChannelIDs = self.DigitalChannelIDsInUse() ;
-            result = ismember(DigitalChannelID, inUseDigitalChannelIDs) ;
-        end
-        
         
     end
     
@@ -2414,7 +2418,7 @@ classdef WavesurferModel < ws.RootModel
 %             error('waversurfer:pollingTimerError',...
 %                   'The polling timer had a problem.  Acquisition aborted.');
 %         end        
-    end
+    end  % protected methods block
     
     methods
         function mimic(self, other)
@@ -2472,7 +2476,7 @@ classdef WavesurferModel < ws.RootModel
                 self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
             end
         end  % function
-    end  % public methods block
+    end  % protected methods block
     
     methods (Access=protected) 
         function mimicUserSettings_(self, other)
@@ -2516,7 +2520,7 @@ classdef WavesurferModel < ws.RootModel
             end
             self.broadcast('Update');
         end  % function        
-    end  % public methods block
+    end  % protected methods block
     
     methods (Static)
         function [pathToRepoRoot,pathToMatlabZmqLib] = pathNamesThatNeedToBeOnSearchPath()

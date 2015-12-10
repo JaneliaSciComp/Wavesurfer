@@ -361,6 +361,16 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
+        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed)
+            self.Stimulation.didAddDigitalChannelInFrontend(newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) ;
+            result = [] ;
+        end  % function
+        
+        function result = didRemoveDigitalOutputChannelInFrontend(self, removedChannelIndex)
+            self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
+            result = [] ;
+        end  % function
+        
     end  % RPC methods block
     
     methods

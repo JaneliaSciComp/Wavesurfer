@@ -233,8 +233,17 @@ classdef RootModel < ws.Model
             end
         end  % function
         
-        function didSetIsDigitalOutputTimed(self) %#ok<MANU>
+        function didSetIsDigitalOutputTimed(self)  %#ok<MANU>
         end
+        
+        function didAddDigitalOutputChannel(self)  %#ok<MANU>
+        end
+        
+        function didRemoveDigitalOutputChannel(self, channelIndex) %#ok<INUSD>
+        end
+        
+        function didSetDigitalOutputStateIfUntimed(self) %#ok<MANU>
+        end        
     end  % public methods block
     
     methods (Access=protected)
