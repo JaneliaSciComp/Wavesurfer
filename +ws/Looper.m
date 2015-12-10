@@ -353,7 +353,7 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;

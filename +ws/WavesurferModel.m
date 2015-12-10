@@ -2265,7 +2265,7 @@ classdef WavesurferModel < ws.RootModel
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.IsDigitalChannelTimed ;
-            self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',value) ;
+            self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
         end
         
         function didAddAnalogInputChannel(self)
@@ -2469,7 +2469,7 @@ classdef WavesurferModel < ws.RootModel
             % Make sure the looper knows which output channels are timed vs
             % on-demand
             if self.IsITheOneTrueWavesurferModel_ ,
-                self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
+                self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
             end
         end  % function
     end  % public methods block

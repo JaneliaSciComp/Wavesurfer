@@ -371,7 +371,7 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end
         
-        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
