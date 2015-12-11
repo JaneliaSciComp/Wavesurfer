@@ -719,7 +719,7 @@ end  % methods block
         end  % function
         
         function addDigitalChannel_(self)
-            fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
+            %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
@@ -744,7 +744,7 @@ end  % methods block
             self.Parent.didAddDigitalOutputChannel(newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             %self.broadcast('DidChangeNumberOfChannels');            
-            fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
+            %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
         end  % function
         
         function removeDigitalChannel_(self,channelIndex)
