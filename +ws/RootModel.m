@@ -63,11 +63,11 @@ classdef RootModel < ws.Model
 %         Logging_
 %         VersionString_
         DeviceName_ = ''   % represents "no device specified"
-%         NDIOChannels_ = 0
-%         NPFILines_ = 0 
-%         NCounters_ = 0
-%         NAIChannels_ = 0
-%         NAOChannels_ = 0
+        NDIOChannels_ = 0
+        NPFILines_ = 0 
+        NCounters_ = 0
+        NAIChannels_ = 0
+        NAOChannels_ = 0
     end
 
     properties (Access=protected, Transient=true)
@@ -156,7 +156,35 @@ classdef RootModel < ws.Model
             % The number of AI channels available, if you used them all in
             % single-ended mode.  If you want them to be differential, you
             % only get half as many.
-            deviceName = self.DeviceName ;
+            result = self.NAIChannels_ ;
+        end
+        
+        function result = getNumberOfAOChannels(self)
+            % The number of AO channels available.
+            result = self.NAOChannels_ ;
+        end
+
+        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
+            % The number of DIO channels available.  We only count the DIO
+            % channels capable of timed operation, i.e. the P0.x channels.
+            % This is a conscious design choice.  We treat the PFIn/Pm.x
+            % channels as being only PFIn channels.
+            numberOfDIOChannels = self.NDIOChannels_ ;
+            numberOfPFILines = self.NPFILines_ ;
+        end  % function
+        
+        function result = getNumberOfCounters(self)
+            % The number of counters (CTRs) on the board.
+            result = self.NCounters_ ;
+        end  % function        
+    end  % (static methods block)
+    
+    methods (Static)
+        function result = getNumberOfAIChannelsFromDevice(deviceName)
+            % The number of AI channels available, if you used them all in
+            % single-ended mode.  If you want them to be differential, you
+            % only get half as many.
+            %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
                 result = nan ;
             else
@@ -168,9 +196,9 @@ classdef RootModel < ws.Model
             end
         end
         
-        function result = getNumberOfAOChannels(self)
+        function result = getNumberOfAOChannelsFromDevice(deviceName)
             % The number of AO channels available.
-            deviceName = self.DeviceName ;
+            %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
                 result = nan ;
             else
@@ -182,12 +210,12 @@ classdef RootModel < ws.Model
             end
         end
         
-        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
+        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILinesFromDevice(deviceName)
             % The number of DIO channels available.  We only count the DIO
             % channels capable of timed operation, i.e. the P0.x channels.
             % This is a conscious design choice.  We treat the PFIn/Pm.x
             % channels as being only PFIn channels.
-            deviceName = self.DeviceName ;
+            %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
                 numberOfDIOChannels = nan ;
                 numberOfPFILines = nan ;
@@ -212,9 +240,9 @@ classdef RootModel < ws.Model
             end
         end  % function
         
-        function result = getNumberOfCounters(self)
+        function result = getNumberOfCountersFromDevice(deviceName)
             % The number of counters (CTRs) on the board.
-            deviceName = self.DeviceName ;
+            %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
                 result = nan ;
             else
@@ -236,8 +264,10 @@ classdef RootModel < ws.Model
                     result = sum(isAGeneralPurposeCounterOutput) ;
                 end
             end
-        end  % function
+        end  % function        
+    end  % (static methods block)
         
+    methods
         function didSetIsDigitalOutputTimed(self)  %#ok<MANU>
         end
         

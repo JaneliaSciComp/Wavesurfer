@@ -262,9 +262,26 @@ classdef Looper < ws.RootModel
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDevice(self)
-            %self.initializeFromMDFStructure_(mdfStructure) ;
+        function result = didSetDevice(self, deviceName, nDIOChannels, nPFILines, nCounters, nAIChannels, nAOChannels)
+            % Set stuff
+            self.DeviceName_ = deviceName ;
+            self.NDIOChannels_ = nDIOChannels ;
+            self.NPFILines_ = nPFILines ;
+            self.NCounters_ = nCounters ;
+            self.NAIChannels_ = nAIChannels ;
+            self.NAOChannels_ = nAOChannels ;            
+            
+            % Notify subsystems
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;            
+            self.Triggering.didSetDeviceName() ;            
+            
+            % Set the state
+            self.setState_('idle');  % do we need to do this?
+            
+            % Get a task, if we need one
             self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+
             result = [] ;
         end  % function
 

@@ -2494,6 +2494,20 @@ classdef WavesurferModel < ws.RootModel
                         iMatch = find(isAMatch,1) ;
                         deviceName = deviceNames{iMatch} ;
                         self.DeviceName_ = deviceName ;
+                        
+                        % Probe the device to find out its capabilities
+                        [nDIOChannels, nPFILines] = ws.RootModel.getNumberOfDIOChannelsAndPFILinesFromDevice(deviceName) ;
+                        nCounters = ws.RootModel.getNumberOfCountersFromDevice(deviceName) ;
+                        nAIChannels = ws.RootModel.getNumberOfAIChannelsFromDevice(deviceName) ;
+                        nAOChannels = ws.RootModel.getNumberOfAOChannelsFromDevice(deviceName) ;
+                        self.NDIOChannels_ = nDIOChannels ;
+                        self.NPFILines_ = nPFILines ;
+                        self.NCounters_ = nCounters ;
+                        self.NAIChannels_ = nAIChannels ;
+                        self.NAOChannels_ = nAOChannels ;
+
+                        % Tell the subsystems that we've changed the device
+                        % name
                         self.Acquisition.didSetDeviceName() ;
                         self.Stimulation.didSetDeviceName() ;
                         self.Triggering.didSetDeviceName() ;
@@ -2505,7 +2519,7 @@ classdef WavesurferModel < ws.RootModel
 
                         % Notify the satellites
                         if self.IsITheOneTrueWavesurferModel_ ,
-                            self.IPCPublisher_.send('didSetDevice') ;
+                            self.IPCPublisher_.send('didSetDevice', deviceName, nDIOChannels, nPFILines, nCounters, nAIChannels, nAOChannels) ;
                         end                        
                     else
                         self.broadcast('Update');
