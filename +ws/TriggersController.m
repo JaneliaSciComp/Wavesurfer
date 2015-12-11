@@ -204,12 +204,13 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             columnIndex = indices(2) ;
             triggerIndex = rowIndex ;
             theTrigger = self.Model.CounterTriggers{triggerIndex} ;
-            % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
+            % 'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
             if (columnIndex==1) ,
-                % I guess this is the row title...
-            elseif (columnIndex==2) ,
                 newValue = newThang ;
                 ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+            elseif (columnIndex==2) ,
+                % Can't change the device name this way, at least not right
+                % now
             elseif (columnIndex==3) ,
                 newValue = str2double(newThang) ;
                 ws.Controller.setWithBenefits(theTrigger, 'CounterID', newValue) ;                
@@ -237,7 +238,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             self.Model.addCounterTrigger() ;
         end
 
-        function RemoveCounterTriggersButtonActuated(self,source,event)
+        function DeleteCounterTriggersButtonActuated(self,source,event)
             self.Model.deleteMarkedCounterTriggers() ;
         end
         
@@ -248,22 +249,22 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             rowIndex = indices(1) ;
             columnIndex = indices(2) ;
             sourceIndex = rowIndex ;
-            theSource = self.Model.ExternalTriggers{sourceIndex} ;
-            % 'Name' 'PFI' 'Edge' 'Delete?'
+            theTrigger = self.Model.ExternalTriggers{sourceIndex} ;
+            % 'Name' 'Device' 'PFI' 'Edge' 'Delete?'
             if (columnIndex==1) ,
-                % I guess this is the row title...
-            elseif (columnIndex==2) ,
                 newValue = newThang ;
-                ws.Controller.setWithBenefits(theSource, 'Name', newValue) ;
+                ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+            elseif (columnIndex==2) ,
+                % Can't change the dev name this way at present
             elseif (columnIndex==3) ,
                 newValue = str2double(newThang) ;
-                ws.Controller.setWithBenefits(theSource, 'PFIID', newValue) ;                
+                ws.Controller.setWithBenefits(theTrigger, 'PFIID', newValue) ;                
             elseif (columnIndex==4) ,
                 newValue = lower(newThang) ;
-                ws.Controller.setWithBenefits(theSource, 'Edge', newValue) ;                
+                ws.Controller.setWithBenefits(theTrigger, 'Edge', newValue) ;                
             elseif (columnIndex==5) ,
                 newValue = logical(newThang) ;
-                ws.Controller.setWithBenefits(theSource, 'IsMarkedForDeletion', newValue) ;
+                ws.Controller.setWithBenefits(theTrigger, 'IsMarkedForDeletion', newValue) ;
             end
         end  % function
 
@@ -271,7 +272,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             self.Model.addExternalTrigger() ;
         end
 
-        function RemoveExternalTriggersButtonActuated(self,source,event)
+        function DeleteExternalTriggersButtonActuated(self,source,event)
             self.Model.deleteMarkedExternalTriggers() ;
         end
         

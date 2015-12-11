@@ -12,12 +12,12 @@ classdef TriggersFigure < ws.MCOSFigure
         CounterTriggersPanel
         CounterTriggersTable
         AddCounterTriggerButton
-        RemoveCounterTriggersButton        
+        DeleteCounterTriggersButton        
         
         ExternalTriggersPanel
         ExternalTriggersTable
         AddExternalTriggerButton
-        RemoveExternalTriggersButton        
+        DeleteExternalTriggersButton        
     end  % properties
     
     methods
@@ -128,7 +128,7 @@ classdef TriggersFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'String','Add');                      
-            self.RemoveCounterTriggersButton= ...
+            self.DeleteCounterTriggersButton= ...
                 uicontrol('Parent',self.CounterTriggersPanel, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
@@ -151,7 +151,7 @@ classdef TriggersFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'Units','pixels', ...
                           'String','Add');                      
-            self.RemoveExternalTriggersButton= ...
+            self.DeleteExternalTriggersButton= ...
                 uicontrol('Parent',self.ExternalTriggersPanel, ...
                           'Style','pushbutton', ...
                           'Units','pixels', ...
@@ -419,7 +419,7 @@ classdef TriggersFigure < ws.MCOSFigure
             removeButtonYOffset = buttonRowYOffset ;
             removeButtonWidth = buttonWidth ;
             removeButtonHeight = buttonHeight ;
-            set(self.RemoveCounterTriggersButton, ...
+            set(self.DeleteCounterTriggersButton, ...
                 'Position', [removeButtonXOffset removeButtonYOffset removeButtonWidth removeButtonHeight]);
 
             % Add button is to the left of the remove button
@@ -472,7 +472,7 @@ classdef TriggersFigure < ws.MCOSFigure
             removeButtonYOffset = buttonRowYOffset ;
             removeButtonWidth = buttonWidth ;
             removeButtonHeight = buttonHeight ;
-            set(self.RemoveExternalTriggersButton, ...
+            set(self.DeleteExternalTriggersButton, ...
                 'Position', [removeButtonXOffset removeButtonYOffset removeButtonWidth removeButtonHeight]);
 
             % Add button is to the left of the remove button
@@ -540,8 +540,19 @@ classdef TriggersFigure < ws.MCOSFigure
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
+            areAnyFreeCounterIDs = ~isempty(triggeringModel.freeCounterIDs()) ;
+            isCounterTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.CounterTriggers) ;
+            isAnyCounterTriggerMarkedForDeletion = any(isCounterTriggerMarkedForDeletion) ;
             set(self.CounterTriggersTable,'Enable',onIff(isIdle));
+            set(self.AddCounterTriggerButton,'Enable',onIff(isIdle&&areAnyFreeCounterIDs)) ;
+            set(self.DeleteCounterTriggersButton,'Enable',onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
+            
+            areAnyFreePFIIDs = ~isempty(triggeringModel.freePFIIDs()) ;
+            isExternalTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.ExternalTriggers) ;
+            isAnyExternalTriggerMarkedForDeletion = any(isExternalTriggerMarkedForDeletion) ;
             set(self.ExternalTriggersTable,'Enable',onIff(isIdle));
+            set(self.AddExternalTriggerButton,'Enable',onIff(isIdle&&areAnyFreePFIIDs)) ;
+            set(self.DeleteExternalTriggersButton,'Enable',onIff(isIdle&&isAnyExternalTriggerMarkedForDeletion)) ;
         end  % function
     end
     

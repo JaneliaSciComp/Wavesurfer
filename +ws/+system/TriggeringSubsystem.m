@@ -350,7 +350,10 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             nCounterIDsInHardware = self.Parent.getNumberOfCounters() ;
             counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
 
-            result = sort([externalTriggerPFIIDs counterTriggerPFIIDs]) ;
+            % The built-in trigger PFI line is also in use
+            builtinTriggerPFIID = self.BuiltinTrigger.PFIID ;
+            
+            result = sort([externalTriggerPFIIDs builtinTriggerPFIID counterTriggerPFIIDs]) ;
         end
         
         function result = freePFIIDs(self)
