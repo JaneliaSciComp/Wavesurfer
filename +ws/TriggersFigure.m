@@ -219,11 +219,13 @@ classdef TriggersFigure < ws.MCOSFigure
             topPadHeight=10;
             schemesAreaWidth=280;
             tablePanelsAreaWidth=500;
-            tablePanelAreaHeight=210;
+            %tablePanelAreaHeight=210;
             heightBetweenTableAreas=6;
+            counterTablePanelAreaHeight = 156 ;
+            externalTablePanelAreaHeight = 210 ;
 
             figureWidth=schemesAreaWidth+tablePanelsAreaWidth;
-            figureHeight=tablePanelAreaHeight+heightBetweenTableAreas+tablePanelAreaHeight+topPadHeight;
+            figureHeight=counterTablePanelAreaHeight+heightBetweenTableAreas+externalTablePanelAreaHeight+topPadHeight;
 
             sweepBasedAcquisitionPanelAreaHeight=78;
             sweepBasedStimulationPanelAreaHeight=78;
@@ -261,9 +263,9 @@ classdef TriggersFigure < ws.MCOSFigure
             tablesAreaXOffset=schemesAreaWidth;
             counterTriggersPanelXOffset=tablesAreaXOffset+panelInset;
             counterTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
-            counterTriggersPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
+            counterTriggersPanelAreaYOffset=externalTablePanelAreaHeight+heightBetweenTableAreas;
             counterTriggersPanelYOffset=counterTriggersPanelAreaYOffset+panelInset;            
-            counterTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            counterTriggersPanelHeight=counterTablePanelAreaHeight-panelInset-panelInset;
             set(self.CounterTriggersPanel, ...
                 'Position',[counterTriggersPanelXOffset counterTriggersPanelYOffset ...
                             counterTriggersPanelWidth counterTriggersPanelHeight]);
@@ -273,7 +275,7 @@ classdef TriggersFigure < ws.MCOSFigure
             externalTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
             externalTriggersPanelAreaYOffset=0;
             externalTriggersPanelYOffset=externalTriggersPanelAreaYOffset+panelInset;            
-            externalTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            externalTriggersPanelHeight=externalTablePanelAreaHeight-panelInset-panelInset;
             set(self.ExternalTriggersPanel, ...
                 'Position',[externalTriggersPanelXOffset externalTriggersPanelYOffset ...
                             externalTriggersPanelWidth externalTriggersPanelHeight]);
@@ -451,11 +453,13 @@ classdef TriggersFigure < ws.MCOSFigure
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
+            rowLabelsWidth = 34 ;  % this the (approximate) width of the numeric labels that Matlab adds to rows
             deviceWidth = 50 ;
             pfiWidth = 40 ;
             edgeWidth = 50 ;
             deleteQWidth = 50 ;
-            nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+deleteQWidth+34);  % 34 for the row titles col
+            scrollbarWidth = 18 ;  % this the (approximate) width of the vertical scrollbar, when it appears
+            nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+deleteQWidth+rowLabelsWidth+scrollbarWidth);  % 34 for the row labels col
                         
             % 'Name' 'PFI' 'Edge' 'Delete?'
             set(self.ExternalTriggersTable, ...

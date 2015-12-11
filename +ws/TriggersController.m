@@ -148,9 +148,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     end
     
     methods
-        function controlActuated(self,controlName,source,event)            
-            %figureObject=self.Figure;
-
+        function controlActuated(self,controlName,source,event)
             try
                 type=get(source,'Type');
                 if isequal(type,'uicontrol') || isequal(type,'uitable') ,
@@ -169,11 +167,6 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %                 end
             end
         end  % function       
-
-%         function UseASAPTriggeringCheckboxActuated(self,source,event)  %#ok<INUSD>
-%             value=logical(get(source,'Value'));
-%             self.Model.AcquisitionUsesASAPTriggering=value;
-%         end  % function
 
         function AcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
@@ -235,7 +228,9 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
         end  % function
         
         function AddCounterTriggerButtonActuated(self,source,event)
+            %profile resume
             self.Model.addCounterTrigger() ;
+            %profile off
         end
 
         function DeleteCounterTriggersButtonActuated(self,source,event)

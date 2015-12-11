@@ -239,12 +239,14 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             trigger = ws.CounterTrigger(self);  % self is parent of the CounterTrigger
 
             % Set the trigger parameters
+            self.disableBroadcasts() ;
             trigger.Name = sprintf('Counter %d',counterID) ;
             trigger.DeviceName = self.Parent.DeviceName ; 
             trigger.CounterID = counterID ;
             trigger.RepeatCount = 1 ;
             trigger.Interval = 1 ;  % s
             trigger.Edge = 'rising' ;
+            self.enableBroadcastsMaybe() ;
             
             % Add the just-created trigger to thel list of counter triggers
             self.CounterTriggers_{1,end + 1} = trigger ;

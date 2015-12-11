@@ -63,6 +63,11 @@ classdef RootModel < ws.Model
 %         Logging_
 %         VersionString_
         DeviceName_ = ''   % represents "no device specified"
+%         NDIOChannels_ = 0
+%         NPFILines_ = 0 
+%         NCounters_ = 0
+%         NAIChannels_ = 0
+%         NAOChannels_ = 0
     end
 
     properties (Access=protected, Transient=true)
