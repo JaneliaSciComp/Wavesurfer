@@ -252,24 +252,18 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.broadcast('Update') ;
         end  % function
 
-        function removeCounterTrigger(self, index)
+        function deleteMarkedCounterTriggers(self)
             triggers = self.CounterTriggers_ ;
-            doKeep = true(size(triggers)) ;
-            doKeep(index) = false ;
+            doKeep = ~cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;
             self.CounterTriggers_ = triggers(doKeep) ;
             self.broadcast('Update') ;
         end
 
-        function removeLastCounterTrigger(self)
-            nTriggers = length(self.CounterTriggers_) ;
-            self.removeCounterTrigger(nTriggers) ;
-        end
-        
         function trigger = addExternalTrigger(self, pfiID)
             % If no PFI ID is given, try to find one that is not in use
             if ~exist('pfiID','var') || isempty(pfiID) ,
-                % Need to pick a counterID.
-                % We find the lowest counterID that is not in use.
+                % Need to pick a PFI ID.
+                % We find the lowest PFI ID that is not in use.
                 pfiIDs = self.freePFIIDs() ;
                 if isempty(pfiIDs) ,
                     % this means there is no free PFI line
@@ -287,7 +281,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             end
 
             % Create the trigger
-            trigger = ws.ExternalTrigger(self);  % self is parent of the ExternalTrigger
+            trigger = ws.ExternalTrigger(self) ;  % self is parent of the ExternalTrigger
 
             % Set the trigger parameters
             trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
@@ -300,17 +294,11 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.broadcast('Update') ;
         end  % function
                         
-        function removeExternalTrigger(self, index)
+        function deleteMarkedExternalTriggers(self)
             triggers = self.ExternalTriggers_ ;
-            doKeep = true(size(triggers)) ;
-            doKeep(index) = false ;
+            doKeep = ~cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;
             self.ExternalTriggers_ = triggers(doKeep) ;
             self.broadcast('Update') ;
-        end
-
-        function removeLastExternalTrigger(self)
-            nTriggers = length(self.ExternalTriggers_) ;
-            self.removeExternalTrigger(nTriggers) ;
         end
         
         function result = allCounterIDs(self)
@@ -340,6 +328,11 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function result = isCounterIDInUse(self, counterID)
             inUseCounterIDs = self.counterIDsInUse() ;
             result = ismember(counterID, inUseCounterIDs) ;
+        end
+
+        function result = isCounterIDFree(self, counterID)
+            freeCounterIDs = self.freeCounterIDs() ;
+            result = ismember(counterID, freeCounterIDs) ;
         end
 
         function result = allPFIIDs(self)
@@ -378,6 +371,11 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         function result = isPFIIDInUse(self, pfiID)
             inUsePFIIDs = self.pfiIDsInUse() ;
             result = ismember(pfiID, inUsePFIIDs) ;
+        end
+        
+        function result = isPFIIDFree(self, pfiID)
+            freePFIIDs = self.freePFIIDs() ;
+            result = ismember(pfiID, freePFIIDs) ;
         end
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
@@ -420,6 +418,10 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.broadcast('Update');
         end
         
+        function update(self)
+            self.broadcast('Update');
+        end
+            
     end  % methods block
     
     methods (Access = protected)

@@ -120,9 +120,9 @@ classdef TriggersFigure < ws.MCOSFigure
                         'Title','Counter Triggers');
             self.CounterTriggersTable = ...
                 uitable('Parent',self.CounterTriggersPanel, ...
-                        'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'}, ...
-                        'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'Rising' 'Falling'}}, ...
-                        'ColumnEditable',[false false false true true false false]);
+                        'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'}, ...
+                        'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'rising' 'falling'} 'logical'}, ...
+                        'ColumnEditable',[true false true true true false true true]);
             self.AddCounterTriggerButton= ...
                 uicontrol('Parent',self.CounterTriggersPanel, ...
                           'Style','pushbutton', ...
@@ -143,9 +143,9 @@ classdef TriggersFigure < ws.MCOSFigure
                         'Title','External Triggers');
             self.ExternalTriggersTable = ...
                 uitable('Parent',self.ExternalTriggersPanel, ...
-                        'ColumnName',{'Name' 'Device' 'PFI' 'Edge'}, ...
-                        'ColumnFormat',{'char' 'char' 'numeric' {'Rising' 'Falling'}}, ...
-                        'ColumnEditable',[false false false false]);
+                        'ColumnName',{'Name' 'Device' 'PFI' 'Edge' 'Delete?'}, ...
+                        'ColumnFormat',{'char' 'char' 'numeric' {'rising' 'falling'} 'logical'}, ...
+                        'ColumnEditable',[true false true true true]);
             self.AddExternalTriggerButton= ...
                 uicontrol('Parent',self.ExternalTriggersPanel, ...
                           'Style','pushbutton', ...
@@ -395,18 +395,19 @@ classdef TriggersFigure < ws.MCOSFigure
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
-            deviceWidth=50;
-            ctrWidth=40;            
-            repeatsWidth=60;
-            intervalWidth=66;
-            pfiWidth=40;
-            edgeWidth=50;
-            nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+34);  % 30 for the row titles col
+            deviceWidth = 50 ;
+            ctrWidth = 40 ;            
+            repeatsWidth = 60 ;
+            intervalWidth = 66 ;
+            pfiWidth = 40 ;
+            edgeWidth = 50 ;
+            deleteQWidth = 50 ;
+            nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+deleteQWidth+34);  % 34 for the row titles col
             
-            % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'
+            % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
             set(self.CounterTriggersTable, ...
                 'Position', [leftPad bottomPad+buttonHeight+heightBetweenTableAndButtonRow tableWidth tableHeight], ...
-                'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth});
+                'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth deleteQWidth});
 
             % Position the buttons
             buttonRowXOffset = leftPad ;
@@ -450,15 +451,16 @@ classdef TriggersFigure < ws.MCOSFigure
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
-            deviceWidth=50;
-            pfiWidth=40;
-            edgeWidth=50;
-            nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+34);  % 34 for the row titles col
+            deviceWidth = 50 ;
+            pfiWidth = 40 ;
+            edgeWidth = 50 ;
+            deleteQWidth = 50 ;
+            nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+deleteQWidth+34);  % 34 for the row titles col
                         
-            % 'Name' 'PFI' 'Edge'
+            % 'Name' 'PFI' 'Edge' 'Delete?'
             set(self.ExternalTriggersTable, ...
                 'Position', [leftPad bottomPad+buttonHeight+heightBetweenTableAndButtonRow tableWidth tableHeight], ...
-                'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth});
+                'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth deleteQWidth});
             
             % Position the buttons
             buttonRowXOffset = leftPad ;
@@ -601,17 +603,18 @@ classdef TriggersFigure < ws.MCOSFigure
                 return
             end
             nRows=length(model.CounterTriggers);
-            nColumns=7;
+            nColumns=8;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                source=model.CounterTriggers{i};
-                data{i,1}=source.Name;
-                data{i,2}=source.DeviceName;
-                data{i,3}=source.CounterID;
-                data{i,4}=source.RepeatCount;
-                data{i,5}=source.Interval;
-                data{i,6}=source.PFIID;
-                data{i,7}=char(source.Edge);
+                trigger=model.CounterTriggers{i};
+                data{i,1}=trigger.Name;
+                data{i,2}=trigger.DeviceName;
+                data{i,3}=trigger.CounterID;
+                data{i,4}=trigger.RepeatCount;
+                data{i,5}=trigger.Interval;
+                data{i,6}=trigger.PFIID;
+                data{i,7}=ws.titleStringFromEdgeType(trigger.Edge);
+                data{i,8}=trigger.IsMarkedForDeletion;
             end
             set(self.CounterTriggersTable,'Data',data);
         end  % function
@@ -624,14 +627,15 @@ classdef TriggersFigure < ws.MCOSFigure
                 return
             end
             nRows=length(model.ExternalTriggers);
-            nColumns=4;
+            nColumns=5;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                destination=model.ExternalTriggers{i};
-                data{i,1}=destination.Name;
-                data{i,2}=destination.DeviceName;
-                data{i,3}=destination.PFIID;
-                data{i,4}=char(destination.Edge);
+                trigger=model.ExternalTriggers{i};
+                data{i,1}=trigger.Name;
+                data{i,2}=trigger.DeviceName;
+                data{i,3}=trigger.PFIID;
+                data{i,4}=ws.titleStringFromEdgeType(trigger.Edge);
+                data{i,5}=trigger.IsMarkedForDeletion;
             end
             set(self.ExternalTriggersTable,'Data',data);
         end  % function

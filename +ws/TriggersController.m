@@ -196,23 +196,40 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
 %         end
         
-        function CounterTriggersTableActuated(self,source,event)  %#ok<INUSL>
+        function CounterTriggersTableActuated(self, source, event)  %#ok<INUSL>
             % Called when a cell of CounterTriggersTable is edited
-            indices=event.Indices;
-            newString=event.EditData;
-            rowIndex=indices(1);
-            columnIndex=indices(2);
-            sourceIndex=rowIndex;
-            if (columnIndex==4) ,
+            indices = event.Indices ;
+            newThang = event.EditData ;
+            rowIndex = indices(1) ;
+            columnIndex = indices(2) ;
+            triggerIndex = rowIndex ;
+            theTrigger = self.Model.CounterTriggers{triggerIndex} ;
+            % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
+            if (columnIndex==1) ,
+                % I guess this is the row title...
+            elseif (columnIndex==2) ,
+                newValue = newThang ;
+                ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+            elseif (columnIndex==3) ,
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'CounterID', newValue) ;                
+            elseif (columnIndex==4) ,
                 % this is the Repeats column
-                newValue=str2double(newString);
-                theSource=self.Model.CounterTriggers{sourceIndex};
-                ws.Controller.setWithBenefits(theSource,'RepeatCount',newValue);
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'RepeatCount', newValue) ;
             elseif (columnIndex==5) ,
                 % this is the Interval column
-                newValue=str2double(newString);
-                theSource=self.Model.CounterTriggers{sourceIndex};
-                ws.Controller.setWithBenefits(theSource,'Interval',newValue);
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'Interval', newValue) ;
+            elseif (columnIndex==6) ,
+                % Can't change PFI
+            elseif (columnIndex==7) ,
+                newValue = lower(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'Edge', newValue) ;                
+            elseif (columnIndex==8) ,
+                % this is the Delete? column
+                newValue = logical(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'IsMarkedForDeletion', newValue) ;
             end
         end  % function
         
@@ -221,16 +238,41 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
         end
 
         function RemoveCounterTriggersButtonActuated(self,source,event)
+            self.Model.deleteMarkedCounterTriggers() ;
         end
         
-        function ExternalTriggersTableActuated(self,source,event)
-        end
+        function ExternalTriggersTableActuated(self, source, event)
+            % Called when a cell of CounterTriggersTable is edited
+            indices = event.Indices ;
+            newThang = event.EditData ;
+            rowIndex = indices(1) ;
+            columnIndex = indices(2) ;
+            sourceIndex = rowIndex ;
+            theSource = self.Model.ExternalTriggers{sourceIndex} ;
+            % 'Name' 'PFI' 'Edge' 'Delete?'
+            if (columnIndex==1) ,
+                % I guess this is the row title...
+            elseif (columnIndex==2) ,
+                newValue = newThang ;
+                ws.Controller.setWithBenefits(theSource, 'Name', newValue) ;
+            elseif (columnIndex==3) ,
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theSource, 'PFIID', newValue) ;                
+            elseif (columnIndex==4) ,
+                newValue = lower(newThang) ;
+                ws.Controller.setWithBenefits(theSource, 'Edge', newValue) ;                
+            elseif (columnIndex==5) ,
+                newValue = logical(newThang) ;
+                ws.Controller.setWithBenefits(theSource, 'IsMarkedForDeletion', newValue) ;
+            end
+        end  % function
 
         function AddExternalTriggerButtonActuated(self,source,event)
             self.Model.addExternalTrigger() ;
         end
 
         function RemoveExternalTriggersButtonActuated(self,source,event)
+            self.Model.deleteMarkedExternalTriggers() ;
         end
         
     end  % methods block    
