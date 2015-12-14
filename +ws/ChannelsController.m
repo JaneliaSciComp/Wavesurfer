@@ -43,6 +43,13 @@ classdef ChannelsController < ws.Controller
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
         end
+
+        function addAIChannel(self)
+            self.Model.Acquisition.addAnalogChannel() ;
+        end
+        
+        function deleteAIChannels(self)
+        end
         
         function diIsActiveCheckboxActuated(self,source)
             isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
@@ -106,7 +113,7 @@ classdef ChannelsController < ws.Controller
 %             end
 %         end    
         
-        function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>
+        function controlActuated(self,controlName,source,event) %#ok<INUSD>
             figureObject=self.Figure;
             try
                 if any(source==figureObject.AIScaleEdits)
@@ -125,6 +132,10 @@ classdef ChannelsController < ws.Controller
                     self.doTimedCheckboxActuated(source);
                 elseif any(source==figureObject.DOIsOnRadiobuttons)
                     self.doOnRadiobuttonActuated(source);
+                elseif isequal(controlName,'AddAIChannelButton') ,
+                    self.addAIChannel() ;
+                elseif isequal(controlName,'DeleteAIChannelsButton') ,
+                    self.deleteAIChannels() ;
 %                 elseif any(source==figureObject.AOMultiplierEdits)
 %                     self.aoMultiplierEditActuated(source);
                 end
