@@ -776,6 +776,10 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels') ;
         end
         
+        function didSetIsInputChannelMarkedForDeletion(self) 
+            self.broadcast('UpdateChannels') ;
+        end
+        
         function didSetIsDigitalOutputTimed(self)
             self.Ephys.didSetIsDigitalOutputTimed() ;
             self.broadcast('UpdateChannels') ;            
@@ -2306,8 +2310,8 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didRemoveAnalogInputChannel(self, nameOfRemovedChannel)
-            self.Display.didRemoveAnalogInputChannel(nameOfRemovedChannel) ;
+        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
+            self.Display.didDeleteAnalogInputChannels(nameOfRemovedChannels) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models

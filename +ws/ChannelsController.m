@@ -8,14 +8,14 @@ classdef ChannelsController < ws.Controller
 %             self.initialize();
 
             % Call superclass constructor
-            self = self@ws.Controller(wavesurferController,wavesurferModel);  
+            self = self@ws.Controller(wavesurferController,wavesurferModel) ;  
 
             % Create the figure, store a pointer to it
             fig = ws.ChannelsFigure(wavesurferModel,self) ;
             self.Figure_ = fig ;
         end
         
-        function aiScaleEditActuated(self,source)
+        function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AIScaleEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AIScaleEdits(i),'String');
@@ -30,35 +30,43 @@ classdef ChannelsController < ws.Controller
             end
         end
         
-        function aiUnitsEditActuated(self,source)
+        function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
             isTheChannel=(source==self.Figure.AIUnitsEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             self.Model.Acquisition.setSingleAnalogChannelUnits(i,newString);
         end
         
-        function aiIsActiveCheckboxActuated(self,source)
+        function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
             isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
             isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
         end
 
-        function addAIChannel(self)
+        function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
+            isAnalogChannelMarkedForDeletion = self.Model.Acquisition.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+        end
+
+        function AddAIChannelButtonActuated(self,source,event)  %#ok<INUSD>
             self.Model.Acquisition.addAnalogChannel() ;
         end
         
-        function deleteAIChannels(self)
+        function DeleteAIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Acquisition.deleteMarkedAnalogChannels() ;
         end
         
-        function diIsActiveCheckboxActuated(self,source)
+        function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
             isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
             isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
         end
         
-        function aoScaleEditActuated(self,source)
+        function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AOScaleEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AOScaleEdits(i),'String');
@@ -74,7 +82,7 @@ classdef ChannelsController < ws.Controller
             end
         end
         
-        function aoUnitsEditActuated(self,source)
+        function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AOUnitsEdits);
             i=find(isTheChannel);            
             newString=get(self.Figure.AOUnitsEdits(i),'String');
@@ -82,7 +90,7 @@ classdef ChannelsController < ws.Controller
             self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
         end
         
-        function doTimedCheckboxActuated(self,source)
+        function DOIsTimedCheckboxesActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsTimedCheckboxes(i),'value');
@@ -90,7 +98,7 @@ classdef ChannelsController < ws.Controller
             self.Figure.update();
         end
         
-        function doOnRadiobuttonActuated(self,source)
+        function DOIsOnRadiobuttonsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
@@ -113,41 +121,36 @@ classdef ChannelsController < ws.Controller
 %             end
 %         end    
         
-        function controlActuated(self,controlName,source,event) %#ok<INUSD>
-            figureObject=self.Figure;
-            try
-                if any(source==figureObject.AIScaleEdits)
-                    self.aiScaleEditActuated(source);
-                elseif any(source==figureObject.AIUnitsEdits)
-                    self.aiUnitsEditActuated(source);
-                elseif any(source==figureObject.AIIsActiveCheckboxes)
-                    self.aiIsActiveCheckboxActuated(source);
-                elseif any(source==figureObject.DIIsActiveCheckboxes)
-                    self.diIsActiveCheckboxActuated(source);
-                elseif any(source==figureObject.AOScaleEdits)
-                    self.aoScaleEditActuated(source);
-                elseif any(source==figureObject.AOUnitsEdits)
-                    self.aoUnitsEditActuated(source);
-                elseif any(source==figureObject.DOIsTimedCheckboxes)
-                    self.doTimedCheckboxActuated(source);
-                elseif any(source==figureObject.DOIsOnRadiobuttons)
-                    self.doOnRadiobuttonActuated(source);
-                elseif isequal(controlName,'AddAIChannelButton') ,
-                    self.addAIChannel() ;
-                elseif isequal(controlName,'DeleteAIChannelsButton') ,
-                    self.deleteAIChannels() ;
-%                 elseif any(source==figureObject.AOMultiplierEdits)
-%                     self.aoMultiplierEditActuated(source);
-                end
-            catch me
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-                    errordlg(me.message,'Error','modal');
+%         function controlActuated(self,controlName,source,event)
+%             figureObject=self.Figure;
+%             try
+%                 if any(source==figureObject.AIScaleEdits)
+%                     self.AIScaleEditsActuated(source);
+%                 elseif any(source==figureObject.AIUnitsEdits)
+%                     self.aiUnitsEditActuated(source);
+%                 elseif any(source==figureObject.AIIsActiveCheckboxes)
+%                     self.aiIsActiveCheckboxActuated(source);
+%                 elseif any(source==figureObject.DIIsActiveCheckboxes)
+%                     self.diIsActiveCheckboxActuated(source);
+%                 elseif any(source==figureObject.AOScaleEdits)
+%                     self.aoScaleEditActuated(source);
+%                 elseif any(source==figureObject.AOUnitsEdits)
+%                     self.aoUnitsEditActuated(source);
+%                 elseif any(source==figureObject.DOIsTimedCheckboxes)
+%                     self.doTimedCheckboxActuated(source);
+%                 elseif any(source==figureObject.DOIsOnRadiobuttons)
+%                     self.doOnRadiobuttonActuated(source);
+%                 elseif isequal(controlName,'AddAIChannelButton') ,
+%                     self.addAIChannel() ;
+%                 elseif isequal(controlName,'DeleteAIChannelsButton') ,
+%                     self.deleteAIChannels() ;
+%                 elseif isequal(controlName,'AIIsMarkedForDeletionCheckboxes') ,
+%                     self.AIIsMarkedForDeletionCheckboxesActuated(source,event);
 %                 end
-            end            
-        end  % function
+%             catch me
+%                     errordlg(me.message,'Error','modal');
+%             end            
+%         end  % function
         
     end  % methods
 

@@ -279,8 +279,8 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
         end
 
-        function didRemoveAnalogInputChannel(self, nameOfRemovedChannel)
-            self.removeScopeByName(nameOfRemovedChannel) ;
+        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
+            self.removeScopesByName(nameOfRemovedChannels) ;
         end
         
         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
@@ -298,6 +298,17 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 self.renameScope_(oldValue, newValue) ;
             end
         end
+        
+        function removeScopesByName(self, namesOfChannelsToRemove)
+            self.disableBroadcasts() ;
+            nChannels = length(namesOfChannelsToRemove) ;
+            for i = 1:nChannels ,
+                channelName = namesOfChannelsToRemove{i} ;
+                self.removeScopeByName(channelName) ;
+            end
+            self.enableBroadcastsMaybe() ;
+            self.broadcast('NScopesMayHaveChanged');
+        end  % function
         
         function removeScopeByName(self, nameOfChannelToRemove)
             [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;

@@ -17,6 +17,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
           % A list of SIUnit instances that describes the real-world units 
           % for each analog channel.
         %ChannelUnits
+        IsAnalogChannelMarkedForDeletion
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -60,6 +61,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         IsAnalogChannelActive_ = true(1,0)
         IsDigitalChannelActive_ = true(1,0)
+        IsAnalogChannelMarkedForDeletion_ = false(1,0)
     end
 
 %     properties (Access=protected, Constant=true)
@@ -232,6 +234,24 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 self.IsAnalogChannelActive_ = newIsAnalogChannelActive;
             end
             self.Parent.didSetIsInputChannelActive() ;
+            %self.broadcast('DidSetIsChannelActive');
+        end
+        
+        function result=get.IsAnalogChannelMarkedForDeletion(self)
+            % Boolean array indicating which of the available analog channels is
+            % active.
+            result =  self.IsAnalogChannelMarkedForDeletion_ ;
+        end
+        
+        function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
+            % Boolean array indicating which of the analog channels is
+            % active.
+            if islogical(newIsAnalogChannelMarkedForDeletion) && ...
+                    isequal(size(newIsAnalogChannelMarkedForDeletion),size(self.IsAnalogChannelMarkedForDeletion)) ,
+                % Set the setting
+                self.IsAnalogChannelMarkedForDeletion_ = newIsAnalogChannelMarkedForDeletion;
+            end
+            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
             %self.broadcast('DidSetIsChannelActive');
         end
         
@@ -963,35 +983,51 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
+            self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             
             self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
 
-        function removeAnalogChannel(self,channelIndex)
-            nChannels = length(self.AnalogChannelIDs) ;
-            if 1<=channelIndex && channelIndex<=nChannels ,
-                isKeeper = true(1,nChannels) ;                
-                isKeeper(channelIndex) = false ;
-                channelName = self.AnalogChannelNames_(channelIndex) ;  % save this for later
-                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-                self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
-                %self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
-                self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
-                self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
-                self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-                self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+%         function removeAnalogChannel(self,channelIndex)
+%             nChannels = length(self.AnalogChannelIDs) ;
+%             if 1<=channelIndex && channelIndex<=nChannels ,
+%                 isKeeper = true(1,nChannels) ;                
+%                 isKeeper(channelIndex) = false ;
+%                 channelName = self.AnalogChannelNames_(channelIndex) ;  % save this for later
+%                 self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+%                 self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
+%                 %self.AnalogPhysicalChannelNames_ =  self.AnalogPhysicalChannelNames_(isKeeper) ;
+%                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+%                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+%                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+%                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+% 
+%                 self.Parent.didRemoveAnalogInputChannel(channelName) ;
+%                 %self.broadcast('DidChangeNumberOfChannels');            
+%             end
+%         end  % function
+%         
+%         function removeLastAnalogChannel(self)
+%             nChannels = length(self.AnalogChannelIDs) ;
+%             self.removeAnalogChannel(nChannels) ;
+%         end  % function
 
-                self.Parent.didRemoveAnalogInputChannel(channelName) ;
-                %self.broadcast('DidChangeNumberOfChannels');            
-            end
+        function deleteMarkedAnalogChannels(self)
+            isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
+            channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
+            isKeeper = ~isToBeDeleted ;
+            self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+            self.AnalogChannelIDs_ = self.AnalogChannelIDs_(isKeeper) ;
+            self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+            self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+            self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+            self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+            self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+
+            self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
         end  % function
         
-        function removeLastAnalogChannel(self)
-            nChannels = length(self.AnalogChannelIDs) ;
-            self.removeAnalogChannel(nChannels) ;
-        end  % function
-
         function addDigitalChannel(self)
             deviceName = self.Parent.DeviceName ;
             
