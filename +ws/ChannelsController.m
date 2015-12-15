@@ -15,6 +15,26 @@ classdef ChannelsController < ws.Controller
             self.Figure_ = fig ;
         end
         
+        function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.AIUnitsEdits(i),'String') ;
+            self.Model.Acquisition.setSingleAnalogChannelName(i, newString) ;
+        end
+        
+        function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllAnalogTerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            channelIDAsString = choice(3:end) ;
+            channelID = str2double(channelIDAsString) ;            
+            isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Acquisition.setSingleAnalogChannelId(iChannel, channelID) ;  %#ok<FNDSB>
+        end
+        
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AIScaleEdits);
             i=find(isTheChannel);

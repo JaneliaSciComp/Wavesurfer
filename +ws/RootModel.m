@@ -177,7 +177,12 @@ classdef RootModel < ws.Model
             % The number of counters (CTRs) on the board.
             result = self.NCounters_ ;
         end  % function        
-    end  % (static methods block)
+        
+        function result = getAllAnalogTerminalNames(self)             
+            nAIsInHardware = self.getNumberOfAIChannels() ;
+            result = arrayfun(@(id)(sprintf('AI%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
+        end        
+    end  % public methods block
     
     methods (Static)
         function result = getNumberOfAIChannelsFromDevice(deviceName)
