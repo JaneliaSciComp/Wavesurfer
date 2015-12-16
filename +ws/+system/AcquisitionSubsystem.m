@@ -18,6 +18,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
           % for each analog channel.
         %ChannelUnits
         IsAnalogChannelMarkedForDeletion
+        IsDigitalChannelMarkedForDeletion
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -62,6 +63,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsAnalogChannelActive_ = true(1,0)
         IsDigitalChannelActive_ = true(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
+        IsDigitalChannelMarkedForDeletion_ = false(1,0)
     end
 
 %     properties (Access=protected, Constant=true)
@@ -255,10 +257,28 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             %self.broadcast('DidSetIsChannelActive');
         end
         
+        function result=get.IsDigitalChannelMarkedForDeletion(self)
+            % Boolean array indicating which of the available analog channels is
+            % active.
+            result = self.IsDigitalChannelMarkedForDeletion_ ;
+        end
+        
+        function set.IsDigitalChannelMarkedForDeletion(self,newIsChannelMarkedForDeletion)
+            % Boolean array indicating which of the analog channels is
+            % active.
+            if islogical(newIsChannelMarkedForDeletion) && ...
+                    isequal(size(newIsChannelMarkedForDeletion),size(self.IsDigitalChannelMarkedForDeletion)) ,
+                % Set the setting
+                self.IsDigitalChannelMarkedForDeletion_ = newIsChannelMarkedForDeletion;
+            end
+            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
+            %self.broadcast('DidSetIsChannelActive');
+        end
+        
         function result=get.IsDigitalChannelActive(self)
             % Boolean array indicating which of the available digital channels is
             % active.
-            result =  self.IsDigitalChannelActive_ ;
+            result = self.IsDigitalChannelActive_ ;
         end
         
         function set.IsDigitalChannelActive(self,newIsDigitalChannelActive)
@@ -1046,32 +1066,48 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             %self.DigitalPhysicalChannelNames_ =  [self.DigitalPhysicalChannelNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
+            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
             
             self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
-        function removeDigitalChannel(self,channelIndex)
-            nChannels = length(self.DigitalChannelIDs) ;
-            if 1<=channelIndex && channelIndex<=nChannels ,            
-                isKeeper = true(1,nChannels) ;
-                isKeeper(channelIndex) = false ;
-                channelName = self.DigitalChannelNames_(channelIndex) ;  % save this for later
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
-                %self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+        function deleteMarkedDigitalChannels(self)
+            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
+            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
+            isKeeper = ~isToBeDeleted ;
+            self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+            self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+            self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+            %self.DigitalChannelScales_ = self.DigitalChannelScales_(isKeeper) ;
+            %self.DigitalChannelUnits_ = self.DigitalChannelUnits_(isKeeper) ;
+            self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+            self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
 
-                self.Parent.didRemoveDigitalInputChannel(channelName) ;
-                %self.broadcast('DidChangeNumberOfChannels');            
-            end
+            self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
-        
-        function removeLastDigitalChannel(self)
-            nChannels = length(self.DigitalChannelIDs) ;
-            self.removeDigitalChannel(nChannels) ;
-        end  % function
+
+%         function removeDigitalChannel(self,channelIndex)
+%             nChannels = length(self.DigitalChannelIDs) ;
+%             if 1<=channelIndex && channelIndex<=nChannels ,            
+%                 isKeeper = true(1,nChannels) ;
+%                 isKeeper(channelIndex) = false ;
+%                 channelName = self.DigitalChannelNames_(channelIndex) ;  % save this for later
+%                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+%                 self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+%                 %self.DigitalPhysicalChannelNames_ =  self.DigitalPhysicalChannelNames_(isKeeper) ;
+%                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+%                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+% 
+%                 self.Parent.didRemoveDigitalInputChannel(channelName) ;
+%                 %self.broadcast('DidChangeNumberOfChannels');            
+%             end
+%         end  % function
+%         
+%         function removeLastDigitalChannel(self)
+%             nChannels = length(self.DigitalChannelIDs) ;
+%             self.removeDigitalChannel(nChannels) ;
+%         end  % function
 
         function didSetDeviceName(self)
             deviceName = self.Parent.DeviceName ;

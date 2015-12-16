@@ -164,12 +164,15 @@ classdef RootModel < ws.Model
             result = self.NAOChannels_ ;
         end
 
-        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
+        function numberOfDIOChannels = getNumberOfDIOChannels(self)
             % The number of DIO channels available.  We only count the DIO
             % channels capable of timed operation, i.e. the P0.x channels.
             % This is a conscious design choice.  We treat the PFIn/Pm.x
             % channels as being only PFIn channels.
             numberOfDIOChannels = self.NDIOChannels_ ;
+        end  % function
+        
+        function numberOfPFILines = getNumberOfPFILines(self)
             numberOfPFILines = self.NPFILines_ ;
         end  % function
         
@@ -181,6 +184,11 @@ classdef RootModel < ws.Model
         function result = getAllAnalogTerminalNames(self)             
             nAIsInHardware = self.getNumberOfAIChannels() ;
             result = arrayfun(@(id)(sprintf('AI%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
+        end        
+        
+        function result = getAllDigitalTerminalNames(self)             
+            nChannelsInHardware = self.getNumberOfDIOChannels() ;
+            result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
     end  % public methods block
     

@@ -419,7 +419,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         
         function syncPFIIDToCounterID_(self)
             rootModel = self.Parent.Parent ;
-            [~,numberOfPFILines] = rootModel.getNumberOfDIOChannelsAndPFILines() ;
+            numberOfPFILines = rootModel.getNumberOfPFILines() ;
             nCounters = rootModel.getNumberOfCounters() ;
             pfiID = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
             self.PFIID_ = pfiID ;

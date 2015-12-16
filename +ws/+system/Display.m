@@ -283,9 +283,13 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             self.removeScopesByName(nameOfRemovedChannels) ;
         end
         
-        function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
-            self.removeScopeByName(nameOfRemovedChannel) ;
+        function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)            
+            self.removeScopesByName(nameOfRemovedChannels) ;
         end
+        
+%         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
+%             self.removeScopeByName(nameOfRemovedChannel) ;
+%         end
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed , 

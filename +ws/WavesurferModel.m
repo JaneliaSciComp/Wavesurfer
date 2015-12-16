@@ -2263,7 +2263,7 @@ classdef WavesurferModel < ws.RootModel
 
     methods
         function result = allDigitalChannelIDs(self)
-            nDigitalChannelIDsInHardware = self.getNumberOfDIOChannelsAndPFILines() ;
+            nDigitalChannelIDsInHardware = self.getNumberOfDIOChannels() ;
             result = 0:(nDigitalChannelIDsInHardware-1) ;              
         end
         
@@ -2280,7 +2280,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function result = isDigitalChannelIDInUse(self, DigitalChannelID)
-            inUseDigitalChannelIDs = self.DigitalChannelIDsInUse() ;
+            inUseDigitalChannelIDs = self.digitalChannelIDsInUse() ;
             result = ismember(DigitalChannelID, inUseDigitalChannelIDs) ;
         end
     end
@@ -2317,12 +2317,19 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
-            self.Display.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
+        function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
+            self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
+        
+%         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
+%             self.Display.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
         
 %         function didChangeNumberOfOutputChannels(self)
 %             self.Ephys.didChangeNumberOfOutputChannels();

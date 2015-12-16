@@ -338,7 +338,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end
 
         function result = allPFIIDs(self)
-            [~,nPFIIDsInHardware] = self.Parent.getNumberOfDIOChannelsAndPFILines() ;
+            nPFIIDsInHardware = self.Parent.getNumberOfPFILines() ;
             result = 0:(nPFIIDsInHardware-1) ;              
         end
         
@@ -348,7 +348,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             
             % We consider all the default counter PFIs to be "in use",
             % regardless of whether any of the counters are in use.
-            [~,nPFIIDsInHardware] = self.Parent.getNumberOfDIOChannelsAndPFILines() ;
+            nPFIIDsInHardware = self.Parent.getNumberOfPFILines() ;
             nCounterIDsInHardware = self.Parent.getNumberOfCounters() ;
             counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
 
