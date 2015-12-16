@@ -174,6 +174,26 @@ classdef ChannelsController < ws.Controller
             self.Model.Acquisition.deleteMarkedDigitalChannels() ;
         end
         
+        function DOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DOChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
+            self.Model.Stimulation.setSingleDigitalChannelName(i, newString) ;
+        end
+        
+        function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            channelIDAsString = choice(4:end) ;
+            channelID = str2double(channelIDAsString) ;            
+            isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Stimulation.setSingleDigitalChannelID(iChannel, channelID) ;  %#ok<FNDSB>
+        end
+        
         function DOIsTimedCheckboxesActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
             i=find(isTheChannel);            
@@ -188,6 +208,22 @@ classdef ChannelsController < ws.Controller
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
             self.Model.Stimulation.DigitalOutputStateIfUntimed(i)=newState;
         end
+        
+        function DOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
+            isChannelMarkedForDeletion = self.Model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Stimulation.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
+        end
+
+        function AddDOChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.addDigitalChannel() ;
+        end
+        
+        function DeleteDOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.deleteMarkedDigitalChannels() ;
+        end
+        
         
     end  % methods
 
