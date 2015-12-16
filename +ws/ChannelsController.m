@@ -1,12 +1,6 @@
 classdef ChannelsController < ws.Controller
     methods
         function self=ChannelsController(wavesurferController,wavesurferModel)
-%             self = self@ws.Controller(wavesurferController,wavesurferModel, {'channelsFigureWrapper'});
-%             figureObject=self.Figure;
-%             figureGH=figureObject.FigureGH;
-%             set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));
-%             self.initialize();
-
             % Call superclass constructor
             self = self@ws.Controller(wavesurferController,wavesurferModel) ;  
 
@@ -18,7 +12,7 @@ classdef ChannelsController < ws.Controller
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
             isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.AIUnitsEdits(i),'String') ;
+            newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
             self.Model.Acquisition.setSingleAnalogChannelName(i, newString) ;
         end
         
@@ -32,7 +26,7 @@ classdef ChannelsController < ws.Controller
             channelID = str2double(channelIDAsString) ;            
             isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            self.Model.Acquisition.setSingleAnalogChannelId(iChannel, channelID) ;  %#ok<FNDSB>
+            self.Model.Acquisition.setSingleAnalogChannelID(iChannel, channelID) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
