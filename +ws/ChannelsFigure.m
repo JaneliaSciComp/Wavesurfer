@@ -446,8 +446,6 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % method
         
         function layout_(self)
-            import ws.utility.*
-
             % Layout parameters
             panelBorderSize=6;
             interPanelSpaceWidth=10;
@@ -457,7 +455,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             titleRowHeight=10;
             rowHeight=16;
             interRowHeight=10;
-            rowToRowHeight=rowHeight+interRowHeight;
+            %rowToRowHeight=rowHeight+interRowHeight;
             panelToLabelSpaceWidth=5;
             channelNameEditWidth = 100 ;
             terminalNamePopupWidth = 50 ;
@@ -500,8 +498,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             extraSpaceFromDeleteButtonToBorder = 4 ;
             
             % Derived layout parameters
-            nAIs=length(self.AIScaleEdits);
-            nAOs=length(self.AOScaleEdits);            
+            nAIs=length(self.AIChannelNameEdits);
+            nAOs=length(self.AOChannelNameEdits);            
             nDIs=length(self.DIChannelNameEdits);            
             nDOs=length(self.DOLabelTexts);            
             nAnalogRows=max(nAIs,nAOs);
@@ -523,7 +521,7 @@ classdef ChannelsFigure < ws.MCOSFigure
                 isActiveColWidth+ ...
                 spaceBeforeIsMarkedForDeletionColWidth + ...
                 isMarkedForDeletionColWidth+ ...                
-                analogPanelRightPadWidth;
+                analogPanelRightPadWidth ;
             diPanelWidth = aiPanelWidth ;
             aoPanelWidth = ...
                 panelToLabelSpaceWidth+...
@@ -538,7 +536,7 @@ classdef ChannelsFigure < ws.MCOSFigure
                 scaleUnitsTextWidth+ ...
                 spaceBetweenScaleUnitsAndCheckboxColsWidth + ...
                 isMarkedForDeletionColWidth+ ...                
-                analogPanelRightPadWidth;
+                analogPanelRightPadWidth ;
             scaleAndUnitsControlsWidth = scaleEditWidth + ...
                                          spaceBetweenScaleAndScaleUnitsWidth + ...
                                          scaleUnitsTextWidth ;
@@ -546,14 +544,14 @@ classdef ChannelsFigure < ws.MCOSFigure
                                max(0,(nAnalogRows-1))*interRowHeight+nAnalogRows*rowHeight + ...
                                spaceBetweenRowsAndButtonsHeight + ...
                                buttonHeight + ...
-                               buttonsToFrameSpaceHeight;
+                               buttonsToFrameSpaceHeight ;
             digitalPanelsHeight=panelToTitleRowSpaceHeight+titleRowHeight+spaceBelowTitleRowHeight + ...
                                 max(0,(nDigitalRows-1))*interRowHeight+nDigitalRows*rowHeight + ...
                                 spaceBetweenRowsAndButtonsHeight + ...
                                 buttonHeight + ...
-                                buttonsToFrameSpaceHeight;
-            figureHeight=panelBorderSize+analogPanelsHeight+interPanelSpaceHeight+digitalPanelsHeight+panelBorderSize;
-            figureWidth=panelBorderSize+aiPanelWidth+interPanelSpaceWidth+aoPanelWidth+panelBorderSize;
+                                buttonsToFrameSpaceHeight ;
+            figureHeight = panelBorderSize+analogPanelsHeight+interPanelSpaceHeight+digitalPanelsHeight+panelBorderSize ;
+            figureWidth = panelBorderSize+aiPanelWidth+interPanelSpaceWidth+aoPanelWidth+panelBorderSize ;
             
             % Position the figure, keeping upper left corner fixed
             currentPosition=get(self.FigureGH,'Position');
@@ -632,42 +630,6 @@ classdef ChannelsFigure < ws.MCOSFigure
                                 addButtonWidth, ...
                                 buttonHeight, ...
                                 spaceBetweenUnitsAndScaleWidth) ;
-            
-%             set(self.AOsPanel, ...
-%                 'Position',[panelBorderSize+aiPanelWidth+interPanelSpaceWidth panelBorderSize+digitalPanelsHeight+interPanelSpaceHeight aoPanelWidth analogPanelsHeight] );
-% 
-%             %  Layout the row of column titles in AO panel
-%             titleRowBottomY=analogPanelsHeight-panelToTitleRowSpaceHeight-titleRowHeight;      
-%             channelLabelColLeftX = panelToLabelSpaceWidth;
-%             gainColLeftX = channelLabelColLeftX+outputLabelWidth+spaceBetweenTerminalAndRestWidth;
-%             isActiveColLeftX=gainColLeftX+scaleEditWidth+spaceBetweenScaleAndScaleUnitsWidth+ ...
-%                              scaleUnitsTextWidth+ ...
-%                              unitsEditWidth+spaceBetweenScaleUnitsAndCheckboxColsWidth;
-%             channelLabelColLeftX = panelToLabelSpaceWidth;
-%             alignTextInRectangleBang(self.AOChannelColTitleText,[channelLabelColLeftX titleRowBottomY aoLabelWidth titleRowHeight],'lm');
-%             gainColLeftX = channelLabelColLeftX+aoLabelWidth+spaceBetweenTerminalAndRestWidth;
-%             alignTextInRectangleBang(self.AOScaleColTitleText,[gainColLeftX titleRowBottomY scaleEditWidth titleRowHeight],'cm');
-
-%             % Position the stuff in the AO rows                        
-%             aoYRowBottom=titleRowBottomY-spaceBelowTitleRowHeight-rowHeight;   
-%             for i=1:nAOs ,
-%                 xColLeft=panelToLabelSpaceWidth;
-%                 set(self.AOLabelTexts(i), ...
-%                     'Position',[xColLeft aoYRowBottom-4 aoLabelWidth labelHeight] );
-%                 xColLeft=xColLeft+aoLabelWidth+spaceBetweenTerminalAndRestWidth;
-%                 set(self.AOScaleEdits(i), ...
-%                     'Position',[xColLeft aoYRowBottom-editShimHeight scaleEditWidth editHeight] );
-%                 xColLeft=xColLeft+scaleEditWidth+spaceBetweenScaleAndScaleUnitsWidth;
-%                 set(self.AOUnitsEdits(i), ...
-%                     'Position',[xColLeft aoYRowBottom-editShimHeight aoUnitsEditWidth editHeight] );
-%                 xColLeft=xColLeft+aoUnitsEditWidth;
-%                 set(self.AOUnitsTexts(i), ...
-%                     'Position',[xColLeft aoYRowBottom-4 aoUnitsDenominatorTextWidth labelHeight] );
-% %                 xColLeft=xColLeft+aoUnitsDenominatorTextWidth+spaceBeforeAOMultiplierColWidth;
-% %                 set(self.AOMultiplierEdits(i), ...
-% %                     'Position',[xColLeft aoYRowBottom-editShimHeight aoMultiplierEditWidth editHeight] );                
-%                 aoYRowBottom=aoYRowBottom-rowToRowHeight;
-%             end
             
             % Position and layout the DIs panel
             self.layoutDIPanel_(panelBorderSize, ...
@@ -1213,61 +1175,18 @@ classdef ChannelsFigure < ws.MCOSFigure
             %nAIs=length(self.AIScaleEdits);
             %nAOs=length(self.AOScaleEdits);
             %nDIs=length(self.DIChannelNameEdits);
-            nDOs=length(self.DOLabelTexts);
-            isWavesurferIdle=isequal(model.State,'idle');
+            %nDOs=length(self.DOLabelTexts);
+            %isWavesurferIdle=isequal(model.State,'idle');
             
             % Specify colors
             normalBackgroundColor=[1 1 1];
             warningBackgroundColor=[1 0.8 0.8];
             
-            % update the AIs
+            % update the panels
             self.updateAIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
-            
-            % update the AOs
             self.updateAOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
-%             terminalNameForEachChannel = model.Stimulation.AnalogPhysicalChannelNames ;
-%             %deviceNames=model.Stimulation.DeviceNamePerAnalogChannel;  % cell array of strings
-%             %channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
-%             channelNames=model.Stimulation.AnalogChannelNames;
-%             channelScales=model.Stimulation.AnalogChannelScales;
-%             channelUnits=model.Stimulation.AnalogChannelUnits;
-%             nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingChannel();
-%             isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
-%             isChannelOvercommited=(nElectrodesClaimingChannel>1);
-%             for i=1:nAOs ,
-%                 %set(self.AOLabelTexts(i),'String',sprintf('%s/ao%d (%s):',deviceNames{i},channelIDs(i),channelNames{i}));                
-%                 set(self.AOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i},terminalNameForEachChannel{i}));                
-%                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
-%                                          'BackgroundColor',ws.utility.fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
-%                                          'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
-%                 set(self.AOUnitsEdits(i),'String',channelUnits{i}, ...
-%                                          'BackgroundColor',ws.utility.fif(isChannelOvercommited(i),warningBackgroundColor,normalBackgroundColor), ...
-%                                          'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
-%             end
-            
-            % update the DIs
             self.updateDIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
-            
-%             % update the DIs
-%             terminalNameForEachChannel = model.Acquisition.DigitalPhysicalChannelNames ;
-%             channelNames=model.Acquisition.DigitalChannelNames;
-%             for i=1:nDIs ,
-%                 set(self.DILabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
-%                 set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelActive(i), ...
-%                                                  'Enable',onIff(isWavesurferIdle));                                     
-%             end
-            
-            % update the DOs
-            terminalNameForEachChannel = model.Stimulation.DigitalPhysicalChannelNames ;
-            channelNames=model.Stimulation.DigitalChannelNames;
-            isTimed=model.Stimulation.IsDigitalChannelTimed;
-            for i=1:nDOs ,
-                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
-                set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
-                                                'enable',ws.utility.onIff(isWavesurferIdle));
-                set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
-                                               'enable',ws.utility.onIff(~isTimed(i)));
-            end            
+            self.updateDOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;            
         end  % function        
         
         function updateAIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
@@ -1374,8 +1293,26 @@ classdef ChannelsFigure < ws.MCOSFigure
                                                             'Enable',ws.utility.onIff(isWavesurferIdle));                                     
             end            
         end  % function        
+       
+        function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
+            % update the DOs
+            model=self.Model;
+            isWavesurferIdle=isequal(model.State,'idle');
+            
+            terminalNameForEachChannel = model.Stimulation.DigitalPhysicalChannelNames ;
+            channelNames=model.Stimulation.DigitalChannelNames;
+            isTimed=model.Stimulation.IsDigitalChannelTimed;
+            nDOs = length(self.DOLabelTexts) ;
+            for i=1:nDOs ,
+                set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
+                set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
+                                                'enable',ws.utility.onIff(isWavesurferIdle));
+                set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
+                                               'enable',ws.utility.onIff(~isTimed(i)));
+            end            
+        end        
         
-    end
+    end  % protected methods block
     
     methods (Access = protected)
         function updateControlsInExistance_(self)
@@ -1386,64 +1323,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             self.updateAIPanelControlsInExistance_() ;
             self.updateAOPanelControlsInExistance_() ;
             self.updateDIPanelControlsInExistance_() ;
-            
-            model = self.Model ;
-            if isempty(model) ,
-                nDOs = 0 ;
-            else
-                nDOs = model.Stimulation.NDigitalChannels ;
-            end
-            
-            % Populate the DO channel rows        
-            % Redimension DO arrays as needed
-            nDOsBefore = length(self.DOLabelTexts) ;
-            if nDOsBefore<nDOs ,
-                % need to make more slots, fill them
-                
-                % redimension arrays
-                self.DOLabelTexts(nDOs) = 0 ;
-                self.DOIsTimedCheckboxes(nDOs)= 0 ;                
-                self.DOIsOnRadiobuttons(nDOs)= 0 ;                
-                
-                for i=(nDOsBefore+1):nDOs ,
-                    self.DOLabelTexts(i)=...
-                        uicontrol('Parent',self.DOsPanel, ...
-                                  'Style','text', ...
-                                  'Tag',sprintf('DOLabelTexts%d',i), ...
-                                  'Units','pixels', ...
-                                  'FontName','Tahoma', ...
-                                  'FontSize',8, ...
-                                  'HorizontalAlignment','left');
-                    self.DOIsTimedCheckboxes(i)= ...
-                        uicontrol('Parent',self.DOsPanel, ...
-                                  'Style','checkbox', ...
-                                  'Units','pixels', ...
-                                  'FontSize',8, ...
-                                  'FontName','Tahoma', ...
-                                  'Value',0, ...
-                                  'String','', ...
-                                  'Callback',@(source,event)(self.controlActuated('DOIsTimedCheckboxes',source,event)));
-                    self.DOIsOnRadiobuttons(i)= ...
-                        uicontrol('Parent',self.DOsPanel, ...
-                                  'Style','radiobutton', ...
-                                  'Units','pixels', ...
-                                  'FontSize',8, ...
-                                  'FontName','Tahoma', ...
-                                  'Value',0, ...
-                                  'String','', ...
-                                  'Callback',@(source,event)(self.controlActuated('DOIsOnRadiobuttons',source,event)));
-                end
-            elseif nDOsBefore>nDOs ,
-                % delete the widgets
-                delete(self.DOLabelTexts(nDOs+1:end)) ;
-                delete(self.DOIsTimedCheckboxes(nDOs+1:end)) ;                
-                delete(self.DOIsOnRadiobuttons(nDOs+1:end)) ;                
-                
-                % need to trim the arrays
-                self.DOLabelTexts(nDOs+1:end) = [] ;
-                self.DOIsTimedCheckboxes(nDOs+1:end) = [] ;                
-                self.DOIsOnRadiobuttons(nDOs+1:end) = [] ;                
-            end
+            self.updateDOPanelControlsInExistance_() ;
         end  % function
         
         function updateAIPanelControlsInExistance_(self)
@@ -1782,6 +1662,66 @@ classdef ChannelsFigure < ws.MCOSFigure
                 %self.DIUnitsEdits(nDIs+1:end) = [] ;
                 self.DIIsActiveCheckboxes(nDIs+1:end) = [] ;                
                 self.DIIsMarkedForDeletionCheckboxes(nDIs+1:end) = [] ;                
+            end
+        end  % function
+        
+        function updateDOPanelControlsInExistance_(self)
+            model = self.Model ;
+            if isempty(model) ,
+                nDOs = 0 ;
+            else
+                nDOs = model.Stimulation.NDigitalChannels ;
+            end
+            
+            % Populate the DO channel rows        
+            % Redimension DO arrays as needed
+            nDOsBefore = length(self.DOLabelTexts) ;
+            if nDOsBefore<nDOs ,
+                % need to make more slots, fill them
+                
+                % redimension arrays
+                self.DOLabelTexts(nDOs) = 0 ;
+                self.DOIsTimedCheckboxes(nDOs)= 0 ;                
+                self.DOIsOnRadiobuttons(nDOs)= 0 ;                
+                
+                for i=(nDOsBefore+1):nDOs ,
+                    self.DOLabelTexts(i)=...
+                        uicontrol('Parent',self.DOsPanel, ...
+                                  'Style','text', ...
+                                  'Tag',sprintf('DOLabelTexts%d',i), ...
+                                  'Units','pixels', ...
+                                  'FontName','Tahoma', ...
+                                  'FontSize',8, ...
+                                  'HorizontalAlignment','left');
+                    self.DOIsTimedCheckboxes(i)= ...
+                        uicontrol('Parent',self.DOsPanel, ...
+                                  'Style','checkbox', ...
+                                  'Units','pixels', ...
+                                  'FontSize',8, ...
+                                  'FontName','Tahoma', ...
+                                  'Value',0, ...
+                                  'String','', ...
+                                  'Callback',@(source,event)(self.controlActuated('DOIsTimedCheckboxes',source,event)));
+                    self.DOIsOnRadiobuttons(i)= ...
+                        uicontrol('Parent',self.DOsPanel, ...
+                                  'Style','radiobutton', ...
+                                  'Units','pixels', ...
+                                  'FontSize',8, ...
+                                  'FontName','Tahoma', ...
+                                  'Value',0, ...
+                                  'String','', ...
+                                  'Callback',@(source,event)(self.controlActuated('DOIsOnRadiobuttons',source,event)));
+                end
+            elseif nDOsBefore>nDOs ,
+                % delete the widgets
+                delete(self.DOLabelTexts(nDOs+1:end)) ;
+                delete(self.DOIsTimedCheckboxes(nDOs+1:end)) ;                
+                delete(self.DOIsOnRadiobuttons(nDOs+1:end)) ;                
+                
+                % need to trim the arrays
+                self.DOLabelTexts(nDOs+1:end) = [] ;
+                self.DOIsTimedCheckboxes(nDOs+1:end) = [] ;                
+                self.DOIsOnRadiobuttons(nDOs+1:end) = [] ;                
             end
         end  % function
         
