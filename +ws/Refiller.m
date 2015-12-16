@@ -382,7 +382,7 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = didRemoveDigitalOutputChannelInFrontend(self, removedChannelIndex) %#ok<INUSD>
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, removedChannelIndices) %#ok<INUSD>
             %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
             result = [] ;
         end  % function

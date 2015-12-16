@@ -2351,19 +2351,19 @@ classdef WavesurferModel < ws.RootModel
             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) ;
         end
         
-        function didRemoveAnalogOutputChannel(self)
+        function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didRemoveDigitalOutputChannel(self, indexOfRemovedChannel)
+        function didDeleteDigitalOutputChannels(self, originalIndicesOfDeletedChannels)
             %self.Display.didRemoveDigitalOutputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-            self.IPCPublisher_.send('didRemoveDigitalOutputChannelInFrontend', indexOfRemovedChannel) ;
+            self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', originalIndicesOfDeletedChannels) ;
         end
         
     end

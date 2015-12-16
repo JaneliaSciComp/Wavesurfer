@@ -383,8 +383,8 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = didRemoveDigitalOutputChannelInFrontend(self, removedChannelIndex)
-            self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, originalIndicesOfDeletedChannels)
+            self.Stimulation.deleteDigitalChannels(originalIndicesOfDeletedChannels) ;
             result = [] ;
         end  % function
         

@@ -19,7 +19,7 @@ classdef ChannelsController < ws.Controller
         function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
             % Get the list of valid choices, if we can
             wavesurferModel = self.Model ;
-            validChoices = wavesurferModel.getAllAnalogTerminalNames() ;
+            validChoices = wavesurferModel.getAllAITerminalNames() ;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
             channelIDAsString = choice(3:end) ;
@@ -73,6 +73,65 @@ classdef ChannelsController < ws.Controller
             self.Model.Acquisition.deleteMarkedAnalogChannels() ;
         end
         
+        function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.AOChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.AOChannelNameEdits(i),'String') ;
+            self.Model.Stimulation.setSingleAnalogChannelName(i, newString) ;
+        end
+        
+        function AOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllAOTerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            channelIDAsString = choice(3:end) ;
+            channelID = str2double(channelIDAsString) ;            
+            isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Stimulation.setSingleAnalogChannelID(iChannel, channelID) ;  %#ok<FNDSB>
+        end
+        
+        function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=(source==self.Figure.AOScaleEdits);
+            i=find(isTheChannel);
+            newString=get(self.Figure.AOScaleEdits(i),'String');
+            newValue=str2double(newString);
+            if isfinite(newValue) && newValue>0 ,
+                % good value
+                %self.Model.Stimulation.ChannelScales(i)=newValue;
+                self.Model.Stimulation.setSingleAnalogChannelScale(i,newValue);
+                % changing model should auto-update the view
+            else
+                % discard change by re-syncing view to model
+                self.Figure.update();
+            end
+        end
+        
+        function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=(source==self.Figure.AOUnitsEdits);
+            i=find(isTheChannel);            
+            newString=get(self.Figure.AOUnitsEdits(i),'String');
+            newValue=strtrim(newString);
+            self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
+        end
+        
+        function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
+            isAnalogChannelMarkedForDeletion = self.Model.Stimulation.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Stimulation.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+        end
+
+        function AddAOChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.addAnalogChannel() ;
+        end
+        
+        function DeleteAOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.deleteMarkedAnalogChannels() ;
+        end
+        
         function DIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
             isTheChannel = (source==self.Figure.DIChannelNameEdits) ;
             i = find(isTheChannel) ;
@@ -113,30 +172,6 @@ classdef ChannelsController < ws.Controller
         
         function DeleteDIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
             self.Model.Acquisition.deleteMarkedDigitalChannels() ;
-        end
-        
-        function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AOScaleEdits);
-            i=find(isTheChannel);
-            newString=get(self.Figure.AOScaleEdits(i),'String');
-            newValue=str2double(newString);
-            if isfinite(newValue) && newValue>0 ,
-                % good value
-                %self.Model.Stimulation.ChannelScales(i)=newValue;
-                self.Model.Stimulation.setSingleAnalogChannelScale(i,newValue);
-                % changing model should auto-update the view
-            else
-                % discard change by re-syncing view to model
-                self.Figure.update();
-            end
-        end
-        
-        function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AOUnitsEdits);
-            i=find(isTheChannel);            
-            newString=get(self.Figure.AOUnitsEdits(i),'String');
-            newValue=strtrim(newString);
-            self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
         end
         
         function DOIsTimedCheckboxesActuated(self,source,event)  %#ok<INUSD>

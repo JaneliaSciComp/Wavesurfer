@@ -181,9 +181,14 @@ classdef RootModel < ws.Model
             result = self.NCounters_ ;
         end  % function        
         
-        function result = getAllAnalogTerminalNames(self)             
+        function result = getAllAITerminalNames(self)             
             nAIsInHardware = self.getNumberOfAIChannels() ;
             result = arrayfun(@(id)(sprintf('AI%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
+        end        
+        
+        function result = getAllAOTerminalNames(self)             
+            nAIsInHardware = self.getNumberOfAOChannels() ;
+            result = arrayfun(@(id)(sprintf('AO%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
         end        
         
         function result = getAllDigitalTerminalNames(self)             
