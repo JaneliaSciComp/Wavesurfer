@@ -277,7 +277,7 @@ classdef Looper < ws.RootModel
             self.Triggering.didSetDeviceName() ;            
             
             % Set the state
-            self.setState_('idle');  % do we need to do this?
+            %self.setState_('idle');  % do we need to do this?
             
             % Get a task, if we need one
             self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
