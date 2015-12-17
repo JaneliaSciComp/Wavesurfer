@@ -1206,7 +1206,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
             set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            set(self.ChannelsMenuItem,'Enable',onIff(isIdle));
+            set(self.ChannelsMenuItem,'Enable',onIff(true));
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
             set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            

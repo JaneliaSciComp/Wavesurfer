@@ -486,11 +486,11 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function layout_(self)
             % Layout parameters
-            topAreaHeight = 50 ;
+            topAreaHeight = 60 ;
             deviceNamePopupXOffset = 66 ;
             deviceNamePopupWidth = 100 ;
             %deviceNamePopupHeight = 16 ;
-            panelBorderSize=6;
+            panelBorderSize=6;  % this is the space between the panel borders and the figure border on the left, right, and bottom
             interPanelSpaceWidth=10;
             interPanelSpaceHeight=10;
             panelToTitleRowSpaceHeight=28;  % need to accomodate the panel title, plus a bit more to make it look nice
@@ -593,7 +593,7 @@ classdef ChannelsFigure < ws.MCOSFigure
                                   spaceBetweenRowsAndButtonsHeight + ...
                                   buttonHeight + ...
                                   buttonsToFrameSpaceHeight ;
-            figureHeight = topAreaHeight + panelBorderSize + analogPanelsHeight + interPanelSpaceHeight + digitalPanelsHeight + panelBorderSize ;
+            figureHeight = topAreaHeight + analogPanelsHeight + interPanelSpaceHeight + digitalPanelsHeight + panelBorderSize ;
             figureWidth = panelBorderSize + aiPanelWidth + interPanelSpaceWidth + aoPanelWidth + panelBorderSize ;
             
             % Position the figure, keeping upper left corner fixed

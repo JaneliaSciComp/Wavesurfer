@@ -25,8 +25,9 @@ function positionPopupmenuAndLabelBang(labelGH,popupmenuGH,popupmenuXOffset,popu
     popupmenuHeight=originalPopupmenuPosition(4);
 
     % Position the popupmenu itself
-    set(popupmenuGH,'Position',[popupmenuXOffset popupmenuYOffset popupmenuWidth popupmenuHeight], ...
-                    'BackgroundColor','w');
+    %set(popupmenuGH,'Position',[popupmenuXOffset popupmenuYOffset popupmenuWidth popupmenuHeight], ...
+    %                'BackgroundColor','w');
+    set(popupmenuGH,'Position',[popupmenuXOffset popupmenuYOffset popupmenuWidth popupmenuHeight]);
     
     % Position the label to the left of the popupmenu
     labelExtentFull=get(labelGH,'Extent');

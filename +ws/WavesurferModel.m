@@ -276,15 +276,15 @@ classdef WavesurferModel < ws.RootModel
             % MDF is specified.
             self.setState_('no_device') ;
             
-            % Finally, set the device name to the first device name, if
-            % there is one (and if we are the one true wavesurfer object)
-            if isITheOneTrueWavesurferModel ,
-                % Set the device name to the first device
-                allDeviceNames = self.AllDeviceNames ;
-                if ~isempty(allDeviceNames) ,
-                    self.DeviceName = allDeviceNames{1} ;
-                end
-            end
+%             % Finally, set the device name to the first device name, if
+%             % there is one (and if we are the one true wavesurfer object)
+%             if isITheOneTrueWavesurferModel ,
+%                 % Set the device name to the first device
+%                 allDeviceNames = self.AllDeviceNames ;
+%                 if ~isempty(allDeviceNames) ,
+%                     self.DeviceName = allDeviceNames{1} ;
+%                 end
+%             end
         end  % function
         
         function delete(self)

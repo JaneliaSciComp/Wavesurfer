@@ -17,9 +17,9 @@ function setPopupMenuItemsAndSelectionBang(popupGH,listOfValidValues,value,alway
     end
     
     [menuItems,indexOfSelectedMenuItem,isValuePresent,isValueInList] = ...
-        ws.utility.regularizeValueForPopupMenu(valueMaybe,listOfValidValues,alwaysShowUnspecifiedItemInMenu) ; %#ok<ASGLU>
+        ws.utility.regularizeValueForPopupMenu(valueMaybe,listOfValidValues,alwaysShowUnspecifiedItemInMenu) ;
 
-    if isValueInList ,
+    if isValuePresent && isValueInList ,
         backgroundColor = normalBackgroundColor ;
     else
         backgroundColor = invalidBackgroundColor ;
