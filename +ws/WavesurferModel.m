@@ -221,27 +221,11 @@ classdef WavesurferModel < ws.RootModel
                     error('ws:noContactWithRefiller' , ...
                           'Unable to establish contact with the refiller process');
                 end
-                    
-%                 % Wait for the Looper & Refiller to phone home
-%                 %self.IPCPublisher_.send('areYallAliveQ') ;
-% 
-%                 % Wait for the looper to respond that it is alive
-%                 timeout = 30 ;  % s
-%                 gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperIsAlive',timeout) ;
-%                 if ~gotMessage ,
-%                     % Something went wrong
-%                     error('ws:looperNotAlive' , ...
-%                           'The looper did not respond to the ''Are you alive?'' message');
-%                 end
-% 
-%                 % Wait for the refiller to respond that it is alive
-%                 gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerIsAlive',timeout) ;
-%                 if ~gotMessage ,
-%                     % Something went wrong
-%                     error('ws:refillerNotAlive' , ...
-%                           'The refiller did not respond to the ''Are you alive?'' message');
-%                 end
-            end
+
+                % Get the list of all device names, and cache it in our own
+                % state
+                self.probeHardwareAndSetAllDeviceNames() ;                
+            end  % if isITheOneTrueWavesurfer
             
             % Initialize the fast protocols
             self.FastProtocols_ = cell(1,self.NFastProtocols) ;
@@ -287,10 +271,21 @@ classdef WavesurferModel < ws.RootModel
 %             %                           'TimerFcn',@(timer,timerStruct)(self.poll_()), ...
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
+
             % The object is now initialized, but not very useful until an
             % MDF is specified.
-            self.setState_('no_device');
-        end
+            self.setState_('no_device') ;
+            
+            % Finally, set the device name to the first device name, if
+            % there is one (and if we are the one true wavesurfer object)
+            if isITheOneTrueWavesurferModel ,
+                % Set the device name to the first device
+                allDeviceNames = self.AllDeviceNames ;
+                if ~isempty(allDeviceNames) ,
+                    self.DeviceName = allDeviceNames{1} ;
+                end
+            end
+        end  % function
         
         function delete(self)
             %fprintf('WavesurferModel::delete()\n');
@@ -2499,11 +2494,11 @@ classdef WavesurferModel < ws.RootModel
         function setDeviceName_(self, newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if ws.utility.isString(newValue) && ~isempty(newValue) ,
-                    deviceNames = ws.WavesurferModel.getAllDeviceNames() ;
-                    isAMatch = strcmpi(newValue,deviceNames) ;
+                    allDeviceNames = self.AllDeviceNames ;
+                    isAMatch = strcmpi(newValue,allDeviceNames) ;
                     if any(isAMatch) ,
                         iMatch = find(isAMatch,1) ;
-                        deviceName = deviceNames{iMatch} ;
+                        deviceName = allDeviceNames{iMatch} ;
                         self.DeviceName_ = deviceName ;
                         
                         % Probe the device to find out its capabilities
@@ -2559,13 +2554,6 @@ classdef WavesurferModel < ws.RootModel
             pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
             
             %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
-        end
-        
-        function deviceNames = getAllDeviceNames()
-            daqmxSystem = ws.dabs.ni.daqmx.System() ;
-            deviceNameAsCommaSeparatedList = daqmxSystem.devNames ;
-            deviceNameWithWhitespace = strsplit(deviceNameAsCommaSeparatedList,',') ;
-            deviceNames = strtrim(deviceNameWithWhitespace) ;
         end
     end  % static methods block
     

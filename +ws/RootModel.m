@@ -36,6 +36,7 @@ classdef RootModel < ws.Model
 %           % ClockAtRunStart_ transient, achieves this.
 %         State
 %         VersionString
+        AllDeviceNames
         DeviceName
     end
     
@@ -71,6 +72,7 @@ classdef RootModel < ws.Model
     end
 
     properties (Access=protected, Transient=true)
+        AllDeviceNames_ = cell(1,0)  % transient b/c we want to probe the hardware on startup each time to get this        
 %         %RPCServer_
 %         IPCPublisher_
 %         %RefillerRPCClient_
@@ -142,6 +144,10 @@ classdef RootModel < ws.Model
     end  % public methods block
         
     methods
+        function value = get.AllDeviceNames(self)
+            value = self.AllDeviceNames_ ;
+        end  % function
+
         function value = get.DeviceName(self)
             value = self.DeviceName_ ;
         end  % function
@@ -152,6 +158,10 @@ classdef RootModel < ws.Model
     end  % public methods block
     
     methods
+        function probeHardwareAndSetAllDeviceNames(self)
+            self.AllDeviceNames_ = ws.RootModel.getAllDeviceNamesFromHardware() ;
+        end
+        
         function result = getNumberOfAIChannels(self)
             % The number of AI channels available, if you used them all in
             % single-ended mode.  If you want them to be differential, you
@@ -198,6 +208,13 @@ classdef RootModel < ws.Model
     end  % public methods block
     
     methods (Static)
+        function deviceNames = getAllDeviceNamesFromHardware()
+            daqmxSystem = ws.dabs.ni.daqmx.System() ;
+            deviceNameAsCommaSeparatedList = daqmxSystem.devNames ;
+            deviceNameWithWhitespace = strsplit(deviceNameAsCommaSeparatedList,',') ;
+            deviceNames = strtrim(deviceNameWithWhitespace) ;
+        end
+        
         function result = getNumberOfAIChannelsFromDevice(deviceName)
             % The number of AI channels available, if you used them all in
             % single-ended mode.  If you want them to be differential, you

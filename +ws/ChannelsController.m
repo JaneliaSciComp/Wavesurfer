@@ -9,6 +9,12 @@ classdef ChannelsController < ws.Controller
             self.Figure_ = fig ;
         end
         
+        function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
+            allDeviceNames = self.Model.AllDeviceNames ;
+            deviceName = ws.utility.getPopupMenuSelection(source, allDeviceNames) ;
+            self.Model.DeviceName = deviceName ;            
+        end
+        
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
             isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
             i = find(isTheChannel) ;
