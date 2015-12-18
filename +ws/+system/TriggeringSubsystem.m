@@ -334,7 +334,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
         end
         
         function result = allCounterIDs(self)
-            nCounterIDsInHardware = self.Parent.getNumberOfCounters() ;
+            nCounterIDsInHardware = self.Parent.NCounters ;
             result = 0:(nCounterIDsInHardware-1) ;              
         end
         
@@ -379,7 +379,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             % We consider all the default counter PFIs to be "in use",
             % regardless of whether any of the counters are in use.
             nPFIIDsInHardware = self.Parent.getNumberOfPFILines() ;
-            nCounterIDsInHardware = self.Parent.getNumberOfCounters() ;
+            nCounterIDsInHardware = self.Parent.NCounters ;
             counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
 
             % The built-in trigger PFI line is also in use

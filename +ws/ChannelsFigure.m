@@ -1434,6 +1434,14 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsAnalogChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.utility.onIff(isWavesurferIdle));                                     
             end            
+            
+            % Deal with enablement of add/delete buttons
+            nAITerminals = model.NAIChannels ;   
+            areAnyFreeAITerminals =  (nAIs<nAITerminals) ;
+            isAIChannelMarkedForDeletion = model.Acquisition.IsAnalogChannelMarkedForDeletion ;
+            isAnyAIChannelMarkedForDeletion = any(isAIChannelMarkedForDeletion) ;
+            set(self.AddAIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeAITerminals)) ;
+            set(self.DeleteAIChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyAIChannelMarkedForDeletion)) ;
         end  % function        
         
         function updateAOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
@@ -1468,8 +1476,16 @@ classdef ChannelsFigure < ws.MCOSFigure
                 %                                 'Enable',onIff(isWavesurferIdle));                                     
                 set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.utility.onIff(isWavesurferIdle));                                     
-            end            
-        end  % function        
+            end
+            
+            % Deal with enablement of add/delete buttons
+            nAOTerminals = model.NAOChannels ;   
+            areAnyFreeAOTerminals =  (nAOs<nAOTerminals) ;
+            isAOChannelMarkedForDeletion = model.Stimulation.IsAnalogChannelMarkedForDeletion ;
+            isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;
+            set(self.AddAOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeAOTerminals)) ;
+            set(self.DeleteAOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyAOChannelMarkedForDeletion)) ;
+        end  % function
         
         function updateDIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
             % update the DIs
@@ -1491,6 +1507,13 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.utility.onIff(isWavesurferIdle));                                     
             end            
+            
+            % Deal with enablement of add/delete buttons
+            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalChannelIDs()) ;
+            isDIChannelMarkedForDeletion = model.Acquisition.IsDigitalChannelMarkedForDeletion ;
+            isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
+            set(self.AddDIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeDIOTerminals)) ;
+            set(self.DeleteDIChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
         end  % function        
        
         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
@@ -1516,6 +1539,13 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.DOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Stimulation.IsDigitalChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.utility.onIff(isWavesurferIdle));                                     
             end            
+            
+            % Deal with enablement of add/delete buttons
+            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalChannelIDs()) ;
+            isDOChannelMarkedForDeletion = model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
+            set(self.AddDOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeDIOTerminals)) ;
+            set(self.DeleteDOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion)) ;                        
         end  % function        
        
 %         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>

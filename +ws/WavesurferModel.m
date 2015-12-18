@@ -2258,7 +2258,7 @@ classdef WavesurferModel < ws.RootModel
 
     methods
         function result = allDigitalChannelIDs(self)
-            nDigitalChannelIDsInHardware = self.getNumberOfDIOChannels() ;
+            nDigitalChannelIDsInHardware = self.NDIOChannels ;
             result = 0:(nDigitalChannelIDsInHardware-1) ;              
         end
         

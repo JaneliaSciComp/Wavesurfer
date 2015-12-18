@@ -38,6 +38,11 @@ classdef RootModel < ws.Model
 %         VersionString
         AllDeviceNames
         DeviceName
+        NDIOChannels
+        NPFILines
+        NCounters
+        NAIChannels
+        NAOChannels
     end
     
     %
@@ -162,19 +167,19 @@ classdef RootModel < ws.Model
             self.AllDeviceNames_ = ws.RootModel.getAllDeviceNamesFromHardware() ;
         end
         
-        function result = getNumberOfAIChannels(self)
+        function result = get.NAIChannels(self)
             % The number of AI channels available, if you used them all in
             % single-ended mode.  If you want them to be differential, you
             % only get half as many.
             result = self.NAIChannels_ ;
         end
         
-        function result = getNumberOfAOChannels(self)
+        function result = get.NAOChannels(self)
             % The number of AO channels available.
             result = self.NAOChannels_ ;
         end
 
-        function numberOfDIOChannels = getNumberOfDIOChannels(self)
+        function numberOfDIOChannels = get.NDIOChannels(self)
             % The number of DIO channels available.  We only count the DIO
             % channels capable of timed operation, i.e. the P0.x channels.
             % This is a conscious design choice.  We treat the PFIn/Pm.x
@@ -182,27 +187,27 @@ classdef RootModel < ws.Model
             numberOfDIOChannels = self.NDIOChannels_ ;
         end  % function
         
-        function numberOfPFILines = getNumberOfPFILines(self)
+        function numberOfPFILines = get.NPFILines(self)
             numberOfPFILines = self.NPFILines_ ;
         end  % function
         
-        function result = getNumberOfCounters(self)
+        function result = get.NCounters(self)
             % The number of counters (CTRs) on the board.
             result = self.NCounters_ ;
         end  % function        
         
         function result = getAllAITerminalNames(self)             
-            nAIsInHardware = self.getNumberOfAIChannels() ;
+            nAIsInHardware = self.NAIChannels ;
             result = arrayfun(@(id)(sprintf('AI%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
         end        
         
         function result = getAllAOTerminalNames(self)             
-            nAIsInHardware = self.getNumberOfAOChannels() ;
-            result = arrayfun(@(id)(sprintf('AO%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
+            nAOsInHardware = self.NAOChannels ;
+            result = arrayfun(@(id)(sprintf('AO%d',id)), 0:(nAOsInHardware-1), 'UniformOutput', false ) ;
         end        
         
         function result = getAllDigitalTerminalNames(self)             
-            nChannelsInHardware = self.getNumberOfDIOChannels() ;
+            nChannelsInHardware = self.NDIOChannels ;
             result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
     end  % public methods block
