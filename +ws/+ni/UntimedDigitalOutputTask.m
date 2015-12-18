@@ -1,9 +1,9 @@
 classdef UntimedDigitalOutputTask < handle
     properties (Dependent = true, SetAccess = immutable)
         TaskName
-        %PhysicalChannelNames
+        %TerminalNames
         DeviceNames
-        ChannelIDs
+        TerminalIDs
         %ChannelNames
     end
     
@@ -17,9 +17,9 @@ classdef UntimedDigitalOutputTask < handle
     end
     
     properties (Access = protected)
-        %PhysicalChannelNames_ = cell(1,0)
+        %TerminalNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
-        ChannelIDs_ = zeros(1,0)        
+        TerminalIDs_ = zeros(1,0)        
         %ChannelNames_ = cell(1,0)
         ChannelData_
     end
@@ -29,12 +29,12 @@ classdef UntimedDigitalOutputTask < handle
 %     end
 
     methods
-        function self = UntimedDigitalOutputTask(parent, taskName, deviceNames, channelIDs)
+        function self = UntimedDigitalOutputTask(parent, taskName, deviceNames, terminalIDs)
             %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
-            %physicalChannelNames
+            %terminalNames
             %channelNames
            
-            nChannels=length(channelIDs);
+            nChannels=length(terminalIDs);
                                     
             % Store the parent
             self.Parent_ = parent ;
@@ -47,22 +47,22 @@ classdef UntimedDigitalOutputTask < handle
             end            
             
             % Store this stuff
-            %self.PhysicalChannelNames_ = physicalChannelNames ;
+            %self.TerminalNames_ = terminalNames ;
             self.DeviceNames_ = deviceNames ;
-            self.ChannelIDs_ = channelIDs ;
+            self.TerminalIDs_ = terminalIDs ;
             %self.ChannelNames_ = channelNames ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
                 for i=1:nChannels ,
-                    %physicalChannelName = physicalChannelNames{i};
-                    %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                    %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
+                    %terminalName = terminalNames{i};
+                    %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
+                    %restOfName = ws.utility.chopDeviceNameFromTerminalName(terminalName);
                     deviceName = deviceNames{i} ;
-                    channelID = channelIDs(i) ;
+                    terminalID = terminalIDs(i) ;
                     %channelName = channelNames{i} ;
-                    lineName = sprintf('line%d',channelID) ;
+                    lineName = sprintf('line%d',terminalID) ;
                     self.DabsDaqTask_.createDOChan(deviceName, lineName);
                 end                
             end            
@@ -97,7 +97,7 @@ classdef UntimedDigitalOutputTask < handle
         end  % function
         
         function clearChannelData(self)
-            nChannels=length(self.ChannelIDs);
+            nChannels=length(self.TerminalIDs);
             self.ChannelData = false(1,nChannels);  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function
         
@@ -107,7 +107,7 @@ classdef UntimedDigitalOutputTask < handle
         
         function set.ChannelData(self, newValue)
             if ws.utility.isASettableValue(newValue),
-                nChannels = length(self.ChannelIDs) ;
+                nChannels = length(self.TerminalIDs) ;
                 if islogical(newValue) && isrow(newValue) && length(newValue)==nChannels ,
                     self.ChannelData_ = newValue;
                     self.syncOutputBufferToChannelData_();
@@ -132,12 +132,12 @@ classdef UntimedDigitalOutputTask < handle
     end  % methods
     
     methods                
-%         function out = get.PhysicalChannelNames(self)
-%             out = self.PhysicalChannelNames_ ;
+%         function out = get.TerminalNames(self)
+%             out = self.TerminalNames_ ;
 %         end  % function
 
-        function out = get.ChannelIDs(self)
-            out = self.ChannelIDs_ ;
+        function out = get.TerminalIDs(self)
+            out = self.TerminalIDs_ ;
         end  % function
                     
         function out = get.TaskName(self)

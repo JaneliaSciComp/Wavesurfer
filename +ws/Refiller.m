@@ -377,7 +377,7 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) %#ok<INUSD>
+        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) %#ok<INUSD>
             %self.Stimulation.addDigitalChannel() ;
             result = [] ;
         end  % function

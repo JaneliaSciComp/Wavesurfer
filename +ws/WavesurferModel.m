@@ -708,11 +708,11 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetAnalogInputChannelID(self)
+        function didSetAnalogInputTerminalID(self)
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetDigitalInputChannelID(self)
+        function didSetDigitalInputTerminalID(self)
             self.broadcast('UpdateChannels') ;
         end
         
@@ -737,11 +737,11 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetAnalogOutputChannelID(self)
+        function didSetAnalogOutputTerminalID(self)
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetDigitalOutputChannelID(self)
+        function didSetDigitalOutputTerminalID(self)
             self.broadcast('UpdateChannels') ;
         end
         
@@ -2257,26 +2257,26 @@ classdef WavesurferModel < ws.RootModel
     end
 
     methods
-        function result = allDigitalChannelIDs(self)
-            nDigitalChannelIDsInHardware = self.NDIOChannels ;
-            result = 0:(nDigitalChannelIDsInHardware-1) ;              
+        function result = allDigitalTerminalIDs(self)
+            nDigitalTerminalIDsInHardware = self.NDIOChannels ;
+            result = 0:(nDigitalTerminalIDsInHardware-1) ;              
         end
         
-        function result = digitalChannelIDsInUse(self)
-            inputDigitalChannelIDs = self.Acquisition.DigitalChannelIDs ;
-            outputDigitalChannelIDs = self.Stimulation.DigitalChannelIDs ;
-            result = sort([inputDigitalChannelIDs outputDigitalChannelIDs]) ;
+        function result = digitalTerminalIDsInUse(self)
+            inputDigitalTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            outputDigitalTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            result = sort([inputDigitalTerminalIDs outputDigitalTerminalIDs]) ;
         end
         
-        function result = freeDigitalChannelIDs(self)
-            allIDs = self.allDigitalChannelIDs() ;  
-            inUseIDs = self.digitalChannelIDsInUse() ;
+        function result = freeDigitalTerminalIDs(self)
+            allIDs = self.allDigitalTerminalIDs() ;  
+            inUseIDs = self.digitalTerminalIDsInUse() ;
             result = setdiff(allIDs, inUseIDs) ;
         end
         
-        function result = isDigitalChannelIDInUse(self, DigitalChannelID)
-            inUseDigitalChannelIDs = self.digitalChannelIDsInUse() ;
-            result = ismember(DigitalChannelID, inUseDigitalChannelIDs) ;
+        function result = isDigitalTerminalIDInUse(self, DigitalTerminalID)
+            inUseDigitalTerminalIDs = self.digitalTerminalIDsInUse() ;
+            result = ismember(DigitalTerminalID, inUseDigitalTerminalIDs) ;
         end
     end
     
@@ -2338,12 +2338,12 @@ classdef WavesurferModel < ws.RootModel
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didAddDigitalOutputChannel(self, newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed)
+        function didAddDigitalOutputChannel(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
             %self.Display.didAddDigitalOutputChannel() ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-            self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed) ;
+            self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
         end
         
         function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>

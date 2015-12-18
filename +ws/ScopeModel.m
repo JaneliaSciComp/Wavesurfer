@@ -465,7 +465,7 @@ classdef ScopeModel < ws.Model
             %colorOrder = get(self.Axes ,'ColorOrder');
             %color = colorOrder(colorOrderIndex, :);
             
-            %self.ChannelNames(end + 1).ChannelName = newChannelID;
+            %self.ChannelNames(end + 1).ChannelName = newTerminalID;
             %self.XDataLims(:,iNewChannel) = [0 0]';
             %self.XData{iNewChannel}=zeros(0,1);  % col vector
             self.YData_{iNewChannel}=zeros(0,1);  % col vector            

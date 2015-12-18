@@ -27,17 +27,17 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         function acquireOnDemandHardwareResources(self)            
             if isempty(self.TheUntimedDigitalOutputTask_) ,
                 isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-                %untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+                %untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
                 digitalDeviceNames = self.DigitalDeviceNames ;
                 untimedDigitalDeviceNames = digitalDeviceNames(isDigitalChannelUntimed) ;
-                digitalChannelIDs = self.DigitalChannelIDs ;
-                untimedDigitalChannelIDs = digitalChannelIDs(isDigitalChannelUntimed) ;
+                digitalTerminalIDs = self.DigitalTerminalIDs ;
+                untimedDigitalTerminalIDs = digitalTerminalIDs(isDigitalChannelUntimed) ;
                 %untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
                 self.TheUntimedDigitalOutputTask_ = ...
                     ws.ni.UntimedDigitalOutputTask(self, ...
                                                    'WaveSurfer Untimed Digital Output Task', ...
                                                    untimedDigitalDeviceNames, ...
-                                                   untimedDigitalChannelIDs) ;
+                                                   untimedDigitalTerminalIDs) ;
                 % Set the outputs to the proper values, now that we have a task                               
                 if any(isDigitalChannelUntimed) ,
                     untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
@@ -64,9 +64,9 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.acquireHardwareResources() ;            
         end
         
-        function didAddDigitalChannelInFrontend(self, newChannelName, newChannelDeviceName, newChannelID, isNewChannelTimed, newChannelStateIfUntimed)
+        function didAddDigitalChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
-            self.DigitalChannelIDs_ = [self.DigitalChannelIDs_ newChannelID] ;
+            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelTimed_ = [ self.IsDigitalChannelTimed_ isNewChannelTimed  ] ;
             self.DigitalOutputStateIfUntimed_ = [ self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ] ;
@@ -74,13 +74,13 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         end
         
         function didRemoveDigitalChannelInFrontend(self, channelIndex)
-            nChannels = length(self.DigitalChannelIDs) ;
+            nChannels = length(self.DigitalTerminalIDs) ;
             if 1<=channelIndex && channelIndex<=nChannels ,
                 %channelName = self.AnalogChannelNames_{channelIndex} ;
                 isKeeper = true(1,nChannels) ;
                 isKeeper(channelIndex) = false ;
                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalChannelIDs_ = self.DigitalChannelIDs_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                 self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
                 self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
@@ -133,7 +133,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             fprintf('LooperStimulation::addDigitalChannel_\n') ;
 %             addDigitalChannel_@ws.system.StimulationSubsystem(self) ;
 %             digitalChannelNames = self.DigitalChannelNames
-%             digitalChannelIDs = self.DigitalChannelIDs            
+%             digitalTerminalIDs = self.DigitalTerminalIDs            
 %             self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
 %             fprintf('About to exit LooperStimulation::addDigitalChannel_\n') ;
 %         end

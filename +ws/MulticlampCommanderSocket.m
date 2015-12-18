@@ -1151,20 +1151,20 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                                      'comPortID',temp, ...
                                      'axoBusID',temp, ...
                                      'serialNumber',temp, ...
-                                     'channelID',temp);
+                                     'terminalID',temp);
             for i=1:numel(electrodeID) ,
                 id=uint32(electrodeID(i));                
                 aOrB=ws.MulticlampCommanderSocket.multiclampAOrBFromElectrodeID(id);
                 if isequal(aOrB,'A') ,
                     % 700A
-                    channelID=uint16(bitshift(id,-16));
+                    terminalID=uint16(bitshift(id,-16));
                     axoBusID=uint8(bitand(bitshift(id,-8),255));
                     comPortID=uint8(bitand(id,255));
                     serialNumber=[];
                 else
                     % 700B
                     serialNumber=uint32(bitand(id,268435455));  % 268435455==2^28-1
-                    channelID=uint8(bitshift(id,-28));
+                    terminalID=uint8(bitshift(id,-28));
                     axoBusID=[];
                     comPortID=[];
                 end
@@ -1172,7 +1172,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                                             'comPortID',comPortID, ...
                                             'axoBusID',axoBusID, ...
                                             'serialNumber',serialNumber, ...
-                                            'channelID',channelID);
+                                            'terminalID',terminalID);
             end
         end  % function
 
@@ -1182,13 +1182,13 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 s=electrodeIDStruct(i);
                 if isequal(s.aOrB,'A') ,
                     % 700A
-                    electrodeID(i)=bitor(bitshift(uint32(s.channelID),16), ...
+                    electrodeID(i)=bitor(bitshift(uint32(s.terminalID),16), ...
                                          bitshift(uint32(s.axoBusID),8), ...
                                          uint32(s.comPortID));
                 else
                     % 700B
                     electrodeID(i)=bitor(s.serialNumber, ...
-                                         bitshift(uint32(s.channelID),28));
+                                         bitshift(uint32(s.terminalID),28));
                 end
             end
         end  % function
@@ -1198,9 +1198,9 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             % This relies on sort() doing a stable sort.
             sorted=s;  
             
-            % Sort by channelID
-            channelID=uint16([sorted.channelID]);
-            [~,i]=sort(channelID);
+            % Sort by terminalID
+            terminalID=uint16([sorted.terminalID]);
+            [~,i]=sort(terminalID);
             sorted=sorted(i);
 
             % Sort by serialNumber

@@ -5,9 +5,9 @@ classdef InputTask < handle
         IsAnalog
         IsDigital
         TaskName
-        %PhysicalChannelNames        
+        %TerminalNames        
         DeviceNames
-        ChannelIDs
+        TerminalIDs
         %ChannelNames
         IsArmed
         % These are not directly settable
@@ -37,9 +37,9 @@ classdef InputTask < handle
     
     properties (Access = protected)
         IsAnalog_
-        %PhysicalChannelNames_ = cell(1,0)
+        %TerminalNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
-        ChannelIDs_ = zeros(1,0)
+        TerminalIDs_ = zeros(1,0)
         %ChannelNames_ = cell(1,0)
         %IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
@@ -57,8 +57,8 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, deviceNames, channelIDs)
-            nChannels=length(channelIDs);
+        function self = InputTask(parent, taskType, taskName, deviceNames, terminalIDs)
+            nChannels=length(terminalIDs);
             
             % Store the parent
             self.Parent_ = parent ;
@@ -77,9 +77,9 @@ classdef InputTask < handle
             self.TicId_ = tic();
             
             % Store this stuff
-            %self.PhysicalChannelNames_ = physicalChannelNames ;
+            %self.TerminalNames_ = terminalNames ;
             self.DeviceNames_ = deviceNames ;
-            self.ChannelIDs_ = channelIDs ;
+            self.TerminalIDs_ = terminalIDs ;
             %self.ChannelNames_ = channelNames ;
             %self.IsChannelActive_ = true(1,nChannels);
             
@@ -87,18 +87,18 @@ classdef InputTask < handle
             % after adding channels)
             if nChannels>0 ,
                 for i=1:nChannels ,
-                    %physicalChannelName = physicalChannelNames{i} ;
+                    %terminalName = terminalNames{i} ;
                     deviceName = deviceNames{i} ;
-                    channelID = channelIDs(i) ;
+                    terminalID = terminalIDs(i) ;
                     %channelName = channelNames{i} ;
                     if self.IsAnalog ,
-                        %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                        %channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createAIVoltageChan(deviceName, channelID) ;
+                        %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
+                        %terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+                        self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID) ;
                     else
-                        %deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                        %restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
-                        lineName = sprintf('line%d',channelID) ;
+                        %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
+                        %restOfName = ws.utility.chopDeviceNameFromTerminalName(terminalName);
+                        lineName = sprintf('line%d',terminalID) ;
                         self.DabsDaqTask_.createDIChan(deviceName, lineName) ;
                     end
                 end
@@ -232,15 +232,15 @@ classdef InputTask < handle
                     else
                         readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
                     end
-                    %shiftBy = cellfun(@(x) ws.utility.channelIDFromPhysicalChannelName(x), self.PhysicalChannelNames_);
-                    shiftBy = self.ChannelIDs_ ;
+                    %shiftBy = cellfun(@(x) ws.utility.terminalIDFromTerminalName(x), self.TerminalNames_);
+                    shiftBy = self.TerminalIDs_ ;
                     shiftedData = bsxfun(@bitshift,readData,(0:(length(shiftBy)-1))-shiftBy);
                     packedData = zeros(size(readData,1),1,'uint32');
                     for column = 1:size(readData,2)
                         packedData = bitor(packedData,shiftedData(:,column));
                     end
                 end
-                nChannels = length(self.ChannelIDs_);
+                nChannels = length(self.TerminalIDs_);
                 if nChannels<=8
                     rawData = uint8(packedData);
                 elseif nChannels<=16
@@ -346,8 +346,8 @@ classdef InputTask < handle
             out = self.DeviceNames_ ;
         end  % function
 
-        function out = get.ChannelIDs(self)
-            out = self.ChannelIDs_ ;
+        function out = get.TerminalIDs(self)
+            out = self.TerminalIDs_ ;
         end  % function
 
 %         function out = get.ChannelNames(self)
@@ -640,14 +640,14 @@ classdef InputTask < handle
         function unpackedData = unpackDigitalData_(self, packedData)
             % Only used for digital data.
             nScans = size(packedData,1);
-            %nChannels = length(self.PhysicalChannelNames);
-            %channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);            
-            channelIDs = self.ChannelIDs_ ;
-            nChannels = length(channelIDs) ;            
+            %nChannels = length(self.TerminalNames);
+            %terminalIDs = ws.utility.terminalIDsFromTerminalNames(self.TerminalNames);            
+            terminalIDs = self.TerminalIDs_ ;
+            nChannels = length(terminalIDs) ;            
             unpackedData = zeros(nScans,nChannels,'uint8');
             for j=1:nChannels ,
-                channelID = channelIDs(j);
-                thisChannelData = bitget(packeData,channelID+1);  % +1 to convert to one-based indexing
+                terminalID = terminalIDs(j);
+                thisChannelData = bitget(packeData,terminalID+1);  % +1 to convert to one-based indexing
                 unpackedData(:,j) = thisChannelData ;
             end
         end  % function

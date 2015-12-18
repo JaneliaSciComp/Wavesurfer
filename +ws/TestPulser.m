@@ -41,9 +41,9 @@ classdef TestPulser < ws.Model
         %CommandInVolts
         NSweepsCompletedThisRun
         OutputDeviceNames
-        CommandChannelID
+        CommandTerminalID
         InputDeviceNames
-        MonitorChannelID
+        MonitorTerminalID
         MonitorChannelScale
         CommandChannelScale
         %AreYLimitsForRunDetermined
@@ -55,8 +55,8 @@ classdef TestPulser < ws.Model
         CommandChannelScalePerElectrode
         MonitorChannelScalePerElectrode
         CommandInVoltsPerElectrode
-        CommandChannelIDPerElectrode
-        MonitorChannelIDPerElectrode
+        CommandTerminalIDPerElectrode
+        MonitorTerminalIDPerElectrode
         IsCCPerElectrode
         IsVCPerElectrode
         CommandUnitsPerElectrode
@@ -839,7 +839,7 @@ classdef TestPulser < ws.Model
             value=wavesurferModel.Stimulation.AnalogDeviceNames ;
         end
         
-        function result=get.CommandChannelIDPerElectrode(self)
+        function result=get.CommandTerminalIDPerElectrode(self)
             ephys=self.Parent_;
             electrodeManager=ephys.ElectrodeManager;
             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
@@ -853,12 +853,12 @@ classdef TestPulser < ws.Model
             result=zeros(1,n);
             for i=1:n ,
                 thisCommandChannelName = commandChannelNames{i} ;
-                thisChannelID = stimulationSubsystem.analogChannelIDFromName(thisCommandChannelName) ;
-                result(i) = thisChannelID ;
+                thisTerminalID = stimulationSubsystem.analogTerminalIDFromName(thisCommandChannelName) ;
+                result(i) = thisTerminalID ;
             end
         end
         
-        function result=get.MonitorChannelIDPerElectrode(self)
+        function result=get.MonitorTerminalIDPerElectrode(self)
             ephys=self.Parent_;
             electrodeManager=ephys.ElectrodeManager;
             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
@@ -871,13 +871,13 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.analogChannelIDFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogTerminalIDFromName(monitorChannelNames{i});
             end
         end
         
-        function value=get.MonitorChannelID(self)
+        function value=get.MonitorTerminalID(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.analogChannelIDFromName(self.MonitorChannelName);            
+            value=wavesurferModel.Acquisition.analogTerminalIDFromName(self.MonitorChannelName);            
         end
         
         function value=get.MonitorChannelScale(self)
@@ -1103,9 +1103,9 @@ classdef TestPulser < ws.Model
                 % Set up the input task
                 % fprintf('About to create the input task...\n');
                 self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
-                monitorChannelIDs=self.MonitorChannelIDPerElectrode;
+                monitorTerminalIDs=self.MonitorTerminalIDPerElectrode;
                 for i=1:nElectrodes
-                    self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorChannelIDs(i));  % defaults to differential
+                    self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorTerminalIDs(i));  % defaults to differential
                 end
                 deviceName = self.Parent.Parent.DeviceName ;
                 clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
@@ -1117,10 +1117,10 @@ classdef TestPulser < ws.Model
                 % Set up the output task
                 % fprintf('About to create the output task...\n');
                 self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
-                commandChannelIDs=self.CommandChannelIDPerElectrode;
+                commandTerminalIDs=self.CommandTerminalIDPerElectrode;
                 outputDeviceNames = self.OutputDeviceNames ;
                 for i=1:nElectrodes ,
-                    self.OutputTask_.createAOVoltageChan(outputDeviceNames{i},commandChannelIDs(i));
+                    self.OutputTask_.createAOVoltageChan(outputDeviceNames{i},commandTerminalIDs(i));
                 end
                 self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
 

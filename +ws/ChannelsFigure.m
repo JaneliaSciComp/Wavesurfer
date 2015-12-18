@@ -1407,9 +1407,9 @@ classdef ChannelsFigure < ws.MCOSFigure
             isWavesurferIdle=isequal(model.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Acquisition.AnalogPhysicalChannelNames ;
+            terminalNameForEachChannel = model.Acquisition.AnalogTerminalNames ;
             allAITerminalNames = model.getAllAITerminalNames() ;
-            %channelIDs=model.Acquisition.AnalogChannelIDs;  % zero-based NI channel index
+            %terminalIDs=model.Acquisition.AnalogTerminalIDs;  % zero-based NI channel index
             channelNames=model.Acquisition.AnalogChannelNames;
             channelScales=model.Acquisition.AnalogChannelScales;
             channelUnits=model.Acquisition.AnalogChannelUnits;
@@ -1450,9 +1450,9 @@ classdef ChannelsFigure < ws.MCOSFigure
             isWavesurferIdle=isequal(model.State,'idle');
 
             %deviceNames=model.Stimulation.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Stimulation.AnalogPhysicalChannelNames ;
+            terminalNameForEachChannel = model.Stimulation.AnalogTerminalNames ;
             allAOTerminalNames = model.getAllAOTerminalNames() ;
-            %channelIDs=model.Stimulation.AnalogChannelIDs;  % zero-based NI channel index
+            %terminalIDs=model.Stimulation.AnalogTerminalIDs;  % zero-based NI channel index
             channelNames=model.Stimulation.AnalogChannelNames;
             channelScales=model.Stimulation.AnalogChannelScales;
             channelUnits=model.Stimulation.AnalogChannelUnits;
@@ -1493,7 +1493,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             isWavesurferIdle=isequal(model.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Acquisition.DigitalPhysicalChannelNames ;
+            terminalNameForEachChannel = model.Acquisition.DigitalTerminalNames ;
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Acquisition.DigitalChannelNames;
             nDIs=length(self.DIChannelNameEdits);            
@@ -1509,7 +1509,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalChannelIDs()) ;
+            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDIChannelMarkedForDeletion = model.Acquisition.IsDigitalChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
             set(self.AddDIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeDIOTerminals)) ;
@@ -1522,7 +1522,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             isWavesurferIdle=isequal(model.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Stimulation.DigitalPhysicalChannelNames ;
+            terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Stimulation.DigitalChannelNames;
             isTimed = model.Stimulation.IsDigitalChannelTimed ;
@@ -1541,7 +1541,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalChannelIDs()) ;
+            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDOChannelMarkedForDeletion = model.Stimulation.IsDigitalChannelMarkedForDeletion ;
             isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
             set(self.AddDOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeDIOTerminals)) ;
@@ -1553,7 +1553,7 @@ classdef ChannelsFigure < ws.MCOSFigure
 %             model=self.Model;
 %             isWavesurferIdle=isequal(model.State,'idle');
 %             
-%             terminalNameForEachChannel = model.Stimulation.DigitalPhysicalChannelNames ;
+%             terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
 %             channelNames=model.Stimulation.DigitalChannelNames;
 %             isTimed=model.Stimulation.IsDigitalChannelTimed;
 %             nDOs = length(self.DOLabelTexts) ;

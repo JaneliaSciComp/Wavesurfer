@@ -19,7 +19,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access=protected, Constant=true)
-        %SweepTriggerPhysicalChannelName_ = 'pfi8'
+        %SweepTriggerTerminalName_ = 'pfi8'
         %SweepTriggerPFIID_ = 8
         %SweepTriggerEdge_ = 'rising'
     end

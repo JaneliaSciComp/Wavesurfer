@@ -32,11 +32,11 @@ classdef ChannelsController < ws.Controller
             validChoices = wavesurferModel.getAllAITerminalNames() ;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            channelIDAsString = choice(3:end) ;
-            channelID = str2double(channelIDAsString) ;            
+            terminalIDAsString = choice(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            self.Model.Acquisition.setSingleAnalogChannelID(iChannel, channelID) ;  %#ok<FNDSB>
+            self.Model.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
@@ -96,11 +96,11 @@ classdef ChannelsController < ws.Controller
             validChoices = wavesurferModel.getAllAOTerminalNames() ;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            channelIDAsString = choice(3:end) ;
-            channelID = str2double(channelIDAsString) ;            
+            terminalIDAsString = choice(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            self.Model.Stimulation.setSingleAnalogChannelID(iChannel, channelID) ;  %#ok<FNDSB>
+            self.Model.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
@@ -155,11 +155,11 @@ classdef ChannelsController < ws.Controller
             validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            channelIDAsString = choice(4:end) ;
-            channelID = str2double(channelIDAsString) ;            
+            terminalIDAsString = choice(4:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.DITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            self.Model.Acquisition.setSingleDigitalChannelID(iChannel, channelID) ;  %#ok<FNDSB>
+            self.Model.Acquisition.setSingleDigitalTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
@@ -197,11 +197,11 @@ classdef ChannelsController < ws.Controller
             validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
             % Do the rest
             choice=ws.utility.getPopupMenuSelection(source,validChoices);
-            channelIDAsString = choice(4:end) ;
-            channelID = str2double(channelIDAsString) ;            
+            terminalIDAsString = choice(4:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            self.Model.Stimulation.setSingleDigitalChannelID(iChannel, channelID) ;  %#ok<FNDSB>
+            self.Model.Stimulation.setSingleDigitalTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function DOIsTimedCheckboxesActuated(self,source,event)  %#ok<INUSD>

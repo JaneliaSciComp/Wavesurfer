@@ -427,7 +427,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 jInDigitalData = [];                
                 NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
                 for cdx = 1:length(activeInputChannelNames)
-                    %channelName = sprintf('Acq_%d', inputChannelIDs(cdx));
+                    %channelName = sprintf('Acq_%d', inputTerminalIDs(cdx));
                     channelName=activeInputChannelNames{cdx};
                     if any(strcmp(channelName, self.Scopes{sdx}.ChannelNames)) ,
                         channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
