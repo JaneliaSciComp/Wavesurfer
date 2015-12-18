@@ -1493,7 +1493,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             set(self.DeleteAOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyAOChannelMarkedForDeletion)) ;
         end  % function
         
-        function updateDIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
+        function updateDIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
             % update the DIs
             model=self.Model;
             isWavesurferIdle=isequal(model.State,'idle');
@@ -1502,12 +1502,15 @@ classdef ChannelsFigure < ws.MCOSFigure
             terminalNameForEachChannel = model.Acquisition.DigitalTerminalNames ;
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Acquisition.DigitalChannelNames;
+            isTerminalOvercommitted = model.Acquisition.IsDigitalChannelTerminalOvercommitted ;
             nDIs=length(self.DIChannelNameEdits);            
             for i=1:nDIs ,
                 set(self.DIChannelNameEdits(i), 'String', channelNames{i} );
                 ws.utility.setPopupMenuItemsAndSelectionBang(self.DITerminalNamePopups(i), ...
                                                              allTerminalNames, ...
                                                              terminalNameForEachChannel{i});
+                set(self.DITerminalNamePopups(i) , ...
+                    'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelActive(i), ...
                                                  'Enable',ws.utility.onIff(isWavesurferIdle));                                     
                 set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelMarkedForDeletion(i), ...
@@ -1522,7 +1525,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             set(self.DeleteDIChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
         end  % function        
        
-        function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
+        function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
             % update the DIs
             model=self.Model;
             isWavesurferIdle=isequal(model.State,'idle');
@@ -1532,12 +1535,15 @@ classdef ChannelsFigure < ws.MCOSFigure
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Stimulation.DigitalChannelNames;
             isTimed = model.Stimulation.IsDigitalChannelTimed ;
+            isTerminalOvercommitted = model.Stimulation.IsDigitalChannelTerminalOvercommitted ;
             nDOs=length(self.DOChannelNameEdits);            
             for i=1:nDOs ,
                 set(self.DOChannelNameEdits(i), 'String', channelNames{i} );
                 ws.utility.setPopupMenuItemsAndSelectionBang(self.DOTerminalNamePopups(i), ...
                                                              allTerminalNames, ...
                                                              terminalNameForEachChannel{i});
+                set(self.DOTerminalNamePopups(i) , ...
+                    'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
                                                 'enable',ws.utility.onIff(isWavesurferIdle));
                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...

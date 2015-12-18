@@ -45,7 +45,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
        	TriggerScheme        
         IsAnalogChannelTerminalOvercommitted
-        %IsDigitalChannelTerminalOvercommitted
+        IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected) 
@@ -67,7 +67,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
         IsAnalogChannelTerminalOvercommitted_ = false(1,0)
-        %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
+        IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
 %     properties (Access=protected, Constant=true)
@@ -253,9 +253,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result =  self.IsAnalogChannelTerminalOvercommitted_ ;
         end
         
-%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
-%             result =  self.IsDigitalChannelTerminalOvercommitted_ ;
-%         end
+        function result=get.IsDigitalChannelTerminalOvercommitted(self)
+            result =  self.IsDigitalChannelTerminalOvercommitted_ ;
+        end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is
@@ -478,9 +478,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
-                        self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    end
+                    %if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    %end
+                    self.syncIsDigitalChannelTerminalOvercommitted_() ;                    
                 end
             end
             self.Parent.didSetDigitalInputTerminalID();
@@ -938,6 +939,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) ;
         end
          
+        function syncIsDigitalChannelTerminalOvercommitted_(self) 
+            nOccurancesOfAcquisitionTerminal = self.Parent.computeDIOTerminalCommitments() ;
+            self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfAcquisitionTerminal>1) ;
+        end
     end  % protected methods block
     
 %     methods (Static=true)
@@ -1066,6 +1071,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
             self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
             self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+            self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
         end  % function
@@ -1089,6 +1095,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
@@ -1105,6 +1112,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             %self.DigitalChannelUnits_ = self.DigitalChannelUnits_(isKeeper) ;
             self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
             self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function

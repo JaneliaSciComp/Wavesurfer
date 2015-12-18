@@ -306,7 +306,7 @@ classdef RootModel < ws.Model
             end
         end  % function        
     end  % (static methods block)
-        
+    
     methods
         function didSetIsDigitalOutputTimed(self)  %#ok<MANU>
         end
@@ -328,8 +328,23 @@ classdef RootModel < ws.Model
             % other subclasses of RootModel shouldn't be setting the
             % DeviceName.
         end        
-    end
+    end  % protected methods block
+    
+    methods
+        function [nOccurancesOfAcquisitionTerminal, nOccurancesOfStimulationTerminal] = computeDIOTerminalCommitments(self) 
+            acquisitionTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            stimulationTerminalIDs = self.Stimulation.DigitalTerminalIDs ;            
+            terminalIDs = horzcat(acquisitionTerminalIDs, stimulationTerminalIDs) ;
+            nChannels = length(terminalIDs) ;
+            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            terminalIDsInEachCol = terminalIDsInEachRow' ;
+            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
+            % Sort them into the acq, stim ones
+            nAcquisitionChannels = length(acquisitionTerminalIDs) ;
+            nOccurancesOfAcquisitionTerminal = nOccurancesOfTerminal(1:nAcquisitionChannels) ;
+            nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
+        end        
+    end  % public methods
     
 end  % classdef
-
-

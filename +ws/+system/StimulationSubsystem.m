@@ -36,6 +36,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         IsChannelAnalog
         TriggerScheme
         IsAnalogChannelTerminalOvercommitted
+        IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected)
@@ -60,6 +61,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
         IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
+        IsDigitalChannelTerminalOvercommitted_ = false(1,0)        
     end
         
 %     properties (Access=protected, Constant=true)
@@ -301,6 +303,10 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         
         function result=get.IsAnalogChannelTerminalOvercommitted(self)
             result =  self.IsAnalogChannelTerminalOvercommitted_ ;
+        end
+        
+        function result=get.IsDigitalChannelTerminalOvercommitted(self)
+            result =  self.IsDigitalChannelTerminalOvercommitted_ ;
         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
@@ -593,7 +599,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             newChannelStateIfUntimed = false ;
             self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            
             self.Parent.didAddDigitalOutputChannel(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             %self.broadcast('DidChangeNumberOfChannels');            
@@ -611,6 +618,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
             %self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
             self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+            self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
         end  % function
@@ -627,6 +635,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             %self.DigitalChannelUnits_ = self.DigitalChannelUnits_(isKeeper) ;
             %self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
             self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteDigitalOutputChannels(indicesOfChannelsToDelete) ;  %#ok<FNDSB>
         end  % function
@@ -709,9 +718,10 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
-                        self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    end
+                    %if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    %end
+                    self.syncIsDigitalChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetDigitalOutputTerminalID();
@@ -838,6 +848,11 @@ end  % methods block
             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) ;
         end
          
+        function syncIsDigitalChannelTerminalOvercommitted_(self) 
+            [~,nOccurancesOfStimulationTerminal] = self.Parent.computeDIOTerminalCommitments() ;
+            self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfStimulationTerminal>1) ;
+        end
+        
     end  % protected methods block
     
 %     properties (Hidden, SetAccess=protected)
