@@ -22,7 +22,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         function testTestPulseModeChange(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            model=ws.WavesurferModel();
+            model=ws.WavesurferModel(true);
             model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             %model=ws.WavesurferModel('Machine_Data_file.m');
             
@@ -60,7 +60,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         function testTestPulseModeChangeWithMultipleElectrodes(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            model=ws.WavesurferModel();
+            isITheOneTrueWavesurferModel = true ;
+            model=ws.WavesurferModel(isITheOneTrueWavesurferModel);
             model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             
             % Create two new electrodes in ElectrodeManager

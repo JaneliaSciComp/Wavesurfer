@@ -58,7 +58,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testSavingAndLoadingStimulusLibraryWithinWavesurferModel(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            em=ws.WavesurferModel();
+            em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Make it so the stim library map durations are not overridden
@@ -102,7 +102,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testEncodingOfStimulusSource(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            em=ws.WavesurferModel();
+            em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Make it so the stim library map durations are not overridden
@@ -135,7 +135,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testRestorationOfStimulusSource(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            wsModel=ws.WavesurferModel();
+            wsModel=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Make it so the stim library map durations are not overridden
@@ -200,7 +200,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testWhetherDurationIsNotFreeAfterProtocolLoad(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            em=ws.WavesurferModel();
+            em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Clear the stim lib within the WavesurferModel
@@ -241,7 +241,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testSavingAndLoadingSimpleProtocolFile(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            wsModel=ws.WavesurferModel();
+            wsModel=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % A list of settings
@@ -285,7 +285,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Create a fresh WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            wsModelCheck=ws.WavesurferModel();
+            wsModelCheck=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             wsModelCheck.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
             
             % Load the settings, very like WavesurferController does
@@ -312,7 +312,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         function testSavingAndLoadingElectrodeProperties(self)
             % Create an WavesurferModel
             thisDirName=fileparts(mfilename('fullpath'));
-            em=ws.WavesurferModel();
+            em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             
             em.Ephys.ElectrodeManager.addNewElectrode();
