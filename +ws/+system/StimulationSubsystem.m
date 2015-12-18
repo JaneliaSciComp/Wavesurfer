@@ -35,6 +35,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         NChannels
         IsChannelAnalog
         TriggerScheme
+        IsAnalogChannelTerminalOvercommitted
     end
     
     properties (Access = protected)
@@ -58,6 +59,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         DigitalTerminalIDs_ = zeros(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
+        IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
     end
         
 %     properties (Access=protected, Constant=true)
@@ -295,6 +297,10 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             % Boolean array indicating which of the available analog channels is
             % active.
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
+        end
+        
+        function result=get.IsAnalogChannelTerminalOvercommitted(self)
+            result =  self.IsAnalogChannelTerminalOvercommitted_ ;
         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
@@ -556,7 +562,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             %self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-
+            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            
             self.Parent.didAddAnalogOutputChannel() ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             
@@ -689,9 +696,10 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    if ~ismember(newValueAsDouble,self.AnalogTerminalIDs) ,
-                        self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    end
+                    %if ~ismember(newValueAsDouble,self.AnalogTerminalIDs) ,
+                    self.AnalogTerminalIDs_(i) = newValueAsDouble ;
+                    %end
+                    self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetAnalogOutputTerminalID();
@@ -820,7 +828,17 @@ end  % methods block
             end
         end
 
-    end
+        function syncIsAnalogChannelTerminalOvercommitted_(self) 
+            terminalIDs = self.AnalogTerminalIDs ;
+            nChannels = length(terminalIDs) ;
+            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            terminalIDsInEachCol = terminalIDsInEachRow' ;
+            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) ;
+        end
+         
+    end  % protected methods block
     
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct() ;        

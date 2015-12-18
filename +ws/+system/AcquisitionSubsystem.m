@@ -44,6 +44,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         ExpectedScanCount
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
        	TriggerScheme        
+        IsAnalogChannelTerminalOvercommitted
+        %IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected) 
@@ -64,6 +66,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsDigitalChannelActive_ = true(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
+        IsAnalogChannelTerminalOvercommitted_ = false(1,0)
+        %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
 %     properties (Access=protected, Constant=true)
@@ -244,6 +248,14 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % active.
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
+        
+        function result=get.IsAnalogChannelTerminalOvercommitted(self)
+            result =  self.IsAnalogChannelTerminalOvercommitted_ ;
+        end
+        
+%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
+%             result =  self.IsDigitalChannelTerminalOvercommitted_ ;
+%         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is
@@ -455,9 +467,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    if ~ismember(newValueAsDouble,self.AnalogTerminalIDs) ,
-                        self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    end
+                    self.AnalogTerminalIDs_(i) = newValueAsDouble ;
+                    self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetAnalogInputTerminalID();
@@ -916,6 +927,16 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         function value = getAnalogChannelScales_(self)
             value = self.AnalogChannelScales_ ;
         end  % function
+        
+        function syncIsAnalogChannelTerminalOvercommitted_(self) 
+            terminalIDs = self.AnalogTerminalIDs ;
+            nChannels = length(terminalIDs) ;
+            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            terminalIDsInEachCol = terminalIDsInEachRow' ;
+            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) ;
+        end
          
     end  % protected methods block
     
@@ -1004,6 +1025,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
+            self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
