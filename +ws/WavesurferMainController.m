@@ -828,38 +828,38 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end
         
     methods (Access=protected)
-        function stimulationOutputComboboxWasManipulated(self, src, varargin)
-            % Called after the combobox widget is manipulated.  Causes the
-            % viewmodel to be updated, given the widget state.
-            
-            % Currently, there are problems with this, b/c it gets called
-            % both when the user changes the selected item, and when the
-            % stimulus library gets changed such that the list of
-            % outputables must change.  
-            
-            %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated()\n');
-            % This function gets called when the list of selections is
-            % changed in the viewmodel, but when that happens we just want
-            % to ignore it.
-%             if self.IsSelectedOutputableBeingFutzedWithInternally_ ,
-%                 return
+%         function stimulationOutputComboboxWasManipulated(self, src, varargin)
+%             % Called after the combobox widget is manipulated.  Causes the
+%             % viewmodel to be updated, given the widget state.
+%             
+%             % Currently, there are problems with this, b/c it gets called
+%             % both when the user changes the selected item, and when the
+%             % stimulus library gets changed such that the list of
+%             % outputables must change.  
+%             
+%             %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated()\n');
+%             % This function gets called when the list of selections is
+%             % changed in the viewmodel, but when that happens we just want
+%             % to ignore it.
+% %             if self.IsSelectedOutputableBeingFutzedWithInternally_ ,
+% %                 return
+% %             end
+%             if src.SelectedIndex == -1 ,
+%                 % Empty is never an option.  It is only ever empty when the library is changed
+%                 % and a cycle or map has not been chosen.  the combobox should never be able to
+%                 % be actively changed to empty.
+%                 % self.Model.Stimulation.SelectedOutputable = ws.stimulus.StimulusSequence.empty();
+%                 %
+%                 % Ummm, now it's an option...  (ALT, 2014-07-17)
+%                 %self.LibraryViewModel.SelectedOutputableViewmodel = ws.ui.viewmodel.StimulusLibraryViewModel.empty();                       
+%                 self.LibraryViewModel.SelectedOutputableViewmodel = ...
+%                     self.LibraryViewModel.findnet(self.Model.Stimulation.StimulusLibrary.SelectedOutputable);
+%             else
+%                 netCycle = src.DataContext.Item(src.SelectedIndex);
+%                 self.LibraryViewModel.SelectedOutputableViewmodel = netCycle;
 %             end
-            if src.SelectedIndex == -1 ,
-                % Empty is never an option.  It is only ever empty when the library is changed
-                % and a cycle or map has not been chosen.  the combobox should never be able to
-                % be actively changed to empty.
-                % self.Model.Stimulation.SelectedOutputable = ws.stimulus.StimulusSequence.empty();
-                %
-                % Ummm, now it's an option...  (ALT, 2014-07-17)
-                %self.LibraryViewModel.SelectedOutputableViewmodel = ws.ui.viewmodel.StimulusLibraryViewModel.empty();                       
-                self.LibraryViewModel.SelectedOutputableViewmodel = ...
-                    self.LibraryViewModel.findnet(self.Model.Stimulation.StimulusLibrary.SelectedOutputable);
-            else
-                netCycle = src.DataContext.Item(src.SelectedIndex);
-                self.LibraryViewModel.SelectedOutputableViewmodel = netCycle;
-            end
-            %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated() exiting.\n');
-        end  % function
+%             %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated() exiting.\n');
+%         end  % function
         
 %         function didSetStimulusLibraryVMSelectedOutputable(self, varargin)
 %             % Called after SelectedOutputableViewmodel is set in the library
@@ -2049,7 +2049,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 return
             end
             
-            menuItems=get(source,'String');
+            menuItems=get(source,'String');            
             nMenuItems=length(menuItems);
             if nMenuItems==0 ,
                 return
@@ -2057,7 +2057,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 menuItem=menuItems{1};
                 if isequal(menuItem,'(No library)') || isequal(menuItem,'(No outputables)') ,
                     return
-                elseif isequal(menuItem,'(None selected)') ,
+                elseif isequal(menuItem,'(None selected)') ||  isequal(menuItem,'(No selection)') ,
                     model.Stimulation.StimulusLibrary.SelectedOutputable=[];
                 else
                     model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(1);
@@ -2066,7 +2066,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 % at least 2 menu items
                 firstMenuItem=menuItems{1};
                 menuIndex=get(source,'Value');
-                if isequal(firstMenuItem,'(None selected)') ,
+                if isequal(firstMenuItem,'(None selected)') || isequal(firstMenuItem,'(No selection)') ,
                     outputableIndex=menuIndex-1;
                 else
                     outputableIndex=menuIndex;

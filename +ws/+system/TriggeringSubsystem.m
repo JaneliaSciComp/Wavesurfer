@@ -51,7 +51,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.AcquisitionTriggerSchemeIndex_ = 1 ;
             self.StimulationTriggerSchemeIndex_ = 1 ;
         end  % function
-                        
+        
         function initializeFromMDFStructure(self,mdfStructure)
             % Set up the trigger sources (i.e. internal triggers) specified
             % in the MDF.
@@ -256,7 +256,20 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
 
         function deleteMarkedCounterTriggers(self)
             triggers = self.CounterTriggers_ ;
-            doKeep = ~cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;
+            doDelete = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;            
+            indicesToDeleteInCounterTriggers = find(doDelete) ;
+            % Counter triggers can't be used for the acquisition trigger,
+            % so no need to check those, but...
+            % If the stimulation trigger is about to be deleted, set the
+            % stimulation trigger to the built-in trigger.  Do this even
+            % if the stimulation trigger is "shadowed" by the acquisition
+            % trigger.
+            indicesToDeleteInStimulationTriggers = 1 + indicesToDeleteInCounterTriggers ;            
+            if ismember(self.StimulationTriggerSchemeIndex, indicesToDeleteInStimulationTriggers) ,
+                self.StimulationTriggerSchemeIndex_ = 1 ;  % the built-in trigger
+            end            
+            % Finally, delete the marked external triggers
+            doKeep = ~doDelete ;
             self.CounterTriggers_ = triggers(doKeep) ;
             self.broadcast('Update') ;
         end
@@ -298,7 +311,24 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                         
         function deleteMarkedExternalTriggers(self)
             triggers = self.ExternalTriggers_ ;
-            doKeep = ~cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;
+            doDelete = cellfun(@(trigger)(trigger.IsMarkedForDeletion), triggers) ;
+            indicesToDeleteInExternalTriggers = find(doDelete) ;
+            % If the acquisition trigger is about to be deleted, set the
+            % Acquisition trigger to the built-in trigger
+            indicesToDeleteInAcquisitionTriggers = 1 + indicesToDeleteInExternalTriggers ;            
+            if ismember(self.AcquisitionTriggerSchemeIndex, indicesToDeleteInAcquisitionTriggers) ,
+                self.AcquisitionTriggerSchemeIndex_ = 1 ;  % the built-in trigger
+            end
+            % If the stimulation trigger is about to be deleted, set the
+            % stimulation trigger to the built-in trigger.  Do this even
+            % if the stimulation trigger is "shadowed" by the acquisition
+            % trigger.
+            indicesToDeleteInStimulationTriggers = 1 + length(self.CounterTriggers) + indicesToDeleteInExternalTriggers ;            
+            if ismember(self.StimulationTriggerSchemeIndex, indicesToDeleteInStimulationTriggers) ,
+                self.StimulationTriggerSchemeIndex_ = 1 ;  % the built-in trigger
+            end
+            % Finally, delete the marked external triggers
+            doKeep = ~doDelete ;
             self.ExternalTriggers_ = triggers(doKeep) ;
             self.broadcast('Update') ;
         end

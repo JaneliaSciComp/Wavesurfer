@@ -12,7 +12,11 @@ classdef ChannelsController < ws.Controller
         function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
             allDeviceNames = self.Model.AllDeviceNames ;
             deviceName = ws.utility.getPopupMenuSelection(source, allDeviceNames) ;
-            self.Model.DeviceName = deviceName ;            
+            if isempty(deviceName) ,
+                self.Figure.update() ;
+            else
+                self.Model.DeviceName = deviceName ;
+            end
         end
         
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
