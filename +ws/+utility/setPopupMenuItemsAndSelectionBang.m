@@ -1,28 +1,36 @@
-function setPopupMenuItemsAndSelectionBang(popupGH,listOfValidValues,value,alwaysShowUnspecifiedItemInMenu)
+function setPopupMenuItemsAndSelectionBang(popupGH,options,selectionAsStringOrCellArray,varargin)
     % Set popupGH String and Value to a "sanitized" version of
-    % listOfValidValues.
+    % options.  selection is typically a string, with the empty string
+    % representing no selection.  But selection can also be a cell array of
+    % strings, with either zero elements or one element.  In this case, an
+    % empty cell array reprents no selection.
     
-    if ~exist('alwaysShowUnspecifiedItemInMenu','var') || isempty(alwaysShowUnspecifiedItemInMenu) ,
-        alwaysShowUnspecifiedItemInMenu = false ;
-    end
-    
-    normalBackgroundColor = [0.94 0.94 0.94] ;
-    invalidBackgroundColor = [1 0.8 0.8] ;
+    normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
+    warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
         
-    % If value is the empty string, that gets treated as an empty value
-    if isempty(value) ,
-        valueMaybe = {} ;
+    % If value is empty (e.g. the empty string), that gets treated as an
+    % empty optional
+    % We call it "selections" b/c it's a list, even though it should always
+    % have either zero elements or one element.
+    if ischar(selectionAsStringOrCellArray) ,
+        if isempty(selectionAsStringOrCellArray) ,
+            selections = {} ;
+        else
+            selection = selectionAsStringOrCellArray ;
+            selections = { selection } ;
+        end
     else
-        valueMaybe = {value} ;
+        % presumably selectionOrSelections is a cell array
+        selections = selectionAsStringOrCellArray ;
     end
     
-    [menuItems,indexOfSelectedMenuItem,isValuePresent,isValueInList] = ...
-        ws.utility.regularizeValueForPopupMenu(valueMaybe,listOfValidValues,alwaysShowUnspecifiedItemInMenu) ;
+    [menuItems, indexOfSelectedMenuItem, isOptionsLaden, isSelectionsLaden, isSelectionInOptions] = ...
+        ws.utility.regularizeValueForPopupMenu(selections,options,varargin{:}) ;
 
-    if isValuePresent && isValueInList ,
+    if isOptionsLaden && isSelectionsLaden && isSelectionInOptions ,
         backgroundColor = normalBackgroundColor ;
     else
-        backgroundColor = invalidBackgroundColor ;
+        backgroundColor = warningBackgroundColor ;
     end
     
     ws.utility.setifhg(popupGH, ...

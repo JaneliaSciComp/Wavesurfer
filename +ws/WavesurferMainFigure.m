@@ -1,4 +1,9 @@
 classdef WavesurferMainFigure < ws.MCOSFigure
+    properties (Constant)
+        NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
+        WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
+    end
+    
     properties
         FileMenu
         LoadMachineDataFileMenuItem
@@ -1115,37 +1120,47 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateProgressBarProperties_();
             
             % Update the Stimulation/Source popupmenu
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
             stimulusLibrary=ws.utility.getSubproperty(model,'Stimulation','StimulusLibrary');
             if isempty(stimulusLibrary) ,
                 set(self.SourcePopupmenu, ...
-                    'String',{'(No library)'}, ...
-                    'Value',1);                      
+                    'String', {'(No library)'}, ...
+                    'Value', 1, ...
+                    'BackgroundColor', warningBackgroundColor);
             else
-                outputables=stimulusLibrary.getOutputables();
-                if isempty(outputables) ,
-                    set(self.SourcePopupmenu, ...
-                        'String',{'(No outputables)'}, ...
-                        'Value',1);                      
+                outputables = stimulusLibrary.getOutputables() ;
+                outputableNames = cellfun(@(item)(item.Name),outputables,'UniformOutput',false) ;
+                selectedOutputable = stimulusLibrary.SelectedOutputable ;
+                if isempty(selectedOutputable) ,
+                    selectedOutputableNames = {} ;                    
                 else
-                    outputableNames=cellfun(@(item)(item.Name),outputables,'UniformOutput',false);                
-                    selectedOutputable=stimulusLibrary.SelectedOutputable;
-                    if isempty(selectedOutputable) ,
-                        iSelected=[];
-                    else
-                        isSelected= cellfun(@(item)(item==selectedOutputable),outputables);
-                        iSelected=find(isSelected,1);
-                    end                 
-                    if isempty(iSelected) ,
-                        outputableNamesWithFallback=[{'(None selected)'} outputableNames];
-                        set(self.SourcePopupmenu, ...
-                            'String',outputableNamesWithFallback, ...
-                            'Value',1);
-                    else
-                        set(self.SourcePopupmenu, ...
-                            'String',outputableNames, ...
-                            'Value',iSelected);
-                    end
-                end
+                    selectedOutputableNames = { selectedOutputable.Name } ;
+                end                
+                ws.utility.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
+%                 if isempty(outputables) ,
+%                     set(self.SourcePopupmenu, ...
+%                         'String',{'(No outputables)'}, ...
+%                         'Value',1);                      
+%                 else
+%                     outputableNames=cellfun(@(item)(item.Name),outputables,'UniformOutput',false);                
+%                     selectedOutputable=stimulusLibrary.SelectedOutputable;
+%                     if isempty(selectedOutputable) ,
+%                         iSelected=[];
+%                     else
+%                         isSelected= cellfun(@(item)(item==selectedOutputable),outputables);
+%                         iSelected=find(isSelected,1);
+%                     end                 
+%                     if isempty(iSelected) ,
+%                         outputableNamesWithFallback=[{'(None selected)'} outputableNames];
+%                         set(self.SourcePopupmenu, ...
+%                             'String',outputableNamesWithFallback, ...
+%                             'Value',1);
+%                     else
+%                         set(self.SourcePopupmenu, ...
+%                             'String',outputableNames, ...
+%                             'Value',iSelected);
+%                     end
+%                 end
             end
             
             % Update whether the "Yoke to ScanImage" menu item is checked,
@@ -1239,11 +1254,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %isStimulationEnableable = model.Stimulation.CanEnable ;
             isStimulationEnableable = true ;
             isStimulusEnabled=model.Stimulation.IsEnabled;
-            stimulusLibrary=model.Stimulation.StimulusLibrary;            
-            isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
+            %stimulusLibrary=model.Stimulation.StimulusLibrary;            
+            %isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
             set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
             set(self.StimulationSampleRateEdit,'Enable',onIff(isIdle && isStimulusEnabled));
-            set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
+            %set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
+            set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled));
             set(self.EditStimulusLibraryButton,'Enable',onIff(isIdle && isStimulusEnabled));
             set(self.RepeatsCheckbox,'Enable',onIff(isIdle && isStimulusEnabled));
 

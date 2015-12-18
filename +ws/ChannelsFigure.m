@@ -1387,8 +1387,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             end
             
             % Specify colors
-            normalBackgroundColor = [1 1 1] ;
-            warningBackgroundColor = [1 0.8 0.8] ;
+            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
             
             % Update the device name popup
             allDeviceNames = model.AllDeviceNames ;

@@ -210,8 +210,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             
             % Specify common parameters for channel popups
             alwaysShowUnspecifiedAsMenuItem=true;
-            normalBackgroundColor=[1 1 1];
-            warningBackgroundColor=[1 0.8 0.8];
+            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
             
             % We'll need wavesurferModel for several things here
             em=self.Model;

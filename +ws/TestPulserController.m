@@ -87,7 +87,7 @@ classdef TestPulserController < ws.Controller
         function electrodePopupMenuTouched(self)
             electrodeNames=self.Model.ElectrodeNames;
             menuItem=ws.utility.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
-                                                         electrodeNames);
+                                                      electrodeNames);
             if isempty(menuItem) ,  % indicates invalid selection
                 self.Figure.badChangeMade();                
             else
