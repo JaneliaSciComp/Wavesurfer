@@ -634,6 +634,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             %self.DigitalChannelScales_ = self.DigitalChannelScales_(isKeeper) ;
             %self.DigitalChannelUnits_ = self.DigitalChannelUnits_(isKeeper) ;
             %self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+            self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+            self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
             self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
 
