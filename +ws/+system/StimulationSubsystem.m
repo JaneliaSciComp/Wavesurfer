@@ -624,21 +624,25 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end  % function
         
         function deleteMarkedDigitalChannels(self)
+            % Do some accounting
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             indicesOfChannelsToDelete = find(isToBeDeleted) ;
             isKeeper = ~isToBeDeleted ;
+            
+            % Turn off any untimed DOs that are about to be deleted
+            digitalOutputStateIfUntimed = self.DigitalOutputStateIfUntimed ;
+            self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
+
+            % Now do the real deleting
             self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
             self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
             self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-            %self.DigitalChannelScales_ = self.DigitalChannelScales_(isKeeper) ;
-            %self.DigitalChannelUnits_ = self.DigitalChannelUnits_(isKeeper) ;
-            %self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
             self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
             self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
             self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
 
+            % Notify others of what we have done
             self.Parent.didDeleteDigitalOutputChannels(indicesOfChannelsToDelete) ;  %#ok<FNDSB>
         end  % function
         
