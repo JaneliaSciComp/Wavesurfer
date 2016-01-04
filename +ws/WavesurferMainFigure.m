@@ -6,7 +6,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     properties
         FileMenu
-        LoadMachineDataFileMenuItem
+        %LoadMachineDataFileMenuItem
         OpenProtocolMenuItem
         SaveProtocolMenuItem
         SaveProtocolAsMenuItem
@@ -195,9 +195,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % File menu
             self.FileMenu=uimenu('Parent',self.FigureGH, ...
                                  'Label','File');
-            self.LoadMachineDataFileMenuItem = ...
-                uimenu('Parent',self.FileMenu, ...
-                       'Label','Load Machine Data File...');
+%             self.LoadMachineDataFileMenuItem = ...
+%                 uimenu('Parent',self.FileMenu, ...
+%                        'Label','Load Machine Data File...');
             self.OpenProtocolMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Open Protocol...');
@@ -1202,9 +1202,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
-            set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
+            %set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
             % set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
-            set(self.OpenProtocolMenuItem,'Enable',onIff(true));            
+            set(self.OpenProtocolMenuItem,'Enable',onIff(isNoDevice||isIdle));            
             set(self.SaveProtocolMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveProtocolAsMenuItem,'Enable',onIff(isIdle));            
             set(self.LoadUserSettingsMenuItem,'Enable',onIff(isIdle));            
