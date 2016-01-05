@@ -571,13 +571,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                 queryChannelNames=queryChannelNamesRaw;
 %             end
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1); 
                         electrode=self.Electrodes{iElectrode};
@@ -595,13 +595,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 queryChannelNames=queryChannelNamesRaw;                
             end
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelScales=ones(1,nQueryChannels);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
@@ -652,19 +652,20 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 queryChannelNames=queryChannelNamesRaw;                
             end
             isMatchBig = self.getMatrixOfMatchesToMonitorChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
                         queryChannelUnits{i}=electrode.getMonitorUnitsByName(queryChannelNames{i});
                     else
-                        % do nothing, thus falling back to dimensionless
+                        % do nothing, thus falling back to empty string
+                        % (which means dimensionless)
                     end                    
                 end                    
             end
@@ -678,13 +679,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 queryChannelNames=queryChannelNamesRaw;                
             end
             isMatchBig = self.getMatrixOfMatchesToMonitorChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelScales=ones(1,nQueryChannels);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
