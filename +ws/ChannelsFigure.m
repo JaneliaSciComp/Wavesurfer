@@ -1414,8 +1414,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             channelScales=model.Acquisition.AnalogChannelScales;
             channelUnits=model.Acquisition.AnalogChannelUnits;
             nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingAnalogChannel();
-            isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
-            isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+            isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
+            %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
             isTerminalOvercommitted = model.Acquisition.IsAnalogChannelTerminalOvercommitted ;
             nAIs=length(self.AIScaleEdits);            
             for i=1:nAIs ,
@@ -1426,10 +1426,8 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AITerminalNamePopups(i) , ...
                     'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.AIUnitsEdits(i),'String',channelUnits{i}, ...
-                                         'BackgroundColor',ws.utility.fif(isChannelOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
-                                         'BackgroundColor',ws.utility.fif(isChannelOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AIScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
                 set(self.AIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsAnalogChannelActive(i), ...
@@ -1460,8 +1458,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             channelScales=model.Stimulation.AnalogChannelScales;
             channelUnits=model.Stimulation.AnalogChannelUnits;
             nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingAnalogChannel();
-            isChannelScaleEnslaved=(nElectrodesClaimingChannel==1);
-            isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+            isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
+            %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
             isTerminalOvercommitted = model.Stimulation.IsAnalogChannelTerminalOvercommitted ;
             nAOs=length(self.AOChannelNameEdits);            
             for i=1:nAOs ,
@@ -1472,10 +1470,8 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AOTerminalNamePopups(i) , ...
                     'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.AOUnitsEdits(i),'String',channelUnits{i}, ...
-                                         'BackgroundColor',ws.utility.fif(isChannelOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
-                                         'BackgroundColor',ws.utility.fif(isChannelOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                                          'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AOScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
                 %set(self.AOIsActiveCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelActive(i), ...
