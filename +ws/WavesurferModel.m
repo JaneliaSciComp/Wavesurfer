@@ -1160,35 +1160,78 @@ classdef WavesurferModel < ws.RootModel
             timeout = 10 ;  % s
             [err,looperError] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
             if isempty(err) ,
-                compositeError = looperError ;
+                compositeLooperError = looperError ;
             else
-                compositeError = err ;
+                % If there was an error in the
+                % message-sending-and-receiving process, then we don't
+                % really care if the looper also had a problem.  We have
+                % bigger fish to fry, in a sense.
+                compositeLooperError = err ;
             end
-            if ~isempty(compositeError) ,
+            if isempty(compositeLooperError) ,
+                summaryLooperError = [] ;
+            else
                 % Something went wrong
-                self.abortOngoingRun_();
-                self.changeReadiness(+1);
-                me = MException('wavesurfer:looperDidntGetReady', ...
-                                'The looper encountered a problem while getting ready for the run');
-                me = me.addCause(compositeError) ;
-                throw(me) ;
+                %self.abortOngoingRun_();
+                %self.changeReadiness(+1);
+                summaryLooperError = MException('wavesurfer:looperDidntGetReady', ...
+                                                'The looper encountered a problem while getting ready for the run');
+                summaryLooperError = summaryLooperError.addCause(compositeLooperError) ;
+                %throw(summaryLooperError) ;  % can't throw until we
+                %consume the message from the refiller.  See below.
             end
+            
+            % Even if the looper had a problem, we still need to get the
+            % message from the refiller, if any.  Otherwise, the next
+            % message we read from the refiller, perhaps when the user
+            % fixes whatever is bothering the looper, will be
+            % refillerReadyForRunOrPerhapsNot, regardless of what it should
+            % be.
             
             % Wait for the refiller to respond that it is ready
             [err, refillerError] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRunOrPerhapsNot', timeout) ;
             if isempty(err) ,
-                compositeError = refillerError ;
+                compositeRefillerError = refillerError ;
             else
-                compositeError = err ;
+                % If there was an error in the
+                % message-sending-and-receiving process, then we don't
+                % really care if the refiller also had a problem.  We have
+                % bigger fish to fry, in a sense.
+                compositeRefillerError = err ;
             end
-            if ~isempty(compositeError) ,
+            if isempty(compositeRefillerError) ,
+                summaryRefillerError = [] ;
+            else
                 % Something went wrong
-                self.abortOngoingRun_();
-                self.changeReadiness(+1);
-                me = MException('wavesurfer:refillerDidntGetReady', ...
-                                'The refiller encountered a problem while getting ready for the run');
-                me = me.addCause(compositeError) ;
-                throw(me) ;
+                %self.abortOngoingRun_();
+                %self.changeReadiness(+1);
+                summaryRefillerError = MException('wavesurfer:refillerDidntGetReady', ...
+                                                  'The refiller encountered a problem while getting ready for the run');
+                summaryRefillerError = summaryRefillerError.addCause(compositeRefillerError) ;
+                %throw(me) ;
+            end
+            
+            % OK, now throw up if needed
+            if isempty(summaryLooperError) ,
+                if isempty(summaryRefillerError) ,
+                    % nothing to do
+                else
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(summaryRefillerError) ;                    
+                end
+            else
+                if isempty(summaryRefillerError) ,
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(summaryLooperError) ;                                        
+                else
+                    % Problems abound!  Throw the looper one, for no good
+                    % reason...
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(summaryLooperError) ;                                                            
+                end                
             end
             
             % Change our own state to running
