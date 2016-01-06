@@ -43,6 +43,7 @@ classdef RootModel < ws.Model
         NCounters
         NAIChannels
         NAOChannels
+        NDigitalChannels
     end
     
     %
@@ -210,6 +211,13 @@ classdef RootModel < ws.Model
             nChannelsInHardware = self.NDIOChannels ;
             result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
+                
+        function result = get.NDigitalChannels(self)
+            nDIs = self.Acquisition.NDigitalChannels ;
+            nDOs = self.Stimulation.NDigitalChannels ;
+            result =  nDIs + nDOs ;
+        end
+        
     end  % public methods block
     
     methods (Static)
