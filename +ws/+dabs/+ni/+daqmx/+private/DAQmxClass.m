@@ -34,7 +34,7 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
         apiPrettyName = 'NI DAQmx';  %A unique descriptive string of the API being wrapped
         apiCompactName = 'NIDAQmx'; %A unique, compact string of the API being wrapped (must not contain spaces)
         
-        apiSupportedVersionNames = {'8.8' '9.3.x' '9.6.x' '9.8.x' '14.5.x'}; %A list of shorthand names for API versions supported by this wrapper class
+        apiSupportedVersionNames = {'8.8' '9.3.x' '9.6.x' '9.8.x' '14.5.x' '15.1.x'}; %A list of shorthand names for API versions supported by this wrapper class
         
         %Properties which can be indexed by version
         apiDLLNames = 'nicaiu'; %Either a single name of the DLL filename (sans the '.dll' extension), or a Map of such names keyed by values in 'apiSupportedVersionNames'
@@ -176,6 +176,7 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
                 versionNum2NameMap(9.6) = '9.6.x';
                 versionNum2NameMap(9.8) = '9.8.x';
                 versionNum2NameMap(14.5) = '14.5.x';
+                versionNum2NameMap(15.1) = '15.1.x';
 
                 
                 if ~versionNum2NameMap.isKey(primaryVersion)
@@ -535,6 +536,7 @@ hMap('9.5.x') = 'NIDAQmx_proto.m';
 hMap('9.6.x') = 'NIDAQmx_proto.m';
 hMap('9.8.x') = 'NIDAQmx_proto.m';
 hMap('14.5.x') = 'NIDAQmx_proto.m';
+hMap('15.1.x') = 'NIDAQmx_proto.m';
 
 end
 
