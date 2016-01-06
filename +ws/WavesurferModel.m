@@ -2301,7 +2301,7 @@ classdef WavesurferModel < ws.RootModel
 
     methods
         function result = allDigitalTerminalIDs(self)
-            nDigitalTerminalIDsInHardware = self.NDIOChannels ;
+            nDigitalTerminalIDsInHardware = self.NDIOTerminals ;
             result = 0:(nDigitalTerminalIDsInHardware-1) ;              
         end
         
@@ -2545,15 +2545,15 @@ classdef WavesurferModel < ws.RootModel
                         self.DeviceName_ = deviceName ;
                         
                         % Probe the device to find out its capabilities
-                        [nDIOChannels, nPFILines] = ws.RootModel.getNumberOfDIOChannelsAndPFILinesFromDevice(deviceName) ;
+                        [nDIOTerminals, nPFITerminals] = ws.RootModel.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
                         nCounters = ws.RootModel.getNumberOfCountersFromDevice(deviceName) ;
-                        nAIChannels = ws.RootModel.getNumberOfAIChannelsFromDevice(deviceName) ;
-                        nAOChannels = ws.RootModel.getNumberOfAOChannelsFromDevice(deviceName) ;
-                        self.NDIOChannels_ = nDIOChannels ;
-                        self.NPFILines_ = nPFILines ;
+                        nAITerminals = ws.RootModel.getNumberOfAITerminalsFromDevice(deviceName) ;
+                        nAOTerminals = ws.RootModel.getNumberOfAOTerminalsFromDevice(deviceName) ;
+                        self.NDIOTerminals_ = nDIOTerminals ;
+                        self.NPFITerminals_ = nPFITerminals ;
                         self.NCounters_ = nCounters ;
-                        self.NAIChannels_ = nAIChannels ;
-                        self.NAOChannels_ = nAOChannels ;
+                        self.NAITerminals_ = nAITerminals ;
+                        self.NAOTerminals_ = nAOTerminals ;
 
                         % Tell the subsystems that we've changed the device
                         % name
@@ -2568,7 +2568,7 @@ classdef WavesurferModel < ws.RootModel
 
                         % Notify the satellites
                         if self.IsITheOneTrueWavesurferModel_ ,
-                            self.IPCPublisher_.send('didSetDevice', deviceName, nDIOChannels, nPFILines, nCounters, nAIChannels, nAOChannels) ;
+                            self.IPCPublisher_.send('didSetDevice', deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals) ;
                         end                        
                     else
                         self.broadcast('Update');

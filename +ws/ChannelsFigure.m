@@ -1437,7 +1437,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            nAITerminals = model.NAIChannels ;   
+            nAITerminals = model.NAITerminals ;   
             areAnyFreeAITerminals =  (nAIs<nAITerminals) ;
             isAIChannelMarkedForDeletion = model.Acquisition.IsAnalogChannelMarkedForDeletion ;
             isAnyAIChannelMarkedForDeletion = any(isAIChannelMarkedForDeletion) ;
@@ -1481,7 +1481,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             end
             
             % Deal with enablement of add/delete buttons
-            nAOTerminals = model.NAOChannels ;   
+            nAOTerminals = model.NAOTerminals ;   
             areAnyFreeAOTerminals =  (nAOs<nAOTerminals) ;
             isAOChannelMarkedForDeletion = model.Stimulation.IsAnalogChannelMarkedForDeletion ;
             isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;

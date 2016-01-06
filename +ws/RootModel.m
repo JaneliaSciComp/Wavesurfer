@@ -38,12 +38,12 @@ classdef RootModel < ws.Model
 %         VersionString
         AllDeviceNames
         DeviceName
-        NDIOChannels
-        NPFILines
+        NDIOTerminals
+        NPFITerminals
         NCounters
-        NAIChannels
-        NAOChannels
-        NDigitalChannels
+        NAITerminals
+        NAOTerminals
+        NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
     end
     
     %
@@ -70,11 +70,11 @@ classdef RootModel < ws.Model
 %         Logging_
 %         VersionString_
         DeviceName_ = ''   % represents "no device specified"
-        NDIOChannels_ = 0
-        NPFILines_ = 0 
+        NDIOTerminals_ = 0
+        NPFITerminals_ = 0 
         NCounters_ = 0
-        NAIChannels_ = 0
-        NAOChannels_ = 0
+        NAITerminals_ = 0
+        NAOTerminals_ = 0
     end
 
     properties (Access=protected, Transient=true)
@@ -168,28 +168,28 @@ classdef RootModel < ws.Model
             self.AllDeviceNames_ = ws.RootModel.getAllDeviceNamesFromHardware() ;
         end
         
-        function result = get.NAIChannels(self)
+        function result = get.NAITerminals(self)
             % The number of AI channels available, if you used them all in
             % single-ended mode.  If you want them to be differential, you
             % only get half as many.
-            result = self.NAIChannels_ ;
+            result = self.NAITerminals_ ;
         end
         
-        function result = get.NAOChannels(self)
+        function result = get.NAOTerminals(self)
             % The number of AO channels available.
-            result = self.NAOChannels_ ;
+            result = self.NAOTerminals_ ;
         end
 
-        function numberOfDIOChannels = get.NDIOChannels(self)
+        function numberOfDIOChannels = get.NDIOTerminals(self)
             % The number of DIO channels available.  We only count the DIO
             % channels capable of timed operation, i.e. the P0.x channels.
             % This is a conscious design choice.  We treat the PFIn/Pm.x
             % channels as being only PFIn channels.
-            numberOfDIOChannels = self.NDIOChannels_ ;
+            numberOfDIOChannels = self.NDIOTerminals_ ;
         end  % function
         
-        function numberOfPFILines = get.NPFILines(self)
-            numberOfPFILines = self.NPFILines_ ;
+        function numberOfPFILines = get.NPFITerminals(self)
+            numberOfPFILines = self.NPFITerminals_ ;
         end  % function
         
         function result = get.NCounters(self)
@@ -198,17 +198,17 @@ classdef RootModel < ws.Model
         end  % function        
         
         function result = getAllAITerminalNames(self)             
-            nAIsInHardware = self.NAIChannels ;
+            nAIsInHardware = self.NAITerminals ;
             result = arrayfun(@(id)(sprintf('AI%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
         end        
         
         function result = getAllAOTerminalNames(self)             
-            nAOsInHardware = self.NAOChannels ;
+            nAOsInHardware = self.NAOTerminals ;
             result = arrayfun(@(id)(sprintf('AO%d',id)), 0:(nAOsInHardware-1), 'UniformOutput', false ) ;
         end        
         
         function result = getAllDigitalTerminalNames(self)             
-            nChannelsInHardware = self.NDIOChannels ;
+            nChannelsInHardware = self.NDIOTerminals ;
             result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
                 
@@ -228,7 +228,7 @@ classdef RootModel < ws.Model
             deviceNames = strtrim(deviceNameWithWhitespace) ;
         end
         
-        function result = getNumberOfAIChannelsFromDevice(deviceName)
+        function result = getNumberOfAITerminalsFromDevice(deviceName)
             % The number of AI channels available, if you used them all in
             % single-ended mode.  If you want them to be differential, you
             % only get half as many.
@@ -244,7 +244,7 @@ classdef RootModel < ws.Model
             end
         end
         
-        function result = getNumberOfAOChannelsFromDevice(deviceName)
+        function result = getNumberOfAOTerminalsFromDevice(deviceName)
             % The number of AO channels available.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
@@ -258,7 +258,7 @@ classdef RootModel < ws.Model
             end
         end
         
-        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILinesFromDevice(deviceName)
+        function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOAndPFITerminalsFromDevice(deviceName)
             % The number of DIO channels available.  We only count the DIO
             % channels capable of timed operation, i.e. the P0.x channels.
             % This is a conscious design choice.  We treat the PFIn/Pm.x

@@ -262,14 +262,14 @@ classdef Looper < ws.RootModel
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDevice(self, deviceName, nDIOChannels, nPFILines, nCounters, nAIChannels, nAOChannels)
+        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals)
             % Set stuff
             self.DeviceName_ = deviceName ;
-            self.NDIOChannels_ = nDIOChannels ;
-            self.NPFILines_ = nPFILines ;
+            self.NDIOTerminals_ = nDIOTerminals ;
+            self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
-            self.NAIChannels_ = nAIChannels ;
-            self.NAOChannels_ = nAOChannels ;            
+            self.NAITerminals_ = nAITerminals ;
+            self.NAOTerminals_ = nAOTerminals ;            
             
             % Notify subsystems
             self.Acquisition.didSetDeviceName() ;

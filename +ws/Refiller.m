@@ -274,7 +274,7 @@ classdef Refiller < ws.RootModel
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDevice(self, deviceName, nDIOChannels, nPFILines, nCounters, nAIChannels, nAOChannels) %#ok<INUSD>
+        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals) %#ok<INUSD>
             % Don't need to do anything---we'll get updated info when a run
             % is started, which is when it matters to us.
             result = [] ;
