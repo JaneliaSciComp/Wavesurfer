@@ -200,7 +200,7 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
             
             
             function errorUnsupportedVersion()
-                formattedVersion = sprintf('%s.%s.%s', majorVer, minorVer, updateVer);
+                formattedVersion = sprintf('%d.%d.%d', double(majorVer), double(minorVer), double(updateVer) );
                 throwAsCaller(obj.DException('', 'UnsupportedVersion', 'Version %s of the ''%s'' API is not supported', formattedVersion, obj.apiPrettyName));
             end
             
