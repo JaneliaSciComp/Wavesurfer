@@ -1461,8 +1461,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
             isTerminalOvercommitted = model.Stimulation.IsAnalogChannelTerminalOvercommitted ;
-            nAOs=length(self.AOChannelNameEdits);            
-            for i=1:nAOs ,
+            nAOChannels=length(self.AOChannelNameEdits);            
+            for i=1:nAOChannels ,
                 set(self.AOChannelNameEdits(i), 'String', channelNames{i} );                
                 ws.utility.setPopupMenuItemsAndSelectionBang(self.AOTerminalNamePopups(i), ...
                                                              allAOTerminalNames, ...
@@ -1482,7 +1482,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Deal with enablement of add/delete buttons
             nAOTerminals = model.NAOTerminals ;   
-            areAnyFreeAOTerminals =  (nAOs<nAOTerminals) ;
+            areAnyFreeAOTerminals =  (nAOChannels<nAOTerminals) ;
             isAOChannelMarkedForDeletion = model.Stimulation.IsAnalogChannelMarkedForDeletion ;
             isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;
             set(self.AddAOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeAOTerminals)) ;
@@ -1499,8 +1499,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Acquisition.DigitalChannelNames;
             isTerminalOvercommitted = model.Acquisition.IsDigitalChannelTerminalOvercommitted ;
-            nDIs=length(self.DIChannelNameEdits);            
-            for i=1:nDIs ,
+            nDIChannels=length(self.DIChannelNameEdits);            
+            for i=1:nDIChannels ,
                 set(self.DIChannelNameEdits(i), 'String', channelNames{i} );
                 ws.utility.setPopupMenuItemsAndSelectionBang(self.DITerminalNamePopups(i), ...
                                                              allTerminalNames, ...
@@ -1514,10 +1514,13 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
+            nDIOTerminals = model.NDIOTerminals ;   
+            nDigitalChannels = model.NDigitalChannels ;
+            areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;
+            %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDIChannelMarkedForDeletion = model.Acquisition.IsDigitalChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
-            set(self.AddDIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeDIOTerminals)) ;
+            set(self.AddDIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals)) ;
             set(self.DeleteDIChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
         end  % function        
        
@@ -1549,11 +1552,14 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
+            nDIOTerminals = model.NDIOTerminals ;   
+            nDigitalChannels = model.NDigitalChannels ;
+            areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;            
+            %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDOChannelMarkedForDeletion = model.Stimulation.IsDigitalChannelMarkedForDeletion ;
             isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
-            set(self.AddDOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeDIOTerminals)) ;
-            set(self.DeleteDOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion)) ;                        
+            set(self.AddDOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals) ) ;
+            set(self.DeleteDOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion) ) ;                        
         end  % function        
        
 %         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
