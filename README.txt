@@ -104,26 +104,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Authors
 -------
 
-WaveSurfer started out as version 3 of Ephus, another
-electrophysiology package largely authored by Vijay Iyer, with
-contributions by Tim O'Connor and others.  Vijay is also the primary
-author of the DABS library, from which the code in +ws/+dabs/+ni was
-taken, and of the MOST library, in +ws/+most.
+WaveSurfer was developed at the HHMI Janelia Research Campus.  It
+started out as version 3 of Ephus, another electrophysiology package
+largely authored by Vijay Iyer, with contributions by Tim O'Connor and
+others.  Vijay is also the primary author of the DABS library, from
+which the code in +ws/+dabs/+ni was taken, and of the MOST library, in
++ws/+most.
 
 The original developer of WaveSurfer was Patrick Edson.  
 
 WaveSurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
 
 
+Support
+-------
+
+WaveSurfer is developed at the HHMI Janelia Research Campus. It is
+supported by the Svoboda Lab, who initiated the project, and by the
+Magee, Spruston, Jayaraman, Lee, Hantman, and Koyama Labs. The project
+is coordinated by Janelia's Scientific Computing Software group.
+
+
 Maintainers
 -----------
 
-[Adam L. Taylor](http://www.janelia.org/people/research-resources-staff/adam-taylor), taylora@hhmi.org  
-[Scientific Computing](http://www.janelia.org/research-resources/computing-resources)  
-[Janelia Research Campus](http://www.janelia.org)  
-[Howard Hughes Medical Institute](http://www.hhmi.org)
-
-[![Picture](/hhmi_janelia_160px.png)](http://www.janelia.org)
+Adam L. Taylor 
+Scientific Computing
+HHMI Janelia Research Campus
 
 
 Version History
