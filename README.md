@@ -18,7 +18,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver, version 9.8.x or 14.5.x
+National Instruments DAQmx driver, version 9.8.x, 14.5.x, or 15.1.x.
 
 Matlab R2013b or later (64-bit)
 
@@ -66,7 +66,7 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in WaveSurfer is copyright 2013-2015 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2016 by the Howard Hughes Medical 
 Institute.
 
 
@@ -276,5 +276,8 @@ Version History
 0.9-beta-14: (November 20, 2015) Fixed bug where didn't work if no 
              input channels were defined.
 
-0.9: (December 1, 2015) Rechristened 0.9-beta-14 as 0.9.
+0.9      Dec 01, 2015    Rechristened 0.9-beta-14 as 0.9.
 
+0.901    Jan 07, 2016    Added support for DAQmx 15.1.x.  Fixed bug in
+                         error dialog message if the installed version
+                         of DAQmx is not supported by WaveSurfer.
