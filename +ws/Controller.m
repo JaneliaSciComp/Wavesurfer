@@ -337,6 +337,8 @@ classdef Controller < handle
                     end
                 end
             catch me
+                self.Model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
+                
 %                 isInDebugMode=~isempty(dbstatus());
 %                 if isInDebugMode ,
 %                     rethrow(me);
@@ -346,6 +348,7 @@ classdef Controller < handle
 %                     id = me.identifier
 %                     msg = me.message
 %                     report = me.getReport()
+
                  if isempty(me.cause) 
                      errordlg(me.message,'Error','modal');
                  else
