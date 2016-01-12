@@ -621,6 +621,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
+            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
         
         function deleteMarkedDigitalChannels(self)
@@ -644,6 +645,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
 
             % Notify others of what we have done
             self.Parent.didDeleteDigitalOutputChannels(indicesOfChannelsToDelete) ;  %#ok<FNDSB>
+            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
         
         function deleteDigitalChannels(self, indicesOfChannelsToBeDeleted)
