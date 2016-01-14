@@ -443,7 +443,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
-            if 1<=i && i<=self.NAnalogChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AnalogChannelNames) ,
+            if 1<=i && i<=self.NAnalogChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
                 self.AnalogChannelNames_{i} = newValue ;
                 didSucceed = true ;
             else
@@ -454,7 +454,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         
         function setSingleDigitalChannelName(self, i, newValue)
             oldValue = self.DigitalChannelNames_{i} ;
-            if 1<=i && i<=self.NDigitalChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.DigitalChannelNames) ,
+            if 1<=i && i<=self.NDigitalChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
                 self.DigitalChannelNames_{i} = newValue ;
                 didSucceed = true ;
             else

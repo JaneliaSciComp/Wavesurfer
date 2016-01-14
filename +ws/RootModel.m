@@ -44,6 +44,7 @@ classdef RootModel < ws.Model
         NAITerminals
         NAOTerminals
         NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
+        AllChannelNames
     end
     
     %
@@ -216,6 +217,14 @@ classdef RootModel < ws.Model
             nDIs = self.Acquisition.NDigitalChannels ;
             nDOs = self.Stimulation.NDigitalChannels ;
             result =  nDIs + nDOs ;
+        end
+        
+        function result = get.AllChannelNames(self)
+            aiNames = self.Acquisition.AnalogChannelNames ;
+            diNames = self.Acquisition.DigitalChannelNames ;
+            aoNames = self.Stimulation.AnalogChannelNames ;
+            doNames = self.Stimulation.DigitalChannelNames ;
+            result = [aiNames diNames aoNames doNames] ;
         end
         
     end  % public methods block
