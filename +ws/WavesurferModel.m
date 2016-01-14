@@ -2166,13 +2166,15 @@ classdef WavesurferModel < ws.RootModel
             self.mimicProtocol_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
+            self.broadcast('Update');  
+                % have to do this before setting state, b/c at this point view could be badly out-of-sync w/ model, and setState_() doesn't do a full Update
             self.setState_('idle');
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);       
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
     end
     
