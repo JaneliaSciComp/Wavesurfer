@@ -501,7 +501,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             %rowToRowHeight=rowHeight+interRowHeight;
             panelToChannelNameColSpaceWidth=5;
             channelNameEditWidth = 100 ;
-            terminalNamePopupWidth = 50 ;
+            terminalNamePopupWidth = 52 ;
             spaceBetweenChannelNameAndTerminalNameWidth = 14 ;
             %diLabelWidthWanted=max(30,self.maximumDILabelTextWidth());
             %aiLabelWidthWanted=max(30,self.maximumAILabelTextWidth());

@@ -45,6 +45,8 @@ classdef RootModel < ws.Model
         NAOTerminals
         NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
         AllChannelNames
+        IsDIChannelTerminalOvercommitted
+        IsDOChannelTerminalOvercommitted
     end
     
     %
@@ -122,6 +124,8 @@ classdef RootModel < ws.Model
 %         IsPerformingSweep_ = false
 %         %IsDeeplyIntoPerformingSweep_ = false
 %         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
+        IsDIChannelTerminalOvercommitted_ = false(1,0)        
+        IsDOChannelTerminalOvercommitted_ = false(1,0)        
     end
     
 %     events
@@ -225,6 +229,14 @@ classdef RootModel < ws.Model
             aoNames = self.Stimulation.AnalogChannelNames ;
             doNames = self.Stimulation.DigitalChannelNames ;
             result = [aiNames diNames aoNames doNames] ;
+        end
+
+        function result = get.IsDIChannelTerminalOvercommitted(self)
+            result = self.IsDIChannelTerminalOvercommitted_ ;
+        end
+        
+        function result = get.IsDOChannelTerminalOvercommitted(self)
+            result = self.IsDOChannelTerminalOvercommitted_ ;
         end
         
     end  % public methods block
@@ -345,10 +357,27 @@ classdef RootModel < ws.Model
             % other subclasses of RootModel shouldn't be setting the
             % DeviceName.
         end        
+        
+        function syncIsDigitalChannelTerminalOvercommitted_(self)
+            [nOccurancesOfTerminalInAcquisition,nOccurancesOfTerminalInStimulation] = self.computeDIOTerminalCommitments() ;
+            nDIOTerminals = self.NDIOTerminals ;
+            terminalIDForEachAcquisitionChannel = self.Acquisition.DigitalTerminalIDs ;
+            terminalIDForEachStimulationChannel = self.Stimulation.DigitalTerminalIDs ;
+            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalInAcquisition>1) | (terminalIDForEachAcquisitionChannel>=nDIOTerminals) ;
+            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalInStimulation>1) | (terminalIDForEachStimulationChannel>=nDIOTerminals) ;
+        end  % function
+
     end  % protected methods block
     
     methods
         function [nOccurancesOfAcquisitionTerminal, nOccurancesOfStimulationTerminal] = computeDIOTerminalCommitments(self) 
+            % Determine how many channels are "claiming" the terminal ID of
+            % each digital channel.  On return,
+            % nOccurancesOfAcquisitionTerminal is 1 x (the number of DI
+            % channels) and is the number of channels that currently have
+            % their terminal ID to the same terminal ID as that channel.
+            % nOccurancesOfStimulationTerminal is similar, but for DO
+            % channels.
             acquisitionTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
             stimulationTerminalIDs = self.Stimulation.DigitalTerminalIDs ;            
             terminalIDs = horzcat(acquisitionTerminalIDs, stimulationTerminalIDs) ;

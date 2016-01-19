@@ -713,6 +713,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didSetDigitalInputTerminalID(self)
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -742,6 +743,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didSetDigitalOutputTerminalID(self)
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -2344,6 +2346,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didAddDigitalInputChannel(self)
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didAddDigitalInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2358,6 +2361,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2385,6 +2389,7 @@ classdef WavesurferModel < ws.RootModel
         
         function didAddDigitalOutputChannel(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
             %self.Display.didAddDigitalOutputChannel() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
@@ -2400,6 +2405,7 @@ classdef WavesurferModel < ws.RootModel
         
         function didDeleteDigitalOutputChannels(self, originalIndicesOfDeletedChannels)
             %self.Display.didRemoveDigitalOutputChannel(nameOfRemovedChannel) ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
@@ -2557,6 +2563,11 @@ classdef WavesurferModel < ws.RootModel
                         self.NAITerminals_ = nAITerminals ;
                         self.NAOTerminals_ = nAOTerminals ;
 
+                        % Recalculate which digital terminals are now
+                        % overcommitted, since that also updates which are
+                        % out-of-range for the device
+                        self.syncIsDigitalChannelTerminalOvercommitted_() ;
+                        
                         % Tell the subsystems that we've changed the device
                         % name
                         self.Acquisition.didSetDeviceName() ;

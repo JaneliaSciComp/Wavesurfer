@@ -61,7 +61,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
         IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
-        IsDigitalChannelTerminalOvercommitted_ = false(1,0)        
+        %IsDigitalChannelTerminalOvercommitted_ = false(1,0)        
     end
         
 %     properties (Access=protected, Constant=true)
@@ -306,7 +306,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end
         
         function result=get.IsDigitalChannelTerminalOvercommitted(self)
-            result =  self.IsDigitalChannelTerminalOvercommitted_ ;
+            result =  self.Parent.IsDOChannelTerminalOvercommitted ;
         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
@@ -599,7 +599,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             newChannelStateIfUntimed = false ;
             self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddDigitalOutputChannel(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -609,15 +609,24 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         
         function deleteMarkedAnalogChannels(self)
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
-            isKeeper = ~isToBeDeleted ;
-            self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-            self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
-            self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
-            self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
-            self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-            %self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
-            self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+            channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;
+            if all(isToBeDeleted)
+                % Want everything to still be a row vector
+                self.AnalogDeviceNames_ = cell(1,0) ;
+                self.AnalogTerminalIDs_ = zeros(1,0) ;
+                self.AnalogChannelNames_ = cell(1,0) ;
+                self.AnalogChannelScales_ = zeros(1,0) ;
+                self.AnalogChannelUnits_ = cell(1,0) ;
+                self.IsAnalogChannelMarkedForDeletion_ = false(1,0) ;
+            else
+                isKeeper = ~isToBeDeleted ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+                self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
+                self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+                self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+                self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+                self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+            end
             self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
@@ -635,13 +644,23 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
 
             % Now do the real deleting
-            self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-            self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-            self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-            self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-            self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
-            self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            if all(isToBeDeleted)
+                % Keep everything a row vector
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelTimed_ = true(1,0) ;
+                self.DigitalOutputStateIfUntimed_ = false(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
+            else
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
 
             % Notify others of what we have done
             self.Parent.didDeleteDigitalOutputChannels(indicesOfChannelsToDelete) ;  %#ok<FNDSB>
@@ -682,6 +701,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             deviceName = self.Parent.DeviceName ;
             self.AnalogDeviceNames_(:) = {deviceName} ;            
             self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('Update');
         end
         
@@ -713,9 +734,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    %if ~ismember(newValueAsDouble,self.AnalogTerminalIDs) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    %end
                     self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
@@ -726,13 +745,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    %if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
                     self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    %end
-                    self.syncIsDigitalChannelTerminalOvercommitted_() ;
+                    %self.syncIsDigitalChannelTerminalOvercommitted_() ;
                 end
             end
-            self.Parent.didSetDigitalOutputTerminalID();
+            self.Parent.didSetDigitalOutputTerminalID() ;
         end
         
 end  % methods block
@@ -847,19 +864,28 @@ end  % methods block
         end
 
         function syncIsAnalogChannelTerminalOvercommitted_(self) 
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
             terminalIDs = self.AnalogTerminalIDs ;
             nChannels = length(terminalIDs) ;
             terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
             terminalIDsInEachCol = terminalIDsInEachRow' ;
             isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
             nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) ;
+            nAOTerminals = self.Parent.NAOTerminals ;
+            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
         end
          
-        function syncIsDigitalChannelTerminalOvercommitted_(self) 
-            [~,nOccurancesOfStimulationTerminal] = self.Parent.computeDIOTerminalCommitments() ;
-            self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfStimulationTerminal>1) ;
-        end
+%         function syncIsDigitalChannelTerminalOvercommitted_(self)            
+%             [~,nOccurancesOfTerminal] = self.Parent.computeDIOTerminalCommitments() ;
+%             nDIOTerminals = self.Parent.NDIOTerminals ;
+%             terminalIDs = self.DigitalTerminalIDs ;
+%             self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nDIOTerminals) ;
+%         end
         
     end  % protected methods block
     

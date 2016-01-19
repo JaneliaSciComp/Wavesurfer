@@ -79,11 +79,20 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 %channelName = self.AnalogChannelNames_{channelIndex} ;
                 isKeeper = true(1,nChannels) ;
                 isKeeper(channelIndex) = false ;
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                if ~any(isKeeper) ,
+                    % special case so things stay row vectors
+                    self.DigitalDeviceNames_ = cell(1,0) ;
+                    self.DigitalTerminalIDs_ = zeros(1,0) ;
+                    self.DigitalChannelNames_ = cell(1,0) ;
+                    self.IsDigitalChannelTimed_ = true(1,0) ;
+                    self.DigitalOutputStateIfUntimed_ = false(1,0) ;                    
+                else
+                    self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                    self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                    self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                    self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                    self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                end
                 self.reacquireHardwareResources() ;
             end            
         end

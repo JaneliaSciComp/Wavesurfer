@@ -67,7 +67,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
         IsAnalogChannelTerminalOvercommitted_ = false(1,0)
-        IsDigitalChannelTerminalOvercommitted_ =false(1,0)
+        %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
 %     properties (Access=protected, Constant=true)
@@ -254,7 +254,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end
         
         function result=get.IsDigitalChannelTerminalOvercommitted(self)
-            result =  self.IsDigitalChannelTerminalOvercommitted_ ;
+            result =  self.Parent.IsDIChannelTerminalOvercommitted ;
         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
@@ -481,7 +481,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                     %if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
                     self.DigitalTerminalIDs_(i) = newValueAsDouble ;
                     %end
-                    self.syncIsDigitalChannelTerminalOvercommitted_() ;                    
+                    %self.syncIsDigitalChannelTerminalOvercommitted_() ;                    
                 end
             end
             self.Parent.didSetDigitalInputTerminalID();
@@ -930,19 +930,28 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end  % function
         
         function syncIsAnalogChannelTerminalOvercommitted_(self) 
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
             terminalIDs = self.AnalogTerminalIDs ;
             nChannels = length(terminalIDs) ;
             terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
             terminalIDsInEachCol = terminalIDsInEachRow' ;
             isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
             nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) ;
+            nTerminalsOnDevice = self.Parent.NAITerminals ;
+            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
         end
          
-        function syncIsDigitalChannelTerminalOvercommitted_(self) 
-            nOccurancesOfAcquisitionTerminal = self.Parent.computeDIOTerminalCommitments() ;
-            self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfAcquisitionTerminal>1) ;
-        end
+%         function syncIsDigitalChannelTerminalOvercommitted_(self)            
+%             [nOccurancesOfTerminal,~] = self.Parent.computeDIOTerminalCommitments() ;
+%             nDIOTerminals = self.Parent.NDIOTerminals ;
+%             terminalIDs = self.DigitalTerminalIDs ;
+%             self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nDIOTerminals) ;
+%         end
     end  % protected methods block
     
 %     methods (Static=true)
@@ -1063,16 +1072,30 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         function deleteMarkedAnalogChannels(self)
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
             channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
-            isKeeper = ~isToBeDeleted ;
-            self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-            self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
-            self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
-            self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
-            self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-            self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
-            self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+            if all(isToBeDeleted) ,
+                % Special case for when all channels are being deleted.
+                % Have to do this because we want all these properties to
+                % be 1x0 when empty, and the default-case code leaves them
+                % 0x0.  I.e. we want them to always be row vectors.
+                self.AnalogDeviceNames_ = cell(1,0) ;
+                self.AnalogTerminalIDs_ = zeros(1,0) ;
+                self.AnalogChannelNames_ = cell(1,0) ;
+                self.AnalogChannelScales_ = zeros(1,0) ;
+                self.AnalogChannelUnits_ = cell(1,0) ;
+                self.IsAnalogChannelActive_ = true(1,0) ;
+                self.IsAnalogChannelMarkedForDeletion_ = false(1,0) ;
+            else
+                isKeeper = ~isToBeDeleted ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+                self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
+                self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+                self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
+                self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
+                self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
+                self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+            end
+            
             self.syncIsAnalogChannelTerminalOvercommitted_() ;
-
             self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
         end  % function
         
@@ -1095,7 +1118,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
@@ -1104,16 +1127,23 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         function deleteMarkedDigitalChannels(self)
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
             channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
-            isKeeper = ~isToBeDeleted ;
-            self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-            self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-            self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-            %self.DigitalChannelScales_ = self.DigitalChannelScales_(isKeeper) ;
-            %self.DigitalChannelUnits_ = self.DigitalChannelUnits_(isKeeper) ;
-            self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
-            self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
-
+            if all(isToBeDeleted) ,
+                % Special case so things stay row vectors
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelActive_ = true(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
+            else
+                isKeeper = ~isToBeDeleted ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
 
@@ -1143,6 +1173,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             deviceName = self.Parent.DeviceName ;
             self.AnalogDeviceNames_(:) = {deviceName} ;
             self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('Update');
         end
     end
