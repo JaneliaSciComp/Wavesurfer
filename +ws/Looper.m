@@ -397,13 +397,16 @@ classdef Looper < ws.RootModel
             % Make the looper settings look like the
             % wavesurferModelSettings.
             
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseHardwareResources_();           
+            
             % Make our own settings mimic those of wavesurferModelSettings
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;
 
-            % Get a task, if we need one
-            self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
-            
+            % Want the on-demand DOs to work immediately
+            self.acquireOnDemandHardwareResources_();           
+
             result = [] ;
         end  % function
         
@@ -804,13 +807,10 @@ classdef Looper < ws.RootModel
             %self.Ephys.releaseHardwareResources();
         end
         
-%         function releaseAllHardwareResources_(self)
-%             self.Acquisition.releaseHardwareResources();
-%             self.Stimulation.releaseTimedHardwareResources();
-%             self.Stimulation.releaseOnDemandHardwareResources();
-%             %self.Triggering.releaseHardwareResources();
-%             %self.Ephys.releaseHardwareResources();
-%         end
+        function releaseHardwareResources_(self)            
+            self.Acquisition.releaseHardwareResources();
+            self.Stimulation.releaseHardwareResources();
+        end
     end
 
     methods
@@ -861,8 +861,10 @@ classdef Looper < ws.RootModel
             self.IsPerformingRun_ = true ;                        
             
             % Make our own settings mimic those of wavesurferModelSettings
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseTimedHardwareResources_();           
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicWavesurferModel_(wsModel) ;
+            self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1647,9 +1649,6 @@ classdef Looper < ws.RootModel
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
         
-            % Have to do this before decoding properties, or bad things will happen
-            self.releaseTimedHardwareResources_();
-            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -1677,7 +1676,7 @@ classdef Looper < ws.RootModel
             % true.
             self.Acquisition.didSetDeviceName() ;
             self.Stimulation.didSetDeviceName() ;            
-            self.Triggering.didSetDeviceName() ;                        
+            self.Triggering.didSetDeviceName() ;                                    
         end  % function
     end  % public methods block
     

@@ -24,24 +24,29 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.acquireOnDemandHardwareResources() ;  % LooperStimulation has only on-demand resources, not timed ones
         end
         
-        function acquireOnDemandHardwareResources(self)            
+        function acquireOnDemandHardwareResources(self)
+            %fprintf('LooperStimulation::acquireOnDemandHardwareResources()\n');
             if isempty(self.TheUntimedDigitalOutputTask_) ,
-                isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
+                %fprintf('the task is empty, so about to create a new one\n');
+                isDigitalChannelOnDemand = ~self.IsDigitalChannelTimed ;
                 %untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
                 digitalDeviceNames = self.DigitalDeviceNames ;
-                untimedDigitalDeviceNames = digitalDeviceNames(isDigitalChannelUntimed) ;
+                onDemandDigitalDeviceNames = digitalDeviceNames(isDigitalChannelOnDemand) ;
                 digitalTerminalIDs = self.DigitalTerminalIDs ;
-                untimedDigitalTerminalIDs = digitalTerminalIDs(isDigitalChannelUntimed) ;
+                OnDemandDigitalTerminalIDs = digitalTerminalIDs(isDigitalChannelOnDemand) ;
                 %untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
                 self.TheUntimedDigitalOutputTask_ = ...
                     ws.ni.UntimedDigitalOutputTask(self, ...
                                                    'WaveSurfer Untimed Digital Output Task', ...
-                                                   untimedDigitalDeviceNames, ...
-                                                   untimedDigitalTerminalIDs) ;
+                                                   onDemandDigitalDeviceNames, ...
+                                                   OnDemandDigitalTerminalIDs) ;
                 % Set the outputs to the proper values, now that we have a task                               
-                if any(isDigitalChannelUntimed) ,
-                    untimedDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelUntimed) ;
-                    self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+                %fprintf('About to turn on/off on-demand digital channels\n');
+                if any(isDigitalChannelOnDemand) ,
+                    onDemandDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelOnDemand) ;
+                    if ~isempty(onDemandDigitalChannelState) ,
+                        self.TheUntimedDigitalOutputTask_.ChannelData = onDemandDigitalChannelState ;
+                    end
                 end                
             end
         end
