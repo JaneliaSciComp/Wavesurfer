@@ -235,6 +235,14 @@ classdef RootModel < ws.Model
             result = self.IsDIChannelTerminalOvercommitted_ ;
         end
         
+%         function set.IsDIChannelTerminalOvercommitted_(self, value)
+%             fprintf('About to set IsDIChannelTerminalOvercommitted_\n');
+%             value
+%             dbstack           
+%             self.IsDIChannelTerminalOvercommitted_ = value ;
+%             fprintf('\n\n\n');
+%         end
+        
         function result = get.IsDOChannelTerminalOvercommitted(self)
             result = self.IsDOChannelTerminalOvercommitted_ ;
         end
@@ -392,5 +400,21 @@ classdef RootModel < ws.Model
             nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
         end        
     end  % public methods
+
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistedState_(self)            
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+        end
+    end
     
 end  % classdef

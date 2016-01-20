@@ -388,6 +388,22 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings)
+            % What it says on the tin.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % Make the looper settings look like the
+            % wavesurferModelSettings.
+            
+            % Make our own settings mimic those of wavesurferModelSettings
+            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.mimicWavesurferModel_(wsModel) ;
+
+            result = [] ;
+        end  % function
+        
     end  % RPC methods block
     
     methods
@@ -1649,6 +1665,10 @@ classdef Looper < ws.RootModel
                     end
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;                                    
         end  % function
     end  % public methods block
     

@@ -386,6 +386,20 @@ classdef Refiller < ws.RootModel
             %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
             result = [] ;
         end  % function
+
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings) %#ok<INUSD>
+            % What it says on the tin.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % We don't need to do anything, because the refiller doesn't
+            % really do much until a run is started, and we get the
+            % frontend state then
+            
+            result = [] ;
+        end  % function        
+        
     end  % RPC methods block
     
     methods
@@ -1075,6 +1089,10 @@ classdef Refiller < ws.RootModel
                     end
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;                                                
         end  % function
     end  % public methods block
     
@@ -1097,4 +1115,20 @@ classdef Refiller < ws.RootModel
 %         end  % function
 %     end  % methods block        
     
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistedState_(self)            
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;  
+        end
+    end
+
 end  % classdef

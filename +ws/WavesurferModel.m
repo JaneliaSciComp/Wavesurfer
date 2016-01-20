@@ -1694,84 +1694,19 @@ classdef WavesurferModel < ws.RootModel
     end % protected methods block
         
     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.most.app.Model(self);
-%             self.setPropertyAttributeFeatures('NSweepsPerRun', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-%             self.setPropertyAttributeFeatures('SweepDuration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('AreSweepsFiniteDuration', 'Classes', 'logical', 'Attributes', {'scalar'});
-%             self.setPropertyAttributeFeatures('AreSweepsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
-%         end  % function
-        
-%         function defineDefaultPropertyTags_(self)
-% %             % Mark all the subsystems since they are SetAccess protected which won't be picked
-% %             % up by default.
-% %             self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
-% %             self.setPropertyTags('FastProtocols', 'ExcludeFromFileTypes', {'cfg','header'});
-% %             self.setPropertyTags('Acquisition', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Stimulation', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Triggering', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'header'});
-% %             self.setPropertyTags('Display', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr','header'});
-% %             self.setPropertyTags('Logging', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('UserCodeManager', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'header'});
-% %             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
-% %             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
-% %             self.setPropertyTags('NSweepsCompletedInThisRun', 'ExcludeFromFileTypes', {'*'});
-% %             self.setPropertyTags('NSweepsPerRun', 'IncludeInFileTypes', {'header'});
-% %             self.setPropertyTags('NSweepsPerRun_', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
-% %             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
-% %             self.setPropertyTags('AreSweepsFiniteDuration', 'ExcludeFromFileTypes', {'usr'});
-% %             self.setPropertyTags('AreSweepsFiniteDuration', 'IncludeInFileTypes', {'cfg', 'header'});
-% %             self.setPropertyTags('AreSweepsContinuous', 'ExcludeFromFileTypes', {'*'});
-%             
-%             % Exclude all the subsystems except FastProtocols from usr
-%             % files
-%             defineDefaultPropertyTags_@ws.Model(self);            
-%             self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
-%             % Exclude Logging from .cfg (aka protocol) file
-%             % This is because we want to maintain e.g. serial sweep indices even if
-%             % user switches protocols.
-%             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
-%             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
-% 
-%             % Exclude FastProtocols from cfg file
-%             self.setPropertyTags('FastProtocols_', 'ExcludeFromFileTypes', {'cfg'});
-%             
-%             % Exclude a few more things from .usr file
-%             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
-%         end  % function
-        
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue_(self, name)
-            out = self.(name);
+            out = self.(name) ;
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue_(self, name, value)
-            self.(name) = value;
-            
-%             % This is a hack to make sure the UI gets updated on loading
-%             % the .cfg file.
-%             if isequal(name,'NSweepsPerRun_') ,
-%                 self.NSweepsPerRun=nan.The;
-%             end                
+            if isequal(name,'IsDIChannelTerminalOvercommitted_')
+                dbstack
+                dbstop
+            end
+            self.(name) = value ;
         end  % function
-        
-%         function syncFromElectrodes(self)
-%             self.Acquisition.syncFromElectrodes();
-%             self.Stimulation.syncFromElectrodes();            
-%         end
-
     end  % methods ( Access = protected )
     
     methods
@@ -2164,8 +2099,9 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
             %self.decodeProperties(wavesurferModelSettings);
+            %keyboard
             newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicProtocol_(newModel) ;
+            self.mimicProtocolThatWasJustLoaded_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.broadcast('Update');  
@@ -2501,7 +2437,7 @@ classdef WavesurferModel < ws.RootModel
     end  % public methods block
 
     methods (Access=protected) 
-        function mimicProtocol_(self, other)
+        function mimicProtocolThatWasJustLoaded_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.
 
             % Do this before replacing properties in place, or bad things
@@ -2527,11 +2463,18 @@ classdef WavesurferModel < ws.RootModel
                 end
             end
             
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
+            
             % Make sure the looper knows which output channels are timed vs
             % on-demand
+            %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
-                self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
-            end
+                %self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
+                wavesurferModelSettings = self.encodeForPersistence() ;
+                self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings) ;
+            end            
         end  % function
     end  % protected methods block
     

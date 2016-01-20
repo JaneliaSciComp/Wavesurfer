@@ -1498,7 +1498,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             terminalNameForEachChannel = model.Acquisition.DigitalTerminalNames ;
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Acquisition.DigitalChannelNames;
-            isTerminalOvercommitted = model.Acquisition.IsDigitalChannelTerminalOvercommitted ;
+            isTerminalOvercommitted = model.IsDIChannelTerminalOvercommitted ;
             nDIChannels=length(self.DIChannelNameEdits);            
             for i=1:nDIChannels ,
                 set(self.DIChannelNameEdits(i), 'String', channelNames{i} );
