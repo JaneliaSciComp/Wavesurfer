@@ -73,11 +73,6 @@ classdef RootModel < ws.Model
 %         Logging_
 %         VersionString_
         DeviceName_ = ''   % represents "no device specified"
-        NDIOTerminals_ = 0
-        NPFITerminals_ = 0 
-        NCounters_ = 0
-        NAITerminals_ = 0
-        NAOTerminals_ = 0
     end
 
     properties (Access=protected, Transient=true)
@@ -124,6 +119,14 @@ classdef RootModel < ws.Model
 %         IsPerformingSweep_ = false
 %         %IsDeeplyIntoPerformingSweep_ = false
 %         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
+
+        NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
+                            % file load than it did when the protocol file was saved
+        NPFITerminals_ = 0 
+        NCounters_ = 0
+        NAITerminals_ = 0
+        NAOTerminals_ = 0
+
         IsDIChannelTerminalOvercommitted_ = false(1,0)        
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
     end
@@ -366,6 +369,20 @@ classdef RootModel < ws.Model
             % DeviceName.
         end        
         
+        function syncDeviceResourceCountsFromDeviceName_(self)
+            % Probe the device to find out its capabilities
+            deviceName = self.DeviceName ;
+            [nDIOTerminals, nPFITerminals] = ws.RootModel.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
+            nCounters = ws.RootModel.getNumberOfCountersFromDevice(deviceName) ;
+            nAITerminals = ws.RootModel.getNumberOfAITerminalsFromDevice(deviceName) ;
+            nAOTerminals = ws.RootModel.getNumberOfAOTerminalsFromDevice(deviceName) ;
+            self.NDIOTerminals_ = nDIOTerminals ;
+            self.NPFITerminals_ = nPFITerminals ;
+            self.NCounters_ = nCounters ;
+            self.NAITerminals_ = nAITerminals ;
+            self.NAOTerminals_ = nAOTerminals ;
+        end
+
         function syncIsDigitalChannelTerminalOvercommitted_(self)
             [nOccurancesOfTerminalInAcquisition,nOccurancesOfTerminalInStimulation] = self.computeDIOTerminalCommitments() ;
             nDIOTerminals = self.NDIOTerminals ;
@@ -413,6 +430,7 @@ classdef RootModel < ws.Model
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
+            self.syncDeviceResourceCountsFromDeviceName_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
         end
     end

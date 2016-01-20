@@ -401,6 +401,9 @@ classdef Looper < ws.RootModel
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;
 
+            % Get a task, if we need one
+            self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+            
             result = [] ;
         end  % function
         
@@ -1668,7 +1671,13 @@ classdef Looper < ws.RootModel
             
             % Make sure the transient state is consistent with
             % the non-transient state
-            self.synchronizeTransientStateToPersistedState_() ;                                    
+            self.synchronizeTransientStateToPersistedState_() ;     
+            
+            % Notify subsystems that we just set the device name, which is
+            % true.
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;            
+            self.Triggering.didSetDeviceName() ;                        
         end  % function
     end  % public methods block
     

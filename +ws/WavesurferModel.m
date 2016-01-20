@@ -2443,10 +2443,14 @@ classdef WavesurferModel < ws.RootModel
             % Do this before replacing properties in place, or bad things
             % will happen
             self.releaseTimedHardwareResources_() ;
-            
+
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
+            % Don't want to do broadcasts while we're in a
+            % possibly-inconsistent state
+            self.disableBroadcasts() ;
+
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
@@ -2466,6 +2470,16 @@ classdef WavesurferModel < ws.RootModel
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
+            
+            % Tell the subsystems that we've changed the device
+            % name, which we have, among other things
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;
+            self.Triggering.didSetDeviceName() ;
+            self.Display.didSetDeviceName() ;
+
+            % Safe to do broadcasts again
+            self.enableBroadcastsMaybe() ;
             
             % Make sure the looper knows which output channels are timed vs
             % on-demand
@@ -2496,15 +2510,7 @@ classdef WavesurferModel < ws.RootModel
                         self.DeviceName_ = deviceName ;
                         
                         % Probe the device to find out its capabilities
-                        [nDIOTerminals, nPFITerminals] = ws.RootModel.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
-                        nCounters = ws.RootModel.getNumberOfCountersFromDevice(deviceName) ;
-                        nAITerminals = ws.RootModel.getNumberOfAITerminalsFromDevice(deviceName) ;
-                        nAOTerminals = ws.RootModel.getNumberOfAOTerminalsFromDevice(deviceName) ;
-                        self.NDIOTerminals_ = nDIOTerminals ;
-                        self.NPFITerminals_ = nPFITerminals ;
-                        self.NCounters_ = nCounters ;
-                        self.NAITerminals_ = nAITerminals ;
-                        self.NAOTerminals_ = nAOTerminals ;
+                        self.syncDeviceResourceCountsFromDeviceName_() ;
 
                         % Recalculate which digital terminals are now
                         % overcommitted, since that also updates which are
@@ -2524,7 +2530,9 @@ classdef WavesurferModel < ws.RootModel
 
                         % Notify the satellites
                         if self.IsITheOneTrueWavesurferModel_ ,
-                            self.IPCPublisher_.send('didSetDevice', deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals) ;
+                            self.IPCPublisher_.send('didSetDevice', ...
+                                                    deviceName, ...
+                                                    self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals) ;
                         end                        
                     else
                         self.broadcast('Update');
