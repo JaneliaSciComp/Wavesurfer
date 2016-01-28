@@ -52,7 +52,16 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
 %                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
 %                 self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
 %             end
-                        
+
+            % Check that there's at least one active input channel
+            NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
+            NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
+            NActiveInputChannels = NActiveAnalogChannels + NActiveDigitalChannels ;
+            if NActiveInputChannels==0 ,
+                error('wavesurfer:NoActiveInputChannels' , ...
+                      'There must be at least one active input channel to perform a run');
+            end
+
             % Dimension the cache that will hold acquired data in main memory
             if self.NDigitalChannels<=8
                 dataType = 'uint8';
@@ -61,8 +70,6 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
             else %self.NDigitalChannels<=32
                 dataType = 'uint32';
             end
-            NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
-            NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
             if wavesurferModel.AreSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');

@@ -260,18 +260,22 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 nScans = size(rawAnalogData,1) ;
                 rawDigitalData = ...
                     self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
-            else
-                % There are zero active analog channels
+            elseif self.IsAtLeastOneActiveDigitalChannelCached_ ,
+                % There are zero active analog channels, but at least one
+                % active digital channel.
                 % In this case, want the digital task to determine the
-                % "pace" of data acquisition.  If there are also zero
-                % active digital channels, readData() essentially fakes
-                % things using tic() and toc().
+                % "pace" of data acquisition.
                 [rawDigitalData,timeSinceRunStartAtStartOfData] = ...
                     self.DigitalInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);                    
                 nScans = size(rawDigitalData,1) ;
                 rawAnalogData = zeros(nScans, 0, 'int16') ;
                 % rawAnalogData  = ...
                 %     self.AnalogInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            else
+                % If we get here, we've made a programming error --- this
+                % should have been caught when the run was started.
+                error('wavesurfer:ZeroActiveInputChannelsWhileReadingDataFromTasks', ...
+                      'Internal error: No active input channels while reading data from tasks') ;
             end
             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
         end  % function

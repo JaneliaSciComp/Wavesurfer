@@ -516,32 +516,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.setAnalogChannelData_(stimulusMap,indexOfEpisodeWithinSweep);
             self.setDigitalChannelData_(stimulusMap,indexOfEpisodeWithinSweep);
 
-            % Arm and start the analog task (which will then wait for a
-            % trigger)
-            %if self.HasAnalogChannels_ ,
-%             if indexOfEpisodeWithinSweep == 1 ,
-%                 self.TheFiniteAnalogOutputTask_.arm();
-%             end
+            % Start the analog task (which will then wait for a trigger)
             self.TheFiniteAnalogOutputTask_.start();                
-            %end
             
-            % Arm and start the digital task (which will then wait for a
-            % trigger)
-            %if self.HasTimedDigitalChannels_ ,
-%             if indexOfEpisodeWithinSweep == 1 ,
-%                 self.TheFiniteDigitalOutputTask_.arm();
-%             end
+            % Start the digital task (which will then wait for a trigger)
             self.TheFiniteDigitalOutputTask_.start(); 
-            %end
-            
-%             % If no samples at all, we just declare the episode done
-%             if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
-%                 % do nothing
-%             else
-%                 % This was triggered, it just has a map/stimulus that has zero samples.
-%                 self.IsArmedOrStimulating_ = false;
-%                 %self.NEpisodesCompleted_ = self.NEpisodesCompleted_ + 1;
-%             end
             
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
@@ -735,7 +714,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
 %             end
 %         end  % function        
-    end        
+    end  % public methods block        
 
 %     methods (Access=protected)
 %         function analogEpisodeCompleted_(self)
