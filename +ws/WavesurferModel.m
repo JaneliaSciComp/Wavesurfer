@@ -2191,6 +2191,77 @@ classdef WavesurferModel < ws.Model
         end  % function
     end  % public methods block
 
+    methods
+        function [acquisitionKeystoneTask, stimulationKeystoneTask] = determineKeystoneTasks(self)
+            % The acq and stim subsystems each have a "keystone" task,
+            % which is one of "ai", "di", "ao", and "do".  In some cases,
+            % the keystone task for the acq subsystem is the same as that
+            % for the stim subsystem.  All the tasks in the subsystem that
+            % are not the keystone task have their start trigger set to
+            % <keystone task>/StartTrigger.  If a task is a keystone task,
+            % it is started after all non-keystone tasks are started.
+            %
+            % If you're not careful about this stuff, the acquisition tasks
+            % can end up getting triggered (e.g. by an external trigger)
+            % before the stimulation tasks have been started, even though
+            % the user has configure both acq and stim subsystems to use
+            % the same trigger.  This business with the keystone tasks is
+            % designed to eliminate this in the common case of acq and stim
+            % subsystems using the same trigger, and ameliorate it in cases
+            % where the acq and stim subsystems use different triggers.
+            
+            if self.Triggering.AcquisitionTriggerScheme==self.Triggering.StimulationTriggerScheme ,
+                % Acq and stim subsystems are using the same trigger, so
+                % acq and stim subsystems will have the same keystone task.
+                nAIChannels = self.Acquisition.NActiveAnalogChannels ;
+                if nAIChannels==0 ,                    
+                    % There are no active AI channels, so the DI task will
+                    % be the keystone.  (If there are zero active DI
+                    % channels, WS won't let you start a run, so there
+                    % should be no issues on that account.)
+                    acquisitionKeystoneTask = 'di' ;
+                    stimulationKeystoneTask = 'di' ;                    
+                else
+                    % There's at least one active AI channel so the AI task
+                    % is the (shared) keystone.
+                    acquisitionKeystoneTask = 'ai' ;
+                    stimulationKeystoneTask = 'ai' ;
+                end                
+            else
+                % Acq and stim subsystems are using different triggers, so
+                % acq and stim subsystems will have distinct keystone tasks.
+                
+                % First figure out the acq keystone task
+                nAIChannels = self.Acquisition.NActiveAnalogChannels ;
+                if nAIChannels==0 ,                    
+                    % There are no active AI channels, so the DI task will
+                    % be the keystone.  (If there are zero active DI
+                    % channels, WS won't let you start a run, so there
+                    % should be no issues on that account.)
+                    acquisitionKeystoneTask = 'di' ;
+                else
+                    % There's at least one active AI channel so the AI task
+                    % is the acq keystone.
+                    acquisitionKeystoneTask = 'ai' ;
+                end                
+                
+                % Now figure out the stim keystone task
+                nAOChannels = self.Stimulation.NAnalogChannels ;
+                if nAOChannels==0 ,                    
+                    % There are no AO channels, so the DO task will
+                    % be the keystone.  (If there are zero active DO
+                    % channels, there won't be any output DAQmx tasks, so
+                    % this shouldn't be a problem.)
+                    stimulationKeystoneTask = 'do' ;                    
+                else
+                    % There's at least one AO channel so the AO task
+                    % is the stim keystone.
+                    stimulationKeystoneTask = 'ao' ;
+                end                                
+            end
+        end
+    end  % public methods block
+    
     methods (Access=protected) 
         function mimicProtocol_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.
