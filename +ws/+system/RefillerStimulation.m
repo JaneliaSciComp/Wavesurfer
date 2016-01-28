@@ -392,12 +392,41 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.acquireHardwareResources_() ;
             
             % Set up the task triggering
-            pfiID = self.TriggerScheme.PFIID ;
-            edge = self.TriggerScheme.Edge ;
-            self.TheFiniteAnalogOutputTask_.TriggerPFIID = pfiID ;
-            self.TheFiniteAnalogOutputTask_.TriggerEdge = edge ;
-            self.TheFiniteDigitalOutputTask_.TriggerPFIID = pfiID ;
-            self.TheFiniteDigitalOutputTask_.TriggerEdge = edge ;
+            %pfiID = self.TriggerScheme.PFIID ;
+            %keystoneTerminalName = sprintf('PFI%d',pfiID) ;
+            %keystoneEdge = self.TriggerScheme.Edge ;
+            %self.TheFiniteAnalogOutputTask_.TriggerPFIID = pfiID ;
+            %self.TheFiniteAnalogOutputTask_.TriggerEdge = edge ;
+            %self.TheFiniteDigitalOutputTask_.TriggerPFIID = pfiID ;
+            %self.TheFiniteDigitalOutputTask_.TriggerEdge = edge ;
+            
+            % Set up the task triggering
+            keystoneTask = self.Parent.StimulationKeystoneTaskCache ;
+            if isequal(keystoneTask,'ai') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'di') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'ao') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ao/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'do') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'do/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+            else
+                % Getting here means there was a programmer error
+                error('ws:InternalError', ...
+                      'Adam is a dum-dum, and the magic number is 8347875');
+            end
             
             % Clear out any pre-existing output waveforms
             self.TheFiniteAnalogOutputTask_.clearChannelData() ;
@@ -516,11 +545,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.setAnalogChannelData_(stimulusMap,indexOfEpisodeWithinSweep);
             self.setDigitalChannelData_(stimulusMap,indexOfEpisodeWithinSweep);
 
-            % Start the analog task (which will then wait for a trigger)
-            self.TheFiniteAnalogOutputTask_.start();                
-            
             % Start the digital task (which will then wait for a trigger)
             self.TheFiniteDigitalOutputTask_.start(); 
+            
+            % Start the analog task (which will then wait for a trigger)
+            self.TheFiniteAnalogOutputTask_.start();                
             
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);

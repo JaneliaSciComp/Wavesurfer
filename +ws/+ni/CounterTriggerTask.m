@@ -90,10 +90,14 @@ classdef CounterTriggerTask < handle    % & ws.mixin.AttributableProperties
             self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)
         end
         
-        function configureStartTrigger(self, pfiId, edge)
+        function configureStartTrigger(self, terminalName, edge)
             %fprintf('CounterTriggerTask::configureStartTrigger()\n');
+            if ~ws.utility.isString(terminalName) ,                
+                error('ws:CounterTriggerTask:TerminalNameIsNotString' , ...
+                      'The counter trigger terminal name must be a string') ;
+            end
             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(edge) ;
-            self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', pfiId), dabsTriggerEdge);
+            self.DabsDaqTask_.cfgDigEdgeStartTrig(terminalName, dabsTriggerEdge);
         end        
         
         function value = get.Parent(self)
