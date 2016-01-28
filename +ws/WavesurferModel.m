@@ -2210,42 +2210,30 @@ classdef WavesurferModel < ws.Model
             % subsystems using the same trigger, and ameliorate it in cases
             % where the acq and stim subsystems use different triggers.
             
+            % First figure out the acq keystone task
+            nAIChannels = self.Acquisition.NActiveAnalogChannels ;
+            if nAIChannels==0 ,                    
+                % There are no active AI channels, so the DI task will
+                % be the keystone.  (If there are zero active DI
+                % channels, WS won't let you start a run, so there
+                % should be no issues on that account.)
+                acquisitionKeystoneTask = 'di' ;
+            else
+                % There's at least one active AI channel so the AI task
+                % is the acq keystone.
+                acquisitionKeystoneTask = 'ai' ;
+            end                
+                
+            % Now figure out the stim keystone task
             if self.Triggering.AcquisitionTriggerScheme==self.Triggering.StimulationTriggerScheme ,
                 % Acq and stim subsystems are using the same trigger, so
                 % acq and stim subsystems will have the same keystone task.
-                nAIChannels = self.Acquisition.NActiveAnalogChannels ;
-                if nAIChannels==0 ,                    
-                    % There are no active AI channels, so the DI task will
-                    % be the keystone.  (If there are zero active DI
-                    % channels, WS won't let you start a run, so there
-                    % should be no issues on that account.)
-                    acquisitionKeystoneTask = 'di' ;
-                    stimulationKeystoneTask = 'di' ;                    
-                else
-                    % There's at least one active AI channel so the AI task
-                    % is the (shared) keystone.
-                    acquisitionKeystoneTask = 'ai' ;
-                    stimulationKeystoneTask = 'ai' ;
-                end                
+                stimulationKeystoneTask = acquisitionKeystoneTask ;
             else
                 % Acq and stim subsystems are using different triggers, so
                 % acq and stim subsystems will have distinct keystone tasks.
                 
-                % First figure out the acq keystone task
-                nAIChannels = self.Acquisition.NActiveAnalogChannels ;
-                if nAIChannels==0 ,                    
-                    % There are no active AI channels, so the DI task will
-                    % be the keystone.  (If there are zero active DI
-                    % channels, WS won't let you start a run, so there
-                    % should be no issues on that account.)
-                    acquisitionKeystoneTask = 'di' ;
-                else
-                    % There's at least one active AI channel so the AI task
-                    % is the acq keystone.
-                    acquisitionKeystoneTask = 'ai' ;
-                end                
-                
-                % Now figure out the stim keystone task
+                % So now we have to determine the stim keystone tasks.                
                 nAOChannels = self.Stimulation.NAnalogChannels ;
                 if nAOChannels==0 ,                    
                     % There are no AO channels, so the DO task will
