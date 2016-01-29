@@ -258,7 +258,7 @@ classdef FiniteOutputTask < handle
         
         function arm(self)
             % called before the first call to start()            
-%             %fprintf('FiniteAnalogOutputTask::setup()\n');
+            %fprintf('FiniteOutputTask::arm()\n');
             if self.IsArmed_ ,
                 return
             end
@@ -274,8 +274,10 @@ classdef FiniteOutputTask < handle
                 if isempty(self.TriggerTerminalName) ,
                     self.DabsDaqTask_.disableStartTrig() ;
                 else
-                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(self.TriggerTerminalName, dabsTriggerEdge);
+                    terminalName = self.TriggerTerminalName ;
+                    triggerEdge = self.TriggerEdge ;
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(terminalName, dabsTriggerEdge) ;
                 end
             end
             

@@ -2254,6 +2254,10 @@ classdef WavesurferModel < ws.Model
                     stimulationKeystoneTask = 'ao' ;
                 end                                
             end
+            
+            %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
+            %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
+            %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
         end
     end  % public methods block
     
