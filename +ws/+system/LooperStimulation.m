@@ -323,8 +323,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             
 %             %T=toc(thisTic);
 %             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
-%         end  % function
-        
+%         end  % function        
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;

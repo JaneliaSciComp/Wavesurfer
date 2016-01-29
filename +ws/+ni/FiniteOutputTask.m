@@ -12,7 +12,7 @@ classdef FiniteOutputTask < handle
     
     properties (Dependent = true)
         SampleRate      % Hz
-        TriggerPFIID
+        TriggerTerminalName
         TriggerEdge
         ChannelData
     end
@@ -25,7 +25,7 @@ classdef FiniteOutputTask < handle
     properties (Access = protected)
         IsAnalog_
         SampleRate_ = 20000
-        TriggerPFIID_ = []
+        TriggerTerminalName_ = ''
         TriggerEdge_ = []
         IsArmed_ = false
         PhysicalChannelNames_ = cell(1,0)
@@ -226,20 +226,20 @@ classdef FiniteOutputTask < handle
             end
         end  % function
         
-        function set.TriggerPFIID(self, newValue)
+        function set.TriggerTerminalName(self, newValue)
             if isempty(newValue) ,
-                self.TriggerPFIID_ = [];
-            elseif isnumeric(newValue) && isscalar(newValue) && (newValue==round(newValue)) && (newValue>=0) ,
-                self.TriggerPFIID_ = double(newValue);
+                self.TriggerTerminalName_ = '' ;
+            elseif ws.utility.isString(self.TriggerTerminalName_) ,
+                self.TriggerTerminalName_ = newValue ;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerPFIID must be empty or a scalar natural number');       
-            end            
+                      'TriggerTerminalName must be empty or a string');
+            end
         end  % function
         
-        function value = get.TriggerPFIID(self)
-            value = self.TriggerPFIID_ ;
-        end  % function                
+        function value = get.TriggerTerminalName(self)
+            value = self.TriggerTerminalName_ ;
+        end  % function
 
         function set.TriggerEdge(self, newValue)
             if isempty(newValue) ,
@@ -255,27 +255,29 @@ classdef FiniteOutputTask < handle
         function value = get.TriggerEdge(self)
             value = self.TriggerEdge_ ;
         end  % function                
-                
+        
         function arm(self)
             % called before the first call to start()            
-%             %fprintf('FiniteAnalogOutputTask::setup()\n');
+            %fprintf('FiniteOutputTask::arm()\n');
             if self.IsArmed_ ,
                 return
             end
             
-            % Configure self.DabsDaqTask_ 
+            % Configure self.DabsDaqTask_
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else
                 % Set up callbacks
-                %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};            
+                %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
 
                 % Set up triggering
-                if ~isempty(self.TriggerPFIID)
-                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), dabsTriggerEdge);
+                if isempty(self.TriggerTerminalName) ,
+                    self.DabsDaqTask_.disableStartTrig() ;
                 else
-                    self.DabsDaqTask_.disableStartTrig();
+                    terminalName = self.TriggerTerminalName ;
+                    triggerEdge = self.TriggerEdge ;
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(terminalName, dabsTriggerEdge) ;
                 end
             end
             

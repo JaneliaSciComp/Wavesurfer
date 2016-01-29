@@ -23,6 +23,8 @@ classdef Refiller < ws.Model
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+        AcquisitionKeystoneTaskCache
+        StimulationKeystoneTaskCache
     end
     
     properties (Access = protected)        
@@ -69,6 +71,8 @@ classdef Refiller < ws.Model
         NEpisodesPerSweep_
         NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
+        AcquisitionKeystoneTaskCache_
+        StimulationKeystoneTaskCache_
     end
     
 %     events
@@ -284,7 +288,7 @@ classdef Refiller < ws.Model
             result = [] ;
         end  % function
         
-        function result = startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -292,7 +296,7 @@ classdef Refiller < ws.Model
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings) ;
+            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
             result = [] ;
         end  % function
 
@@ -331,7 +335,20 @@ classdef Refiller < ws.Model
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweepLooper(self,indexOfSweepWithinRun)  %#ok<INUSD>
+            % Sent by the wavesurferModel to prompt the Looper to prepare
+            % to run a sweep.  But the sweep doesn't start until the
+            % WavesurferModel calls startSweep().
+            %
+            % This is called via RPC, so must return exactly one return
+            % value.  If a runtime error occurs, it will cause the frontend
+            % process to hang.
+
+            % Do nothing, since we're not the looper
+            result = [] ;
+        end  % function
+
+        function result = startingSweepRefiller(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Refiller to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -705,8 +722,16 @@ classdef Refiller < ws.Model
 %         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
 %             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
 %         end
-    end
 
+        function value = get.AcquisitionKeystoneTaskCache(self)
+            value = self.AcquisitionKeystoneTaskCache_ ;
+        end
+        
+        function value = get.StimulationKeystoneTaskCache(self)
+            value = self.StimulationKeystoneTaskCache_ ;
+        end
+    end  % public methods block
+    
     methods (Access = protected)
         function releaseHardwareResources_(self)
             self.releaseTimedHardwareResources_() ;  % All the refiller resources are timed
@@ -719,7 +744,7 @@ classdef Refiller < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, wavesurferModelSettings)
+        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -734,6 +759,10 @@ classdef Refiller < ws.Model
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             %keyboard
             self.mimicWavesurferModel_(wsModel) ;
+            
+            % Cache the keystone task for the run
+            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
+            self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
             
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
@@ -797,7 +826,7 @@ classdef Refiller < ws.Model
                     self.Subsystems_{i}.startingSweep();
                 end
             end
-                        
+            
             % Start the counter timer tasks, which will trigger the
             % hardware-timed AI, AO, DI, and DO tasks.  But the counter
             % timer tasks will not start running until they themselves
