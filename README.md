@@ -281,3 +281,8 @@ Version History
 0.901    Jan 07, 2016    Added support for DAQmx 15.1.x.  Fixed bug in
                          error dialog message if the installed version
                          of DAQmx is not supported by WaveSurfer.
+
+0.902    Jan 29, 2016    Fixed triggering issues that could cause acq
+                         tasks but not stim tasks to trigger for a 
+                         finite-duration sweep, despite nominally 
+                         using the same trigger. 
