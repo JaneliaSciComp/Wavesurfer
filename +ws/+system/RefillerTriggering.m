@@ -178,7 +178,10 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
             % can't use a counter for acq trigger.
             % Set it up to trigger off the acq trigger, since don't want to
             % fire anything until we've started acquiring.
-            task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+            keystoneTask = self.Parent.AcquisitionKeystoneTaskCache ;
+            triggerTerminalName = sprintf('%s/StartTrigger', keystoneTask) ;
+            %task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+            task.configureStartTrigger(triggerTerminalName, 'rising');
         end
         
         function startCounterTasks_(self)

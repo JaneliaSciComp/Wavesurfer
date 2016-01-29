@@ -23,6 +23,7 @@ classdef Refiller < ws.Model
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+        AcquisitionKeystoneTaskCache
         StimulationKeystoneTaskCache
     end
     
@@ -70,6 +71,7 @@ classdef Refiller < ws.Model
         NEpisodesPerSweep_
         NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
+        AcquisitionKeystoneTaskCache_
         StimulationKeystoneTaskCache_
     end
     
@@ -286,7 +288,7 @@ classdef Refiller < ws.Model
             result = [] ;
         end  % function
         
-        function result = startingRun(self,wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) %#ok<INUSL>
+        function result = startingRun(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -294,7 +296,7 @@ classdef Refiller < ws.Model
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, stimulationKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
             result = [] ;
         end  % function
 
@@ -721,6 +723,10 @@ classdef Refiller < ws.Model
 %             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
 %         end
 
+        function value = get.AcquisitionKeystoneTaskCache(self)
+            value = self.AcquisitionKeystoneTaskCache_ ;
+        end
+        
         function value = get.StimulationKeystoneTaskCache(self)
             value = self.StimulationKeystoneTaskCache_ ;
         end
@@ -738,7 +744,7 @@ classdef Refiller < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, wavesurferModelSettings, stimulationKeystoneTask)
+        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -755,6 +761,7 @@ classdef Refiller < ws.Model
             self.mimicWavesurferModel_(wsModel) ;
             
             % Cache the keystone task for the run
+            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
             
             % Determine episodes per sweep
