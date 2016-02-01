@@ -148,9 +148,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     end
     
     methods
-        function controlActuated(self,controlName,source,event)            
-            %figureObject=self.Figure;
-
+        function controlActuated(self,controlName,source,event)
             try
                 type=get(source,'Type');
                 if isequal(type,'uicontrol') || isequal(type,'uitable') ,
@@ -169,11 +167,6 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %                 end
             end
         end  % function       
-
-%         function UseASAPTriggeringCheckboxActuated(self,source,event)  %#ok<INUSD>
-%             value=logical(get(source,'Value'));
-%             self.Model.AcquisitionUsesASAPTriggering=value;
-%         end  % function
 
         function AcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
@@ -196,28 +189,88 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
 %         end
         
-        function CounterTriggersTableActuated(self,source,event)  %#ok<INUSL>
+        function CounterTriggersTableActuated(self, source, event)  %#ok<INUSL>
             % Called when a cell of CounterTriggersTable is edited
-            indices=event.Indices;
-            newString=event.EditData;
-            rowIndex=indices(1);
-            columnIndex=indices(2);
-            sourceIndex=rowIndex;
-            if (columnIndex==4) ,
+            indices = event.Indices ;
+            newThang = event.EditData ;
+            rowIndex = indices(1) ;
+            columnIndex = indices(2) ;
+            triggerIndex = rowIndex ;
+            theTrigger = self.Model.CounterTriggers{triggerIndex} ;
+            % 'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
+            if (columnIndex==1) ,
+                newValue = newThang ;
+                ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+            elseif (columnIndex==2) ,
+                % Can't change the device name this way, at least not right
+                % now
+            elseif (columnIndex==3) ,
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'CounterID', newValue) ;                
+            elseif (columnIndex==4) ,
                 % this is the Repeats column
-                newValue=str2double(newString);
-                theSource=self.Model.CounterTriggers{sourceIndex};
-                ws.Controller.setWithBenefits(theSource,'RepeatCount',newValue);
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'RepeatCount', newValue) ;
             elseif (columnIndex==5) ,
                 % this is the Interval column
-                newValue=str2double(newString);
-                theSource=self.Model.CounterTriggers{sourceIndex};
-                ws.Controller.setWithBenefits(theSource,'Interval',newValue);
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'Interval', newValue) ;
+            elseif (columnIndex==6) ,
+                % Can't change PFI
+            elseif (columnIndex==7) ,
+                newValue = lower(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'Edge', newValue) ;                
+            elseif (columnIndex==8) ,
+                % this is the Delete? column
+                newValue = logical(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'IsMarkedForDeletion', newValue) ;
             end
         end  % function
         
-        % No method ExternalTriggersTableActuated() b/c can't change
-        % anything in that table
+        function AddCounterTriggerButtonActuated(self,source,event)
+            %profile resume
+            self.Model.addCounterTrigger() ;
+            %profile off
+        end
+
+        function DeleteCounterTriggersButtonActuated(self,source,event)
+            self.Model.deleteMarkedCounterTriggers() ;
+        end
+        
+        function ExternalTriggersTableActuated(self, source, event)
+            % Called when a cell of CounterTriggersTable is edited
+            indices = event.Indices ;
+            newThang = event.EditData ;
+            rowIndex = indices(1) ;
+            columnIndex = indices(2) ;
+            sourceIndex = rowIndex ;
+            theTrigger = self.Model.ExternalTriggers{sourceIndex} ;
+            % 'Name' 'Device' 'PFI' 'Edge' 'Delete?'
+            if (columnIndex==1) ,
+                newValue = newThang ;
+                ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+            elseif (columnIndex==2) ,
+                % Can't change the dev name this way at present
+            elseif (columnIndex==3) ,
+                newValue = str2double(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'PFIID', newValue) ;                
+            elseif (columnIndex==4) ,
+                newValue = lower(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'Edge', newValue) ;                
+            elseif (columnIndex==5) ,
+                newValue = logical(newThang) ;
+                ws.Controller.setWithBenefits(theTrigger, 'IsMarkedForDeletion', newValue) ;
+            end
+        end  % function
+
+        function AddExternalTriggerButtonActuated(self,source,event)
+            self.Model.addExternalTrigger() ;
+        end
+
+        function DeleteExternalTriggersButtonActuated(self,source,event)
+            self.Model.deleteMarkedExternalTriggers() ;
+        end
+        
     end  % methods block    
 
 %     methods (Access=protected)

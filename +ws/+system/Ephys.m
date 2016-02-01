@@ -178,6 +178,36 @@ classdef Ephys < ws.system.Subsystem
                 testPulser.didSetAcquisitionSampleRate(newValue) ;
             end
         end        
+        
+        function didSetIsInputChannelActive(self) 
+            self.ElectrodeManager.didSetIsInputChannelActive() ;
+            self.TestPulser.didSetIsInputChannelActive() ;
+        end
+        
+        function didSetIsDigitalOutputTimed(self)
+            self.ElectrodeManager.didSetIsDigitalOutputTimed() ;
+        end
+        
+        function didChangeNumberOfInputChannels(self)
+            self.ElectrodeManager.didChangeNumberOfInputChannels();
+            self.TestPulser.didChangeNumberOfInputChannels();
+        end        
+        
+        function didChangeNumberOfOutputChannels(self)
+            self.ElectrodeManager.didChangeNumberOfOutputChannels();
+            self.TestPulser.didChangeNumberOfOutputChannels();
+        end        
+
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            self.ElectrodeManager.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+            %self.TestPulser.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+        end        
+
+        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+            self.ElectrodeManager.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue) ;
+            %self.TestPulser.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+        end        
+
     end  % methods block
     
     methods         

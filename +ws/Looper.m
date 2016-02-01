@@ -1,4 +1,4 @@
-classdef Looper < ws.Model
+classdef Looper < ws.RootModel
     % The main Looper model object.
     
     properties (Dependent = true)
@@ -23,6 +23,7 @@ classdef Looper < ws.Model
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+        AcquisitionKeystoneTaskCache  
     end
     
     properties (Access = protected)        
@@ -66,6 +67,7 @@ classdef Looper < ws.Model
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
+        AcquisitionKeystoneTaskCache_
     end
     
 %     events
@@ -96,19 +98,14 @@ classdef Looper < ws.Model
     end
     
     methods
-        function self = Looper(parent)
+        function self = Looper()
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Deal with arguments
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;  % no parent by default
-            end
-            
             % Call the superclass constructor
-            self@ws.Model(parent);
+            self@ws.RootModel();
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
@@ -117,14 +114,14 @@ classdef Looper < ws.Model
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Looper
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(self.LooperIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
 
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Looper::Looper(): About to send looperIsAlive\n') ;
@@ -267,13 +264,30 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function result = initializeFromMDFStructure(self,mdfStructure)
-            self.initializeFromMDFStructure_(mdfStructure) ;
+        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals)
+            % Set stuff
+            self.DeviceName_ = deviceName ;
+            self.NDIOTerminals_ = nDIOTerminals ;
+            self.NPFITerminals_ = nPFITerminals ;
+            self.NCounters_ = nCounters ;
+            self.NAITerminals_ = nAITerminals ;
+            self.NAOTerminals_ = nAOTerminals ;            
+            
+            % Notify subsystems
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;            
+            self.Triggering.didSetDeviceName() ;            
+            
+            % Set the state
+            %self.setState_('idle');  % do we need to do this?
+            
+            % Get a task, if we need one
             self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+
             result = [] ;
         end  % function
 
-        function result = startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self,wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)  %#ok<INUSD>
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -281,7 +295,7 @@ classdef Looper < ws.Model
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings) ;
+            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask) ;
             result = [] ;
         end  % function
 
@@ -312,7 +326,7 @@ classdef Looper < ws.Model
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweepLooper(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % for a sweep.
             %
@@ -323,6 +337,18 @@ classdef Looper < ws.Model
             % Prepare for the sweep
             %fprintf('Looper::startingSweep()\n');            
             self.prepareForSweep_(indexOfSweepWithinRun) ;
+            result = [] ;
+        end  % function
+
+        function result = startingSweepRefiller(self,indexOfSweepWithinRun)  %#ok<INUSD>
+            % Sent by the wavesurferModel to prompt the Refiller to prepare
+            % for a sweep.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value.  If a runtime error occurs, it will cause the frontend
+            % process to hang.
+
+            % Do nothing, since we're not the refiller
             result = [] ;
         end  % function
 
@@ -358,11 +384,43 @@ classdef Looper < ws.Model
             result = [] ;
         end  % function
         
-        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
 %             whos
 %             newValue
             self.Stimulation.IsDigitalChannelTimed = newValue ;
             %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+            self.Stimulation.didAddDigitalChannelInFrontend(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
+            result = [] ;
+        end  % function
+        
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, originalIndicesOfDeletedChannels)
+            self.Stimulation.deleteDigitalChannels(originalIndicesOfDeletedChannels) ;
+            result = [] ;
+        end  % function
+        
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings)
+            % What it says on the tin.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % Make the looper settings look like the
+            % wavesurferModelSettings.
+            
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseHardwareResources_();           
+            
+            % Make our own settings mimic those of wavesurferModelSettings
+            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.mimicWavesurferModel_(wsModel) ;
+
+            % Want the on-demand DOs to work immediately
+            self.acquireOnDemandHardwareResources_();           
+
             result = [] ;
         end  % function
         
@@ -763,13 +821,10 @@ classdef Looper < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-%         function releaseAllHardwareResources_(self)
-%             self.Acquisition.releaseHardwareResources();
-%             self.Stimulation.releaseTimedHardwareResources();
-%             self.Stimulation.releaseOnDemandHardwareResources();
-%             %self.Triggering.releaseHardwareResources();
-%             %self.Ephys.releaseHardwareResources();
-%         end
+        function releaseHardwareResources_(self)            
+            self.Acquisition.releaseHardwareResources();
+            self.Stimulation.releaseHardwareResources();
+        end
     end
 
     methods
@@ -803,7 +858,7 @@ classdef Looper < ws.Model
 %             end
 %         end
         
-        function prepareForRun_(self, wavesurferModelSettings)
+        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -820,8 +875,13 @@ classdef Looper < ws.Model
             self.IsPerformingRun_ = true ;                        
             
             % Make our own settings mimic those of wavesurferModelSettings
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseTimedHardwareResources_();           
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicWavesurferModel_(wsModel) ;
+            self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
+            
+            % Cache the keystone task for the run
+            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1318,7 +1378,7 @@ classdef Looper < ws.Model
 %             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
 %             if ~isScanImageReady ,
 %                 self.ensureYokingFilesAreGone_();
-%                 error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
+%                 error('EphusModel:ProblemCommandingScanImageToSaveProtocolFile', ...
 %                       errorMessage);
 %             end            
 %         end  % function
@@ -1345,7 +1405,7 @@ classdef Looper < ws.Model
 %             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
 %             if ~isScanImageReady ,
 %                 self.ensureYokingFilesAreGone_();
-%                 error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
+%                 error('EphusModel:ProblemCommandingScanImageToOpenProtocolFile', ...
 %                       errorMessage);
 %             end            
 %         end  % function
@@ -1432,7 +1492,7 @@ classdef Looper < ws.Model
 %     end
     
 %     methods
-%         function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+%         function saveStruct=loadProtocolFileForRealsSrsly(self, fileName)
 %             % Actually loads the named config file.  fileName should be a
 %             % file name referring to a file that is known to be
 %             % present, at least as of a few milliseconds ago.
@@ -1449,7 +1509,7 @@ classdef Looper < ws.Model
 %             self.decodeProperties(wavesurferModelSettings);
 %             self.AbsoluteProtocolFileName=absoluteFileName;
 %             self.HasUserSpecifiedProtocolFileName=true;            
-%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
 %             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
 %             self.broadcast('DidLoadProtocolFile');
 %             self.changeReadiness(+1);       
@@ -1457,7 +1517,7 @@ classdef Looper < ws.Model
 %     end
 %     
 %     methods
-%         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+%         function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
 %             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
 %             self.changeReadiness(-1);            
 %             wavesurferModelSettings=self.encodeForFileType('cfg');
@@ -1469,7 +1529,7 @@ classdef Looper < ws.Model
 %             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
 %             self.AbsoluteProtocolFileName=absoluteFileName;
 %             self.HasUserSpecifiedProtocolFileName=true;
-%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
 %             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
 %             self.changeReadiness(+1);            
 %         end
@@ -1578,37 +1638,17 @@ classdef Looper < ws.Model
 %         end  % function        
 %     end
     
-%     methods
-%         function mimic(self, other)
-%             % Cause self to resemble other.
-%             
-%             % Get the list of property names for this file type
-%             propertyNames = self.listPropertiesForPersistence();
-%             
-%             % Set each property to the corresponding one
-%             for i = 1:length(propertyNames) ,
-%                 thisPropertyName=propertyNames{i};
-%                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
-%                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-%                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
-%                 else
-%                     if isprop(other,thisPropertyName) ,
-%                         source = other.getPropertyValue_(thisPropertyName) ;
-%                         self.setPropertyValue_(thisPropertyName, source) ;
-%                     end
-%                 end
-%             end
-%         end  % function
-%     end  % public methods block
+    methods
+        function value = get.AcquisitionKeystoneTaskCache(self)
+            value = self.AcquisitionKeystoneTaskCache_ ;
+        end
+    end  % public methods block
 
     methods (Access=protected) 
         function mimicWavesurferModel_(self, wsModel)
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
         
-            % Have to do this before decoding properties, or bad things will happen
-            self.releaseTimedHardwareResources_();
-            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -1627,26 +1667,36 @@ classdef Looper < ws.Model
                     end
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;     
+            
+            % Notify subsystems that we just set the device name, which is
+            % true.
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;            
+            self.Triggering.didSetDeviceName() ;                                    
         end  % function
     end  % public methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            %self.Display.initializeScopes();
-            
-            % Change our state to reflect the presence of the MDF file
-            %self.setState_('idle');            
-        end  % function
-    end  % methods block        
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)                        
+%             % Initialize the acquisition subsystem given the MDF data
+%             self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             %self.Display.initializeScopes();
+%             
+%             % Change our state to reflect the presence of the MDF file
+%             %self.setState_('idle');            
+%         end  % function
+%     end  % methods block        
     
 end  % classdef

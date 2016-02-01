@@ -48,13 +48,15 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
                 isAnalogChannelActive = self.IsAnalogChannelActive ;
-                activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;                
-                activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;                
+                %activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;
+                %activeAnalogTerminalNames = self.AnalogTerminalNames(isAnalogChannelActive) ;
+                activeAnalogDeviceNames = self.AnalogDeviceNames(isAnalogChannelActive) ;
+                activeAnalogTerminalIDs = self.AnalogTerminalIDs(isAnalogChannelActive) ;
                 self.AnalogInputTask_ = ...
                     ws.ni.InputTask(self, 'analog', ...
                                           'WaveSurfer Analog Acquisition Task', ...
-                                          activeAnalogPhysicalChannelNames, ...
-                                          activeAnalogChannelNames);
+                                          activeAnalogDeviceNames, ...
+                                          activeAnalogTerminalIDs);
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
@@ -63,13 +65,15 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             end
             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
                 isDigitalChannelActive = self.IsDigitalChannelActive ;
-                activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
-                activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
+                %activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
+                %activeDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelActive) ;                
+                activeDigitalDeviceNames = self.DigitalDeviceNames(isDigitalChannelActive) ;
+                activeDigitalTerminalIDs = self.DigitalTerminalIDs(isDigitalChannelActive) ;
                 self.DigitalInputTask_ = ...
                     ws.ni.InputTask(self, 'digital', ...
                                           'WaveSurfer Digital Acquisition Task', ...
-                                          activeDigitalPhysicalChannelNames, ...
-                                          activeDigitalChannelNames);
+                                          activeDigitalDeviceNames, ...
+                                          activeDigitalTerminalIDs);
                 % Set other things in the Task object
                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
@@ -90,10 +94,22 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.acquireHardwareResources_();
 
             % Set up the task triggering
-            self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.PFIID;
-            self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Edge;
-            self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.PFIID;
-            self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Edge;
+            keystoneTask = parent.AcquisitionKeystoneTaskCache ;
+            if isequal(keystoneTask,'ai') ,
+                self.AnalogInputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
+                self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+                self.DigitalInputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.DigitalInputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'di') ,
+                self.AnalogInputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.AnalogInputTask_.TriggerEdge = 'rising' ;                
+                self.DigitalInputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
+                self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+            else
+                % Getting here means there was a programmer error
+                error('ws:InternalError', ...
+                      'Adam is a dum-dum, and the magic number is 92834797');
+            end
             
             % Set for finite-duration vs. continous acquisition
             if parent.AreSweepsContinuous ,
@@ -175,8 +191,8 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
             self.NScansReadThisSweep_ = 0 ;
-            self.AnalogInputTask_.start();
             self.DigitalInputTask_.start();
+            self.AnalogInputTask_.start();
         end  % function
         
         function completingSweep(self) %#ok<MANU>
@@ -260,18 +276,22 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                 nScans = size(rawAnalogData,1) ;
                 rawDigitalData = ...
                     self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
-            else
-                % There are zero active analog channels
+            elseif self.IsAtLeastOneActiveDigitalChannelCached_ ,
+                % There are zero active analog channels, but at least one
+                % active digital channel.
                 % In this case, want the digital task to determine the
-                % "pace" of data acquisition.  If there are also zero
-                % active digital channels, readData() essentially fakes
-                % things using tic() and toc().
+                % "pace" of data acquisition.
                 [rawDigitalData,timeSinceRunStartAtStartOfData] = ...
                     self.DigitalInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);                    
                 nScans = size(rawDigitalData,1) ;
                 rawAnalogData = zeros(nScans, 0, 'int16') ;
                 % rawAnalogData  = ...
                 %     self.AnalogInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            else
+                % If we get here, we've made a programming error --- this
+                % should have been caught when the run was started.
+                error('wavesurfer:ZeroActiveInputChannelsWhileReadingDataFromTasks', ...
+                      'Internal error: No active input channels while reading data from tasks') ;
             end
             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
         end  % function

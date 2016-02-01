@@ -95,7 +95,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.updateSubscriptionsToModel_()
             
             % Bring the scopes into sync
-            self.nukeAndRepaveScopeControllers();
+            %self.nukeAndRepaveScopeControllers();
+            self.syncScopeControllersWithScopeModels() ;
             
             % Update all the controls
             %self.Figure.updateControlsInExistance();
@@ -482,7 +483,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
     methods
 
-        function loadConfigFileForRealsSrsly(self, fileName)
+        function loadProtocolFileForRealsSrsly(self, fileName)
             % Actually loads the named config file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -492,7 +493,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end            
-            saveStruct = self.Model.loadConfigFileForRealsSrsly(absoluteFileName) ;
+            saveStruct = self.Model.loadProtocolFileForRealsSrsly(absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
             %wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -501,9 +502,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.LibraryViewModel.Library=self.Model.Stimulation.StimulusLibrary;  % re-link to the new stim library
             %self.AbsoluteProtocolFileName=absoluteFileName;
             %self.HasUserSpecifiedProtocolFileName=true;            
-            %ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
-            %self.setConfigFileNameInMenu(fileName);
-            %self.updateConfigFileNameInMenu();
+            %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+            %self.setProtocolFileNameInMenu(fileName);
+            %self.updateProtocolFileNameInMenu();
             %self.nukeAndRepaveScopeControllers();
             self.decodeMultiWindowLayoutForSuiGenerisControllers(layoutForAllWindows);
             self.decodeMultiWindowLayoutForExistingScopeControllers(layoutForAllWindows);
@@ -531,7 +532,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 if self.Model.HasUserSpecifiedProtocolFileName ,
                     fileChooserInitialFileName = self.Model.AbsoluteProtocolFileName;
                 else                    
-                    fileChooserInitialFileName = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
+                    fileChooserInitialFileName = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
                 end
             else
                 % this is a plain-old save
@@ -539,7 +540,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % this means that the user has already specified a
                     % config file name
                     isFileNameKnown=true;
-                    %fileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
+                    %fileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
                     fileName=self.Model.AbsoluteProtocolFileName;
                     fileChooserInitialFileName = '';  % not used
                 else
@@ -547,11 +548,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % config file name
                     isFileNameKnown=false;
                     fileName='';  % not used
-                    lastConfigFileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
-                    if isempty(lastConfigFileName)
+                    lastProtocolFileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
+                    if isempty(lastProtocolFileName)
                         fileChooserInitialFileName = fullfile(pwd(),'untitled.cfg');
                     else
-                        fileChooserInitialFileName = lastConfigFileName;
+                        fileChooserInitialFileName = lastProtocolFileName;
                     end
                 end
             end
@@ -630,7 +631,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % this means that the user has already specified a
                     % config file name
                     isFileNameKnown=true;
-                    %fileName=ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath');
+                    %fileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
                     fileName=self.Model.AbsoluteUserSettingsFileName;
                     fileChooserInitialFileName = '';  % not used
                 else
@@ -684,9 +685,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
             
             if ~isempty(actualFileName)
-                ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', actualFileName);
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualFileName);
                 %feval(replyFcn, actualFileName);
-                self.loadConfigFileForRealsSrsly(actualFileName)
+                self.loadProtocolFileForRealsSrsly(actualFileName)
                 out = true;
             else
                 out = false;
@@ -723,18 +724,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     fileChooserInitialFileName);
             
             if ~isempty(absoluteFileName)
-                self.saveConfigFileForRealsSrsly(absoluteFileName);
+                self.saveProtocolFileForRealsSrsly(absoluteFileName);
             end
         end  % function
         
-        function saveConfigFileForRealsSrsly(self,absoluteFileName)
+        function saveProtocolFileForRealsSrsly(self,absoluteFileName)
             %self.Figure.changeReadiness(-1);
 
             %ephusModelSettings=self.Model.encodeConfigurablePropertiesForFileType('cfg');
             %ephusModelSettingsVariableName=self.Model.encodedVariableName();
             layoutForAllWindows=self.encodeAllWindowLayouts();
             
-            self.Model.saveConfigFileForRealsSrsly(absoluteFileName,layoutForAllWindows);
+            self.Model.saveProtocolFileForRealsSrsly(absoluteFileName,layoutForAllWindows);
             
             %layoutVariableName='layoutForAllWindows';            
             %saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
@@ -742,8 +743,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %save('-mat',absoluteFileName,'-struct','saveStruct');     
             %self.AbsoluteProtocolFileName=absoluteFileName;
             %self.HasUserSpecifiedProtocolFileName=true;
-            %ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
-            %self.updateConfigFileNameInMenu();
+            %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+            %self.updateProtocolFileNameInMenu();
             %self.Model.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
 
             %self.Figure.changeReadiness(+1);            
@@ -773,7 +774,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 end                                
                 %self.Model.subscribeMe(self,'PreSet','State','willSetModelState');
                 %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
-                self.Model.subscribeMe(self,'DidSetStateAwayFromNoMDF','','nukeAndRepaveScopeControllers');
+                self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
                 %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
                 %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
                 %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
@@ -781,7 +782,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
                 %self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
                 %self.Model.Logging.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfLoggingControls');
-                self.Model.subscribeMe(self,'DidLoadProtocolFile','','nukeAndRepaveScopeControllers');
+                self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
             end            
         end  % function
     end  % protected methods
@@ -798,7 +799,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 fileName=fastProtocol.ProtocolFileName;
                 if ~isempty(fileName) , ...                        
                     if exist(fileName, 'file') ,
-                        self.loadConfigFileForRealsSrsly(fileName);
+                        self.loadProtocolFileForRealsSrsly(fileName);
                     else
                         errorMessage=sprintf('The protocol file %s is missing.', ...
                                              fileName);
@@ -827,38 +828,38 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end
         
     methods (Access=protected)
-        function stimulationOutputComboboxWasManipulated(self, src, varargin)
-            % Called after the combobox widget is manipulated.  Causes the
-            % viewmodel to be updated, given the widget state.
-            
-            % Currently, there are problems with this, b/c it gets called
-            % both when the user changes the selected item, and when the
-            % stimulus library gets changed such that the list of
-            % outputables must change.  
-            
-            %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated()\n');
-            % This function gets called when the list of selections is
-            % changed in the viewmodel, but when that happens we just want
-            % to ignore it.
-%             if self.IsSelectedOutputableBeingFutzedWithInternally_ ,
-%                 return
+%         function stimulationOutputComboboxWasManipulated(self, src, varargin)
+%             % Called after the combobox widget is manipulated.  Causes the
+%             % viewmodel to be updated, given the widget state.
+%             
+%             % Currently, there are problems with this, b/c it gets called
+%             % both when the user changes the selected item, and when the
+%             % stimulus library gets changed such that the list of
+%             % outputables must change.  
+%             
+%             %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated()\n');
+%             % This function gets called when the list of selections is
+%             % changed in the viewmodel, but when that happens we just want
+%             % to ignore it.
+% %             if self.IsSelectedOutputableBeingFutzedWithInternally_ ,
+% %                 return
+% %             end
+%             if src.SelectedIndex == -1 ,
+%                 % Empty is never an option.  It is only ever empty when the library is changed
+%                 % and a cycle or map has not been chosen.  the combobox should never be able to
+%                 % be actively changed to empty.
+%                 % self.Model.Stimulation.SelectedOutputable = ws.stimulus.StimulusSequence.empty();
+%                 %
+%                 % Ummm, now it's an option...  (ALT, 2014-07-17)
+%                 %self.LibraryViewModel.SelectedOutputableViewmodel = ws.ui.viewmodel.StimulusLibraryViewModel.empty();                       
+%                 self.LibraryViewModel.SelectedOutputableViewmodel = ...
+%                     self.LibraryViewModel.findnet(self.Model.Stimulation.StimulusLibrary.SelectedOutputable);
+%             else
+%                 netCycle = src.DataContext.Item(src.SelectedIndex);
+%                 self.LibraryViewModel.SelectedOutputableViewmodel = netCycle;
 %             end
-            if src.SelectedIndex == -1 ,
-                % Empty is never an option.  It is only ever empty when the library is changed
-                % and a cycle or map has not been chosen.  the combobox should never be able to
-                % be actively changed to empty.
-                % self.Model.Stimulation.SelectedOutputable = ws.stimulus.StimulusSequence.empty();
-                %
-                % Ummm, now it's an option...  (ALT, 2014-07-17)
-                %self.LibraryViewModel.SelectedOutputableViewmodel = ws.ui.viewmodel.StimulusLibraryViewModel.empty();                       
-                self.LibraryViewModel.SelectedOutputableViewmodel = ...
-                    self.LibraryViewModel.findnet(self.Model.Stimulation.StimulusLibrary.SelectedOutputable);
-            else
-                netCycle = src.DataContext.Item(src.SelectedIndex);
-                self.LibraryViewModel.SelectedOutputableViewmodel = netCycle;
-            end
-            %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated() exiting.\n');
-        end  % function
+%             %fprintf('WavesurferController.stimulationOutputComboboxWasManipulated() exiting.\n');
+%         end  % function
         
 %         function didSetStimulusLibraryVMSelectedOutputable(self, varargin)
 %             % Called after SelectedOutputableViewmodel is set in the library
@@ -1074,45 +1075,101 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end  % public methods block
     
     methods
-        function nukeAndRepaveScopeControllers(self,varargin)
+%         function nukeAndRepaveScopeControllers(self,varargin)
+%             % Creates a controller and a window for each ScopeModel
+%             % in the WavesurferModel Display subsystem.
+%             
+%             self.deleteAllScopeControllers_();
+%             if isempty(self.Model) ,
+%                 return
+%             end
+%             nScopes=self.Model.Display.NScopes;
+%             for iScope=1:nScopes ,
+%                 scopeModel=self.Model.Display.Scopes{iScope};
+%                 self.createChildControllerIfNonexistant('ScopeController',scopeModel);                
+%             end
+%         end
+        
+        function syncScopeControllersWithScopeModels(self,varargin)
             % Creates a controller and a window for each ScopeModel
             % in the WavesurferModel Display subsystem.
             
-            self.deleteAllScopeControllers();
-            if isempty(self.Model) ,
-                return
-            end
-            nScopes=self.Model.Display.NScopes;
-            for iScope=1:nScopes ,
-                scopeModel=self.Model.Display.Scopes{iScope};
-                self.createChildControllerIfNonexistant('ScopeController',scopeModel);                
-            end
-        end
-    end
-
-    methods (Access = protected)    
-        function deleteAllScopeControllers(self)
-            % Deletes all the scope controllers/views, leaving the models alone.
+            % Figure out which scope controllers go with which models
+            scopeModels = self.Model.Display.Scopes ;
+            scopeControllers = self.ScopeControllers ;            
+            isMatch = ws.WavesurferMainController.doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers) ;
             
-            nScopeControllers=length(self.ScopeControllers);
-            for scopeIndex=nScopeControllers:-1:1 ,  % delete off end so low-index ones don't change index
-                scopeController=self.ScopeControllers{scopeIndex};
-                isMatch=cellfun(@(childController)(scopeController==childController),self.ChildControllers);
-                childIndex=find(isMatch,1);
-                %scopeController.delete();  % NEED TO DO SOMETHING DIFFERENT HERE!!!
-                scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-%                 scopeController.deleteFigureGH() ;
-%                 scopeController.unsubscribeFromAll() ;
-%                 scopeController.Figure.unsubscribeFromAll() ;
-                self.ScopeControllers(scopeIndex)=[];  % delete an element from the cell array
-                if ~isempty(childIndex) ,
-                    self.ChildControllers(childIndex)=[];  % delete an element from the cell array
+            % Delete controllers with no model
+            nModelsForController = sum(isMatch,1) ;
+            nControllers = length(scopeControllers) ;
+            for indexOfScopeController = nControllers:-1:1 ,  % delete from last to first so low-index ones don't change index
+                if nModelsForController(indexOfScopeController)==0 ,
+                    self.deleteScopeController_(indexOfScopeController) ;
                 end
             end
-                
-            % Update the scope menu (think we should do this elsewhere)
-            %self.updateScopeMenu();
+            
+            % If a model has no controller, create one
+            nControllersForModel = sum(isMatch,2)' ;
+            nModels = length(scopeModels) ;
+            for indexOfScopeModel = 1:nModels ,
+                if nControllersForModel(indexOfScopeModel)==0 ,
+                    scopeModel=self.Model.Display.Scopes{indexOfScopeModel};
+                    self.createChildControllerIfNonexistant('ScopeController',scopeModel);
+                end
+            end
+        end  % function
+        
+    end
+
+    methods (Static)    
+        function isMatch = doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers)
+            % Looks at all the scope models, and all the scope controllers,
+            % and returns an nScopeModels x nScopeControllers matrix which
+            % is 1 if that model goes with that controller, and 0
+            % otherwise.  So all-zero rows of the matrix correspond to
+            % models with no controller, and all-zero columns correspond to
+            % controllers with no model among the current scope models
+            
+            %scopeModels = self.Model.Display.Scopes ;
+            %scopeControllers = self.ScopeControllers ;
+            controllerModels = cellfun(@(controller)(controller.Model),scopeControllers,'UniformOutput',false) ;
+%             isMatch = bsxfun(@(scopeModelCell,scopeControllerModelCell)(scopeModelCell{1}==scopeControllerModelCell{1}), ...
+%                              scopeModels' , ...
+%                              scopeControllerModels) ;
+            nModels = length(scopeModels) ;
+            nControllers = length(scopeControllers) ;
+            isMatch = zeros(nModels,nControllers) ;
+            for i = 1:nModels ,
+                for j = 1:nControllers ,
+                    isMatch(i,j) = (scopeModels{i}==controllerModels{j}) ;
+                end
+            end
+        end        
+    end
+        
+    methods (Access = protected)    
+%         function deleteAllScopeControllers_(self)
+%             % Deletes all the scope controllers/views, leaving the models alone.
+%             
+%             nScopeControllers=length(self.ScopeControllers);
+%             for indexInScopeControllers=nScopeControllers:-1:1 ,  % delete off end so low-index ones don't change index
+%                 self.deleteScopeController_(indexInScopeControllers) ;
+%             end
+%         end
+        
+        function deleteScopeController_(self, indexInScopeControllers)
+            % Deletes a single scope controller+view, leaving the model alone.
+            
+            scopeController = self.ScopeControllers{indexInScopeControllers} ;
+            isMatch = cellfun(@(childController)(scopeController==childController), self.ChildControllers) ;
+            scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+            self.ScopeControllers(indexInScopeControllers) = [] ;  % delete an element from the cell array
+            indexInChildControllers = find(isMatch,1) ;
+            if ~isempty(indexInChildControllers) ,
+                self.ChildControllers(indexInChildControllers) = [] ;  % delete an element from the cell array
+            end
         end
+        
     end
     
     methods
@@ -1217,7 +1274,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             % out.  --ALT, 2014-12-17
 %             %self.nukeAndRepaveScopeControllers();
 %             self.Figure.update();
-%             %self.updateConfigFileNameInMenu();
+%             %self.updateProtocolFileNameInMenu();
 %             %self.updateUserFileNameInMenu();                        
 %         end  % function
 
@@ -1474,14 +1531,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %         end
         
-%         function setConfigFileNameInMenu(self, fileName)
+%         function setProtocolFileNameInMenu(self, fileName)
 %             [~, name, ext] = fileparts(fileName);
 %             relativeFileName=[name ext];
 %             menuItemHG=self.Figure.SaveProtocolMenuItem;
 %             set(menuItemHG,'Label',sprintf('Save %s',relativeFileName));
 %         end
 
-%         function updateConfigFileNameInMenu(self)
+%         function updateProtocolFileNameInMenu(self)
 %             absoluteProtocolFileName=self.Model.AbsoluteProtocolFileName;
 %             if ~isempty(absoluteProtocolFileName) ,
 %                 [~, name, ext] = fileparts(absoluteProtocolFileName);
@@ -1863,7 +1920,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            startLoc = ws.Preferences.sharedPreferences().loadPref('LastConfigFilePath') ;
+            startLoc = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
             fileName = '' ;
             self.loadConfigSettings(fileName,startLoc) ;
         end
@@ -1992,7 +2049,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 return
             end
             
-            menuItems=get(source,'String');
+            menuItems=get(source,'String');            
             nMenuItems=length(menuItems);
             if nMenuItems==0 ,
                 return
@@ -2000,7 +2057,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 menuItem=menuItems{1};
                 if isequal(menuItem,'(No library)') || isequal(menuItem,'(No outputables)') ,
                     return
-                elseif isequal(menuItem,'(None selected)') ,
+                elseif isequal(menuItem,'(None selected)') ||  isequal(menuItem,'(No selection)') ,
                     model.Stimulation.StimulusLibrary.SelectedOutputable=[];
                 else
                     model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(1);
@@ -2009,7 +2066,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 % at least 2 menu items
                 firstMenuItem=menuItems{1};
                 menuIndex=get(source,'Value');
-                if isequal(firstMenuItem,'(None selected)') ,
+                if isequal(firstMenuItem,'(None selected)') || isequal(firstMenuItem,'(No selection)') ,
                     outputableIndex=menuIndex-1;
                 else
                     outputableIndex=menuIndex;
@@ -2029,6 +2086,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 self.applyFastProtocol(index);
             end
         end
-    end  % methods        
+    end  % methods
     
 end  % classdef

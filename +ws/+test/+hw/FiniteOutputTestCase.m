@@ -18,9 +18,10 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
     methods (Test)
         function testAnalog(self)
             taskName = 'Finite Analog Output Task' ;
-            physicalChannelNames = { 'Dev1/ao0' 'Dev1/ao1' } ;
-            channelNames = { 'ao0' 'ao1' } ;
-            theTask = ws.ni.FiniteOutputTask('analog', taskName, physicalChannelNames, channelNames);
+            deviceNames = { 'Dev1' 'Dev1' } ;
+            terminalIDs = [0 1] ;
+            %channelNames = { 'ao0' 'ao1' } ;
+            theTask = ws.ni.FiniteOutputTask('analog', taskName, deviceNames, terminalIDs);
             fs=20000;  % Hz
             theTask.SampleRate = fs ;
             
@@ -44,9 +45,10 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
 
         function testDigital(self)
             taskName = 'Finite Digital Output Task' ;
-            physicalChannelNames = { 'Dev1/line0' 'Dev1/line1' } ;
-            channelNames = { 'do0' 'do1' } ;
-            theTask = ws.ni.FiniteOutputTask('digital', taskName, physicalChannelNames, channelNames);
+            deviceNames = { 'Dev1' 'Dev1' } ;
+            terminalIDs = [0 1] ;
+            %channelNames = { 'do0' 'do1' } ;
+            theTask = ws.ni.FiniteOutputTask('digital', taskName, deviceNames, terminalIDs);
             fs=20000;  % Hz
             theTask.SampleRate = fs ;
             

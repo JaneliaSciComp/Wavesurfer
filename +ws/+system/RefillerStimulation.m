@@ -2,12 +2,12 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     % Refiller Stimulation subsystem
     
     properties (Access = protected)
-%         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
-%         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+%         AnalogTerminalNames_ = cell(1,0)  % the physical channel name for each analog channel
+%         DigitalTerminalNames_ = cell(1,0)  % the physical channel name for each digital channel
 %         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
 %         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
 %         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
-%         %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+%         %AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
 %         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
 %         AnalogChannelUnits_ = cell(1,0)  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
 %         %AnalogChannelNames_ = cell(1,0)
@@ -112,16 +112,16 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             result = self.IsArmedOrStimulating_ ;
 %         end
 %     
-%         function result = get.AnalogPhysicalChannelNames(self)
-%             result = self.AnalogPhysicalChannelNames_ ;
+%         function result = get.AnalogTerminalNames(self)
+%             result = self.AnalogTerminalNames_ ;
 %         end
 %     
-%         function result = get.DigitalPhysicalChannelNames(self)
-%             result = self.DigitalPhysicalChannelNames_ ;
+%         function result = get.DigitalTerminalNames(self)
+%             result = self.DigitalTerminalNames_ ;
 %         end
 % 
-%         function result = get.PhysicalChannelNames(self)
-%             result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
+%         function result = get.TerminalNames(self)
+%             result = [self.AnalogTerminalNames self.DigitalTerminalNames] ;
 %         end
 %         
 %         function result = get.AnalogChannelNames(self)
@@ -136,21 +136,21 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             result = [self.AnalogChannelNames self.DigitalChannelNames] ;
 %         end
 %     
-% %         function result = get.AnalogChannelIDs(self)
-% %             result = self.AnalogChannelIDs_ ;
+% %         function result = get.AnalogTerminalIDs(self)
+% %             result = self.AnalogTerminalIDs_ ;
 % %         end
 %         
 %         function result = get.DeviceNamePerAnalogChannel(self)
-%             result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
+%             result = ws.utility.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
 %         end
 %         
-% %         function result = get.AnalogPhysicalChannelNames(self)
+% %         function result = get.AnalogTerminalNames(self)
 % %             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
-% %             analogChannelIDs = self.AnalogChannelIDs_ ;            
-% %             nChannels=length(analogChannelIDs);
+% %             analogTerminalIDs = self.AnalogTerminalIDs_ ;            
+% %             nChannels=length(analogTerminalIDs);
 % %             result=cell(1,nChannels);
 % %             for i=1:nChannels ,
-% %                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
+% %                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogTerminalIDs(i));
 % %             end
 % %         end
 %         
@@ -282,11 +282,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %         function initializeFromMDFStructure(self, mdfStructure)            
 %             if ~isempty(mdfStructure.physicalOutputChannelNames) ,          
 %                 % Get the list of physical channel names
-%                 physicalChannelNames = mdfStructure.physicalOutputChannelNames ;
+%                 terminalNames = mdfStructure.physicalOutputChannelNames ;
 %                 channelNames = mdfStructure.outputChannelNames ;                                
 %                 
 %                 % Check that they're all on the same device (for now)
-%                 deviceNames = ws.utility.deviceNamesFromPhysicalChannelNames(physicalChannelNames);
+%                 deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
 %                 uniqueDeviceNames = unique(deviceNames);
 %                 if ~isscalar(uniqueDeviceNames) ,
 %                     error('ws:MoreThanOneDeviceName', ...
@@ -294,13 +294,13 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %                 end
 %                 
 %                 % Figure out which are analog and which are digital
-%                 channelTypes = ws.utility.channelTypesFromPhysicalChannelNames(physicalChannelNames);
+%                 channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
 %                 isAnalog = strcmp(channelTypes,'ao');
 %                 isDigital = ~isAnalog;
 % 
 %                 % Sort the channel names
-%                 self.AnalogPhysicalChannelNames_ = physicalChannelNames(isAnalog) ;
-%                 self.DigitalPhysicalChannelNames_ = physicalChannelNames(isDigital) ;
+%                 self.AnalogTerminalNames_ = terminalNames(isAnalog) ;
+%                 self.DigitalTerminalNames_ = terminalNames(isDigital) ;
 %                 self.AnalogChannelNames_ = channelNames(isAnalog) ;
 %                 self.DigitalChannelNames_ = channelNames(isDigital) ;
 %                 
@@ -331,25 +331,26 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask('analog', ...
                                            'WaveSurfer Finite Analog Output Task', ...
-                                           self.AnalogPhysicalChannelNames, ...
-                                           self.AnalogChannelNames) ;
-                self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
+                                           self.AnalogDeviceNames, ...
+                                           self.AnalogTerminalIDs) ;
+                self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
                 %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
+                isDigitalChannelTimed = self.IsDigitalChannelTimed ;
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.ni.FiniteOutputTask('digital', ...
                                            'WaveSurfer Finite Digital Output Task', ...
-                                           self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
-                                           self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
-                self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
+                                           self.DigitalDeviceNames(isDigitalChannelTimed), ...
+                                           self.DigitalTerminalIDs(isDigitalChannelTimed) ) ;
+                self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
 %             if isempty(self.TheUntimedDigitalOutputTask_) ,
 %                  self.TheUntimedDigitalOutputTask_ = ...
 %                     ws.ni.UntimedDigitalOutputTask(self, ...
 %                                            'Wavesurfer Untimed Digital Output Task', ...
-%                                            self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
+%                                            self.DigitalTerminalNames(~self.IsDigitalChannelTimed), ...
 %                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
 %                  if ~all(self.IsDigitalChannelTimed)
 %                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
@@ -392,12 +393,41 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.acquireHardwareResources_() ;
             
             % Set up the task triggering
-            pfiID = self.TriggerScheme.PFIID ;
-            edge = self.TriggerScheme.Edge ;
-            self.TheFiniteAnalogOutputTask_.TriggerPFIID = pfiID ;
-            self.TheFiniteAnalogOutputTask_.TriggerEdge = edge ;
-            self.TheFiniteDigitalOutputTask_.TriggerPFIID = pfiID ;
-            self.TheFiniteDigitalOutputTask_.TriggerEdge = edge ;
+            %pfiID = self.TriggerScheme.PFIID ;
+            %keystoneTerminalName = sprintf('PFI%d',pfiID) ;
+            %keystoneEdge = self.TriggerScheme.Edge ;
+            %self.TheFiniteAnalogOutputTask_.TriggerPFIID = pfiID ;
+            %self.TheFiniteAnalogOutputTask_.TriggerEdge = edge ;
+            %self.TheFiniteDigitalOutputTask_.TriggerPFIID = pfiID ;
+            %self.TheFiniteDigitalOutputTask_.TriggerEdge = edge ;
+            
+            % Set up the task triggering
+            keystoneTask = self.Parent.StimulationKeystoneTaskCache ;
+            if isequal(keystoneTask,'ai') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'di') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'ao') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ao/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'do') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'do/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+            else
+                % Getting here means there was a programmer error
+                error('ws:InternalError', ...
+                      'Adam is a dum-dum, and the magic number is 8347875');
+            end
             
             % Clear out any pre-existing output waveforms
             self.TheFiniteAnalogOutputTask_.clearChannelData() ;
@@ -516,32 +546,11 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.setAnalogChannelData_(stimulusMap,indexOfEpisodeWithinSweep);
             self.setDigitalChannelData_(stimulusMap,indexOfEpisodeWithinSweep);
 
-            % Arm and start the analog task (which will then wait for a
-            % trigger)
-            %if self.HasAnalogChannels_ ,
-%             if indexOfEpisodeWithinSweep == 1 ,
-%                 self.TheFiniteAnalogOutputTask_.arm();
-%             end
-            self.TheFiniteAnalogOutputTask_.start();                
-            %end
-            
-            % Arm and start the digital task (which will then wait for a
-            % trigger)
-            %if self.HasTimedDigitalChannels_ ,
-%             if indexOfEpisodeWithinSweep == 1 ,
-%                 self.TheFiniteDigitalOutputTask_.arm();
-%             end
+            % Start the digital task (which will then wait for a trigger)
             self.TheFiniteDigitalOutputTask_.start(); 
-            %end
             
-%             % If no samples at all, we just declare the episode done
-%             if self.HasAnalogChannels_ || self.HasTimedDigitalChannels_ ,
-%                 % do nothing
-%             else
-%                 % This was triggered, it just has a map/stimulus that has zero samples.
-%                 self.IsArmedOrStimulating_ = false;
-%                 %self.NEpisodesCompleted_ = self.NEpisodesCompleted_ + 1;
-%             end
+            % Start the analog task (which will then wait for a trigger)
+            self.TheFiniteAnalogOutputTask_.start();                
             
             %T=toc(thisTic);
             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
@@ -575,44 +584,44 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.StimulusLibrary.SelectedOutputable = cycle;
         end  % function
         
-        function channelID=analogChannelIDFromName(self,channelName)
-            % Get the channel ID, given the name.
-            % This returns a channel ID, e.g. if the channel is ao2,
-            % it returns 2.
-            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
-            if isnan(iChannel) ,
-                channelID = nan ;
-            else
-                physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
-                channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-            end
-        end  % function
-
-        function value=channelScaleFromName(self,channelName)
-            value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
-        end  % function
-
-        function iChannel=indexOfAnalogChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
-            if isempty(iChannels) ,
-                iChannel=nan;
-            else
-                iChannel=iChannels(1);
-            end
-        end  % function
-
-        function result=channelUnitsFromName(self,channelName)
-            if isempty(channelName) ,
-                result='';
-            else
-                iChannel=self.indexOfAnalogChannelFromName(channelName);
-                if isempty(iChannel) ,
-                    result='';
-                else
-                    result=self.AnalogChannelUnits{iChannel};
-                end
-            end
-        end  % function
+%         function terminalID=analogTerminalIDFromName(self,channelName)
+%             % Get the channel ID, given the name.
+%             % This returns a channel ID, e.g. if the channel is ao2,
+%             % it returns 2.
+%             iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+%             if isnan(iChannel) ,
+%                 terminalID = nan ;
+%             else
+%                 terminalName = self.AnalogTerminalNames_{iChannel};
+%                 terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+%             end
+%         end  % function
+% 
+%         function value=channelScaleFromName(self,channelName)
+%             value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
+%         end  % function
+% 
+%         function iChannel=indexOfAnalogChannelFromName(self,channelName)
+%             iChannels=find(strcmp(channelName,self.AnalogChannelNames));
+%             if isempty(iChannels) ,
+%                 iChannel=nan;
+%             else
+%                 iChannel=iChannels(1);
+%             end
+%         end  % function
+% 
+%         function result=channelUnitsFromName(self,channelName)
+%             if isempty(channelName) ,
+%                 result='';
+%             else
+%                 iChannel=self.indexOfAnalogChannelFromName(channelName);
+%                 if isempty(iChannel) ,
+%                     result='';
+%                 else
+%                     result=self.AnalogChannelUnits{iChannel};
+%                 end
+%             end
+%         end  % function
         
 %         function channelUnits=get.AnalogChannelUnits(self)
 %             import ws.utility.*
@@ -735,7 +744,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %                     electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
 %             end
 %         end  % function        
-    end        
+    end  % public methods block        
 
 %     methods (Access=protected)
 %         function analogEpisodeCompleted_(self)
@@ -786,12 +795,12 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             % Set the untimed output task appropriately
 %             self.TheUntimedDigitalOutputTask_ = [] ;
 %             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-%             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+%             untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
 %             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
 %             self.TheUntimedDigitalOutputTask_ = ...
 %                 ws.ni.UntimedDigitalOutputTask(self, ...
 %                                                'Wavesurfer Untimed Digital Output Task', ...
-%                                                untimedDigitalPhysicalChannelNames, ...
+%                                                untimedDigitalTerminalNames, ...
 %                                                untimedDigitalChannelNames) ;
 %             % Set the outputs to the proper values, now that we have a task                               
 %             if any(isDigitalChannelUntimed) ,
@@ -980,12 +989,12 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             % Set the untimed output task appropriately
 %             self.TheUntimedDigitalOutputTask_ = [] ;
 %             isDigitalChannelUntimed = ~self.IsDigitalChannelTimed ;
-%             untimedDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelUntimed) ;
+%             untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
 %             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
 %             self.TheUntimedDigitalOutputTask_ = ...
 %                 ws.ni.UntimedDigitalOutputTask(self, ...
 %                                                'Wavesurfer Untimed Digital Output Task', ...
-%                                                untimedDigitalPhysicalChannelNames, ...
+%                                                untimedDigitalTerminalNames, ...
 %                                                untimedDigitalChannelNames) ;
 %             % Set the outputs to the proper values, now that we have a task                               
 %             if any(isDigitalChannelUntimed) ,

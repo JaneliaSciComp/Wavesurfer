@@ -26,16 +26,16 @@ classdef ScopeModel < ws.Model
           % file.  We want it to be clear to user where different kinds of
           % things are stored, not confuse them by having some aspects of
           % window visibilty stored in .usr, and some in .cfg.
-    end
-
-    properties (Dependent=true, SetAccess=immutable)
-        %Parent  % the parent Display object
-        Tag        % This should be a unique tag that identifies this ScopeModel.
+        Tag        % This should be a unique tag that identifies this ScopeModel (i.e. a string).
                    % This is used as the Tag for any ScopeFigure that uses
                    % this ScopeModel as its model, and should be usable as
                    % a field name in a structure, for saving/loading
                    % purposes.
-        ChannelNames   % row vector, the channel names shown in this scope
+        ChannelNames   % row cell array, the channel names shown in this scope.  At present, guaranteed to be a singleton
+        ChannelName  % convenience method for setting ChannelNames to {ChannelName}
+    end
+
+    properties (Dependent=true, SetAccess=immutable)
         ChannelColorIndex  
         NChannels
         XData
@@ -144,7 +144,10 @@ classdef ScopeModel < ws.Model
 %         end
         
         function set.Title(self, newValue)            
-            self.Title_ = newValue ;
+            if ws.utility.isString(newValue) && ~isempty(newValue) ,
+                self.Title_ = newValue ;
+            end
+            self.broadcast('Update');            
         end
         
         function result = get.Title(self)
@@ -158,7 +161,18 @@ classdef ScopeModel < ws.Model
         function result = get.ChannelNames(self)
             result = self.ChannelNames_ ;
         end
-
+        
+        function result = get.ChannelName(self)
+            result = self.ChannelNames_{1} ;
+        end
+        
+        function set.ChannelName(self, newValue)
+            if ws.utility.isString(newValue) && ~isempty(newValue) ,
+                self.ChannelNames_ = {newValue} ;
+            end
+            self.broadcast('Update');            
+        end
+        
         function result = get.ChannelColorIndex(self)
             result = self.ChannelColorIndex_ ;
         end
@@ -374,7 +388,7 @@ classdef ScopeModel < ws.Model
         function set.Tag(self,newValue)
             % Make sure it's a valid field name before setting the Tag to
             % it
-            if ischar(newValue)
+            if ws.utility.isString(newValue) && ~isempty(newValue) ,
                 isValidFieldName=true;
                 try
                     s=struct();
@@ -390,6 +404,7 @@ classdef ScopeModel < ws.Model
                     self.Tag_ = newValue;
                 end
             end
+            self.broadcast('Update');
         end
         
         function set.XUnits(self,newValue)
@@ -450,7 +465,7 @@ classdef ScopeModel < ws.Model
             %colorOrder = get(self.Axes ,'ColorOrder');
             %color = colorOrder(colorOrderIndex, :);
             
-            %self.ChannelNames(end + 1).ChannelName = newChannelID;
+            %self.ChannelNames(end + 1).ChannelName = newTerminalID;
             %self.XDataLims(:,iNewChannel) = [0 0]';
             %self.XData{iNewChannel}=zeros(0,1);  % col vector
             self.YData_{iNewChannel}=zeros(0,1);  % col vector            

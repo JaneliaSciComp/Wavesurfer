@@ -7,7 +7,7 @@ inputChannelNames = {'Mon1' 'Mon2' 'Mon3' 'Mon4'}; % String cell array of channe
 
 physicalOutputChannelNames = {'Dev1/ao0' 'Dev2/ao0'} ;  % Cell array of strings, each string an NI physical channel name
 outputChannelNames = {'Cmd1' 'Cmd2'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
-%outputDigitalChannelIDs = []; % Array of DO channel numbers, e.g. 0:1.
+%outputDigitalTerminalIDs = []; % Array of DO channel numbers, e.g. 0:1.
 %outputDigitalChannelNames = {}; %String cell array of channel identifiers. If left empty, default NI channel names will be used.
 
 % % This part sets up a "trigger source" -- An internally-generated trigger.

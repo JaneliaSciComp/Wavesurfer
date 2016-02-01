@@ -39,6 +39,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
     end
 
+    events
+        DidSetIsInputChannelActive
+        DidSetIsDigitalOutputTimed
+        DidChangeNumberOfInputChannels
+        DidChangeNumberOfOutputChannels
+    end
+    
     methods
         function self = ElectrodeManager(parent,varargin)
             % General initialization
@@ -564,13 +571,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                 queryChannelNames=queryChannelNamesRaw;
 %             end
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1); 
                         electrode=self.Electrodes{iElectrode};
@@ -588,13 +595,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 queryChannelNames=queryChannelNamesRaw;                
             end
             isMatchBig = self.getMatrixOfMatchesToCommandChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelScales=ones(1,nQueryChannels);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
@@ -645,19 +652,20 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 queryChannelNames=queryChannelNamesRaw;                
             end
             isMatchBig = self.getMatrixOfMatchesToMonitorChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelUnits=repmat({''},[1 nQueryChannels]);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
                         queryChannelUnits{i}=electrode.getMonitorUnitsByName(queryChannelNames{i});
                     else
-                        % do nothing, thus falling back to dimensionless
+                        % do nothing, thus falling back to empty string
+                        % (which means dimensionless)
                     end                    
                 end                    
             end
@@ -671,13 +679,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 queryChannelNames=queryChannelNamesRaw;                
             end
             isMatchBig = self.getMatrixOfMatchesToMonitorChannelNames(queryChannelNames);  % nElectrodes x nQueryChannels
-            isQueryChannelScaleManaged=(sum(isMatchBig,1)==1);            
+            isQueryChannelScaleManaged=(sum(isMatchBig,1)>=1);            
             nQueryChannels=length(queryChannelNames);
             queryChannelScales=ones(1,nQueryChannels);
             for i=1:nQueryChannels ,
                 if isQueryChannelScaleManaged(i),
                     isRelevantElectrode=isMatchBig(:,i);
-                    iRelevantElectrodes=find(isRelevantElectrode);
+                    iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
                         electrode=self.Electrodes{iElectrode};
@@ -906,6 +914,40 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             %self.State_
 %         end  % function
 
+        function didSetIsInputChannelActive(self) 
+            self.broadcast('DidSetIsInputChannelActive');
+        end
+
+        function didSetIsDigitalOutputTimed(self)
+            self.broadcast('DidSetIsDigitalOutputTimed');
+        end
+        
+        function didChangeNumberOfInputChannels(self)
+            self.broadcast('DidChangeNumberOfInputChannels');
+        end
+        
+        function didChangeNumberOfOutputChannels(self)
+            self.broadcast('DidChangeNumberOfOutputChannels');
+        end
+        
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            if didSucceed ,
+                for i=1:self.NElectrodes ,                
+                    electrode=self.Electrodes{i};
+                    electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
+                end            
+            end
+        end        
+        
+        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+            if didSucceed ,
+                for i=1:self.NElectrodes ,                
+                    electrode=self.Electrodes{i};
+                    electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
+                end            
+            end
+        end        
+        
         function debug(self) %#ok<MANU>
             keyboard
         end

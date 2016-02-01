@@ -1,4 +1,4 @@
-classdef Refiller < ws.Model
+classdef Refiller < ws.RootModel
     % The main Refiller model object.
     
     properties (Dependent = true)
@@ -23,6 +23,8 @@ classdef Refiller < ws.Model
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+        AcquisitionKeystoneTaskCache
+        StimulationKeystoneTaskCache
     end
     
     properties (Access = protected)        
@@ -69,6 +71,8 @@ classdef Refiller < ws.Model
         NEpisodesPerSweep_
         NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
+        AcquisitionKeystoneTaskCache_
+        StimulationKeystoneTaskCache_
     end
     
 %     events
@@ -99,19 +103,14 @@ classdef Refiller < ws.Model
     end
     
     methods
-        function self = Refiller(parent)
+        function self = Refiller()
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Deal with arguments
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;  % no parent by default
-            end
-            
             % Call the superclass constructor
-            self@ws.Model(parent);
+            self@ws.RootModel();
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.RefillerRPCPortNumber) ;
@@ -120,14 +119,14 @@ classdef Refiller < ws.Model
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Refiller
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(self.RefillerIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
             
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;
@@ -279,12 +278,13 @@ classdef Refiller < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function result = initializeFromMDFStructure(self,mdfStructure)
-            self.initializeFromMDFStructure_(mdfStructure) ;
+        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals) %#ok<INUSD>
+            % Don't need to do anything---we'll get updated info when a run
+            % is started, which is when it matters to us.
             result = [] ;
         end  % function
         
-        function result = startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -292,7 +292,7 @@ classdef Refiller < ws.Model
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings) ;
+            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
             result = [] ;
         end  % function
 
@@ -331,7 +331,20 @@ classdef Refiller < ws.Model
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweepLooper(self,indexOfSweepWithinRun)  %#ok<INUSD>
+            % Sent by the wavesurferModel to prompt the Looper to prepare
+            % to run a sweep.  But the sweep doesn't start until the
+            % WavesurferModel calls startSweep().
+            %
+            % This is called via RPC, so must return exactly one return
+            % value.  If a runtime error occurs, it will cause the frontend
+            % process to hang.
+
+            % Do nothing, since we're not the looper
+            result = [] ;
+        end  % function
+
+        function result = startingSweepRefiller(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Refiller to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -376,13 +389,33 @@ classdef Refiller < ws.Model
             result = [] ;
         end
         
-        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.IsDigitalChannelTimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue) %#ok<INUSD>
+            %self.Stimulation.IsDigitalChannelTimed = newValue ;
             result = [] ;
         end  % function
+        
+        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) %#ok<INUSD>
+            %self.Stimulation.addDigitalChannel() ;
+            result = [] ;
+        end  % function
+        
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, removedChannelIndices) %#ok<INUSD>
+            %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
+            result = [] ;
+        end  % function
+
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings) %#ok<INUSD>
+            % What it says on the tin.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % We don't need to do anything, because the refiller doesn't
+            % really do much until a run is started, and we get the
+            % frontend state then
+            
+            result = [] ;
+        end  % function        
         
     end  % RPC methods block
     
@@ -705,8 +738,16 @@ classdef Refiller < ws.Model
 %         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
 %             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
 %         end
-    end
 
+        function value = get.AcquisitionKeystoneTaskCache(self)
+            value = self.AcquisitionKeystoneTaskCache_ ;
+        end
+        
+        function value = get.StimulationKeystoneTaskCache(self)
+            value = self.StimulationKeystoneTaskCache_ ;
+        end
+    end  % public methods block
+    
     methods (Access = protected)
         function releaseHardwareResources_(self)
             self.releaseTimedHardwareResources_() ;  % All the refiller resources are timed
@@ -719,7 +760,7 @@ classdef Refiller < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, wavesurferModelSettings)
+        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -734,6 +775,10 @@ classdef Refiller < ws.Model
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             %keyboard
             self.mimicWavesurferModel_(wsModel) ;
+            
+            % Cache the keystone task for the run
+            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
+            self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
             
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
@@ -797,7 +842,7 @@ classdef Refiller < ws.Model
                     self.Subsystems_{i}.startingSweep();
                 end
             end
-                        
+            
             % Start the counter timer tasks, which will trigger the
             % hardware-timed AI, AO, DI, and DO tasks.  But the counter
             % timer tasks will not start running until they themselves
@@ -1073,26 +1118,46 @@ classdef Refiller < ws.Model
                     end
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;                                                
         end  % function
     end  % public methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            %self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            %self.Display.initializeScopes();
-            
-            % Change our state to reflect the presence of the MDF file
-            %self.setState_('idle');
-        end  % function
-    end  % methods block        
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)                        
+%             % Initialize the acquisition subsystem given the MDF data
+%             %self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             %self.Display.initializeScopes();
+%             
+%             % Change our state to reflect the presence of the MDF file
+%             %self.setState_('idle');
+%         end  % function
+%     end  % methods block        
     
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistedState_(self)            
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;  
+        end
+    end
+
 end  % classdef

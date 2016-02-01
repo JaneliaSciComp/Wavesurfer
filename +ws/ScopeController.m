@@ -25,13 +25,13 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             if ~isempty(display) ,
                 display.subscribeMe(self,'DidSetIsEnabled','','displayEnablementMayHaveChanged');
             end
-            scopeFigure=self.Figure;
+            %scopeFigure=self.Figure;
 %             scopeFigure.subscribeMe(self,'PostSet','XLim','didSetXLimInView');           
 %             scopeFigure.subscribeMe(self,'PostSet','YLim','didSetYLimInView');           
             %scopeFigure.subscribeMe(self,'DidSetXLim','','didSetXLimInView');           
             %scopeFigure.subscribeMe(self,'DidSetYLim','','didSetYLimInView');           
             %self.IsSuiGeneris_ = false;  % Multiple instances of this controller can coexist in the same Wavesurfer session
-            scopeFigure.syncTitleAndTagsToModel();  % Shouldn't this happen somewhere else?
+            %scopeFigure.syncTitleAndTagsToModel();  % Shouldn't this happen somewhere else?
             self.updateWindowVisibility();
               % Need to update the window visibility to match Display
               % subsystem enablement and the per-scope visibility setting.

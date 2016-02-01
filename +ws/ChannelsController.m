@@ -1,21 +1,45 @@
 classdef ChannelsController < ws.Controller
     methods
         function self=ChannelsController(wavesurferController,wavesurferModel)
-%             self = self@ws.Controller(wavesurferController,wavesurferModel, {'channelsFigureWrapper'});
-%             figureObject=self.Figure;
-%             figureGH=figureObject.FigureGH;
-%             set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));
-%             self.initialize();
-
             % Call superclass constructor
-            self = self@ws.Controller(wavesurferController,wavesurferModel);  
+            self = self@ws.Controller(wavesurferController,wavesurferModel) ;  
 
             % Create the figure, store a pointer to it
             fig = ws.ChannelsFigure(wavesurferModel,self) ;
             self.Figure_ = fig ;
         end
         
-        function aiScaleEditActuated(self,source)
+        function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
+            allDeviceNames = self.Model.AllDeviceNames ;
+            deviceName = ws.utility.getPopupMenuSelection(source, allDeviceNames) ;
+            if isempty(deviceName) ,
+                self.Figure.update() ;
+            else
+                self.Model.DeviceName = deviceName ;
+            end
+        end
+        
+        function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
+            self.Model.Acquisition.setSingleAnalogChannelName(i, newString) ;
+        end
+        
+        function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllAITerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AIScaleEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AIScaleEdits(i),'String');
@@ -30,28 +54,56 @@ classdef ChannelsController < ws.Controller
             end
         end
         
-        function aiUnitsEditActuated(self,source)
+        function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
             isTheChannel=(source==self.Figure.AIUnitsEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             self.Model.Acquisition.setSingleAnalogChannelUnits(i,newString);
         end
         
-        function aiIsActiveCheckboxActuated(self,source)
+        function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
             isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
             isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
         end
-        
-        function diIsActiveCheckboxActuated(self,source)
-            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
-            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
-            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
-            self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
+
+        function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
+            isAnalogChannelMarkedForDeletion = self.Model.Acquisition.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+        end
+
+        function AddAIChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Acquisition.addAnalogChannel() ;
         end
         
-        function aoScaleEditActuated(self,source)
+        function DeleteAIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Acquisition.deleteMarkedAnalogChannels() ;
+        end
+        
+        function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.AOChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.AOChannelNameEdits(i),'String') ;
+            self.Model.Stimulation.setSingleAnalogChannelName(i, newString) ;
+        end
+        
+        function AOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllAOTerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AOScaleEdits);
             i=find(isTheChannel);
             newString=get(self.Figure.AOScaleEdits(i),'String');
@@ -67,7 +119,7 @@ classdef ChannelsController < ws.Controller
             end
         end
         
-        function aoUnitsEditActuated(self,source)
+        function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.AOUnitsEdits);
             i=find(isTheChannel);            
             newString=get(self.Figure.AOUnitsEdits(i),'String');
@@ -75,7 +127,84 @@ classdef ChannelsController < ws.Controller
             self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
         end
         
-        function doTimedCheckboxActuated(self,source)
+        function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
+            isAnalogChannelMarkedForDeletion = self.Model.Stimulation.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Stimulation.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+        end
+
+        function AddAOChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.addAnalogChannel() ;
+        end
+        
+        function DeleteAOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.deleteMarkedAnalogChannels() ;
+        end
+        
+        function DIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DIChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.DIChannelNameEdits(i),'String') ;
+            self.Model.Acquisition.setSingleDigitalChannelName(i, newString) ;
+        end
+        
+        function DITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(4:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.DITerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Acquisition.setSingleDigitalTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
+            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
+            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
+        end
+
+        function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.DIIsMarkedForDeletionCheckboxes) ;
+            isChannelMarkedForDeletion = self.Model.Acquisition.IsDigitalChannelMarkedForDeletion ;
+            isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Acquisition.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
+        end
+
+        function AddDIChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Acquisition.addDigitalChannel() ;
+        end
+        
+        function DeleteDIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Acquisition.deleteMarkedDigitalChannels() ;
+        end
+        
+        function DOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DOChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
+            self.Model.Stimulation.setSingleDigitalChannelName(i, newString) ;
+        end
+        
+        function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model ;
+            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            % Do the rest
+            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(4:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model.Stimulation.setSingleDigitalTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function DOIsTimedCheckboxesActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsTimedCheckboxes(i),'value');
@@ -83,60 +212,28 @@ classdef ChannelsController < ws.Controller
             self.Figure.update();
         end
         
-        function doOnRadiobuttonActuated(self,source)
+        function DOIsOnRadiobuttonsActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=(source==self.Figure.DOIsOnRadiobuttons);
             i=find(isTheChannel);            
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value');
             self.Model.Stimulation.DigitalOutputStateIfUntimed(i)=newState;
         end
         
-%         function aoMultiplierEditActuated(self,source)
-%             isTheChannel=(source==self.Figure.AOMultiplierEdits);
-%             i=find(isTheChannel);
-%             newString=get(self.Figure.AOMultiplierEdits(i),'String');
-%             newValue=str2double(newString);
-%             if isfinite(newValue) && newValue>0 ,
-%                 % good value
-%                 %self.Model.Stimulation.ChannelScales(i)=newValue;
-%                 self.Model.Stimulation.setSingleChannelMultiplier(i,newValue);
-%                 % changing model should auto-update the view
-%             else
-%                 % discard change by re-syncing view to model
-%                 self.Figure.update();
-%             end
-%         end    
+        function DOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
+            isChannelMarkedForDeletion = self.Model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model.Stimulation.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
+        end
+
+        function AddDOChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.addDigitalChannel() ;
+        end
         
-        function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>
-            figureObject=self.Figure;
-            try
-                if any(source==figureObject.AIScaleEdits)
-                    self.aiScaleEditActuated(source);
-                elseif any(source==figureObject.AIUnitsEdits)
-                    self.aiUnitsEditActuated(source);
-                elseif any(source==figureObject.AIIsActiveCheckboxes)
-                    self.aiIsActiveCheckboxActuated(source);
-                elseif any(source==figureObject.DIIsActiveCheckboxes)
-                    self.diIsActiveCheckboxActuated(source);
-                elseif any(source==figureObject.AOScaleEdits)
-                    self.aoScaleEditActuated(source);
-                elseif any(source==figureObject.AOUnitsEdits)
-                    self.aoUnitsEditActuated(source);
-                elseif any(source==figureObject.DOIsTimedCheckboxes)
-                    self.doTimedCheckboxActuated(source);
-                elseif any(source==figureObject.DOIsOnRadiobuttons)
-                    self.doOnRadiobuttonActuated(source);
-%                 elseif any(source==figureObject.AOMultiplierEdits)
-%                     self.aoMultiplierEditActuated(source);
-                end
-            catch me
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-                    errordlg(me.message,'Error','modal');
-%                 end
-            end            
-        end  % function
+        function DeleteDOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            self.Model.Stimulation.deleteMarkedDigitalChannels() ;
+        end
+        
         
     end  % methods
 

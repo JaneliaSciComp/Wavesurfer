@@ -648,6 +648,18 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             end
             result=true;
         end
+        
+        function didSetChannelName(self, oldValue, newValue)
+            channelNames = self.ChannelNames ;
+            nChannels = length(channelNames) ;
+            for i = 1:nChannels ,
+                thisChannelName = channelNames{i} ;
+                if isequal(thisChannelName, oldValue) ,
+                    self.ChannelNames_{i} = newValue ;
+                end
+            end
+        end
+        
     end  % public methods block
     
     methods (Access = protected)

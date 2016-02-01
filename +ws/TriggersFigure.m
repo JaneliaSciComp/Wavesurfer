@@ -11,9 +11,13 @@ classdef TriggersFigure < ws.MCOSFigure
         
         CounterTriggersPanel
         CounterTriggersTable
+        AddCounterTriggerButton
+        DeleteCounterTriggersButton        
         
         ExternalTriggersPanel
         ExternalTriggersTable
+        AddExternalTriggerButton
+        DeleteExternalTriggersButton        
     end  % properties
     
     methods
@@ -116,10 +120,20 @@ classdef TriggersFigure < ws.MCOSFigure
                         'Title','Counter Triggers');
             self.CounterTriggersTable = ...
                 uitable('Parent',self.CounterTriggersPanel, ...
-                        'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'}, ...
-                        'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'Rising' 'Falling'}}, ...
-                        'ColumnEditable',[false false false true true false false]);
-            
+                        'ColumnName',{'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'}, ...
+                        'ColumnFormat',{'char' 'char' 'numeric' 'numeric' 'numeric' 'numeric' {'rising' 'falling'} 'logical'}, ...
+                        'ColumnEditable',[true false true true true false true true]);
+            self.AddCounterTriggerButton= ...
+                uicontrol('Parent',self.CounterTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Add');                      
+            self.DeleteCounterTriggersButton= ...
+                uicontrol('Parent',self.CounterTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Delete');
+                    
             % Trigger Destinations Panel
             self.ExternalTriggersPanel = ...
                 uipanel('Parent',self.FigureGH, ...
@@ -129,9 +143,20 @@ classdef TriggersFigure < ws.MCOSFigure
                         'Title','External Triggers');
             self.ExternalTriggersTable = ...
                 uitable('Parent',self.ExternalTriggersPanel, ...
-                        'ColumnName',{'Name' 'Device' 'PFI' 'Edge'}, ...
-                        'ColumnFormat',{'char' 'char' 'numeric' {'Rising' 'Falling'}}, ...
-                        'ColumnEditable',[false false false false]);
+                        'ColumnName',{'Name' 'Device' 'PFI' 'Edge' 'Delete?'}, ...
+                        'ColumnFormat',{'char' 'char' 'numeric' {'rising' 'falling'} 'logical'}, ...
+                        'ColumnEditable',[true false true true true]);
+            self.AddExternalTriggerButton= ...
+                uicontrol('Parent',self.ExternalTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Add');                      
+            self.DeleteExternalTriggersButton= ...
+                uicontrol('Parent',self.ExternalTriggersPanel, ...
+                          'Style','pushbutton', ...
+                          'Units','pixels', ...
+                          'String','Delete');
+                    
         end  % function
     end  % singleton methods block
     
@@ -194,11 +219,13 @@ classdef TriggersFigure < ws.MCOSFigure
             topPadHeight=10;
             schemesAreaWidth=280;
             tablePanelsAreaWidth=500;
-            tablePanelAreaHeight=210;
+            %tablePanelAreaHeight=210;
             heightBetweenTableAreas=6;
+            counterTablePanelAreaHeight = 156 ;
+            externalTablePanelAreaHeight = 210 ;
 
             figureWidth=schemesAreaWidth+tablePanelsAreaWidth;
-            figureHeight=tablePanelAreaHeight+heightBetweenTableAreas+tablePanelAreaHeight+topPadHeight;
+            figureHeight=counterTablePanelAreaHeight+heightBetweenTableAreas+externalTablePanelAreaHeight+topPadHeight;
 
             sweepBasedAcquisitionPanelAreaHeight=78;
             sweepBasedStimulationPanelAreaHeight=78;
@@ -236,9 +263,9 @@ classdef TriggersFigure < ws.MCOSFigure
             tablesAreaXOffset=schemesAreaWidth;
             counterTriggersPanelXOffset=tablesAreaXOffset+panelInset;
             counterTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
-            counterTriggersPanelAreaYOffset=tablePanelAreaHeight+heightBetweenTableAreas;
+            counterTriggersPanelAreaYOffset=externalTablePanelAreaHeight+heightBetweenTableAreas;
             counterTriggersPanelYOffset=counterTriggersPanelAreaYOffset+panelInset;            
-            counterTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            counterTriggersPanelHeight=counterTablePanelAreaHeight-panelInset-panelInset;
             set(self.CounterTriggersPanel, ...
                 'Position',[counterTriggersPanelXOffset counterTriggersPanelYOffset ...
                             counterTriggersPanelWidth counterTriggersPanelHeight]);
@@ -248,7 +275,7 @@ classdef TriggersFigure < ws.MCOSFigure
             externalTriggersPanelWidth=tablePanelsAreaWidth-panelInset-panelInset;
             externalTriggersPanelAreaYOffset=0;
             externalTriggersPanelYOffset=externalTriggersPanelAreaYOffset+panelInset;            
-            externalTriggersPanelHeight=tablePanelAreaHeight-panelInset-panelInset;
+            externalTriggersPanelHeight=externalTablePanelAreaHeight-panelInset-panelInset;
             set(self.ExternalTriggersPanel, ...
                 'Position',[externalTriggersPanelXOffset externalTriggersPanelYOffset ...
                             externalTriggersPanelWidth externalTriggersPanelHeight]);
@@ -355,28 +382,55 @@ classdef TriggersFigure < ws.MCOSFigure
         function layoutCounterTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
+            buttonWidth = 80 ;
+            buttonHeight = 20 ;
+            interButtonSpaceWidth = 10 ;
+            heightBetweenTableAndButtonRow = 8 ;
+            
             leftPad=10;
             rightPad=10;
             bottomPad=10;
             topPad=2;
             
             tableWidth=panelWidth-leftPad-rightPad;
-            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad;
+            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad-heightBetweenTableAndButtonRow-buttonHeight;
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
-            deviceWidth=50;
-            ctrWidth=40;            
-            repeatsWidth=60;
-            intervalWidth=66;
-            pfiWidth=40;
-            edgeWidth=50;
-            nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+34);  % 30 for the row titles col
+            deviceWidth = 50 ;
+            ctrWidth = 40 ;            
+            repeatsWidth = 60 ;
+            intervalWidth = 66 ;
+            pfiWidth = 40 ;
+            edgeWidth = 50 ;
+            deleteQWidth = 50 ;
+            nameWidth=tableWidth-(deviceWidth+ctrWidth+repeatsWidth+intervalWidth+pfiWidth+edgeWidth+deleteQWidth+34);  % 34 for the row titles col
             
-            % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge'
+            % 'Name' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
             set(self.CounterTriggersTable, ...
-                'Position', [leftPad bottomPad tableWidth tableHeight], ...
-                'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth});
+                'Position', [leftPad bottomPad+buttonHeight+heightBetweenTableAndButtonRow tableWidth tableHeight], ...
+                'ColumnWidth', {nameWidth deviceWidth ctrWidth repeatsWidth intervalWidth pfiWidth edgeWidth deleteQWidth});
+
+            % Position the buttons
+            buttonRowXOffset = leftPad ;
+            buttonRowYOffset = bottomPad ;
+            buttonRowWidth = tableWidth ;
+            
+            % Remove button is flush right
+            removeButtonXOffset = buttonRowXOffset + buttonRowWidth - buttonWidth ;
+            removeButtonYOffset = buttonRowYOffset ;
+            removeButtonWidth = buttonWidth ;
+            removeButtonHeight = buttonHeight ;
+            set(self.DeleteCounterTriggersButton, ...
+                'Position', [removeButtonXOffset removeButtonYOffset removeButtonWidth removeButtonHeight]);
+
+            % Add button is to the left of the remove button
+            addButtonXOffset = removeButtonXOffset - interButtonSpaceWidth - buttonWidth ;
+            addButtonYOffset = buttonRowYOffset ;
+            addButtonWidth = buttonWidth ;
+            addButtonHeight = buttonHeight ;
+            set(self.AddCounterTriggerButton, ...
+                'Position', [addButtonXOffset addButtonYOffset addButtonWidth addButtonHeight]);            
         end
     end
     
@@ -384,25 +438,54 @@ classdef TriggersFigure < ws.MCOSFigure
         function layoutExternalTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
 
+            buttonWidth = 80 ;
+            buttonHeight = 20 ;
+            interButtonSpaceWidth = 10 ;
+            heightBetweenTableAndButtonRow = 8 ;
+            
             leftPad=10;
             rightPad=10;
             bottomPad=10;
             topPad=2;
             
             tableWidth=panelWidth-leftPad-rightPad;
-            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad;
+            tableHeight=panelHeight-heightOfPanelTitle-bottomPad-topPad-topPad-heightBetweenTableAndButtonRow-buttonHeight;
             
             % The table cols have fixed width except Name, which takes up
             % the slack.
-            deviceWidth=50;
-            pfiWidth=40;
-            edgeWidth=50;
-            nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+34);  % 34 for the row titles col
+            rowLabelsWidth = 34 ;  % this the (approximate) width of the numeric labels that Matlab adds to rows
+            deviceWidth = 50 ;
+            pfiWidth = 40 ;
+            edgeWidth = 50 ;
+            deleteQWidth = 50 ;
+            scrollbarWidth = 18 ;  % this the (approximate) width of the vertical scrollbar, when it appears
+            nameWidth=tableWidth-(deviceWidth+pfiWidth+edgeWidth+deleteQWidth+rowLabelsWidth+scrollbarWidth);  % 34 for the row labels col
                         
-            % 'Name' 'PFI' 'Edge'
+            % 'Name' 'PFI' 'Edge' 'Delete?'
             set(self.ExternalTriggersTable, ...
-                'Position', [leftPad bottomPad tableWidth tableHeight], ...
-                'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth});
+                'Position', [leftPad bottomPad+buttonHeight+heightBetweenTableAndButtonRow tableWidth tableHeight], ...
+                'ColumnWidth', {nameWidth deviceWidth pfiWidth edgeWidth deleteQWidth});
+            
+            % Position the buttons
+            buttonRowXOffset = leftPad ;
+            buttonRowYOffset = bottomPad ;
+            buttonRowWidth = tableWidth ;
+            
+            % Remove button is flush right
+            removeButtonXOffset = buttonRowXOffset + buttonRowWidth - buttonWidth ;
+            removeButtonYOffset = buttonRowYOffset ;
+            removeButtonWidth = buttonWidth ;
+            removeButtonHeight = buttonHeight ;
+            set(self.DeleteExternalTriggersButton, ...
+                'Position', [removeButtonXOffset removeButtonYOffset removeButtonWidth removeButtonHeight]);
+
+            % Add button is to the left of the remove button
+            addButtonXOffset = removeButtonXOffset - interButtonSpaceWidth - buttonWidth ;
+            addButtonYOffset = buttonRowYOffset ;
+            addButtonWidth = buttonWidth ;
+            addButtonHeight = buttonHeight ;
+            set(self.AddExternalTriggerButton, ...
+                'Position', [addButtonXOffset addButtonYOffset addButtonWidth addButtonHeight]);            
         end
     end
     
@@ -461,8 +544,19 @@ classdef TriggersFigure < ws.MCOSFigure
             
             %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
             
+            areAnyFreeCounterIDs = ~isempty(triggeringModel.freeCounterIDs()) ;
+            isCounterTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.CounterTriggers) ;
+            isAnyCounterTriggerMarkedForDeletion = any(isCounterTriggerMarkedForDeletion) ;
             set(self.CounterTriggersTable,'Enable',onIff(isIdle));
+            set(self.AddCounterTriggerButton,'Enable',onIff(isIdle&&areAnyFreeCounterIDs)) ;
+            set(self.DeleteCounterTriggersButton,'Enable',onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
+            
+            areAnyFreePFIIDs = ~isempty(triggeringModel.freePFIIDs()) ;
+            isExternalTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.ExternalTriggers) ;
+            isAnyExternalTriggerMarkedForDeletion = any(isExternalTriggerMarkedForDeletion) ;
             set(self.ExternalTriggersTable,'Enable',onIff(isIdle));
+            set(self.AddExternalTriggerButton,'Enable',onIff(isIdle&&areAnyFreePFIIDs)) ;
+            set(self.DeleteExternalTriggersButton,'Enable',onIff(isIdle&&isAnyExternalTriggerMarkedForDeletion)) ;
         end  % function
     end
     
@@ -524,17 +618,18 @@ classdef TriggersFigure < ws.MCOSFigure
                 return
             end
             nRows=length(model.CounterTriggers);
-            nColumns=7;
+            nColumns=8;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                source=model.CounterTriggers{i};
-                data{i,1}=source.Name;
-                data{i,2}=source.DeviceName;
-                data{i,3}=source.CounterID;
-                data{i,4}=source.RepeatCount;
-                data{i,5}=source.Interval;
-                data{i,6}=source.PFIID;
-                data{i,7}=char(source.Edge);
+                trigger=model.CounterTriggers{i};
+                data{i,1}=trigger.Name;
+                data{i,2}=trigger.DeviceName;
+                data{i,3}=trigger.CounterID;
+                data{i,4}=trigger.RepeatCount;
+                data{i,5}=trigger.Interval;
+                data{i,6}=trigger.PFIID;
+                data{i,7}=ws.titleStringFromEdgeType(trigger.Edge);
+                data{i,8}=trigger.IsMarkedForDeletion;
             end
             set(self.CounterTriggersTable,'Data',data);
         end  % function
@@ -547,14 +642,15 @@ classdef TriggersFigure < ws.MCOSFigure
                 return
             end
             nRows=length(model.ExternalTriggers);
-            nColumns=4;
+            nColumns=5;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                destination=model.ExternalTriggers{i};
-                data{i,1}=destination.Name;
-                data{i,2}=destination.DeviceName;
-                data{i,3}=destination.PFIID;
-                data{i,4}=char(destination.Edge);
+                trigger=model.ExternalTriggers{i};
+                data{i,1}=trigger.Name;
+                data{i,2}=trigger.DeviceName;
+                data{i,3}=trigger.PFIID;
+                data{i,4}=ws.titleStringFromEdgeType(trigger.Edge);
+                data{i,5}=trigger.IsMarkedForDeletion;
             end
             set(self.ExternalTriggersTable,'Data',data);
         end  % function

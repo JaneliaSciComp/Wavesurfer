@@ -171,20 +171,9 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             end
         end       
         
-        function initializeScopes(self)
-            % Set up the initial set of scope models, one per AI channel,
-            % and one for all channels.
-            activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
-            for iChannel = 1:length(activeChannelNames) ,
-                thisChannelName=activeChannelNames{iChannel};
-                prototypeScopeTag=sprintf('Channel_%s', thisChannelName);
-                scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
-                scopeTitle=sprintf('Channel %s', thisChannelName);
-                channelNames={thisChannelName};
-                self.addScope(scopeTag, scopeTitle, channelNames);
-            end
-            %self.addScope('All_Channels','All Channels', activeChannelNames);            
-        end        
+        function didSetDeviceName(self)
+            %self.initializeScopes_() ;
+        end
         
         function addScope(self, scopeTag, scopeTitle, channelNames)
             if isempty(scopeTag)
@@ -265,15 +254,130 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
         function abortingRun(self)
             self.completingOrStoppingOrAbortingRun_();
         end
+        
+        function didAddAnalogInputChannel(self)
+            % Add a scope to match the new channel (newly added channels
+            % are always active)
+            channelNames = self.Parent.Acquisition.AnalogChannelNames ;            
+            newChannelName = channelNames{end} ;
+            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
+            scopeTag = ws.system.Display.tagFromString(prototypeScopeTag);  % this is a static method call
+            scopeTitle=sprintf('Channel %s', newChannelName);
+            channelNamesForNewScope={newChannelName};
+            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+        end
+        
+        function didAddDigitalInputChannel(self)
+            % Add a scope to match the new channel (newly added channels
+            % are always active)
+            channelNames = self.Parent.Acquisition.DigitalChannelNames ;            
+            newChannelName = channelNames{end} ;
+            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
+            scopeTag = ws.system.Display.tagFromString(prototypeScopeTag);  % this is a static method call
+            scopeTitle=sprintf('Channel %s', newChannelName);
+            channelNamesForNewScope={newChannelName};
+            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+        end
+
+        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
+            self.removeScopesByName(nameOfRemovedChannels) ;
+        end
+        
+        function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)            
+            self.removeScopesByName(nameOfRemovedChannels) ;
+        end
+        
+%         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
+%             self.removeScopeByName(nameOfRemovedChannel) ;
+%         end
+        
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            if didSucceed , 
+                self.renameScope_(oldValue, newValue) ;
+            end
+        end
+        
+        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
+            if didSucceed , 
+                self.renameScope_(oldValue, newValue) ;
+            end
+        end
+        
+        function removeScopesByName(self, namesOfChannelsToRemove)
+            self.disableBroadcasts() ;
+            nChannels = length(namesOfChannelsToRemove) ;
+            for i = 1:nChannels ,
+                channelName = namesOfChannelsToRemove{i} ;
+                self.removeScopeByName(channelName) ;
+            end
+            self.enableBroadcastsMaybe() ;
+            self.broadcast('NScopesMayHaveChanged');
+        end  % function
+        
+        function removeScopeByName(self, nameOfChannelToRemove)
+            [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;
+            if ~isempty(theScope) ,
+                self.removeScope(indexOfTheScope) ;
+            end
+        end  % function
     end
     
     methods (Access=protected)
+        function [theScope, indexOfTheScope] = getScopeByName_(self, channelName)
+            nScopes = self.NScopes ;
+            didFindIt = false ;
+            for i = 1:nScopes ,
+                thisScope = self.Scopes{i} ;
+                thisScopeChannelNames = thisScope.ChannelNames ;
+                if ~isempty(thisScopeChannelNames) ,                    
+                    thisScopeChannelName = thisScopeChannelNames{1} ;
+                    if isequal(thisScopeChannelName,channelName) ,                        
+                        theScope = thisScope ;
+                        indexOfTheScope = i ;
+                        didFindIt = true ;
+                        break
+                    end
+                end
+            end
+            if ~didFindIt ,
+                theScope = [] ;
+                indexOfTheScope = [] ;
+            end
+        end
+        
+        function renameScope_(self, oldChannelName, newChannelName)
+            theScope = self.getScopeByName_(oldChannelName) ;
+            if ~isempty(theScope) ,
+                prototypeNewScopeTag = sprintf('Channel_%s', newChannelName) ;
+                newScopeTag = ws.system.Display.tagFromString(prototypeNewScopeTag) ;  % this is a static method call
+                newScopeTitle = sprintf('Channel %s', newChannelName) ;
+                %newChannelNames = {newChannelName} ;
+                theScope.ChannelName = newChannelName ;
+                theScope.Title = newScopeTitle ;
+                theScope.Tag = newScopeTag ;
+            end
+        end
+        
         function completingOrStoppingOrAbortingRun_(self)
             if ~isempty(self.CachedDisplayXSpan_)
                 self.XSpan = self.CachedDisplayXSpan_;
             end
             self.CachedDisplayXSpan_ = [];
         end        
+        
+%         function initializeScopes_(self)
+%             % Set up the initial set of scope models, one per AI channel
+%             activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
+%             for iChannel = 1:length(activeChannelNames) ,
+%                 thisChannelName=activeChannelNames{iChannel};
+%                 prototypeScopeTag=sprintf('Channel_%s', thisChannelName);
+%                 scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
+%                 scopeTitle=sprintf('Channel %s', thisChannelName);
+%                 channelNames={thisChannelName};
+%                 self.addScope(scopeTag, scopeTitle, channelNames);
+%             end
+%             %self.addScope('All_Channels','All Channels', activeChannelNames);            
+%         end        
     end
         
     methods    
@@ -323,7 +427,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
                 jInDigitalData = [];                
                 NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
                 for cdx = 1:length(activeInputChannelNames)
-                    %channelName = sprintf('Acq_%d', inputChannelIDs(cdx));
+                    %channelName = sprintf('Acq_%d', inputTerminalIDs(cdx));
                     channelName=activeInputChannelNames{cdx};
                     if any(strcmp(channelName, self.Scopes{sdx}.ChannelNames)) ,
                         channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>

@@ -30,8 +30,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         FigureGH_  % the figure graphics handle
         Controller_  % the controller, an instance of ws.Controller
         Model_  % the model        
-    end  % properties
-    
+    end  % properties    
     
     methods
         function self=MCOSFigure(model,controller)

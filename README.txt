@@ -18,7 +18,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver, version 9.8.x or 14.5.x
+National Instruments DAQmx driver, version 9.8.x, 14.5.x, or 15.1.x.
 
 Matlab R2013b or later (64-bit)
 
@@ -66,7 +66,7 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in WaveSurfer is copyright 2013-2015 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2016 by the Howard Hughes Medical 
 Institute.
 
 
@@ -104,26 +104,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Authors
 -------
 
-WaveSurfer started out as version 3 of Ephus, another
-electrophysiology package largely authored by Vijay Iyer, with
-contributions by Tim O'Connor and others.  Vijay is also the primary
-author of the DABS library, from which the code in +ws/+dabs/+ni was
-taken, and of the MOST library, in +ws/+most.
+WaveSurfer was developed at the HHMI Janelia Research Campus.  It
+started out as version 3 of Ephus, another electrophysiology package
+largely authored by Vijay Iyer, with contributions by Tim O'Connor and
+others.  Vijay is also the primary author of the DABS library, from
+which the code in +ws/+dabs/+ni was taken, and of the MOST library, in
++ws/+most.
 
 The original developer of WaveSurfer was Patrick Edson.  
 
 WaveSurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
 
 
+Support
+-------
+
+WaveSurfer is developed at the HHMI Janelia Research Campus. It is
+supported by the Svoboda Lab, who initiated the project, and by the
+Magee, Spruston, Jayaraman, Lee, Hantman, and Koyama Labs. The project
+is coordinated by Janelia's Scientific Computing Software group.
+
+
 Maintainers
 -----------
 
-[Adam L. Taylor](http://www.janelia.org/people/research-resources-staff/adam-taylor), taylora@hhmi.org  
-[Scientific Computing](http://www.janelia.org/research-resources/computing-resources)  
-[Janelia Research Campus](http://www.janelia.org)  
-[Howard Hughes Medical Institute](http://www.hhmi.org)
-
-[![Picture](/hhmi_janelia_160px.png)](http://www.janelia.org)
+Adam L. Taylor 
+Scientific Computing
+HHMI Janelia Research Campus
 
 
 Version History
@@ -276,5 +283,13 @@ Version History
 0.9-beta-14: (November 20, 2015) Fixed bug where didn't work if no 
              input channels were defined.
 
-0.9: (December 1, 2015) Rechristened 0.9-beta-14 as 0.9.
+0.9      Dec 01, 2015    Rechristened 0.9-beta-14 as 0.9.
 
+0.901    Jan 07, 2016    Added support for DAQmx 15.1.x.  Fixed bug in
+                         error dialog message if the installed version
+                         of DAQmx is not supported by WaveSurfer.
+
+0.902    Jan 29, 2016    Fixed triggering issues that could cause acq
+                         tasks but not stim tasks to trigger for a 
+                         finite-duration sweep, despite nominally 
+                         using the same trigger. 

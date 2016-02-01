@@ -20,6 +20,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         Edge
             % Whether rising edges or falling edges constitute a trigger
             % event.
+        IsMarkedForDeletion
     end
     
     properties (Access=protected)
@@ -27,6 +28,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         DeviceName_
         PFIID_
         Edge_
+        IsMarkedForDeletion_
     end
     
     methods
@@ -35,7 +37,8 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
             self.Name_ = 'Destination';
             self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
-            self.Edge_ = 'rising';            
+            self.Edge_ = 'rising';  
+            self.IsMarkedForDeletion_ = false ;
         end
         
         function value=get.Name(self)
@@ -59,12 +62,12 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
                 if ws.utility.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end
         
         function set.DeviceName(self, value)
@@ -72,26 +75,26 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
                 if ws.utility.isString(value) ,
                     self.DeviceName_ = value ;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'DeviceName must be a string');                  
                 end                    
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end
         
         function set.PFIID(self, value)
             if ws.utility.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 && self.Parent.isPFIIDFree(value) ,
                     value = double(value) ;
                     self.PFIID_ = value ;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'PFIID must be a (scalar) nonnegative integer');                  
                 end                    
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end
         
         function set.Edge(self, value)
@@ -99,13 +102,31 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end  % function 
+        
+        function value = get.IsMarkedForDeletion(self)
+            value = self.IsMarkedForDeletion_ ;
+        end
+
+        function set.IsMarkedForDeletion(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+                    self.IsMarkedForDeletion_ = logical(value) ;
+                else
+                    self.Parent.update();
+                    error('most:Model:invalidPropVal', ...
+                          'IsMarkedForDeletion must be a truthy scalar');                  
+                end                    
+            end
+            self.Parent.update();            
+        end
+        
     end  % methods
     
     methods (Access=protected)        

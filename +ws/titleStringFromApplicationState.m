@@ -2,8 +2,8 @@ function out = titleStringFromApplicationState(state)
     switch state
         case 'uninitialized'
             out = '(Uninitialized)';
-        case 'no_mdf'
-            out = 'No MDF';
+        case 'no_device'
+            out = 'No Device';
         case 'idle'
             out = 'Idle';
         case 'running'
