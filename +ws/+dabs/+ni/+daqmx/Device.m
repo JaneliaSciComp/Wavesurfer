@@ -66,7 +66,7 @@ classdef Device < ws.dabs.ni.daqmx.private.DAQmxClass
                 devmap(devname) = obj; %#ok<NASGU>
             else
                 % DAQmx doesn't know about a device by that name
-                error(['There is no device ''' devname ''' in the system.']);
+                error('dabs:noDeviceByThatName',['There is no device ''' devname ''' in the system.']);
             end
         end        
     end

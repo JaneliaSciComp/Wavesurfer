@@ -266,10 +266,19 @@ classdef RootModel < ws.Model
             % only get half as many.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                result = nan ;
+                result = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        result = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
                     % cellstring, each element of the form '<device name>/ai<channel ID>'
                 result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
@@ -280,10 +289,19 @@ classdef RootModel < ws.Model
             % The number of AO channels available.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                result = nan ;
+                result = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        result = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device name>/ao<channel ID>'
                 result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
@@ -297,11 +315,21 @@ classdef RootModel < ws.Model
             % channels as being only PFIn channels.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                numberOfDIOChannels = nan ;
-                numberOfPFILines = nan ;
+                numberOfDIOChannels = 0 ;
+                numberOfPFILines = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        numberOfDIOChannels = 0 ;
+                        numberOfPFILines = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
                 % We only want to count the port0 lines, since those are
@@ -324,10 +352,19 @@ classdef RootModel < ws.Model
             % The number of counters (CTRs) on the board.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                result = nan ;
+                result = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        result = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device
                     % name>/<counter name>', where a <counter name> is of
