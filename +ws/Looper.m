@@ -23,6 +23,7 @@ classdef Looper < ws.RootModel
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
+        AcquisitionKeystoneTaskCache  
     end
     
     properties (Access = protected)        
@@ -66,6 +67,7 @@ classdef Looper < ws.RootModel
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
+        AcquisitionKeystoneTaskCache_
     end
     
 %     events
@@ -285,7 +287,7 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
 
-        function result = startingRun(self,wavesurferModelSettings)
+        function result = startingRun(self,wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)  %#ok<INUSD>
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -293,7 +295,7 @@ classdef Looper < ws.RootModel
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings) ;
+            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask) ;
             result = [] ;
         end  % function
 
@@ -324,7 +326,7 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self,indexOfSweepWithinRun)
+        function result = startingSweepLooper(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % for a sweep.
             %
@@ -335,6 +337,18 @@ classdef Looper < ws.RootModel
             % Prepare for the sweep
             %fprintf('Looper::startingSweep()\n');            
             self.prepareForSweep_(indexOfSweepWithinRun) ;
+            result = [] ;
+        end  % function
+
+        function result = startingSweepRefiller(self,indexOfSweepWithinRun)  %#ok<INUSD>
+            % Sent by the wavesurferModel to prompt the Refiller to prepare
+            % for a sweep.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value.  If a runtime error occurs, it will cause the frontend
+            % process to hang.
+
+            % Do nothing, since we're not the refiller
             result = [] ;
         end  % function
 
@@ -844,7 +858,7 @@ classdef Looper < ws.RootModel
 %             end
 %         end
         
-        function prepareForRun_(self, wavesurferModelSettings)
+        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -865,6 +879,9 @@ classdef Looper < ws.RootModel
             self.releaseTimedHardwareResources_();           
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
+            
+            % Cache the keystone task for the run
+            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1621,28 +1638,11 @@ classdef Looper < ws.RootModel
 %         end  % function        
 %     end
     
-%     methods
-%         function mimic(self, other)
-%             % Cause self to resemble other.
-%             
-%             % Get the list of property names for this file type
-%             propertyNames = self.listPropertiesForPersistence();
-%             
-%             % Set each property to the corresponding one
-%             for i = 1:length(propertyNames) ,
-%                 thisPropertyName=propertyNames{i};
-%                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
-%                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-%                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
-%                 else
-%                     if isprop(other,thisPropertyName) ,
-%                         source = other.getPropertyValue_(thisPropertyName) ;
-%                         self.setPropertyValue_(thisPropertyName, source) ;
-%                     end
-%                 end
-%             end
-%         end  % function
-%     end  % public methods block
+    methods
+        function value = get.AcquisitionKeystoneTaskCache(self)
+            value = self.AcquisitionKeystoneTaskCache_ ;
+        end
+    end  % public methods block
 
     methods (Access=protected) 
         function mimicWavesurferModel_(self, wsModel)

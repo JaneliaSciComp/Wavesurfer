@@ -1131,7 +1131,7 @@ classdef WavesurferModel < ws.RootModel
             self.NSweepsCompletedInThisRun_ = 0;
             
             self.callUserMethod_('startingRun');  
-            
+                        
             % Tell all the subsystems to prepare for the run
             self.ClockAtRunStart_ = clock() ;
               % do this now so that the data file header has the right value
@@ -1148,10 +1148,13 @@ classdef WavesurferModel < ws.RootModel
                 me.rethrow();
             end
             
+            % Determine the keystone tasks for acq and stim
+            [acquisitionKeystoneTask, stimulationKeystoneTask] = self.determineKeystoneTasks() ;
+            
             % Tell the Looper & Refiller to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
-            self.IPCPublisher_.send('startingRun',wavesurferModelSettings) ;
+            self.IPCPublisher_.send('startingRun',wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
             
             % Isn't the code below a race condition?  What if the refiller
             % responds first?  No, it's not a race, because one is waiting
@@ -1312,7 +1315,7 @@ classdef WavesurferModel < ws.RootModel
             % performing a sweep
             % Actually, we'll wait until a bit later to set this true
             %self.IsPerformingSweep_ = true ;
-                
+            
             % Call user functions 
             self.callUserMethod_('startingSweep');            
             
@@ -1324,21 +1327,13 @@ classdef WavesurferModel < ws.RootModel
                     end
                 end
                 
-                % Tell the looper & refiller to ready themselves
-                %fprintf('About to send startingSweep\n');
-                self.IPCPublisher_.send('startingSweep',self.NSweepsCompletedInThisRun_+1) ;
-                
-                % Wait for the looper to respond
-                timeout = 10 ;  % s
-                err = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep', timeout) ;
-                if ~isempty(err) ,
-                    % Something went wrong
-                    self.abortOngoingRun_();
-                    self.changeReadiness(+1);
-                    throw(err);
-                end
+                % Tell the refiller to ready itself (we do this first b/c
+                % this start the DAQmx tasks, and we want the output
+                % task(s) to start before the input task(s)
+                self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
                 
                 % Wait for the refiller to respond
+                timeout = 10 ;  % s
                 err = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep', timeout) ;
                 if ~isempty(err) ,
                     % Something went wrong
@@ -1346,6 +1341,18 @@ classdef WavesurferModel < ws.RootModel
                     self.changeReadiness(+1);
                     throw(err);
                 end
+                
+                % Tell the looper to ready itself
+                self.IPCPublisher_.send('startingSweepLooper',self.NSweepsCompletedInThisRun_+1) ;
+                
+                % Wait for the looper to respond
+                err = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep', timeout) ;
+                if ~isempty(err) ,
+                    % Something went wrong
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(err);
+                end               
                 
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
@@ -2436,6 +2443,69 @@ classdef WavesurferModel < ws.RootModel
         end  % function
     end  % public methods block
 
+    methods
+        function [acquisitionKeystoneTask, stimulationKeystoneTask] = determineKeystoneTasks(self)
+            % The acq and stim subsystems each have a "keystone" task,
+            % which is one of "ai", "di", "ao", and "do".  In some cases,
+            % the keystone task for the acq subsystem is the same as that
+            % for the stim subsystem.  All the tasks in the subsystem that
+            % are not the keystone task have their start trigger set to
+            % <keystone task>/StartTrigger.  If a task is a keystone task,
+            % it is started after all non-keystone tasks are started.
+            %
+            % If you're not careful about this stuff, the acquisition tasks
+            % can end up getting triggered (e.g. by an external trigger)
+            % before the stimulation tasks have been started, even though
+            % the user has configure both acq and stim subsystems to use
+            % the same trigger.  This business with the keystone tasks is
+            % designed to eliminate this in the common case of acq and stim
+            % subsystems using the same trigger, and ameliorate it in cases
+            % where the acq and stim subsystems use different triggers.
+            
+            % First figure out the acq keystone task
+            nAIChannels = self.Acquisition.NActiveAnalogChannels ;
+            if nAIChannels==0 ,                    
+                % There are no active AI channels, so the DI task will
+                % be the keystone.  (If there are zero active DI
+                % channels, WS won't let you start a run, so there
+                % should be no issues on that account.)
+                acquisitionKeystoneTask = 'di' ;
+            else
+                % There's at least one active AI channel so the AI task
+                % is the acq keystone.
+                acquisitionKeystoneTask = 'ai' ;
+            end                
+            
+            % Now figure out the stim keystone task
+            if self.Triggering.AcquisitionTriggerScheme==self.Triggering.StimulationTriggerScheme ,
+                % Acq and stim subsystems are using the same trigger, so
+                % acq and stim subsystems will have the same keystone task.
+                stimulationKeystoneTask = acquisitionKeystoneTask ;
+            else
+                % Acq and stim subsystems are using different triggers, so
+                % acq and stim subsystems will have distinct keystone tasks.
+                
+                % So now we have to determine the stim keystone tasks.                
+                nAOChannels = self.Stimulation.NAnalogChannels ;
+                if nAOChannels==0 ,
+                    % There are no AO channels, so the DO task will
+                    % be the keystone.  (If there are zero active DO
+                    % channels, there won't be any output DAQmx tasks, so
+                    % this shouldn't be a problem.)
+                    stimulationKeystoneTask = 'do' ;
+                else
+                    % There's at least one AO channel so the AO task
+                    % is the stim keystone.
+                    stimulationKeystoneTask = 'ao' ;
+                end                                
+            end
+            
+            %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
+            %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
+            %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
+        end
+    end  % public methods block
+    
     methods (Access=protected) 
         function mimicProtocolThatWasJustLoaded_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.

@@ -21,7 +21,7 @@ classdef InputTask < handle
         AcquisitionDuration  % Seconds
         DurationPerDataAvailableCallback  % Seconds
         ClockTiming   % no setter, set when you set AcquisitionDuration
-        TriggerPFIID
+        TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
     end
     
@@ -46,7 +46,7 @@ classdef InputTask < handle
         AcquisitionDuration_ = 1     % Seconds
         DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = 'DAQmx_Val_FiniteSamps'
-        TriggerPFIID_
+        TriggerTerminalName_
         TriggerEdge_
         IsArmed_ = false
     end
@@ -461,19 +461,19 @@ classdef InputTask < handle
 %             value = self.TriggerDelegate_ ;
 %         end  % function                
         
-        function set.TriggerPFIID(self, newValue)
+        function set.TriggerTerminalName(self, newValue)
             if isempty(newValue) ,
-                self.TriggerPFIID_ = [];
-            elseif isnumeric(newValue) && isscalar(newValue) && (newValue==round(newValue)) && (newValue>=0) ,
-                self.TriggerPFIID_ = double(newValue);
+                self.TriggerTerminalName_ = '' ;
+            elseif ws.utility.isString(newValue) ,
+                self.TriggerTerminalName_ = newValue;
             else
                 error('most:Model:invalidPropVal', ...
-                      'TriggerPFIID must be empty or a scalar natural number');       
-            end            
+                      'TriggerTerminalName must be empty or a string');
+            end
         end  % function
         
-        function value = get.TriggerPFIID(self)
-            value = self.TriggerPFIID_ ;
+        function value = get.TriggerTerminalName(self)
+            value = self.TriggerTerminalName_ ;
         end  % function                
 
         function set.TriggerEdge(self, newValue)
@@ -539,11 +539,11 @@ classdef InputTask < handle
                 end
 
                 % Set up triggering
-                if ~isempty(self.TriggerPFIID)
-                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;                    
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(sprintf('PFI%d', self.TriggerPFIID), dabsTriggerEdge);
-                else
+                if isempty(self.TriggerTerminalName)
                     self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
+                else
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;                    
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(self.TriggerTerminalName, dabsTriggerEdge);
                 end        
             end
             
