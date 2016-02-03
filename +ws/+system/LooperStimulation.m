@@ -107,6 +107,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelTimed_ = [ self.IsDigitalChannelTimed_ isNewChannelTimed  ] ;
             self.DigitalOutputStateIfUntimed_ = [ self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ] ;
+            self.IsDigitalChannelMarkedForDeletion_ = [ self.IsDigitalChannelMarkedForDeletion_ false ] ;
             self.reacquireHardwareResources() ;
         end
         
@@ -122,13 +123,15 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                     self.DigitalTerminalIDs_ = zeros(1,0) ;
                     self.DigitalChannelNames_ = cell(1,0) ;
                     self.IsDigitalChannelTimed_ = true(1,0) ;
-                    self.DigitalOutputStateIfUntimed_ = false(1,0) ;                    
+                    self.DigitalOutputStateIfUntimed_ = false(1,0) ;     
+                    self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;     
                 else
                     self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                     self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
                     self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                     self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
                     self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                    self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
                 end
                 self.reacquireHardwareResources() ;
             end            
