@@ -3,6 +3,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     
     properties (Access = protected, Transient=true)
         TheUntimedDigitalOutputTask_ = []
+        IsTerminalInUntimedDigitalOutputTask_
     end
     
     methods
@@ -60,6 +61,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 
                 % And all the filters together
                 isTerminalInTask = isOnDemand & isInRange & isTerminalIDUnique ;
+                self.IsTerminalInUntimedDigitalOutputTask_ = isTerminalInTask ;
                 
                 % Create the task
                 deviceNamesInTask = digitalDeviceNames(isTerminalInTask) ;
@@ -172,9 +174,10 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self, newValue) ;
             if wasSet ,
                 if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-                    isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-                    untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isDigitalChannelUntimed) ;
-                    if ~isempty(untimedDigitalChannelState) ,
+                    isTerminalInUntimedDigitalOutputTask = self.IsTerminalInUntimedDigitalOutputTask_ ;
+                    %isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+                    untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isTerminalInUntimedDigitalOutputTask) ;
+                    if ~isempty(untimedDigitalChannelState) ,  % protects us against differently-dimensioned empties
                         self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
                     end
                 end
