@@ -1102,10 +1102,12 @@ classdef WavesurferModel < ws.RootModel
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
 
+            % Can't run unless we are currently idle
             if ~isequal(self.State,'idle') ,
                 return
             end
 
+            % Change the readiness (this changes the pointer in the view)
             self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
@@ -1128,13 +1130,17 @@ classdef WavesurferModel < ws.RootModel
                 end
             end
             
+            % Initialize the sweep counter
             self.NSweepsCompletedInThisRun_ = 0;
             
+            % Call the user method, if any
             self.callUserMethod_('startingRun');  
                         
-            % Tell all the subsystems to prepare for the run
+            % Note the time, b/c the logging subsystem needs it, and we
+            % want to note it *just* before the start of the run
             self.ClockAtRunStart_ = clock() ;
-              % do this now so that the data file header has the right value
+            
+            % Tell all the subsystems to prepare for the run
             try
                 for idx = 1: numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.IsEnabled ,
