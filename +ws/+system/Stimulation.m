@@ -756,7 +756,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
     end  % protected methods block
     
     methods (Access = protected)
-        function syncTasksToChannelMembership_(self)            
+        function syncTasksToChannelMembership_(self)             %#ok<MANU>
             % Clear the timed digital output task, will be recreated when acq is
             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
             % And have to do it first to avoid a temporary collision.
@@ -963,6 +963,13 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %     end
     
     methods (Access=protected)
+        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
+            wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;            
+            if wasSet ,
+                self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
+            end
+        end
+        
         function setIsDigitalChannelTimed_(self,newValue)
             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
             if wasSet ,

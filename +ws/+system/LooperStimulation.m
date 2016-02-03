@@ -28,24 +28,54 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             %fprintf('LooperStimulation::acquireOnDemandHardwareResources()\n');
             if isempty(self.TheUntimedDigitalOutputTask_) ,
                 %fprintf('the task is empty, so about to create a new one\n');
-                isDigitalChannelOnDemand = ~self.IsDigitalChannelTimed ;
-                %untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
+                
+                % Get the digital device names and terminal IDs
                 digitalDeviceNames = self.DigitalDeviceNames ;
-                onDemandDigitalDeviceNames = digitalDeviceNames(isDigitalChannelOnDemand) ;
                 digitalTerminalIDs = self.DigitalTerminalIDs ;
-                OnDemandDigitalTerminalIDs = digitalTerminalIDs(isDigitalChannelOnDemand) ;
-                %untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
+
+                % Filter for just the on-demand ones
+                isOnDemand = ~self.IsDigitalChannelTimed ;
+                %deviceNames2 = digitalDeviceNames(isOnDemand) ;
+                %terminalIDs2 = digitalTerminalIDs(isOnDemand) ;
+                
+                % Filter out channels with terminal IDs that are
+                % out-of-range.
+                nDIOTerminals = self.Parent.NDIOTerminals ;
+                isInRange = (0<=digitalTerminalIDs) & (digitalTerminalIDs<nDIOTerminals) ;
+                %deviceNames3 = deviceNames2(isInRange) ;
+                %terminalIDs3 = terminalIDs2(isInRange) ;
+                
+                % Filter out channels with terminal IDs that are
+                % overcommited.
+                %
+                % Note that we don't check for collisions with DIO
+                % terminals that are timed, or with ones that are being
+                % used as (timed) digital *inputs*.  But that should be OK,
+                % in the sense of not leading to errors for conflicts that
+                % get resolved before they start a run.  You could argue
+                % that us setting the values on in-conflict channels will 
+                % surprise the user, but we'll live with that for now.
+                nOccurancesOfTerminal = ws.nOccurancesOfID(digitalTerminalIDs) ;
+                isTerminalIDUnique = (nOccurancesOfTerminal==1) ;                
+                
+                % And all the filters together
+                isTerminalInTask = isOnDemand & isInRange & isTerminalIDUnique ;
+                
+                % Create the task
+                deviceNamesInTask = digitalDeviceNames(isTerminalInTask) ;
+                terminalIDsInTask = digitalTerminalIDs(isTerminalInTask) ;
                 self.TheUntimedDigitalOutputTask_ = ...
                     ws.ni.UntimedDigitalOutputTask(self, ...
                                                    'WaveSurfer Untimed Digital Output Task', ...
-                                                   onDemandDigitalDeviceNames, ...
-                                                   OnDemandDigitalTerminalIDs) ;
+                                                   deviceNamesInTask, ...
+                                                   terminalIDsInTask) ;
+                                               
                 % Set the outputs to the proper values, now that we have a task                               
                 %fprintf('About to turn on/off on-demand digital channels\n');
-                if any(isDigitalChannelOnDemand) ,
-                    onDemandDigitalChannelState = self.DigitalOutputStateIfUntimed(isDigitalChannelOnDemand) ;
-                    if ~isempty(onDemandDigitalChannelState) ,
-                        self.TheUntimedDigitalOutputTask_.ChannelData = onDemandDigitalChannelState ;
+                if any(isTerminalInTask) ,
+                    channelStateForEachTerminalInTask = self.DigitalOutputStateIfUntimed(isTerminalInTask) ;
+                    if ~isempty(channelStateForEachTerminalInTask) ,  % Isn't this redundant? -- ALT, 2016-02-02
+                        self.TheUntimedDigitalOutputTask_.ChannelData = channelStateForEachTerminalInTask ;
                     end
                 end                
             end
@@ -121,6 +151,15 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     end  % protected methods block
     
     methods (Access=protected)
+        function setSingleDigitalTerminalID_(self, i, newValue)
+            wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;
+            % If the setting was valid, and the channel is on-demand, we
+            % need to release and re-acquire the hardware resources.
+            if wasSet && ~self.IsDigitalChannelTimed(i) ,
+                self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
+            end
+        end  % function
+
         function setIsDigitalChannelTimed_(self, newValue)
             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self, newValue) ;
             if wasSet ,

@@ -375,6 +375,11 @@ classdef Looper < ws.RootModel
             self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
             result = [] ;
         end  % function
+
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue)
+            self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
+            result = [] ;
+        end  % function
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
 %             whos
@@ -781,7 +786,12 @@ classdef Looper < ws.RootModel
             self.Triggering.didSetSweepDurationIfFinite();
             %self.Display.didSetSweepDurationIfFinite();
         end                
-    end
+        
+        function didDeleteDigitalOutputChannels(self, originalIndicesOfDeletedChannels) %#ok<INUSD>
+            % In the looper, this does nothing
+        end
+        
+    end  % public methods block
        
     methods (Access=protected)
         function performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
@@ -1641,6 +1651,11 @@ classdef Looper < ws.RootModel
     methods
         function value = get.AcquisitionKeystoneTaskCache(self)
             value = self.AcquisitionKeystoneTaskCache_ ;
+        end
+
+        function didSetDigitalOutputTerminalID(self)
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            %self.broadcast('UpdateChannels') ;
         end
     end  % public methods block
 

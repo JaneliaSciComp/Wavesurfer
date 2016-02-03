@@ -2271,6 +2271,11 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
+        function singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(self, i)
+            value = self.Stimulation.DigitalTerminalIDs(i) ;
+            self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', i, value) ;
+        end
+
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.DigitalOutputStateIfUntimed ;
             self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;

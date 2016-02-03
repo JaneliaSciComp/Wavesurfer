@@ -443,11 +443,12 @@ classdef RootModel < ws.Model
             acquisitionTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
             stimulationTerminalIDs = self.Stimulation.DigitalTerminalIDs ;            
             terminalIDs = horzcat(acquisitionTerminalIDs, stimulationTerminalIDs) ;
-            nChannels = length(terminalIDs) ;
-            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            terminalIDsInEachCol = terminalIDsInEachRow' ;
-            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
+            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+            % nChannels = length(terminalIDs) ;
+            % terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            % terminalIDsInEachCol = terminalIDsInEachRow' ;
+            % isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            % nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
             % Sort them into the acq, stim ones
             nAcquisitionChannels = length(acquisitionTerminalIDs) ;
             nOccurancesOfAcquisitionTerminal = nOccurancesOfTerminal(1:nAcquisitionChannels) ;

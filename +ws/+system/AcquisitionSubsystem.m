@@ -937,11 +937,12 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % the current device, then we say that that terminal ID is
             % overcommitted.
             terminalIDs = self.AnalogTerminalIDs ;
-            nChannels = length(terminalIDs) ;
-            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            terminalIDsInEachCol = terminalIDsInEachRow' ;
-            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+            %nChannels = length(terminalIDs) ;
+            %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            %terminalIDsInEachCol = terminalIDsInEachRow' ;
+            %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
             nTerminalsOnDevice = self.Parent.NAITerminals ;
             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
         end

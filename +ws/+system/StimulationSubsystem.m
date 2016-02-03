@@ -742,14 +742,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end
         
         function setSingleDigitalTerminalID(self, i, newValue)
-            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                newValueAsDouble = double(newValue) ;
-                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-                end
-            end
-            self.Parent.didSetDigitalOutputTerminalID() ;
+            self.setSingleDigitalTerminalID_(i, newValue) ;
         end
         
 end  % methods block
@@ -810,6 +803,21 @@ end  % methods block
     end
 
     methods (Access=protected)
+        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
+            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    wasSet = true ;
+                else
+                    wasSet = false ;
+                end
+            else
+                wasSet = false ;
+            end
+            self.Parent.didSetDigitalOutputTerminalID() ;
+        end
+        
         function wasSet = setIsDigitalChannelTimed_(self,newValue)
             if ws.utility.isASettableValue(newValue),
                 nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
@@ -871,11 +879,12 @@ end  % methods block
             % the current device, then we say that that terminal ID is
             % overcommitted.
             terminalIDs = self.AnalogTerminalIDs ;
-            nChannels = length(terminalIDs) ;
-            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            terminalIDsInEachCol = terminalIDsInEachRow' ;
-            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+            %nChannels = length(terminalIDs) ;
+            %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            %terminalIDsInEachCol = terminalIDsInEachRow' ;
+            %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
             nAOTerminals = self.Parent.NAOTerminals ;
             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
         end
