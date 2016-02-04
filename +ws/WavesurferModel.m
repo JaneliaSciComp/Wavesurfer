@@ -1334,7 +1334,7 @@ classdef WavesurferModel < ws.RootModel
                 end
                 
                 % Tell the refiller to ready itself (we do this first b/c
-                % this start the DAQmx tasks, and we want the output
+                % this starts the DAQmx tasks, and we want the output
                 % task(s) to start before the input task(s)
                 self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
                 
