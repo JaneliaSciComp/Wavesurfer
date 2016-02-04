@@ -165,14 +165,12 @@ classdef UntimedDigitalOutputTask < handle
     
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)
-            % Get the channel data into a local
-            outputData = self.ChannelData ;
-            
             % Actually set up the task, if present
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else            
                 % Write the data to the output buffer
+                outputData = self.ChannelData ;
                 self.DabsDaqTask_.writeDigitalData(outputData) ;
             end
         end  % function

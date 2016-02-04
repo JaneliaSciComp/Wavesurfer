@@ -352,28 +352,28 @@ classdef FiniteOutputTask < handle
                 return
             end
             
-            % Get the channel data into a local
-            channelData=self.ChannelData;
-            
-            % The outputData is the channelData, unless the channelData is
-            % very short, in which case the outputData is just long
-            % enough, and all zeros
-            nScansInChannelData = size(channelData,1) ;            
-            if nScansInChannelData<2 ,
-                nChannels = length(self.TerminalIDs) ;
-                if self.IsAnalog ,
-                    outputData=zeros(2,nChannels);
-                else
-                    outputData=false(2,nChannels);
-                end
-            else
-                outputData = self.ChannelData ;
-            end
-            
             % Actually set up the task, if present
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else            
+                % Get the channel data into a local
+                channelData=self.ChannelData;
+
+                % The outputData is the channelData, unless the channelData is
+                % very short, in which case the outputData is just long
+                % enough, and all zeros
+                nScansInChannelData = size(channelData,1) ;            
+                if nScansInChannelData<2 ,
+                    nChannels = length(self.TerminalIDs) ;
+                    if self.IsAnalog ,
+                        outputData=zeros(2,nChannels);
+                    else
+                        outputData=false(2,nChannels);
+                    end
+                else
+                    outputData = self.ChannelData ;
+                end
+                
                 % Resize the output buffer to the number of scans in outputData
                 %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');  
                 % this is needed b/c we might have filled the buffer before bur never outputed that data
