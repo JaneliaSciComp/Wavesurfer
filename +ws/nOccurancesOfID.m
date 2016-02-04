@@ -4,8 +4,12 @@ function result = nOccurancesOfID(ids)
     % finding, for instance, when multiple channels are trying to use the
     % same terminal ID.
     n = length(ids) ;
-    idsInEachRow = repmat(ids,[n 1]) ;
-    idsInEachCol = idsInEachRow' ;
-    isMatchMatrix = (idsInEachRow==idsInEachCol) ;
-    result = sum(isMatchMatrix,1) ;   % sum rows
+    if n==0 ,
+        result = zeros(1,0) ;  % want to guarantee a row vector, even if input is zero-length col vector
+    else
+        idsInEachRow = repmat(ids,[n 1]) ;
+        idsInEachCol = idsInEachRow' ;
+        isMatchMatrix = (idsInEachRow==idsInEachCol) ;
+        result = sum(isMatchMatrix,1) ;   % sum rows
+    end
 end
