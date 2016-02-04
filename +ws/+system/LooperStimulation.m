@@ -3,7 +3,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     
     properties (Access = protected, Transient=true)
         TheUntimedDigitalOutputTask_ = []
-        IsTerminalInUntimedDigitalOutputTask_
+        IsInUntimedDOTaskForEachUntimedDigitalChannel_
     end
     
     methods
@@ -30,19 +30,29 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             if isempty(self.TheUntimedDigitalOutputTask_) ,
                 %fprintf('the task is empty, so about to create a new one\n');
                 
-                % Get the digital device names and terminal IDs
-                digitalDeviceNames = self.DigitalDeviceNames ;
-                digitalTerminalIDs = self.DigitalTerminalIDs ;
+                % Get the digital device names and terminal IDs, other
+                % things out of self
+                deviceNameForEachDigitalChannel = self.DigitalDeviceNames ;
+                terminalIDForEachDigitalChannel = self.DigitalTerminalIDs ;
+                onDemandOutputStateForEachDigitalChannel = self.DigitalOutputStateIfUntimed ;
+                nDIOTerminals = self.Parent.NDIOTerminals ;
 
                 % Filter for just the on-demand ones
-                isOnDemand = ~self.IsDigitalChannelTimed ;
-                %deviceNames2 = digitalDeviceNames(isOnDemand) ;
-                %terminalIDs2 = digitalTerminalIDs(isOnDemand) ;
+                isOnDemandForEachDigitalChannel = ~self.IsDigitalChannelTimed ;
+                if any(isOnDemandForEachDigitalChannel) ,
+                    deviceNameForEachOnDemandDigitalChannel = deviceNameForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
+                    terminalIDForEachOnDemandDigitalChannel = terminalIDForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
+                    outputStateForEachOnDemandDigitalChannel = onDemandOutputStateForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
+                else
+                    deviceNameForEachOnDemandDigitalChannel = cell(1,0) ;  % want a length-zero row vector
+                    terminalIDForEachOnDemandDigitalChannel = zeros(1,0) ;  % want a length-zero row vector
+                    outputStateForEachOnDemandDigitalChannel = false(1,0) ;  % want a length-zero row vector
+                end
                 
                 % Filter out channels with terminal IDs that are
                 % out-of-range.
-                nDIOTerminals = self.Parent.NDIOTerminals ;
-                isInRange = (0<=digitalTerminalIDs) & (digitalTerminalIDs<nDIOTerminals) ;
+                isTerminalIDInRangeForEachOnDemandDigitalChannel = ...
+                    (0<=terminalIDForEachOnDemandDigitalChannel) & (terminalIDForEachOnDemandDigitalChannel<nDIOTerminals) ;
                 %deviceNames3 = deviceNames2(isInRange) ;
                 %terminalIDs3 = terminalIDs2(isInRange) ;
                 
@@ -56,35 +66,38 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 % get resolved before they start a run.  You could argue
                 % that us setting the values on in-conflict channels will 
                 % surprise the user, but we'll live with that for now.
-                nOccurancesOfTerminal = ws.nOccurancesOfID(digitalTerminalIDs) ;
-                isTerminalIDUnique = (nOccurancesOfTerminal==1) ;                
+                nOccurancesOfTerminalIDForEachOnDemandDigitalChannel = ws.nOccurancesOfID(terminalIDForEachOnDemandDigitalChannel) ;
+                isTerminalIDUniqueForEachOnDemandDigitalChannel = (nOccurancesOfTerminalIDForEachOnDemandDigitalChannel==1) ;                
                 
                 % And all the filters together
-                isTerminalInTask = isOnDemand & isInRange & isTerminalIDUnique ;
-                self.IsTerminalInUntimedDigitalOutputTask_ = isTerminalInTask ;
+                isInTaskForEachOnDemandDigitalChannel = ...
+                    isTerminalIDInRangeForEachOnDemandDigitalChannel & ...
+                    isTerminalIDUniqueForEachOnDemandDigitalChannel ;
                 
                 % Create the task
-                deviceNamesInTask = digitalDeviceNames(isTerminalInTask) ;
-                terminalIDsInTask = digitalTerminalIDs(isTerminalInTask) ;
+                deviceNamesInTask = deviceNameForEachOnDemandDigitalChannel(isInTaskForEachOnDemandDigitalChannel) ;
+                terminalIDsInTask = terminalIDForEachOnDemandDigitalChannel(isInTaskForEachOnDemandDigitalChannel) ;
                 self.TheUntimedDigitalOutputTask_ = ...
                     ws.ni.UntimedDigitalOutputTask(self, ...
                                                    'WaveSurfer Untimed Digital Output Task', ...
                                                    deviceNamesInTask, ...
                                                    terminalIDsInTask) ;
+                self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ = isInTaskForEachOnDemandDigitalChannel ;
                                                
                 % Set the outputs to the proper values, now that we have a task                               
                 %fprintf('About to turn on/off on-demand digital channels\n');
-                if any(isTerminalInTask) ,
-                    channelStateForEachTerminalInTask = self.DigitalOutputStateIfUntimed(isTerminalInTask) ;
-                    if ~isempty(channelStateForEachTerminalInTask) ,  % Isn't this redundant? -- ALT, 2016-02-02
-                        self.TheUntimedDigitalOutputTask_.ChannelData = channelStateForEachTerminalInTask ;
+                if any(isInTaskForEachOnDemandDigitalChannel) ,                    
+                    outputStateForEachChannelInOnDemandDigitalTask = ...
+                        outputStateForEachOnDemandDigitalChannel(isInTaskForEachOnDemandDigitalChannel) ;
+                    if ~isempty(outputStateForEachChannelInOnDemandDigitalTask) ,  % Isn't this redundant? -- ALT, 2016-02-02
+                        self.TheUntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInOnDemandDigitalTask ;
                     end
                 end                
             end
         end
         
         function releaseHardwareResources(self)
-            self.releaseOnDemandHardwareResources() ;  % LooperStimulation has only on-demand resources, not timed ones
+            self.releaseOnDemandHardwareResources() ;
             self.releaseTimedHardwareResources() ;
         end
 
@@ -93,7 +106,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         end
         
         function releaseOnDemandHardwareResources(self)
-            self.TheUntimedDigitalOutputTask_ = [];            
+            self.TheUntimedDigitalOutputTask_ = [];
+            self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ = [] ;   % for tidiness---this is meaningless if TheUntimedDigitalOutputTask_ is empty
         end
         
         function reacquireHardwareResources(self) 
@@ -177,11 +191,13 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self, newValue) ;
             if wasSet ,
                 if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-                    isTerminalInUntimedDigitalOutputTask = self.IsTerminalInUntimedDigitalOutputTask_ ;
-                    %isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-                    untimedDigitalChannelState = self.DigitalOutputStateIfUntimed_(isTerminalInUntimedDigitalOutputTask) ;
-                    if ~isempty(untimedDigitalChannelState) ,  % protects us against differently-dimensioned empties
-                        self.TheUntimedDigitalOutputTask_.ChannelData = untimedDigitalChannelState ;
+                    isInUntimedDOTaskForEachUntimedDigitalChannel = self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ ;
+                    isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+                    outputStateIfUntimedForEachDigitalChannel = self.DigitalOutputStateIfUntimed_ ;
+                    outputStateForEachUntimedDigitalChannel = outputStateIfUntimedForEachDigitalChannel(isDigitalChannelUntimed) ;
+                    outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDigitalChannel(isInUntimedDOTaskForEachUntimedDigitalChannel) ;
+                    if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+                        self.TheUntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
                     end
                 end
             end
