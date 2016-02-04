@@ -908,15 +908,18 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
             
             % Calculate the signals
+            isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
+            nTimedDigitalChannels = sum(self.IsDigitalChannelTimed) ;
             if isempty(stimulusMap) ,
-                doData=zeros(0,length(self.IsDigitalChannelTimed));
+                doData=zeros(0,nTimedDigitalChannels);  
                 nChannelsWithStimulus = 0 ;
             else
-                isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
+                isChannelAnalogForEachTimedDigitalChannel = false(1,nTimedDigitalChannels) ;
+                namesOfTimedDigitalChannels = self.DigitalChannelNames(isTimedForEachDigitalChannel) ;                
                 [doData, nChannelsWithStimulus] = ...
                     stimulusMap.calculateSignals(self.SampleRate, ...
-                                                 self.DigitalChannelNames(self.IsDigitalChannelTimed), ...
-                                                 isChannelAnalog, ...
+                                                 namesOfTimedDigitalChannels, ...
+                                                 isChannelAnalogForEachTimedDigitalChannel, ...
                                                  episodeIndexWithinRun);
             end
             
