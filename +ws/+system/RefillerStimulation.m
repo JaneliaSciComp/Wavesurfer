@@ -325,8 +325,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %         end  % function
     end
 
-    methods (Access=protected)
-        function acquireHardwareResources_(self)            
+    methods
+        function acquireHardwareResources(self)            
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask('analog', ...
@@ -346,30 +346,21 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
-%             if isempty(self.TheUntimedDigitalOutputTask_) ,
-%                  self.TheUntimedDigitalOutputTask_ = ...
-%                     ws.ni.UntimedDigitalOutputTask(self, ...
-%                                            'Wavesurfer Untimed Digital Output Task', ...
-%                                            self.DigitalTerminalNames(~self.IsDigitalChannelTimed), ...
-%                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
-%                  if ~all(self.IsDigitalChannelTimed)
-%                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
-%                  end
-%            end
-        end
-    end
-    
-    methods
-        function releaseTimedHardwareResources(self)
-            self.TheFiniteAnalogOutputTask_ = [];            
-            self.TheFiniteDigitalOutputTask_ = [];            
-            %self.TheUntimedDigitalOutputTask_ = [];            
         end
         
         function releaseHardwareResources(self)
-            self.releaseTimedHardwareResources();
+            self.releaseTimedHardwareResources_();  % we only have timed resources, no on-demand
         end        
+    end  % public methods block
         
+    methods (Access=protected)
+        function releaseTimedHardwareResources_(self)
+            self.TheFiniteAnalogOutputTask_ = [];            
+            self.TheFiniteDigitalOutputTask_ = [];            
+        end
+    end  % protected methods block
+    
+    methods 
         function startingRun(self)
             %fprintf('Stimulation::startingRun()\n');
             %errors = [];
@@ -390,7 +381,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %wavesurferModel = self.Parent ;
             
             % Make the NI daq tasks, if don't have already
-            self.acquireHardwareResources_() ;
+            self.acquireHardwareResources() ;
             
             % Set up the task triggering
             %pfiID = self.TriggerScheme.PFIID ;
@@ -467,7 +458,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();            
             
-            %self.IsWithinRun_=false;  % might already be guaranteed to be false here...
+            % Clear the NI daq tasks
+            self.releaseHardwareResources() ;
         end  % function
         
         function stoppingRun(self)
@@ -477,7 +469,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();            
             
-            %self.IsWithinRun_=false;
+            % Clear the NI daq tasks
+            self.releaseHardwareResources() ;
         end  % function
 
         function abortingRun(self)
@@ -492,7 +485,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.TheFiniteDigitalOutputTask_.disarm();
             end
             
-            %self.IsWithinRun_=false;
+            % Clear the NI daq tasks
+            self.releaseHardwareResources() ;
         end  % function
         
         function startingSweep(self) %#ok<MANU>
