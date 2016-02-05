@@ -389,14 +389,10 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end
         
-        function result = heyLooperIsDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
-            % We are not the looper, so ignore
-            result = [] ;
-        end  % function
-        
-        function result = heyRefillerIsDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
-            self.releaseHardwareResources_() ;
-            self.IPCPublisher_.send('gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend') ;
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
+            %nothing to do, b/c we release the hardware resources at the
+            %end of a run now
+            %self.releaseHardwareResources_() ;
             result = [] ;
         end  % function
         

@@ -389,13 +389,8 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = heyLooperIsDigitalOutputTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
             self.Stimulation.IsDigitalChannelTimed = newValue ;
-            result = [] ;
-        end  % function
-        
-        function result = heyRefillerIsDigitalOutputTimedWasSetInFrontend(self, newValue) %#ok<INUSD>
-            % This message is intended for the refiller so we do nothing.
             result = [] ;
         end  % function
         

@@ -2295,19 +2295,7 @@ classdef WavesurferModel < ws.RootModel
             value = self.Stimulation.IsDigitalChannelTimed ;
             % Notify the refiller first, so that it can release all the DO
             % channels
-            self.IPCPublisher_.send('heyRefillerIsDigitalOutputTimedWasSetInFrontend',value) ;
-            
-            % Wait for the refiller to respond, to prevent a race
-            timeout = 10 ;  % s
-            err = self.RefillerIPCSubscriber_.waitForMessage('gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend',timeout) ;
-            if ~isempty(err) ,
-                % Something went wrong
-                throw(err);
-            end            
-
-            % Notify the looper next, so it can claim and perhaps set all
-            % the on-demand DO channels
-            self.IPCPublisher_.send('heyLooperIsDigitalOutputTimedWasSetInFrontend',value) ;
+            self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
         end
         
         function didAddAnalogInputChannel(self)
