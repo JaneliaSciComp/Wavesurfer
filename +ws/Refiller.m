@@ -45,7 +45,7 @@ classdef Refiller < ws.RootModel
         %RPCServer_
         %RPCClient_
         IPCPublisher_
-        IPCSubscriber_
+        IPCSubscriber_  % subscriber for the frontend
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedSoFarThisRun_ = 0
@@ -389,8 +389,14 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end
         
-        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue) %#ok<INUSD>
-            %self.Stimulation.IsDigitalChannelTimed = newValue ;
+        function result = heyLooperIsDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
+            % We are not the looper, so ignore
+            result = [] ;
+        end  % function
+        
+        function result = heyRefillerIsDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
+            self.releaseHardwareResources_() ;
+            self.IPCPublisher_.send('gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend') ;
             result = [] ;
         end  % function
         
@@ -1150,7 +1156,7 @@ classdef Refiller < ws.RootModel
 %     end  % methods block        
     
     methods (Access=protected)
-        function synchronizeTransientStateToPersistedState_(self)            
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
             % This method should set any transient state variables to
             % ensure that the object invariants are met, given the values
             % of the persisted state variables.  The default implementation

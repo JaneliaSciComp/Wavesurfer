@@ -463,8 +463,12 @@ classdef WavesurferModel < ws.RootModel
         
         function result = refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
             result = [] ;
-        end        
-    end  % methods
+        end       
+        
+        function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
+            result = [] ;
+        end       
+    end  % ZMQ methods block
     
     methods
         function value=get.VersionString(self)
@@ -2289,7 +2293,21 @@ classdef WavesurferModel < ws.RootModel
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.IsDigitalChannelTimed ;
-            self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
+            % Notify the refiller first, so that it can release all the DO
+            % channels
+            self.IPCPublisher_.send('heyRefillerIsDigitalOutputTimedWasSetInFrontend',value) ;
+            
+            % Wait for the refiller to respond, to prevent a race
+            timeout = 10 ;  % s
+            err = self.RefillerIPCSubscriber_.waitForMessage('gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend',timeout) ;
+            if ~isempty(err) ,
+                % Something went wrong
+                throw(err);
+            end            
+
+            % Notify the looper next, so it can claim and perhaps set all
+            % the on-demand DO channels
+            self.IPCPublisher_.send('heyLooperIsDigitalOutputTimedWasSetInFrontend',value) ;
         end
         
         function didAddAnalogInputChannel(self)

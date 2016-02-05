@@ -44,7 +44,7 @@ classdef Looper < ws.RootModel
         %RPCServer_
         %RPCClient_
         IPCPublisher_
-        IPCSubscriber_
+        IPCSubscriber_  % subscriber for the frontend
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
@@ -389,11 +389,13 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
+        function result = heyLooperIsDigitalOutputTimedWasSetInFrontend(self, newValue)
             self.Stimulation.IsDigitalChannelTimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            result = [] ;
+        end  % function
+        
+        function result = heyRefillerIsDigitalOutputTimedWasSetInFrontend(self, newValue) %#ok<INUSD>
+            % This message is intended for the refiller so we do nothing.
             result = [] ;
         end  % function
         
