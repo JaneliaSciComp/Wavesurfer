@@ -284,7 +284,13 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = startingRun(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
+        function result = startingRun(self, ...
+                                      wavesurferModelSettings, ...
+                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      isTerminalOvercommitedForEachAIChannel, ...
+                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      isTerminalOvercommitedForEachAOChannel, ...
+                                      isTerminalOvercommitedForEachDOChannel)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -292,7 +298,12 @@ classdef Refiller < ws.RootModel
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel) ;
             result = [] ;
         end  % function
 
@@ -419,7 +430,7 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue)  %#ok<INUSD>
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
             % We don't need to do anything in response to this message
             result = [] ;
         end  % function
@@ -767,7 +778,13 @@ classdef Refiller < ws.RootModel
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
+        function prepareForRun_(self, ...
+                                wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -786,6 +803,12 @@ classdef Refiller < ws.RootModel
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
+            
+            % Set the overcommitment arrays
+            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,

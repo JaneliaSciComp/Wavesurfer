@@ -115,7 +115,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.acquireHardwareResources() ;            
         end
         
-        function didAddDigitalChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+        function didAddDOChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
@@ -125,31 +125,58 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.reacquireHardwareResources() ;
         end
         
-        function didRemoveDigitalChannelInFrontend(self, channelIndex)
-            nChannels = length(self.DigitalTerminalIDs) ;
-            if 1<=channelIndex && channelIndex<=nChannels ,
-                %channelName = self.AnalogChannelNames_{channelIndex} ;
-                isKeeper = true(1,nChannels) ;
-                isKeeper(channelIndex) = false ;
-                if ~any(isKeeper) ,
-                    % special case so things stay row vectors
-                    self.DigitalDeviceNames_ = cell(1,0) ;
-                    self.DigitalTerminalIDs_ = zeros(1,0) ;
-                    self.DigitalChannelNames_ = cell(1,0) ;
-                    self.IsDigitalChannelTimed_ = true(1,0) ;
-                    self.DigitalOutputStateIfUntimed_ = false(1,0) ;     
-                    self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;     
-                else
-                    self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                    self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                    self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                    self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-                    self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
-                    self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-                end
-                self.reacquireHardwareResources() ;
-            end            
+        function didRemoveDigitalOutputChannelsInFrontend(self, channelIndices)
+            nChannels = length(self.DigitalChannelNames) ;            
+            isKeeper = true(1,nChannels) ;
+            isKeeper(channelIndices) = false ;
+            if ~any(isKeeper) ,
+                % special case so things stay row vectors
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelTimed_ = true(1,0) ;
+                self.DigitalOutputStateIfUntimed_ = false(1,0) ;     
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;     
+            else
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            self.reacquireHardwareResources() ;
         end
+        
+%         function didRemoveDigitalOutputChannelsInFrontendAlternateSeemsBad(self, indicesOfChannelsToBeDeleted)
+%             % Delete just the indicated channels.  We take pains to
+%             % preserve the IsMarkedForDeletion status of the surviving
+%             % channels.  The primary use case of this is to sync up the
+%             % Looper with the Frontend when the user deletes digital
+%             % channels.
+%             
+%             % Get the current state of IsMarkedForDeletion, so that we can
+%             % restore it for the surviving channels before we exit
+%             isChannelMarkedForDeletionAtEntry = self.IsDigitalChannelMarkedForDeletion ;
+%             
+%             % Construct a logical array indicating which channels we're
+%             % going to delete, as indicated by indicesOfChannelsToBeDeleted
+%             nChannels = length(isChannelMarkedForDeletionAtEntry) ;
+%             isToBeDeleted = false(1,nChannels) ;
+%             isToBeDeleted(indicesOfChannelsToBeDeleted) = true ;
+%             
+%             % Mark the channels we want to delete, then delete them using
+%             % the public interface
+%             self.IsDigitalChannelMarkedForDeletion_ = isToBeDeleted ;
+%             self.deleteMarkedDigitalChannels() ;
+%             
+%             % Now restore IsMarkedForDeletion for the surviving channels to
+%             % the value they had on entry
+%             wasDeleted = isToBeDeleted ;
+%             wasKept = ~wasDeleted ;
+%             isChannelMarkedForDeletionAtExit = isChannelMarkedForDeletionAtEntry(wasKept) ;
+%             self.IsDigitalChannelMarkedForDeletion_ = isChannelMarkedForDeletionAtExit ;            
+%         end
         
         function didSelectStimulusSequence(self, cycle)
             self.StimulusLibrary.SelectedOutputable = cycle;
@@ -168,17 +195,14 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.(name) = value;
         end
     end  % protected methods block
+
+    methods
+        function singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue)
+            self.DigitalTerminalIDs_(i) = newValue ;
+        end  % function
+    end
     
     methods (Access=protected)
-        function setSingleDigitalTerminalID_(self, i, newValue)
-            wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;
-            % If the setting was valid, and the channel is on-demand, we
-            % need to release and re-acquire the hardware resources.
-            if wasSet && ~self.IsDigitalChannelTimed(i) ,
-                self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
-            end
-        end  % function
-
         function setIsDigitalChannelTimed_(self, newValue)
             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self, newValue) ;
             if wasSet ,

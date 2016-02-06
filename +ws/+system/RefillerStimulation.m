@@ -326,25 +326,31 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     end
 
     methods
-        function acquireHardwareResources(self)            
+        function acquireHardwareResources(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
+                isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted ;
+                isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
+                deviceNameForEachChannelInAOTask = self.AnalogDeviceNames(isInTaskForEachAOChannel) ;
+                terminalIDForEachChannelInAOTask = self.AnalogTerminalIDs(isInTaskForEachAOChannel) ;                
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask('analog', ...
                                            'WaveSurfer Finite Analog Output Task', ...
-                                           self.AnalogDeviceNames, ...
-                                           self.AnalogTerminalIDs) ;
+                                           deviceNameForEachChannelInAOTask, ...
+                                           terminalIDForEachChannelInAOTask) ;
                 self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
-                %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
-                isDigitalChannelTimed = self.IsDigitalChannelTimed ;
+                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+                isTimedForEachDOChannel = self.IsDigitalChannelTimed ;
+                isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
+                deviceNameForEachChannelInDOTask = self.DigitalDeviceNames(isInTaskForEachDOChannel) ;
+                terminalIDForEachChannelInDOTask = self.DigitalTerminalIDs(isInTaskForEachDOChannel) ;                
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.ni.FiniteOutputTask('digital', ...
                                            'WaveSurfer Finite Digital Output Task', ...
-                                           self.DigitalDeviceNames(isDigitalChannelTimed), ...
-                                           self.DigitalTerminalIDs(isDigitalChannelTimed) ) ;
+                                           deviceNameForEachChannelInDOTask, ...
+                                           terminalIDForEachChannelInDOTask ) ;
                 self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
-                %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
             end
         end
         

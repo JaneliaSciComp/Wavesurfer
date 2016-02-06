@@ -287,7 +287,13 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
 
-        function result = startingRun(self,wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)  %#ok<INUSD>
+        function result = startingRun(self, ...
+                                      wavesurferModelSettings, ...
+                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      isTerminalOvercommitedForEachAIChannel, ...
+                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      isTerminalOvercommitedForEachAOChannel, ...
+                                      isTerminalOvercommitedForEachDOChannel)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -295,7 +301,13 @@ classdef Looper < ws.RootModel
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, ...
+                                stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel) ;
             result = [] ;
         end  % function
 
@@ -376,16 +388,12 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
 
-        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue)
-            self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
-            result = [] ;
-        end  % function
-        
-        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDIChannelTerminalOvercommitted, isDOChannelTerminalOvercommitted)
+            %self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
+            self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
+            self.IsDIChannelTerminalOvercommitted_ = isDIChannelTerminalOvercommitted ;
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
@@ -395,12 +403,17 @@ classdef Looper < ws.RootModel
         end  % function
         
         function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
-            self.Stimulation.didAddDigitalChannelInFrontend(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
+            self.Stimulation.didAddDOChannelInFrontend(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
             result = [] ;
         end  % function
         
         function result = didRemoveDigitalOutputChannelsInFrontend(self, originalIndicesOfDeletedChannels)
-            self.Stimulation.deleteDigitalChannels(originalIndicesOfDeletedChannels) ;
+            self.Stimulation.didRemoveDigitalOutputChannelsInFrontend(originalIndicesOfDeletedChannels) ;
+            result = [] ;
+        end  % function
+        
+        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+            self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
             result = [] ;
         end  % function
         
@@ -865,7 +878,13 @@ classdef Looper < ws.RootModel
 %             end
 %         end
         
-        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask)
+        function prepareForRun_(self, ...
+                                wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel )  %#ok<INUSL>
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -889,6 +908,12 @@ classdef Looper < ws.RootModel
             
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
+            
+            % Set the overcommitment arrays, since we have the info at hand
+            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1650,10 +1675,10 @@ classdef Looper < ws.RootModel
             value = self.AcquisitionKeystoneTaskCache_ ;
         end
 
-        function didSetDigitalOutputTerminalID(self)
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            %self.broadcast('UpdateChannels') ;
-        end
+%         function didSetDigitalOutputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             %self.broadcast('UpdateChannels') ;
+%         end
     end  % public methods block
 
     methods (Access=protected) 

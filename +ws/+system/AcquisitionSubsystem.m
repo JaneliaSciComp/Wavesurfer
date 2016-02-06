@@ -66,7 +66,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsDigitalChannelActive_ = true(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
-        IsAnalogChannelTerminalOvercommitted_ = false(1,0)
+        %IsAnalogChannelTerminalOvercommitted_ = false(1,0)
         %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
@@ -250,7 +250,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end
         
         function result=get.IsAnalogChannelTerminalOvercommitted(self)
-            result =  self.IsAnalogChannelTerminalOvercommitted_ ;
+            result =  self.Parent.IsAIChannelTerminalOvercommitted ;
         end
         
         function result=get.IsDigitalChannelTerminalOvercommitted(self)
@@ -468,7 +468,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    self.syncIsAnalogChannelTerminalOvercommitted_() ;
+                    %self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetAnalogInputTerminalID();
@@ -929,23 +929,23 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             value = self.AnalogChannelScales_ ;
         end  % function
         
-        function syncIsAnalogChannelTerminalOvercommitted_(self) 
-            % For each channel, determines if the terminal ID for that
-            % channel is "overcommited".  I.e. if two channels specify the
-            % same terminal ID, that terminal ID is overcommitted.  Also,
-            % if that specified terminal ID is not a legal terminal ID for
-            % the current device, then we say that that terminal ID is
-            % overcommitted.
-            terminalIDs = self.AnalogTerminalIDs ;
-            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
-            %nChannels = length(terminalIDs) ;
-            %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            %terminalIDsInEachCol = terminalIDsInEachRow' ;
-            %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-            nTerminalsOnDevice = self.Parent.NAITerminals ;
-            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
-        end
+%         function syncIsAnalogChannelTerminalOvercommitted_(self) 
+%             % For each channel, determines if the terminal ID for that
+%             % channel is "overcommited".  I.e. if two channels specify the
+%             % same terminal ID, that terminal ID is overcommitted.  Also,
+%             % if that specified terminal ID is not a legal terminal ID for
+%             % the current device, then we say that that terminal ID is
+%             % overcommitted.
+%             terminalIDs = self.AnalogTerminalIDs ;
+%             nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+%             %nChannels = length(terminalIDs) ;
+%             %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+%             %terminalIDsInEachCol = terminalIDsInEachRow' ;
+%             %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+%             %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+%             nTerminalsOnDevice = self.Parent.NAITerminals ;
+%             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
+%         end
          
 %         function syncIsDigitalChannelTerminalOvercommitted_(self)            
 %             [nOccurancesOfTerminal,~] = self.Parent.computeDIOTerminalCommitments() ;
@@ -1040,7 +1040,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
@@ -1096,7 +1096,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
             
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
         end  % function
         
@@ -1174,7 +1174,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             deviceName = self.Parent.DeviceName ;
             self.AnalogDeviceNames_(:) = {deviceName} ;
             self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('Update');
         end

@@ -713,6 +713,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didSetAnalogInputTerminalID(self)
+            self.syncIsAIChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -743,6 +744,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didSetAnalogOutputTerminalID(self)
+            self.syncIsAOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -2282,8 +2284,10 @@ classdef WavesurferModel < ws.RootModel
     
     methods
         function singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(self, i)
+            % This only gets called if the value was actually set.
             value = self.Stimulation.DigitalTerminalIDs(i) ;
-            self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', i, value) ;
+            self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
+                                    i, value, self.IsDIChannelTerminalOvercommitted, self.IsDOChannelTerminalOvercommitted ) ;
         end
 
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
@@ -2299,6 +2303,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didAddAnalogInputChannel(self)
+            self.syncIsAIChannelTerminalOvercommitted_() ;
             self.Display.didAddAnalogInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2314,6 +2319,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
+            self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display.didDeleteAnalogInputChannels(nameOfRemovedChannels) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2341,6 +2347,7 @@ classdef WavesurferModel < ws.RootModel
 %         end
         
         function didAddAnalogOutputChannel(self)
+            self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display.didAddAnalogOutputChannel() ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2357,6 +2364,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
+            self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2602,6 +2610,8 @@ classdef WavesurferModel < ws.RootModel
                         % Recalculate which digital terminals are now
                         % overcommitted, since that also updates which are
                         % out-of-range for the device
+                        self.syncIsAIChannelTerminalOvercommitted_() ;
+                        self.syncIsAOChannelTerminalOvercommitted_() ;
                         self.syncIsDigitalChannelTerminalOvercommitted_() ;
                         
                         % Tell the subsystems that we've changed the device

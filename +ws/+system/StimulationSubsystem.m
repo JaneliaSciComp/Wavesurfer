@@ -568,7 +568,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             %self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddAnalogOutputChannel() ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -627,7 +627,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -667,41 +667,11 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
         
-        function deleteDigitalChannels(self, indicesOfChannelsToBeDeleted)
-            % Delete just the indicated channels.  We take pains to
-            % preserve the IsMarkedForDeletion status of the surviving
-            % channels.  The primary use case of this is to sync up the
-            % Looper with the Frontend when the user deletes digital
-            % channels.
-            
-            % Get the current state of IsMarkedForDeletion, so that we can
-            % restore it for the surviving channels before we exit
-            isChannelMarkedForDeletionAtEntry = self.IsDigitalChannelMarkedForDeletion ;
-            
-            % Construct a logical array indicating which channels we're
-            % going to delete, as indicated by indicesOfChannelsToBeDeleted
-            nChannels = length(isChannelMarkedForDeletionAtEntry) ;
-            isToBeDeleted = false(1,nChannels) ;
-            isToBeDeleted(indicesOfChannelsToBeDeleted) = true ;
-            
-            % Mark the channels we want to delete, then delete them using
-            % the public interface
-            self.IsDigitalChannelMarkedForDeletion_ = isToBeDeleted ;
-            self.deleteMarkedDigitalChannels() ;
-            
-            % Now restore IsMarkedForDeletion for the surviving channels to
-            % the value they had on entry
-            wasDeleted = isToBeDeleted ;
-            wasKept = ~wasDeleted ;
-            isChannelMarkedForDeletionAtExit = isChannelMarkedForDeletionAtEntry(wasKept) ;
-            self.IsDigitalChannelMarkedForDeletion_ = isChannelMarkedForDeletionAtExit ;            
-        end
-        
         function didSetDeviceName(self)
             deviceName = self.Parent.DeviceName ;
             self.AnalogDeviceNames_(:) = {deviceName} ;            
             self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('Update');
         end
@@ -735,7 +705,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    self.syncIsAnalogChannelTerminalOvercommitted_() ;
+                    %self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetAnalogOutputTerminalID();
@@ -871,23 +841,23 @@ end  % methods block
             end
         end
 
-        function syncIsAnalogChannelTerminalOvercommitted_(self) 
-            % For each channel, determines if the terminal ID for that
-            % channel is "overcommited".  I.e. if two channels specify the
-            % same terminal ID, that terminal ID is overcommitted.  Also,
-            % if that specified terminal ID is not a legal terminal ID for
-            % the current device, then we say that that terminal ID is
-            % overcommitted.
-            terminalIDs = self.AnalogTerminalIDs ;
-            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
-            %nChannels = length(terminalIDs) ;
-            %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            %terminalIDsInEachCol = terminalIDsInEachRow' ;
-            %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-            nAOTerminals = self.Parent.NAOTerminals ;
-            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
-        end
+%         function syncIsAnalogChannelTerminalOvercommitted_(self) 
+%             % For each channel, determines if the terminal ID for that
+%             % channel is "overcommited".  I.e. if two channels specify the
+%             % same terminal ID, that terminal ID is overcommitted.  Also,
+%             % if that specified terminal ID is not a legal terminal ID for
+%             % the current device, then we say that that terminal ID is
+%             % overcommitted.
+%             terminalIDs = self.AnalogTerminalIDs ;
+%             nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+%             %nChannels = length(terminalIDs) ;
+%             %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+%             %terminalIDsInEachCol = terminalIDsInEachRow' ;
+%             %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+%             %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+%             nAOTerminals = self.Parent.NAOTerminals ;
+%             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
+%         end
          
 %         function syncIsDigitalChannelTerminalOvercommitted_(self)            
 %             [~,nOccurancesOfTerminal] = self.Parent.computeDIOTerminalCommitments() ;

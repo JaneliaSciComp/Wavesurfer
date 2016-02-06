@@ -45,6 +45,8 @@ classdef RootModel < ws.Model
         NAOTerminals
         NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
         AllChannelNames
+        IsAIChannelTerminalOvercommitted
+        IsAOChannelTerminalOvercommitted
         IsDIChannelTerminalOvercommitted
         IsDOChannelTerminalOvercommitted
     end
@@ -127,6 +129,9 @@ classdef RootModel < ws.Model
         NAITerminals_ = 0
         NAOTerminals_ = 0
 
+        IsAIChannelTerminalOvercommitted_ = false(1,0)        
+        IsAOChannelTerminalOvercommitted_ = false(1,0)        
+        
         IsDIChannelTerminalOvercommitted_ = false(1,0)        
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
     end
@@ -234,17 +239,17 @@ classdef RootModel < ws.Model
             result = [aiNames diNames aoNames doNames] ;
         end
 
+        function result = get.IsAIChannelTerminalOvercommitted(self)
+            result = self.IsAIChannelTerminalOvercommitted_ ;
+        end
+        
+        function result = get.IsAOChannelTerminalOvercommitted(self)
+            result = self.IsAOChannelTerminalOvercommitted_ ;
+        end
+        
         function result = get.IsDIChannelTerminalOvercommitted(self)
             result = self.IsDIChannelTerminalOvercommitted_ ;
         end
-        
-%         function set.IsDIChannelTerminalOvercommitted_(self, value)
-%             fprintf('About to set IsDIChannelTerminalOvercommitted_\n');
-%             value
-%             dbstack           
-%             self.IsDIChannelTerminalOvercommitted_ = value ;
-%             fprintf('\n\n\n');
-%         end
         
         function result = get.IsDOChannelTerminalOvercommitted(self)
             result = self.IsDOChannelTerminalOvercommitted_ ;
@@ -421,14 +426,44 @@ classdef RootModel < ws.Model
         end
 
         function syncIsDigitalChannelTerminalOvercommitted_(self)
-            [nOccurancesOfTerminalInAcquisition,nOccurancesOfTerminalInStimulation] = self.computeDIOTerminalCommitments() ;
+            [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
             nDIOTerminals = self.NDIOTerminals ;
-            terminalIDForEachAcquisitionChannel = self.Acquisition.DigitalTerminalIDs ;
-            terminalIDForEachStimulationChannel = self.Stimulation.DigitalTerminalIDs ;
-            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalInAcquisition>1) | (terminalIDForEachAcquisitionChannel>=nDIOTerminals) ;
-            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalInStimulation>1) | (terminalIDForEachStimulationChannel>=nDIOTerminals) ;
+            terminalIDForEachDIChannel = self.Acquisition.DigitalTerminalIDs ;
+            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
+            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
         end  % function
 
+        function syncIsAIChannelTerminalOvercommitted_(self)            
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
+            
+            % For AI terminals
+            aiTerminalIDs = self.Acquisition.AnalogTerminalIDs ;
+            nOccurancesOfAITerminal = ws.nOccurancesOfID(aiTerminalIDs) ;
+            nAITerminalsOnDevice = self.NAITerminals ;
+            self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | (aiTerminalIDs>=nAITerminalsOnDevice) ;            
+        end
+        
+        function syncIsAOChannelTerminalOvercommitted_(self)            
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
+            
+            % For AO terminals
+            aoTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            nOccurancesOfAOTerminal = ws.nOccurancesOfID(aoTerminalIDs) ;
+            nAOTerminals = self.NAOTerminals ;
+            self.IsAOChannelTerminalOvercommitted_ = (nOccurancesOfAOTerminal>1) | (aoTerminalIDs>=nAOTerminals) ;            
+        end
+        
     end  % protected methods block
     
     methods
@@ -469,6 +504,8 @@ classdef RootModel < ws.Model
             % variables have been set to the encoded values.
             
             self.syncDeviceResourceCountsFromDeviceName_() ;
+            self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
         end
     end
