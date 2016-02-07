@@ -205,6 +205,20 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.IsDigitalChannelTimed_ = newValue ;
             self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
         end  % function
+        
+        function digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+            self.DigitalOutputStateIfUntimed_ = newValue ;
+            if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+                isInUntimedDOTaskForEachUntimedDigitalChannel = self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ ;
+                isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+                outputStateIfUntimedForEachDigitalChannel = self.DigitalOutputStateIfUntimed_ ;
+                outputStateForEachUntimedDigitalChannel = outputStateIfUntimedForEachDigitalChannel(isDigitalChannelUntimed) ;
+                outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDigitalChannel(isInUntimedDOTaskForEachUntimedDigitalChannel) ;
+                if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+                    self.TheUntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
+                end
+            end            
+        end  % function        
     end
     
     methods (Access=protected)
@@ -216,22 +230,22 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %             %self.broadcast('DidSetIsDigitalChannelTimed');
 %         end  % function
         
-        function setDigitalOutputStateIfUntimed_(self, newValue)
-            wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self, newValue) ;
-            if wasSet ,
-                if ~isempty(self.TheUntimedDigitalOutputTask_) ,
-                    isInUntimedDOTaskForEachUntimedDigitalChannel = self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ ;
-                    isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
-                    outputStateIfUntimedForEachDigitalChannel = self.DigitalOutputStateIfUntimed_ ;
-                    outputStateForEachUntimedDigitalChannel = outputStateIfUntimedForEachDigitalChannel(isDigitalChannelUntimed) ;
-                    outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDigitalChannel(isInUntimedDOTaskForEachUntimedDigitalChannel) ;
-                    if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
-                        self.TheUntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
-                    end
-                end
-            end
-            %self.broadcast('DidSetDigitalOutputStateIfUntimed');
-        end  % function
+%         function setDigitalOutputStateIfUntimed_(self, newValue)
+%             wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self, newValue) ;
+%             if wasSet ,
+%                 if ~isempty(self.TheUntimedDigitalOutputTask_) ,
+%                     isInUntimedDOTaskForEachUntimedDigitalChannel = self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ ;
+%                     isDigitalChannelUntimed = ~self.IsDigitalChannelTimed_ ;
+%                     outputStateIfUntimedForEachDigitalChannel = self.DigitalOutputStateIfUntimed_ ;
+%                     outputStateForEachUntimedDigitalChannel = outputStateIfUntimedForEachDigitalChannel(isDigitalChannelUntimed) ;
+%                     outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDigitalChannel(isInUntimedDOTaskForEachUntimedDigitalChannel) ;
+%                     if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+%                         self.TheUntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
+%                     end
+%                 end
+%             end
+%             %self.broadcast('DidSetDigitalOutputStateIfUntimed');
+%         end  % function
         
 %         function addDigitalChannel_(self)
 %             fprintf('LooperStimulation::addDigitalChannel_\n') ;

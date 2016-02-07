@@ -406,8 +406,17 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
-            self.Stimulation.didAddDOChannelInFrontend(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
+        function result = didAddDigitalOutputChannelInFrontend(self, ...
+                                                               newChannelName, ...
+                                                               newChannelDeviceName, ...
+                                                               newTerminalID, ...
+                                                               isNewChannelTimed, ...
+                                                               newChannelStateIfUntimed)
+            self.Stimulation.didAddDOChannelInFrontend(newChannelName, ...
+                                                       newChannelDeviceName, ...
+                                                       newTerminalID, ...
+                                                       isNewChannelTimed, ...
+                                                       newChannelStateIfUntimed) ;
             result = [] ;
         end  % function
         
@@ -417,7 +426,8 @@ classdef Looper < ws.RootModel
         end  % function
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-            self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
+            %self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
+            self.Stimulation.digitalOutputStateIfUntimedWasSetInFrontend(newValue) ;
             result = [] ;
         end  % function
         
