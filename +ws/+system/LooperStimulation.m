@@ -200,16 +200,21 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         function singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue)
             self.DigitalTerminalIDs_(i) = newValue ;
         end  % function
+        
+        function isDigitalChannelTimedWasSetInFrontend(self, newValue)
+            self.IsDigitalChannelTimed_ = newValue ;
+            self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
+        end  % function
     end
     
     methods (Access=protected)
-        function setIsDigitalChannelTimed_(self, newValue)
-            wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self, newValue) ;
-            if wasSet ,
-                self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
-            end  
-            %self.broadcast('DidSetIsDigitalChannelTimed');
-        end  % function
+%         function setIsDigitalChannelTimed_(self, newValue)
+%             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self, newValue) ;
+%             if wasSet ,
+%                 self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
+%             end  
+%             %self.broadcast('DidSetIsDigitalChannelTimed');
+%         end  % function
         
         function setDigitalOutputStateIfUntimed_(self, newValue)
             wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self, newValue) ;

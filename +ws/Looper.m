@@ -388,7 +388,9 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
 
-        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDIChannelTerminalOvercommitted, isDOChannelTerminalOvercommitted)
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
+                                                                        i, newValue, ...
+                                                                        isDIChannelTerminalOvercommitted, isDOChannelTerminalOvercommitted)
             %self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
             self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
             self.IsDIChannelTerminalOvercommitted_ = isDIChannelTerminalOvercommitted ;
@@ -398,7 +400,9 @@ classdef Looper < ws.RootModel
         end  % function
         
         function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
-            self.Stimulation.IsDigitalChannelTimed = newValue ;
+            % This only gets called if the value in newValue was found to
+            % be legal.
+            self.Stimulation.isDigitalChannelTimedWasSetInFrontend(newValue) ;
             result = [] ;
         end  % function
         
