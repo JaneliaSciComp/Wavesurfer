@@ -407,7 +407,13 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) %#ok<INUSD>
+        function result = didAddDigitalOutputChannelInFrontend(self, ...
+                                                               channelNameForEachDOChannel, ...
+                                                               deviceNameForEachDOChannel, ...
+                                                               terminalIDForEachDOChannel, ...
+                                                               isTimedForEachDOChannel, ...
+                                                               onDemandOutputForEachDOChannel, ...
+                                                               isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
             %self.Stimulation.addDigitalChannel() ;
             result = [] ;
         end  % function
@@ -417,7 +423,7 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
 
-        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings) %#ok<INUSD>
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings, isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return

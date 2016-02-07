@@ -592,16 +592,12 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
-            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            isNewChannelTimed = true ;
-            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ isNewChannelTimed  ];
-            newChannelStateIfUntimed = false ;
-            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ];
+            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
+            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             
-            self.Parent.didAddDigitalOutputChannel(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
+            self.Parent.didAddDigitalOutputChannel() ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             %self.broadcast('DidChangeNumberOfChannels');            
             %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
@@ -636,7 +632,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         function deleteMarkedDigitalChannels(self)
             % Do some accounting
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            indicesOfChannelsToDelete = find(isToBeDeleted) ;
+            %indicesOfChannelsToDelete = find(isToBeDeleted) ;
             isKeeper = ~isToBeDeleted ;
             
             % Turn off any untimed DOs that are about to be deleted
@@ -663,7 +659,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
 
             % Notify others of what we have done
-            self.Parent.didDeleteDigitalOutputChannels(indicesOfChannelsToDelete) ;  %#ok<FNDSB>
+            self.Parent.didDeleteDigitalOutputChannels() ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
         

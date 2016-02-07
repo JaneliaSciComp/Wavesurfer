@@ -328,7 +328,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     methods
         function acquireHardwareResources(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
-                isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted ;
+                isTerminalOvercommittedForEachAOChannel = self.Parent.IsAOChannelTerminalOvercommitted ;
                 isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
                 deviceNameForEachChannelInAOTask = self.AnalogDeviceNames(isInTaskForEachAOChannel) ;
                 terminalIDForEachChannelInAOTask = self.AnalogTerminalIDs(isInTaskForEachAOChannel) ;                
@@ -340,7 +340,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+                isTerminalOvercommittedForEachDOChannel = self.Parent.IsDOChannelTerminalOvercommitted ;
                 isTimedForEachDOChannel = self.IsDigitalChannelTimed ;
                 isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
                 deviceNameForEachChannelInDOTask = self.DigitalDeviceNames(isInTaskForEachDOChannel) ;

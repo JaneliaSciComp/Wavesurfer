@@ -35,7 +35,10 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 deviceNameForEachDigitalChannel = self.DigitalDeviceNames ;
                 terminalIDForEachDigitalChannel = self.DigitalTerminalIDs ;
                 onDemandOutputStateForEachDigitalChannel = self.DigitalOutputStateIfUntimed ;
-                nDIOTerminals = self.Parent.NDIOTerminals ;
+                isTerminalOvercommittedForEachDigitalChannel = self.Parent.IsDOChannelTerminalOvercommitted ;
+                  % channels with out-of-range DIO terminal IDs are "overcommitted", too
+                isTerminalUniquelyCommittedForEachDigitalChannel = ~isTerminalOvercommittedForEachDigitalChannel ; 
+                %nDIOTerminals = self.Parent.NDIOTerminals ;
 
                 % Filter for just the on-demand ones
                 isOnDemandForEachDigitalChannel = ~self.IsDigitalChannelTimed ;
@@ -43,16 +46,18 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                     deviceNameForEachOnDemandDigitalChannel = deviceNameForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
                     terminalIDForEachOnDemandDigitalChannel = terminalIDForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
                     outputStateForEachOnDemandDigitalChannel = onDemandOutputStateForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
+                    isTerminalUniquelyCommittedForEachOnDemandDigitalChannel = isTerminalUniquelyCommittedForEachDigitalChannel(isOnDemandForEachDigitalChannel) ;
                 else
                     deviceNameForEachOnDemandDigitalChannel = cell(1,0) ;  % want a length-zero row vector
                     terminalIDForEachOnDemandDigitalChannel = zeros(1,0) ;  % want a length-zero row vector
                     outputStateForEachOnDemandDigitalChannel = false(1,0) ;  % want a length-zero row vector
+                    isTerminalUniquelyCommittedForEachOnDemandDigitalChannel = true(1,0) ;  % want a length-zero row vector
                 end
                 
                 % Filter out channels with terminal IDs that are
                 % out-of-range.
-                isTerminalIDInRangeForEachOnDemandDigitalChannel = ...
-                    (0<=terminalIDForEachOnDemandDigitalChannel) & (terminalIDForEachOnDemandDigitalChannel<nDIOTerminals) ;
+                %isTerminalIDInRangeForEachOnDemandDigitalChannel = ...
+                %    (0<=terminalIDForEachOnDemandDigitalChannel) & (terminalIDForEachOnDemandDigitalChannel<nDIOTerminals) ;
                 %deviceNames3 = deviceNames2(isInRange) ;
                 %terminalIDs3 = terminalIDs2(isInRange) ;
                 
@@ -66,13 +71,14 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 % get resolved before they start a run.  You could argue
                 % that us setting the values on in-conflict channels will 
                 % surprise the user, but we'll live with that for now.
-                nOccurancesOfTerminalIDForEachOnDemandDigitalChannel = ws.nOccurancesOfID(terminalIDForEachOnDemandDigitalChannel) ;
-                isTerminalIDUniqueForEachOnDemandDigitalChannel = (nOccurancesOfTerminalIDForEachOnDemandDigitalChannel==1) ;                
+                %nOccurancesOfTerminalIDForEachOnDemandDigitalChannel = ws.nOccurancesOfID(terminalIDForEachOnDemandDigitalChannel) ;
+                %isTerminalIDUniqueForEachOnDemandDigitalChannel = (nOccurancesOfTerminalIDForEachOnDemandDigitalChannel==1) ;                
                 
                 % And all the filters together
-                isInTaskForEachOnDemandDigitalChannel = ...
-                    isTerminalIDInRangeForEachOnDemandDigitalChannel & ...
-                    isTerminalIDUniqueForEachOnDemandDigitalChannel ;
+%                 isInTaskForEachOnDemandDigitalChannel = ...
+%                     isTerminalIDInRangeForEachOnDemandDigitalChannel & ...
+%                     isTerminalIDUniqueForEachOnDemandDigitalChannel ;
+                isInTaskForEachOnDemandDigitalChannel = isTerminalUniquelyCommittedForEachOnDemandDigitalChannel ;
                 
                 % Create the task
                 deviceNamesInTask = deviceNameForEachOnDemandDigitalChannel(isInTaskForEachOnDemandDigitalChannel) ;
@@ -116,6 +122,16 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         end
         
         function didAddDOChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+            self.didAddOrDeleteDOChannelsInFrontend_(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+        end
+        
+        function didRemoveDigitalOutputChannelsInFrontend(self,  newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+            self.didAddOrDeleteDOChannelsInFrontend_(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+        end
+    end  % public methods block
+       
+    methods (Access=protected)
+        function didAddOrDeleteDOChannelsInFrontend_(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
@@ -124,29 +140,31 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.IsDigitalChannelMarkedForDeletion_ = [ self.IsDigitalChannelMarkedForDeletion_ false ] ;
             self.reacquireHardwareResources() ;
         end
-        
-        function didRemoveDigitalOutputChannelsInFrontend(self, channelIndices)
-            nChannels = length(self.DigitalChannelNames) ;            
-            isKeeper = true(1,nChannels) ;
-            isKeeper(channelIndices) = false ;
-            if ~any(isKeeper) ,
-                % special case so things stay row vectors
-                self.DigitalDeviceNames_ = cell(1,0) ;
-                self.DigitalTerminalIDs_ = zeros(1,0) ;
-                self.DigitalChannelNames_ = cell(1,0) ;
-                self.IsDigitalChannelTimed_ = true(1,0) ;
-                self.DigitalOutputStateIfUntimed_ = false(1,0) ;     
-                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;     
-            else
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
-                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-            end
-            self.reacquireHardwareResources() ;
-        end
+    end
+    
+    methods    
+%         function didRemoveDigitalOutputChannelsInFrontend(self, channelIndices)
+%             nChannels = length(self.DigitalChannelNames) ;            
+%             isKeeper = true(1,nChannels) ;
+%             isKeeper(channelIndices) = false ;
+%             if ~any(isKeeper) ,
+%                 % special case so things stay row vectors
+%                 self.DigitalDeviceNames_ = cell(1,0) ;
+%                 self.DigitalTerminalIDs_ = zeros(1,0) ;
+%                 self.DigitalChannelNames_ = cell(1,0) ;
+%                 self.IsDigitalChannelTimed_ = true(1,0) ;
+%                 self.DigitalOutputStateIfUntimed_ = false(1,0) ;     
+%                 self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;     
+%             else
+%                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+%                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+%                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+%                 self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+%                 self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+%                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+%             end
+%             self.reacquireHardwareResources() ;
+%         end
         
 %         function didRemoveDigitalOutputChannelsInFrontendAlternateSeemsBad(self, indicesOfChannelsToBeDeleted)
 %             % Delete just the indicated channels.  We take pains to

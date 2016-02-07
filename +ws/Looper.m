@@ -390,10 +390,9 @@ classdef Looper < ws.RootModel
 
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
                                                                         i, newValue, ...
-                                                                        isDIChannelTerminalOvercommitted, isDOChannelTerminalOvercommitted)
+                                                                        isDOChannelTerminalOvercommitted)
             %self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
             self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
-            self.IsDIChannelTerminalOvercommitted_ = isDIChannelTerminalOvercommitted ;
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
@@ -407,31 +406,42 @@ classdef Looper < ws.RootModel
         end  % function
         
         function result = didAddDigitalOutputChannelInFrontend(self, ...
-                                                               newChannelName, ...
-                                                               newChannelDeviceName, ...
-                                                               newTerminalID, ...
-                                                               isNewChannelTimed, ...
-                                                               newChannelStateIfUntimed)
-            self.Stimulation.didAddDOChannelInFrontend(newChannelName, ...
-                                                       newChannelDeviceName, ...
-                                                       newTerminalID, ...
-                                                       isNewChannelTimed, ...
-                                                       newChannelStateIfUntimed) ;
+                                                               channelNameForEachDOChannel, ...
+                                                               deviceNameForEachDOChannel, ...
+                                                               terminalIDForEachDOChannel, ...
+                                                               isTimedForEachDOChannel, ...
+                                                               onDemandOutputForEachDOChannel, ...
+                                                               isTerminalOvercommittedForEachDOChannel)
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+            self.Stimulation.didAddDOChannelInFrontend(channelNameForEachDOChannel, ...
+                                                       deviceNameForEachDOChannel, ...
+                                                       terminalIDForEachDOChannel, ...
+                                                       isTimedForEachDOChannel, ...
+                                                       onDemandOutputForEachDOChannel) ;
             result = [] ;
         end  % function
         
-        function result = didRemoveDigitalOutputChannelsInFrontend(self, originalIndicesOfDeletedChannels)
-            self.Stimulation.didRemoveDigitalOutputChannelsInFrontend(originalIndicesOfDeletedChannels) ;
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
+                                                                   channelNameForEachDOChannel, ...
+                                                                   deviceNameForEachDOChannel, ...
+                                                                   terminalIDForEachDOChannel, ...
+                                                                   isTimedForEachDOChannel, ...
+                                                                   onDemandOutputForEachDOChannel)
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+            self.Stimulation.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
+                                                                      deviceNameForEachDOChannel, ...
+                                                                      terminalIDForEachDOChannel, ...
+                                                                      isTimedForEachDOChannel, ...
+                                                                      onDemandOutputForEachDOChannel)
             result = [] ;
         end  % function
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-            %self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
             self.Stimulation.digitalOutputStateIfUntimedWasSetInFrontend(newValue) ;
             result = [] ;
         end  % function
         
-        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings)
+        function result = frontendJustLoadedProtocol(self, wavesurferModelSettings, isDOChannelTerminalOvercommitted)
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return
@@ -441,14 +451,17 @@ classdef Looper < ws.RootModel
             % wavesurferModelSettings.
             
             % Have to do this before decoding properties, or bad things will happen
-            self.releaseHardwareResources_();           
+            self.releaseHardwareResources_() ;           
             
             % Make our own settings mimic those of wavesurferModelSettings
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;
 
+            % Set the overcommitment stuff, calculated in the frontend
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            
             % Want the on-demand DOs to work immediately
-            self.acquireOnDemandHardwareResources_();           
+            self.acquireOnDemandHardwareResources_() ;
 
             result = [] ;
         end  % function
@@ -811,9 +824,9 @@ classdef Looper < ws.RootModel
             %self.Display.didSetSweepDurationIfFinite();
         end                
         
-        function didDeleteDigitalOutputChannels(self, originalIndicesOfDeletedChannels) %#ok<INUSD>
-            % In the looper, this does nothing
-        end
+%         function didDeleteDigitalOutputChannels(self) %#ok<INUSD>
+%             % In the looper, this does nothing
+%         end
         
     end  % public methods block
        
