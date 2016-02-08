@@ -34,10 +34,15 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                 % things out of self
                 deviceNameForEachDigitalChannel = self.DigitalDeviceNames ;
                 terminalIDForEachDigitalChannel = self.DigitalTerminalIDs ;
+                %if length(deviceNameForEachDigitalChannel) ~= length(terminalIDForEachDigitalChannel) ,
+                %    self
+                %    keyboard
+                %end
+                
                 onDemandOutputStateForEachDigitalChannel = self.DigitalOutputStateIfUntimed ;
                 isTerminalOvercommittedForEachDigitalChannel = self.Parent.IsDOChannelTerminalOvercommitted ;
                   % channels with out-of-range DIO terminal IDs are "overcommitted", too
-                isTerminalUniquelyCommittedForEachDigitalChannel = ~isTerminalOvercommittedForEachDigitalChannel ; 
+                isTerminalUniquelyCommittedForEachDigitalChannel = ~isTerminalOvercommittedForEachDigitalChannel ;
                 %nDIOTerminals = self.Parent.NDIOTerminals ;
 
                 % Filter for just the on-demand ones
@@ -54,30 +59,8 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
                     isTerminalUniquelyCommittedForEachOnDemandDigitalChannel = true(1,0) ;  % want a length-zero row vector
                 end
                 
-                % Filter out channels with terminal IDs that are
-                % out-of-range.
-                %isTerminalIDInRangeForEachOnDemandDigitalChannel = ...
-                %    (0<=terminalIDForEachOnDemandDigitalChannel) & (terminalIDForEachOnDemandDigitalChannel<nDIOTerminals) ;
-                %deviceNames3 = deviceNames2(isInRange) ;
-                %terminalIDs3 = terminalIDs2(isInRange) ;
-                
-                % Filter out channels with terminal IDs that are
-                % overcommited.
-                %
-                % Note that we don't check for collisions with DIO
-                % terminals that are timed, or with ones that are being
-                % used as (timed) digital *inputs*.  But that should be OK,
-                % in the sense of not leading to errors for conflicts that
-                % get resolved before they start a run.  You could argue
-                % that us setting the values on in-conflict channels will 
-                % surprise the user, but we'll live with that for now.
-                %nOccurancesOfTerminalIDForEachOnDemandDigitalChannel = ws.nOccurancesOfID(terminalIDForEachOnDemandDigitalChannel) ;
-                %isTerminalIDUniqueForEachOnDemandDigitalChannel = (nOccurancesOfTerminalIDForEachOnDemandDigitalChannel==1) ;                
-                
-                % And all the filters together
-%                 isInTaskForEachOnDemandDigitalChannel = ...
-%                     isTerminalIDInRangeForEachOnDemandDigitalChannel & ...
-%                     isTerminalIDUniqueForEachOnDemandDigitalChannel ;
+                % The channels in the task are exactly those that are
+                % uniquely committed.
                 isInTaskForEachOnDemandDigitalChannel = isTerminalUniquelyCommittedForEachOnDemandDigitalChannel ;
                 
                 % Create the task
@@ -121,23 +104,45 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.acquireHardwareResources() ;            
         end
         
-        function didAddDOChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
-            self.didAddOrDeleteDOChannelsInFrontend_(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+        function didAddDOChannelInFrontend(self, ...
+                                           channelNameForEachDOChannel, ...
+                                           deviceNameForEachDOChannel, ...
+                                           terminalIDForEachDOChannel, ...
+                                           isTimedForEachDOChannel, ...
+                                           onDemandOutputForEachDOChannel)
+            self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
+                                                     deviceNameForEachDOChannel, ...
+                                                     terminalIDForEachDOChannel, ...
+                                                     isTimedForEachDOChannel, ...
+                                                     onDemandOutputForEachDOChannel)
         end
         
-        function didRemoveDigitalOutputChannelsInFrontend(self,  newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
-            self.didAddOrDeleteDOChannelsInFrontend_(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
+        function didRemoveDigitalOutputChannelsInFrontend(self, ...
+                                                          channelNameForEachDOChannel, ...
+                                                          deviceNameForEachDOChannel, ...
+                                                          terminalIDForEachDOChannel, ...
+                                                          isTimedForEachDOChannel, ...
+                                                          onDemandOutputForEachDOChannel)
+            self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
+                                                     deviceNameForEachDOChannel, ...
+                                                     terminalIDForEachDOChannel, ...
+                                                     isTimedForEachDOChannel, ...
+                                                     onDemandOutputForEachDOChannel)
         end
     end  % public methods block
        
     methods (Access=protected)
-        function didAddOrDeleteDOChannelsInFrontend_(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
-            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
-            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            self.IsDigitalChannelTimed_ = [ self.IsDigitalChannelTimed_ isNewChannelTimed  ] ;
-            self.DigitalOutputStateIfUntimed_ = [ self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ] ;
-            self.IsDigitalChannelMarkedForDeletion_ = [ self.IsDigitalChannelMarkedForDeletion_ false ] ;
+        function didAddOrDeleteDOChannelsInFrontend_(self, ...
+                                                     channelNameForEachDOChannel, ...
+                                                     deviceNameForEachDOChannel, ...
+                                                     terminalIDForEachDOChannel, ...
+                                                     isTimedForEachDOChannel, ...
+                                                     onDemandOutputForEachDOChannel)
+            self.DigitalChannelNames_ = channelNameForEachDOChannel ;
+            self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
+            self.DigitalTerminalIDs_ = terminalIDForEachDOChannel ;
+            self.IsDigitalChannelTimed_ = isTimedForEachDOChannel ;
+            self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
             self.reacquireHardwareResources() ;
         end
     end

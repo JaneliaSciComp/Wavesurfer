@@ -31,6 +31,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         HasTimedDigitalChannels_
         %DidAnalogEpisodeComplete_
         %DidDigitalEpisodeComplete_
+        IsInTaskForEachAOChannel_
+        IsInTaskForEachDOChannel_        
     end
     
     methods
@@ -338,6 +340,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                                            deviceNameForEachChannelInAOTask, ...
                                            terminalIDForEachChannelInAOTask) ;
                 self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
+                self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
                 isTerminalOvercommittedForEachDOChannel = self.Parent.IsDOChannelTerminalOvercommitted ;
@@ -351,6 +354,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                                            deviceNameForEachChannelInDOTask, ...
                                            terminalIDForEachChannelInDOTask ) ;
                 self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
+                self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
             end
         end
         
@@ -361,8 +365,10 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         
     methods (Access=protected)
         function releaseTimedHardwareResources_(self)
-            self.TheFiniteAnalogOutputTask_ = [];            
-            self.TheFiniteDigitalOutputTask_ = [];            
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            self.IsInTaskForEachAOChannel_ = [] ;
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+            self.IsInTaskForEachDOChannel_ = [] ;
         end
     end  % protected methods block
     
@@ -859,28 +865,29 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         end  % function
         
         function [nScans,nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMap, episodeIndexWithinSweep)
-            import ws.utility.*
-            
-            % % Calculate the episode index
-            % episodeIndexWithinSweep=self.NEpisodesCompleted_+1;
-            
+            % Get info about which analog channels are in the task
+            isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
+            nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
+
             % Calculate the signals
             if isempty(stimulusMap) ,
-                aoData = zeros(0,length(self.AnalogChannelNames));
+                aoData = zeros(0,nAnalogChannelsInTask) ;
                 nChannelsWithStimulus = 0 ;
             else
-                isChannelAnalog = true(1,self.NAnalogChannels) ;
-                [aoData,nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinSweep);
+                channelNamesInTask = self.AnalogChannelNames(isInTaskForEachAnalogChannel) ;
+                isChannelAnalog = true(1,nAnalogChannelsInTask) ;
+                [aoData, nChannelsWithStimulus] = ...
+                    stimulusMap.calculateSignals(self.SampleRate, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;
             end
             
             % Want to return the number of scans in the stimulus data
-            nScans= size(aoData,1);
+            nScans = size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AnalogChannelScales;
+            analogChannelScales=self.AnalogChannelScales(isInTaskForEachAnalogChannel);
             inverseAnalogChannelScales=1./analogChannelScales;
-            sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+            sanitizedInverseAnalogChannelScales = ...
+                ws.utility.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
 
             % scale the data by the channel scales
             if isempty(aoData) ,
@@ -908,18 +915,19 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
             
             % Calculate the signals
-            isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
-            nTimedDigitalChannels = sum(self.IsDigitalChannelTimed) ;
+            %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
+            isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
+            nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
             if isempty(stimulusMap) ,
-                doData=zeros(0,nTimedDigitalChannels);  
+                doData=zeros(0,nDigitalChannelsInTask);  
                 nChannelsWithStimulus = 0 ;
             else
-                isChannelAnalogForEachTimedDigitalChannel = false(1,nTimedDigitalChannels) ;
-                namesOfTimedDigitalChannels = self.DigitalChannelNames(isTimedForEachDigitalChannel) ;                
+                isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
+                namesOfDigitalChannelsInTask = self.DigitalChannelNames(isInTaskForEachDigitalChannel) ;                
                 [doData, nChannelsWithStimulus] = ...
                     stimulusMap.calculateSignals(self.SampleRate, ...
-                                                 namesOfTimedDigitalChannels, ...
-                                                 isChannelAnalogForEachTimedDigitalChannel, ...
+                                                 namesOfDigitalChannelsInTask, ...
+                                                 isChannelAnalogForEachDigitalChannelInTask, ...
                                                  episodeIndexWithinRun);
             end
             
