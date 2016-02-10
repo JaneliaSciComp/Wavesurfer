@@ -44,8 +44,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         ExpectedScanCount
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
        	TriggerScheme        
-        IsAnalogChannelTerminalOvercommitted
-        IsDigitalChannelTerminalOvercommitted
+        %IsAnalogChannelTerminalOvercommitted
+        %IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected) 
@@ -249,13 +249,13 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
         
-        function result=get.IsAnalogChannelTerminalOvercommitted(self)
-            result =  self.Parent.IsAIChannelTerminalOvercommitted ;
-        end
+%         function result=get.IsAnalogChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsAIChannelTerminalOvercommitted ;
+%         end
         
-        function result=get.IsDigitalChannelTerminalOvercommitted(self)
-            result =  self.Parent.IsDIChannelTerminalOvercommitted ;
-        end
+%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsDIChannelTerminalOvercommitted ;
+%         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is

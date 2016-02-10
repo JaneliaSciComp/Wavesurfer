@@ -35,8 +35,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         NChannels
         IsChannelAnalog
         TriggerScheme
-        IsAnalogChannelTerminalOvercommitted
-        IsDigitalChannelTerminalOvercommitted
+        %IsAnalogChannelTerminalOvercommitted
+        %IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected)
@@ -60,7 +60,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         DigitalTerminalIDs_ = zeros(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
-        IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
+        %IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
         %IsDigitalChannelTerminalOvercommitted_ = false(1,0)        
     end
         
@@ -301,13 +301,13 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
         
-        function result=get.IsAnalogChannelTerminalOvercommitted(self)
-            result =  self.IsAnalogChannelTerminalOvercommitted_ ;
-        end
+%         function result=get.IsAnalogChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsAOChannelTerminalOvercommitted ;
+%         end
         
-        function result=get.IsDigitalChannelTerminalOvercommitted(self)
-            result =  self.Parent.IsDOChannelTerminalOvercommitted ;
-        end
+%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsDOChannelTerminalOvercommitted ;
+%         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is

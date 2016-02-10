@@ -1416,7 +1416,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingAnalogChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-            isTerminalOvercommitted = model.Acquisition.IsAnalogChannelTerminalOvercommitted ;
+            isTerminalOvercommitted = model.IsAIChannelTerminalOvercommitted ;
             nAIs=length(self.AIScaleEdits);            
             for i=1:nAIs ,
                 set(self.AIChannelNameEdits(i), 'String', channelNames{i} );                
@@ -1460,7 +1460,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingAnalogChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-            isTerminalOvercommitted = model.Stimulation.IsAnalogChannelTerminalOvercommitted ;
+            isTerminalOvercommitted = model.IsAOChannelTerminalOvercommitted ;
             nAOChannels=length(self.AOChannelNameEdits);            
             for i=1:nAOChannels ,
                 set(self.AOChannelNameEdits(i), 'String', channelNames{i} );                
@@ -1534,7 +1534,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Stimulation.DigitalChannelNames;
             isTimed = model.Stimulation.IsDigitalChannelTimed ;
-            isTerminalOvercommitted = model.Stimulation.IsDigitalChannelTerminalOvercommitted ;
+            isTerminalOvercommitted = model.IsDOChannelTerminalOvercommitted ;
             nDOs=length(self.DOChannelNameEdits);            
             for i=1:nDOs ,
                 set(self.DOChannelNameEdits(i), 'String', channelNames{i} );
