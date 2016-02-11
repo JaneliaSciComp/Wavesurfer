@@ -962,14 +962,30 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         end
 %     end
     
-    methods (Access=protected)
-        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
-            wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;            
-            if wasSet ,
-                self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
+    methods 
+        function wasSet = setSingleDigitalTerminalID(self, i, newValue)
+            % This should only be called by the parent WavesurferModel, to
+            % ensure the self-consistency of the WavesurferModel.
+            %wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;            
+            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    wasSet = true ;
+                else
+                    wasSet = false ;
+                end
+            else
+                wasSet = false ;
             end
+%             self.Parent.didSetDigitalOutputTerminalID() ;
+%             if wasSet ,
+%                 self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
+%             end
         end
+    end
         
+    methods (Access=protected)
         function setIsDigitalChannelTimed_(self,newValue)
             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
             if wasSet ,

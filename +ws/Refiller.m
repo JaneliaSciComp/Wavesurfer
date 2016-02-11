@@ -441,6 +441,11 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
         
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            % We don't need to do anything in response to this message
+            result = [] ;
+        end  % function
+        
     end  % RPC methods block
     
     methods

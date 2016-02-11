@@ -441,6 +441,13 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, ...
+                                                                       isDOChannelTerminalOvercommitted)
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
         function result = frontendJustLoadedProtocol(self, wavesurferModelSettings, isDOChannelTerminalOvercommitted)
             % What it says on the tin.
             %

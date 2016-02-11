@@ -5,6 +5,61 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
             self@ws.system.AcquisitionSubsystem(parent);
         end
                 
+        function initializeFromMDFStructure(self, mdfStructure)
+            terminalNames = mdfStructure.physicalInputChannelNames ;
+            
+            if ~isempty(terminalNames) ,
+                channelNames = mdfStructure.inputChannelNames;
+
+                % Deal with the device names, setting the WSM DeviceName if
+                % it's not set yet.
+                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+                uniqueDeviceNames=unique(deviceNames);
+                if length(uniqueDeviceNames)>1 ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'WaveSurfer only supports a single NI card at present.');                      
+                end
+                deviceName = uniqueDeviceNames{1} ;                
+                if isempty(self.Parent.DeviceName) ,
+                    self.Parent.DeviceName = deviceName ;
+                end
+
+                % Get the channel IDs
+                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+                isAnalog = strcmp(channelTypes,'ai');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names, etc
+                %analogDeviceNames = deviceNames(isAnalog) ;
+                %digitalDeviceNames = deviceNames(isDigital) ;
+                analogTerminalIDs = terminalIDs(isAnalog) ;
+                digitalTerminalIDs = terminalIDs(isDigital) ;            
+                analogChannelNames = channelNames(isAnalog) ;
+                digitalChannelNames = channelNames(isDigital) ;
+
+                % add the analog channels
+                nAnalogChannels = length(analogChannelNames);
+                for i = 1:nAnalogChannels ,
+                    self.addAnalogChannel() ;
+                    indexOfChannelInSelf = self.NAnalogChannels ;
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+                end
+                
+                % add the digital channels
+                nDigitalChannels = length(digitalChannelNames);
+                for i = 1:nDigitalChannels ,
+                    self.addDigitalChannel() ;
+                    indexOfChannelInSelf = self.NDigitalChannels ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                    self.Parent.setSingleDIChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+                end                
+            end
+        end  % function
+        
 %         function settings = packageCoreSettings(self)
 %             settings=struct() ;
 %             for i=1:length(self.CoreFieldNames_)
@@ -87,7 +142,23 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
 %             self.AnalogInputTask_.arm();
 %             self.DigitalInputTask_.arm();
         end  % function
-    end
+        
+        function wasSet = setSingleDigitalTerminalID(self, i, newValue)
+            % This should only be called from the parent
+            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    wasSet = true ;
+                else
+                    wasSet = false ;
+                end
+            else
+                wasSet = false ;
+            end                
+            %self.Parent.didSetDigitalInputTerminalID();
+        end
+    end  % public methods block
 
     methods (Access=protected)
         function value = getAnalogChannelScales_(self)

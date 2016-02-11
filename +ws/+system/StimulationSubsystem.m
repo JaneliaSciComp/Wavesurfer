@@ -138,7 +138,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                     self.addDigitalChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
-                    self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+                    self.Parent.setSingleDOChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
                 end                
                 
                 % Intialize the stimulus library, just to keep compatible
@@ -707,9 +707,9 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.Parent.didSetAnalogOutputTerminalID();
         end
         
-        function setSingleDigitalTerminalID(self, i, newValue)
-            self.setSingleDigitalTerminalID_(i, newValue) ;
-        end
+%         function setSingleDigitalTerminalID(self, i, newValue)
+%             self.setSingleDigitalTerminalID_(i, newValue) ;
+%         end
         
 end  % methods block
 
@@ -769,20 +769,20 @@ end  % methods block
     end
 
     methods (Access=protected)
-        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
-            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                newValueAsDouble = double(newValue) ;
-                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    wasSet = true ;
-                else
-                    wasSet = false ;
-                end
-            else
-                wasSet = false ;
-            end
-            self.Parent.didSetDigitalOutputTerminalID() ;
-        end
+%         function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
+%             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+%                 newValueAsDouble = double(newValue) ;
+%                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+%                     self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+%                     wasSet = true ;
+%                 else
+%                     wasSet = false ;
+%                 end
+%             else
+%                 wasSet = false ;
+%             end
+%             self.Parent.didSetDigitalOutputTerminalID() ;
+%         end
         
         function wasSet = setIsDigitalChannelTimed_(self,newValue)
             if ws.utility.isASettableValue(newValue),

@@ -105,60 +105,60 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)
-            terminalNames = mdfStructure.physicalInputChannelNames ;
-            
-            if ~isempty(terminalNames) ,
-                channelNames = mdfStructure.inputChannelNames;
-
-                % Deal with the device names, setting the WSM DeviceName if
-                % it's not set yet.
-                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
-                uniqueDeviceNames=unique(deviceNames);
-                if length(uniqueDeviceNames)>1 ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                deviceName = uniqueDeviceNames{1} ;                
-                if isempty(self.Parent.DeviceName) ,
-                    self.Parent.DeviceName = deviceName ;
-                end
-
-                % Get the channel IDs
-                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
-                isAnalog = strcmp(channelTypes,'ai');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names, etc
-                %analogDeviceNames = deviceNames(isAnalog) ;
-                %digitalDeviceNames = deviceNames(isDigital) ;
-                analogTerminalIDs = terminalIDs(isAnalog) ;
-                digitalTerminalIDs = terminalIDs(isDigital) ;            
-                analogChannelNames = channelNames(isAnalog) ;
-                digitalChannelNames = channelNames(isDigital) ;
-
-                % add the analog channels
-                nAnalogChannels = length(analogChannelNames);
-                for i = 1:nAnalogChannels ,
-                    self.addAnalogChannel() ;
-                    indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
-                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
-                end
-                
-                % add the digital channels
-                nDigitalChannels = length(digitalChannelNames);
-                for i = 1:nDigitalChannels ,
-                    self.addDigitalChannel() ;
-                    indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
-                    self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
-                end                
-            end
-        end  % function
+%         function initializeFromMDFStructure(self, mdfStructure)
+%             terminalNames = mdfStructure.physicalInputChannelNames ;
+%             
+%             if ~isempty(terminalNames) ,
+%                 channelNames = mdfStructure.inputChannelNames;
+% 
+%                 % Deal with the device names, setting the WSM DeviceName if
+%                 % it's not set yet.
+%                 deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+%                 uniqueDeviceNames=unique(deviceNames);
+%                 if length(uniqueDeviceNames)>1 ,
+%                     error('ws:MoreThanOneDeviceName', ...
+%                           'WaveSurfer only supports a single NI card at present.');                      
+%                 end
+%                 deviceName = uniqueDeviceNames{1} ;                
+%                 if isempty(self.Parent.DeviceName) ,
+%                     self.Parent.DeviceName = deviceName ;
+%                 end
+% 
+%                 % Get the channel IDs
+%                 terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
+%                 
+%                 % Figure out which are analog and which are digital
+%                 channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+%                 isAnalog = strcmp(channelTypes,'ai');
+%                 isDigital = ~isAnalog;
+% 
+%                 % Sort the channel names, etc
+%                 %analogDeviceNames = deviceNames(isAnalog) ;
+%                 %digitalDeviceNames = deviceNames(isDigital) ;
+%                 analogTerminalIDs = terminalIDs(isAnalog) ;
+%                 digitalTerminalIDs = terminalIDs(isDigital) ;            
+%                 analogChannelNames = channelNames(isAnalog) ;
+%                 digitalChannelNames = channelNames(isDigital) ;
+% 
+%                 % add the analog channels
+%                 nAnalogChannels = length(analogChannelNames);
+%                 for i = 1:nAnalogChannels ,
+%                     self.addAnalogChannel() ;
+%                     indexOfChannelInSelf = self.NAnalogChannels ;
+%                     self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+%                     self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+%                 end
+%                 
+%                 % add the digital channels
+%                 nDigitalChannels = length(digitalChannelNames);
+%                 for i = 1:nDigitalChannels ,
+%                     self.addDigitalChannel() ;
+%                     indexOfChannelInSelf = self.NDigitalChannels ;
+%                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+%                     self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+%                 end                
+%             end
+%         end  % function
         
 %         function result = get.AnalogTerminalNames(self)
 %             result = self.AnalogTerminalNames_ ;
@@ -472,19 +472,6 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 end
             end
             self.Parent.didSetAnalogInputTerminalID();
-        end
-        
-        function setSingleDigitalTerminalID(self, i, newValue)
-            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                newValueAsDouble = double(newValue) ;
-                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    %if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
-                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    %end
-                    %self.syncIsDigitalChannelTerminalOvercommitted_() ;                    
-                end
-            end
-            self.Parent.didSetDigitalInputTerminalID();
         end
         
         function value=isChannelName(self,putativeName)

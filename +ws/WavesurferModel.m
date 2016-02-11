@@ -717,10 +717,21 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetDigitalInputTerminalID(self)
+        function setSingleDIChannelTerminalID(self, iChannel, terminalID)
+            wasSet = self.Acquisition.setSingleDigitalTerminalID(iChannel, terminalID) ;            
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
+            if wasSet ,
+                %value = self.Acquisition.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
+                self.IPCPublisher_.send('singleDigitalInputTerminalIDWasSetInFrontend', ...
+                                        self.IsDOChannelTerminalOvercommitted ) ;
+            end            
         end
+        
+%         function didSetDigitalInputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.broadcast('UpdateChannels') ;
+%         end
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             display=self.Display;
@@ -748,10 +759,10 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetDigitalOutputTerminalID(self)
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetDigitalOutputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.broadcast('UpdateChannels') ;
+%         end
         
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
 %             display=self.Display;
@@ -1726,10 +1737,10 @@ classdef WavesurferModel < ws.RootModel
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue_(self, name, value)
-            if isequal(name,'IsDIChannelTerminalOvercommitted_')
-                dbstack
-                dbstop
-            end
+            %if isequal(name,'IsDIChannelTerminalOvercommitted_')
+            %    dbstack
+            %    dbstop
+            %end
             self.(name) = value ;
         end  % function
     end  % methods ( Access = protected )
@@ -2289,12 +2300,26 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(self, i)
-            % This only gets called if the value was actually set.
-            value = self.Stimulation.DigitalTerminalIDs(i) ;
-            self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
-                                    i, value, self.IsDOChannelTerminalOvercommitted ) ;
+        function setSingleDOChannelTerminalID(self, iChannel, terminalID)
+            wasSet = self.Stimulation.setSingleDigitalTerminalID(iChannel, terminalID) ;            
+            %self.didSetDigitalOutputTerminalID() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.broadcast('UpdateChannels') ;
+            if wasSet ,
+                %self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
+                value = self.Stimulation.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
+                self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
+                                        iChannel, value, self.IsDOChannelTerminalOvercommitted ) ;
+            end
         end
+        
+%         function singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(self, i)
+%             % This only gets called if the value was actually set.
+%             value = self.Stimulation.DigitalTerminalIDs(i) ;
+%             keyboard
+%             self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
+%                                     i, value, self.IsDOChannelTerminalOvercommitted ) ;
+%         end
 
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.DigitalOutputStateIfUntimed ;
