@@ -2369,9 +2369,9 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function deleteMarkedDIChannels(self)
-            self.Acquisition.deleteMarkedDigitalChannels_() ;
+            namesOfDeletedChannels = self.Acquisition.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
+            self.Display.didDeleteDigitalInputChannels(namesOfDeletedChannels) ;
             self.Ephys.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models

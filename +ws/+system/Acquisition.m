@@ -211,9 +211,9 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
-        function deleteMarkedDigitalChannels_(self)
+        function channelNamesToDelete = deleteMarkedDigitalChannels_(self)
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
+            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case so things stay row vectors
                 self.DigitalDeviceNames_ = cell(1,0) ;
