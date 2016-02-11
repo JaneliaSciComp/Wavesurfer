@@ -446,6 +446,14 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
         
+        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            result = [] ;
+        end  % function
+        
+        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            result = [] ;
+        end  % function
+        
     end  % RPC methods block
     
     methods

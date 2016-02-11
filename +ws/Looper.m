@@ -473,6 +473,18 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function
         
+        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)            
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
+        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
     end  % RPC methods block
     
     methods

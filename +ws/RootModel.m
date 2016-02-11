@@ -393,8 +393,8 @@ classdef RootModel < ws.Model
         function didSetIsDigitalOutputTimed(self)  %#ok<MANU>
         end
         
-        function didAddDigitalOutputChannel(self)  %#ok<MANU>
-        end
+        %function didAddDigitalOutputChannel(self)  %#ok<MANU>
+        %end
         
         function didRemoveDigitalOutputChannel(self, channelIndex) %#ok<INUSD>
         end

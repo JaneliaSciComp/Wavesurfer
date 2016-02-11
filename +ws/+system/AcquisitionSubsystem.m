@@ -1087,54 +1087,6 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
         end  % function
         
-        function addDigitalChannel(self)
-            deviceName = self.Parent.DeviceName ;
-            
-            newChannelDeviceName = deviceName ;
-            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-            if isempty(freeTerminalIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newTerminalID = freeTerminalIDs(1) ;
-            end
-            newChannelName = sprintf('P0.%d',newTerminalID) ;
-            %newChannelName = newChannelPhysicalName ;
-            
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
-            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
-            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
-            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
-            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            
-            self.Parent.didAddDigitalInputChannel() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
-        end  % function
-        
-        function deleteMarkedDigitalChannels(self)
-            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
-            if all(isToBeDeleted) ,
-                % Special case so things stay row vectors
-                self.DigitalDeviceNames_ = cell(1,0) ;
-                self.DigitalTerminalIDs_ = zeros(1,0) ;
-                self.DigitalChannelNames_ = cell(1,0) ;
-                self.IsDigitalChannelActive_ = true(1,0) ;
-                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
-            else
-                isKeeper = ~isToBeDeleted ;
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
-                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-            end
-            
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
-        end  % function
-
 %         function removeDigitalChannel(self,channelIndex)
 %             nChannels = length(self.DigitalTerminalIDs) ;
 %             if 1<=channelIndex && channelIndex<=nChannels ,            

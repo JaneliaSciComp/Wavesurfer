@@ -963,7 +963,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %     end
     
     methods 
-        function wasSet = setSingleDigitalTerminalID(self, i, newValue)
+        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
             % This should only be called by the parent WavesurferModel, to
             % ensure the self-consistency of the WavesurferModel.
             %wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;            
@@ -983,6 +983,70 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %                 self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
 %             end
         end
+        
+        function addDigitalChannel_(self)
+            %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+            if isempty(freeTerminalIDs) ,
+                return  % can't add a new one, because no free IDs
+            else
+                newTerminalID = freeTerminalIDs(1) ;
+            end
+            newChannelName = sprintf('P0.%d',newTerminalID) ;
+            %newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
+            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
+            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
+            
+            %self.Parent.didAddDigitalOutputChannel() ;
+            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
+            %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
+        end  % function
+        
+        function deleteMarkedDigitalChannels_(self)
+            % Should only be called from parent.
+            
+            % Do some accounting
+            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
+            %indicesOfChannelsToDelete = find(isToBeDeleted) ;
+            isKeeper = ~isToBeDeleted ;
+            
+            % Turn off any untimed DOs that are about to be deleted
+            digitalOutputStateIfUntimed = self.DigitalOutputStateIfUntimed ;
+            self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
+
+            % Now do the real deleting
+            if all(isToBeDeleted)
+                % Keep everything a row vector
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelTimed_ = true(1,0) ;
+                self.DigitalOutputStateIfUntimed_ = false(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
+            else
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+
+%             % Notify others of what we have done
+%             self.Parent.didDeleteDigitalOutputChannels() ;
+%             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+        end  % function
+        
     end
         
     methods (Access=protected)

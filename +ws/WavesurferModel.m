@@ -718,7 +718,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
-            wasSet = self.Acquisition.setSingleDigitalTerminalID(iChannel, terminalID) ;            
+            wasSet = self.Acquisition.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
@@ -2301,7 +2301,7 @@ classdef WavesurferModel < ws.RootModel
     
     methods
         function setSingleDOChannelTerminalID(self, iChannel, terminalID)
-            wasSet = self.Stimulation.setSingleDigitalTerminalID(iChannel, terminalID) ;            
+            wasSet = self.Stimulation.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             %self.didSetDigitalOutputTerminalID() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
@@ -2341,13 +2341,24 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didAddDigitalInputChannel(self)
+        function addDIChannel(self)
+            self.Acquisition.addDigitalChannel_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didAddDigitalInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+            self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
+                                    self.IsDOChannelTerminalOvercommitted) ;
         end
+        
+%         function didAddDigitalInputChannel(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Display.didAddDigitalInputChannel() ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
         
         function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
             self.syncIsAIChannelTerminalOvercommitted_() ;            
@@ -2357,13 +2368,24 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
+        function deleteMarkedDIChannels(self)
+            self.Acquisition.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
-            self.Ephys.didChangeNumberOfInputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+            self.Ephys.didChangeNumberOfInputChannels() ;
+            self.broadcast('UpdateChannels') ;  % causes channels figure to update
+            self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
+            self.IPCPublisher_.send('didDeleteDigitalInputChannelsInFrontend', ...
+                                    self.IsDOChannelTerminalOvercommitted) ;
         end
+        
+%         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
         
 %         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
 %             self.Display.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
@@ -2384,10 +2406,33 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
+
+%         function didAddDigitalOutputChannel(self)
+%             %self.Display.didAddDigitalOutputChannel() ;
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+%             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
+%             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+%             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
+%                                     channelNameForEachDOChannel, ...
+%                                     deviceNameForEachDOChannel, ...
+%                                     terminalIDForEachDOChannel, ...
+%                                     isTimedForEachDOChannel, ...
+%                                     onDemandOutputForEachDOChannel, ...
+%                                     isTerminalOvercommittedForEachDOChannel) ;
+%         end
         
-        function didAddDigitalOutputChannel(self)
+        function addDOChannel(self)
+            self.Stimulation.addDigitalChannel_() ;
             %self.Display.didAddDigitalOutputChannel() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
@@ -2414,8 +2459,10 @@ classdef WavesurferModel < ws.RootModel
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function didDeleteDigitalOutputChannels(self)
+        function deleteMarkedDOChannels(self)
+            self.Stimulation.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;                                
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
@@ -2432,6 +2479,25 @@ classdef WavesurferModel < ws.RootModel
                                     onDemandOutputForEachDOChannel, ...
                                     isTerminalOvercommittedForEachDOChannel) ;
         end
+        
+%         function didDeleteDigitalOutputChannels(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
+%             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+%             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
+%                                     channelNameForEachDOChannel, ...
+%                                     deviceNameForEachDOChannel, ...
+%                                     terminalIDForEachDOChannel, ...
+%                                     isTimedForEachDOChannel, ...
+%                                     onDemandOutputForEachDOChannel, ...
+%                                     isTerminalOvercommittedForEachDOChannel) ;
+%         end
         
     end
     

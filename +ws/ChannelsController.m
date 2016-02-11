@@ -177,11 +177,11 @@ classdef ChannelsController < ws.Controller
         end
 
         function AddDIChannelButtonActuated(self,source,event)  %#ok<INUSD>
-            self.Model.Acquisition.addDigitalChannel() ;
+            self.Model.addDIChannel() ;
         end
         
         function DeleteDIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
-            self.Model.Acquisition.deleteMarkedDigitalChannels() ;
+            self.Model.deleteMarkedDIChannels() ;
         end
         
         function DOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
@@ -228,13 +228,12 @@ classdef ChannelsController < ws.Controller
         end
 
         function AddDOChannelButtonActuated(self,source,event)  %#ok<INUSD>
-            self.Model.Stimulation.addDigitalChannel() ;
+            self.Model.addDOChannel() ;
         end
         
         function DeleteDOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
-            self.Model.Stimulation.deleteMarkedDigitalChannels() ;
+            self.Model.deleteMarkedDOChannels() ;
         end
-        
         
     end  % methods
 

@@ -52,7 +52,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 % add the digital channels
                 nDigitalChannels = length(digitalChannelNames);
                 for i = 1:nDigitalChannels ,
-                    self.addDigitalChannel() ;
+                    self.Parent.addDIChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
                     self.Parent.setSingleDIChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
@@ -143,7 +143,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
 %             self.DigitalInputTask_.arm();
         end  % function
         
-        function wasSet = setSingleDigitalTerminalID(self, i, newValue)
+        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
             % This should only be called from the parent
             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
@@ -185,5 +185,55 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
         end
     end  % methods block    
     
+    methods
+        function addDigitalChannel_(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+            if isempty(freeTerminalIDs) ,
+                return  % can't add a new one, because no free IDs
+            else
+                newTerminalID = freeTerminalIDs(1) ;
+            end
+            newChannelName = sprintf('P0.%d',newTerminalID) ;
+            %newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
+            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
+            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            
+            %self.Parent.didAddDigitalInputChannel() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
+        end  % function
+        
+        function deleteMarkedDigitalChannels_(self)
+            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
+            %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
+            if all(isToBeDeleted) ,
+                % Special case so things stay row vectors
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelActive_ = true(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
+            else
+                isKeeper = ~isToBeDeleted ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            
+%             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
+        end  % function
+        
+    end
     
 end  % classdef
