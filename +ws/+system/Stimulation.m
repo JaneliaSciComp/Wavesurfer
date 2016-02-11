@@ -1046,6 +1046,13 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             self.Parent.didDeleteDigitalOutputChannels() ;
 %             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
+       
+        function didSetDeviceName(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;            
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.broadcast('Update');
+        end
         
     end
         

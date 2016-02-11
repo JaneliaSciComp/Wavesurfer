@@ -98,8 +98,13 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             self.TheUntimedDigitalOutputTask_ = [];
             self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ = [] ;   % for tidiness---this is meaningless if TheUntimedDigitalOutputTask_ is empty
         end
+
+        function reacquireOnDemandHardwareResources(self)
+            self.releaseOnDemandHardwareResources() ;
+            self.acquireOnDemandHardwareResources() ;            
+        end
         
-        function reacquireHardwareResources(self) 
+        function reacquireHardwareResources(self)
             self.releaseHardwareResources() ;
             self.acquireHardwareResources() ;            
         end
@@ -290,5 +295,17 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
             % This method does no error checking, for minimum latency
             self.TheUntimedDigitalOutputTask_.setChannelDataQuicklyAndDirtily(newValue) ;
         end
+        
+        function didSetDeviceNameInFrontend(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;            
+            self.DigitalDeviceNames_(:) = {deviceName} ;
+        end
+        
+        function mimickingWavesurferModel_(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;            
+            self.DigitalDeviceNames_(:) = {deviceName} ;
+        end        
     end
 end  % classdef

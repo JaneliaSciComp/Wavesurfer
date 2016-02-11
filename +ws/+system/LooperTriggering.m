@@ -28,6 +28,33 @@ classdef LooperTriggering < ws.system.TriggeringSubsystem
             % object
             keyboard
         end  % function
+        
+        function didSetDeviceNameInFrontend(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            schemes = self.Schemes ;
+            nTriggers = length(schemes) ;            
+            for i = 1:nTriggers ,
+                trigger = schemes{i} ;
+                trigger.DeviceName = deviceName ;
+            end
+            
+            %self.broadcast('Update');
+        end        
+        
+        function mimickingWavesurferModel_(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            schemes = self.Schemes ;
+            nTriggers = length(schemes) ;            
+            for i = 1:nTriggers ,
+                trigger = schemes{i} ;
+                trigger.DeviceName = deviceName ;
+            end
+            
+            %self.broadcast('Update');
+        end        
+        
     end  % methods block
     
 %     methods        

@@ -264,7 +264,10 @@ classdef Looper < ws.RootModel
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals)
+        function result = didSetDeviceInFrontend(self, ...
+                                                 deviceName, ...
+                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
+                                                 isDOChannelTerminalOvercommitted)
             % Set stuff
             self.DeviceName_ = deviceName ;
             self.NDIOTerminals_ = nDIOTerminals ;
@@ -272,17 +275,18 @@ classdef Looper < ws.RootModel
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.NAOTerminals_ = nAOTerminals ;            
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
             % Notify subsystems
-            self.Acquisition.didSetDeviceName() ;
-            self.Stimulation.didSetDeviceName() ;            
-            self.Triggering.didSetDeviceName() ;            
+            self.Acquisition.didSetDeviceNameInFrontend() ;
+            self.Stimulation.didSetDeviceNameInFrontend() ;            
+            self.Triggering.didSetDeviceNameInFrontend() ;            
             
             % Set the state
             %self.setState_('idle');  % do we need to do this?
             
             % Get a task, if we need one
-            self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+            self.reacquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
 
             result = [] ;
         end  % function
@@ -912,6 +916,10 @@ classdef Looper < ws.RootModel
 
         function acquireOnDemandHardwareResources_(self)
             self.Stimulation.acquireOnDemandHardwareResources();
+        end
+
+        function reacquireOnDemandHardwareResources_(self)
+            self.Stimulation.reacquireOnDemandHardwareResources();
         end
         
 %         function runWithGuards_(self)
@@ -1755,11 +1763,11 @@ classdef Looper < ws.RootModel
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;     
             
-            % Notify subsystems that we just set the device name, which is
-            % true.
-            self.Acquisition.didSetDeviceName() ;
-            self.Stimulation.didSetDeviceName() ;            
-            self.Triggering.didSetDeviceName() ;                                    
+            % Notify subsystems, because they need to pick up the new
+            % device name
+            self.Acquisition.mimickingWavesurferModel_() ;
+            self.Stimulation.mimickingWavesurferModel_() ;            
+            self.Triggering.mimickingWavesurferModel_() ;                                    
         end  % function
     end  % public methods block
     

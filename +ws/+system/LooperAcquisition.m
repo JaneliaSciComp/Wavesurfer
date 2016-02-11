@@ -354,6 +354,20 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
         end        
-    end
+        
+        function didSetDeviceNameInFrontend(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %self.broadcast('Update');
+        end        
+        
+        function mimickingWavesurferModel_(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %self.broadcast('Update');
+        end        
+    end  % public methods block
     
 end  % classdef
