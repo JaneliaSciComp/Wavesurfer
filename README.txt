@@ -294,6 +294,6 @@ Version History
                          finite-duration sweep, despite nominally 
                          using the same trigger. 
 
-0.91     Feb 1, 2016     All things that used to be set in the MDF
+0.91     Feb 12, 2016    All things that used to be set in the MDF
                          file are now settable in the GUI, and stored
                          in the protocol file. 
