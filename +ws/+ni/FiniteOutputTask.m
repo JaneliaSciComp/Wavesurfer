@@ -4,8 +4,10 @@ classdef FiniteOutputTask < handle
         IsAnalog
         IsDigital
         TaskName
-        PhysicalChannelNames
-        ChannelNames
+        %TerminalNames
+        DeviceNames
+        TerminalIDs
+        %ChannelNames
         IsArmed  % generally shouldn't set props, etc when armed (but setting ChannelData is actually OK)
         OutputDuration
     end
@@ -28,8 +30,10 @@ classdef FiniteOutputTask < handle
         TriggerTerminalName_ = ''
         TriggerEdge_ = []
         IsArmed_ = false
-        PhysicalChannelNames_ = cell(1,0)
-        ChannelNames_ = cell(1,0)
+        %TerminalNames_ = cell(1,0)
+        DeviceNames_ = cell(1,0)
+        TerminalIDs_ = zeros(1,0)        
+        %ChannelNames_ = cell(1,0)
         ChannelData_
         IsOutputBufferSyncedToChannelData_ = false
     end
@@ -39,8 +43,8 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, physicalChannelNames, channelNames)
-            nChannels=length(physicalChannelNames);
+        function self = FiniteOutputTask(taskType, taskName, deviceNames, terminalIDs)
+            nChannels=length(terminalIDs);
             
 %             % Store the parent
 %             self.Parent_ = parent ;
@@ -56,29 +60,33 @@ classdef FiniteOutputTask < handle
             end            
             
             % Store this stuff
-            self.PhysicalChannelNames_ = physicalChannelNames ;
-            self.ChannelNames_ = channelNames ;
+            %self.TerminalNames_ = terminalNames ;
+            self.DeviceNames_ = deviceNames ;
+            self.TerminalIDs_ = terminalIDs ;
+            %self.ChannelNames_ = channelNames ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
                 for i=1:nChannels ,
-                    physicalChannelName = physicalChannelNames{i} ;
+                    %terminalName = terminalNames{i} ;
+                    deviceName = deviceNames{i} ;
+                    terminalID = terminalIDs(i) ;                    
+                    %channelName = channelNames{i} ;
                     if self.IsAnalog ,
-                        channelName = channelNames{i} ;
-                        deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                        channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createAOVoltageChan(deviceName, channelID, channelName);
+                        %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
+                        %terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+                        self.DabsDaqTask_.createAOVoltageChan(deviceName, terminalID) ;
                     else
-                        physicalChannelName = physicalChannelNames{i} ;
-                        deviceName = ws.utility.deviceNameFromPhysicalChannelName(physicalChannelName);
-                        restOfName = ws.utility.chopDeviceNameFromPhysicalChannelName(physicalChannelName);
-                        self.DabsDaqTask_.createDOChan(deviceName, restOfName);
+                        %terminalName = terminalNames{i} ;
+                        %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
+                        %restOfName = ws.utility.chopDeviceNameFromTerminalName(terminalName);
+                        lineName = sprintf('line%d',terminalID) ;                        
+                        self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
                     end
-                end                
+                end
                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
-            end
-            
+            end            
         end  % function
         
         function delete(self)
@@ -138,7 +146,7 @@ classdef FiniteOutputTask < handle
         end  % function
         
         function clearChannelData(self)
-            nChannels=length(self.ChannelNames);
+            nChannels=length(self.TerminalIDs);
             if self.IsAnalog ,
                 self.ChannelData_ = zeros(0,nChannels);  
             else
@@ -152,7 +160,7 @@ classdef FiniteOutputTask < handle
         end  % function
         
         function set.ChannelData(self, value)
-            nChannels=length(self.ChannelNames);
+            nChannels=length(self.TerminalIDs);
             if self.IsAnalog ,
                 requiredType = 'double' ;
             else
@@ -178,13 +186,21 @@ classdef FiniteOutputTask < handle
     end  % methods
     
     methods
-        function out = get.PhysicalChannelNames(self)
-            out = self.PhysicalChannelNames_ ;
+%         function out = get.TerminalNames(self)
+%             out = self.TerminalNames_ ;
+%         end  % function
+
+        function out = get.DeviceNames(self)
+            out = self.DeviceNames_ ;
         end  % function
 
-        function out = get.ChannelNames(self)
-            out = self.ChannelNames_ ;
+        function out = get.TerminalIDs(self)
+            out = self.TerminalIDs_ ;
         end  % function
+
+%         function out = get.ChannelNames(self)
+%             out = self.ChannelNames_ ;
+%         end  % function
         
         function value = get.SampleRate(self)
             value = self.SampleRate_;
@@ -336,28 +352,28 @@ classdef FiniteOutputTask < handle
                 return
             end
             
-            % Get the channel data into a local
-            channelData=self.ChannelData;
-            
-            % The outputData is the channelData, unless the channelData is
-            % very short, in which case the outputData is just long
-            % enough, and all zeros
-            nScansInChannelData = size(channelData,1) ;            
-            if nScansInChannelData<2 ,
-                nChannels = length(self.ChannelNames) ;
-                if self.IsAnalog ,
-                    outputData=zeros(2,nChannels);
-                else
-                    outputData=false(2,nChannels);
-                end
-            else
-                outputData = self.ChannelData ;
-            end
-            
             % Actually set up the task, if present
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else            
+                % Get the channel data into a local
+                channelData=self.ChannelData;
+
+                % The outputData is the channelData, unless the channelData is
+                % very short, in which case the outputData is just long
+                % enough, and all zeros
+                nScansInChannelData = size(channelData,1) ;            
+                if nScansInChannelData<2 ,
+                    nChannels = length(self.TerminalIDs) ;
+                    if self.IsAnalog ,
+                        outputData=zeros(2,nChannels);
+                    else
+                        outputData=false(2,nChannels);
+                    end
+                else
+                    outputData = self.ChannelData ;
+                end
+                
                 % Resize the output buffer to the number of scans in outputData
                 %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');  
                 % this is needed b/c we might have filled the buffer before bur never outputed that data
@@ -399,14 +415,15 @@ classdef FiniteOutputTask < handle
             % channel.
             [nScans,nChannels] = size(unpackedData);
             packedData = zeros(nScans,1,'uint32');
-            channelIDs = ws.utility.channelIDsFromPhysicalChannelNames(self.PhysicalChannelNames);
+            %terminalIDs = ws.utility.terminalIDsFromTerminalNames(self.TerminalNames);
+            terminalIDs = self.TerminalIDs_ ;
             for j=1:nChannels ,
-                channelID = channelIDs(j);
+                terminalID = terminalIDs(j);
                 %thisChannelData = uint32(outputData(:,j));                
-                %thisChannelDataShifted = bitshift(thisChannelData,channelID) ;
+                %thisChannelDataShifted = bitshift(thisChannelData,terminalID) ;
                 %packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
                 thisChannelData = unpackedData(:,j);
-                packedData = bitset(packedData,channelID+1,thisChannelData);  % +1 to convert to 1-based indexing
+                packedData = bitset(packedData,terminalID+1,thisChannelData);  % +1 to convert to 1-based indexing
             end
         end  % function
     end  % Static methods

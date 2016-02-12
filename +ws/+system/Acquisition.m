@@ -5,6 +5,61 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
             self@ws.system.AcquisitionSubsystem(parent);
         end
                 
+        function initializeFromMDFStructure(self, mdfStructure)
+            terminalNamesWithDeviceName = mdfStructure.physicalInputChannelNames ;  % these should be of the form 'Dev1/ao0' or 'Dev1/line3'            
+            
+            if ~isempty(terminalNamesWithDeviceName) ,
+                channelNames = mdfStructure.inputChannelNames;
+
+                % Deal with the device names, setting the WSM DeviceName if
+                % it's not set yet.
+                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
+                uniqueDeviceNames=unique(deviceNames);
+                if length(uniqueDeviceNames)>1 ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'WaveSurfer only supports a single NI card at present.');                      
+                end
+                deviceName = uniqueDeviceNames{1} ;                
+                if isempty(self.Parent.DeviceName) ,
+                    self.Parent.DeviceName = deviceName ;
+                end
+
+                % Get the channel IDs
+                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
+                isAnalog = strcmp(channelTypes,'ai');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names, etc
+                %analogDeviceNames = deviceNames(isAnalog) ;
+                %digitalDeviceNames = deviceNames(isDigital) ;
+                analogTerminalIDs = terminalIDs(isAnalog) ;
+                digitalTerminalIDs = terminalIDs(isDigital) ;            
+                analogChannelNames = channelNames(isAnalog) ;
+                digitalChannelNames = channelNames(isDigital) ;
+
+                % add the analog channels
+                nAnalogChannels = length(analogChannelNames);
+                for i = 1:nAnalogChannels ,
+                    self.addAnalogChannel() ;
+                    indexOfChannelInSelf = self.NAnalogChannels ;
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
+                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+                end
+                
+                % add the digital channels
+                nDigitalChannels = length(digitalChannelNames);
+                for i = 1:nDigitalChannels ,
+                    self.Parent.addDIChannel() ;
+                    indexOfChannelInSelf = self.NDigitalChannels ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
+                    self.Parent.setSingleDIChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+                end                
+            end
+        end  % function
+        
 %         function settings = packageCoreSettings(self)
 %             settings=struct() ;
 %             for i=1:length(self.CoreFieldNames_)
@@ -87,7 +142,23 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
 %             self.AnalogInputTask_.arm();
 %             self.DigitalInputTask_.arm();
         end  % function
-    end
+        
+        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
+            % This should only be called from the parent
+            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    wasSet = true ;
+                else
+                    wasSet = false ;
+                end
+            else
+                wasSet = false ;
+            end                
+            %self.Parent.didSetDigitalInputTerminalID();
+        end
+    end  % public methods block
 
     methods (Access=protected)
         function value = getAnalogChannelScales_(self)
@@ -114,5 +185,62 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
         end
     end  % methods block    
     
+    methods
+        function addDigitalChannel_(self)
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+            if isempty(freeTerminalIDs) ,
+                return  % can't add a new one, because no free IDs
+            else
+                newTerminalID = freeTerminalIDs(1) ;
+            end
+            newChannelName = sprintf('P0.%d',newTerminalID) ;
+            %newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
+            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
+            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            
+            %self.Parent.didAddDigitalInputChannel() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
+        end  % function
+        
+        function channelNamesToDelete = deleteMarkedDigitalChannels_(self)
+            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
+            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
+            if all(isToBeDeleted) ,
+                % Special case so things stay row vectors
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelActive_ = true(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
+            else
+                isKeeper = ~isToBeDeleted ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            
+%             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
+        end  % function
+        
+        function didSetDeviceName(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.broadcast('Update');
+        end
+        
+    end
     
 end  % classdef

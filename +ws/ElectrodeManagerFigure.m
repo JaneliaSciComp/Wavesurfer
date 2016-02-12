@@ -104,20 +104,30 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 %model.Ephys.subscribeMe(self,'PreSet','Electrodes','willChangeElectrodes');  % need to know if electrode is added/removed
                 %model.Ephys.subscribeMe(self,'PostSet','Electrodes','didChangeElectrodesChanged');  % need to know if electrode is added/removed
                 model.subscribeMe(self,'Update','','update');
-                ephys=model.Parent;
-                wavesurferModel=[];
-                if ~isempty(ephys) ,
-                    ephys.subscribeMe(self,'Update','','update');
-                    wavesurferModel=ephys.Parent;
-                end
-                if ~isempty(wavesurferModel) ,
-                    %wavesurferModel.subscribeMe(self,'PostSet','State','updateControlProperties');
-                    wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                    acquisition=wavesurferModel.Acquisition;
-                    if ~isempty(acquisition) ,
-                        %acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
-                    end
-                end                
+                model.subscribeMe(self,'DidSetIsInputChannelActive','','updateControlProperties');
+                model.subscribeMe(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
+                model.subscribeMe(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
+                model.subscribeMe(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
+%                 ephys=model.Parent;
+%                 wavesurferModel=[];
+%                 if ~isempty(ephys) ,
+%                     ephys.subscribeMe(self,'Update','','update');
+%                     wavesurferModel=ephys.Parent;
+%                 end
+%                 if ~isempty(wavesurferModel) ,
+%                     wavesurferModel.subscribeMe(self,'DidSetState','','update');
+%                     acquisition=wavesurferModel.Acquisition;
+%                     if ~isempty(acquisition) ,
+%                         %acquisition.subscribeMe(self,'DidChangeNumberOfChannels','','updateControlProperties');
+%                         %acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
+%                     end
+%                     stimulation=wavesurferModel.Stimulation ;
+%                     if ~isempty(stimulation) ,
+%                         %stimulation.subscribeMe(self,'DidChangeNumberOfChannels','','updateControlProperties');
+%                         %stimulation.subscribeMe(self,'DidSetIsDigitalChannelTimed','','updateControlProperties');
+%                         %stimulation.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
+%                     end
+%                 end                
             end
             
             % make the figure visible
@@ -199,11 +209,9 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             set(self.SoftpanelButton,'Value',areAnyElectrodesCommandable&&isInControlOfSoftpanelModeAndGains);
             
             % Specify common parameters for channel popups
-            fallbackItem='(Unspecified)';
-            emptyItem='';  % use default
-            alwaysShowFallbackItem=true;
-            normalBackgroundColor=[1 1 1];
-            warningBackgroundColor=[1 0.8 0.8];
+            alwaysShowUnspecifiedAsMenuItem=true;
+            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
             
             % We'll need wavesurferModel for several things here
             em=self.Model;
@@ -232,7 +240,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 %                 isThisElectrodeSmart=~isThisElectrodeManual;
                 
                 % Update the type popup                
-                setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
+                ws.utility.setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
                                                   ws.Electrode.Types, ...
                                                   thisElectrode.Type);
                 %set(self.TypePopups(i),'BackgroundColor',fif(isElectrodeConnectionOpen(i),normalBackgroundColor,warningBackgroundColor));
@@ -249,7 +257,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 % Update the mode popup
                 listOfModes=thisElectrode.getAllowedModes();
                 listOfModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),listOfModes,'UniformOutput',false);
-                setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
+                ws.utility.setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
                                                   listOfModesAsStrings, ...
                                                   ws.titleStringFromElectrodeMode(thisElectrode.Mode));
                 %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
@@ -265,13 +273,13 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current monitor popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingMonitorChannel(thisElectrode.CurrentMonitorChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
-                                                      wavesurferModel.Acquisition.ChannelNames, ...
+                    ws.utility.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
+                                                      wavesurferModel.Acquisition.AnalogChannelNames, ...
                                                       thisElectrode.CurrentMonitorChannelName, ...
-                                                      fallbackItem, ...
-                                                      emptyItem, ...
-                                                      alwaysShowFallbackItem);
-                    set(self.MonitorPopups(i),'BackgroundColor',fif(isChannelOvercommitted,warningBackgroundColor,normalBackgroundColor));
+                                                      alwaysShowUnspecifiedAsMenuItem);
+                    if isChannelOvercommitted,
+                        set(self.MonitorPopups(i),'BackgroundColor',warningBackgroundColor);
+                    end
 
                     % Update the current monitor scale
                     set(self.MonitorScaleEdits(i), ...
@@ -287,14 +295,14 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the voltage command popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingCommandChannel(thisElectrode.VoltageCommandChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
+                    ws.utility.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                       wavesurferModel.Stimulation.AnalogChannelNames, ...
                                                       thisElectrode.VoltageCommandChannelName, ...
-                                                      fallbackItem, ...
-                                                      emptyItem, ...
-                                                      alwaysShowFallbackItem);
-                    set(self.CommandPopups(i),'BackgroundColor',fif(isChannelOvercommitted,warningBackgroundColor,normalBackgroundColor));
-
+                                                      alwaysShowUnspecifiedAsMenuItem);
+                    if isChannelOvercommitted,
+                        set(self.CommandPopups(i),'BackgroundColor',warningBackgroundColor);
+                    end
+                    
                     % Update the voltage command scale
     %                 isVoltageCommandScaleEnabled=isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains);
                     % Add a special case for the Heka EPC voltage command scale in CC
@@ -314,13 +322,13 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the voltage monitor popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingMonitorChannel(thisElectrode.VoltageMonitorChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
-                                                      wavesurferModel.Acquisition.ChannelNames, ...
+                    ws.utility.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
+                                                      wavesurferModel.Acquisition.AnalogChannelNames, ...
                                                       thisElectrode.VoltageMonitorChannelName, ...
-                                                      fallbackItem, ...
-                                                      emptyItem, ...
-                                                      alwaysShowFallbackItem);
-                    set(self.MonitorPopups(i),'BackgroundColor',fif(isChannelOvercommitted,warningBackgroundColor,normalBackgroundColor));
+                                                      alwaysShowUnspecifiedAsMenuItem);
+                    if isChannelOvercommitted,
+                        set(self.MonitorPopups(i),'BackgroundColor',warningBackgroundColor);
+                    end
 
                     % Update the voltage monitor scale
                     set(self.MonitorScaleEdits(i), ...
@@ -336,13 +344,13 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current command popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingCommandChannel(thisElectrode.CurrentCommandChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
+                    ws.utility.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                       wavesurferModel.Stimulation.AnalogChannelNames, ...
                                                       thisElectrode.CurrentCommandChannelName, ...
-                                                      fallbackItem, ...
-                                                      emptyItem, ...
-                                                      alwaysShowFallbackItem);
-                    set(self.CommandPopups(i),'BackgroundColor',fif(isChannelOvercommitted,warningBackgroundColor,normalBackgroundColor));
+                                                      alwaysShowUnspecifiedAsMenuItem);
+                    if isChannelOvercommitted,
+                        set(self.CommandPopups(i),'BackgroundColor',warningBackgroundColor);
+                    end
 
                     % Update the current command scale
     %                 isCurrentCommandScaleEnabled=isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains);
@@ -783,7 +791,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'FontName','Tahoma', ...
                           'FontSize',8, ...
                           'HorizontalAlignment','left', ...
-                          'String','Remove?');
+                          'String','Delete?');
                 
             self.AddButton= ...
                 uicontrol('Parent',self.FigureGH, ...
@@ -800,7 +808,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'Units','pixels', ...
                           'FontName','Tahoma', ...
                           'FontSize',8, ...
-                          'String','Remove', ...
+                          'String','Delete', ...
                           'Callback',@(src,evt)(self.controlActuated('RemoveButton',src,evt)));
 
             self.UpdateButton= ...

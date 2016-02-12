@@ -1,4 +1,4 @@
-classdef Refiller < ws.Model
+classdef Refiller < ws.RootModel
     % The main Refiller model object.
     
     properties (Dependent = true)
@@ -45,7 +45,7 @@ classdef Refiller < ws.Model
         %RPCServer_
         %RPCClient_
         IPCPublisher_
-        IPCSubscriber_
+        IPCSubscriber_  % subscriber for the frontend
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedSoFarThisRun_ = 0
@@ -103,19 +103,14 @@ classdef Refiller < ws.Model
     end
     
     methods
-        function self = Refiller(parent)
+        function self = Refiller()
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Deal with arguments
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;  % no parent by default
-            end
-            
             % Call the superclass constructor
-            self@ws.Model(parent);
+            self@ws.RootModel();
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.RefillerRPCPortNumber) ;
@@ -124,14 +119,14 @@ classdef Refiller < ws.Model
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Refiller
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(self.RefillerIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
             
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;
@@ -283,12 +278,22 @@ classdef Refiller < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function result = initializeFromMDFStructure(self,mdfStructure)
-            self.initializeFromMDFStructure_(mdfStructure) ;
+        function result = didSetDeviceInFrontend(self, ...
+                                                 deviceName, ...
+                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
+                                                 isDOChannelTerminalOvercommitted) %#ok<INUSD>
+            % Don't need to do anything---we'll get updated info when a run
+            % is started, which is when it matters to us.
             result = [] ;
         end  % function
         
-        function result = startingRun(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
+        function result = startingRun(self, ...
+                                      wavesurferModelSettings, ...
+                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      isTerminalOvercommitedForEachAIChannel, ...
+                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      isTerminalOvercommitedForEachAOChannel, ...
+                                      isTerminalOvercommitedForEachDOChannel)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -296,7 +301,12 @@ classdef Refiller < ws.Model
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel) ;
             result = [] ;
         end  % function
 
@@ -393,11 +403,63 @@ classdef Refiller < ws.Model
             result = [] ;
         end
         
-        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.IsDigitalChannelTimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
+            %nothing to do, b/c we release the hardware resources at the
+            %end of a run now
+            %self.releaseHardwareResources_() ;
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalOutputChannelInFrontend(self, ...
+                                                               channelNameForEachDOChannel, ...
+                                                               deviceNameForEachDOChannel, ...
+                                                               terminalIDForEachDOChannel, ...
+                                                               isTimedForEachDOChannel, ...
+                                                               onDemandOutputForEachDOChannel, ...
+                                                               isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
+            %self.Stimulation.addDigitalChannel() ;
+            result = [] ;
+        end  % function
+        
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
+                                                                   channelNameForEachDOChannel, ...
+                                                                   deviceNameForEachDOChannel, ...
+                                                                   terminalIDForEachDOChannel, ...
+                                                                   isTimedForEachDOChannel, ...
+                                                                   onDemandOutputForEachDOChannel, ...
+                                                                   isTerminalOvercommittedForEachDOChannel) %#ok<INUSD>
+            %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
+            result = [] ;
+        end  % function
+
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings, isDOChannelTerminalOvercommitted) %#ok<INUSD>
+            % What it says on the tin.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % We don't need to do anything, because the refiller doesn't
+            % really do much until a run is started, and we get the
+            % frontend state then
+            
+            result = [] ;
+        end  % function        
+        
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            % We don't need to do anything in response to this message
+            result = [] ;
+        end  % function
+        
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            % We don't need to do anything in response to this message
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            result = [] ;
+        end  % function
+        
+        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
             result = [] ;
         end  % function
         
@@ -744,7 +806,13 @@ classdef Refiller < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
+        function prepareForRun_(self, ...
+                                wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -763,6 +831,12 @@ classdef Refiller < ws.Model
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
+            
+            % Set the overcommitment arrays
+            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
@@ -1102,26 +1176,46 @@ classdef Refiller < ws.Model
                     end
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;                                                
         end  % function
     end  % public methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            %self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            %self.Display.initializeScopes();
-            
-            % Change our state to reflect the presence of the MDF file
-            %self.setState_('idle');
-        end  % function
-    end  % methods block        
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)                        
+%             % Initialize the acquisition subsystem given the MDF data
+%             %self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             %self.Display.initializeScopes();
+%             
+%             % Change our state to reflect the presence of the MDF file
+%             %self.setState_('idle');
+%         end  % function
+%     end  % methods block        
     
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;  
+        end
+    end
+
 end  % classdef

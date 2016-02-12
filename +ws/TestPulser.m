@@ -41,9 +41,9 @@ classdef TestPulser < ws.Model
         %CommandInVolts
         NSweepsCompletedThisRun
         OutputDeviceNames
-        CommandChannelID
+        CommandTerminalID
         InputDeviceNames
-        MonitorChannelID
+        MonitorTerminalID
         MonitorChannelScale
         CommandChannelScale
         %AreYLimitsForRunDetermined
@@ -55,8 +55,8 @@ classdef TestPulser < ws.Model
         CommandChannelScalePerElectrode
         MonitorChannelScalePerElectrode
         CommandInVoltsPerElectrode
-        CommandChannelIDPerElectrode
-        MonitorChannelIDPerElectrode
+        CommandTerminalIDPerElectrode
+        MonitorTerminalIDPerElectrode
         IsCCPerElectrode
         IsVCPerElectrode
         CommandUnitsPerElectrode
@@ -125,6 +125,7 @@ classdef TestPulser < ws.Model
     end    
     
     events
+        DidSetIsInputChannelActive
         UpdateTrace
         %UpdateReadiness
     end
@@ -226,7 +227,16 @@ classdef TestPulser < ws.Model
             self.clearExistingSweepIfPresent_();
             self.broadcast('Update');            
         end
-                
+           
+        function didChangeNumberOfInputChannels(self)
+            self.broadcast('Update');
+        end
+        
+        function didChangeNumberOfOutputChannels(self)
+            self.broadcast('Update');
+        end
+        
+        
         function delete(self)
             self.Parent_=[];  % not necessary, but harmless
         end
@@ -820,16 +830,16 @@ classdef TestPulser < ws.Model
         end
         
         function value=get.InputDeviceNames(self)
-            wavesurferModel=self.Parent_.Parent;            
-            value=wavesurferModel.Acquisition.DeviceNames;
+            wavesurferModel=self.Parent.Parent;            
+            value=wavesurferModel.Acquisition.AnalogDeviceNames ;
         end
         
         function value=get.OutputDeviceNames(self)
-            wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.DeviceNamePerAnalogChannel;
+            wavesurferModel=self.Parent.Parent;
+            value=wavesurferModel.Stimulation.AnalogDeviceNames ;
         end
         
-        function result=get.CommandChannelIDPerElectrode(self)
+        function result=get.CommandTerminalIDPerElectrode(self)
             ephys=self.Parent_;
             electrodeManager=ephys.ElectrodeManager;
             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
@@ -842,11 +852,13 @@ classdef TestPulser < ws.Model
             stimulationSubsystem=wavesurferModel.Stimulation;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=stimulationSubsystem.analogChannelIDFromName(commandChannelNames{i});
+                thisCommandChannelName = commandChannelNames{i} ;
+                thisTerminalID = stimulationSubsystem.analogTerminalIDFromName(thisCommandChannelName) ;
+                result(i) = thisTerminalID ;
             end
         end
         
-        function result=get.MonitorChannelIDPerElectrode(self)
+        function result=get.MonitorTerminalIDPerElectrode(self)
             ephys=self.Parent_;
             electrodeManager=ephys.ElectrodeManager;
             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
@@ -859,13 +871,13 @@ classdef TestPulser < ws.Model
             acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.analogChannelIDFromName(monitorChannelNames{i});
+                result(i)=acquisition.analogTerminalIDFromName(monitorChannelNames{i});
             end
         end
         
-        function value=get.MonitorChannelID(self)
+        function value=get.MonitorTerminalID(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.analogChannelIDFromName(self.MonitorChannelName);            
+            value=wavesurferModel.Acquisition.analogTerminalIDFromName(self.MonitorChannelName);            
         end
         
         function value=get.MonitorChannelScale(self)
@@ -1091,11 +1103,12 @@ classdef TestPulser < ws.Model
                 % Set up the input task
                 % fprintf('About to create the input task...\n');
                 self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
-                monitorChannelIDs=self.MonitorChannelIDPerElectrode;
+                monitorTerminalIDs=self.MonitorTerminalIDPerElectrode;
                 for i=1:nElectrodes
-                    self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorChannelIDs(i));  % defaults to differential
+                    self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorTerminalIDs(i));  % defaults to differential
                 end
-                clockString=sprintf('/%s/ao/SampleClock',self.OutputDeviceNames{1});  % Output device name is something like 'Dev3'
+                deviceName = self.Parent.Parent.DeviceName ;
+                clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
                 self.InputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',[],clockString);
                   % set the sampling rate, and use the AO sample clock to keep
                   % acquisiton synced with analog output
@@ -1104,9 +1117,10 @@ classdef TestPulser < ws.Model
                 % Set up the output task
                 % fprintf('About to create the output task...\n');
                 self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
-                commandChannelIDs=self.CommandChannelIDPerElectrode;
+                commandTerminalIDs=self.CommandTerminalIDPerElectrode;
+                outputDeviceNames = self.OutputDeviceNames ;
                 for i=1:nElectrodes ,
-                    self.OutputTask_.createAOVoltageChan(self.OutputDeviceNames{i},commandChannelIDs(i));
+                    self.OutputTask_.createAOVoltageChan(outputDeviceNames{i},commandTerminalIDs(i));
                 end
                 self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
 
@@ -1475,7 +1489,12 @@ classdef TestPulser < ws.Model
         function didSetAcquisitionSampleRate(self,newValue)
             % newValue has already been validated
             self.setSamplingRate_(newValue) ;  % This will fire Update, etc.
-        end                
+        end       
+        
+        function didSetIsInputChannelActive(self) 
+            self.broadcast('DidSetIsInputChannelActive');
+        end
+        
     end  % methods
         
     methods (Access=protected)

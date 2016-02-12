@@ -169,6 +169,22 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.mayHaveChanged('CurrentCommandChannelName');
         end  % function
         
+        function didSetAnalogInputChannelName(self, oldValue, newValue)
+            if isequal(self.VoltageMonitorChannelName, oldValue) ,
+                self.VoltageMonitorChannelName = newValue ;
+            elseif isequal(self.CurrentMonitorChannelName, oldValue) ,
+                self.CurrentMonitorChannelName =  newValue ;
+            end
+        end        
+        
+        function didSetAnalogOutputChannelName(self, oldValue, newValue)
+            if isequal(self.VoltageCommandChannelName, oldValue) ,
+                self.VoltageCommandChannelName = newValue ;
+            elseif isequal(self.CurrentCommandChannelName, oldValue) ,
+                self.CurrentCommandChannelName =  newValue ;
+            end
+        end        
+        
         function set.Mode(self,newValue)
             % Want subclasses to be able to override, so we indirect
             self.setMode_(newValue);

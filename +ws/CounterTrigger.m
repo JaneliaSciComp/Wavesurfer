@@ -18,20 +18,22 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         Interval  % the inter-trigger interval, in seconds
         PFIID
         Edge
+        IsMarkedForDeletion
     end
     
     properties (Access=protected)
         Name_
         RepeatCount_  % our internal RepeatCount value, which can be overridden
-        IsRepeatCountOverridden_ = false  % boolean, true iff RepeatCount is overridden
-        RepeatCountOverride_  % the value of RepeatCount if IsRepeatCountOverridden_
+        %IsRepeatCountOverridden_ = false  % boolean, true iff RepeatCount is overridden
+        %RepeatCountOverride_  % the value of RepeatCount if IsRepeatCountOverridden_
         Interval_  % our internal Interval value, which can be overridden
-        IsIntervalOverridden_ = false  % boolean, true iff Interval is overridden
-        IntervalOverride_  % the value of Interval if IsIntervalOverridden_
+        %IsIntervalOverridden_ = false  % boolean, true iff Interval is overridden
+        %IntervalOverride_  % the value of Interval if IsIntervalOverridden_
         DeviceName_
         CounterID_
         PFIID_
         Edge_
+        IsMarkedForDeletion_
     end
 
 %     properties (Access = protected, Transient=true)
@@ -46,14 +48,16 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
     methods
         function self = CounterTrigger(parent)
             self = self@ws.Model(parent) ;
+            self.DeviceName_ = 'Dev1' ;
             self.Name_ = 'CounterTrigger' ;
             self.RepeatCount_ = 1 ;
-            self.DeviceName_ = 'Dev1' ;
             self.CounterID_ = 0 ;
             self.Interval_ = 1 ; % s
-            self.PFIID_ = 12 ;
+            self.syncPFIIDToCounterID_() ;
+            %self.PFIID_ = 12 ;
             self.Edge_ = 'rising' ;
             %self.CounterTask_=[];  % set in setup() method
+            self.IsMarkedForDeletion_ = false ;
         end
     end
     
@@ -65,25 +69,22 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
     
     methods        
         function value=get.RepeatCount(self)
-            if self.IsRepeatCountOverridden_ ,
-                value=self.RepeatCountOverride_;
-            else
-                value=self.RepeatCount_;
-            end
+            value=self.RepeatCount_;
         end
         
         function set.RepeatCount(self, newValue)
             %fprintf('set.RepeatCount()\n');
             %dbstack
             if ws.utility.isASettableValue(newValue) ,
-                self.validateRepeatCount_(newValue);
-                if self.IsRepeatCountOverridden_ ,
-                    % do nothing
+                if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
+                    self.RepeatCount_ = double(newValue) ;
                 else
-                    self.RepeatCount_ = newValue;
-                end
+                    self.Parent.update();
+                    error('most:Model:invalidPropVal', ...
+                          'RepeatCount must be a (scalar) positive integer, or inf');
+                end                
             end
-            self.broadcast('Update');
+            self.Parent.update();
         end
         
 %         function overrideRepeatCount(self,newValue)
@@ -94,7 +95,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %                 self.IsRepeatCountOverridden_=true;
 %             end
 %             %self.RepeatCount=nan.The;  % just to cause set listeners to fire
-%             self.broadcast('Update');
+%             self.Parent.update();
 %         end
 %         
 %         function releaseRepeatCount(self)
@@ -103,30 +104,27 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %             self.IsRepeatCountOverridden_=false;
 %             self.RepeatCountOverride_ = [];  % for tidiness
 %             %self.RepeatCount=nan.The;  % just to cause set listeners to fire
-%             self.broadcast('Update');
+%             self.Parent.update();
 %         end
         
     end
 
     methods
         function value=get.Interval(self)
-            if self.IsIntervalOverridden_ ,
-                value=self.IntervalOverride_;
-            else
-                value=self.Interval_;
-            end
+            value=self.Interval_;
         end
         
         function set.Interval(self, value)
             if ws.utility.isASettableValue(value) ,
-                self.validateInterval_(value);
-                if self.IsIntervalOverridden_ ,
-                    % do nothing
+                if isnumeric(value) && isscalar(value) && isreal(value) && value>0 ,
+                    self.Interval_ = value ;
                 else
-                    self.Interval_ = value;
-                end                
+                    self.Parent.update() ;
+                    error('most:Model:invalidPropVal', ...
+                          'Interval must be a (scalar) positive integer') ;       
+                end
             end
-            self.broadcast('Update');                
+            self.Parent.update();                
         end
         
 %         function overrideInterval(self,newValue)
@@ -136,7 +134,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %             self.IntervalOverride_ = newValue;
 %             self.IsIntervalOverridden_=true;
 %             %self.Interval=nan.The;  % just to cause set listeners to fire
-%             self.broadcast('Update');                
+%             self.Parent.update();                
 %         end
 %         
 %         function releaseInterval(self)
@@ -145,7 +143,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %             self.IsIntervalOverridden_=false;
 %             self.IntervalOverride_ = [];  % for tidiness
 %             %self.Interval=nan.The;  % just to cause set listeners to fire
-%             self.broadcast('Update');                
+%             self.Parent.update();                
 %         end
 
 %         function placeLowerLimitOnInterval(self,newValue)
@@ -189,71 +187,90 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
             value=self.Edge_;
         end
         
+        function value = get.IsMarkedForDeletion(self)
+            value = self.IsMarkedForDeletion_ ;
+        end
+
+        function set.IsMarkedForDeletion(self, value)
+            if ws.utility.isASettableValue(value) ,
+                if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+                    self.IsMarkedForDeletion_ = logical(value) ;
+                else
+                    self.Parent.update();
+                    error('most:Model:invalidPropVal', ...
+                          'IsMarkedForDeletion must be a truthy scalar');                  
+                end                    
+            end
+            self.Parent.update();            
+        end
+        
         function set.Name(self, value)
             if ws.utility.isASettableValue(value) ,
                 if ws.utility.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end
         
         function set.DeviceName(self, value)
             if ws.utility.isASettableValue(value) ,
                 if ws.utility.isString(value) ,
                     self.DeviceName_ = value ;
+                    self.syncPFIIDToCounterID_() ;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'DeviceName must be a string');                  
                 end                    
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end
         
-        function set.PFIID(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
-                    value = double(value) ;
-                    self.PFIID_ = value ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'PFIID must be a (scalar) nonnegative integer');                  
-                end                    
-            end
-            self.broadcast('Update');            
-        end
+%         function set.PFIID(self, value)
+%             if ws.utility.isASettableValue(value) ,
+%                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+%                     value = double(value) ;
+%                     self.PFIID_ = value ;
+%                 else
+%                     self.Parent.update();
+%                     error('most:Model:invalidPropVal', ...
+%                           'PFIID must be a (scalar) nonnegative integer');                  
+%                 end                    
+%             end
+%             self.Parent.update();            
+%         end
         
         function set.Edge(self, value)
             if ws.utility.isASettableValue(value) ,
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end  % function 
         
         function set.CounterID(self, value)
             if ws.utility.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 && self.Parent.isCounterIDFree(value),
                     value = double(value) ;
                     self.CounterID_ = value ;
+                    self.syncPFIIDToCounterID_() ;
                 else
-                    self.broadcast('Update');
+                    self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'CounterID must be a (scalar) nonnegative integer');                  
                 end                    
             end
-            self.broadcast('Update');            
+            self.Parent.update();            
         end
         
 %         function setup(self)
@@ -378,26 +395,34 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 % %                           'AllowEmpty', false);
 %         end  % function
         
-        function validateRepeatCount_(self,newValue)
-            % If returns, it's valid.  If throws, it's not.
-            if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
-                % all is well---do nothing
-            else
-                self.broadcast('Update');
-                error('most:Model:invalidPropVal', ...
-                      'RepeatCount must be a (scalar) positive integer, or inf');       
-            end
-        end
+%         function validateRepeatCount_(self,newValue)
+%             % If returns, it's valid.  If throws, it's not.
+%             if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
+%                 % all is well---do nothing
+%             else
+%                 self.Parent.update();
+%                 error('most:Model:invalidPropVal', ...
+%                       'RepeatCount must be a (scalar) positive integer, or inf');       
+%             end
+%         end
+%         
+%         function validateInterval_(self,newValue)
+%             % If returns, it's valid.  If throws, it's not.
+%             if isnumeric(newValue) && isscalar(newValue) && newValue>0 ,
+%                 % all is well---do nothing
+%             else
+%                 self.Parent.update();
+%                 error('most:Model:invalidPropVal', ...
+%                       'Interval must be a (scalar) positive integer');       
+%             end
+%         end
         
-        function validateInterval_(self,newValue)
-            % If returns, it's valid.  If throws, it's not.
-            if isnumeric(newValue) && isscalar(newValue) && newValue>0 ,
-                % all is well---do nothing
-            else
-                self.broadcast('Update');
-                error('most:Model:invalidPropVal', ...
-                      'Interval must be a (scalar) positive integer');       
-            end
+        function syncPFIIDToCounterID_(self)
+            rootModel = self.Parent.Parent ;
+            numberOfPFILines = rootModel.NPFITerminals ;
+            nCounters = rootModel.NCounters ;
+            pfiID = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
+            self.PFIID_ = pfiID ;
         end
         
     end  % static methods

@@ -298,7 +298,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             if ~isempty(outputChannelNames) ,
                 outputChannelName=outputChannelNames{1};
                 map=self.addNewMap();
-                map.Name='Pulse out first channel';
+                map.Name=sprintf('Pulse out %s',outputChannelName);
                 %map=ws.stimulus.StimulusMap('Name','Unit pulse out first channel');                
                 map.addBinding(outputChannelName,pulse);
                 %map.Bindings{1}.Stimulus=unitPulse;
@@ -884,6 +884,15 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             result=find(self.isStimulusAMatch(queryStimulus),1);
         end
         
+        function didSetChannelName(self, oldValue, newValue)
+            maps = self.Maps ;
+            for i = 1:length(maps) ,
+                map = maps{i} ;
+                map.didSetChannelName(oldValue, newValue) ;               
+            end
+            self.broadcast('Update');            
+        end
+        
         function debug(self) %#ok<MANU>
             keyboard
         end
@@ -939,6 +948,10 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
 %             end
 %             self.broadcast('Update');
 %         end  % function
+
+        function didChangeNumberOfOutputChannels(self)
+            self.broadcast('Update') ;
+        end
     end  % public methods block
     
     methods (Access = protected)        

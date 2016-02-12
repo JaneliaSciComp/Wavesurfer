@@ -17,9 +17,9 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %     end
 %     
 %     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-%         AnalogPhysicalChannelNames % the physical channel name for each analog channel
-%         DigitalPhysicalChannelNames  % the physical channel name for each digital channel
-%         PhysicalChannelNames
+%         AnalogTerminalNames % the physical channel name for each analog channel
+%         DigitalTerminalNames  % the physical channel name for each digital channel
+%         TerminalNames
 %         AnalogChannelNames
 %         DigitalChannelNames
 %         ChannelNames
@@ -28,7 +28,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         NTimedDigitalChannels        
 %         NChannels
 %         DeviceNamePerAnalogChannel  % the device names of the NI board for each channel, a cell array of strings
-%         %AnalogChannelIDs  % the zero-based channel IDs of all the available AOs 
+%         %AnalogTerminalIDs  % the zero-based channel IDs of all the available AOs 
 %         IsArmedOrStimulating   % Goes true during self.armForEpisode(), goes false during self.episodeCompleted_().  Then the cycle may repeat.
 %         IsWithinRun
 %         IsChannelAnalog
@@ -49,12 +49,12 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %     end
 % 
 %     properties (Access = protected)
-%         AnalogPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each analog channel
-%         DigitalPhysicalChannelNames_ = cell(1,0)  % the physical channel name for each digital channel
+%         AnalogTerminalNames_ = cell(1,0)  % the physical channel name for each analog channel
+%         DigitalTerminalNames_ = cell(1,0)  % the physical channel name for each digital channel
 %         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
 %         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
 %         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
-%         %AnalogChannelIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
+%         %AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
 %         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
 %         %AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
 %         %AnalogChannelNames_ = cell(1,0)
@@ -90,6 +90,65 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
             %self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
+        
+        function initializeFromMDFStructure(self, mdfStructure)       
+            terminalNamesWithDeviceName = mdfStructure.physicalOutputChannelNames ;
+            
+            if ~isempty(terminalNamesWithDeviceName) ,
+                channelNames = mdfStructure.outputChannelNames;
+
+                % Deal with the device names, setting the WSM DeviceName if
+                % it's not set yet.
+                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
+                uniqueDeviceNames=unique(deviceNames);
+                if length(uniqueDeviceNames)>1 ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'WaveSurfer only supports a single NI card at present.');                      
+                end
+                deviceName = uniqueDeviceNames{1} ;                
+                if isempty(self.Parent.DeviceName) ,
+                    self.Parent.DeviceName = deviceName ;
+                end
+
+                % Get the channel IDs
+                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
+                isAnalog = strcmp(channelTypes,'ao');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names, etc
+                %analogDeviceNames = deviceNames(isAnalog) ;
+                %digitalDeviceNames = deviceNames(isDigital) ;
+                analogTerminalIDs = terminalIDs(isAnalog) ;
+                digitalTerminalIDs = terminalIDs(isDigital) ;            
+                analogChannelNames = channelNames(isAnalog) ;
+                digitalChannelNames = channelNames(isDigital) ;
+
+                % add the analog channels
+                nAnalogChannels = length(analogChannelNames);
+                for i = 1:nAnalogChannels ,
+                    self.addAnalogChannel() ;
+                    indexOfChannelInSelf = self.NAnalogChannels ;
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
+                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+                end
+                
+                % add the digital channels
+                nDigitalChannels = length(digitalChannelNames);
+                for i = 1:nDigitalChannels ,
+                    self.Parent.addDOChannel() ;
+                    indexOfChannelInSelf = self.NDigitalChannels ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
+                    self.Parent.setSingleDOChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+                end                
+                
+                % Intialize the stimulus library, just to keep compatible
+                % with the old behavior
+                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);                
+            end
+        end  % function
         
 %         function delete(self)
 %             %fprintf('Stimulation::delete()\n');            
@@ -169,16 +228,16 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             result = self.IsArmedOrStimulating_ ;
 %         end
 %     
-%         function result = get.AnalogPhysicalChannelNames(self)
-%             result = self.AnalogPhysicalChannelNames_ ;
+%         function result = get.AnalogTerminalNames(self)
+%             result = self.AnalogTerminalNames_ ;
 %         end
 %     
-%         function result = get.DigitalPhysicalChannelNames(self)
-%             result = self.DigitalPhysicalChannelNames_ ;
+%         function result = get.DigitalTerminalNames(self)
+%             result = self.DigitalTerminalNames_ ;
 %         end
 % 
-%         function result = get.PhysicalChannelNames(self)
-%             result = [self.AnalogPhysicalChannelNames self.DigitalPhysicalChannelNames] ;
+%         function result = get.TerminalNames(self)
+%             result = [self.AnalogTerminalNames self.DigitalTerminalNames] ;
 %         end
 %         
 %         function result = get.AnalogChannelNames(self)
@@ -193,21 +252,21 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             result = [self.AnalogChannelNames self.DigitalChannelNames] ;
 %         end
 %     
-% %         function result = get.AnalogChannelIDs(self)
-% %             result = self.AnalogChannelIDs_ ;
+% %         function result = get.AnalogTerminalIDs(self)
+% %             result = self.AnalogTerminalIDs_ ;
 % %         end
 %         
 %         function result = get.DeviceNamePerAnalogChannel(self)
-%             result = ws.utility.deviceNamesFromPhysicalChannelNames(self.AnalogPhysicalChannelNames);
+%             result = ws.utility.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
 %         end
 %         
-% %         function result = get.AnalogPhysicalChannelNames(self)
+% %         function result = get.AnalogTerminalNames(self)
 % %             deviceNamePerAnalogChannel = self.DeviceNamePerAnalogChannel_ ;
-% %             analogChannelIDs = self.AnalogChannelIDs_ ;            
-% %             nChannels=length(analogChannelIDs);
+% %             analogTerminalIDs = self.AnalogTerminalIDs_ ;            
+% %             nChannels=length(analogTerminalIDs);
 % %             result=cell(1,nChannels);
 % %             for i=1:nChannels ,
-% %                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogChannelIDs(i));
+% %                 result{i} = sprintf('%s/ao%d',deviceNamePerAnalogChannel{i},analogTerminalIDs(i));
 % %             end
 % %         end
 %         
@@ -342,7 +401,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %                     ws.ni.FiniteOutputTask(self, ...
 %                                            'analog', ...
 %                                            'Wavesurfer Finite Analog Output Task', ...
-%                                            self.AnalogPhysicalChannelNames, ...
+%                                            self.AnalogTerminalNames, ...
 %                                            self.AnalogChannelNames) ;
 %                 self.TheFiniteAnalogOutputTask_.SampleRate=self.SampleRate;
 %                 %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
@@ -352,7 +411,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %                     ws.ni.FiniteOutputTask(self, ...
 %                                            'digital', ...
 %                                            'Wavesurfer Finite Digital Output Task', ...
-%                                            self.DigitalPhysicalChannelNames(self.IsDigitalChannelTimed), ...
+%                                            self.DigitalTerminalNames(self.IsDigitalChannelTimed), ...
 %                                            self.DigitalChannelNames(self.IsDigitalChannelTimed)) ;
 %                 self.TheFiniteDigitalOutputTask_.SampleRate=self.SampleRate;
 %                 %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
@@ -361,7 +420,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %                  self.TheUntimedDigitalOutputTask_ = ...
 %                     ws.ni.UntimedDigitalOutputTask(self, ...
 %                                            'Wavesurfer Untimed Digital Output Task', ...
-%                                            self.DigitalPhysicalChannelNames(~self.IsDigitalChannelTimed), ...
+%                                            self.DigitalTerminalNames(~self.IsDigitalChannelTimed), ...
 %                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
 %                  if ~all(self.IsDigitalChannelTimed)
 %                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
@@ -519,44 +578,44 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
             self.StimulusLibrary.SelectedOutputable = cycle;
         end  % function
         
-        function channelID=analogChannelIDFromName(self,channelName)
-            % Get the channel ID, given the name.
-            % This returns a channel ID, e.g. if the channel is ao2,
-            % it returns 2.
-            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
-            if isnan(iChannel) ,
-                channelID = nan ;
-            else
-                physicalChannelName = self.AnalogPhysicalChannelNames_{iChannel};
-                channelID = ws.utility.channelIDFromPhysicalChannelName(physicalChannelName);
-            end
-        end  % function
-
-        function value=channelScaleFromName(self,channelName)
-            value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
-        end  % function
-
-        function iChannel=indexOfAnalogChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.AnalogChannelNames));
-            if isempty(iChannels) ,
-                iChannel=nan;
-            else
-                iChannel=iChannels(1);
-            end
-        end  % function
-
-        function result=channelUnitsFromName(self,channelName)
-            if isempty(channelName) ,
-                result='';
-            else
-                iChannel=self.indexOfAnalogChannelFromName(channelName);
-                if isempty(iChannel) ,
-                    result='';
-                else
-                    result=self.AnalogChannelUnits{iChannel};
-                end
-            end
-        end  % function
+%         function terminalID=analogTerminalIDFromName(self,channelName)
+%             % Get the channel ID, given the name.
+%             % This returns a channel ID, e.g. if the channel is ao2,
+%             % it returns 2.
+%             iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+%             if isnan(iChannel) ,
+%                 terminalID = nan ;
+%             else
+%                 terminalName = self.AnalogTerminalNames_{iChannel};
+%                 terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+%             end
+%         end  % function
+% 
+%         function value=channelScaleFromName(self,channelName)
+%             value=self.AnalogChannelScales(self.indexOfAnalogChannelFromName(channelName));
+%         end  % function
+% 
+%         function iChannel=indexOfAnalogChannelFromName(self,channelName)
+%             iChannels=find(strcmp(channelName,self.AnalogChannelNames));
+%             if isempty(iChannels) ,
+%                 iChannel=nan;
+%             else
+%                 iChannel=iChannels(1);
+%             end
+%         end  % function
+% 
+%         function result=channelUnitsFromName(self,channelName)
+%             if isempty(channelName) ,
+%                 result='';
+%             else
+%                 iChannel=self.indexOfAnalogChannelFromName(channelName);
+%                 if isempty(iChannel) ,
+%                     result='';
+%                 else
+%                     result=self.AnalogChannelUnits{iChannel};
+%                 end
+%             end
+%         end  % function
         
 %         function channelUnits=get.AnalogChannelUnits(self)
 %             import ws.utility.*
@@ -756,7 +815,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
     end  % protected methods block
     
     methods (Access = protected)
-        function syncTasksToChannelMembership_(self)            
+        function syncTasksToChannelMembership_(self)             %#ok<MANU>
             % Clear the timed digital output task, will be recreated when acq is
             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
             % And have to do it first to avoid a temporary collision.
@@ -962,6 +1021,100 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         end
 %     end
     
+    methods 
+        function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
+            % This should only be called by the parent WavesurferModel, to
+            % ensure the self-consistency of the WavesurferModel.
+            %wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;            
+            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+                    wasSet = true ;
+                else
+                    wasSet = false ;
+                end
+            else
+                wasSet = false ;
+            end
+%             self.Parent.didSetDigitalOutputTerminalID() ;
+%             if wasSet ,
+%                 self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
+%             end
+        end
+        
+        function addDigitalChannel_(self)
+            %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
+            deviceName = self.Parent.DeviceName ;
+            
+            newChannelDeviceName = deviceName ;
+            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+            if isempty(freeTerminalIDs) ,
+                return  % can't add a new one, because no free IDs
+            else
+                newTerminalID = freeTerminalIDs(1) ;
+            end
+            newChannelName = sprintf('P0.%d',newTerminalID) ;
+            %newChannelName = newChannelPhysicalName ;
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
+            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
+            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
+            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
+            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
+            
+            %self.Parent.didAddDigitalOutputChannel() ;
+            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.broadcast('DidChangeNumberOfChannels');            
+            %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
+        end  % function
+        
+        function deleteMarkedDigitalChannels_(self)
+            % Should only be called from parent.
+            
+            % Do some accounting
+            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
+            %indicesOfChannelsToDelete = find(isToBeDeleted) ;
+            isKeeper = ~isToBeDeleted ;
+            
+            % Turn off any untimed DOs that are about to be deleted
+            digitalOutputStateIfUntimed = self.DigitalOutputStateIfUntimed ;
+            self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
+
+            % Now do the real deleting
+            if all(isToBeDeleted)
+                % Keep everything a row vector
+                self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalTerminalIDs_ = zeros(1,0) ;
+                self.DigitalChannelNames_ = cell(1,0) ;
+                self.IsDigitalChannelTimed_ = true(1,0) ;
+                self.DigitalOutputStateIfUntimed_ = false(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
+            else
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
+                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+            end
+            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+
+%             % Notify others of what we have done
+%             self.Parent.didDeleteDigitalOutputChannels() ;
+%             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+        end  % function
+       
+        function didSetDeviceName(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;            
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            self.broadcast('Update');
+        end
+        
+    end
+        
     methods (Access=protected)
         function setIsDigitalChannelTimed_(self,newValue)
             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;

@@ -1,7 +1,12 @@
 classdef WavesurferMainFigure < ws.MCOSFigure
+    properties (Constant)
+        NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
+        WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
+    end
+    
     properties
         FileMenu
-        LoadMachineDataFileMenuItem
+        %LoadMachineDataFileMenuItem
         OpenProtocolMenuItem
         SaveProtocolMenuItem
         SaveProtocolAsMenuItem
@@ -190,9 +195,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % File menu
             self.FileMenu=uimenu('Parent',self.FigureGH, ...
                                  'Label','File');
-            self.LoadMachineDataFileMenuItem = ...
-                uimenu('Parent',self.FileMenu, ...
-                       'Label','Load Machine Data File...');
+%             self.LoadMachineDataFileMenuItem = ...
+%                 uimenu('Parent',self.FileMenu, ...
+%                        'Label','Load Machine Data File...');
             self.OpenProtocolMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Open Protocol...');
@@ -229,7 +234,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                        'Label','Scopes');
             self.ChannelsMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
-                       'Label','Channels...');
+                       'Label','Device & Channels...');
             self.TriggersMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','Triggers...');
@@ -1115,37 +1120,47 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateProgressBarProperties_();
             
             % Update the Stimulation/Source popupmenu
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
             stimulusLibrary=ws.utility.getSubproperty(model,'Stimulation','StimulusLibrary');
             if isempty(stimulusLibrary) ,
                 set(self.SourcePopupmenu, ...
-                    'String',{'(No library)'}, ...
-                    'Value',1);                      
+                    'String', {'(No library)'}, ...
+                    'Value', 1, ...
+                    'BackgroundColor', warningBackgroundColor);
             else
-                outputables=stimulusLibrary.getOutputables();
-                if isempty(outputables) ,
-                    set(self.SourcePopupmenu, ...
-                        'String',{'(No outputables)'}, ...
-                        'Value',1);                      
+                outputables = stimulusLibrary.getOutputables() ;
+                outputableNames = cellfun(@(item)(item.Name),outputables,'UniformOutput',false) ;
+                selectedOutputable = stimulusLibrary.SelectedOutputable ;
+                if isempty(selectedOutputable) ,
+                    selectedOutputableNames = {} ;                    
                 else
-                    outputableNames=cellfun(@(item)(item.Name),outputables,'UniformOutput',false);                
-                    selectedOutputable=stimulusLibrary.SelectedOutputable;
-                    if isempty(selectedOutputable) ,
-                        iSelected=[];
-                    else
-                        isSelected= cellfun(@(item)(item==selectedOutputable),outputables);
-                        iSelected=find(isSelected,1);
-                    end                 
-                    if isempty(iSelected) ,
-                        outputableNamesWithFallback=[{'(None selected)'} outputableNames];
-                        set(self.SourcePopupmenu, ...
-                            'String',outputableNamesWithFallback, ...
-                            'Value',1);
-                    else
-                        set(self.SourcePopupmenu, ...
-                            'String',outputableNames, ...
-                            'Value',iSelected);
-                    end
-                end
+                    selectedOutputableNames = { selectedOutputable.Name } ;
+                end                
+                ws.utility.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
+%                 if isempty(outputables) ,
+%                     set(self.SourcePopupmenu, ...
+%                         'String',{'(No outputables)'}, ...
+%                         'Value',1);                      
+%                 else
+%                     outputableNames=cellfun(@(item)(item.Name),outputables,'UniformOutput',false);                
+%                     selectedOutputable=stimulusLibrary.SelectedOutputable;
+%                     if isempty(selectedOutputable) ,
+%                         iSelected=[];
+%                     else
+%                         isSelected= cellfun(@(item)(item==selectedOutputable),outputables);
+%                         iSelected=find(isSelected,1);
+%                     end                 
+%                     if isempty(iSelected) ,
+%                         outputableNamesWithFallback=[{'(None selected)'} outputableNames];
+%                         set(self.SourcePopupmenu, ...
+%                             'String',outputableNamesWithFallback, ...
+%                             'Value',1);
+%                     else
+%                         set(self.SourcePopupmenu, ...
+%                             'String',outputableNames, ...
+%                             'Value',iSelected);
+%                     end
+%                 end
             end
             
             % Update whether the "Yoke to ScanImage" menu item is checked,
@@ -1179,7 +1194,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %figureObject=self.Figure; 
             %window=self.hGUIData.WavesurferWindow;
             
-            isNoMDF = isequal(model.State,'no_mdf') ;
+            isNoDevice = isequal(model.State,'no_device') ;
             isIdle=isequal(model.State,'idle');
             isSweepBased=model.AreSweepsFiniteDuration;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
@@ -1187,14 +1202,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
-            set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoMDF));
-            set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
+            %set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
+            % set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
+            set(self.OpenProtocolMenuItem,'Enable',onIff(isNoDevice||isIdle));            
             set(self.SaveProtocolMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveProtocolAsMenuItem,'Enable',onIff(isIdle));            
             set(self.LoadUserSettingsMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveUserSettingsMenuItem,'Enable',onIff(isIdle));            
             set(self.SaveUserSettingsAsMenuItem,'Enable',onIff(isIdle));            
-            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoMDF));
+            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoDevice));
             %set(self.QuitMenuItem,'Enable',onIff(true));  % always available          
             
             %% Run Menu
@@ -1205,7 +1221,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
             set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            set(self.ChannelsMenuItem,'Enable',onIff(isIdle));
+            set(self.ChannelsMenuItem,'Enable',onIff(true));
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
             set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
@@ -1214,7 +1230,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
             
             % Help menu
-            set(self.AboutMenuItem,'Enable',onIff(isIdle||isNoMDF));
+            set(self.AboutMenuItem,'Enable',onIff(isIdle||isNoDevice));
             
             % Toolbar buttons
             set(self.PlayButton,'Enable',onIff(isIdle));
@@ -1238,11 +1254,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %isStimulationEnableable = model.Stimulation.CanEnable ;
             isStimulationEnableable = true ;
             isStimulusEnabled=model.Stimulation.IsEnabled;
-            stimulusLibrary=model.Stimulation.StimulusLibrary;            
-            isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
+            %stimulusLibrary=model.Stimulation.StimulusLibrary;            
+            %isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
             set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
             set(self.StimulationSampleRateEdit,'Enable',onIff(isIdle && isStimulusEnabled));
-            set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
+            %set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
+            set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled));
             set(self.EditStimulusLibraryButton,'Enable',onIff(isIdle && isStimulusEnabled));
             set(self.RepeatsCheckbox,'Enable',onIff(isIdle && isStimulusEnabled));
 
@@ -1425,7 +1442,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.OriginalModelState_=[];
             
             % If we're switching out of the "no MDF" mode, update the scope menu            
-            if isequal(originalModelState,'no_mdf') && ~isequal(self.Model.State,'no_mdf') ,
+            if isequal(originalModelState,'no_device') && ~isequal(self.Model.State,'no_device') ,
                 self.update();
             else
                 % More limited update is sufficient

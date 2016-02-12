@@ -1,12 +1,12 @@
-classdef WavesurferModel < ws.Model
+classdef WavesurferModel < ws.RootModel
     % The main Wavesurfer model object.
 
-    properties (Constant = true, Transient=true)
-        NFastProtocols = 6        
-        FrontendIPCPublisherPortNumber = 8081
-        LooperIPCPublisherPortNumber = 8082
-        RefillerIPCPublisherPortNumber = 8083        
-    end
+%     properties (Constant = true, Transient=true)
+%         NFastProtocols = 6        
+%         FrontendIPCPublisherPortNumber = 8081
+%         LooperIPCPublisherPortNumber = 8082
+%         RefillerIPCPublisherPortNumber = 8083        
+%     end
     
     properties (Dependent = true)
         HasUserSpecifiedProtocolFileName
@@ -36,6 +36,7 @@ classdef WavesurferModel < ws.Model
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
+        %DeviceName
     end
     
     %
@@ -61,6 +62,7 @@ classdef WavesurferModel < ws.Model
         % Not saved to either protocol or .usr file
         Logging_
         VersionString_
+        %DeviceName_
     end
 
     properties (Access=protected, Transient=true)
@@ -123,28 +125,28 @@ classdef WavesurferModel < ws.Model
     
     events
         % These events _are_ used by WS itself.
+        UpdateChannels
         UpdateFastProtocols
+        UpdateForNewData
         UpdateIsYokedToScanImage
         %DidSetAbsoluteProtocolFileName
         %DidSetAbsoluteUserSettingsFileName        
         DidLoadProtocolFile
-        DidSetStateAwayFromNoMDF
         WillSetState
         DidSetState
         %DidSetAreSweepsFiniteDurationOrContinuous
-        UpdateForNewData
         DidCompleteSweep
+        UpdateDigitalOutputStateIfUntimed
+        DidChangeNumberOfInputChannels
     end
     
     methods
-        function self = WavesurferModel(parent,isITheOneTrueWavesurferModel)
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;
-            end
+        function self = WavesurferModel(isITheOneTrueWavesurferModel)
+            self@ws.RootModel();  % we have no parent
+            
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
-            self@ws.Model(parent);
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
@@ -157,18 +159,18 @@ classdef WavesurferModel < ws.Model
             if isITheOneTrueWavesurferModel ,
                 % Set up the object to broadcast messages to the satellite
                 % processes
-                self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_ = ws.IPCPublisher(self.FrontendIPCPublisherPortNumber) ;
                 self.IPCPublisher_.bind() ;
 
                 % Subscribe the the looper boradcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+                self.LooperIPCSubscriber_.connect(self.LooperIPCPublisherPortNumber) ;
 
                 % Subscribe the the refiller broadcaster
                 self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(ws.WavesurferModel.RefillerIPCPublisherPortNumber) ;
+                self.RefillerIPCSubscriber_.connect(self.RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
@@ -219,27 +221,11 @@ classdef WavesurferModel < ws.Model
                     error('ws:noContactWithRefiller' , ...
                           'Unable to establish contact with the refiller process');
                 end
-                    
-%                 % Wait for the Looper & Refiller to phone home
-%                 %self.IPCPublisher_.send('areYallAliveQ') ;
-% 
-%                 % Wait for the looper to respond that it is alive
-%                 timeout = 30 ;  % s
-%                 gotMessage = self.LooperIPCSubscriber_.waitForMessage('looperIsAlive',timeout) ;
-%                 if ~gotMessage ,
-%                     % Something went wrong
-%                     error('ws:looperNotAlive' , ...
-%                           'The looper did not respond to the ''Are you alive?'' message');
-%                 end
-% 
-%                 % Wait for the refiller to respond that it is alive
-%                 gotMessage = self.RefillerIPCSubscriber_.waitForMessage('refillerIsAlive',timeout) ;
-%                 if ~gotMessage ,
-%                     % Something went wrong
-%                     error('ws:refillerNotAlive' , ...
-%                           'The refiller did not respond to the ''Are you alive?'' message');
-%                 end
-            end
+
+                % Get the list of all device names, and cache it in our own
+                % state
+                self.probeHardwareAndSetAllDeviceNames() ;                
+            end  % if isITheOneTrueWavesurfer
             
             % Initialize the fast protocols
             self.FastProtocols_ = cell(1,self.NFastProtocols) ;
@@ -285,10 +271,21 @@ classdef WavesurferModel < ws.Model
 %             %                           'TimerFcn',@(timer,timerStruct)(self.poll_()), ...
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
+
             % The object is now initialized, but not very useful until an
             % MDF is specified.
-            self.setState_('no_mdf');
-        end
+            self.setState_('no_device') ;
+            
+            % Finally, set the device name to the first device name, if
+            % there is one (and if we are the one true wavesurfer object)
+            if isITheOneTrueWavesurferModel ,
+                % Set the device name to the first device
+                allDeviceNames = self.AllDeviceNames ;
+                if ~isempty(allDeviceNames) ,
+                    self.DeviceName = allDeviceNames{1} ;
+                end
+            end
+        end  % function
         
         function delete(self)
             %fprintf('WavesurferModel::delete()\n');
@@ -466,8 +463,12 @@ classdef WavesurferModel < ws.Model
         
         function result = refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
             result = [] ;
-        end        
-    end  % methods
+        end       
+        
+        function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
+            result = [] ;
+        end       
+    end  % ZMQ methods block
     
     methods
         function value=get.VersionString(self)
@@ -708,6 +709,98 @@ classdef WavesurferModel < ws.Model
             if ~isempty(ephys)
                 ephys.didSetAnalogChannelUnitsOrScales();
             end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetAnalogInputTerminalID(self)
+            self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function setSingleDIChannelTerminalID(self, iChannel, terminalID)
+            wasSet = self.Acquisition.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.broadcast('UpdateChannels') ;
+            if wasSet ,
+                %value = self.Acquisition.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
+                self.IPCPublisher_.send('singleDigitalInputTerminalIDWasSetInFrontend', ...
+                                        self.IsDOChannelTerminalOvercommitted ) ;
+            end            
+        end
+        
+%         function didSetDigitalInputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.broadcast('UpdateChannels') ;
+%         end
+        
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+            display=self.Display;
+            if ~isempty(display)
+                display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+            end            
+            ephys=self.Ephys;
+            if ~isempty(ephys)
+                ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+            end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
+            self.Display.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+%             ephys=self.Ephys;
+%             if ~isempty(ephys)
+%                 ephys.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetAnalogOutputTerminalID(self)
+            self.syncIsAOChannelTerminalOvercommitted_() ;
+            self.broadcast('UpdateChannels') ;
+        end
+        
+%         function didSetDigitalOutputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.broadcast('UpdateChannels') ;
+%         end
+        
+        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+%             display=self.Display;
+%             if ~isempty(display)
+%                 display.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            ephys=self.Ephys;
+            if ~isempty(ephys)
+                ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
+            end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
+%             self.Display.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
+%             ephys=self.Ephys;
+%             if ~isempty(ephys)
+%                 ephys.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetIsInputChannelActive(self) 
+            self.Ephys.didSetIsInputChannelActive() ;
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetIsInputChannelMarkedForDeletion(self) 
+            self.broadcast('UpdateChannels') ;
+        end
+        
+        function didSetIsDigitalOutputTimed(self)
+            self.Ephys.didSetIsDigitalOutputTimed() ;
+            self.broadcast('UpdateChannels') ;            
+        end
+        
+        function didSetDigitalOutputStateIfUntimed(self)
+            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
         end
         
         function set.IsYokedToScanImage(self,newValue)
@@ -870,7 +963,93 @@ classdef WavesurferModel < ws.Model
         function testPulserIsAboutToStartTestPulsing(self)
             self.releaseTimedHardwareResourcesOfAllProcesses_();
         end
-    end
+        
+%         function result = getNumberOfAIChannels(self)
+%             % The number of AI channels available, if you used them all in
+%             % single-ended mode.  If you want them to be differential, you
+%             % only get half as many.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 result = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+%                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
+%                     % cellstring, each element of the form '<device name>/ai<channel ID>'
+%                 result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
+%             end
+%         end
+%         
+%         function result = getNumberOfAOChannels(self)
+%             % The number of AO channels available.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 result = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+%                     % cellstring, each element of the form '<device name>/ao<channel ID>'
+%                 result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
+%             end
+%         end
+%         
+%         function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
+%             % The number of DIO channels available.  We only count the DIO
+%             % channels capable of timed operation, i.e. the P0.x channels.
+%             % This is a conscious design choice.  We treat the PFIn/Pm.x
+%             % channels as being only PFIn channels.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 numberOfDIOChannels = nan ;
+%                 numberOfPFILines = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+%                     % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
+%                 % We only want to count the port0 lines, since those are
+%                 % the only ones that can be used for timed operations.
+%                 splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
+%                 lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
+%                 if any(lengthOfEachSplit<2) ,
+%                     numberOfDIOChannels = nan ;  % should we throw an error here instead?
+%                     numberOfPFILines = nan ;
+%                 else
+%                     portNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
+%                     isAPort0Channel = strcmp(portNames,'port0') ;
+%                     numberOfDIOChannels = sum(isAPort0Channel) ;
+%                     numberOfPFILines = sum(~isAPort0Channel) ;
+%                 end
+%             end
+%         end  % function
+%         
+%         function result = getNumberOfCounters(self)
+%             % The number of counters (CTRs) on the board.
+%             deviceName = self.DeviceName ;
+%             if isempty(deviceName) ,
+%                 result = nan ;
+%             else
+%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
+%                 commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+%                     % cellstring, each element of the form '<device
+%                     % name>/<counter name>', where a <counter name> is of
+%                     % the form 'ctr<n>' or 'freqout'.
+%                 % We only want to count the ctr<n> lines, since those are
+%                 % the general-purpose CTRs.
+%                 splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
+%                 lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
+%                 if any(lengthOfEachSplit<2) ,
+%                     result = nan ;  % should we throw an error here instead?
+%                 else
+%                     counterOutputNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
+%                     isAGeneralPurposeCounterOutput = strncmp(counterOutputNames,'ctr',3) ;
+%                     result = sum(isAGeneralPurposeCounterOutput) ;
+%                 end
+%             end
+%         end  % function
+    end  % public methods block
     
     methods (Access=protected)
         function releaseTimedHardwareResourcesOfAllProcesses_(self)
@@ -914,11 +1093,11 @@ classdef WavesurferModel < ws.Model
             self.broadcast('WillSetState');
             if ws.isAnApplicationState(newValue) ,
                 if ~isequal(self.State_,newValue) ,
-                    oldValue = self.State_ ;
+%                     oldValue = self.State_ ;
                     self.State_ = newValue ;
-                    if isequal(oldValue,'no_mdf') && ~isequal(newValue,'no_mdf') ,
-                        self.broadcast('DidSetStateAwayFromNoMDF');
-                    end
+%                     if isequal(oldValue,'no_device') && ~isequal(newValue,'no_device') ,
+%                         self.broadcast('DidSetStateAwayFromNoDevice');
+%                     end
                 end
             end
 %             if isequal(newValue,'running') ,
@@ -940,10 +1119,12 @@ classdef WavesurferModel < ws.Model
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
 
+            % Can't run unless we are currently idle
             if ~isequal(self.State,'idle') ,
                 return
             end
 
+            % Change the readiness (this changes the pointer in the view)
             self.changeReadiness(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
@@ -966,13 +1147,17 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
+            % Initialize the sweep counter
             self.NSweepsCompletedInThisRun_ = 0;
             
+            % Call the user method, if any
             self.callUserMethod_('startingRun');  
                         
-            % Tell all the subsystems to prepare for the run
+            % Note the time, b/c the logging subsystem needs it, and we
+            % want to note it *just* before the start of the run
             self.ClockAtRunStart_ = clock() ;
-              % do this now so that the data file header has the right value
+            
+            % Tell all the subsystems to prepare for the run
             try
                 for idx = 1: numel(self.Subsystems_) ,
                     if self.Subsystems_{idx}.IsEnabled ,
@@ -992,7 +1177,13 @@ classdef WavesurferModel < ws.Model
             % Tell the Looper & Refiller to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
-            self.IPCPublisher_.send('startingRun',wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
+            self.IPCPublisher_.send('startingRun', ...
+                                    wavesurferModelSettings, ...
+                                    acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                    self.IsAIChannelTerminalOvercommitted, ...
+                                    self.IsDIChannelTerminalOvercommitted, ...
+                                    self.IsAOChannelTerminalOvercommitted, ...
+                                    self.IsDOChannelTerminalOvercommitted) ;
             
             % Isn't the code below a race condition?  What if the refiller
             % responds first?  No, it's not a race, because one is waiting
@@ -1003,35 +1194,78 @@ classdef WavesurferModel < ws.Model
             timeout = 10 ;  % s
             [err,looperError] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
             if isempty(err) ,
-                compositeError = looperError ;
+                compositeLooperError = looperError ;
             else
-                compositeError = err ;
+                % If there was an error in the
+                % message-sending-and-receiving process, then we don't
+                % really care if the looper also had a problem.  We have
+                % bigger fish to fry, in a sense.
+                compositeLooperError = err ;
             end
-            if ~isempty(compositeError) ,
+            if isempty(compositeLooperError) ,
+                summaryLooperError = [] ;
+            else
                 % Something went wrong
-                self.abortOngoingRun_();
-                self.changeReadiness(+1);
-                me = MException('wavesurfer:looperDidntGetReady', ...
-                                'The looper encountered a problem while getting ready for the run');
-                me = me.addCause(compositeError) ;
-                throw(me) ;
+                %self.abortOngoingRun_();
+                %self.changeReadiness(+1);
+                summaryLooperError = MException('wavesurfer:looperDidntGetReady', ...
+                                                'The looper encountered a problem while getting ready for the run');
+                summaryLooperError = summaryLooperError.addCause(compositeLooperError) ;
+                %throw(summaryLooperError) ;  % can't throw until we
+                %consume the message from the refiller.  See below.
             end
+            
+            % Even if the looper had a problem, we still need to get the
+            % message from the refiller, if any.  Otherwise, the next
+            % message we read from the refiller, perhaps when the user
+            % fixes whatever is bothering the looper, will be
+            % refillerReadyForRunOrPerhapsNot, regardless of what it should
+            % be.
             
             % Wait for the refiller to respond that it is ready
             [err, refillerError] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRunOrPerhapsNot', timeout) ;
             if isempty(err) ,
-                compositeError = refillerError ;
+                compositeRefillerError = refillerError ;
             else
-                compositeError = err ;
+                % If there was an error in the
+                % message-sending-and-receiving process, then we don't
+                % really care if the refiller also had a problem.  We have
+                % bigger fish to fry, in a sense.
+                compositeRefillerError = err ;
             end
-            if ~isempty(compositeError) ,
+            if isempty(compositeRefillerError) ,
+                summaryRefillerError = [] ;
+            else
                 % Something went wrong
-                self.abortOngoingRun_();
-                self.changeReadiness(+1);
-                me = MException('wavesurfer:refillerDidntGetReady', ...
-                                'The refiller encountered a problem while getting ready for the run');
-                me = me.addCause(compositeError) ;
-                throw(me) ;
+                %self.abortOngoingRun_();
+                %self.changeReadiness(+1);
+                summaryRefillerError = MException('wavesurfer:refillerDidntGetReady', ...
+                                                  'The refiller encountered a problem while getting ready for the run');
+                summaryRefillerError = summaryRefillerError.addCause(compositeRefillerError) ;
+                %throw(me) ;
+            end
+            
+            % OK, now throw up if needed
+            if isempty(summaryLooperError) ,
+                if isempty(summaryRefillerError) ,
+                    % nothing to do
+                else
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(summaryRefillerError) ;                    
+                end
+            else
+                if isempty(summaryRefillerError) ,
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(summaryLooperError) ;                                        
+                else
+                    % Problems abound!  Throw the looper one, for no good
+                    % reason...
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(summaryLooperError) ;                                                            
+                end                
             end
             
             % Change our own state to running
@@ -1123,7 +1357,7 @@ classdef WavesurferModel < ws.Model
                 end
                 
                 % Tell the refiller to ready itself (we do this first b/c
-                % this start the DAQmx tasks, and we want the output
+                % this starts the DAQmx tasks, and we want the output
                 % task(s) to start before the input task(s)
                 self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
                 
@@ -1496,84 +1730,19 @@ classdef WavesurferModel < ws.Model
     end % protected methods block
         
     methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.most.app.Model(self);
-%             self.setPropertyAttributeFeatures('NSweepsPerRun', 'Classes', 'numeric', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-%             self.setPropertyAttributeFeatures('SweepDuration', 'Attributes', {'positive', 'scalar'});
-%             self.setPropertyAttributeFeatures('AreSweepsFiniteDuration', 'Classes', 'logical', 'Attributes', {'scalar'});
-%             self.setPropertyAttributeFeatures('AreSweepsContinuous', 'Classes', 'logical', 'Attributes', {'scalar'});
-%         end  % function
-        
-%         function defineDefaultPropertyTags_(self)
-% %             % Mark all the subsystems since they are SetAccess protected which won't be picked
-% %             % up by default.
-% %             self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
-% %             self.setPropertyTags('FastProtocols', 'ExcludeFromFileTypes', {'cfg','header'});
-% %             self.setPropertyTags('Acquisition', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Stimulation', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Triggering', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'header'});
-% %             self.setPropertyTags('Display', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr','header'});
-% %             self.setPropertyTags('Logging', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('UserCodeManager', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'header'});
-% %             self.setPropertyTags('Ephys', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr','header'});
-% %             self.setPropertyTags('State', 'ExcludeFromFileTypes', {'*'});
-% %             self.setPropertyTags('NSweepsCompletedInThisRun', 'ExcludeFromFileTypes', {'*'});
-% %             self.setPropertyTags('NSweepsPerRun', 'IncludeInFileTypes', {'header'});
-% %             self.setPropertyTags('NSweepsPerRun_', 'IncludeInFileTypes', {'cfg'});
-% %             self.setPropertyTags('IsYokedToScanImage', 'ExcludeFromFileTypes', {'usr'});
-% %             self.setPropertyTags('IsYokedToScanImage', 'IncludeInFileTypes', {'cfg', 'header'});
-% %             self.setPropertyTags('AreSweepsFiniteDuration', 'ExcludeFromFileTypes', {'usr'});
-% %             self.setPropertyTags('AreSweepsFiniteDuration', 'IncludeInFileTypes', {'cfg', 'header'});
-% %             self.setPropertyTags('AreSweepsContinuous', 'ExcludeFromFileTypes', {'*'});
-%             
-%             % Exclude all the subsystems except FastProtocols from usr
-%             % files
-%             defineDefaultPropertyTags_@ws.Model(self);            
-%             self.setPropertyTags('Acquisition', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Stimulation', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Triggering', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Display', 'ExcludeFromFileTypes', {'usr'});
-%             % Exclude Logging from .cfg (aka protocol) file
-%             % This is because we want to maintain e.g. serial sweep indices even if
-%             % user switches protocols.
-%             self.setPropertyTags('Logging', 'ExcludeFromFileTypes', {'usr', 'cfg'});  
-%             self.setPropertyTags('UserCodeManager', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('Ephys', 'ExcludeFromFileTypes', {'usr'});
-% 
-%             % Exclude FastProtocols from cfg file
-%             self.setPropertyTags('FastProtocols_', 'ExcludeFromFileTypes', {'cfg'});
-%             
-%             % Exclude a few more things from .usr file
-%             self.setPropertyTags('IsYokedToScanImage_', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('AreSweepsFiniteDuration_', 'ExcludeFromFileTypes', {'usr'});
-%             self.setPropertyTags('NSweepsPerRun_', 'ExcludeFromFileTypes', {'usr'});            
-%         end  % function
-        
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function out = getPropertyValue_(self, name)
-            out = self.(name);
+            out = self.(name) ;
         end  % function
         
         % Allows access to protected and protected variables from ws.mixin.Coding.
         function setPropertyValue_(self, name, value)
-            self.(name) = value;
-            
-%             % This is a hack to make sure the UI gets updated on loading
-%             % the .cfg file.
-%             if isequal(name,'NSweepsPerRun_') ,
-%                 self.NSweepsPerRun=nan.The;
-%             end                
+            %if isequal(name,'IsDIChannelTerminalOvercommitted_')
+            %    dbstack
+            %    dbstop
+            %end
+            self.(name) = value ;
         end  % function
-        
-%         function syncFromElectrodes(self)
-%             self.Acquisition.syncFromElectrodes();
-%             self.Stimulation.syncFromElectrodes();            
-%         end
-
     end  % methods ( Access = protected )
     
     methods
@@ -1589,29 +1758,43 @@ classdef WavesurferModel < ws.Model
             end
             self.changeReadiness(+1);
         end
+        
+        function addStarterChannelsAndStimulusLibrary(self)
+            % Adds an AI channel, an AO channel, creates a stimulus and a
+            % map in the stim library, and sets the current outputable to
+            % the newly-created map.  This is intended to be run on a
+            % "virgin" wavesurferModel.
+            
+            aiChannelName = self.Acquisition.addAnalogChannel() ;
+            aoChannelName = self.Stimulation.addAnalogChannel() ;
+            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+            
+        end
     end  % methods block
     
     methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
+        function initializeFromMDFStructure_(self, mdfStructure)
             % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure);
+            self.Acquisition.initializeFromMDFStructure(mdfStructure) ;
             
             % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
+            self.Stimulation.initializeFromMDFStructure(mdfStructure) ;
 
             % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
+            self.Triggering.initializeFromMDFStructure(mdfStructure) ;
+                        
             % Add the default scopes to the display
-            self.Display.initializeScopes();
+            %self.Display.initializeScopes();
+            % Don't need this anymore --- Display keeps itself in sync as
+            % channels are added.
             
-            % Change our state to reflect the presence of the MDF file
-            self.setState_('idle');
+            % Change our state to reflect the presence of the MDF file            
+            %self.setState_('idle');
             
-            % Notify the satellites
-            if self.IsITheOneTrueWavesurferModel_ ,
-                self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
-            end
+%             % Notify the satellites
+%             if self.IsITheOneTrueWavesurferModel_ ,
+%                 self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
+%             end
         end  % function
     end  % methods block
         
@@ -1827,7 +2010,7 @@ classdef WavesurferModel < ws.Model
             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
             if ~isScanImageReady ,
                 self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
+                error('EphusModel:ProblemCommandingScanImageToSaveProtocolFile', ...
                       errorMessage);
             end            
         end  % function
@@ -1854,7 +2037,7 @@ classdef WavesurferModel < ws.Model
             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
             if ~isScanImageReady ,
                 self.ensureYokingFilesAreGone_();
-                error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
+                error('EphusModel:ProblemCommandingScanImageToOpenProtocolFile', ...
                       errorMessage);
             end            
         end  % function
@@ -1949,7 +2132,7 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function saveStruct = loadConfigFileForRealsSrsly(self, fileName)
+        function saveStruct = loadProtocolFileForRealsSrsly(self, fileName)
             % Actually loads the named config file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -1964,21 +2147,25 @@ classdef WavesurferModel < ws.Model
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
             %self.decodeProperties(wavesurferModelSettings);
+            %keyboard
             newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicProtocol_(newModel) ;
+            self.mimicProtocolThatWasJustLoaded_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
+            self.broadcast('Update');  
+                % have to do this before setting state, b/c at this point view could be badly out-of-sync w/ model, and setState_() doesn't do a full Update
+            self.setState_('idle');
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
-            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+            ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);       
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
     end
     
     methods
-        function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+        function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForPersistence();
@@ -1992,7 +2179,7 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
-            ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+            ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
             self.changeReadiness(+1);            
             self.broadcast('Update');
@@ -2101,6 +2288,51 @@ classdef WavesurferModel < ws.Model
     end
 
     methods
+        function result = allDigitalTerminalIDs(self)
+            nDigitalTerminalIDsInHardware = self.NDIOTerminals ;
+            result = 0:(nDigitalTerminalIDsInHardware-1) ;              
+        end
+        
+        function result = digitalTerminalIDsInUse(self)
+            inputDigitalTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            outputDigitalTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            result = sort([inputDigitalTerminalIDs outputDigitalTerminalIDs]) ;
+        end
+        
+        function result = freeDigitalTerminalIDs(self)
+            allIDs = self.allDigitalTerminalIDs() ;  
+            inUseIDs = self.digitalTerminalIDsInUse() ;
+            result = setdiff(allIDs, inUseIDs) ;
+        end
+        
+        function result = isDigitalTerminalIDInUse(self, DigitalTerminalID)
+            inUseDigitalTerminalIDs = self.digitalTerminalIDsInUse() ;
+            result = ismember(DigitalTerminalID, inUseDigitalTerminalIDs) ;
+        end
+    end
+    
+    methods
+        function setSingleDOChannelTerminalID(self, iChannel, terminalID)
+            wasSet = self.Stimulation.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
+            %self.didSetDigitalOutputTerminalID() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.broadcast('UpdateChannels') ;
+            if wasSet ,
+                %self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
+                value = self.Stimulation.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
+                self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
+                                        iChannel, value, self.IsDOChannelTerminalOvercommitted ) ;
+            end
+        end
+        
+%         function singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(self, i)
+%             % This only gets called if the value was actually set.
+%             value = self.Stimulation.DigitalTerminalIDs(i) ;
+%             keyboard
+%             self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
+%                                     i, value, self.IsDOChannelTerminalOvercommitted ) ;
+%         end
+
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.DigitalOutputStateIfUntimed ;
             self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
@@ -2108,8 +2340,177 @@ classdef WavesurferModel < ws.Model
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
             value = self.Stimulation.IsDigitalChannelTimed ;
-            self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',value) ;
+            % Notify the refiller first, so that it can release all the DO
+            % channels
+            self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
         end
+        
+        function didAddAnalogInputChannel(self)
+            self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.Display.didAddAnalogInputChannel() ;
+            self.Ephys.didChangeNumberOfInputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+        end
+        
+        function addDIChannel(self)
+            self.Acquisition.addDigitalChannel_() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Display.didAddDigitalInputChannel() ;
+            self.Ephys.didChangeNumberOfInputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+            self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
+                                    self.IsDOChannelTerminalOvercommitted) ;
+        end
+        
+%         function didAddDigitalInputChannel(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Display.didAddDigitalInputChannel() ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
+        
+        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
+            self.syncIsAIChannelTerminalOvercommitted_() ;            
+            self.Display.didDeleteAnalogInputChannels(nameOfRemovedChannels) ;
+            self.Ephys.didChangeNumberOfInputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+        end
+        
+        function deleteMarkedDIChannels(self)
+            namesOfDeletedChannels = self.Acquisition.deleteMarkedDigitalChannels_() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Display.didDeleteDigitalInputChannels(namesOfDeletedChannels) ;
+            self.Ephys.didChangeNumberOfInputChannels() ;
+            self.broadcast('UpdateChannels') ;  % causes channels figure to update
+            self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
+            self.IPCPublisher_.send('didDeleteDigitalInputChannelsInFrontend', ...
+                                    self.IsDOChannelTerminalOvercommitted) ;
+        end
+        
+%         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
+        
+%         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
+%             self.Display.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
+        
+%         function didChangeNumberOfOutputChannels(self)
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');
+%         end
+        
+        function didAddAnalogOutputChannel(self)
+            self.syncIsAOChannelTerminalOvercommitted_() ;            
+            %self.Display.didAddAnalogOutputChannel() ;
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+        end
+
+%         function didAddDigitalOutputChannel(self)
+%             %self.Display.didAddDigitalOutputChannel() ;
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+%             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
+%             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+%             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
+%                                     channelNameForEachDOChannel, ...
+%                                     deviceNameForEachDOChannel, ...
+%                                     terminalIDForEachDOChannel, ...
+%                                     isTimedForEachDOChannel, ...
+%                                     onDemandOutputForEachDOChannel, ...
+%                                     isTerminalOvercommittedForEachDOChannel) ;
+%         end
+        
+        function addDOChannel(self)
+            self.Stimulation.addDigitalChannel_() ;
+            %self.Display.didAddDigitalOutputChannel() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+            channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
+            deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+            isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+            onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+            isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+            self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
+                                    channelNameForEachDOChannel, ...
+                                    deviceNameForEachDOChannel, ...
+                                    terminalIDForEachDOChannel, ...
+                                    isTimedForEachDOChannel, ...
+                                    onDemandOutputForEachDOChannel, ...
+                                    isTerminalOvercommittedForEachDOChannel) ;
+        end
+        
+        function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
+            self.syncIsAOChannelTerminalOvercommitted_() ;            
+            %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+        end
+        
+        function deleteMarkedDOChannels(self)
+            self.Stimulation.deleteMarkedDigitalChannels_() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;                                
+            self.Ephys.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateChannels');  % causes channels figure to update
+            channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
+            deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+            isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+            onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+            isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+            self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
+                                    channelNameForEachDOChannel, ...
+                                    deviceNameForEachDOChannel, ...
+                                    terminalIDForEachDOChannel, ...
+                                    isTimedForEachDOChannel, ...
+                                    onDemandOutputForEachDOChannel, ...
+                                    isTerminalOvercommittedForEachDOChannel) ;
+        end
+        
+%         function didDeleteDigitalOutputChannels(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
+%             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+%             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
+%                                     channelNameForEachDOChannel, ...
+%                                     deviceNameForEachDOChannel, ...
+%                                     terminalIDForEachDOChannel, ...
+%                                     isTimedForEachDOChannel, ...
+%                                     onDemandOutputForEachDOChannel, ...
+%                                     isTerminalOvercommittedForEachDOChannel) ;
+%         end
+        
     end
     
 %     methods
@@ -2173,7 +2574,7 @@ classdef WavesurferModel < ws.Model
 %             error('waversurfer:pollingTimerError',...
 %                   'The polling timer had a problem.  Acquisition aborted.');
 %         end        
-    end
+    end  % protected methods block
     
     methods
         function mimic(self, other)
@@ -2262,16 +2663,20 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
     
     methods (Access=protected) 
-        function mimicProtocol_(self, other)
+        function mimicProtocolThatWasJustLoaded_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.
 
             % Do this before replacing properties in place, or bad things
             % will happen
             self.releaseTimedHardwareResources_() ;
-            
+
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
+            % Don't want to do broadcasts while we're in a
+            % possibly-inconsistent state
+            self.disableBroadcasts() ;
+
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
@@ -2288,13 +2693,31 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
+            
+            % Tell the subsystems that we've changed the device
+            % name, which we have, among other things
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;
+            self.Triggering.didSetDeviceName() ;
+            self.Display.didSetDeviceName() ;
+
+            % Safe to do broadcasts again
+            self.enableBroadcastsMaybe() ;
+            
             % Make sure the looper knows which output channels are timed vs
             % on-demand
+            %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
-                self.IPCPublisher_.send('isDigitalChannelTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
-            end
+                %self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
+                wavesurferModelSettings = self.encodeForPersistence() ;
+                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
+                self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
+            end            
         end  % function
-    end  % public methods block
+    end  % protected methods block
     
     methods (Access=protected) 
         function mimicUserSettings_(self, other)
@@ -2302,7 +2725,59 @@ classdef WavesurferModel < ws.Model
             source = other.getPropertyValue_('FastProtocols_') ;
             self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
-    end  % public methods block
+        
+        function setDeviceName_(self, newValue)
+            if ws.utility.isASettableValue(newValue) ,
+                if ws.utility.isString(newValue) && ~isempty(newValue) ,
+                    allDeviceNames = self.AllDeviceNames ;
+                    isAMatch = strcmpi(newValue,allDeviceNames) ;
+                    if any(isAMatch) ,
+                        iMatch = find(isAMatch,1) ;
+                        deviceName = allDeviceNames{iMatch} ;
+                        self.DeviceName_ = deviceName ;
+                        
+                        % Probe the device to find out its capabilities
+                        self.syncDeviceResourceCountsFromDeviceName_() ;
+
+                        % Recalculate which digital terminals are now
+                        % overcommitted, since that also updates which are
+                        % out-of-range for the device
+                        self.syncIsAIChannelTerminalOvercommitted_() ;
+                        self.syncIsAOChannelTerminalOvercommitted_() ;
+                        self.syncIsDigitalChannelTerminalOvercommitted_() ;
+                        
+                        % Tell the subsystems that we've changed the device
+                        % name
+                        self.Acquisition.didSetDeviceName() ;
+                        self.Stimulation.didSetDeviceName() ;
+                        self.Triggering.didSetDeviceName() ;
+                        self.Display.didSetDeviceName() ;
+                        
+                        % Change our state to reflect the presence of the
+                        % device
+                        self.setState_('idle');
+
+                        % Notify the satellites
+                        if self.IsITheOneTrueWavesurferModel_ ,
+                            self.IPCPublisher_.send('didSetDeviceInFrontend', ...
+                                                    deviceName, ...
+                                                    self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
+                                                    self.IsDOChannelTerminalOvercommitted) ;
+                        end                        
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'DeviceName must be the name of an NI DAQmx device');       
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DeviceName must be a nonempty string');       
+                end
+            end
+            self.broadcast('Update');
+        end  % function        
+    end  % protected methods block
     
     methods (Static)
         function [pathToRepoRoot,pathToMatlabZmqLib] = pathNamesThatNeedToBeOnSearchPath()

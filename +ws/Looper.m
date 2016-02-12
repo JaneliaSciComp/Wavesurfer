@@ -1,4 +1,4 @@
-classdef Looper < ws.Model
+classdef Looper < ws.RootModel
     % The main Looper model object.
     
     properties (Dependent = true)
@@ -44,7 +44,7 @@ classdef Looper < ws.Model
         %RPCServer_
         %RPCClient_
         IPCPublisher_
-        IPCSubscriber_
+        IPCSubscriber_  % subscriber for the frontend
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
@@ -98,19 +98,14 @@ classdef Looper < ws.Model
     end
     
     methods
-        function self = Looper(parent)
+        function self = Looper()
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Deal with arguments
-            if ~exist('parent','var') || isempty(parent) ,
-                parent = [] ;  % no parent by default
-            end
-            
             % Call the superclass constructor
-            self@ws.Model(parent);
+            self@ws.RootModel();
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
@@ -119,14 +114,14 @@ classdef Looper < ws.Model
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Looper
-            self.IPCPublisher_ = ws.IPCPublisher(ws.WavesurferModel.LooperIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(self.LooperIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
 
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Looper::Looper(): About to send looperIsAlive\n') ;
@@ -269,13 +264,40 @@ classdef Looper < ws.Model
     end  % public methods block
         
     methods  % RPC methods block
-        function result = initializeFromMDFStructure(self,mdfStructure)
-            self.initializeFromMDFStructure_(mdfStructure) ;
-            self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+        function result = didSetDeviceInFrontend(self, ...
+                                                 deviceName, ...
+                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
+                                                 isDOChannelTerminalOvercommitted)
+            % Set stuff
+            self.DeviceName_ = deviceName ;
+            self.NDIOTerminals_ = nDIOTerminals ;
+            self.NPFITerminals_ = nPFITerminals ;
+            self.NCounters_ = nCounters ;
+            self.NAITerminals_ = nAITerminals ;
+            self.NAOTerminals_ = nAOTerminals ;            
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            
+            % Notify subsystems
+            self.Acquisition.didSetDeviceNameInFrontend() ;
+            self.Stimulation.didSetDeviceNameInFrontend() ;            
+            self.Triggering.didSetDeviceNameInFrontend() ;            
+            
+            % Set the state
+            %self.setState_('idle');  % do we need to do this?
+            
+            % Get a task, if we need one
+            self.reacquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+
             result = [] ;
         end  % function
 
-        function result = startingRun(self,wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)  %#ok<INUSD>
+        function result = startingRun(self, ...
+                                      wavesurferModelSettings, ...
+                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      isTerminalOvercommitedForEachAIChannel, ...
+                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      isTerminalOvercommitedForEachAOChannel, ...
+                                      isTerminalOvercommitedForEachDOChannel)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -283,7 +305,13 @@ classdef Looper < ws.Model
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, ...
+                                stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel) ;
             result = [] ;
         end  % function
 
@@ -363,20 +391,102 @@ classdef Looper < ws.Model
             self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
             result = [] ;
         end  % function
-        
-        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
+                                                                        i, newValue, ...
+                                                                        isDOChannelTerminalOvercommitted)
+            %self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
+            self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
-        function result = isDigitalChannelTimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.IsDigitalChannelTimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
+            % This only gets called if the value in newValue was found to
+            % be legal.
+            self.Stimulation.isDigitalChannelTimedWasSetInFrontend(newValue) ;
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalOutputChannelInFrontend(self, ...
+                                                               channelNameForEachDOChannel, ...
+                                                               deviceNameForEachDOChannel, ...
+                                                               terminalIDForEachDOChannel, ...
+                                                               isTimedForEachDOChannel, ...
+                                                               onDemandOutputForEachDOChannel, ...
+                                                               isTerminalOvercommittedForEachDOChannel)
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+            self.Stimulation.didAddDOChannelInFrontend(channelNameForEachDOChannel, ...
+                                                       deviceNameForEachDOChannel, ...
+                                                       terminalIDForEachDOChannel, ...
+                                                       isTimedForEachDOChannel, ...
+                                                       onDemandOutputForEachDOChannel) ;
+            result = [] ;
+        end  % function
+        
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
+                                                                   channelNameForEachDOChannel, ...
+                                                                   deviceNameForEachDOChannel, ...
+                                                                   terminalIDForEachDOChannel, ...
+                                                                   isTimedForEachDOChannel, ...
+                                                                   onDemandOutputForEachDOChannel, ...
+                                                                   isTerminalOvercommittedForEachDOChannel)
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+            self.Stimulation.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
+                                                                      deviceNameForEachDOChannel, ...
+                                                                      terminalIDForEachDOChannel, ...
+                                                                      isTimedForEachDOChannel, ...
+                                                                      onDemandOutputForEachDOChannel)
+            result = [] ;
+        end  % function
+        
+        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+            self.Stimulation.digitalOutputStateIfUntimedWasSetInFrontend(newValue) ;
+            result = [] ;
+        end  % function
+        
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, ...
+                                                                       isDOChannelTerminalOvercommitted)
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
+        function result = frontendJustLoadedProtocol(self, wavesurferModelSettings, isDOChannelTerminalOvercommitted)
+            % What it says on the tin.
+            %
+            % This is called via RPC, so must return exactly one return
+            % value, and must not throw.
+
+            % Make the looper settings look like the
+            % wavesurferModelSettings.
+            
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseHardwareResources_() ;           
+            
+            % Make our own settings mimic those of wavesurferModelSettings
+            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.mimicWavesurferModel_(wsModel) ;
+
+            % Set the overcommitment stuff, calculated in the frontend
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            
+            % Want the on-demand DOs to work immediately
+            self.acquireOnDemandHardwareResources_() ;
+
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)            
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
+        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
@@ -737,7 +847,12 @@ classdef Looper < ws.Model
             self.Triggering.didSetSweepDurationIfFinite();
             %self.Display.didSetSweepDurationIfFinite();
         end                
-    end
+        
+%         function didDeleteDigitalOutputChannels(self) %#ok<INUSD>
+%             % In the looper, this does nothing
+%         end
+        
+    end  % public methods block
        
     methods (Access=protected)
         function performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
@@ -777,13 +892,10 @@ classdef Looper < ws.Model
             %self.Ephys.releaseHardwareResources();
         end
         
-%         function releaseAllHardwareResources_(self)
-%             self.Acquisition.releaseHardwareResources();
-%             self.Stimulation.releaseTimedHardwareResources();
-%             self.Stimulation.releaseOnDemandHardwareResources();
-%             %self.Triggering.releaseHardwareResources();
-%             %self.Ephys.releaseHardwareResources();
-%         end
+        function releaseHardwareResources_(self)            
+            self.Acquisition.releaseHardwareResources();
+            self.Stimulation.releaseHardwareResources();
+        end
     end
 
     methods
@@ -806,6 +918,10 @@ classdef Looper < ws.Model
         function acquireOnDemandHardwareResources_(self)
             self.Stimulation.acquireOnDemandHardwareResources();
         end
+
+        function reacquireOnDemandHardwareResources_(self)
+            self.Stimulation.reacquireOnDemandHardwareResources();
+        end
         
 %         function runWithGuards_(self)
 %             % Start a run.
@@ -817,7 +933,13 @@ classdef Looper < ws.Model
 %             end
 %         end
         
-        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask)
+        function prepareForRun_(self, ...
+                                wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel )  %#ok<INUSL>
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -834,11 +956,19 @@ classdef Looper < ws.Model
             self.IsPerformingRun_ = true ;                        
             
             % Make our own settings mimic those of wavesurferModelSettings
+            % Have to do this before decoding properties, or bad things will happen
+            self.releaseTimedHardwareResources_();           
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicWavesurferModel_(wsModel) ;
+            self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
+            
+            % Set the overcommitment arrays, since we have the info at hand
+            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -1335,7 +1465,7 @@ classdef Looper < ws.Model
 %             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
 %             if ~isScanImageReady ,
 %                 self.ensureYokingFilesAreGone_();
-%                 error('EphusModel:ProblemCommandingScanImageToSaveConfigFile', ...
+%                 error('EphusModel:ProblemCommandingScanImageToSaveProtocolFile', ...
 %                       errorMessage);
 %             end            
 %         end  % function
@@ -1362,7 +1492,7 @@ classdef Looper < ws.Model
 %             [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
 %             if ~isScanImageReady ,
 %                 self.ensureYokingFilesAreGone_();
-%                 error('EphusModel:ProblemCommandingScanImageToOpenConfigFile', ...
+%                 error('EphusModel:ProblemCommandingScanImageToOpenProtocolFile', ...
 %                       errorMessage);
 %             end            
 %         end  % function
@@ -1449,7 +1579,7 @@ classdef Looper < ws.Model
 %     end
     
 %     methods
-%         function saveStruct=loadConfigFileForRealsSrsly(self, fileName)
+%         function saveStruct=loadProtocolFileForRealsSrsly(self, fileName)
 %             % Actually loads the named config file.  fileName should be a
 %             % file name referring to a file that is known to be
 %             % present, at least as of a few milliseconds ago.
@@ -1466,7 +1596,7 @@ classdef Looper < ws.Model
 %             self.decodeProperties(wavesurferModelSettings);
 %             self.AbsoluteProtocolFileName=absoluteFileName;
 %             self.HasUserSpecifiedProtocolFileName=true;            
-%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
 %             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
 %             self.broadcast('DidLoadProtocolFile');
 %             self.changeReadiness(+1);       
@@ -1474,7 +1604,7 @@ classdef Looper < ws.Model
 %     end
 %     
 %     methods
-%         function saveConfigFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+%         function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
 %             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
 %             self.changeReadiness(-1);            
 %             wavesurferModelSettings=self.encodeForFileType('cfg');
@@ -1486,7 +1616,7 @@ classdef Looper < ws.Model
 %             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
 %             self.AbsoluteProtocolFileName=absoluteFileName;
 %             self.HasUserSpecifiedProtocolFileName=true;
-%             ws.Preferences.sharedPreferences().savePref('LastConfigFilePath', absoluteFileName);
+%             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
 %             self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
 %             self.changeReadiness(+1);            
 %         end
@@ -1599,6 +1729,11 @@ classdef Looper < ws.Model
         function value = get.AcquisitionKeystoneTaskCache(self)
             value = self.AcquisitionKeystoneTaskCache_ ;
         end
+
+%         function didSetDigitalOutputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             %self.broadcast('UpdateChannels') ;
+%         end
     end  % public methods block
 
     methods (Access=protected) 
@@ -1606,9 +1741,6 @@ classdef Looper < ws.Model
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
         
-            % Have to do this before decoding properties, or bad things will happen
-            self.releaseTimedHardwareResources_();
-            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -1627,26 +1759,36 @@ classdef Looper < ws.Model
                     end
                 end
             end
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;     
+            
+            % Notify subsystems, because they need to pick up the new
+            % device name
+            self.Acquisition.mimickingWavesurferModel_() ;
+            self.Stimulation.mimickingWavesurferModel_() ;            
+            self.Triggering.mimickingWavesurferModel_() ;                                    
         end  % function
     end  % public methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)                        
-            % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure);
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure);
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure);
-            
-            % Add the default scopes to the display
-            %self.Display.initializeScopes();
-            
-            % Change our state to reflect the presence of the MDF file
-            %self.setState_('idle');            
-        end  % function
-    end  % methods block        
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)                        
+%             % Initialize the acquisition subsystem given the MDF data
+%             self.Acquisition.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure);
+%             
+%             % Add the default scopes to the display
+%             %self.Display.initializeScopes();
+%             
+%             % Change our state to reflect the presence of the MDF file
+%             %self.setState_('idle');            
+%         end  % function
+%     end  % methods block        
     
 end  % classdef

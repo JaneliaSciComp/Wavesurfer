@@ -48,13 +48,15 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             if isempty(self.AnalogInputTask_) ,  % && self.NAnalogChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
                 isAnalogChannelActive = self.IsAnalogChannelActive ;
-                activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;                
-                activeAnalogPhysicalChannelNames = self.AnalogPhysicalChannelNames(isAnalogChannelActive) ;                
+                %activeAnalogChannelNames = self.AnalogChannelNames(isAnalogChannelActive) ;
+                %activeAnalogTerminalNames = self.AnalogTerminalNames(isAnalogChannelActive) ;
+                activeAnalogDeviceNames = self.AnalogDeviceNames(isAnalogChannelActive) ;
+                activeAnalogTerminalIDs = self.AnalogTerminalIDs(isAnalogChannelActive) ;
                 self.AnalogInputTask_ = ...
                     ws.ni.InputTask(self, 'analog', ...
                                           'WaveSurfer Analog Acquisition Task', ...
-                                          activeAnalogPhysicalChannelNames, ...
-                                          activeAnalogChannelNames);
+                                          activeAnalogDeviceNames, ...
+                                          activeAnalogTerminalIDs);
                 % Set other things in the Task object
                 self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.AnalogInputTask_.SampleRate = self.SampleRate;                
@@ -63,13 +65,15 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             end
             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
                 isDigitalChannelActive = self.IsDigitalChannelActive ;
-                activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
-                activeDigitalPhysicalChannelNames = self.DigitalPhysicalChannelNames(isDigitalChannelActive) ;                
+                %activeDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelActive) ;                
+                %activeDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelActive) ;                
+                activeDigitalDeviceNames = self.DigitalDeviceNames(isDigitalChannelActive) ;
+                activeDigitalTerminalIDs = self.DigitalTerminalIDs(isDigitalChannelActive) ;
                 self.DigitalInputTask_ = ...
                     ws.ni.InputTask(self, 'digital', ...
                                           'WaveSurfer Digital Acquisition Task', ...
-                                          activeDigitalPhysicalChannelNames, ...
-                                          activeDigitalChannelNames);
+                                          activeDigitalDeviceNames, ...
+                                          activeDigitalTerminalIDs);
                 % Set other things in the Task object
                 self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
                 self.DigitalInputTask_.SampleRate = self.SampleRate;                
@@ -350,6 +354,20 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
         end        
-    end
+        
+        function didSetDeviceNameInFrontend(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %self.broadcast('Update');
+        end        
+        
+        function mimickingWavesurferModel_(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %self.broadcast('Update');
+        end        
+    end  % public methods block
     
 end  % classdef

@@ -7,7 +7,7 @@ function clean()
 
     % We don't want to move these -- we just want wavesurfer to forget about them
     %localMakeBackup(ws.Preferences.sharedpreferences().loadPref('LastLoadedStimulusLibrary'));
-    %localMakeBackup(ws.Preferences.sharedpreferences().loadPref('LastConfigFilePath'));
+    %localMakeBackup(ws.Preferences.sharedpreferences().loadPref('LastProtocolFilePath'));
     %localMakeBackup(ws.Preferences.sharedpreferences().loadPref('LastUserFilePath'));
 
     preferences = fullfile(prefdir(), ['wavesurfer' ws.versionStringWithDashesForDots()]);

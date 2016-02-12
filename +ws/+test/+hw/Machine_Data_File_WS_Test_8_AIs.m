@@ -7,10 +7,10 @@ physicalInputChannelNames = {'Dev1/ai0' 'Dev1/ai1' 'Dev1/ai2' 'Dev1/ai3' 'Dev1/a
 inputChannelNames = {'V1' 'V2' 'V3' 'V4' 'I1' 'I2' 'I3' 'I4'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
 
 % outputDeviceNames = {'Dev1' 'Dev1'}; % Cellstring identifying NI board used for the output channels.
-% outputAnalogChannelIDs = 0:1; % Array of AO channel numbers, e.g. 0:1.
+% outputAnalogTerminalIDs = 0:1; % Array of AO channel numbers, e.g. 0:1.
 physicalOutputChannelNames = {'Dev1/ao0' 'Dev1/ao1'} ;  % Cell array of strings, each string an NI physical channel name
 outputChannelNames = {'Cmd1' 'Cmd2'}; % String cell array of channel identifiers. If left empty, default NI channel names will be used.
-%outputDigitalChannelIDs = []; % Array of DO channel numbers, e.g. 0:1.
+%outputDigitalTerminalIDs = []; % Array of DO channel numbers, e.g. 0:1.
 %outputDigitalChannelNames = {}; %String cell array of channel identifiers. If left empty, default NI channel names will be used.
 
 % % This part sets up a "trigger source" -- An internally-generated trigger.

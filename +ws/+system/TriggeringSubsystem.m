@@ -19,7 +19,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end
     
     properties (Access=protected, Constant=true)
-        %SweepTriggerPhysicalChannelName_ = 'pfi8'
+        %SweepTriggerTerminalName_ = 'pfi8'
         %SweepTriggerPFIID_ = 8
         %SweepTriggerEdge_ = 'rising'
     end
@@ -50,54 +50,6 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
             self.AcquisitionTriggerSchemeIndex_ = 1 ;
             self.StimulationTriggerSchemeIndex_ = 1 ;
-        end  % function
-                        
-        function initializeFromMDFStructure(self,mdfStructure)
-            % Set up the trigger sources (i.e. internal triggers) specified
-            % in the MDF.
-            triggerSourceSpecs=mdfStructure.triggerSource;
-            for idx = 1:length(triggerSourceSpecs) ,
-                thisCounterTriggerSpec=triggerSourceSpecs(idx);
-                
-                % Create the trigger source, set params
-                source = self.addNewCounterTrigger() ;
-                %source = ws.CounterTrigger();                
-                source.Name=thisCounterTriggerSpec.Name;
-                source.DeviceName=thisCounterTriggerSpec.DeviceName;
-                source.CounterID=thisCounterTriggerSpec.CounterID;                
-                source.RepeatCount = 1;
-                source.Interval = 1;  % s
-                source.PFIID = thisCounterTriggerSpec.CounterID + 12;                
-                source.Edge = 'rising';                                
-                
-                % add the trigger source to the subsystem
-                %self.addCounterTrigger(source);
-                
-                % If the first source, set things to point to it
-                if idx==1 ,
-                    self.AcquisitionTriggerSchemeIndex_ = 1 ;
-                    self.StimulationTriggerSchemeIndex_ = 1 ;  
-                    self.StimulationUsesAcquisitionTriggerScheme = true;
-                end                    
-            end  % for loop
-            
-            % Set up the trigger destinations (i.e. external triggers)
-            % specified in the MDF.
-            triggerDestinationSpecs=mdfStructure.triggerDestination;
-            for idx = 1:length(triggerDestinationSpecs) ,
-                thisExternalTriggerSpec=triggerDestinationSpecs(idx);
-                
-                % Create the trigger destination, set params
-                %destination = ws.ExternalTrigger();
-                destination = self.addNewExternalTrigger();
-                destination.Name = thisExternalTriggerSpec.Name;
-                destination.DeviceName = thisExternalTriggerSpec.DeviceName;
-                destination.PFIID = thisExternalTriggerSpec.PFIID;
-                destination.Edge = lower(thisExternalTriggerSpec.Edge);
-                
-                % add the trigger destination to the subsystem
-                %self.addExternalTrigger(destination);
-            end  % for loop            
         end  % function
         
         function out = get.BuiltinTrigger(self)
@@ -191,16 +143,205 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     end  % methods block
     
     methods
-        function source = addNewCounterTrigger(self)
-            source = ws.CounterTrigger(self);
-            self.CounterTriggers_{1,end + 1} = source;
+        function trigger = addCounterTrigger(self, counterID)
+            % If no counter ID is given, try to find one that is not in use
+            if ~exist('counterID','var') || isempty(counterID) ,
+                % Need to pick a counterID.
+                % We find the lowest counterID that is not in use.
+                counterIDs = self.freeCounterIDs() ;
+                if isempty(counterIDs) ,
+                    % this means there is no free counter
+                    trigger = [] ;
+                    return
+                else
+                    counterID = counterIDs(1) ;
+                end
+            end
+            
+            % Check that the counterID is free
+            if self.isCounterIDInUse(counterID) ,
+                trigger = [] ;
+                return
+            end
+
+            % Create the trigger
+            trigger = ws.CounterTrigger(self);  % self is parent of the CounterTrigger
+
+            % Set the trigger parameters
+            self.disableBroadcasts() ;
+            trigger.Name = sprintf('Counter %d',counterID) ;
+            trigger.DeviceName = self.Parent.DeviceName ; 
+            trigger.CounterID = counterID ;
+            trigger.RepeatCount = 1 ;
+            trigger.Interval = 1 ;  % s
+            trigger.Edge = 'rising' ;
+            self.enableBroadcastsMaybe() ;
+            
+            % Add the just-created trigger to thel list of counter triggers
+            self.CounterTriggers_{1,end + 1} = trigger ;
+            
+            self.broadcast('Update') ;
         end  % function
-                
-        function destination = addNewExternalTrigger(self)
-            destination = ws.ExternalTrigger(self);
-            self.ExternalTriggers_{1,end + 1} = destination;
+
+        function deleteMarkedCounterTriggers(self)
+            triggers = self.CounterTriggers_ ;
+            doDelete = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;            
+            indicesToDeleteInCounterTriggers = find(doDelete) ;
+            % Counter triggers can't be used for the acquisition trigger,
+            % so no need to check those, but...
+            % If the stimulation trigger is about to be deleted, set the
+            % stimulation trigger to the built-in trigger.  Do this even
+            % if the stimulation trigger is "shadowed" by the acquisition
+            % trigger.
+            indicesToDeleteInStimulationTriggers = 1 + indicesToDeleteInCounterTriggers ;            
+            if ismember(self.StimulationTriggerSchemeIndex, indicesToDeleteInStimulationTriggers) ,
+                self.StimulationTriggerSchemeIndex_ = 1 ;  % the built-in trigger
+            end            
+            % Finally, delete the marked external triggers
+            doKeep = ~doDelete ;
+            self.CounterTriggers_ = triggers(doKeep) ;
+            self.broadcast('Update') ;
+        end
+
+        function trigger = addExternalTrigger(self, pfiID)
+            % If no PFI ID is given, try to find one that is not in use
+            if ~exist('pfiID','var') || isempty(pfiID) ,
+                % Need to pick a PFI ID.
+                % We find the lowest PFI ID that is not in use.
+                pfiIDs = self.freePFIIDs() ;
+                if isempty(pfiIDs) ,
+                    % this means there is no free PFI line
+                    trigger = [] ;
+                    return
+                else
+                    pfiID = pfiIDs(1) ;
+                end
+            end
+            
+            % Check that the pfiID is free
+            if self.isPFIIDInUse(pfiID) ,
+                trigger = [] ;
+                return
+            end
+
+            % Create the trigger
+            trigger = ws.ExternalTrigger(self) ;  % self is parent of the ExternalTrigger
+
+            % Set the trigger parameters
+            trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
+            trigger.DeviceName = self.Parent.DeviceName ; 
+            trigger.PFIID = pfiID ;
+            trigger.Edge = 'rising' ;
+            
+            % Add the just-created trigger to thel list of counter triggers
+            self.ExternalTriggers_{1,end + 1} = trigger ;
+            self.broadcast('Update') ;
         end  % function
                         
+        function deleteMarkedExternalTriggers(self)
+            triggers = self.ExternalTriggers_ ;
+            doDelete = cellfun(@(trigger)(trigger.IsMarkedForDeletion), triggers) ;
+            indicesToDeleteInExternalTriggers = find(doDelete) ;
+            % If the acquisition trigger is about to be deleted, set the
+            % Acquisition trigger to the built-in trigger
+            indicesToDeleteInAcquisitionTriggers = 1 + indicesToDeleteInExternalTriggers ;            
+            if ismember(self.AcquisitionTriggerSchemeIndex, indicesToDeleteInAcquisitionTriggers) ,
+                self.AcquisitionTriggerSchemeIndex_ = 1 ;  % the built-in trigger
+            end
+            % If the stimulation trigger is about to be deleted, set the
+            % stimulation trigger to the built-in trigger.  Do this even
+            % if the stimulation trigger is "shadowed" by the acquisition
+            % trigger.
+            indicesToDeleteInStimulationTriggers = 1 + length(self.CounterTriggers) + indicesToDeleteInExternalTriggers ;            
+            if ismember(self.StimulationTriggerSchemeIndex, indicesToDeleteInStimulationTriggers) ,
+                self.StimulationTriggerSchemeIndex_ = 1 ;  % the built-in trigger
+            end
+            % Finally, delete the marked external triggers
+            doKeep = ~doDelete ;
+            self.ExternalTriggers_ = triggers(doKeep) ;
+            self.broadcast('Update') ;
+        end
+        
+        function result = allCounterIDs(self)
+            nCounterIDsInHardware = self.Parent.NCounters ;
+            result = 0:(nCounterIDsInHardware-1) ;              
+        end
+        
+        function result = counterIDsInUse(self)
+            result = sort(cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers)) ;
+        end
+        
+        function result = freeCounterIDs(self)
+            allCounterIDs = self.allCounterIDs() ;  
+            inUseCounterIDs = self.counterIDsInUse() ;
+            result = setdiff(allCounterIDs, inUseCounterIDs) ;
+        end
+        
+%         function result = nextFreeCounterID(self)
+%             freeCounterIDs = self.freeCounterIDs() ;
+%             if isempty(freeCounterIDs) ,
+%                 result = [] ;
+%             else
+%                 result = freeCounterIDs(1) ;
+%             end
+%         end
+        
+        function result = isCounterIDInUse(self, counterID)
+            inUseCounterIDs = self.counterIDsInUse() ;
+            result = ismember(counterID, inUseCounterIDs) ;
+        end
+
+        function result = isCounterIDFree(self, counterID)
+            freeCounterIDs = self.freeCounterIDs() ;
+            result = ismember(counterID, freeCounterIDs) ;
+        end
+
+        function result = allPFIIDs(self)
+            nPFIIDsInHardware = self.Parent.NPFITerminals ;
+            result = 0:(nPFIIDsInHardware-1) ;              
+        end
+        
+        function result = pfiIDsInUse(self)
+            %counterTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.CounterTriggers) ;
+            externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers) ;
+            
+            % We consider all the default counter PFIs to be "in use",
+            % regardless of whether any of the counters are in use.
+            nPFIIDsInHardware = self.Parent.NPFITerminals ;
+            nCounterIDsInHardware = self.Parent.NCounters ;
+            counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
+
+            % The built-in trigger PFI line is also in use
+            builtinTriggerPFIID = self.BuiltinTrigger.PFIID ;
+            
+            result = sort([externalTriggerPFIIDs builtinTriggerPFIID counterTriggerPFIIDs]) ;
+        end
+        
+        function result = freePFIIDs(self)
+            allIDs = self.allPFIIDs() ;  
+            inUseIDs = self.pfiIDsInUse() ;
+            result = setdiff(allIDs, inUseIDs) ;
+        end
+        
+%         function result = nextFreePFIID(self)
+%             freePFIIDs = self.freePFIIDs() ;
+%             if isempty(freePFIIDs) ,
+%                 result = [] ;
+%             else
+%                 result = freePFIIDs(1) ;
+%             end
+%         end
+        
+        function result = isPFIIDInUse(self, pfiID)
+            inUsePFIIDs = self.pfiIDsInUse() ;
+            result = ismember(pfiID, inUsePFIIDs) ;
+        end
+        
+        function result = isPFIIDFree(self, pfiID)
+            freePFIIDs = self.freePFIIDs() ;
+            result = ismember(pfiID, freePFIIDs) ;
+        end
+        
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
             if ws.utility.isASettableValue(newValue) ,
                 if self.Parent.AreSweepsFiniteDuration ,
@@ -227,6 +368,11 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
                 value = self.StimulationUsesAcquisitionTriggerScheme_ ;
             end
         end  % function
+        
+        function update(self)
+            self.broadcast('Update');
+        end
+            
     end  % methods block
     
     methods (Access = protected)

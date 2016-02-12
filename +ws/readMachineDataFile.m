@@ -16,16 +16,16 @@ function mdfStructure=readMachineDataFile(fileName)
     % wavesurfer:InvalidMDFVariableValue exception if it finds something it
     % dislikes
     verifyProperty(mdfStructure, [], 'physicalInputChannelNames', {'Classes', {'cell'}});
-    %verifyProperty(mdfStructure, [], 'inputChannelIDs', {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
+    %verifyProperty(mdfStructure, [], 'inputTerminalIDs', {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
     verifyProperty(mdfStructure, [], 'inputChannelNames', {'Classes', {'cell'}});
     
     verifyProperty(mdfStructure, [], 'physicalOutputChannelNames', {'Classes', {'cell'}});
 %     verifyProperty(mdfStructure, [], 'outputDeviceNames', {'Classes', {'cell'}});
-%     verifyProperty(mdfStructure, [], 'outputAnalogChannelIDs', ...
+%     verifyProperty(mdfStructure, [], 'outputAnalogTerminalIDs', ...
 %                    {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
     verifyProperty(mdfStructure, [], 'outputChannelNames', {'Classes', {'cell'}});
     
-%     verifyProperty(mdfStructure, [], 'outputDigitalChannelIDs', ...
+%     verifyProperty(mdfStructure, [], 'outputDigitalTerminalIDs', ...
 %                    {'Classes', {'numeric'}, 'Attributes', {'vector', 'nonnegative', 'integer'}, 'AllowEmptyDouble', true});
 %     verifyProperty(mdfStructure, [], 'outputDigitalChannelNames', {'Classes', {'cell'}});
     

@@ -66,25 +66,18 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
 %         end  % function
         
         function changeReadiness(self,delta)
-            import ws.utility.*
-
             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
                 return
             end
                     
-            isReadyBefore=self.IsReady;
-            
-            newDegreeOfReadinessRaw=self.DegreeOfReadiness_+delta;
-            self.DegreeOfReadiness_ = ...
-                    fif(newDegreeOfReadinessRaw<=1, ...
-                        newDegreeOfReadinessRaw, ...
-                        1);
-                        
-            isReadyAfter=self.IsReady;
-            
-            if isReadyAfter ~= isReadyBefore ,
-                self.broadcast('UpdateReadiness');
-            end            
+            newDegreeOfReadinessRaw = self.DegreeOfReadiness_ + delta ;
+            self.setReadiness_(newDegreeOfReadinessRaw) ;
+        end  % function        
+        
+        function resetReadiness(self)
+            % Used during error handling to reset model back to the ready
+            % state.
+            self.setReadiness_(1) ;
         end  % function        
         
         function value=get.IsReady(self)
@@ -113,6 +106,21 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
     end
 
     methods (Access = protected)
+        function setReadiness_(self, newDegreeOfReadinessRaw)
+            isReadyBefore=self.IsReady;
+            
+            self.DegreeOfReadiness_ = ...
+                    ws.utility.fif(newDegreeOfReadinessRaw<=1, ...
+                                   newDegreeOfReadinessRaw, ...
+                                   1);
+                        
+            isReadyAfter=self.IsReady;
+            
+            if isReadyAfter ~= isReadyBefore ,
+                self.broadcast('UpdateReadiness');
+            end            
+        end  % function                
+        
 %         function setParent_(self, newValue)
 %             if ws.utility.isASettableValue(newValue) ,
 %                 if isempty(newValue) ,
