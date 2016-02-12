@@ -6,14 +6,14 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
         end
                 
         function initializeFromMDFStructure(self, mdfStructure)
-            terminalNames = mdfStructure.physicalInputChannelNames ;
+            terminalNamesWithDeviceName = mdfStructure.physicalInputChannelNames ;  % these should be of the form 'Dev1/ao0' or 'Dev1/line3'            
             
-            if ~isempty(terminalNames) ,
+            if ~isempty(terminalNamesWithDeviceName) ,
                 channelNames = mdfStructure.inputChannelNames;
 
                 % Deal with the device names, setting the WSM DeviceName if
                 % it's not set yet.
-                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
                 uniqueDeviceNames=unique(deviceNames);
                 if length(uniqueDeviceNames)>1 ,
                     error('ws:MoreThanOneDeviceName', ...
@@ -25,10 +25,10 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 end
 
                 % Get the channel IDs
-                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
+                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
                 
                 % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
                 isAnalog = strcmp(channelTypes,'ai');
                 isDigital = ~isAnalog;
 
@@ -45,7 +45,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 for i = 1:nAnalogChannels ,
                     self.addAnalogChannel() ;
                     indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
                     self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
                 end
                 
@@ -54,7 +54,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
                 for i = 1:nDigitalChannels ,
                     self.Parent.addDIChannel() ;
                     indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
                     self.Parent.setSingleDIChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
                 end                
             end
