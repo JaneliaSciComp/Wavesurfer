@@ -91,6 +91,67 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
             %self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
+        function initializeFromMDFStructure(self, mdfStructure)       
+            terminalNames = mdfStructure.physicalOutputChannelNames ;
+            
+            if ~isempty(terminalNames) ,
+                channelNames = mdfStructure.outputChannelNames;
+
+                % Deal with the device names, setting the WSM DeviceName if
+                % it's not set yet.
+                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+                uniqueDeviceNames=unique(deviceNames);
+                if length(uniqueDeviceNames)>1 ,
+                    error('ws:MoreThanOneDeviceName', ...
+                          'WaveSurfer only supports a single NI card at present.');                      
+                end
+                deviceName = uniqueDeviceNames{1} ;                
+                if isempty(self.Parent.DeviceName) ,
+                    self.Parent.DeviceName = deviceName ;
+                end
+
+                % Get the channel IDs
+                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
+                
+                % Figure out which are analog and which are digital
+                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+                isAnalog = strcmp(channelTypes,'ao');
+                isDigital = ~isAnalog;
+
+                % Sort the channel names, etc
+                %analogDeviceNames = deviceNames(isAnalog) ;
+                %digitalDeviceNames = deviceNames(isDigital) ;
+                analogTerminalIDs = terminalIDs(isAnalog) ;
+                digitalTerminalIDs = terminalIDs(isDigital) ;            
+                analogChannelNames = channelNames(isAnalog) ;
+                digitalChannelNames = channelNames(isDigital) ;
+
+                % add the analog channels
+                nAnalogChannels = length(analogChannelNames);
+                for i = 1:nAnalogChannels ,
+                    self.addAnalogChannel() ;
+                    indexOfChannelInSelf = self.NAnalogChannels ;
+                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+                end
+                
+                % add the digital channels
+                nDigitalChannels = length(digitalChannelNames);
+                for i = 1:nDigitalChannels ,
+                    self.Parent.addDOChannel() ;
+                    indexOfChannelInSelf = self.NDigitalChannels ;
+                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+                    self.Parent.setSingleDOChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+                end                
+                
+                % Intialize the stimulus library, just to keep compatible
+                % with the old behavior
+                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);                
+            end
+        end  % function
+
+        
+        
 %         function delete(self)
 %             %fprintf('Stimulation::delete()\n');            
 % %             self.TheFiniteAnalogOutputTask_ = [] ;

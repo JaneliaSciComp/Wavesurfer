@@ -1009,7 +1009,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result  = self.NScansReadThisSweep_ ;
         end        
         
-        function addAnalogChannel(self)
+        function newChannelName = addAnalogChannel(self)
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;

@@ -30,8 +30,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     end
 
     % Create the application (model) object.
-    model = ws.WavesurferModel(true);
-      % 1st arg is parent, 2nd is isITheOneTrueWavesurferModel
+    model = ws.WavesurferModel(true);  % arg is isITheOneTrueWavesurferModel
 
     % Start the controller, if desired
     if isCommandLineOnly ,
@@ -66,6 +65,9 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
         else
             % do nothing
         end
+    else
+        % If no protocol or MDF file given, start with a basic setup
+        model.addStarterChannelsAndStimulusLibrary() ;
     end
 
     % Populate the output args

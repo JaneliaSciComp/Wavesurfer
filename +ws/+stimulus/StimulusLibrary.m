@@ -298,7 +298,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             if ~isempty(outputChannelNames) ,
                 outputChannelName=outputChannelNames{1};
                 map=self.addNewMap();
-                map.Name='Pulse out first channel';
+                map.Name=sprintf('Pulse out %s',outputChannelName);
                 %map=ws.stimulus.StimulusMap('Name','Unit pulse out first channel');                
                 map.addBinding(outputChannelName,pulse);
                 %map.Bindings{1}.Stimulus=unitPulse;

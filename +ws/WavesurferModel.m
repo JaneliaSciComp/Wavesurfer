@@ -1758,6 +1758,18 @@ classdef WavesurferModel < ws.RootModel
             end
             self.changeReadiness(+1);
         end
+        
+        function addStarterChannelsAndStimulusLibrary(self)
+            % Adds an AI channel, an AO channel, creates a stimulus and a
+            % map in the stim library, and sets the current outputable to
+            % the newly-created map.  This is intended to be run on a
+            % "virgin" wavesurferModel.
+            
+            aiChannelName = self.Acquisition.addAnalogChannel() ;
+            aoChannelName = self.Stimulation.addAnalogChannel() ;
+            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+            
+        end
     end  % methods block
     
     methods (Access=protected)
