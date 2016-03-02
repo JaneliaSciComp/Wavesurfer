@@ -302,3 +302,8 @@ Version History
 
 0.912    Mar 01, 2016    Fixed bug in README.
 
+0.913    Mar 01, 2016    Fixed bug which resulted in actual
+                         sampling rate being slightly different from
+                         nominal sampling rate for sampling rates (in
+                         Hz) that do not evenly divide 100 MHz.
+

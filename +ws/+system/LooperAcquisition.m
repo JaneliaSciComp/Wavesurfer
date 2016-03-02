@@ -56,12 +56,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     ws.ni.InputTask(self, 'analog', ...
                                           'WaveSurfer Analog Acquisition Task', ...
                                           activeAnalogDeviceNames, ...
-                                          activeAnalogTerminalIDs);
+                                          activeAnalogTerminalIDs, ...
+                                          self.SampleRate, ...
+                                          self.Duration) ;
                 % Set other things in the Task object
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                self.AnalogInputTask_.SampleRate = self.SampleRate;                
-                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                %self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
+                %self.AnalogInputTask_.SampleRate = self.SampleRate;                
             end
             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
                 isDigitalChannelActive = self.IsDigitalChannelActive ;
@@ -73,12 +73,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     ws.ni.InputTask(self, 'digital', ...
                                           'WaveSurfer Digital Acquisition Task', ...
                                           activeDigitalDeviceNames, ...
-                                          activeDigitalTerminalIDs);
+                                          activeDigitalTerminalIDs, ...
+                                          self.SampleRate, ...
+                                          self.Duration) ;
                 % Set other things in the Task object
-                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                self.DigitalInputTask_.SampleRate = self.SampleRate;                
-                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                %self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
+                %self.DigitalInputTask_.SampleRate = self.SampleRate;                
             end
         end  % function
 
