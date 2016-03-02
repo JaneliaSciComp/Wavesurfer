@@ -137,6 +137,7 @@ classdef Logging < ws.system.Subsystem
                           'NextSweepIndex must be a (scalar) nonnegative integer');
                 end
             end
+            self.broadcast('Update');            
         end
         
         function result=get.NextSweepIndex(self)
