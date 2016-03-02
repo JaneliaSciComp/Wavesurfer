@@ -57,7 +57,7 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, deviceNames, terminalIDs)
+        function self = InputTask(parent, taskType, taskName, deviceNames, terminalIDs, sampleRate, durationPerDataAvailableCallback)
             nChannels=length(terminalIDs);
             
             % Store the parent
@@ -102,8 +102,25 @@ classdef InputTask < handle
                         self.DabsDaqTask_.createDIChan(deviceName, lineName) ;
                     end
                 end
-                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
+                self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                try
+                    self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+                catch me
+                    error('There was a problem setting up the input task');
+                end
+                if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                end                
             end
+            
+            % Store the sample rate and durationPerDataAvailableCallback
+            self.SampleRate_ = sampleRate ;
+            
+            if ~( isnumeric(durationPerDataAvailableCallback) && isscalar(durationPerDataAvailableCallback) && durationPerDataAvailableCallback>=0 )  ,
+                error('most:Model:invalidPropVal', ...
+                      'DurationPerDataAvailableCallback must be a nonnegative scalar');       
+            end            
+            self.DurationPerDataAvailableCallback_ = durationPerDataAvailableCallback ;  % don't think we use this anymore, but...
         end  % function
         
         function delete(self)
@@ -379,32 +396,32 @@ classdef InputTask < handle
             value = self.SampleRate_;
         end  % function
         
-        function set.SampleRate(self,value)
-            if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,
-                error('most:Model:invalidPropVal', ...
-                      'SampleRate must be a positive integer');       
-            end            
-            
-            if ~isempty(self.DabsDaqTask_)
-                oldSampClkRate = self.DabsDaqTask_.sampClkRate;
-                self.DabsDaqTask_.sampClkRate = value;
-                try
-                    self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-                catch me
-                    self.DabsDaqTask_.sampClkRate = oldSampClkRate;
-                    % This will put the sampleRate property in sync with the hardware, but it will
-                    % be an odd artifact that the sampleRate value did not change to the reqested,
-                    % but to something else.  This can be fixed by doing a verify when first setting
-                    % the clock in ziniPrepareAcquisitionDAQ and setting the sampleRate property to
-                    % the clock value if it fails.  Since it is called at construction, the user
-                    % will never see the original, invalid sampleRate property value.
-                    self.SampleRate_ = oldSampClkRate;
-                    error('Invalid sample rate value');
-                end
-            end
-            
-            self.SampleRate_ = value;
-        end  % function
+%         function set.SampleRate(self,value)
+%             if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'SampleRate must be a positive integer');       
+%             end            
+%             
+%             if ~isempty(self.DabsDaqTask_)
+%                 oldSampClkRate = self.DabsDaqTask_.sampClkRate;
+%                 self.DabsDaqTask_.sampClkRate = value;
+%                 try
+%                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+%                 catch me
+%                     self.DabsDaqTask_.sampClkRate = oldSampClkRate;
+%                     % This will put the sampleRate property in sync with the hardware, but it will
+%                     % be an odd artifact that the sampleRate value did not change to the reqested,
+%                     % but to something else.  This can be fixed by doing a verify when first setting
+%                     % the clock in ziniPrepareAcquisitionDAQ and setting the sampleRate property to
+%                     % the clock value if it fails.  Since it is called at construction, the user
+%                     % will never see the original, invalid sampleRate property value.
+%                     self.SampleRate_ = oldSampClkRate;
+%                     error('Invalid sample rate value');
+%                 end
+%             end
+%             
+%             self.SampleRate_ = value;
+%         end  % function
         
         function value = get.NScansPerDataAvailableCallback(self)
             value = round(self.DurationPerDataAvailableCallback * self.SampleRate);
@@ -412,13 +429,13 @@ classdef InputTask < handle
               % correct.
         end  % function
         
-        function set.DurationPerDataAvailableCallback(self, value)
-            if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
-                error('most:Model:invalidPropVal', ...
-                      'DurationPerDataAvailableCallback must be a nonnegative scalar');       
-            end            
-            self.DurationPerDataAvailableCallback_ = value;
-        end  % function
+%         function set.DurationPerDataAvailableCallback(self, value)
+%             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
+%             end            
+%             self.DurationPerDataAvailableCallback_ = value;
+%         end  % function
 
         function value = get.DurationPerDataAvailableCallback(self)
             value = min(self.AcquisitionDuration_, self.DurationPerDataAvailableCallback_);
@@ -524,18 +541,31 @@ classdef InputTask < handle
     %             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
 
                 % Set up timing
+                sampleRate = self.SampleRate_ ;
                 switch self.ClockTiming_ ,
                     case 'DAQmx_Val_FiniteSamps'
-                        self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
+                        self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
+                          % we validated the sample rate when we created
+                          % the input task, so should be ok, but check
+                          % anyway
+                          if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+                              error('The DABS task sample rate is not equal to the desired sampling rate');
+                          end  
                     case 'DAQmx_Val_ContSamps'
                         if isinf(self.ExpectedScanCount)
-                            bufferSize = self.SampleRate_; % Default to 1 second of data as the buffer.
+                            bufferSize = sampleRate; % Default to 1 second of data as the buffer.
                         else
                             bufferSize = self.ExpectedScanCount;
                         end
-                        self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+                        self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+                          % we validated the sample rate when we created
+                          % the input task, so should be ok, but check
+                          % anyway
+                          if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+                              error('The DABS task sample rate is not equal to the desired sampling rate');
+                          end  
                     otherwise
-                        assert(false, 'finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
+                        error('finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
                 end
 
                 % Set up triggering

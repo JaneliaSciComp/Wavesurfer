@@ -542,23 +542,21 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %         end  % function
         
         function set.SampleRate(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,
-                    self.SampleRate_ = double(newValue) ;
-                    wsModel = self.Parent ;
-                    if ~isempty(wsModel) ,
-                        wsModel.didSetAcquisitionSampleRate(newValue);
-                    end
-                else
-                    if ~isempty(self.Parent) ,
-                        self.Parent.didSetAcquisitionSampleRate(newValue);
-                    end
-                    self.broadcast('DidSetSampleRate');
-                    error('most:Model:invalidPropVal', ...
-                          'SampleRate must be a positive scalar');                  
-                end                    
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.Parent.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.SampleRate_ = sampleRate ;
+                self.Parent.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
             end
             self.broadcast('DidSetSampleRate');
+            if ~isValueValid ,
+                error('most:Model:invalidPropVal', ...
+                      'SampleRate must be a positive finite numeric scalar');
+            end                
         end  % function
         
         function output = get.TriggerScheme(self)

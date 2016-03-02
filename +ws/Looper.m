@@ -898,14 +898,14 @@ classdef Looper < ws.RootModel
         end
     end
 
-    methods
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys ;
-            if ~isempty(ephys) ,
-                ephys.didSetAcquisitionSampleRate(newValue) ;
-            end
-        end
-    end  % methods
+%     methods
+%         function didSetAcquisitionSampleRate(self,newValue)
+%             ephys = self.Ephys ;
+%             if ~isempty(ephys) ,
+%                 ephys.didSetAcquisitionSampleRate(newValue) ;
+%             end
+%         end
+%     end  % methods
     
     methods (Access = protected)
         function acquireTimedHardwareResources_(self)

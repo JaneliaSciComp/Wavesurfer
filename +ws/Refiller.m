@@ -774,12 +774,12 @@ classdef Refiller < ws.RootModel
 %             result = self.FastProtocols_;
 %         end
         
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys ;
-            if ~isempty(ephys) ,
-                ephys.didSetAcquisitionSampleRate(newValue) ;
-            end
-        end
+%         function didSetAcquisitionSampleRate(self,newValue)
+%             ephys = self.Ephys ;
+%             if ~isempty(ephys) ,
+%                 ephys.didSetAcquisitionSampleRate(newValue) ;
+%             end
+%         end
         
 %         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
 %             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
