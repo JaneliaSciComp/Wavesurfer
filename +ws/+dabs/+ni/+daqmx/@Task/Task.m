@@ -1228,6 +1228,38 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
         end
         
         
+        %% COEFFICIENTS FOR CONVERTING COUNTS TO VOLTS
+        function coeffs = getAIDevScalingCoeffs(self)
+            % Gets the scaling coeffs for each AI channel in the task.
+            % On return, coeffs is nAIChannels x nCoeffsPerChannel
+            % (nCoeffsPerChannel is 4 for X series boards).
+            
+            channels = self.channels ;
+            isAIChannel = strcmp(channels.type,'AnalogInput') ;
+            aiChannels = channels(isAIChannel) ;
+            aiChannelsCount = length(aiChannels) ;
+            aiChannelNames = {aiChannels.chanNamePhysical} ;
+            
+            if aiChannelsCount==0 ,
+                coeffs = [] ;
+            else
+                taskID = self.taskID ;  %#ok<PROP>
+                nullPtr = libpointer() ;
+                for iChannel = 1:aiChannelsCount ,
+                    channelName = aiChannelNames{iChannel} ;
+                    if iChannel == 1 ,
+                        nCoeffsPerChannel = self.apiCall('DAQmxGetAIDevScalingCoeff', taskID, channelName, nullPtr, 0) ; %#ok<PROP>
+                        coeffs = zeros(aiChannelsCount,nCoeffsPerChannel) ;                    
+                    end
+                    coeffsForThisChannelPtr = libpointer('doublePtr',zeros(1,nCoeffsPerChannel));
+                    self.apiCall('DAQmxGetAIDevScalingCoeff', taskID, channelName, coeffsForThisChannelPtr, nCoeffsPerChannel) %#ok<PROP>
+                    coeffsForThisChannel = coeffsForThisChannelPtr.Value ;
+                    coeffs(iChannel,:) = coeffsForThisChannel ;
+                end
+            end
+        end  % function
+        
+        
         %% INTERNAL BUFFER CONFIGURATION
         function cfgInputBuffer(obj, numSampsPerChan)
             %Overrides the automatic output buffer allocation that NI-DAQmx performs.
@@ -1328,7 +1360,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             end
         end
         
-    end
+    end  % public methods block
     
     %% ADVANCED FUNCTIONS
     
