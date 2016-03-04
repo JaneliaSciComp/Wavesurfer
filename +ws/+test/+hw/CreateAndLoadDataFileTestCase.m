@@ -1,4 +1,4 @@
-classdef LoadDataFileTestCase < matlab.unittest.TestCase
+classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
     % To run these tests, need to have an NI daq attached, pointed to by
     % the MDF.  (Can be a simulated daq board.)
     
@@ -90,36 +90,6 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
         end  % function
-        
-        function testLoadingOlderFileWithFunnySamplingRate(self)
-            thisDirName=fileparts(mfilename('fullpath'));
-            fileName = fullfile(thisDirName, 'funny_sampling_rate_0p912_0001.h5') ;
-            dataFileAsStruct = ws.loadDataFile(fileName) ;
-            % The nominal sampling rate was 30000, but the returned
-            % sampling rate should be ~30003 Hz, to make (100 Mhz)/fs an
-            % integer.
-            returnedAcqSamplingRate = dataFileAsStruct.header.Acquisition.SampleRate ;
-            nTimebaseTicksPerAcqSample = 100e6/returnedAcqSamplingRate ;  % should be exactly 3333
-            self.verifyEqual(nTimebaseTicksPerAcqSample,3333) ;
-            returnedStimSamplingRate = dataFileAsStruct.header.Stimulation.SampleRate ;
-            nTimebaseTicksPerStimSample = 100e6/returnedStimSamplingRate ;  % should be exactly 3333
-            self.verifyEqual(nTimebaseTicksPerStimSample,3333) ;
-        end
-        
-        function testLoadingNewerFileWithFunnySamplingRate(self)
-            thisDirName=fileparts(mfilename('fullpath'));
-            fileName = fullfile(thisDirName, 'funny_sampling_rate_0p913_0001.h5') ;
-            dataFileAsStruct = ws.loadDataFile(fileName) ;
-            % The requested sampling rate was 30000, but this version of WS
-            % coerces that in the UI to an acheivable rate, which should be
-            % ~30003 Hz, to make (100 Mhz)/fs an integer.
-            returnedAcqSamplingRate = dataFileAsStruct.header.Acquisition.SampleRate ;
-            nTimebaseTicksPerAcqSample = 100e6/returnedAcqSamplingRate ;  % should be exactly 3333
-            self.verifyEqual(nTimebaseTicksPerAcqSample,3333) ;
-            returnedStimSamplingRate = dataFileAsStruct.header.Stimulation.SampleRate ;
-            nTimebaseTicksPerStimSample = 100e6/returnedStimSamplingRate ;  % should be exactly 3333
-            self.verifyEqual(nTimebaseTicksPerStimSample,3333) ;
-        end
         
     end  % test methods
 
