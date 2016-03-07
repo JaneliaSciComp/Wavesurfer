@@ -23,6 +23,7 @@ classdef InputTask < handle
         ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
+        ScalingCoeffs
     end
     
     properties (Transient = true, Access = protected)
@@ -49,6 +50,7 @@ classdef InputTask < handle
         TriggerTerminalName_
         TriggerEdge_
         IsArmed_ = false
+        ScalingCoeffs_
     end
     
 %     events
@@ -110,7 +112,17 @@ classdef InputTask < handle
                 end
                 if self.DabsDaqTask_.sampClkRate~=sampleRate ,
                     error('The DABS task sample rate is not equal to the desired sampling rate');
-                end                
+                end
+                
+                % If analog, get the scaling coefficients
+                if self.IsAnalog_ ,                    
+                    self.ScalingCoeffs_ = self.DabsDaqTask_.getAIDevScalingCoeffs() ;
+                else
+                    self.ScalingCoeffs_ = [] ;
+                end
+            else
+                % nChannels == 0
+                self.ScalingCoeffs_ = [] ;
             end
             
             % Store the sample rate and durationPerDataAvailableCallback
@@ -182,6 +194,10 @@ classdef InputTask < handle
         
         function value = get.Parent(self)
             value = self.Parent_;
+        end  % function
+        
+        function value = get.ScalingCoeffs(self)
+            value = self.ScalingCoeffs_ ;
         end  % function
         
         function [rawData,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>
