@@ -79,7 +79,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %     end
     
     properties (Access = protected, Transient=true)
-        LatestAnalogData_ = [] ;
+        %LatestAnalogData_ = [] ;
         LatestRawAnalogData_ = [] ;
         LatestRawDigitalData_ = [] ;
         DataCacheDurationWhenContinuous_ = 10;  % s
@@ -723,10 +723,21 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %             end
 %         end  % function
         
-        function data = getLatestAnalogData(self)
+        function scaledAnalogData = getLatestAnalogData(self)
             % Get the data from the most-recent data available callback, as
             % doubles.
-            data = self.LatestAnalogData_ ;
+            rawAnalogData = self.LatestRawAnalogData_ ;
+            %data = self.LatestAnalogData_ ;
+            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
+            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+            % scale the data by the channel scales
+            if isempty(rawAnalogData) ,
+                scaledAnalogData=zeros(size(rawAnalogData));
+            else
+                data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+                scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
+            end            
         end  % function
 
         function data = getLatestRawAnalogData(self)
@@ -741,7 +752,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end  % function
 
         function addDataToUserCache(self, rawAnalogData, rawDigitalData, scaledAnalogData, isSweepBased)
-            self.LatestAnalogData_ = scaledAnalogData ;
+            %self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;
             if isSweepBased ,
