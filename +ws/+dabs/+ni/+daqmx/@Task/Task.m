@@ -1235,7 +1235,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             % (nCoeffsPerChannel is 4 for X series boards).
             
             channels = self.channels ;
-            isAIChannel = strcmp(channels.type,'AnalogInput') ;
+            isAIChannel = strcmp({channels.type},'AnalogInput') ;
             aiChannels = channels(isAIChannel) ;
             aiChannelsCount = length(aiChannels) ;
             aiChannelNames = {aiChannels.chanNamePhysical} ;
@@ -1248,11 +1248,16 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
                 for iChannel = 1:aiChannelsCount ,
                     channelName = aiChannelNames{iChannel} ;
                     if iChannel == 1 ,
-                        nCoeffsPerChannel = self.apiCall('DAQmxGetAIDevScalingCoeff', taskID, channelName, nullPtr, 0) ; %#ok<PROP>
+                        %nCoeffsPerChannel = self.apiCall('DAQmxGetAIDevScalingCoeff', taskID, channelName, nullPtr, 0) ; %#ok<PROP>
+                        nCoeffsPerChannel = calllib(self.apiDLLName,'DAQmxGetAIDevScalingCoeff', taskID, channelName, nullPtr, 0) ; %#ok<PROP>
+                        if nCoeffsPerChannel<0 ,
+                            error('dabs:Task:unableToGetCoefficientCount', ...
+                                  'Unable to get the number of calibration coefficients from the board') ;
+                        end
                         coeffs = zeros(aiChannelsCount,nCoeffsPerChannel) ;                    
                     end
                     coeffsForThisChannelPtr = libpointer('doublePtr',zeros(1,nCoeffsPerChannel));
-                    self.apiCall('DAQmxGetAIDevScalingCoeff', taskID, channelName, coeffsForThisChannelPtr, nCoeffsPerChannel) %#ok<PROP>
+                    self.apiCall('DAQmxGetAIDevScalingCoeff', taskID, channelName, coeffsForThisChannelPtr, nCoeffsPerChannel);  %#ok<PROP>
                     coeffsForThisChannel = coeffsForThisChannelPtr.Value ;
                     coeffs(iChannel,:) = coeffsForThisChannel ;
                 end
