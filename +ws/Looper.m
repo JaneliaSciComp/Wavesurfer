@@ -1178,14 +1178,17 @@ classdef Looper < ws.RootModel
 
                 % Scale the analog data
                 channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
-                inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-                if isempty(rawAnalogData) ,
-                    scaledAnalogData=zeros(size(rawAnalogData));
-                else
-                    data = double(rawAnalogData);
-                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
-                end
+                
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+                
+%                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+%                 if isempty(rawAnalogData) ,
+%                     scaledAnalogData=zeros(size(rawAnalogData));
+%                 else
+%                     data = double(rawAnalogData);
+%                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
+%                 end
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
@@ -1195,7 +1198,6 @@ classdef Looper < ws.RootModel
                 % No need to inform Triggering subsystem
                 self.Acquisition.samplesAcquired(isSweepBased, ...
                                                  t, ...
-                                                 scaledAnalogData, ...
                                                  rawAnalogData, ...
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled

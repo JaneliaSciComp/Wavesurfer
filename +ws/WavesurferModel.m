@@ -1680,17 +1680,18 @@ classdef WavesurferModel < ws.RootModel
 
                 % Scale the analog data
                 channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
-                inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-                if isempty(rawAnalogData) ,
-                    scaledAnalogData=zeros(size(rawAnalogData));
-                else
-                    data = double(rawAnalogData);
-                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
-                end
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
+%                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+%                 if isempty(rawAnalogData) ,
+%                     scaledAnalogData=zeros(size(rawAnalogData));
+%                 else
+%                     data = double(rawAnalogData);
+%                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
+%                 end
                 
                 % Store the data in the user cache
-                self.Acquisition.addDataToUserCache(rawAnalogData, rawDigitalData, scaledAnalogData, self.AreSweepsFiniteDuration_) ;
+                self.Acquisition.addDataToUserCache(rawAnalogData, rawDigitalData, self.AreSweepsFiniteDuration_) ;
                 
                 % 
 

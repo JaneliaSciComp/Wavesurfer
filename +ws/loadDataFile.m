@@ -36,7 +36,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
             error('Unable to read active/inactive channel information from file.');
         end
         analogChannelScales = allAnalogChannelScales(isActive) ;
-        inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+        %inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
         doesUserWantSingle = strcmpi(formatString,'single') ;
         %doesUserWantDouble = ~doesUserWantSingle ;
         fieldNames = fieldnames(dataFileAsStruct);
@@ -46,21 +46,26 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
                 % We check for "trial" for backward-compatibility with
                 % data files produced by older versions of WS.
                 analogDataAsCounts = dataFileAsStruct.(fieldName).analogScans;
-                if isempty(analogDataAsCounts) ,
-                    if doesUserWantSingle ,
-                        scaledAnalogData=zeros(size(analogDataAsCounts),'single');
-                    else                        
-                        scaledAnalogData=zeros(size(analogDataAsCounts));
-                    end
+                if doesUserWantSingle ,
+                    scaledAnalogData = ws.scaledSingleDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales) ;
                 else
-                    if doesUserWantSingle ,
-                        analogData = single(analogDataAsCounts) ;
-                    else
-                        analogData = double(analogDataAsCounts);
-                    end
-                    combinedScaleFactors = 3.0517578125e-4 * inverseAnalogChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledAnalogData=bsxfun(@times,analogData,combinedScaleFactors);                    
-                end
+                    scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales) ;
+                end                
+%                 if isempty(analogDataAsCounts) ,
+%                     if doesUserWantSingle ,
+%                         scaledAnalogData=zeros(size(analogDataAsCounts),'single');
+%                     else                        
+%                         scaledAnalogData=zeros(size(analogDataAsCounts));
+%                     end
+%                 else
+%                     if doesUserWantSingle ,
+%                         analogData = single(analogDataAsCounts) ;
+%                     else
+%                         analogData = double(analogDataAsCounts);
+%                     end
+%                     combinedScaleFactors = 3.0517578125e-4 * inverseAnalogChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                     scaledAnalogData=bsxfun(@times,analogData,combinedScaleFactors);                    
+%                 end
                 dataFileAsStruct.(fieldName).analogScans = scaledAnalogData ;
             end
         end

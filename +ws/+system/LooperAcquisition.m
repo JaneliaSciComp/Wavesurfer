@@ -220,14 +220,14 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.IsArmedOrAcquiring_ = false;
         end  % function
                         
-        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
+        function samplesAcquired(self, isSweepBased, t, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called by the Looper when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             %fprintf('\n\n');
             %fprintf('LooperAcquisition::samplesAcquired:\n');
             %dbstack
             %fprintf('\n\n');
-            self.addDataToUserCache(rawAnalogData, rawDigitalData, scaledAnalogData, isSweepBased) ;
+            self.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
         end  % function
         
     end  % methods block

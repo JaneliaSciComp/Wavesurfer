@@ -729,15 +729,16 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             rawAnalogData = self.LatestRawAnalogData_ ;
             %data = self.LatestAnalogData_ ;
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-            % scale the data by the channel scales
-            if isempty(rawAnalogData) ,
-                scaledAnalogData=zeros(size(rawAnalogData));
-            else
-                data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
-            end            
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+%             % scale the data by the channel scales
+%             if isempty(rawAnalogData) ,
+%                 scaledAnalogData=zeros(size(rawAnalogData));
+%             else
+%                 data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
+%             end            
         end  % function
 
         function data = getLatestRawAnalogData(self)
@@ -751,7 +752,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             data = self.LatestRawDigitalData_ ;
         end  % function
 
-        function addDataToUserCache(self, rawAnalogData, rawDigitalData, scaledAnalogData, isSweepBased)
+        function addDataToUserCache(self, rawAnalogData, rawDigitalData, isSweepBased)
             %self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;
@@ -805,15 +806,16 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-            % scale the data by the channel scales
-            if isempty(rawAnalogData) ,
-                scaledAnalogData=zeros(size(rawAnalogData));
-            else
-                data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
-            end            
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+%             % scale the data by the channel scales
+%             if isempty(rawAnalogData) ,
+%                 scaledAnalogData=zeros(size(rawAnalogData));
+%             else
+%                 data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
+%             end            
         end  % function
 
         function scaledData = getSinglePrecisionDataFromCache(self)
@@ -821,15 +823,16 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-            % scale the data by the channel scales
-            if isempty(rawAnalogData) ,
-                scaledData=zeros(size(rawAnalogData),'single');
-            else
-                data = single(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledData=bsxfun(@times,data,combinedScaleFactors);
-            end            
+            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+%             % scale the data by the channel scales
+%             if isempty(rawAnalogData) ,
+%                 scaledData=zeros(size(rawAnalogData),'single');
+%             else
+%                 data = single(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 scaledData=bsxfun(@times,data,combinedScaleFactors);
+%             end            
         end  % function
         
         function data = getRawAnalogDataFromCache(self)
