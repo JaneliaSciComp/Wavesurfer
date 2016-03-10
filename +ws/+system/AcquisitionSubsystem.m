@@ -46,6 +46,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
        	TriggerScheme        
         %IsAnalogChannelTerminalOvercommitted
         %IsDigitalChannelTerminalOvercommitted
+        AnalogScalingCoefficients
     end
     
     properties (Access = protected) 
@@ -396,6 +397,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             end
         end
         
+        function result = get.AnalogScalingCoefficients(self)
+            result = self.getAnalogScalingCoefficients_() ;
+        end
+        
         function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
@@ -729,7 +734,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             rawAnalogData = self.LatestRawAnalogData_ ;
             %data = self.LatestAnalogData_ ;
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+            scalingCoefficients = self.AnalogScalingCoefficients ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
 %             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
 %             % scale the data by the channel scales
 %             if isempty(rawAnalogData) ,
@@ -806,7 +812,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+            scalingCoefficients = self.AnalogScalingCoefficients ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;            
+            %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
 %             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
 %             % scale the data by the channel scales
 %             if isempty(rawAnalogData) ,
@@ -823,7 +831,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+            scalingCoefficients = self.AnalogScalingCoefficients ;
+            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
 %             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
 %             % scale the data by the channel scales
 %             if isempty(rawAnalogData) ,

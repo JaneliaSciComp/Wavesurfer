@@ -1157,11 +1157,14 @@ classdef WavesurferModel < ws.RootModel
             % want to note it *just* before the start of the run
             self.ClockAtRunStart_ = clock() ;
             
-            % Tell all the subsystems to prepare for the run
+            % Tell all the subsystems except the logging subsystem to prepare for the run
+            % The logging subsystem has to wait until we obtain the analog
+            % scaling coefficients from the Looper.
             try
                 for idx = 1: numel(self.Subsystems_) ,
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.startingRun();
+                    thisSubsystem = self.Subsystems_{idx} ;
+                    if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
+                        thisSubsystem.startingRun();
                     end
                 end
             catch me
@@ -1192,16 +1195,23 @@ classdef WavesurferModel < ws.RootModel
             
             % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            [err,looperError] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
+            [err,looperResponse] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
             if isempty(err) ,
-                compositeLooperError = looperError ;
+                if isa(looperResponse,'MException') ,
+                    compositeLooperError = looperResponse ;
+                    analogScalingCoefficients = [] ;
+                else
+                    compositeLooperError = [] ;
+                    analogScalingCoefficients = looperResponse ;
+                end
             else
                 % If there was an error in the
                 % message-sending-and-receiving process, then we don't
                 % really care if the looper also had a problem.  We have
                 % bigger fish to fry, in a sense.
                 compositeLooperError = err ;
-            end
+                analogScalingCoefficients = [] ;
+            end            
             if isempty(compositeLooperError) ,
                 summaryLooperError = [] ;
             else
@@ -1266,6 +1276,25 @@ classdef WavesurferModel < ws.RootModel
                     self.changeReadiness(+1);
                     throw(summaryLooperError) ;                                                            
                 end                
+            end
+            
+            % Stash the analog scaling coefficients (have to do this now,
+            % instead of in Acquisiton.startingRun(), b/c we get them from
+            % the looper
+            self.Acquisition.cacheAnalogScalingCoefficents_(analogScalingCoefficients) ;
+
+            % Now tell the logging subsystem that a run is about to start,
+            % since the analog scaling coeffs have been set
+            try
+                thisSubsystem = self.Logging ;
+                if thisSubsystem.IsEnabled ,
+                    thisSubsystem.startingRun();
+                end
+            catch me
+                % Something went wrong
+                self.abortOngoingRun_();
+                self.changeReadiness(+1);
+                me.rethrow();
             end
             
             % Change our own state to running
@@ -1680,7 +1709,9 @@ classdef WavesurferModel < ws.RootModel
 
                 % Scale the analog data
                 channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
+                scalingCoefficients = self.AnalogScalingCoefficients ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;                
+                %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
 %                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
 %                 if isempty(rawAnalogData) ,
 %                     scaledAnalogData=zeros(size(rawAnalogData));
@@ -1766,10 +1797,9 @@ classdef WavesurferModel < ws.RootModel
             % the newly-created map.  This is intended to be run on a
             % "virgin" wavesurferModel.
             
-            aiChannelName = self.Acquisition.addAnalogChannel() ;
+            aiChannelName = self.Acquisition.addAnalogChannel() ;  %#ok<NASGU>
             aoChannelName = self.Stimulation.addAnalogChannel() ;
-            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;
-            
+            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;            
         end
     end  % methods block
     

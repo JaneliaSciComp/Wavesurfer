@@ -985,12 +985,15 @@ classdef Looper < ws.RootModel
                 me.rethrow() ;
             end
             
+            % Get the analog input scaling coeffcients
+            scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+            
             % Initialize timing variables
             self.FromRunStartTicId_ = tic() ;
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',[]) ;
+            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',scalingCoefficients) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
@@ -1179,7 +1182,10 @@ classdef Looper < ws.RootModel
                 % Scale the analog data
                 channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+                scalingCoefficients = self.AnalogScalingCoefficients ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+                
+                %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
                 
 %                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
 %                 if isempty(rawAnalogData) ,

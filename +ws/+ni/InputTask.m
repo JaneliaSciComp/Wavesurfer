@@ -23,7 +23,7 @@ classdef InputTask < handle
         ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
-        ScalingCoeffs
+        ScalingCoefficients
     end
     
     properties (Transient = true, Access = protected)
@@ -50,7 +50,7 @@ classdef InputTask < handle
         TriggerTerminalName_
         TriggerEdge_
         IsArmed_ = false
-        ScalingCoeffs_
+        ScalingCoefficients_
     end
     
 %     events
@@ -116,13 +116,14 @@ classdef InputTask < handle
                 
                 % If analog, get the scaling coefficients
                 if self.IsAnalog_ ,                    
-                    self.ScalingCoeffs_ = self.DabsDaqTask_.getAIDevScalingCoeffs() ;
+                    rawScalingCoefficients = self.DabsDaqTask_.getAIDevScalingCoeffs() ;  % nChannels x nCoefficients, low-order coeffs first
+                    self.ScalingCoefficients_ = transpose(fliplr(rawScalingCoefficients)) ;  % nChannels x nCoefficients, high-order coeffs first
                 else
-                    self.ScalingCoeffs_ = [] ;
+                    self.ScalingCoefficients_ = [] ;
                 end
             else
                 % nChannels == 0
-                self.ScalingCoeffs_ = [] ;
+                self.ScalingCoefficients_ = [] ;
             end
             
             % Store the sample rate and durationPerDataAvailableCallback
@@ -196,8 +197,8 @@ classdef InputTask < handle
             value = self.Parent_;
         end  % function
         
-        function value = get.ScalingCoeffs(self)
-            value = self.ScalingCoeffs_ ;
+        function value = get.ScalingCoefficients(self)
+            value = self.ScalingCoefficients_ ;
         end  % function
         
         function [rawData,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>

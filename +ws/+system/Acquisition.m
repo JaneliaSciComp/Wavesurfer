@@ -1,10 +1,14 @@
 classdef Acquisition < ws.system.AcquisitionSubsystem
     
+    properties (Access=protected, Transient=true)
+        AnalogScalingCoefficientsCache_  % a cache of the analog input scaling coefficients, populated at the start of a run, set to empty at end of run
+    end
+    
     methods
         function self = Acquisition(parent)
             self@ws.system.AcquisitionSubsystem(parent);
         end
-                
+        
         function initializeFromMDFStructure(self, mdfStructure)
             terminalNamesWithDeviceName = mdfStructure.physicalInputChannelNames ;  % these should be of the form 'Dev1/ao0' or 'Dev1/line3'            
             
@@ -143,6 +147,23 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
 %             self.DigitalInputTask_.arm();
         end  % function
         
+%         function completingRun(self)
+%             self.AnalogScalingCoefficientsCache_ = [] ;
+%         end
+%         
+%         function stoppingRun(self) 
+%             self.AnalogScalingCoefficientsCache_ = [] ;
+%         end
+%         
+%         function abortingRun(self)
+%             % Called if a failure occurred during startingRun() for subsystems
+%             % that have already passed startingRun() to clean up, and called fater
+%             % abortingSweep().
+%             
+%             % This code MUST be exception free.
+%             self.AnalogScalingCoefficientsCache_ = [] ;
+%         end
+        
         function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
             % This should only be called from the parent
             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
@@ -241,6 +262,20 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
             self.broadcast('Update');
         end
         
+        function cacheAnalogScalingCoefficents_(self, analogScalingCoefficients) 
+            self.AnalogScalingCoefficientsCache_ = analogScalingCoefficients ;
+        end
+        
+        function clearAnalogScalingCoefficentsCache_(self) 
+            self.AnalogScalingCoefficientsCache_ = [] ;
+        end
+        
     end
+
+    methods (Access=protected)
+        function result = getAnalogScalingCoefficients_(self)
+            result = self.AnalogScalingCoefficientsCache_ ;
+        end
+    end  % protected methods block
     
 end  % classdef

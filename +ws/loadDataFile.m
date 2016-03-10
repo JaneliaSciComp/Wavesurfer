@@ -36,6 +36,14 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
             error('Unable to read active/inactive channel information from file.');
         end
         analogChannelScales = allAnalogChannelScales(isActive) ;
+        
+        % read the scaling coefficients
+        try
+            analogScalingCoefficients=dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+        catch
+            error('Unable to read channel scaling coefficients from file.');
+        end
+        
         %inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
         doesUserWantSingle = strcmpi(formatString,'single') ;
         %doesUserWantDouble = ~doesUserWantSingle ;
@@ -47,10 +55,10 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
                 % data files produced by older versions of WS.
                 analogDataAsCounts = dataFileAsStruct.(fieldName).analogScans;
                 if doesUserWantSingle ,
-                    scaledAnalogData = ws.scaledSingleDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales) ;
+                    scaledAnalogData = ws.scaledSingleDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
                 else
-                    scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales) ;
-                end                
+                    scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+                end
 %                 if isempty(analogDataAsCounts) ,
 %                     if doesUserWantSingle ,
 %                         scaledAnalogData=zeros(size(analogDataAsCounts),'single');

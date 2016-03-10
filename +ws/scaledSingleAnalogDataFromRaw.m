@@ -1,22 +1,32 @@
-function scaledData = scaledSingleAnalogDataFromRaw(rawData, channelScales)
+function scaledData = scaledSingleAnalogDataFromRaw(dataAsADCCounts, channelScales, scalingCoefficients)
     % Function to convert raw ADC data as int16s to singles, taking to the
     % per-channel scaling factors into account.
     %
-    %   rawData: nScans x nChannels int16 array
-    %   channelScales:  1 x nChannels single/double array, each element having
+    %   scalingCoefficients: nScans x nChannels int16 array
+    %   channelScales:  1 x nChannels double array, each element having
     %                   (implicit) units of V/(native unit), where each
     %                   channel has its own native unit.
+    %   scalingCoefficients: nCoefficients x nChannels  double array,
+    %                        contains scaling coefficients for converting
+    %                        ADC counts to volts at the ADC input.
     %
     %   scaledData: nScans x nChannels single array containing the scaled
     %               data, each channel with it's own native unit.
     
     inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-    if isempty(rawData) ,
-        scaledData=zeros(size(rawData),'single');
-    else
-        rawDataAsSingle = single(rawData);
-        combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-        scaledData=bsxfun(@times,rawDataAsSingle,combinedScaleFactors); 
+    [nScans,nChannels] = size(dataAsADCCounts) ;
+    nCoefficients = size(scalingCoefficients,1) ;
+    scaledData=zeros(nScans,nChannels,'single') ;
+    if nScans>0 && nChannels>0 && nCoefficients>0,  % i.e. if nonempty
+        for j = 1:nChannels ,
+            for i = 1:nScans ,
+                datumAsADCCounts = double(dataAsADCCounts(i,j)) ;
+                datumAsADCVoltage = scalingCoefficients(1,j) ;
+                for k = 2:nCoefficients ,
+                    datumAsADCVoltage = scalingCoefficients(k,j) + datumAsADCCounts*datumAsADCVoltage ;
+                end
+                scaledData(i,j) = single(inverseChannelScales(j) * datumAsADCVoltage) ;
+            end
+        end        
     end
-                
 end
