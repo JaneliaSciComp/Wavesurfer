@@ -17,7 +17,8 @@ function scaledData = scaledDoubleAnalogDataFromRaw(dataAsADCCounts, channelScal
     [nScans,nChannels] = size(dataAsADCCounts) ;
     nCoefficients = size(scalingCoefficients,1) ;
     scaledData=zeros(nScans,nChannels) ;
-    if nScans>0 && nChannels>0 && nCoefficients>0,  % i.e. if nonempty
+    if nScans>0 && nChannels>0 && nCoefficients>0 ,  % i.e. if nonempty
+        % This nested loop *should* get JIT-accelerated
         for j = 1:nChannels ,
             for i = 1:nScans ,
                 datumAsADCCounts = double(dataAsADCCounts(i,j)) ;
@@ -28,13 +29,5 @@ function scaledData = scaledDoubleAnalogDataFromRaw(dataAsADCCounts, channelScal
                 scaledData(i,j) = inverseChannelScales(j) * datumAsADCVoltage ;
             end
         end        
-%         rawDataAsDouble = double(dataAsADCCounts);
-%         voltsAtADC = zeros(size(rawDataAsDouble)) ;
-%         for j = 1:nChannels ,
-%             voltsAtADC(:,j) = polyval(scalingCoefficients(:,j),rawDataAsDouble(:,j)) ;
-%         end
-%         %combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%         scaledData=bsxfun(@times,voltsAtADC,inverseChannelScales); 
-    end
-                
+    end     
 end

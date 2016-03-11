@@ -18,6 +18,7 @@ function scaledData = scaledSingleAnalogDataFromRaw(dataAsADCCounts, channelScal
     nCoefficients = size(scalingCoefficients,1) ;
     scaledData=zeros(nScans,nChannels,'single') ;
     if nScans>0 && nChannels>0 && nCoefficients>0,  % i.e. if nonempty
+        % This nested loop *should* get JIT-accelerated
         for j = 1:nChannels ,
             for i = 1:nScans ,
                 datumAsADCCounts = double(dataAsADCCounts(i,j)) ;
