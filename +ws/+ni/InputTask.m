@@ -117,7 +117,7 @@ classdef InputTask < handle
                 % If analog, get the scaling coefficients
                 if self.IsAnalog_ ,                    
                     rawScalingCoefficients = self.DabsDaqTask_.getAIDevScalingCoeffs() ;  % nChannels x nCoefficients, low-order coeffs first
-                    self.ScalingCoefficients_ = transpose(fliplr(rawScalingCoefficients)) ;  % nChannels x nCoefficients, high-order coeffs first
+                    self.ScalingCoefficients_ = transpose(rawScalingCoefficients) ;  % nChannels x nCoefficients, low-order coeffs first
                 else
                     self.ScalingCoefficients_ = [] ;
                 end

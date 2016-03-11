@@ -21,8 +21,8 @@ function scaledData = scaledSingleAnalogDataFromRaw(dataAsADCCounts, channelScal
         for j = 1:nChannels ,
             for i = 1:nScans ,
                 datumAsADCCounts = double(dataAsADCCounts(i,j)) ;
-                datumAsADCVoltage = scalingCoefficients(1,j) ;
-                for k = 2:nCoefficients ,
+                datumAsADCVoltage = scalingCoefficients(nCoefficients,j) ;
+                for k = (nCoefficients-1):-1:1 ,
                     datumAsADCVoltage = scalingCoefficients(k,j) + datumAsADCCounts*datumAsADCVoltage ;
                 end
                 scaledData(i,j) = single(inverseChannelScales(j) * datumAsADCVoltage) ;
