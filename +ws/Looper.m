@@ -1182,7 +1182,7 @@ classdef Looper < ws.RootModel
                 % Scale the analog data
                 channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 
-                scalingCoefficients = self.AnalogScalingCoefficients ;
+                scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
                 scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
                 
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;

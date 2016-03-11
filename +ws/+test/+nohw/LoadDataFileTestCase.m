@@ -21,7 +21,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         function testLoadingOlderFileWithFunnySamplingRate(self)
             thisDirName=fileparts(mfilename('fullpath'));
             fileName = fullfile(thisDirName, '30_kHz_sampling_rate_0p912_0001.h5') ;
-            dataFileAsStruct = ws.loadDataFile(fileName) ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw') ;  % conversion to scaled data would fail for these files
             % The nominal sampling rate was 30000, but the returned
             % sampling rate should be ~30003 Hz, to make (100 Mhz)/fs an
             % integer.
@@ -36,7 +36,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         function testLoadingNewerFileWithFunnySamplingRate(self)
             thisDirName=fileparts(mfilename('fullpath'));
             fileName = fullfile(thisDirName, '30_kHz_sampling_rate_0p913_0001.h5') ;
-            dataFileAsStruct = ws.loadDataFile(fileName) ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw') ;
             % The requested sampling rate was 30000, but this version of WS
             % coerces that in the UI to an acheivable rate, which should be
             % ~30003 Hz, to make (100 Mhz)/fs an integer.
@@ -51,7 +51,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         function testLoadingOlderFileWithFunnierSamplingRate(self)
             thisDirName=fileparts(mfilename('fullpath'));
             fileName = fullfile(thisDirName, '29997_Hz_sampling_rate_0p912_0001.h5') ;
-            dataFileAsStruct = ws.loadDataFile(fileName) ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw') ;
             % The nominal sampling rate was 29997, but the returned
             % sampling rate should be 100e6/3333 for acq, and 100e6/3334
             % for stim.
@@ -66,7 +66,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         function testLoadingNewerFileWithFunnierSamplingRate(self)
             thisDirName=fileparts(mfilename('fullpath'));
             fileName = fullfile(thisDirName, '29997_Hz_sampling_rate_0p913_0001.h5') ;
-            dataFileAsStruct = ws.loadDataFile(fileName) ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw') ;
             % The nominal sampling rate was 29997, but the returned
             % sampling rate should be 100e6/3333 for both acq and stim.
             returnedAcqSamplingRate = dataFileAsStruct.header.Acquisition.SampleRate ;

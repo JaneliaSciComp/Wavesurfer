@@ -986,6 +986,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         end  % function
     end
     
+    methods (Abstract, Access=protected)
+        result = getAnalogScalingCoefficients_(self)
+    end
+    
     methods
 %         function poll(self, timeSinceSweepStart, fromRunStartTicId)
 %             % Determine the time since the last undropped timer fire
