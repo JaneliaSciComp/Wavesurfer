@@ -985,12 +985,15 @@ classdef Looper < ws.RootModel
                 me.rethrow() ;
             end
             
+            % Get the analog input scaling coeffcients
+            scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+            
             % Initialize timing variables
             self.FromRunStartTicId_ = tic() ;
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',[]) ;
+            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',scalingCoefficients) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
@@ -1178,14 +1181,20 @@ classdef Looper < ws.RootModel
 
                 % Scale the analog data
                 channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
-                inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-                if isempty(rawAnalogData) ,
-                    scaledAnalogData=zeros(size(rawAnalogData));
-                else
-                    data = double(rawAnalogData);
-                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
-                end
+                
+                scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+                
+                %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+                
+%                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+%                 if isempty(rawAnalogData) ,
+%                     scaledAnalogData=zeros(size(rawAnalogData));
+%                 else
+%                     data = double(rawAnalogData);
+%                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
+%                 end
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
@@ -1195,7 +1204,6 @@ classdef Looper < ws.RootModel
                 % No need to inform Triggering subsystem
                 self.Acquisition.samplesAcquired(isSweepBased, ...
                                                  t, ...
-                                                 scaledAnalogData, ...
                                                  rawAnalogData, ...
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled

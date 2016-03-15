@@ -307,3 +307,11 @@ Version History
                          sampling rate for sampling rates (in Hz) that
                          do not evenly divide 100 MHz.
 
+0.914    Mar 11, 2016    Fixed bug where data was saved without
+                         scaling coefficients.  Added code to
+                         ws.loadDataFile() convert nominal sampling rate
+                         for pre-0.913 data files to correct sampling
+                         rate.  Added code to ws.loadDataFile() to
+                         error if asked to return floating-point
+                         (scaled) data when the data file lacks
+                         scaling coefficients, as a safeguard.
