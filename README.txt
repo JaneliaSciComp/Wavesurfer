@@ -315,3 +315,9 @@ Version History
                          error if asked to return floating-point
                          (scaled) data when the data file lacks
                          scaling coefficients, as a safeguard.
+
+0.915    Mar 22, 2016    Added tool,
+                         ws.addScalingToHDF5FilesRecursively(), to
+                         automatically append device scaling
+                         information to .h5 data files that currently
+                         lack it.

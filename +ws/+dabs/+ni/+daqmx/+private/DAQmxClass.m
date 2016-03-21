@@ -374,13 +374,13 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
             assert(isempty(apiPropTypeMap) == isempty(lowerPropMap));
             
             if isempty(apiPropTypeMap)
-                prototypes = libfunctions(obj.apiDLLName, '-full');
+                prototypes = libfunctions(obj.apiDLLName, '-full');  % cell array of strings, each a function prototype
                 [~,varTypes] = regexp(prototypes, obj.gsPropRegExp, 'tokens', 'names', 'once');
                 
                 %TODO: Deal with handful of channel-related Task variables, which have a companion property with 'Ex' appended at end
                 
                 varTypes = cat(1,varTypes{:}); %Concatenate into a struct array
-                apiPropNames  = {varTypes.varName}';
+                apiPropNames  = {varTypes.varName}';  % raw names of all the DAQmx properties that will be available via the get() method
                 apiPropTypes  = {varTypes.varType}';
                 userPropNames = cell(size(apiPropNames));
                 lowerNames    = cell(size(apiPropNames));
