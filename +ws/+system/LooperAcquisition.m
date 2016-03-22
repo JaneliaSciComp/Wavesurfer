@@ -18,11 +18,11 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % tasks for doneness.  If sweeps are continuous, there's no
             % need to check.  This is an important optimization, b/c
             % checking takes 10-20 ms
-        AnalogInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
-        DigitalInputTask_ = []    % an ws.ni.AnalogInputTask, or empty
+        AnalogInputTask_ = []    % an ws.ni.InputTask, or empty
+        DigitalInputTask_ = []    % an ws.ni.InputTask, or empty
         IsAtLeastOneActiveAnalogChannelCached_
         IsAtLeastOneActiveDigitalChannelCached_
-    end    
+    end
     
     methods
         function self = LooperAcquisition(parent)
@@ -56,12 +56,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     ws.ni.InputTask(self, 'analog', ...
                                           'WaveSurfer Analog Acquisition Task', ...
                                           activeAnalogDeviceNames, ...
-                                          activeAnalogTerminalIDs);
+                                          activeAnalogTerminalIDs, ...
+                                          self.SampleRate, ...
+                                          self.Duration) ;
                 % Set other things in the Task object
-                self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                self.AnalogInputTask_.SampleRate = self.SampleRate;                
-                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                %self.AnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
+                %self.AnalogInputTask_.SampleRate = self.SampleRate;                
             end
             if isempty(self.DigitalInputTask_) , % && self.NDigitalChannels>0,
                 isDigitalChannelActive = self.IsDigitalChannelActive ;
@@ -73,12 +73,12 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
                     ws.ni.InputTask(self, 'digital', ...
                                           'WaveSurfer Digital Acquisition Task', ...
                                           activeDigitalDeviceNames, ...
-                                          activeDigitalTerminalIDs);
+                                          activeDigitalTerminalIDs, ...
+                                          self.SampleRate, ...
+                                          self.Duration) ;
                 % Set other things in the Task object
-                self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                self.DigitalInputTask_.SampleRate = self.SampleRate;                
-                %self.AnalogInputTask_.addlistener('AcquisitionComplete', @self.acquisitionSweepComplete_);
-                %self.AnalogInputTask_.addlistener('SamplesAvailable', @self.samplesAcquired_);
+                %self.DigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
+                %self.DigitalInputTask_.SampleRate = self.SampleRate;                
             end
         end  % function
 
@@ -220,14 +220,14 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.IsArmedOrAcquiring_ = false;
         end  % function
                         
-        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
+        function samplesAcquired(self, isSweepBased, t, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
             % Called by the Looper when data is available.  When called, we update
             % our main-memory data cache with the newly available data.
             %fprintf('\n\n');
             %fprintf('LooperAcquisition::samplesAcquired:\n');
             %dbstack
             %fprintf('\n\n');
-            self.addDataToUserCache(rawAnalogData, rawDigitalData, scaledAnalogData, isSweepBased) ;
+            self.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
         end  % function
         
     end  % methods block
@@ -296,6 +296,14 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
         end  % function
         
+        function result = getAnalogScalingCoefficients_(self)
+            if isempty(self.AnalogInputTask_) ,
+                result = [] ;
+            else                
+                result = self.AnalogInputTask_.ScalingCoefficients ;
+            end
+        end
+        
     end  % protected methods block
     
     methods
@@ -354,6 +362,20 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
             % Prepare for next time            
             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
         end        
-    end
+        
+        function didSetDeviceNameInFrontend(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %self.broadcast('Update');
+        end        
+        
+        function mimickingWavesurferModel_(self)
+            deviceName = self.Parent.DeviceName ;
+            self.AnalogDeviceNames_(:) = {deviceName} ;
+            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %self.broadcast('Update');
+        end        
+    end  % public methods block
     
 end  % classdef

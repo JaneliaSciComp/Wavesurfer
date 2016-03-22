@@ -45,7 +45,7 @@ classdef Refiller < ws.RootModel
         %RPCServer_
         %RPCClient_
         IPCPublisher_
-        IPCSubscriber_
+        IPCSubscriber_  % subscriber for the frontend
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedSoFarThisRun_ = 0
@@ -278,13 +278,22 @@ classdef Refiller < ws.RootModel
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals) %#ok<INUSD>
+        function result = didSetDeviceInFrontend(self, ...
+                                                 deviceName, ...
+                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
+                                                 isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % Don't need to do anything---we'll get updated info when a run
             % is started, which is when it matters to us.
             result = [] ;
         end  % function
         
-        function result = startingRun(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
+        function result = startingRun(self, ...
+                                      wavesurferModelSettings, ...
+                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      isTerminalOvercommitedForEachAIChannel, ...
+                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      isTerminalOvercommitedForEachAOChannel, ...
+                                      isTerminalOvercommitedForEachDOChannel)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -292,7 +301,12 @@ classdef Refiller < ws.RootModel
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel) ;
             result = [] ;
         end  % function
 
@@ -389,22 +403,36 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end
         
-        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue) %#ok<INUSD>
-            %self.Stimulation.IsDigitalChannelTimed = newValue ;
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
+            %nothing to do, b/c we release the hardware resources at the
+            %end of a run now
+            %self.releaseHardwareResources_() ;
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) %#ok<INUSD>
+        function result = didAddDigitalOutputChannelInFrontend(self, ...
+                                                               channelNameForEachDOChannel, ...
+                                                               deviceNameForEachDOChannel, ...
+                                                               terminalIDForEachDOChannel, ...
+                                                               isTimedForEachDOChannel, ...
+                                                               onDemandOutputForEachDOChannel, ...
+                                                               isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
             %self.Stimulation.addDigitalChannel() ;
             result = [] ;
         end  % function
         
-        function result = didRemoveDigitalOutputChannelsInFrontend(self, removedChannelIndices) %#ok<INUSD>
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
+                                                                   channelNameForEachDOChannel, ...
+                                                                   deviceNameForEachDOChannel, ...
+                                                                   terminalIDForEachDOChannel, ...
+                                                                   isTimedForEachDOChannel, ...
+                                                                   onDemandOutputForEachDOChannel, ...
+                                                                   isTerminalOvercommittedForEachDOChannel) %#ok<INUSD>
             %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
             result = [] ;
         end  % function
 
-        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings) %#ok<INUSD>
+        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings, isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return
@@ -416,6 +444,24 @@ classdef Refiller < ws.RootModel
             
             result = [] ;
         end  % function        
+        
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            % We don't need to do anything in response to this message
+            result = [] ;
+        end  % function
+        
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            % We don't need to do anything in response to this message
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            result = [] ;
+        end  % function
+        
+        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
+            result = [] ;
+        end  % function
         
     end  % RPC methods block
     
@@ -728,12 +774,12 @@ classdef Refiller < ws.RootModel
 %             result = self.FastProtocols_;
 %         end
         
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys ;
-            if ~isempty(ephys) ,
-                ephys.didSetAcquisitionSampleRate(newValue) ;
-            end
-        end
+%         function didSetAcquisitionSampleRate(self,newValue)
+%             ephys = self.Ephys ;
+%             if ~isempty(ephys) ,
+%                 ephys.didSetAcquisitionSampleRate(newValue) ;
+%             end
+%         end
         
 %         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
 %             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
@@ -760,7 +806,13 @@ classdef Refiller < ws.RootModel
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)
+        function prepareForRun_(self, ...
+                                wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -779,6 +831,12 @@ classdef Refiller < ws.RootModel
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
+            
+            % Set the overcommitment arrays
+            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per sweep
             if self.AreSweepsFiniteDuration ,
@@ -1145,7 +1203,7 @@ classdef Refiller < ws.RootModel
 %     end  % methods block        
     
     methods (Access=protected)
-        function synchronizeTransientStateToPersistedState_(self)            
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
             % This method should set any transient state variables to
             % ensure that the object invariants are met, given the values
             % of the persisted state variables.  The default implementation

@@ -38,6 +38,7 @@ classdef RootModel < ws.Model
 %         VersionString
         AllDeviceNames
         DeviceName
+        SampleClockTimebaseFrequency
         NDIOTerminals
         NPFITerminals
         NCounters
@@ -45,6 +46,8 @@ classdef RootModel < ws.Model
         NAOTerminals
         NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
         AllChannelNames
+        IsAIChannelTerminalOvercommitted
+        IsAOChannelTerminalOvercommitted
         IsDIChannelTerminalOvercommitted
         IsDOChannelTerminalOvercommitted
     end
@@ -120,6 +123,8 @@ classdef RootModel < ws.Model
 %         %IsDeeplyIntoPerformingSweep_ = false
 %         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
 
+        SampleClockTimebaseFrequency_ = 100e6 ;  % Hz, X series devices use a 100 MHz sample timebase by default, and we don't change that ever
+        
         NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
                             % file load than it did when the protocol file was saved
         NPFITerminals_ = 0 
@@ -127,6 +132,9 @@ classdef RootModel < ws.Model
         NAITerminals_ = 0
         NAOTerminals_ = 0
 
+        IsAIChannelTerminalOvercommitted_ = false(1,0)        
+        IsAOChannelTerminalOvercommitted_ = false(1,0)        
+        
         IsDIChannelTerminalOvercommitted_ = false(1,0)        
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
     end
@@ -164,6 +172,10 @@ classdef RootModel < ws.Model
 
         function value = get.DeviceName(self)
             value = self.DeviceName_ ;
+        end  % function
+
+        function value = get.SampleClockTimebaseFrequency(self)
+            value = self.SampleClockTimebaseFrequency_ ;
         end  % function
 
         function set.DeviceName(self, newValue)
@@ -234,17 +246,17 @@ classdef RootModel < ws.Model
             result = [aiNames diNames aoNames doNames] ;
         end
 
+        function result = get.IsAIChannelTerminalOvercommitted(self)
+            result = self.IsAIChannelTerminalOvercommitted_ ;
+        end
+        
+        function result = get.IsAOChannelTerminalOvercommitted(self)
+            result = self.IsAOChannelTerminalOvercommitted_ ;
+        end
+        
         function result = get.IsDIChannelTerminalOvercommitted(self)
             result = self.IsDIChannelTerminalOvercommitted_ ;
         end
-        
-%         function set.IsDIChannelTerminalOvercommitted_(self, value)
-%             fprintf('About to set IsDIChannelTerminalOvercommitted_\n');
-%             value
-%             dbstack           
-%             self.IsDIChannelTerminalOvercommitted_ = value ;
-%             fprintf('\n\n\n');
-%         end
         
         function result = get.IsDOChannelTerminalOvercommitted(self)
             result = self.IsDOChannelTerminalOvercommitted_ ;
@@ -266,10 +278,19 @@ classdef RootModel < ws.Model
             % only get half as many.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                result = nan ;
+                result = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        result = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
                     % cellstring, each element of the form '<device name>/ai<channel ID>'
                 result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
@@ -280,10 +301,19 @@ classdef RootModel < ws.Model
             % The number of AO channels available.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                result = nan ;
+                result = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        result = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device name>/ao<channel ID>'
                 result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
@@ -297,11 +327,21 @@ classdef RootModel < ws.Model
             % channels as being only PFIn channels.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                numberOfDIOChannels = nan ;
-                numberOfPFILines = nan ;
+                numberOfDIOChannels = 0 ;
+                numberOfPFILines = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        numberOfDIOChannels = 0 ;
+                        numberOfPFILines = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
                 % We only want to count the port0 lines, since those are
@@ -324,10 +364,19 @@ classdef RootModel < ws.Model
             % The number of counters (CTRs) on the board.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
-                result = nan ;
+                result = 0 ;
             else
-                device = ws.dabs.ni.daqmx.Device(deviceName) ;
-                commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+                try
+                    device = ws.dabs.ni.daqmx.Device(deviceName) ;
+                    commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
+                catch exception
+                    if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+                        result = 0 ;
+                        return
+                    else
+                        rethrow(exception) ;
+                    end
+                end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device
                     % name>/<counter name>', where a <counter name> is of
@@ -351,8 +400,8 @@ classdef RootModel < ws.Model
         function didSetIsDigitalOutputTimed(self)  %#ok<MANU>
         end
         
-        function didAddDigitalOutputChannel(self)  %#ok<MANU>
-        end
+        %function didAddDigitalOutputChannel(self)  %#ok<MANU>
+        %end
         
         function didRemoveDigitalOutputChannel(self, channelIndex) %#ok<INUSD>
         end
@@ -384,14 +433,44 @@ classdef RootModel < ws.Model
         end
 
         function syncIsDigitalChannelTerminalOvercommitted_(self)
-            [nOccurancesOfTerminalInAcquisition,nOccurancesOfTerminalInStimulation] = self.computeDIOTerminalCommitments() ;
+            [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
             nDIOTerminals = self.NDIOTerminals ;
-            terminalIDForEachAcquisitionChannel = self.Acquisition.DigitalTerminalIDs ;
-            terminalIDForEachStimulationChannel = self.Stimulation.DigitalTerminalIDs ;
-            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalInAcquisition>1) | (terminalIDForEachAcquisitionChannel>=nDIOTerminals) ;
-            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalInStimulation>1) | (terminalIDForEachStimulationChannel>=nDIOTerminals) ;
+            terminalIDForEachDIChannel = self.Acquisition.DigitalTerminalIDs ;
+            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
+            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
         end  % function
 
+        function syncIsAIChannelTerminalOvercommitted_(self)            
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
+            
+            % For AI terminals
+            aiTerminalIDs = self.Acquisition.AnalogTerminalIDs ;
+            nOccurancesOfAITerminal = ws.nOccurancesOfID(aiTerminalIDs) ;
+            nAITerminalsOnDevice = self.NAITerminals ;
+            self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | (aiTerminalIDs>=nAITerminalsOnDevice) ;            
+        end
+        
+        function syncIsAOChannelTerminalOvercommitted_(self)            
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
+            
+            % For AO terminals
+            aoTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            nOccurancesOfAOTerminal = ws.nOccurancesOfID(aoTerminalIDs) ;
+            nAOTerminals = self.NAOTerminals ;
+            self.IsAOChannelTerminalOvercommitted_ = (nOccurancesOfAOTerminal>1) | (aoTerminalIDs>=nAOTerminals) ;            
+        end
+        
     end  % protected methods block
     
     methods
@@ -406,16 +485,41 @@ classdef RootModel < ws.Model
             acquisitionTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
             stimulationTerminalIDs = self.Stimulation.DigitalTerminalIDs ;            
             terminalIDs = horzcat(acquisitionTerminalIDs, stimulationTerminalIDs) ;
-            nChannels = length(terminalIDs) ;
-            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            terminalIDsInEachCol = terminalIDsInEachRow' ;
-            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
+            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+            % nChannels = length(terminalIDs) ;
+            % terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            % terminalIDsInEachCol = terminalIDsInEachRow' ;
+            % isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            % nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
             % Sort them into the acq, stim ones
             nAcquisitionChannels = length(acquisitionTerminalIDs) ;
             nOccurancesOfAcquisitionTerminal = nOccurancesOfTerminal(1:nAcquisitionChannels) ;
             nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
         end        
+        
+        function [sampleFrequency,timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+            % Coerce to be finite and not nan
+            if isfinite(desiredSampleFrequency) ,
+                protoResult1 = desiredSampleFrequency;
+            else
+                protoResult1 = 20000;  % the default
+            end
+            
+            % We know it's finite and not nan here
+            
+            % Limit to the allowed range of sampling frequencies
+            protoResult2 = max(protoResult1,10) ;  % 10 Hz minimum
+            timebaseFrequency = self.SampleClockTimebaseFrequency;  % Hz
+            maximumFrequency = timebaseFrequency/100 ;  % maximum, 1 MHz for X-series 
+            protoResult3 = min(protoResult2, maximumFrequency) ;
+            
+            %% Make the sample rate an integer, and a factor of timebaseFrequency
+            %sampleFrequency = ws.RootModel.coerceSampleFrequencyToFactorOfTimebase(protoResult3, timebaseFrequency) ;
+            
+            % Limit to an integer multiple of the timebase interval
+            timebaseTicksPerSample = floor(timebaseFrequency/protoResult3) ;  % err on the side of sampling faster
+            sampleFrequency = timebaseFrequency/timebaseTicksPerSample ;
+        end
     end  % public methods
 
     methods (Access=protected)
@@ -431,8 +535,56 @@ classdef RootModel < ws.Model
             % variables have been set to the encoded values.
             
             self.syncDeviceResourceCountsFromDeviceName_() ;
+            self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
         end
     end
+    
+%     methods (Static=true)
+%         function coercedSampleFrequency = coerceSampleFrequencyToFactorOfTimebase(desiredSampleFrequency, timebaseFrequency)
+%             % Given a desiredSampleFrequency and an (integral)
+%             % timebaseFrequency, determines the coercedSampleFrequency such
+%             % that coercedSampleFrequency * n == timebaseFrequency, where
+%             % coercedSampleFrequency and n are both integral, and
+%             % coercedSampleFrequency is greater than or equal
+%             % desiredSampleFrequency.  Given these constraints,
+%             % coercedSampleFrequency is as close as possible to
+%             % desiredSampleFrequency on a log scale.
+%             
+%             if desiredSampleFrequency >= timebaseFrequency ,
+%                 coercedSampleFrequency = timebaseFrequency ;
+%             else
+%                 if timebaseFrequency == 1e8 ,  % 100 MHz, timebase for X series by default
+%                     powersOfTen = 10.^((0:7)') ;
+%                     possibleFactorsMatrix = bsxfun(@times, powersOfTen, [1 2 5]) ;
+%                     possibleFactors = [reshape(possibleFactorsMatrix, [1 numel(possibleFactorsMatrix)]) 10e8] ;
+%                     log10PossibleFactors = log10(possibleFactors) ;
+%                     log10DesiredSampleFrequency = log10(desiredSampleFrequency) ;
+%                     logDistances =  log10PossibleFactors - log10DesiredSampleFrequency ;  % negative=> too slow, positive=> fast enough
+%                     % We want the lowest-magnitude nonnegative logDistance
+%                     isTooLow = logDistances<0 ;
+%                     nonnegativeLogDistances = logDistances(~isTooLow) ;
+%                     if isempty(nonnegativeLogDistances) ,
+%                         % all the options are too low, to just return the
+%                         % timebaseFrequency
+%                         coercedSampleFrequency = timebaseFrequency ;
+%                     else
+%                         log10CoercedSampleFrequency = nonnegativeLogDistances(1) ;
+%                         coercedSampleFrequency = round(10^log10CoercedSampleFrequency) ;
+%                         if ~isequal(unique(factor(coercedSampleFrequency)),[2 5]) ,
+%                             error('wavesurfer:internalError', ...
+%                                   ['There was an internal error with Wavesurfer: Programming error in coerceSampleFrequencyToFactorOfTimebase().  ' ...
+%                                    'Please report to the WaveSurfer developers.']) ;
+%                         end
+%                     end
+%                 else
+%                     error('wavesurfer:internalError', ...
+%                           'There was an internal error with Wavesurfer: Unsupported timebase frequency.  Please report to the WaveSurfer developers.') ;
+%                 end            
+%             end
+%             
+%         end
+%     end
     
 end  % classdef

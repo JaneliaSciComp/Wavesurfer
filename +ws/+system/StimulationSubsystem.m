@@ -35,8 +35,8 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         NChannels
         IsChannelAnalog
         TriggerScheme
-        IsAnalogChannelTerminalOvercommitted
-        IsDigitalChannelTerminalOvercommitted
+        %IsAnalogChannelTerminalOvercommitted
+        %IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected)
@@ -60,7 +60,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         DigitalTerminalIDs_ = zeros(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
-        IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
+        %IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
         %IsDigitalChannelTerminalOvercommitted_ = false(1,0)        
     end
         
@@ -88,65 +88,6 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)       
-            terminalNames = mdfStructure.physicalOutputChannelNames ;
-            
-            if ~isempty(terminalNames) ,
-                channelNames = mdfStructure.outputChannelNames;
-
-                % Deal with the device names, setting the WSM DeviceName if
-                % it's not set yet.
-                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
-                uniqueDeviceNames=unique(deviceNames);
-                if length(uniqueDeviceNames)>1 ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                deviceName = uniqueDeviceNames{1} ;                
-                if isempty(self.Parent.DeviceName) ,
-                    self.Parent.DeviceName = deviceName ;
-                end
-
-                % Get the channel IDs
-                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
-                isAnalog = strcmp(channelTypes,'ao');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names, etc
-                %analogDeviceNames = deviceNames(isAnalog) ;
-                %digitalDeviceNames = deviceNames(isDigital) ;
-                analogTerminalIDs = terminalIDs(isAnalog) ;
-                digitalTerminalIDs = terminalIDs(isDigital) ;            
-                analogChannelNames = channelNames(isAnalog) ;
-                digitalChannelNames = channelNames(isDigital) ;
-
-                % add the analog channels
-                nAnalogChannels = length(analogChannelNames);
-                for i = 1:nAnalogChannels ,
-                    self.addAnalogChannel() ;
-                    indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
-                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
-                end
-                
-                % add the digital channels
-                nDigitalChannels = length(digitalChannelNames);
-                for i = 1:nDigitalChannels ,
-                    self.addDigitalChannel() ;
-                    indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
-                    self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
-                end                
-                
-                % Intialize the stimulus library, just to keep compatible
-                % with the old behavior
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);                
-            end
-        end  % function
-
         function value=get.StimulusLibrary(self)
             value=self.StimulusLibrary_;
         end
@@ -172,21 +113,39 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
         end
         
         function set.SampleRate(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,
-                    self.SampleRate_ = double(newValue) ;
-                    wsModel = self.Parent ;
-                    if ~isempty(wsModel) ,
-                        wsModel.didSetAcquisitionSampleRate(newValue);
-                    end
-                else
-                    self.broadcast('DidSetSampleRate');
-                    error('most:Model:invalidPropVal', ...
-                          'SampleRate must be a positive scalar');                  
-                end                    
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.Parent.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.SampleRate_ = sampleRate ;
+                self.Parent.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
             end
             self.broadcast('DidSetSampleRate');
+            if ~isValueValid ,
+                error('most:Model:invalidPropVal', ...
+                    'SampleRate must be a positive finite numeric scalar');
+            end                
         end  % function
+                
+%         function set.SampleRate(self, newValue)
+%             if ws.utility.isASettableValue(newValue) ,
+%                 if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,
+%                     self.SampleRate_ = double(newValue) ;
+%                     wsModel = self.Parent ;
+%                     if ~isempty(wsModel) ,
+%                         wsModel.didSetAcquisitionSampleRate(newValue);
+%                     end
+%                 else
+%                     self.broadcast('DidSetSampleRate');
+%                     error('most:Model:invalidPropVal', ...
+%                           'SampleRate must be a positive scalar');                  
+%                 end                    
+%             end
+%             self.broadcast('DidSetSampleRate');
+%         end  % function
         
         function out = get.IsDigitalChannelTimed(self)
             out= self.IsDigitalChannelTimed_ ;
@@ -301,13 +260,13 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
         
-        function result=get.IsAnalogChannelTerminalOvercommitted(self)
-            result =  self.IsAnalogChannelTerminalOvercommitted_ ;
-        end
+%         function result=get.IsAnalogChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsAOChannelTerminalOvercommitted ;
+%         end
         
-        function result=get.IsDigitalChannelTerminalOvercommitted(self)
-            result =  self.Parent.IsDOChannelTerminalOvercommitted ;
-        end
+%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsDOChannelTerminalOvercommitted ;
+%         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is
@@ -550,7 +509,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             end
         end  % function       
         
-        function addAnalogChannel(self)
+        function newChannelName = addAnalogChannel(self)
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
@@ -568,7 +527,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             %self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddAnalogOutputChannel() ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -576,37 +535,6 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
 
-        function addDigitalChannel(self)
-            %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
-            deviceName = self.Parent.DeviceName ;
-            
-            newChannelDeviceName = deviceName ;
-            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-            if isempty(freeTerminalIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newTerminalID = freeTerminalIDs(1) ;
-            end
-            newChannelName = sprintf('P0.%d',newTerminalID) ;
-            %newChannelName = newChannelPhysicalName ;
-            
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
-            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
-            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
-            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            isNewChannelTimed = true ;
-            self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ isNewChannelTimed  ];
-            newChannelStateIfUntimed = false ;
-            self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ newChannelStateIfUntimed ];
-            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            
-            self.Parent.didAddDigitalOutputChannel(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
-            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
-            %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
-        end  % function
-        
         function deleteMarkedAnalogChannels(self)
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
             channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;
@@ -627,81 +555,17 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
             self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
         
-        function deleteMarkedDigitalChannels(self)
-            % Do some accounting
-            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            indicesOfChannelsToDelete = find(isToBeDeleted) ;
-            isKeeper = ~isToBeDeleted ;
-            
-            % Turn off any untimed DOs that are about to be deleted
-            digitalOutputStateIfUntimed = self.DigitalOutputStateIfUntimed ;
-            self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
-
-            % Now do the real deleting
-            if all(isToBeDeleted)
-                % Keep everything a row vector
-                self.DigitalDeviceNames_ = cell(1,0) ;
-                self.DigitalTerminalIDs_ = zeros(1,0) ;
-                self.DigitalChannelNames_ = cell(1,0) ;
-                self.IsDigitalChannelTimed_ = true(1,0) ;
-                self.DigitalOutputStateIfUntimed_ = false(1,0) ;
-                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
-            else
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
-                self.DigitalOutputStateIfUntimed_ = self.DigitalOutputStateIfUntimed_(isKeeper) ;
-                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-            end
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-
-            % Notify others of what we have done
-            self.Parent.didDeleteDigitalOutputChannels(indicesOfChannelsToDelete) ;  %#ok<FNDSB>
-            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
-        end  % function
-        
-        function deleteDigitalChannels(self, indicesOfChannelsToBeDeleted)
-            % Delete just the indicated channels.  We take pains to
-            % preserve the IsMarkedForDeletion status of the surviving
-            % channels.  The primary use case of this is to sync up the
-            % Looper with the Frontend when the user deletes digital
-            % channels.
-            
-            % Get the current state of IsMarkedForDeletion, so that we can
-            % restore it for the surviving channels before we exit
-            isChannelMarkedForDeletionAtEntry = self.IsDigitalChannelMarkedForDeletion ;
-            
-            % Construct a logical array indicating which channels we're
-            % going to delete, as indicated by indicesOfChannelsToBeDeleted
-            nChannels = length(isChannelMarkedForDeletionAtEntry) ;
-            isToBeDeleted = false(1,nChannels) ;
-            isToBeDeleted(indicesOfChannelsToBeDeleted) = true ;
-            
-            % Mark the channels we want to delete, then delete them using
-            % the public interface
-            self.IsDigitalChannelMarkedForDeletion_ = isToBeDeleted ;
-            self.deleteMarkedDigitalChannels() ;
-            
-            % Now restore IsMarkedForDeletion for the surviving channels to
-            % the value they had on entry
-            wasDeleted = isToBeDeleted ;
-            wasKept = ~wasDeleted ;
-            isChannelMarkedForDeletionAtExit = isChannelMarkedForDeletionAtEntry(wasKept) ;
-            self.IsDigitalChannelMarkedForDeletion_ = isChannelMarkedForDeletionAtExit ;            
-        end
-        
         function didSetDeviceName(self)
             deviceName = self.Parent.DeviceName ;
             self.AnalogDeviceNames_(:) = {deviceName} ;            
             self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('Update');
         end
@@ -735,22 +599,15 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    self.syncIsAnalogChannelTerminalOvercommitted_() ;
+                    %self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetAnalogOutputTerminalID();
         end
         
-        function setSingleDigitalTerminalID(self, i, newValue)
-            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                newValueAsDouble = double(newValue) ;
-                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-                end
-            end
-            self.Parent.didSetDigitalOutputTerminalID() ;
-        end
+%         function setSingleDigitalTerminalID(self, i, newValue)
+%             self.setSingleDigitalTerminalID_(i, newValue) ;
+%         end
         
 end  % methods block
 
@@ -810,6 +667,21 @@ end  % methods block
     end
 
     methods (Access=protected)
+%         function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
+%             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+%                 newValueAsDouble = double(newValue) ;
+%                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+%                     self.DigitalTerminalIDs_(i) = newValueAsDouble ;
+%                     wasSet = true ;
+%                 else
+%                     wasSet = false ;
+%                 end
+%             else
+%                 wasSet = false ;
+%             end
+%             self.Parent.didSetDigitalOutputTerminalID() ;
+%         end
+        
         function wasSet = setIsDigitalChannelTimed_(self,newValue)
             if ws.utility.isASettableValue(newValue),
                 nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
@@ -854,31 +726,39 @@ end  % methods block
             self.Parent.didSetDigitalOutputStateIfUntimed() ;
             %self.broadcast('DidSetDigitalOutputStateIfUntimed');
         end  % function
-        
+    end
+       
+    methods
         function notifyLibraryThatDidChangeNumberOfOutputChannels_(self)
+            % This is public, but should only be called by self or Parent,
+            % hence the underscore
+            
             %self.Parent.didChangeNumberOfOutputChannels() ;
             stimulusLibrary = self.StimulusLibrary ;
             if ~isempty(stimulusLibrary) ,
                 stimulusLibrary.didChangeNumberOfOutputChannels() ;
             end
         end
-
-        function syncIsAnalogChannelTerminalOvercommitted_(self) 
-            % For each channel, determines if the terminal ID for that
-            % channel is "overcommited".  I.e. if two channels specify the
-            % same terminal ID, that terminal ID is overcommitted.  Also,
-            % if that specified terminal ID is not a legal terminal ID for
-            % the current device, then we say that that terminal ID is
-            % overcommitted.
-            terminalIDs = self.AnalogTerminalIDs ;
-            nChannels = length(terminalIDs) ;
-            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            terminalIDsInEachCol = terminalIDsInEachRow' ;
-            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-            nAOTerminals = self.Parent.NAOTerminals ;
-            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
-        end
+    end
+    
+    methods (Access=protected)
+%         function syncIsAnalogChannelTerminalOvercommitted_(self) 
+%             % For each channel, determines if the terminal ID for that
+%             % channel is "overcommited".  I.e. if two channels specify the
+%             % same terminal ID, that terminal ID is overcommitted.  Also,
+%             % if that specified terminal ID is not a legal terminal ID for
+%             % the current device, then we say that that terminal ID is
+%             % overcommitted.
+%             terminalIDs = self.AnalogTerminalIDs ;
+%             nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+%             %nChannels = length(terminalIDs) ;
+%             %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+%             %terminalIDsInEachCol = terminalIDsInEachRow' ;
+%             %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+%             %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+%             nAOTerminals = self.Parent.NAOTerminals ;
+%             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
+%         end
          
 %         function syncIsDigitalChannelTerminalOvercommitted_(self)            
 %             [~,nOccurancesOfTerminal] = self.Parent.computeDIOTerminalCommitments() ;

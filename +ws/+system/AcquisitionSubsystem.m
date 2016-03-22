@@ -44,8 +44,9 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         ExpectedScanCount
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
        	TriggerScheme        
-        IsAnalogChannelTerminalOvercommitted
-        IsDigitalChannelTerminalOvercommitted
+        %IsAnalogChannelTerminalOvercommitted
+        %IsDigitalChannelTerminalOvercommitted
+        AnalogScalingCoefficients
     end
     
     properties (Access = protected) 
@@ -66,7 +67,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         IsDigitalChannelActive_ = true(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
-        IsAnalogChannelTerminalOvercommitted_ = false(1,0)
+        %IsAnalogChannelTerminalOvercommitted_ = false(1,0)
         %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
@@ -79,7 +80,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %     end
     
     properties (Access = protected, Transient=true)
-        LatestAnalogData_ = [] ;
+        %LatestAnalogData_ = [] ;
         LatestRawAnalogData_ = [] ;
         LatestRawDigitalData_ = [] ;
         DataCacheDurationWhenContinuous_ = 10;  % s
@@ -105,60 +106,60 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)
-            terminalNames = mdfStructure.physicalInputChannelNames ;
-            
-            if ~isempty(terminalNames) ,
-                channelNames = mdfStructure.inputChannelNames;
-
-                % Deal with the device names, setting the WSM DeviceName if
-                % it's not set yet.
-                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
-                uniqueDeviceNames=unique(deviceNames);
-                if length(uniqueDeviceNames)>1 ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                deviceName = uniqueDeviceNames{1} ;                
-                if isempty(self.Parent.DeviceName) ,
-                    self.Parent.DeviceName = deviceName ;
-                end
-
-                % Get the channel IDs
-                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
-                isAnalog = strcmp(channelTypes,'ai');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names, etc
-                %analogDeviceNames = deviceNames(isAnalog) ;
-                %digitalDeviceNames = deviceNames(isDigital) ;
-                analogTerminalIDs = terminalIDs(isAnalog) ;
-                digitalTerminalIDs = terminalIDs(isDigital) ;            
-                analogChannelNames = channelNames(isAnalog) ;
-                digitalChannelNames = channelNames(isDigital) ;
-
-                % add the analog channels
-                nAnalogChannels = length(analogChannelNames);
-                for i = 1:nAnalogChannels ,
-                    self.addAnalogChannel() ;
-                    indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
-                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
-                end
-                
-                % add the digital channels
-                nDigitalChannels = length(digitalChannelNames);
-                for i = 1:nDigitalChannels ,
-                    self.addDigitalChannel() ;
-                    indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
-                    self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
-                end                
-            end
-        end  % function
+%         function initializeFromMDFStructure(self, mdfStructure)
+%             terminalNames = mdfStructure.physicalInputChannelNames ;
+%             
+%             if ~isempty(terminalNames) ,
+%                 channelNames = mdfStructure.inputChannelNames;
+% 
+%                 % Deal with the device names, setting the WSM DeviceName if
+%                 % it's not set yet.
+%                 deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+%                 uniqueDeviceNames=unique(deviceNames);
+%                 if length(uniqueDeviceNames)>1 ,
+%                     error('ws:MoreThanOneDeviceName', ...
+%                           'WaveSurfer only supports a single NI card at present.');                      
+%                 end
+%                 deviceName = uniqueDeviceNames{1} ;                
+%                 if isempty(self.Parent.DeviceName) ,
+%                     self.Parent.DeviceName = deviceName ;
+%                 end
+% 
+%                 % Get the channel IDs
+%                 terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
+%                 
+%                 % Figure out which are analog and which are digital
+%                 channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+%                 isAnalog = strcmp(channelTypes,'ai');
+%                 isDigital = ~isAnalog;
+% 
+%                 % Sort the channel names, etc
+%                 %analogDeviceNames = deviceNames(isAnalog) ;
+%                 %digitalDeviceNames = deviceNames(isDigital) ;
+%                 analogTerminalIDs = terminalIDs(isAnalog) ;
+%                 digitalTerminalIDs = terminalIDs(isDigital) ;            
+%                 analogChannelNames = channelNames(isAnalog) ;
+%                 digitalChannelNames = channelNames(isDigital) ;
+% 
+%                 % add the analog channels
+%                 nAnalogChannels = length(analogChannelNames);
+%                 for i = 1:nAnalogChannels ,
+%                     self.addAnalogChannel() ;
+%                     indexOfChannelInSelf = self.NAnalogChannels ;
+%                     self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
+%                     self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+%                 end
+%                 
+%                 % add the digital channels
+%                 nDigitalChannels = length(digitalChannelNames);
+%                 for i = 1:nDigitalChannels ,
+%                     self.addDigitalChannel() ;
+%                     indexOfChannelInSelf = self.NDigitalChannels ;
+%                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
+%                     self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+%                 end                
+%             end
+%         end  % function
         
 %         function result = get.AnalogTerminalNames(self)
 %             result = self.AnalogTerminalNames_ ;
@@ -249,13 +250,13 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
         
-        function result=get.IsAnalogChannelTerminalOvercommitted(self)
-            result =  self.IsAnalogChannelTerminalOvercommitted_ ;
-        end
+%         function result=get.IsAnalogChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsAIChannelTerminalOvercommitted ;
+%         end
         
-        function result=get.IsDigitalChannelTerminalOvercommitted(self)
-            result =  self.Parent.IsDIChannelTerminalOvercommitted ;
-        end
+%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
+%             result =  self.Parent.IsDIChannelTerminalOvercommitted ;
+%         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is
@@ -396,6 +397,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             end
         end
         
+        function result = get.AnalogScalingCoefficients(self)
+            result = self.getAnalogScalingCoefficients_() ;
+        end
+        
         function set.AnalogChannelUnits(self,newValue)
             import ws.utility.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
@@ -468,23 +473,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    self.syncIsAnalogChannelTerminalOvercommitted_() ;
+                    %self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
             self.Parent.didSetAnalogInputTerminalID();
-        end
-        
-        function setSingleDigitalTerminalID(self, i, newValue)
-            if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                newValueAsDouble = double(newValue) ;
-                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    %if ~self.Parent.isDigitalTerminalIDInUse(newValueAsDouble) ,
-                    self.DigitalTerminalIDs_(i) = newValueAsDouble ;
-                    %end
-                    %self.syncIsDigitalChannelTerminalOvercommitted_() ;                    
-                end
-            end
-            self.Parent.didSetDigitalInputTerminalID();
         end
         
         function value=isChannelName(self,putativeName)
@@ -555,23 +547,21 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %         end  % function
         
         function set.SampleRate(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,
-                    self.SampleRate_ = double(newValue) ;
-                    wsModel = self.Parent ;
-                    if ~isempty(wsModel) ,
-                        wsModel.didSetAcquisitionSampleRate(newValue);
-                    end
-                else
-                    if ~isempty(self.Parent) ,
-                        self.Parent.didSetAcquisitionSampleRate(newValue);
-                    end
-                    self.broadcast('DidSetSampleRate');
-                    error('most:Model:invalidPropVal', ...
-                          'SampleRate must be a positive scalar');                  
-                end                    
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.Parent.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.SampleRate_ = sampleRate ;
+                self.Parent.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
             end
             self.broadcast('DidSetSampleRate');
+            if ~isValueValid ,
+                error('most:Model:invalidPropVal', ...
+                      'SampleRate must be a positive finite numeric scalar');
+            end                
         end  % function
         
         function output = get.TriggerScheme(self)
@@ -738,10 +728,23 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %             end
 %         end  % function
         
-        function data = getLatestAnalogData(self)
+        function scaledAnalogData = getLatestAnalogData(self)
             % Get the data from the most-recent data available callback, as
             % doubles.
-            data = self.LatestAnalogData_ ;
+            rawAnalogData = self.LatestRawAnalogData_ ;
+            %data = self.LatestAnalogData_ ;
+            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
+            scalingCoefficients = self.AnalogScalingCoefficients ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+%             % scale the data by the channel scales
+%             if isempty(rawAnalogData) ,
+%                 scaledAnalogData=zeros(size(rawAnalogData));
+%             else
+%                 data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
+%             end            
         end  % function
 
         function data = getLatestRawAnalogData(self)
@@ -755,8 +758,8 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             data = self.LatestRawDigitalData_ ;
         end  % function
 
-        function addDataToUserCache(self, rawAnalogData, rawDigitalData, scaledAnalogData, isSweepBased)
-            self.LatestAnalogData_ = scaledAnalogData ;
+        function addDataToUserCache(self, rawAnalogData, rawDigitalData, isSweepBased)
+            %self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;
             if isSweepBased ,
@@ -809,15 +812,18 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-            % scale the data by the channel scales
-            if isempty(rawAnalogData) ,
-                scaledAnalogData=zeros(size(rawAnalogData));
-            else
-                data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
-            end            
+            scalingCoefficients = self.AnalogScalingCoefficients ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;            
+            %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+%             % scale the data by the channel scales
+%             if isempty(rawAnalogData) ,
+%                 scaledAnalogData=zeros(size(rawAnalogData));
+%             else
+%                 data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
+%             end            
         end  % function
 
         function scaledData = getSinglePrecisionDataFromCache(self)
@@ -825,15 +831,17 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             % call unwraps the circular buffer for you.
             rawAnalogData = self.getRawAnalogDataFromCache();
             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-            % scale the data by the channel scales
-            if isempty(rawAnalogData) ,
-                scaledData=zeros(size(rawAnalogData),'single');
-            else
-                data = single(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                scaledData=bsxfun(@times,data,combinedScaleFactors);
-            end            
+            scalingCoefficients = self.AnalogScalingCoefficients ;
+            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
+%             % scale the data by the channel scales
+%             if isempty(rawAnalogData) ,
+%                 scaledData=zeros(size(rawAnalogData),'single');
+%             else
+%                 data = single(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                 scaledData=bsxfun(@times,data,combinedScaleFactors);
+%             end            
         end  % function
         
         function data = getRawAnalogDataFromCache(self)
@@ -929,22 +937,23 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             value = self.AnalogChannelScales_ ;
         end  % function
         
-        function syncIsAnalogChannelTerminalOvercommitted_(self) 
-            % For each channel, determines if the terminal ID for that
-            % channel is "overcommited".  I.e. if two channels specify the
-            % same terminal ID, that terminal ID is overcommitted.  Also,
-            % if that specified terminal ID is not a legal terminal ID for
-            % the current device, then we say that that terminal ID is
-            % overcommitted.
-            terminalIDs = self.AnalogTerminalIDs ;
-            nChannels = length(terminalIDs) ;
-            terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            terminalIDsInEachCol = terminalIDsInEachRow' ;
-            isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-            nTerminalsOnDevice = self.Parent.NAITerminals ;
-            self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
-        end
+%         function syncIsAnalogChannelTerminalOvercommitted_(self) 
+%             % For each channel, determines if the terminal ID for that
+%             % channel is "overcommited".  I.e. if two channels specify the
+%             % same terminal ID, that terminal ID is overcommitted.  Also,
+%             % if that specified terminal ID is not a legal terminal ID for
+%             % the current device, then we say that that terminal ID is
+%             % overcommitted.
+%             terminalIDs = self.AnalogTerminalIDs ;
+%             nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+%             %nChannels = length(terminalIDs) ;
+%             %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+%             %terminalIDsInEachCol = terminalIDsInEachRow' ;
+%             %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+%             %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
+%             nTerminalsOnDevice = self.Parent.NAITerminals ;
+%             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
+%         end
          
 %         function syncIsDigitalChannelTerminalOvercommitted_(self)            
 %             [nOccurancesOfTerminal,~] = self.Parent.computeDIOTerminalCommitments() ;
@@ -975,6 +984,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
+    end
+    
+    methods (Abstract, Access=protected)
+        result = getAnalogScalingCoefficients_(self)
     end
     
     methods
@@ -1021,7 +1034,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             result  = self.NScansReadThisSweep_ ;
         end        
         
-        function addAnalogChannel(self)
+        function newChannelName = addAnalogChannel(self)
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
@@ -1039,7 +1052,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
@@ -1095,58 +1108,10 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
             
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
         end  % function
         
-        function addDigitalChannel(self)
-            deviceName = self.Parent.DeviceName ;
-            
-            newChannelDeviceName = deviceName ;
-            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-            if isempty(freeTerminalIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newTerminalID = freeTerminalIDs(1) ;
-            end
-            newChannelName = sprintf('P0.%d',newTerminalID) ;
-            %newChannelName = newChannelPhysicalName ;
-            
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
-            self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
-            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
-            self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
-            self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
-            self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            
-            self.Parent.didAddDigitalInputChannel() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
-        end  % function
-        
-        function deleteMarkedDigitalChannels(self)
-            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
-            if all(isToBeDeleted) ,
-                % Special case so things stay row vectors
-                self.DigitalDeviceNames_ = cell(1,0) ;
-                self.DigitalTerminalIDs_ = zeros(1,0) ;
-                self.DigitalChannelNames_ = cell(1,0) ;
-                self.IsDigitalChannelActive_ = true(1,0) ;
-                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
-            else
-                isKeeper = ~isToBeDeleted ;
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
-                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
-            end
-            
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
-        end  % function
-
 %         function removeDigitalChannel(self,channelIndex)
 %             nChannels = length(self.DigitalTerminalIDs) ;
 %             if 1<=channelIndex && channelIndex<=nChannels ,            
@@ -1168,15 +1133,6 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
 %             nChannels = length(self.DigitalTerminalIDs) ;
 %             self.removeDigitalChannel(nChannels) ;
 %         end  % function
-
-        function didSetDeviceName(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.syncIsAnalogChannelTerminalOvercommitted_() ;
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.broadcast('Update');
-        end
     end
     
 %     methods (Access=protected)

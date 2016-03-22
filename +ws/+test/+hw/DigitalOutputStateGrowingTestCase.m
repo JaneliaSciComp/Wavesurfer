@@ -22,11 +22,11 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
 
             wsModel.Stimulation.IsEnabled=true;
             self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 0);
-            wsModel.Stimulation.addDigitalChannel() ;
+            wsModel.addDOChannel() ;
             self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 1) ;
             %wsModel.Stimulation.DigitalOutputStateIfUntimed = true ;
             wsModel.Stimulation.IsDigitalChannelMarkedForDeletion = true ;
-            wsModel.Stimulation.deleteMarkedDigitalChannels() ;
+            wsModel.deleteMarkedDOChannels() ;
             self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 0) ;
         end  % function
     end  % test methods

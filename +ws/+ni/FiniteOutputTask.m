@@ -43,7 +43,7 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, deviceNames, terminalIDs)
+        function self = FiniteOutputTask(taskType, taskName, deviceNames, terminalIDs, sampleRate)
             nChannels=length(terminalIDs);
             
 %             % Store the parent
@@ -85,8 +85,19 @@ classdef FiniteOutputTask < handle
                         self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
                     end
                 end
-                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps');
-            end            
+                self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                try
+                    self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+                catch me
+                    error('There was a problem setting up the finite output task');
+                end
+                if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                end
+            end        
+            
+            % Store the sampling rate
+            self.SampleRate_ = sampleRate ;
         end  % function
         
         function delete(self)
@@ -206,33 +217,33 @@ classdef FiniteOutputTask < handle
             value = self.SampleRate_;
         end  % function
         
-        function set.SampleRate(self, newValue)
-            if ~( isnumeric(newValue) && isscalar(newValue) && newValue==round(newValue) && newValue>0 )  ,
-                error('most:Model:invalidPropVal', ...
-                      'SampleRate must be a positive integer');       
-            end            
-                        
-            if isempty(self.DabsDaqTask_) ,
-                self.SampleRate_ = newValue;
-            else                
-                nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
-                if nScansInBuffer > 0 ,                
-                    originalSampleRate = self.DabsDaqTask_.sampClkRate;
-                    self.DabsDaqTask_.sampClkRate = newValue;
-                    self.SampleRate_ = newValue;
-                    try
-                        self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-                    catch me
-                        self.DabsDaqTask_.sampClkRate = originalSampleRate;
-                        self.SampleRate_ = originalSampleRate;
-                        error('most:Model:invalidPropVal', ...
-                              'Unable to set task sample rate to the given value');
-                    end
-                else
-                    self.SampleRate_ = newValue;
-                end
-            end
-        end  % function
+%         function set.SampleRate(self, newValue)
+%             if ~( isnumeric(newValue) && isscalar(newValue) && newValue==round(newValue) && newValue>0 )  ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'SampleRate must be a positive integer');       
+%             end            
+%                         
+%             if isempty(self.DabsDaqTask_) ,
+%                 self.SampleRate_ = newValue;
+%             else                
+%                 nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
+%                 if nScansInBuffer > 0 ,                
+%                     originalSampleRate = self.DabsDaqTask_.sampClkRate;
+%                     self.DabsDaqTask_.sampClkRate = newValue;
+%                     self.SampleRate_ = newValue;
+%                     try
+%                         self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+%                     catch me
+%                         self.DabsDaqTask_.sampClkRate = originalSampleRate;
+%                         self.SampleRate_ = originalSampleRate;
+%                         error('most:Model:invalidPropVal', ...
+%                               'Unable to set task sample rate to the given value');
+%                     end
+%                 else
+%                     self.SampleRate_ = newValue;
+%                 end
+%             end
+%         end  % function
         
         function out = get.TaskName(self)
             if isempty(self.DabsDaqTask_) ,
@@ -352,28 +363,28 @@ classdef FiniteOutputTask < handle
                 return
             end
             
-            % Get the channel data into a local
-            channelData=self.ChannelData;
-            
-            % The outputData is the channelData, unless the channelData is
-            % very short, in which case the outputData is just long
-            % enough, and all zeros
-            nScansInChannelData = size(channelData,1) ;            
-            if nScansInChannelData<2 ,
-                nChannels = length(self.TerminalIDs) ;
-                if self.IsAnalog ,
-                    outputData=zeros(2,nChannels);
-                else
-                    outputData=false(2,nChannels);
-                end
-            else
-                outputData = self.ChannelData ;
-            end
-            
             % Actually set up the task, if present
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else            
+                % Get the channel data into a local
+                channelData=self.ChannelData;
+
+                % The outputData is the channelData, unless the channelData is
+                % very short, in which case the outputData is just long
+                % enough, and all zeros
+                nScansInChannelData = size(channelData,1) ;            
+                if nScansInChannelData<2 ,
+                    nChannels = length(self.TerminalIDs) ;
+                    if self.IsAnalog ,
+                        outputData=zeros(2,nChannels);
+                    else
+                        outputData=false(2,nChannels);
+                    end
+                else
+                    outputData = self.ChannelData ;
+                end
+                
                 % Resize the output buffer to the number of scans in outputData
                 %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');  
                 % this is needed b/c we might have filled the buffer before bur never outputed that data
@@ -384,7 +395,14 @@ classdef FiniteOutputTask < handle
                 end
 
                 % Configure the the number of scans in the finite-duration output
-                self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData);
+                sampleRate = self.SampleRate ;
+                self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData);
+                  % We validated the sample rate when we created the
+                  % FiniteOutputTask, so this should be OK, but check
+                  % anyway.
+                  if self.DabsDaqTask_.sampClkRate ~= sampleRate ,
+                      error('The DABS task sample rate is not equal to the desired sampling rate');
+                  end
 
                 % Write the data to the output buffer
                 if self.IsAnalog ,

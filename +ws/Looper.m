@@ -44,7 +44,7 @@ classdef Looper < ws.RootModel
         %RPCServer_
         %RPCClient_
         IPCPublisher_
-        IPCSubscriber_
+        IPCSubscriber_  % subscriber for the frontend
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
@@ -264,7 +264,10 @@ classdef Looper < ws.RootModel
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDevice(self, deviceName, nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals)
+        function result = didSetDeviceInFrontend(self, ...
+                                                 deviceName, ...
+                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
+                                                 isDOChannelTerminalOvercommitted)
             % Set stuff
             self.DeviceName_ = deviceName ;
             self.NDIOTerminals_ = nDIOTerminals ;
@@ -272,22 +275,29 @@ classdef Looper < ws.RootModel
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.NAOTerminals_ = nAOTerminals ;            
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
             % Notify subsystems
-            self.Acquisition.didSetDeviceName() ;
-            self.Stimulation.didSetDeviceName() ;            
-            self.Triggering.didSetDeviceName() ;            
+            self.Acquisition.didSetDeviceNameInFrontend() ;
+            self.Stimulation.didSetDeviceNameInFrontend() ;            
+            self.Triggering.didSetDeviceNameInFrontend() ;            
             
             % Set the state
             %self.setState_('idle');  % do we need to do this?
             
             % Get a task, if we need one
-            self.acquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
+            self.reacquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
 
             result = [] ;
         end  % function
 
-        function result = startingRun(self,wavesurferModelSettings, acquisitionKeystoneTask, stimulationKeystoneTask)  %#ok<INUSD>
+        function result = startingRun(self, ...
+                                      wavesurferModelSettings, ...
+                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      isTerminalOvercommitedForEachAIChannel, ...
+                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      isTerminalOvercommitedForEachAOChannel, ...
+                                      isTerminalOvercommitedForEachDOChannel)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -295,7 +305,13 @@ classdef Looper < ws.RootModel
             % value, and must not throw.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, acquisitionKeystoneTask) ;
+            self.prepareForRun_(wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, ...
+                                stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel) ;
             result = [] ;
         end  % function
 
@@ -375,34 +391,69 @@ classdef Looper < ws.RootModel
             self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
             result = [] ;
         end  % function
-        
-        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.DigitalOutputStateIfUntimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+
+        function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
+                                                                        i, newValue, ...
+                                                                        isDOChannelTerminalOvercommitted)
+            %self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
+            self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
         function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
-%             whos
-%             newValue
-            self.Stimulation.IsDigitalChannelTimed = newValue ;
-            %ws.Controller.setWithBenefits(self.Stimulation,'DigitalOutputStateIfUntimed',newValue);            
+            % This only gets called if the value in newValue was found to
+            % be legal.
+            self.Stimulation.isDigitalChannelTimedWasSetInFrontend(newValue) ;
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed)
-            self.Stimulation.didAddDigitalChannelInFrontend(newChannelName, newChannelDeviceName, newTerminalID, isNewChannelTimed, newChannelStateIfUntimed) ;
+        function result = didAddDigitalOutputChannelInFrontend(self, ...
+                                                               channelNameForEachDOChannel, ...
+                                                               deviceNameForEachDOChannel, ...
+                                                               terminalIDForEachDOChannel, ...
+                                                               isTimedForEachDOChannel, ...
+                                                               onDemandOutputForEachDOChannel, ...
+                                                               isTerminalOvercommittedForEachDOChannel)
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+            self.Stimulation.didAddDOChannelInFrontend(channelNameForEachDOChannel, ...
+                                                       deviceNameForEachDOChannel, ...
+                                                       terminalIDForEachDOChannel, ...
+                                                       isTimedForEachDOChannel, ...
+                                                       onDemandOutputForEachDOChannel) ;
             result = [] ;
         end  % function
         
-        function result = didRemoveDigitalOutputChannelsInFrontend(self, originalIndicesOfDeletedChannels)
-            self.Stimulation.deleteDigitalChannels(originalIndicesOfDeletedChannels) ;
+        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
+                                                                   channelNameForEachDOChannel, ...
+                                                                   deviceNameForEachDOChannel, ...
+                                                                   terminalIDForEachDOChannel, ...
+                                                                   isTimedForEachDOChannel, ...
+                                                                   onDemandOutputForEachDOChannel, ...
+                                                                   isTerminalOvercommittedForEachDOChannel)
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+            self.Stimulation.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
+                                                                      deviceNameForEachDOChannel, ...
+                                                                      terminalIDForEachDOChannel, ...
+                                                                      isTimedForEachDOChannel, ...
+                                                                      onDemandOutputForEachDOChannel)
             result = [] ;
         end  % function
         
-        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings)
+        function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
+            self.Stimulation.digitalOutputStateIfUntimedWasSetInFrontend(newValue) ;
+            result = [] ;
+        end  % function
+        
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, ...
+                                                                       isDOChannelTerminalOvercommitted)
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
+        function result = frontendJustLoadedProtocol(self, wavesurferModelSettings, isDOChannelTerminalOvercommitted)
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return
@@ -412,15 +463,30 @@ classdef Looper < ws.RootModel
             % wavesurferModelSettings.
             
             % Have to do this before decoding properties, or bad things will happen
-            self.releaseHardwareResources_();           
+            self.releaseHardwareResources_() ;           
             
             % Make our own settings mimic those of wavesurferModelSettings
             wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;
 
+            % Set the overcommitment stuff, calculated in the frontend
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            
             % Want the on-demand DOs to work immediately
-            self.acquireOnDemandHardwareResources_();           
+            self.acquireOnDemandHardwareResources_() ;
 
+            result = [] ;
+        end  % function
+        
+        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)            
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            result = [] ;
+        end  % function
+        
+        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)
+            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
@@ -781,7 +847,12 @@ classdef Looper < ws.RootModel
             self.Triggering.didSetSweepDurationIfFinite();
             %self.Display.didSetSweepDurationIfFinite();
         end                
-    end
+        
+%         function didDeleteDigitalOutputChannels(self) %#ok<INUSD>
+%             % In the looper, this does nothing
+%         end
+        
+    end  % public methods block
        
     methods (Access=protected)
         function performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
@@ -827,14 +898,14 @@ classdef Looper < ws.RootModel
         end
     end
 
-    methods
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys ;
-            if ~isempty(ephys) ,
-                ephys.didSetAcquisitionSampleRate(newValue) ;
-            end
-        end
-    end  % methods
+%     methods
+%         function didSetAcquisitionSampleRate(self,newValue)
+%             ephys = self.Ephys ;
+%             if ~isempty(ephys) ,
+%                 ephys.didSetAcquisitionSampleRate(newValue) ;
+%             end
+%         end
+%     end  % methods
     
     methods (Access = protected)
         function acquireTimedHardwareResources_(self)
@@ -847,6 +918,10 @@ classdef Looper < ws.RootModel
         function acquireOnDemandHardwareResources_(self)
             self.Stimulation.acquireOnDemandHardwareResources();
         end
+
+        function reacquireOnDemandHardwareResources_(self)
+            self.Stimulation.reacquireOnDemandHardwareResources();
+        end
         
 %         function runWithGuards_(self)
 %             % Start a run.
@@ -858,7 +933,13 @@ classdef Looper < ws.RootModel
 %             end
 %         end
         
-        function prepareForRun_(self, wavesurferModelSettings, acquisitionKeystoneTask)
+        function prepareForRun_(self, ...
+                                wavesurferModelSettings, ...
+                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                isTerminalOvercommitedForEachAIChannel, ...
+                                isTerminalOvercommitedForEachDIChannel, ...
+                                isTerminalOvercommitedForEachAOChannel, ...
+                                isTerminalOvercommitedForEachDOChannel )  %#ok<INUSL>
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -883,6 +964,12 @@ classdef Looper < ws.RootModel
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
             
+            % Set the overcommitment arrays, since we have the info at hand
+            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
+            
             % Tell all the subsystems to prepare for the run
             try
                 for idx = 1:numel(self.Subsystems_) ,
@@ -898,12 +985,15 @@ classdef Looper < ws.RootModel
                 me.rethrow() ;
             end
             
+            % Get the analog input scaling coeffcients
+            scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+            
             % Initialize timing variables
             self.FromRunStartTicId_ = tic() ;
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',[]) ;
+            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',scalingCoefficients) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
@@ -1091,14 +1181,20 @@ classdef Looper < ws.RootModel
 
                 % Scale the analog data
                 channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
-                inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-                if isempty(rawAnalogData) ,
-                    scaledAnalogData=zeros(size(rawAnalogData));
-                else
-                    data = double(rawAnalogData);
-                    combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-                    scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
-                end
+                
+                scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+                
+                %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
+                
+%                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
+%                 if isempty(rawAnalogData) ,
+%                     scaledAnalogData=zeros(size(rawAnalogData));
+%                 else
+%                     data = double(rawAnalogData);
+%                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
+%                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
+%                 end
 
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
@@ -1108,7 +1204,6 @@ classdef Looper < ws.RootModel
                 % No need to inform Triggering subsystem
                 self.Acquisition.samplesAcquired(isSweepBased, ...
                                                  t, ...
-                                                 scaledAnalogData, ...
                                                  rawAnalogData, ...
                                                  rawDigitalData, ...
                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
@@ -1642,6 +1737,11 @@ classdef Looper < ws.RootModel
         function value = get.AcquisitionKeystoneTaskCache(self)
             value = self.AcquisitionKeystoneTaskCache_ ;
         end
+
+%         function didSetDigitalOutputTerminalID(self)
+%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             %self.broadcast('UpdateChannels') ;
+%         end
     end  % public methods block
 
     methods (Access=protected) 
@@ -1672,11 +1772,11 @@ classdef Looper < ws.RootModel
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;     
             
-            % Notify subsystems that we just set the device name, which is
-            % true.
-            self.Acquisition.didSetDeviceName() ;
-            self.Stimulation.didSetDeviceName() ;            
-            self.Triggering.didSetDeviceName() ;                                    
+            % Notify subsystems, because they need to pick up the new
+            % device name
+            self.Acquisition.mimickingWavesurferModel_() ;
+            self.Stimulation.mimickingWavesurferModel_() ;            
+            self.Triggering.mimickingWavesurferModel_() ;                                    
         end  % function
     end  % public methods block
     

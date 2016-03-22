@@ -31,6 +31,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         HasTimedDigitalChannels_
         %DidAnalogEpisodeComplete_
         %DidDigitalEpisodeComplete_
+        IsInTaskForEachAOChannel_
+        IsInTaskForEachDOChannel_        
     end
     
     methods
@@ -325,51 +327,54 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %         end  % function
     end
 
-    methods (Access=protected)
-        function acquireHardwareResources_(self)            
+    methods
+        function acquireHardwareResources(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
+                isTerminalOvercommittedForEachAOChannel = self.Parent.IsAOChannelTerminalOvercommitted ;
+                isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
+                deviceNameForEachChannelInAOTask = self.AnalogDeviceNames(isInTaskForEachAOChannel) ;
+                terminalIDForEachChannelInAOTask = self.AnalogTerminalIDs(isInTaskForEachAOChannel) ;                
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.ni.FiniteOutputTask('analog', ...
                                            'WaveSurfer Finite Analog Output Task', ...
-                                           self.AnalogDeviceNames, ...
-                                           self.AnalogTerminalIDs) ;
-                self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
-                %self.TheFiniteAnalogOutputTask_.addlistener('OutputComplete', @(~,~)self.analogEpisodeCompleted_() );
+                                           deviceNameForEachChannelInAOTask, ...
+                                           terminalIDForEachChannelInAOTask, ...
+                                           self.SampleRate) ;
+                %self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
+                self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
-                isDigitalChannelTimed = self.IsDigitalChannelTimed ;
+                isTerminalOvercommittedForEachDOChannel = self.Parent.IsDOChannelTerminalOvercommitted ;
+                isTimedForEachDOChannel = self.IsDigitalChannelTimed ;
+                isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
+                deviceNameForEachChannelInDOTask = self.DigitalDeviceNames(isInTaskForEachDOChannel) ;
+                terminalIDForEachChannelInDOTask = self.DigitalTerminalIDs(isInTaskForEachDOChannel) ;                
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.ni.FiniteOutputTask('digital', ...
                                            'WaveSurfer Finite Digital Output Task', ...
-                                           self.DigitalDeviceNames(isDigitalChannelTimed), ...
-                                           self.DigitalTerminalIDs(isDigitalChannelTimed) ) ;
-                self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
-                %self.TheFiniteDigitalOutputTask_.addlistener('OutputComplete', @(~,~)self.digitalEpisodeCompleted_() );
+                                           deviceNameForEachChannelInDOTask, ...
+                                           terminalIDForEachChannelInDOTask, ...
+                                           self.SampleRate) ;
+                %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
+                self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
             end
-%             if isempty(self.TheUntimedDigitalOutputTask_) ,
-%                  self.TheUntimedDigitalOutputTask_ = ...
-%                     ws.ni.UntimedDigitalOutputTask(self, ...
-%                                            'Wavesurfer Untimed Digital Output Task', ...
-%                                            self.DigitalTerminalNames(~self.IsDigitalChannelTimed), ...
-%                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
-%                  if ~all(self.IsDigitalChannelTimed)
-%                      self.TheUntimedDigitalOutputTask_.ChannelData=self.DigitalOutputStateIfUntimed(~self.IsDigitalChannelTimed);
-%                  end
-%            end
-        end
-    end
-    
-    methods
-        function releaseTimedHardwareResources(self)
-            self.TheFiniteAnalogOutputTask_ = [];            
-            self.TheFiniteDigitalOutputTask_ = [];            
-            %self.TheUntimedDigitalOutputTask_ = [];            
         end
         
         function releaseHardwareResources(self)
-            self.releaseTimedHardwareResources();
+            self.releaseTimedHardwareResources_();  % we only have timed resources, no on-demand
         end        
+    end  % public methods block
         
+    methods (Access=protected)
+        function releaseTimedHardwareResources_(self)
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            self.IsInTaskForEachAOChannel_ = [] ;
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+            self.IsInTaskForEachDOChannel_ = [] ;
+        end
+    end  % protected methods block
+    
+    methods 
         function startingRun(self)
             %fprintf('Stimulation::startingRun()\n');
             %errors = [];
@@ -390,7 +395,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             %wavesurferModel = self.Parent ;
             
             % Make the NI daq tasks, if don't have already
-            self.acquireHardwareResources_() ;
+            self.acquireHardwareResources() ;
             
             % Set up the task triggering
             %pfiID = self.TriggerScheme.PFIID ;
@@ -467,7 +472,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();            
             
-            %self.IsWithinRun_=false;  % might already be guaranteed to be false here...
+            % Clear the NI daq tasks
+            self.releaseHardwareResources() ;
         end  % function
         
         function stoppingRun(self)
@@ -477,7 +483,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();            
             
-            %self.IsWithinRun_=false;
+            % Clear the NI daq tasks
+            self.releaseHardwareResources() ;
         end  % function
 
         function abortingRun(self)
@@ -492,7 +499,8 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
                 self.TheFiniteDigitalOutputTask_.disarm();
             end
             
-            %self.IsWithinRun_=false;
+            % Clear the NI daq tasks
+            self.releaseHardwareResources() ;
         end  % function
         
         function startingSweep(self) %#ok<MANU>
@@ -859,28 +867,29 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
         end  % function
         
         function [nScans,nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMap, episodeIndexWithinSweep)
-            import ws.utility.*
-            
-            % % Calculate the episode index
-            % episodeIndexWithinSweep=self.NEpisodesCompleted_+1;
-            
+            % Get info about which analog channels are in the task
+            isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
+            nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
+
             % Calculate the signals
             if isempty(stimulusMap) ,
-                aoData = zeros(0,length(self.AnalogChannelNames));
+                aoData = zeros(0,nAnalogChannelsInTask) ;
                 nChannelsWithStimulus = 0 ;
             else
-                isChannelAnalog = true(1,self.NAnalogChannels) ;
-                [aoData,nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, self.AnalogChannelNames, isChannelAnalog, episodeIndexWithinSweep);
+                channelNamesInTask = self.AnalogChannelNames(isInTaskForEachAnalogChannel) ;
+                isChannelAnalog = true(1,nAnalogChannelsInTask) ;
+                [aoData, nChannelsWithStimulus] = ...
+                    stimulusMap.calculateSignals(self.SampleRate, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;
             end
             
             % Want to return the number of scans in the stimulus data
-            nScans= size(aoData,1);
+            nScans = size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AnalogChannelScales;
+            analogChannelScales=self.AnalogChannelScales(isInTaskForEachAnalogChannel);
             inverseAnalogChannelScales=1./analogChannelScales;
-            sanitizedInverseAnalogChannelScales=fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+            sanitizedInverseAnalogChannelScales = ...
+                ws.utility.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
 
             % scale the data by the channel scales
             if isempty(aoData) ,
@@ -908,15 +917,19 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
             % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
             
             % Calculate the signals
+            %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
+            isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
+            nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
             if isempty(stimulusMap) ,
-                doData=zeros(0,length(self.IsDigitalChannelTimed));
+                doData=zeros(0,nDigitalChannelsInTask);  
                 nChannelsWithStimulus = 0 ;
             else
-                isChannelAnalog = false(1,sum(self.IsDigitalChannelTimed)) ;
+                isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
+                namesOfDigitalChannelsInTask = self.DigitalChannelNames(isInTaskForEachDigitalChannel) ;                
                 [doData, nChannelsWithStimulus] = ...
                     stimulusMap.calculateSignals(self.SampleRate, ...
-                                                 self.DigitalChannelNames(self.IsDigitalChannelTimed), ...
-                                                 isChannelAnalog, ...
+                                                 namesOfDigitalChannelsInTask, ...
+                                                 isChannelAnalogForEachDigitalChannelInTask, ...
                                                  episodeIndexWithinRun);
             end
             
