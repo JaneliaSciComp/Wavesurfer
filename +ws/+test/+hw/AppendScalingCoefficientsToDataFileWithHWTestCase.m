@@ -82,6 +82,8 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
         
         function testAppendingToManyOlderFilesRelativePath(self)
             thisDirName=fileparts(mfilename('fullpath'));
+            originalDirName = pwd() ;
+            cleanupObject = onCleanup( @()(cd(originalDirName)) ) ;
             cd(thisDirName) ;
             sourceFolderName = fullfile('../+hw/folder_without_scaling_coeffs') ;
             deviceName = 'Dev1' ;
@@ -91,6 +93,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             % Verify
             isAllWell = ws.verifyScalingOfHDF5FilesRecursivelyGivenCoeffs(sourceFolderName, deviceScalingCoefficients, targetFolderName) ;
             self.verifyTrue(isAllWell) ;
+            %cd(originalDirName) ;
         end
         
         function testAppendingToManyOlderFilesRelativePath2(self)
@@ -100,12 +103,15 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             targetFolderAbsolutePath = tempname() ;
             [targetFolderNameParent,targetFolderStem,targetFolderExt] = fileparts(targetFolderAbsolutePath) ;
             targetFolderName = [ targetFolderStem targetFolderExt ] ;
+            originalDirName = pwd() ;
+            cleanupObject = onCleanup( @()(cd(originalDirName)) ) ;
             cd(targetFolderNameParent) ;
             deviceScalingCoefficients = ws.addScalingToHDF5FilesRecursively(sourceFolderAbsolutePath, deviceName, targetFolderName) ;        
             
             % Verify
             isAllWell = ws.verifyScalingOfHDF5FilesRecursivelyGivenCoeffs(sourceFolderAbsolutePath, deviceScalingCoefficients, targetFolderAbsolutePath) ;
             self.verifyTrue(isAllWell) ;
+            %cd(originalDirName) ;
         end
         
     end  % test methods
