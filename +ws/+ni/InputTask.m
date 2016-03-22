@@ -96,7 +96,9 @@ classdef InputTask < handle
                     if self.IsAnalog ,
                         %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
                         %terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
-                        self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID) ;
+                        self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', [], 'DAQmx_Val_Diff');
+                          % we now explicitly configure the voltage range,
+                          % and specify differential acquisition.  
                     else
                         %deviceName = ws.utility.deviceNameFromTerminalName(terminalName);
                         %restOfName = ws.utility.chopDeviceNameFromTerminalName(terminalName);

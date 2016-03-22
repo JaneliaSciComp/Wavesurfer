@@ -293,7 +293,8 @@ classdef RootModel < ws.Model
                 end
                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
                     % cellstring, each element of the form '<device name>/ai<channel ID>'
-                result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
+                nSingleEnded = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode                
+                result = round(nSingleEnded/2) ;  % the number of channels available if you use them all in differential mode, which we do
             end
         end
         
