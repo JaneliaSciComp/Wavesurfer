@@ -7,29 +7,29 @@
 #include <iostream>
 #include "utility.hpp"
 
-int WINAPI wWinMain (HINSTANCE hInstance,
-                     HINSTANCE hPrevInstance,
-                     LPWSTR    lpszCmdLine,
-                     int       nCmdShow)
+int WINAPI WinMain (HINSTANCE hInstance,
+                    HINSTANCE hPrevInstance,
+                    LPSTR     lpCmdLine,
+                    int       nCmdShow)
     {
     // To show the .exe was called properly
     OutputDebugString(L"Inside launch_satellite_engine.exe\n");
 
     // Get the command-line arguments into something civilized
-    std::wstring args = lpszCmdLine ;
+    std::string args = lpCmdLine ;
 
     // Read the debug arg
-    std::wstring release_or_debug ;
+    std::string release_or_debug ;
     try
         {
         release_or_debug    = extract_single_argument(args, 0) ;
         }
     catch (std::domain_error)
         {
-        release_or_debug = L"debug" ;
+        release_or_debug = "debug" ;
         }
 
-    bool is_debug = (release_or_debug != std::wstring(L"release")) ;
+    bool is_debug = (release_or_debug != std::string("release")) ;
 
     if (is_debug)
         {
@@ -54,7 +54,7 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         }
 
     // Process the rest of the command-line args
-    std::wstring looper_or_refiller, matlab_bin_path, path_to_repo_root, path_to_matlab_zmq_lib;
+    std::string looper_or_refiller, matlab_bin_path, path_to_repo_root, path_to_matlab_zmq_lib;
     try
         {
         looper_or_refiller      = extract_single_argument(args, 1) ;
@@ -63,7 +63,7 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         {
         exit(-1) ;
         }
-    std::wcout << L"looper_or_refiller: " << looper_or_refiller << std::endl ;
+    std::cout << "looper_or_refiller: " << looper_or_refiller << std::endl ;
 
     try
         {
@@ -73,7 +73,7 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         {
         exit(-2) ;
         }
-    std::wcout << L"matlab_bin_path: " << matlab_bin_path << std::endl ;
+    std::cout << "matlab_bin_path: " << matlab_bin_path << std::endl ;
 
     try
         {
@@ -83,7 +83,7 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         {
         exit(-3) ;
         }
-    std::wcout << L"path_to_repo_root: " << path_to_repo_root << std::endl ;
+    std::cout << "path_to_repo_root: " << path_to_repo_root << std::endl ;
 
     try
         {
@@ -93,42 +93,43 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         {
         exit(-4) ;
         }
-    std::wcout << L"path_to_matlab_zmq_lib: " << path_to_matlab_zmq_lib << std::endl ;
+    std::cout << "path_to_matlab_zmq_lib: " << path_to_matlab_zmq_lib << std::endl ;
 
     // Get the current path
-    std::wstring original_path ;
+    std::string original_path ;
     try
         {
-        original_path = GetEnvironmentVariableGracefully(std::wstring(L"Path")) ;
+        original_path = GetEnvironmentVariableGracefully(std::string("Path")) ;
         }
     catch ( std::runtime_error )
         {
         // If running in release mode, this will do nothing
-        std::wcout << L"Unable to read path environment variable.  Exiting." << std::endl ;
+        std::cout << "Unable to read path environment variable.  Exiting." << std::endl ;
         //MessageBox((HWND)NULL, (LPCWSTR) L"Unable to read Path environment variable", 
         //           (LPCWSTR) L"Boo", MB_OK) ;
         exit(-5) ;
         }
-    std::wcout << L"original_path: " << original_path << std::endl ;
+    std::cout << "original_path: " << original_path << std::endl ;
 
     // Construct the new path
-    std::wstring new_path = matlab_bin_path + L";" + original_path ;
+    std::string new_path = matlab_bin_path + ";" + original_path ;
 
     // Set the env var to the new path
-    int didSucceed = SetEnvironmentVariable(L"Path", new_path.c_str()) ;
+    std::wstring wide_new_path = wide_from_narrow(new_path) ;
+    int didSucceed = SetEnvironmentVariable(L"Path", wide_new_path.c_str()) ;
     if (!didSucceed)
         {
-        std::wcout << L"Unable to set path environment variable.  Exiting." << std::endl ;
+        std::cout << "Unable to set path environment variable.  Exiting." << std::endl ;
         exit(-6) ;
         }
-    std::wcout << L"new_path (we think/hope): " << new_path << std::endl ;
+    std::cout << "new_path (we think/hope): " << new_path << std::endl ;
 
     // Get the path again, to check it
     /*
-    std::wstring new_path_check ;
+    std::string new_path_check ;
     try
         {
-        new_path_check = GetEnvironmentVariableGracefully(std::wstring(L"Path")) ;
+        new_path_check = GetEnvironmentVariableGracefully(std::string(L"Path")) ;
         }
     catch ( std::runtime_error )
         {
@@ -155,7 +156,7 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         {
         //MessageBox((HWND)NULL, (LPCWSTR) L"Can't start MATLAB engine", 
         //           (LPCWSTR) L"Boo", MB_OK);
-        std::wcout << L"Unable to start Matlab engine.  Exiting." << std::endl ;
+        std::cout << L"Unable to start Matlab engine.  Exiting." << std::endl ;
         exit(-7);
         }
     std::cout << "Just started Matlab engine successfully." << std::endl ;
@@ -166,27 +167,25 @@ int WINAPI wWinMain (HINSTANCE hInstance,
 
     // Execute the commands that will start the satellite main loop
     //"addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"
-    std::wstring wide_command_string ;
+    std::string wide_command_string ;
     std::string command_string ;
 
     //system("pause");
 
     // Add the WS root to the path
-    wide_command_string = std::wstring(L"addpath('") + path_to_repo_root + L"');" ;
-    command_string = utf8_encode(wide_command_string) ;
+    command_string = std::string("addpath('") + path_to_repo_root + "');" ;
     engEvalString(ep, command_string.c_str());
 
     //system("pause");
 
     // Add the ZMQ lib to the path
-    wide_command_string = std::wstring(L"addpath('") + path_to_matlab_zmq_lib + L"');" ;
-    command_string = utf8_encode(wide_command_string) ;
+    command_string = std::string("addpath('") + path_to_matlab_zmq_lib + "');" ;
     engEvalString(ep, command_string.c_str());
 
     //system("pause");
 
     // Create the satellite model object
-    if ( looper_or_refiller == std::wstring(L"refiller") )
+    if ( looper_or_refiller == std::string("refiller") )
         {
         command_string = "refiller=ws.Refiller();" ;
         }
@@ -199,8 +198,8 @@ int WINAPI wWinMain (HINSTANCE hInstance,
     //system("pause");
 
     // Start the main loop of the model object
-    std::wcout << L"About to start the " << looper_or_refiller << L" main loop..." << std::endl ;
-    if ( looper_or_refiller == std::wstring(L"refiller") )
+    std::cout << "About to start the " << looper_or_refiller << " main loop..." << std::endl ;
+    if ( looper_or_refiller == std::string("refiller") )
         {
         command_string = "refiller.runMainLoop();" ;
         }
@@ -209,7 +208,7 @@ int WINAPI wWinMain (HINSTANCE hInstance,
         command_string = "looper.runMainLoop();" ;
         }
     engEvalString(ep, command_string.c_str());  // this will block until the satellite exits
-    std::wcout << L"The " << looper_or_refiller << L" main loop exited." << std::endl ;
+    std::cout << "The " << looper_or_refiller << " main loop exited." << std::endl ;
 
     //std::cout << "Normally we'd be running the main loop now..." << std::endl ;
     //system("pause");

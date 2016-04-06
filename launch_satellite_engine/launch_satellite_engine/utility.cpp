@@ -3,7 +3,7 @@
 #include <vector>
 
 // Convert a wide Unicode string to an UTF8 string
-std::string utf8_encode(const std::wstring &wstr)
+std::string narrow_from_wide(const std::wstring &wstr)
     {
     if( wstr.empty() ) return std::string();
     int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
@@ -13,7 +13,7 @@ std::string utf8_encode(const std::wstring &wstr)
     }
 
 // Convert an UTF8 string to a wide Unicode String
-std::wstring utf8_decode(const std::string &str)
+std::wstring wide_from_narrow(const std::string &str)
     {
     if( str.empty() ) return std::wstring();
     int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
@@ -22,23 +22,25 @@ std::wstring utf8_decode(const std::string &str)
     return wstrTo;
     }
 
-std::wstring GetEnvironmentVariableGracefully(std::wstring variable_name)
+std::string GetEnvironmentVariableGracefully(std::string variable_name)
     {
-    const wchar_t * raw_variable_name = variable_name.c_str() ;
-    const unsigned long bufferSizeNeeded = GetEnvironmentVariable(raw_variable_name, (LPTSTR) 0, 0) ;
+    std::wstring wide_variable_name = wide_from_narrow(variable_name) ;
+    const wchar_t * raw_wide_variable_name = wide_variable_name.c_str() ;
+    const unsigned long bufferSizeNeeded = GetEnvironmentVariable(raw_wide_variable_name, (LPTSTR) 0, 0) ;
     wchar_t * wideCharBuffer = new wchar_t [bufferSizeNeeded] ;
-    unsigned long nCharsInPath = GetEnvironmentVariable(raw_variable_name, wideCharBuffer, bufferSizeNeeded) ;
+    unsigned long nCharsInPath = GetEnvironmentVariable(raw_wide_variable_name, wideCharBuffer, bufferSizeNeeded) ;
     if ( nCharsInPath == 0 )
         {
         delete [] wideCharBuffer ;
         throw std::runtime_error("unable to get environment variable") ;
         }
-    std::wstring result = wideCharBuffer ;
+    std::wstring wide_result = wideCharBuffer ;
     delete [] wideCharBuffer ;
+    std::string result = narrow_from_wide(wide_result) ;
     return result ;
     }
 
-std::wstring extract_single_argument(const std::wstring & args, const size_t n)
+std::string extract_single_argument(const std::string & args, const size_t n)
     {
     // Returns the (n+1)th argument
     // I.e. n is the zero-based index of the desired argument
@@ -51,7 +53,7 @@ std::wstring extract_single_argument(const std::wstring & args, const size_t n)
     size_t i ;
     for (i=0; i<args_length; ++i)
         {
-        if ( args[i] == L'"')
+        if ( args[i] == '"')
             {
             if (n_quotes_skipped==n_quotes_to_skip)
                 {
@@ -75,7 +77,7 @@ std::wstring extract_single_argument(const std::wstring & args, const size_t n)
 
     for (i=i_first_quote+1; i<args_length; i++)
         {
-        if ( args[i] == L'"')
+        if ( args[i] == '"')
             break ;
         }
 
@@ -91,7 +93,7 @@ std::wstring extract_single_argument(const std::wstring & args, const size_t n)
 
     size_t i_substring = i_first_quote + 1 ;  // index (in args) of the first char in substring
     size_t substring_length = i_second_quote-i_substring ; 
-    std::wstring result = args.substr(i_substring, substring_length) ;
+    std::string result = args.substr(i_substring, substring_length) ;
     return result ;
     }
 
