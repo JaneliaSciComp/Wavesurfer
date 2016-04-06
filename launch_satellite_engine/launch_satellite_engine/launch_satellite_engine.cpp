@@ -54,7 +54,7 @@ int WINAPI WinMain (HINSTANCE hInstance,
         }
 
     // Process the rest of the command-line args
-    std::string looper_or_refiller, matlab_bin_path, path_to_repo_root, path_to_matlab_zmq_lib;
+    std::string looper_or_refiller, path_to_ws_root, path_to_matlab_zmq_lib;
     try
         {
         looper_or_refiller      = extract_single_argument(args, 1) ;
@@ -65,6 +65,8 @@ int WINAPI WinMain (HINSTANCE hInstance,
         }
     std::cout << "looper_or_refiller: " << looper_or_refiller << std::endl ;
 
+    // Matlab automatically adds dir to the path for things called via system() matlab function
+    /*
     try
         {
         matlab_bin_path         = extract_single_argument(args, 2) ;
@@ -74,27 +76,29 @@ int WINAPI WinMain (HINSTANCE hInstance,
         exit(-2) ;
         }
     std::cout << "matlab_bin_path: " << matlab_bin_path << std::endl ;
+    */
 
     try
         {
-        path_to_repo_root       = extract_single_argument(args, 3) ;
+        path_to_ws_root       = extract_single_argument(args, 2) ;
+        }
+    catch (std::domain_error)
+        {
+        exit(-2) ;
+        }
+    std::cout << "path_to_ws_root: " << path_to_ws_root << std::endl ;
+
+    try
+        {
+        path_to_matlab_zmq_lib  = extract_single_argument(args, 3) ;
         }
     catch (std::domain_error)
         {
         exit(-3) ;
         }
-    std::cout << "path_to_repo_root: " << path_to_repo_root << std::endl ;
-
-    try
-        {
-        path_to_matlab_zmq_lib  = extract_single_argument(args, 4) ;
-        }
-    catch (std::domain_error)
-        {
-        exit(-4) ;
-        }
     std::cout << "path_to_matlab_zmq_lib: " << path_to_matlab_zmq_lib << std::endl ;
 
+    /*
     // Get the current path
     std::string original_path ;
     try
@@ -124,23 +128,22 @@ int WINAPI WinMain (HINSTANCE hInstance,
         }
     std::cout << "new_path (we think/hope): " << new_path << std::endl ;
 
-    // Get the path again, to check it
-    /*
-    std::string new_path_check ;
-    try
-        {
-        new_path_check = GetEnvironmentVariableGracefully(std::string(L"Path")) ;
-        }
-    catch ( std::runtime_error )
-        {
-        MessageBox((HWND)NULL, (LPCWSTR) L"Unable to read Path environment variable to check it", 
-                   (LPCWSTR) L"Boo", MB_OK) ;
-        exit(-1) ;
-        }
+    //// Get the path again, to check it
+    //std::string new_path_check ;
+    //try
+    //    {
+    //    new_path_check = GetEnvironmentVariableGracefully(std::string(L"Path")) ;
+    //    }
+    //catch ( std::runtime_error )
+    //    {
+    //    MessageBox((HWND)NULL, (LPCWSTR) L"Unable to read Path environment variable to check it", 
+    //               (LPCWSTR) L"Boo", MB_OK) ;
+    //    exit(-1) ;
+    //    }
 
-    // Show the new path
-    MessageBox((HWND)NULL, (LPCWSTR) new_path_check.c_str(), 
-               (LPCWSTR) L"Path, after", MB_OK) ;
+    //// Show the new path
+    //MessageBox((HWND)NULL, (LPCWSTR) new_path_check.c_str(), 
+    //           (LPCWSTR) L"Path, after", MB_OK) ;
     */
 
     //system("pause");
@@ -172,8 +175,19 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
     //system("pause");
 
+    // Print out which satellite this is, because this is sometimes good to know, esp. when debugging
+    //command_string = std::string("fprintf('This is the ") + looper_or_refiller + " process.\\n\\n');" ;
+    // This doesn't work, b/c Matlab Engine doesn't output the (textual) results of commands executed with
+    // engEvalString() to the matlab command window.  This is by design, apparently.
+    /*
+    command_string = std::string("ver") ;
+    engEvalString(ep, command_string.c_str());
+    command_string = std::string("pause(0.01)") ;
+    engEvalString(ep, command_string.c_str());
+    */
+
     // Add the WS root to the path
-    command_string = std::string("addpath('") + path_to_repo_root + "');" ;
+    command_string = std::string("addpath('") + path_to_ws_root + "');" ;
     engEvalString(ep, command_string.c_str());
 
     //system("pause");
@@ -265,4 +279,3 @@ int WINAPI WinMain (HINSTANCE hInstance,
     // exit    
     return(0);
     }
-

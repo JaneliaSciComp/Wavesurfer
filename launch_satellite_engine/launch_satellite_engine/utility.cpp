@@ -125,4 +125,3 @@ std::string string_from_mxArray(mxArray *matlab_string)
 
     return result ;
     }
-
