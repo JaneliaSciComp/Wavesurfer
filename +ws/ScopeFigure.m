@@ -699,7 +699,7 @@ classdef ScopeFigure < ws.MCOSFigure
 
             % Update the colors
             areColorsNormal = self.Model.AreColorsNormal ;
-            defaultUIControlBackgroundColor = get(0,'defaultUIControlBackgroundColor') ;
+            defaultUIControlBackgroundColor = ws.utility.getDefaultUIControlBackgroundColor() ;
             controlBackground  = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             controlForeground = ws.utility.fif(areColorsNormal,'k','w') ;
             figureBackground = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
