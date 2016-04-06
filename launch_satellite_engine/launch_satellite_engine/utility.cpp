@@ -1,4 +1,6 @@
 #include "utility.hpp"
+#include "engine.h"
+#include <vector>
 
 // Convert a wide Unicode string to an UTF8 string
 std::string utf8_encode(const std::wstring &wstr)
@@ -90,6 +92,35 @@ std::wstring extract_single_argument(const std::wstring & args, const size_t n)
     size_t i_substring = i_first_quote + 1 ;  // index (in args) of the first char in substring
     size_t substring_length = i_second_quote-i_substring ; 
     std::wstring result = args.substr(i_substring, substring_length) ;
+    return result ;
+    }
+
+std::string string_from_mxArray(mxArray *matlab_string)
+    {
+    // Convert a row char array (i.e. a Matlab string) to a std::string
+
+    // Determine the needed buffer size
+    size_t string_length = mxGetN(matlab_string) ;
+    size_t buffer_size = string_length + 1 ;
+
+    // Create a buffer and size it appropriately
+    std::vector<char> char_buffer ;
+    char_buffer.resize(buffer_size) ;
+
+    // Put the string into the buffer
+    int retcode = mxGetString(matlab_string, &(char_buffer[0]), buffer_size);
+
+    // Convert the buffer into a std::string
+    std::string result ;
+    if (retcode==0)
+        {
+        result = &(char_buffer[0]) ;
+        }
+    else
+        {
+        result = "" ;
+        }
+
     return result ;
     }
 
