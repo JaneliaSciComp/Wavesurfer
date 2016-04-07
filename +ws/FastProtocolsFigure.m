@@ -53,7 +53,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure
             % throughout the life of the window.
             
             self.Table = ...
-                uitable('Parent',self.FigureGH, ...
+                ws.uitable('Parent',self.FigureGH, ...
                         'ColumnName',{'Protocol File' 'Action'}, ...
                         'ColumnFormat',{'char' {'Do Nothing' 'Play' 'Record'}}, ...
                         'ColumnEditable',[true true]);
@@ -100,16 +100,16 @@ classdef FastProtocolsFigure < ws.MCOSFigure
                         set(propertyThing,'CellSelectionCallback',@(source,event)(self.controlActuated(propertyName,source,event)));                        
                     end
                     
-                    % Set Font
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'FontName','Tahoma');
-                        set(propertyThing,'FontSize',8);
-                    end
-                    
-                    % Set Units
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'Units','pixels');
-                    end                    
+%                     % Set Font
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'FontName','Tahoma');
+%                         set(propertyThing,'FontSize',8);
+%                     end
+%                     
+%                     % Set Units
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'Units','pixels');
+%                     end                    
                 end
             end
         end  % function        

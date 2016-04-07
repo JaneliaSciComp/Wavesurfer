@@ -370,9 +370,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                           'Style','text', ...
                           'String','Source:');
             self.SourcePopupmenu = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','popupmenu', ...
-                          'String',{'Thing 1';'Thing 2'});
+                ws.uipopupmenu('Parent',self.StimulationPanel, ...
+                               'String',{'Thing 1';'Thing 2'});
             self.EditStimulusLibraryButton = ...
                 ws.uicontrol('Parent',self.StimulationPanel, ...
                           'Style','pushbutton', ...
@@ -553,15 +552,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
                     end
                     
-                    % Set Font
-                    if isequal(get(examplePropertyThing,'Type'),'uicontrol') || isequal(get(examplePropertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'FontName','Tahoma');
-                        set(propertyThing,'FontSize',8);
-                    end
+%                     % Set Font
+%                     if isequal(get(examplePropertyThing,'Type'),'uicontrol') || isequal(get(examplePropertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'FontName','Tahoma');
+%                         set(propertyThing,'FontSize',8);
+%                     end
                     
                     % Set Units
-                    if isequal(get(examplePropertyThing,'Type'),'uicontrol') || isequal(get(examplePropertyThing,'Type'),'uipanel') || ...
-                       isequal(get(examplePropertyThing,'Type'),'axes'),
+                    if isequal(get(examplePropertyThing,'Type'),'axes'),
                         set(propertyThing,'Units','pixels');
                     end
                 end

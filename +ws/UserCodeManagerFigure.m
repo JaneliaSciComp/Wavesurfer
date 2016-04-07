@@ -107,16 +107,16 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                         set(propertyThing,'CellSelectionCallback',@(source,event)(self.controlActuated(propertyName,source,event)));                        
                     end
                     
-                    % Set Font
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'FontName','Tahoma');
-                        set(propertyThing,'FontSize',8);
-                    end
-                    
-                    % Set Units
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'Units','pixels');
-                    end                    
+%                     % Set Font
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'FontName','Tahoma');
+%                         set(propertyThing,'FontSize',8);
+%                     end
+%                     
+%                     % Set Units
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'Units','pixels');
+%                     end                    
                     
                     if ( isequal(get(propertyThing,'Type'),'uicontrol') && isequal(get(propertyThing,'Style'),'edit') ) ,                    
                         set(propertyThing,'HorizontalAlignment','left');
