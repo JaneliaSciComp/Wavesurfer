@@ -424,13 +424,14 @@ classdef TestPulserFigure < ws.MCOSFigure
                      'box','on', ...
                      'XLim',[0 20], ...
                      'YLim',self.YLimits_, ...
+                     'FontSize', 9, ...
                      'Visible','on');
             
             % Axis labels
             self.XAxisLabel= ...
-                xlabel(self.TraceAxes,'Time (ms)','FontSize',10);
+                xlabel(self.TraceAxes,'Time (ms)','FontSize',9);
             self.YAxisLabel= ...
-                ylabel(self.TraceAxes,'Monitor (pA)','FontSize',10);
+                ylabel(self.TraceAxes,'Monitor (pA)','FontSize',9);
             
             % Trace line
             self.TraceLine= ...
@@ -533,64 +534,96 @@ classdef TestPulserFigure < ws.MCOSFigure
             % lays out the figure widgets, given the current figure size
             %fprintf('Inside layout()...\n');
 
-            % Layout parameters
-            widthFromFigureLeftToStartStopButton=22;
-            heightFromFigureTopToStartStopButton=20;
+            % The "layout" is basically the figure rectangle, but
+            % taking into account the fact that the figure can be hmade
+            % arbitrarily small, but the layout has a miniumum width and
+            % height.  Further, the layout rectangle *top* left corner is
+            % the same point as the figure top left corner.
+            
+            % The layout contains the following things, in order from top
+            % to bottom: 
+            %
+            %     top space
+            %     top stuff (the widgets at the top of the figure)
+            %     top-stuff-traces-plot-interspace
+            %     the traces plot
+            %     bottom-stuff-traces-plot-interspace
+            %     bottom stuff (the update rate and gain widgets)
+            %     bottom space.  
+            %
+            % Each is a rectangle, and they are laid out edge-to-edge
+            % vertically.  All but the traces plot have a fixed height, and
+            % the traces plot fills the leftover height in the layout.  The
+            % top edge of the top space is fixed to the top edge of the
+            % layout, and the bottom of the bottom space is fixed to the
+            % bottom edge of the layout.
+
+            % minimum layout dimensions
+            minimumLayoutWidth=570;  % If the figure gets small, we lay it out as if it was bigger
+            minimumLayoutHeight=500;  
+            
+            % Heights of the stacked rectangles that comprise the layout
+            topSpaceHeight = 0 ;
+            % we don't know the height of the top stuff yet, but it does
+            % not depend on the figure/layout size
+            topStuffToTracesPlotInterspaceHeight = 2 ;
+            % traces plot height is set to fill leftover space in the
+            % layout
+            tracesPlotToBottomStuffInterspaceHeight=10;
+            % we don't know the height of the bottom stuff yet, but it does
+            % not depend on the figure/layout size            
+            bottomSpaceHeight = 2 ;
+            
+            % General widget sizes
+            editWidth=40;
+            editHeight=20;
+            textHeight=18;  % for 8 pt font
+            
+            % Top stuff layout parameters
+            widthFromTopStuffLeftToStartStopButton=22;
+            heightFromTopStuffTopToStartStopButton=20;
             startStopButtonWidth=96;
             startStopButtonHeight=28;
-            %widthFromStartStopButtonRightToPopupsLeft=30;
-            %electrodePopupMenuLabelTextX=134;
-            
             checkboxBankXOffset = 145 ;
             checkboxBankWidth = 80 ;
             widthFromCheckboxBankToElectrodeBank = 16 ;
-            
             heightFromFigureTopToSubBaseCheckbox = 6 ; 
             heightBetweenCheckboxes = -1 ;
             widthOfAutoYRepeatingIndent = 14 ;
-            
-            
             electrodePopupMenuLabelTextX=checkboxBankXOffset + checkboxBankWidth + widthFromCheckboxBankToElectrodeBank ;
-            %commandChannelPopupMenuLabelTextX=134;
-            heightFromTopToPopup=10;
-            heightBetweenPopups=26;
-            popupWidth=100;
+            heightFromTopStuffStopToPopup=10;
+            heightBetweenAmplitudeAndDuration=26;
+            electrodePopupWidth=100;
             widthFromPopupsRightToAmplitudeLeft=20;
-            %heightBetweenAplitudeAndDuration=14;
-            %heightFromButtonToBaseSubCheckbox=6;
-            editWidth=40;
-            editHeight=20;
-            widthFromFigureLeftToUpdateRateLeft=20;
-            heightFromFigureBottomToUpdateRateBottom=0;
-            widthFromFigureRightToGainRight=20;
-            heightFromFigureBottomToGainBottom=0;
-            heightFromTopStuffToPlot=1;
-            heightFromBottomStuffToPlot=10;
-            widthFromFigureLeftToPlot=0;
-            widthFromFigureRightToPlot=0;            
+            clampToggleWidth=electrodePopupWidth/2;  % 30;
+            clampToggleHeight=20;
+            electrodePopupToClampToggleAreaHeight=8;
+            interClampToggleWidth=0;
+            
+            % Traces plot layout parameters                      
+            widthFromLayoutLeftToPlot=0;
+            widthFromLayoutRightToPlot=0;            
             traceAxesLeftPad=5;
             traceAxesRightPad=5;
             tickLength=5;  % in pixels
-            minimumLayoutWidth=570;  % If the figure gets small, we lay it out as if it was bigger
-            minimumLayoutHeight=500;  
+            fromAxesToYRangeButtonsWidth=6;
+            yRangeButtonSize=20;  % those buttons are square
+            spaceBetweenScrollButtons=5;
+            spaceBetweenZoomButtons=5;
+            
+            % Bottom stuff layout parameters
+            widthFromLayoutLeftToUpdateRateLeft=20;  
+            widthFromLayoutRightToGainRight=20;
             updateRateTextWidth=36;  % wide enough to accomodate '100.0'
             gainTextWidth=60;
-            textHeight=18;  % for 8 pt font
             interGainSpaceHeight=0;
             gainUnitsTextWidth=40;  % approximately right for 'GOhm' in 9 pt text.  Don't want layout to change even if units change
             %gainLabelTextWidth=200;  % Approximate width if the string is 'Electrode 1 Resistance: ' [sic]
             gainLabelTextWidth=160;  % Approximate width if the string is 'Electrode 1 Resistance: ' [sic]
             %fromSubBaseToAutoYSpaceWidth=16;
-            fromAxesToYRangeButtonsWidth=6;
-            yRangeButtonSize=20;  % those buttons are square
-            spaceBetweenScrollButtons=5;
-            spaceBetweenZoomButtons=5;
-            clampToggleWidth=popupWidth/2;  % 30;
-            clampToggleHeight=20;
-            electrodePopupToClampToggleAreaHeight=8;
-            interClampToggleWidth=0;
             
-            % Get the sizes of various things
+            % Get the dimensions of the figure, determine the size and
+            % position of the layout rectangle
             figurePosition=get(self.FigureGH,'Position');
             figureWidth = figurePosition(3) ;
             figureHeight = figurePosition(4) ;
@@ -599,12 +632,20 @@ classdef TestPulserFigure < ws.MCOSFigure
             % "layout" size
             layoutWidth=max(figureWidth,minimumLayoutWidth) ;  
             layoutHeight=max(figureHeight,minimumLayoutHeight) ;
-            figureTopYOffset=figureHeight ;  
-              % Use this so that when the figure gets short, the top of the
-              % figure stays put, while the bottom will be outside shown area
+            layoutYOffset = figureHeight - layoutHeight ;
+              % All widget coords have to ultimately be given in the figure
+              % coordinate system.  This is the y position of the layout
+              % lower left corner, in the figure coordinate system.
+            layoutTopYOffset = layoutYOffset + layoutHeight ;  
+              
+            % Can compute the height of the bottom stuff pretty easily, so
+            % do that now
+            nElectrodes=length(self.GainTexts);
+            nBottomRows=max(nElectrodes,1);  % Even when no electrodes, there's still the update rate text
+            bottomStuffHeight = nBottomRows*textHeight + (nBottomRows-1)*interGainSpaceHeight ;
+
             
-            % Dependent layout parameters
-            
+              
             %
             %
             % Position thangs
@@ -616,8 +657,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             %
             
             % The start/stop button
-            startStopButtonX=widthFromFigureLeftToStartStopButton;
-            startStopButtonY=figureTopYOffset-heightFromFigureTopToStartStopButton-startStopButtonHeight;
+            topStuffTopYOffset = layoutTopYOffset - topSpaceHeight ;
+            startStopButtonX=widthFromTopStuffLeftToStartStopButton;
+            startStopButtonY=topStuffTopYOffset-heightFromTopStuffTopToStartStopButton-startStopButtonHeight;
             set(self.StartStopButton, ...
                 'Position',[startStopButtonX startStopButtonY ...
                             startStopButtonWidth startStopButtonHeight]);
@@ -630,7 +672,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             [subtractBaselineCheckboxTextWidth,subtractBaselineCheckboxTextHeight]=ws.getExtent(self.SubtractBaselineCheckbox);
             subtractBaselineCheckboxWidth=subtractBaselineCheckboxTextWidth+16;  % Add some width to accomodate the checkbox itself
             subtractBaselineCheckboxHeight=subtractBaselineCheckboxTextHeight;
-            subtractBaselineCheckboxY = figureTopYOffset - heightFromFigureTopToSubBaseCheckbox - subtractBaselineCheckboxHeight ;
+            subtractBaselineCheckboxY = topStuffTopYOffset - heightFromFigureTopToSubBaseCheckbox - subtractBaselineCheckboxHeight ;
             subtractBaselineCheckboxX = checkboxBankXOffset ;
             set(self.SubtractBaselineCheckbox, ...
                 'Position',[subtractBaselineCheckboxX subtractBaselineCheckboxY ...
@@ -667,7 +709,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             electrodePopupMenuPosition=get(self.ElectrodePopupMenu,'Position');
             electrodePopupMenuHeight=electrodePopupMenuPosition(4);
             electrodePopupMenuY= ...
-                figureTopYOffset-heightFromTopToPopup-electrodePopupMenuHeight;
+                topStuffTopYOffset-heightFromTopStuffStopToPopup-electrodePopupMenuHeight;
             electrodePopupMenuLabelTextY=...
                 electrodePopupMenuY+electrodePopupMenuHeight/2-electrodePopupMenuLabelHeight/2-4;  % shim
             electrodePopupMenuX=electrodePopupMenuLabelTextX+electrodePopupMenuLabelWidth+1;
@@ -676,14 +718,14 @@ classdef TestPulserFigure < ws.MCOSFigure
                             electrodePopupMenuLabelWidth electrodePopupMenuLabelHeight]);
             set(self.ElectrodePopupMenu, ...
                 'Position',[electrodePopupMenuX electrodePopupMenuY ...
-                            popupWidth electrodePopupMenuHeight]);
+                            electrodePopupWidth electrodePopupMenuHeight]);
                         
             % VC, CC toggle buttons
             clampToggleAreaHeight=clampToggleHeight;
             clampToggleAreaWidth=clampToggleWidth+interClampToggleWidth+clampToggleWidth;
 
             %clampToggleAreaCenterX=electrodePopupMenuX+popupWidth/2;
-            clampToggleAreaRightX=electrodePopupMenuX+popupWidth;
+            clampToggleAreaRightX=electrodePopupMenuX+electrodePopupWidth;
             clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
             
             clampToggleAreaTopY=electrodePopupMenuY-electrodePopupToClampToggleAreaHeight;
@@ -711,7 +753,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                         
             % The amplitude edit and its label
             [amplitudeEditLabelTextWidth,amplitudeEditLabelTextHeight]=ws.getExtent(self.AmplitudeEditLabelText);
-            amplitudeEditLabelTextX=electrodePopupMenuX+popupWidth+widthFromPopupsRightToAmplitudeLeft;
+            amplitudeEditLabelTextX=electrodePopupMenuX+electrodePopupWidth+widthFromPopupsRightToAmplitudeLeft;
             amplitudeEditLabelTextY=electrodePopupMenuLabelTextY;
             set(self.AmplitudeEditLabelText, ...
                 'Position',[amplitudeEditLabelTextX amplitudeEditLabelTextY ...
@@ -733,7 +775,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             % The duration edit and its label
             [~,durationEditLabelTextHeight]=ws.getExtent(self.DurationEditLabelText);
             durationEditLabelTextX=amplitudeEditLabelTextX;
-            durationEditLabelTextY=electrodePopupMenuLabelTextY-heightBetweenPopups;
+            durationEditLabelTextY=electrodePopupMenuLabelTextY-heightBetweenAmplitudeAndDuration;
             set(self.DurationEditLabelText, ...
                 'Position',[durationEditLabelTextX durationEditLabelTextY ...
                             amplitudeEditLabelTextWidth amplitudeEditLabelTextHeight]);
@@ -750,20 +792,22 @@ classdef TestPulserFigure < ws.MCOSFigure
                 'Position',[durationEditUnitsTextX durationEditUnitsTextY ...
                             durationEditUnitsTextWidth durationEditUnitsTextHeight]);
             
-
+            % All the stuff above is at a fixed y offset from the top of
+            % the layout.  So now we can compute the height of the top
+            % stuff rectangle.
+            topStuffYOffset = min([autoYRepeatingCheckboxY vcToggleY durationEditY]) ;
+            topStuffHeight = topStuffTopYOffset - topStuffYOffset ;
+                        
+                        
             %
-            % The trace axes
+            % The trace plot
             %
-            nElectrodes=length(self.GainTexts);            
-            topStuffHeight=figureTopYOffset-min([autoYRepeatingCheckboxY vcToggleY durationEditY]);
-            % topStuffMinimumY=min([subtractBaselineCheckboxY monitorChannelPopupMenuY durationEditY]);
-            nBottomRows=max(nElectrodes,1);  % Even when no electrodes, there's still the update rate text
-            bottomStuffMaximumHeight=heightFromFigureBottomToGainBottom+nBottomRows*textHeight+(nBottomRows-1)*interGainSpaceHeight;
-            traceAxesAreaX=widthFromFigureLeftToPlot;
+            traceAxesAreaX=widthFromLayoutLeftToPlot;
             traceAxesAreaWidth= ...
-                layoutWidth-widthFromFigureLeftToPlot-widthFromFigureRightToPlot-yRangeButtonSize-fromAxesToYRangeButtonsWidth;
-            traceAxesAreaHeight=layoutHeight-topStuffHeight-bottomStuffMaximumHeight-heightFromBottomStuffToPlot-heightFromTopStuffToPlot;
-            traceAxesAreaY = figureTopYOffset - topStuffHeight - heightFromTopStuffToPlot - traceAxesAreaHeight ;
+                layoutWidth-widthFromLayoutLeftToPlot-widthFromLayoutRightToPlot-yRangeButtonSize-fromAxesToYRangeButtonsWidth;
+            traceAxesAreaHeight = layoutHeight-topSpaceHeight-topStuffToTracesPlotInterspaceHeight-topStuffHeight-tracesPlotToBottomStuffInterspaceHeight-bottomStuffHeight ;
+            traceAxesAreaTopY = layoutTopYOffset - topSpaceHeight - topStuffHeight - topStuffToTracesPlotInterspaceHeight ;
+            traceAxesAreaY = traceAxesAreaTopY - traceAxesAreaHeight ;
             set(self.TraceAxes,'OuterPosition',[traceAxesAreaX traceAxesAreaY traceAxesAreaWidth traceAxesAreaHeight]);
             tightInset=get(self.TraceAxes,'TightInset');
             traceAxesX=traceAxesAreaX+tightInset(1)+traceAxesLeftPad;
@@ -805,27 +849,23 @@ classdef TestPulserFigure < ws.MCOSFigure
             %
             % The stuff at the bottom of the figure
             %
-                                    
-            layoutBottomYOffset = traceAxesAreaY - bottomStuffMaximumHeight ;  
-              % This is the y coord of the bottom of the *layout*.  This is zero
-              % if the figure is tall enough, but can be negative if the figure
-              % is short.
-            updateRateBaselineYOffset = layoutBottomYOffset + heightFromFigureBottomToUpdateRateBottom ;
+                         
+            bottomStuffYOffset = layoutYOffset + bottomSpaceHeight ;
             % The update rate and its label
             [updateRateTextLabelTextWidth,updateRateTextLabelTextHeight]=ws.getExtent(self.UpdateRateTextLabelText);
-            updateRateTextLabelTextX=widthFromFigureLeftToUpdateRateLeft;
-            updateRateTextLabelTextY=updateRateBaselineYOffset;
+            updateRateTextLabelTextX=widthFromLayoutLeftToUpdateRateLeft;
+            updateRateTextLabelTextY=bottomStuffYOffset;
             set(self.UpdateRateTextLabelText, ...
                 'Position',[updateRateTextLabelTextX updateRateTextLabelTextY ...
                             updateRateTextLabelTextWidth updateRateTextLabelTextHeight]);
             updateRateTextX=updateRateTextLabelTextX+updateRateTextLabelTextWidth+1;  % shim
-            updateRateTextY=updateRateBaselineYOffset;
+            updateRateTextY=bottomStuffYOffset;
             set(self.UpdateRateText, ...
                 'Position',[updateRateTextX updateRateTextY ...
                             updateRateTextWidth updateRateTextLabelTextHeight]);
             [updateRateUnitsTextWidth,updateRateUnitsTextHeight]=ws.getExtent(self.UpdateRateTextUnitsText);
             updateRateUnitsTextX=updateRateTextX+updateRateTextWidth+1;  % shim
-            updateRateUnitsTextY=updateRateBaselineYOffset;
+            updateRateUnitsTextY=bottomStuffYOffset;
             set(self.UpdateRateTextUnitsText, ...
                 'Position',[updateRateUnitsTextX updateRateUnitsTextY ...
                             updateRateUnitsTextWidth updateRateUnitsTextHeight]);
@@ -833,9 +873,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             % The gains and associated labels
             for j=1:nElectrodes ,
                 nRowsBelow=nElectrodes-j;
-                thisRowY=layoutBottomYOffset+heightFromFigureBottomToGainBottom+nRowsBelow*(textHeight+interGainSpaceHeight);
+                thisRowY = bottomStuffYOffset + nRowsBelow*(textHeight+interGainSpaceHeight) ;
                 
-                gainUnitsTextX=layoutWidth-widthFromFigureRightToGainRight-gainUnitsTextWidth;
+                gainUnitsTextX=layoutWidth-widthFromLayoutRightToGainRight-gainUnitsTextWidth;
                 gainUnitsTextY=thisRowY;
                 set(self.GainUnitsTexts(j), ...
                     'Position',[gainUnitsTextX gainUnitsTextY ...
