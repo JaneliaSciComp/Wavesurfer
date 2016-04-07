@@ -241,7 +241,15 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             self.updateReadinessImplementation_();
         end
 
-    end  % methods
+        function positionUpperLeftRelativeToOtherUpperRight(self, other, offset)
+            % Positions the upper left corner of the figure relative to the upper
+            % *right* corner of the other figure.  offset is 2x1, with the 1st
+            % element the number of pixels from the right side of the other figure,
+            % the 2nd the number of pixels from the top of the other figure.
+
+            ws.utility.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH, offset) ;
+        end
+    end  % public methods
 
     methods (Access=protected)
         createFixedControls_(self)

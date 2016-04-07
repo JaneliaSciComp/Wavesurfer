@@ -75,7 +75,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 'Menubar','none', ...
                 'Toolbar','none', ...
                 'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
-                'ResizeFcn',@(sourse,event)(self.layout_()));
+                'ResizeFcn',@(sourse,event)(self.layout_()) );
 %                'Renderer','OpenGL', ...            
 %                'Color', model.BackgroundColor,...
             
@@ -116,7 +116,11 @@ classdef ScopeFigure < ws.MCOSFigure
             self.updateGuidata_();
             
             % sync up self to model
-            self.update();            
+            self.update();
+            
+            % position next to main window
+            mainFigure = controller.Parent.Figure ;
+            self.positionUpperLeftRelativeToOtherUpperRight(mainFigure, [40 0]) ;
         end  % constructor
         
         function delete(self)

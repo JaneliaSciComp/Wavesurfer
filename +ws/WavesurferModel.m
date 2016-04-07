@@ -1811,7 +1811,8 @@ classdef WavesurferModel < ws.RootModel
             
             aiChannelName = self.Acquisition.addAnalogChannel() ;  %#ok<NASGU>
             aoChannelName = self.Stimulation.addAnalogChannel() ;
-            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;            
+            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+            self.Display.IsEnabled = true ;
         end
     end  % methods block
     
