@@ -976,7 +976,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             leftTableSideSpaceWidth=5;  % the space between the left edge of the fig and the left side of the "table"
             rightTableSideSpaceWidth=5;  % the space between the right edge of the fig and the right side of the "table".
             
-            titleRowHeight=24;
+            topShimHeight=8;
+            titleRowHeight=18;
             trodeRowHeight=16;
             interTrodeRowSpaceHeight=10;
             heightBetweenTrodesAndBottomButtonRow=10;
@@ -997,7 +998,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             minimumNumberOfRows=4;
             nTrodeRows=max(minimumNumberOfRows,nElectrodes);
             nInterTrodeRowSpaces=max([nTrodeRows-1 0]);
-            figureHeight=titleRowHeight+nTrodeRows*trodeRowHeight+nInterTrodeRowSpaces*interTrodeRowSpaceHeight+heightBetweenTrodesAndBottomButtonRow+ ...
+            figureHeight=topShimHeight+titleRowHeight+nTrodeRows*trodeRowHeight+nInterTrodeRowSpaces*interTrodeRowSpaceHeight+heightBetweenTrodesAndBottomButtonRow+ ...
                          bottomButtonRowHeight;
             
             
@@ -1005,7 +1006,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             %
             %  Layout the row of column titles
             %
-            centerYForColumnTitles=figureHeight-titleRowHeight/2;
+            centerYForColumnTitles=figureHeight-topShimHeight-titleRowHeight/2;
 
             labelColLeftX=leftTableSideSpaceWidth;
             labelColCenterX=labelColLeftX+labelColWidth/2;
@@ -1138,7 +1139,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % For each electrode, lay out the row
             for i=1:nElectrodes ,
                 nRowsAbove=i-1;
-                rowBottomY=figureHeight-titleRowHeight-nRowsAbove*(trodeRowHeight+interTrodeRowSpaceHeight)-trodeRowHeight;
+                rowBottomY=figureHeight-topShimHeight-titleRowHeight-nRowsAbove*(trodeRowHeight+interTrodeRowSpaceHeight)-trodeRowHeight;
                 
                 set(self.LabelEdits(i),'Position',[labelColLeftX rowBottomY-5 labelColWidth trodeRowHeight+5]);  % shims to make it look nice
                 set(self.TypePopups(i),'Position',[typeColLeftX rowBottomY typeColWidth trodeRowHeight]);
