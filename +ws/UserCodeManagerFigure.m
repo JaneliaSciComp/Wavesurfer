@@ -59,8 +59,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                           'Style','text', ...
                           'String','Class Name:');
             self.ClassNameEdit = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
+                ws.uiedit('Parent',self.FigureGH, ...
+                          'HorizontalAlignment','left');
                       
             self.ReinstantiateButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -118,9 +118,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %                         set(propertyThing,'Units','pixels');
 %                     end                    
                     
-                    if ( isequal(get(propertyThing,'Type'),'uicontrol') && isequal(get(propertyThing,'Style'),'edit') ) ,                    
-                        set(propertyThing,'HorizontalAlignment','left');
-                    end
+%                     if ( isequal(get(propertyThing,'Type'),'uicontrol') && isequal(get(propertyThing,'Style'),'edit') ) ,                    
+%                         set(propertyThing,'HorizontalAlignment','left');
+%                     end
                 end
             end
         end  % function        
