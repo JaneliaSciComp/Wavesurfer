@@ -1,4 +1,4 @@
-classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
+classdef Display < ws.Subsystem   %& ws.EventSubscriber
     %Display Manages the display and update of one or more Scope objects.
     
     properties (Dependent = true)
@@ -41,7 +41,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
 
     methods
         function self = Display(parent)
-            self@ws.system.Subsystem(parent) ;
+            self@ws.Subsystem(parent) ;
             self.Scopes_ = cell(1,0) ;
             self.XOffset_ = 0;  % s
             self.XSpan_ = 1;  % s
@@ -261,7 +261,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             channelNames = self.Parent.Acquisition.AnalogChannelNames ;            
             newChannelName = channelNames{end} ;
             prototypeScopeTag=sprintf('Channel_%s', newChannelName);
-            scopeTag = ws.system.Display.tagFromString(prototypeScopeTag);  % this is a static method call
+            scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
             channelNamesForNewScope={newChannelName};
             self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
@@ -273,7 +273,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             channelNames = self.Parent.Acquisition.DigitalChannelNames ;            
             newChannelName = channelNames{end} ;
             prototypeScopeTag=sprintf('Channel_%s', newChannelName);
-            scopeTag = ws.system.Display.tagFromString(prototypeScopeTag);  % this is a static method call
+            scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
             channelNamesForNewScope={newChannelName};
             self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
@@ -349,7 +349,7 @@ classdef Display < ws.system.Subsystem   %& ws.EventSubscriber
             theScope = self.getScopeByName_(oldChannelName) ;
             if ~isempty(theScope) ,
                 prototypeNewScopeTag = sprintf('Channel_%s', newChannelName) ;
-                newScopeTag = ws.system.Display.tagFromString(prototypeNewScopeTag) ;  % this is a static method call
+                newScopeTag = ws.Display.tagFromString(prototypeNewScopeTag) ;  % this is a static method call
                 newScopeTitle = sprintf('Channel %s', newChannelName) ;
                 %newChannelNames = {newChannelName} ;
                 theScope.ChannelName = newChannelName ;

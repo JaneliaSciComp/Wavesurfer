@@ -1,4 +1,4 @@
-classdef Logging < ws.system.Subsystem
+classdef Logging < ws.Subsystem
     % Logging  Subsystem that logs data to disk.
     
     properties (Dependent=true)
@@ -62,7 +62,7 @@ classdef Logging < ws.system.Subsystem
     
     methods
         function self = Logging(parent)
-            self@ws.system.Subsystem(parent) ;
+            self@ws.Subsystem(parent) ;
             self.FileLocation_ = 'C:\Data';
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
@@ -610,14 +610,14 @@ classdef Logging < ws.system.Subsystem
     
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
+%             defineDefaultPropertyAttributes@ws.Subsystem(self);
 %             self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
 %             self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
 %             self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
 %         end
         
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
+%             defineDefaultPropertyTags_@ws.Subsystem(self);            
 %             % self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'*'});  
 %             %self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'});
 %             %self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'usr'});            

@@ -1,10 +1,10 @@
-classdef LooperTriggering < ws.system.TriggeringSubsystem 
+classdef LooperTriggering < ws.TriggeringSubsystem 
     % The triggering subsystem for the refiller process.  Doesn't need to
     % do anything except store the current triggering settings.
     
     methods
         function self = LooperTriggering(parent)
-            self@ws.system.TriggeringSubsystem(parent);
+            self@ws.TriggeringSubsystem(parent);
         end  % function        
         
 %         function acquireHardwareResources(self)

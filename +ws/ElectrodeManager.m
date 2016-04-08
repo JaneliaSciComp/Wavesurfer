@@ -139,7 +139,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end
 %         
 %         function set.Parent(self,newValue)
-%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%             if isempty(newValue) || isa(newValue,'ws.Ephys') ,
 %                 self.Parent_=newValue;
 %             end
 %         end
@@ -1150,7 +1150,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         function s = propertyAttributes()
 %             s = struct();
 %             
-%             s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
+%             s.Parent = struct('Classes', 'ws.Ephys', 'AllowEmpty', true);
 %             s.Electrodes = struct('Classes', 'cell', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
 %             s.IsElectrodeMarkedForTestPulse = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
 %             s.IsElectrodeMarkedForRemoval = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);

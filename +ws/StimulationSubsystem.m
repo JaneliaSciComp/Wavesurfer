@@ -1,4 +1,4 @@
-classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.DependentProperties
+classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.mixin.DependentProperties
     % Stimulation subsystem
     
     properties (Dependent = true)
@@ -84,7 +84,7 @@ classdef (Abstract) StimulationSubsystem < ws.system.Subsystem   % & ws.mixin.De
     
     methods
         function self = StimulationSubsystem(parent)
-            self@ws.system.Subsystem(parent) ;            
+            self@ws.Subsystem(parent) ;            
             self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
         end
         

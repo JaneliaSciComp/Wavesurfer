@@ -1,4 +1,4 @@
-classdef Triggering < ws.system.TriggeringSubsystem 
+classdef Triggering < ws.TriggeringSubsystem 
     
     properties (Access=protected, Transient=true)
         BuiltinTriggerDABSTask_
@@ -6,7 +6,7 @@ classdef Triggering < ws.system.TriggeringSubsystem
         
     methods
         function self = Triggering(parent)
-            self@ws.system.TriggeringSubsystem(parent);
+            self@ws.TriggeringSubsystem(parent);
         end  % function
                 
 %         function settings = packageCoreSettings(self)

@@ -1,4 +1,4 @@
-classdef AcquisitionSubsystem < ws.system.Subsystem
+classdef AcquisitionSubsystem < ws.Subsystem
     
     properties (Dependent = true)
         Duration   % s
@@ -102,7 +102,7 @@ classdef AcquisitionSubsystem < ws.system.Subsystem
     
     methods
         function self = AcquisitionSubsystem(parent)
-            self@ws.system.Subsystem(parent) ;
+            self@ws.Subsystem(parent) ;
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         

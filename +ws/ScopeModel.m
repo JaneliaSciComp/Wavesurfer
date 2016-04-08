@@ -671,7 +671,7 @@ classdef ScopeModel < ws.Model
     
     methods (Access = protected)        
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
+%             defineDefaultPropertyTags_@ws.Subsystem(self);            
 %             self.setPropertyTags('XOffset', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('XSpan', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('YLim', 'IncludeInFileTypes', {'cfg'});
@@ -764,7 +764,7 @@ classdef ScopeModel < ws.Model
 %     methods (Static)
 %         function s = propertyAttributes()
 %             s = struct();
-%             s.Parent = struct('Classes', 'ws.system.Display', 'AllowEmpty', true);
+%             s.Parent = struct('Classes', 'ws.Display', 'AllowEmpty', true);
 %         end  % function
 %     end  % class methods block
 

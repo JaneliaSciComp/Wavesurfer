@@ -1,4 +1,4 @@
-classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentProperties
+classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentProperties
     % Refiller Stimulation subsystem
     
     properties (Access = protected)
@@ -37,7 +37,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     
     methods
         function self = RefillerStimulation(parent)
-            self@ws.system.StimulationSubsystem(parent);
+            self@ws.StimulationSubsystem(parent);
         end
         
         function delete(self)
@@ -51,7 +51,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
 %             if ~isempty(self.StimulusLibrary) ,
 %                 self.StimulusLibrary.unstring();
 %             end
-%             unstring@ws.system.Subsystem(self);
+%             unstring@ws.Subsystem(self);
 %         end
         
 %         function value=get.StimulusLibrary(self)
@@ -1019,7 +1019,7 @@ classdef RefillerStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Dep
     
     methods (Access=protected)
         function setIsDigitalChannelTimed_(self, newValue)
-            wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            wasSet = setIsDigitalChannelTimed_@ws.StimulationSubsystem(self,newValue) ;
             if wasSet ,
                 self.syncTasksToChannelMembership_() ;
             end  

@@ -246,7 +246,7 @@ classdef TestPulser < ws.Model
 %         end
 % 
 %         function set.Parent(self,newValue)
-%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%             if isempty(newValue) || isa(newValue,'ws.Ephys') ,
 %                 self.Parent_=newValue;
 %             end
 %         end

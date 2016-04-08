@@ -1,4 +1,4 @@
-classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentProperties
+classdef LooperStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentProperties
     % Stimulation subsystem in the looper process
     
     properties (Access = protected, Transient=true)
@@ -8,7 +8,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     
     methods
         function self = LooperStimulation(parent)
-            self@ws.system.StimulationSubsystem(parent) ;
+            self@ws.StimulationSubsystem(parent) ;
         end
         
         function delete(self)
@@ -251,7 +251,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
     
     methods (Access=protected)
 %         function setIsDigitalChannelTimed_(self, newValue)
-%             wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self, newValue) ;
+%             wasSet = setIsDigitalChannelTimed_@ws.StimulationSubsystem(self, newValue) ;
 %             if wasSet ,
 %                 self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
 %             end  
@@ -259,7 +259,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %         end  % function
         
 %         function setDigitalOutputStateIfUntimed_(self, newValue)
-%             wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self, newValue) ;
+%             wasSet = setDigitalOutputStateIfUntimed_@ws.StimulationSubsystem(self, newValue) ;
 %             if wasSet ,
 %                 if ~isempty(self.TheUntimedDigitalOutputTask_) ,
 %                     isInUntimedDOTaskForEachUntimedDigitalChannel = self.IsInUntimedDOTaskForEachUntimedDigitalChannel_ ;
@@ -277,7 +277,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
         
 %         function addDigitalChannel_(self)
 %             fprintf('LooperStimulation::addDigitalChannel_\n') ;
-%             addDigitalChannel_@ws.system.StimulationSubsystem(self) ;
+%             addDigitalChannel_@ws.StimulationSubsystem(self) ;
 %             digitalChannelNames = self.DigitalChannelNames
 %             digitalTerminalIDs = self.DigitalTerminalIDs            
 %             self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
@@ -285,7 +285,7 @@ classdef LooperStimulation < ws.system.StimulationSubsystem   % & ws.mixin.Depen
 %         end
 %         
 %         function removeDigitalChannel_(self, channelIndex)
-%             removeDigitalChannel_@ws.system.StimulationSubsystem(self, channelIndex) ;
+%             removeDigitalChannel_@ws.StimulationSubsystem(self, channelIndex) ;
 %             self.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately
 %         end
     end

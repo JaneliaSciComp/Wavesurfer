@@ -1,4 +1,4 @@
-classdef LooperAcquisition < ws.system.AcquisitionSubsystem
+classdef LooperAcquisition < ws.AcquisitionSubsystem
     
     properties (Dependent=true)
         IsArmedOrAcquiring
@@ -26,7 +26,7 @@ classdef LooperAcquisition < ws.system.AcquisitionSubsystem
     
     methods
         function self = LooperAcquisition(parent)
-            self@ws.system.AcquisitionSubsystem(parent);
+            self@ws.AcquisitionSubsystem(parent);
         end
         
         function delete(self)

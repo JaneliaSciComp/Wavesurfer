@@ -1,4 +1,4 @@
-classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
+classdef (Abstract) TriggeringSubsystem < ws.Subsystem
     
     properties (Dependent = true)
         BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
@@ -42,7 +42,7 @@ classdef (Abstract) TriggeringSubsystem < ws.system.Subsystem
     
     methods
         function self = TriggeringSubsystem(parent)
-            self@ws.system.Subsystem(parent) ;            
+            self@ws.Subsystem(parent) ;            
             self.IsEnabled = true ;
             self.BuiltinTrigger_ = ws.BuiltinTrigger(self) ; 
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row

@@ -1,4 +1,4 @@
-classdef Acquisition < ws.system.AcquisitionSubsystem
+classdef Acquisition < ws.AcquisitionSubsystem
     
     properties (Access=protected, Transient=true)
         AnalogScalingCoefficientsCache_  % a cache of the analog input scaling coefficients, populated at the start of a run, set to empty at end of run
@@ -6,7 +6,7 @@ classdef Acquisition < ws.system.AcquisitionSubsystem
     
     methods
         function self = Acquisition(parent)
-            self@ws.system.AcquisitionSubsystem(parent);
+            self@ws.AcquisitionSubsystem(parent);
         end
         
         function initializeFromMDFStructure(self, mdfStructure)

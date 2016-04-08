@@ -247,13 +247,13 @@ classdef WavesurferModel < ws.RootModel
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems.
-            self.Acquisition_ = ws.system.Acquisition(self);
-            self.Stimulation_ = ws.system.Stimulation(self);
-            self.Display_ = ws.system.Display(self);
-            self.Triggering_ = ws.system.Triggering(self);
-            self.UserCodeManager_ = ws.system.UserCodeManager(self);
-            self.Logging_ = ws.system.Logging(self);
-            self.Ephys_ = ws.system.Ephys(self);
+            self.Acquisition_ = ws.Acquisition(self);
+            self.Stimulation_ = ws.Stimulation(self);
+            self.Display_ = ws.Display(self);
+            self.Triggering_ = ws.Triggering(self);
+            self.UserCodeManager_ = ws.UserCodeManager(self);
+            self.Logging_ = ws.Logging(self);
+            self.Ephys_ = ws.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property

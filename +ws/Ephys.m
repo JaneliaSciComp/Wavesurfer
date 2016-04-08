@@ -1,4 +1,4 @@
-classdef Ephys < ws.system.Subsystem
+classdef Ephys < ws.Subsystem
     %Ephys  Wavesurfer subsystem responsible for most Ephys-related behaviors.
     %
     %    The Ephys subsystem manages electrode configuration and settings
@@ -25,7 +25,7 @@ classdef Ephys < ws.system.Subsystem
     methods
         %%
         function self = Ephys(parent)
-            self@ws.system.Subsystem(parent);
+            self@ws.Subsystem(parent);
             self.IsEnabled=true;            
             self.ElectrodeManager_=ws.ElectrodeManager(self);
             self.TestPulser_=ws.TestPulser(self);
@@ -224,12 +224,12 @@ classdef Ephys < ws.system.Subsystem
     methods (Access = protected)
 %         %%
 %         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
+%             defineDefaultPropertyAttributes@ws.Subsystem(self);
 %         end
         
 %         %%
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.system.Subsystem(self);                        
+%             defineDefaultPropertyTags_@ws.Subsystem(self);                        
 %             self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
 %         end
         
@@ -266,7 +266,7 @@ classdef Ephys < ws.system.Subsystem
     
 %     methods (Static)
 %         function s = propertyAttributes()
-%             s = ws.system.Subsystem.propertyAttributes();
+%             s = ws.Subsystem.propertyAttributes();
 %         end  % function
 %     end  % class methods block
     

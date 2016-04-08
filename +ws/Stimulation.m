@@ -1,4 +1,4 @@
-classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentProperties
+classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentProperties
     % Stimulation subsystem
     
 %     properties (Dependent = true)
@@ -79,7 +79,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
     
     methods
         function self = Stimulation(parent)
-            self@ws.system.StimulationSubsystem(parent);
+            self@ws.StimulationSubsystem(parent);
 %             if ~exist('parent','var') ,
 %                 parent=ws.WavesurferModel.empty();  % Want the no-arg constructor to at least return
 %             end
@@ -165,7 +165,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %             if ~isempty(self.StimulusLibrary) ,
 %                 self.StimulusLibrary.unstring();
 %             end
-%             unstring@ws.system.Subsystem(self);
+%             unstring@ws.Subsystem(self);
 %         end
         
 %         function value=get.StimulusLibrary(self)
@@ -774,7 +774,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
     
     methods (Access = protected)
 %         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.system.Subsystem(self);
+%             defineDefaultPropertyAttributes@ws.Subsystem(self);
 %             
 %             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
 %             %self.setPropertyAttributeFeatures('SelectedOutputable', 'Classes', {'ws.stimulus.StimulusSequence', 'ws.stimulus.StimulusMap'}, 'Attributes', {'scalar'});
@@ -783,7 +783,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         end
         
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.system.Subsystem(self);
+%             defineDefaultPropertyTags_@ws.Subsystem(self);
 %             self.setPropertyTags('SampleRate', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('AnalogChannelUnits_', 'IncludeInFileTypes', {'cfg'});
 %             self.setPropertyTags('AnalogChannelScales_', 'IncludeInFileTypes', {'cfg'});            
@@ -799,7 +799,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
 %         end
         
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.system.Subsystem(self);            
+%             defineDefaultPropertyTags_@ws.Subsystem(self);            
 %             %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
 %         end
 
@@ -1025,7 +1025,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
         function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
             % This should only be called by the parent WavesurferModel, to
             % ensure the self-consistency of the WavesurferModel.
-            %wasSet = setSingleDigitalTerminalID_@ws.system.StimulationSubsystem(self, i, newValue) ;            
+            %wasSet = setSingleDigitalTerminalID_@ws.StimulationSubsystem(self, i, newValue) ;            
             if 1<=i && i<=self.NDigitalChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
@@ -1117,7 +1117,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
         
     methods (Access=protected)
         function setIsDigitalChannelTimed_(self,newValue)
-            wasSet = setIsDigitalChannelTimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            wasSet = setIsDigitalChannelTimed_@ws.StimulationSubsystem(self,newValue) ;
             if wasSet ,
                 self.syncTasksToChannelMembership_() ;
                 self.Parent.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
@@ -1126,7 +1126,7 @@ classdef Stimulation < ws.system.StimulationSubsystem   % & ws.mixin.DependentPr
         end  % function
         
         function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
-            wasSet = setDigitalOutputStateIfUntimed_@ws.system.StimulationSubsystem(self,newValue) ;
+            wasSet = setDigitalOutputStateIfUntimed_@ws.StimulationSubsystem(self,newValue) ;
             if wasSet ,
                 self.Parent.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
             end

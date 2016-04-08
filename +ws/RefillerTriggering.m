@@ -1,4 +1,4 @@
-classdef RefillerTriggering < ws.system.TriggeringSubsystem 
+classdef RefillerTriggering < ws.TriggeringSubsystem 
 
     properties (Access=protected, Transient=true)
         %AcquisitionCounterTask_  % a ws.ni.CounterTriggerTask, or []
@@ -10,7 +10,7 @@ classdef RefillerTriggering < ws.system.TriggeringSubsystem
     
     methods
         function self = RefillerTriggering(parent)
-            self@ws.system.TriggeringSubsystem(parent);
+            self@ws.TriggeringSubsystem(parent);
         end  % function        
         
 %         function acquireHardwareResources(self)

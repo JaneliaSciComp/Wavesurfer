@@ -146,13 +146,13 @@ classdef Refiller < ws.RootModel
 %             self.IndexOfSelectedFastProtocol=1;
             
             % Create all subsystems.
-            %self.Acquisition_ = ws.system.RefillerAcquisition(self);
-            self.Stimulation_ = ws.system.RefillerStimulation(self);
-            %self.Display = ws.system.Display(self);
-            self.Triggering_ = ws.system.RefillerTriggering(self);
-            self.UserCodeManager_ = ws.system.UserCodeManager(self);
-            %self.Logging = ws.system.Logging(self);
-            %self.Ephys = ws.system.Ephys(self);
+            %self.Acquisition_ = ws.RefillerAcquisition(self);
+            self.Stimulation_ = ws.RefillerStimulation(self);
+            %self.Display = ws.Display(self);
+            self.Triggering_ = ws.RefillerTriggering(self);
+            self.UserCodeManager_ = ws.UserCodeManager(self);
+            %self.Logging = ws.Logging(self);
+            %self.Ephys = ws.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property

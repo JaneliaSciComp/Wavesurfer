@@ -1,4 +1,4 @@
-classdef UserCodeManager < ws.system.Subsystem
+classdef UserCodeManager < ws.Subsystem
     
     properties (Dependent = true)
         ClassName
@@ -28,7 +28,7 @@ classdef UserCodeManager < ws.system.Subsystem
     
     methods
         function self = UserCodeManager(parent)
-            self@ws.system.Subsystem(parent) ;
+            self@ws.Subsystem(parent) ;
             self.IsEnabled=true;            
         end  % function
 
