@@ -92,7 +92,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %em.decodeProperties(protocolSettingsCheck);
-            em = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old em object
+            em = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old em object
 
             % compare the stim library in model to the copy of the
             % populated version
@@ -184,7 +184,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsAsRead=s.protocolSettings;
             %wsModel2.decodeProperties(protocolSettingsCheck);
-            wsModelAsDecoded = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsAsRead) ;
+            wsModelAsDecoded = ws.Coding.decodeEncodingContainer(protocolSettingsAsRead) ;
 
             % Check the self-consistency of the stim library
             self.verifyTrue(wsModelAsDecoded.Stimulation.StimulusLibrary.isSelfConsistent());
@@ -229,7 +229,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %em.decodeProperties(protocolSettingsCheck);
-            em = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
+            em = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
 
             % All map durations should be not free, again
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
@@ -293,7 +293,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettingsCheck=s.protocolSettings;
             %wsModelCheck.releaseHardwareResources();
             %wsModelCheck.decodeProperties(protocolSettingsCheck);
-            wsModelCheck = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
+            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
 
             % Check that all settings are as set
             for i=1:nSettings ,
@@ -369,7 +369,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %emCheck.decodeProperties(protocolSettingsCheck);
-            emCheck = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
+            emCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
             
             % Check that all settings are as set
             electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>

@@ -494,7 +494,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
                 
 %         % Need to override the decodeProperties() method supplied by
-%         % ws.mixin.Coding() to get correct behavior when the number of
+%         % ws.Coding() to get correct behavior when the number of
 %         % scopes changes.
 %         function decodeProperties(self, propSet)
 %             % Sets the properties in self to the values encoded in propSet.
@@ -507,8 +507,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.removeScopes();
 %             
 %             % Now call the superclass method
-%             %originalValues=self.decodeProperties@ws.mixin.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
-%             self.decodeProperties@ws.mixin.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
+%             %originalValues=self.decodeProperties@ws.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
+%             self.decodeProperties@ws.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
 % 
 %             % Update the view
 %             self.broadcast('NScopesMayHaveChanged');
@@ -521,14 +521,14 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     
     methods (Access = protected)        
         % Need to override the decodeUnwrappedEncodingCore_() method supplied
-        % by ws.mixin.Coding() to get correct behavior when the number of
+        % by ws.Coding() to get correct behavior when the number of
         % scopes changes.
         function decodeUnwrappedEncodingCore_(self, encoding)            
             % Need to clear the existing scopes first
             self.removeScopes();
             
             % Now call the superclass method
-            self.decodeUnwrappedEncodingCore_@ws.mixin.Coding(encoding);
+            self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
 
             % Update the view
             %self.broadcast('NScopesMayHaveChanged');  % do I need this?
@@ -536,12 +536,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end  % protected methods block
     
     methods (Access = protected)        
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)            
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
 %             if isequal(name,'Scopes') ,
@@ -593,7 +593,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Scopes_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+                    target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,

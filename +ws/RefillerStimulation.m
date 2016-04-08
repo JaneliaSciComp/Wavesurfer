@@ -1,4 +1,4 @@
-classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentProperties
+classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     % Refiller Stimulation subsystem
     
     properties (Access = protected)
@@ -783,12 +783,12 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentP
 %     end  % protected methods block
     
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end        

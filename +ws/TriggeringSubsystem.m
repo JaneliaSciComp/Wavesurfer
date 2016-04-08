@@ -376,12 +376,12 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
     end  % methods block
     
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
@@ -452,7 +452,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+                    target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,

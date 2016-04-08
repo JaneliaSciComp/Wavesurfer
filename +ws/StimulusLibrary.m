@@ -1,4 +1,4 @@
-classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
+classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
     properties (Dependent = true)
         Stimuli  % these are all cell arrays
@@ -1375,7 +1375,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
@@ -1415,7 +1415,7 @@ classdef StimulusLibrary < ws.Model & ws.mixin.ValueComparable   % & ws.Mimic  %
 %     end    
     
 %     methods
-%         function other=copy(self)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%         function other=copy(self)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
 %             other=ws.StimulusLibrary();
 %             other.mimic(self);
 %         end

@@ -1,4 +1,4 @@
-classdef LooperStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentProperties
+classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     % Stimulation subsystem in the looper process
     
     properties (Access = protected, Transient=true)
@@ -213,12 +213,12 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentPro
     end  % methods block
     
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end

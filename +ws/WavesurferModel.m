@@ -1774,12 +1774,12 @@ classdef WavesurferModel < ws.RootModel
     end % protected methods block
         
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name) ;
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             %if isequal(name,'IsDIChannelTerminalOvercommitted_')
             %    dbstack
@@ -1843,7 +1843,7 @@ classdef WavesurferModel < ws.RootModel
     end  % methods block
         
     methods (Access = protected)        
-%         % Allows ws.mixin.DependentProperties to initiate registered dependencies on
+%         % Allows ws.DependentProperties to initiate registered dependencies on
 %         % properties that are not otherwise publicly settable.
 %         function zprvPrivateSet(self, propertyName)
 %             self.(propertyName) = NaN;
@@ -2192,7 +2192,7 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
             %self.decodeProperties(wavesurferModelSettings);
             %keyboard
-            newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
@@ -2252,7 +2252,7 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             
             %self.decodeProperties(wavesurferModelSettings);
-            newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicUserSettings_(newModel) ;
             
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
@@ -2767,7 +2767,7 @@ classdef WavesurferModel < ws.RootModel
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
-            self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+            self.FastProtocols_ = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
         
         function setDeviceName_(self, newValue)

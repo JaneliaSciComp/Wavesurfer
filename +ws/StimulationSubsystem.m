@@ -1,4 +1,4 @@
-classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.mixin.DependentProperties
+classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProperties
     % Stimulation subsystem
     
     properties (Dependent = true)
@@ -618,7 +618,7 @@ end  % methods block
     end  % protected methods block        
     
     methods (Access = protected)        
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end

@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
+classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         Parent  
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
@@ -87,13 +87,13 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
     
     methods         
         function propNames = listPropertiesForPersistence(self)
-            propNamesRaw = listPropertiesForPersistence@ws.mixin.Coding(self) ;            
+            propNamesRaw = listPropertiesForPersistence@ws.Coding(self) ;            
             propNames=setdiff(propNamesRaw, ...
                               {'Parent_'}) ;
         end  % function 
 
         function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.mixin.Coding(self) ;            
+            propNamesRaw = listPropertiesForHeader@ws.Coding(self) ;            
             propNames=setdiff(propNamesRaw, ...
                               {'Parent'}) ;
         end  % function         

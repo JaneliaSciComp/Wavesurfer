@@ -1,4 +1,4 @@
-classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentProperties
+classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     % Stimulation subsystem
     
 %     properties (Dependent = true)
@@ -803,12 +803,12 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentPropertie
 %             %self.setPropertyTags('StimulusLibrary', 'ExcludeFromFileTypes', {'header'});
 %         end
 
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end        

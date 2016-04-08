@@ -1,4 +1,4 @@
-classdef CounterTriggerTask < handle    % & ws.mixin.AttributableProperties
+classdef CounterTriggerTask < handle    % & ws.AttributableProperties
         
     properties (Dependent = true, SetAccess=immutable)
         Parent

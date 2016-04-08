@@ -466,7 +466,7 @@ classdef Looper < ws.RootModel
             self.releaseHardwareResources_() ;           
             
             % Make our own settings mimic those of wavesurferModelSettings
-            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;
 
             % Set the overcommitment stuff, calculated in the frontend
@@ -958,7 +958,7 @@ classdef Looper < ws.RootModel
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
             self.releaseTimedHardwareResources_();           
-            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Cache the keystone task for the run
@@ -1274,12 +1274,12 @@ classdef Looper < ws.RootModel
 %     end % protected methods block
     
     methods (Access = protected)        
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function        

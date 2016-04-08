@@ -505,7 +505,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.IsCommandEnabled=other.IsCommandEnabled;            
         end  % function
 
-%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
 %             className=class(self);
 %             other=feval(className,parent);
 %             other.mimic(self);

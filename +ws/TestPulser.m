@@ -1574,7 +1574,7 @@ classdef TestPulser < ws.Model
 %         mdlHeaderExcludeProps = {};
 %     end    
     
-    % These next two methods allow access to private and protected variables from ws.mixin.Coding. 
+    % These next two methods allow access to private and protected variables from ws.Coding. 
     methods (Access=protected)
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -1589,7 +1589,7 @@ classdef TestPulser < ws.Model
 %         % Have to override decodeProperties() to sync up transient properties
 %         % after.
 %         function decodeProperties(self, encoding)
-%             decodeProperties@ws.mixin.Coding(self, encoding) ;
+%             decodeProperties@ws.Coding(self, encoding) ;
 %             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
 %         end  % function
 %     end
@@ -1598,7 +1598,7 @@ classdef TestPulser < ws.Model
         % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
         % after.
         function decodeUnwrappedEncodingCore_(self, encoding)
-            decodeUnwrappedEncodingCore_@ws.mixin.Coding(self, encoding) ;
+            decodeUnwrappedEncodingCore_@ws.Coding(self, encoding) ;
             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
         end  % function
     end

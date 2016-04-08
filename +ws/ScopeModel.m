@@ -714,7 +714,7 @@ classdef ScopeModel < ws.Model
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
@@ -726,7 +726,7 @@ classdef ScopeModel < ws.Model
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Coding.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             

@@ -1,4 +1,4 @@
-classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
+classdef StimulusSequence < ws.Model & ws.ValueComparable
     % Represents a sequence of stimulus maps, to be used in sequence.
     % Note that StimulusSequences should only ever
     % exist as an item in a StimulusLibrary!
@@ -375,7 +375,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         end
         
 %         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.mixin.AttributableProperties(self);
+%             defineDefaultPropertyAttributes@ws.AttributableProperties(self);
 %             self.setPropertyAttributeFeatures('Name', 'Classes', 'char', 'Attributes', {'vector'});
 %         end  % function
         
@@ -496,7 +496,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function

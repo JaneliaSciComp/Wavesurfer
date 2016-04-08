@@ -33,7 +33,7 @@ classdef (Abstract) Coding < handle
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 thisPropertyValue = self.getPropertyValue_(thisPropertyName);
-                encodingOfPropertyValue = ws.mixin.Coding.encodeAnythingForPersistence(thisPropertyValue);
+                encodingOfPropertyValue = ws.Coding.encodeAnythingForPersistence(thisPropertyValue);
                 encoding.(thisPropertyName)=encodingOfPropertyValue;
             end
             
@@ -58,7 +58,7 @@ classdef (Abstract) Coding < handle
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 thisPropertyValue = self.getPropertyValue_(thisPropertyName);
-                encodingOfPropertyValue = ws.mixin.Coding.encodeAnythingForHeader(thisPropertyValue);
+                encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue);
                 encoding.(thisPropertyName)=encodingOfPropertyValue;
             end
         end
@@ -88,7 +88,7 @@ classdef (Abstract) Coding < handle
             self.synchronizeTransientStateToPersistedState_() ;            
         end  % function
         
-        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
             className=class(self);
             other=feval(className,parent);
             other.mimic(self);
@@ -101,7 +101,7 @@ classdef (Abstract) Coding < handle
             % specified in the classdef.
             
             %className=class(self);
-            %value=ws.mixin.Coding.classPropertyNames_(className);
+            %value=ws.Coding.classPropertyNames_(className);
             
             mc = metaclass(self);
             allClassProperties = mc.Properties;
@@ -143,7 +143,7 @@ classdef (Abstract) Coding < handle
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Coding.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
         end
@@ -158,7 +158,7 @@ classdef (Abstract) Coding < handle
             elseif iscell(thing) ,
                 encoding=cell(size(thing));
                 for j=1:numel(thing) ,
-                    encoding{j} = ws.mixin.Coding.encodeAnythingForPersistence(thing{j});
+                    encoding{j} = ws.Coding.encodeAnythingForPersistence(thing{j});
                 end
                 encodingContainer = struct('className',{'cell'},'encoding',{encoding}) ;
             elseif isstruct(thing) ,
@@ -167,11 +167,11 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(thing) ,
                     for j=1:length(fieldNames) ,
                         thisFieldName=fieldNames{j};
-                        encoding(i).(thisFieldName) = ws.mixin.Coding.encodeAnythingForPersistence(thing(i).(thisFieldName)) ;
+                        encoding(i).(thisFieldName) = ws.Coding.encodeAnythingForPersistence(thing(i).(thisFieldName)) ;
                     end
                 end
                 encodingContainer=struct('className',{'struct'},'encoding',{encoding}) ;
-            elseif isa(thing, 'ws.mixin.Coding') ,
+            elseif isa(thing, 'ws.Coding') ,
                 encodingContainer = thing.encodeForPersistence() ;
             else                
                 error('Coding:dontKnowHowToEncode', ...
@@ -188,7 +188,7 @@ classdef (Abstract) Coding < handle
             elseif iscell(thing) ,
                 encoding=cell(size(thing));
                 for j=1:numel(thing) ,
-                    encoding{j} = ws.mixin.Coding.encodeAnythingForHeader(thing{j});
+                    encoding{j} = ws.Coding.encodeAnythingForHeader(thing{j});
                 end
             elseif isstruct(thing) ,
                 fieldNames=fieldnames(thing);
@@ -196,10 +196,10 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(thing) ,
                     for j=1:length(fieldNames) ,
                         thisFieldName=fieldNames{j};
-                        encoding(i).(thisFieldName) = ws.mixin.Coding.encodeAnythingForHeader(thing(i).(thisFieldName));
+                        encoding(i).(thisFieldName) = ws.Coding.encodeAnythingForHeader(thing(i).(thisFieldName));
                     end
                 end
-            elseif isa(thing, 'ws.mixin.Coding') ,
+            elseif isa(thing, 'ws.Coding') ,
                 encoding = thing.encodeForHeader() ;
             else                
                 error('Coding:dontKnowHowToEncode', ...
@@ -209,11 +209,11 @@ classdef (Abstract) Coding < handle
         end  % function                
 
         function result = decodeEncodingContainer(encodingContainer)
-            result = ws.mixin.Coding.decodeEncodingContainerGivenParent(encodingContainer,[]) ;  % parent is empty
+            result = ws.Coding.decodeEncodingContainerGivenParent(encodingContainer,[]) ;  % parent is empty
         end
     
         function result = decodeEncodingContainerGivenParent(encodingContainer,parent)
-            if ~ws.mixin.Coding.isAnEncodingContainer(encodingContainer) ,                        
+            if ~ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
                 error('Coding:errSettingProp', ...
                       'decodeAnything() requires an encoding container.');
             end
@@ -228,7 +228,7 @@ classdef (Abstract) Coding < handle
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;
                 for i=1:numel(result) ,
-                    result{i} = ws.mixin.Coding.decodeEncodingContainerGivenParent(encoding{i},parent) ;
+                    result{i} = ws.Coding.decodeEncodingContainerGivenParent(encoding{i},parent) ;
                       % A cell array can't be a parent, so we just use
                       % parent
                 end
@@ -238,12 +238,12 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(encoding) ,
                     for j=1:length(fieldNames) ,
                         fieldName = fieldNames{j} ;
-                        result(i).(fieldName) = ws.mixin.Coding.decodeEncodingContainerGivenParent(encoding(i).(fieldName),parent) ;
+                        result(i).(fieldName) = ws.Coding.decodeEncodingContainerGivenParent(encoding(i).(fieldName),parent) ;
                             % A struct array can't be a parent, so we just use
                             % parent
                     end
                 end                
-            elseif length(className)>=3 && isequal(className(1:3),'ws.') ,  % would be better to determine if className is a subclass of ws.mixin.Coding...
+            elseif length(className)>=3 && isequal(className(1:3),'ws.') ,  % would be better to determine if className is a subclass of ws.Coding...
                 % One of our custom classes
                 
                 % Make sure the encoded object is a scalar
@@ -264,7 +264,7 @@ classdef (Abstract) Coding < handle
                     propertyName = propertyNames{i};
                     if isprop(result,propertyName) ,  % Only decode if there's a property to receive it
                         subencoding = encoding.(propertyName) ;  % the encoding is a struct, to no worries about access
-                        subresult = ws.mixin.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                        subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
                         result.setPropertyValue_(propertyName,subresult) ;
                     % else
                     %     warning('Coding:errSettingProp', ...
@@ -291,7 +291,7 @@ classdef (Abstract) Coding < handle
         end  % function
         
         function target = copyCellArrayOfHandlesGivenParent(source,parent)
-            % Utility function for copying a cell array of ws.mixin.Coding
+            % Utility function for copying a cell array of ws.Coding
             % entities, given a parent.
             nElements = length(source) ;
             target = cell(size(source)) ;  % want to preserve row vectors vs col vectors
