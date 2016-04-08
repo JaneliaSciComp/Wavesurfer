@@ -86,7 +86,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
 
         function set.AcquisitionTriggerSchemeIndex(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 nSchemes = 1 + length(self.ExternalTriggers_) ;
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
                     self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
@@ -104,7 +104,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
 
         function set.StimulationTriggerSchemeIndex(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if self.StimulationUsesAcquisitionTriggerScheme ,
                     error('most:Model:invalidPropVal', ...
                           'Can''t set StimulationTriggerSchemeIndex when StimulationUsesAcquisitionTriggerScheme is true');                    
@@ -343,7 +343,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if self.Parent.AreSweepsFiniteDuration ,
                     % overridden by AreSweepsFiniteDuration, do nothing
                 else                    

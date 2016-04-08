@@ -79,7 +79,7 @@ classdef (Abstract) Subsystem < ws.Model
         end
         
         function setIsEnabledImplementation_(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.IsEnabled_ = logical(newValue);
                 else

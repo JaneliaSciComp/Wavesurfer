@@ -80,9 +80,9 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.IsCommandEnabled=true;
             
             % Process args
-            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -476,8 +476,8 @@ classdef Electrode < ws.Model % & ws.Mimic
 %             self.CurrentMonitorChannelName=s.CurrentMonitorChannelName;
 %             self.CurrentCommandChannelName=s.CurrentCommandChannelName;
 %             self.VoltageMonitorChannelName=s.VoltageMonitorChannelName;
-%             self.TestPulseAmplitudeInVC=ws.utility.DoubleString(s.TestPulseAmplitudeInVC);
-%             self.TestPulseAmplitudeInCC=ws.utility.DoubleString(s.TestPulseAmplitudeInCC);
+%             self.TestPulseAmplitudeInVC=ws.DoubleString(s.TestPulseAmplitudeInVC);
+%             self.TestPulseAmplitudeInCC=ws.DoubleString(s.TestPulseAmplitudeInCC);
 %             self.VoltageCommandScaling=s.VoltageCommandScaling;
 %             self.CurrentMonitorScaling=s.CurrentMonitorScaling;
 %             self.CurrentCommandScaling=s.CurrentCommandScaling;

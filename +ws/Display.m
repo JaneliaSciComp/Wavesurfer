@@ -64,7 +64,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function set.UpdateRate(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                     newValue = max(0.1,min(newValue,10)) ;
                     self.UpdateRate_ = newValue;
@@ -78,7 +78,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function value = get.XSpan(self)
-            import ws.utility.*
+            import ws.*
             if self.IsXSpanSlavedToAcquistionDuration ,
                 value=1;  % s, fallback value
                 wavesurferModel=self.Parent;
@@ -97,7 +97,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function set.XSpan(self, newValue)            
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if self.IsXSpanSlavedToAcquistionDuration ,
                     % don't set anything
                 else
@@ -121,7 +121,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
                 
         function set.XOffset(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                     self.XOffset_ = double(newValue);
                     for idx = 1:numel(self.Scopes)

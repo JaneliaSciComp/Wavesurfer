@@ -190,7 +190,7 @@ classdef YLimDialogFigure < ws.MCOSFigure
         end  % function
         
         function syncOKButtonEnablementFromEditContents(self)
-            import ws.utility.onIff
+            import ws.onIff
             yMaxAsString=get(self.YMaxEdit,'String');
             yMinAsString=get(self.YMinEdit,'String');
             yMax=str2double(yMaxAsString);
@@ -221,7 +221,7 @@ classdef YLimDialogFigure < ws.MCOSFigure
         end
         
         function self=updateControlPropertiesImplementation_(self,varargin)
-            import ws.utility.*
+            import ws.*
             
             % If the model is empty or broken, just return at this point
             model=self.Model;

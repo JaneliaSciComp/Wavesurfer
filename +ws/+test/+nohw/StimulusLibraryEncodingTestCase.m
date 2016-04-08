@@ -55,9 +55,9 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         end  % function
         
         function testCopyingOfStimuli(self)
-            import ws.utility.cellisequal
-            import ws.utility.cellisequaln
-            import ws.utility.cellne
+            import ws.cellisequal
+            import ws.cellisequaln
+            import ws.cellne
             
             % create some stimuli, etc.
             %stimuli=self.makeExampleStimulusParts();
@@ -147,8 +147,8 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             
             %isMapLiveAndConsistent=cellfun(@isLiveAndSelfConsistent,mapsCheck);
             %self.verifyTrue(all(isMapLiveAndConsistent));  % test soundness of the restored ones
-            self.verifyTrue(all(ws.utility.cellisequal(maps,mapsCheck)));  % test value equality
-            self.verifyTrue(all(ws.utility.cellne(maps,mapsCheck)));  % test (lack of) identity
+            self.verifyTrue(all(ws.cellisequal(maps,mapsCheck)));  % test value equality
+            self.verifyTrue(all(ws.cellne(maps,mapsCheck)));  % test (lack of) identity
         end  % function
         
         function testSavingOfStimulusSequences(self)
@@ -164,8 +164,8 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %cellfun(@(seq)(seq.revive(stimulusLibrary.Maps)),sequencesCheck);
             
             %self.verifyTrue(all(cellfun(@isLiveAndSelfConsistent,sequencesCheck)));  % test soundness of the restored one
-            self.verifyTrue(all(ws.utility.cellisequal(sequences,sequencesCheck)));  % test value equality
-            self.verifyTrue(all(ws.utility.cellne(sequences,sequencesCheck)));  % test (lack of) identity
+            self.verifyTrue(all(ws.cellisequal(sequences,sequencesCheck)));  % test value equality
+            self.verifyTrue(all(ws.cellne(sequences,sequencesCheck)));  % test (lack of) identity
         end  % function
         
         function testSavingOfStimulusLibrary(self)

@@ -31,7 +31,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     methods
         function self = StimulusMap(parent,varargin)
             self@ws.Model(parent);
-            pvArgs = ws.utility.filterPVArgs(varargin, {'Name', 'Duration'}, {});
+            pvArgs = ws.filterPVArgs(varargin, {'Name', 'Duration'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -100,7 +100,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         function set.ChannelNames(self,newValue)
             % newValue must be a row cell array, with each element a string
             % and each string either empty or a valid output channel name
-            stimulation=ws.utility.getSubproperty(self,'Parent','Parent');
+            stimulation=ws.getSubproperty(self,'Parent','Parent');
             if isempty(stimulation) ,
                 doCheckChannelNames=false;
             else
@@ -251,7 +251,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end   % function
         
         function set.Duration(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,                
+            if ws.isASettableValue(newValue) ,                
                 if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>=0 ,            
                     newValue = double(newValue) ;
                     didThrow=false ;
@@ -340,7 +340,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end   % function
         
         function out = containsStimulus(self, stimuliOrStimulus)
-            stimuli=ws.utility.cellifyIfNeeded(stimuliOrStimulus);
+            stimuli=ws.cellifyIfNeeded(stimuliOrStimulus);
             out = false(size(stimuli));
             
             for index = 1:numel(stimuli)
@@ -572,7 +572,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             time = dt*(0:(n-1))';
             
             %clist = 'bgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmk';
-            clist = ws.utility.make_color_sequence() ;
+            clist = ws.make_color_sequence() ;
             
             %set(ax, 'NextPlot', 'Add');
 
@@ -591,7 +591,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                                   'Color',clist(indexOfThisChannelInOverallList,:));
             end
             
-            ws.utility.setYAxisLimitsToAccomodateLinesBang(ax,lines);
+            ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
             legend(ax, channelNamesInThisMap, 'Interpreter', 'None');
             %title(ax,sprintf('Stimulus Map: %s', self.Name));
             xlabel(ax,'Time (s)','FontSize',10);
@@ -681,7 +681,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %             % loading from a file.  Tries to find a stimulus in stimuli
 %             % with a UUID matching the binding's stored stimulus UUID.            
 %             stimulusUUID=self.StimulusUUIDs_{i};
-%             uuids=ws.utility.cellArrayPropertyAsArray(stimuli,'UUID');
+%             uuids=ws.cellArrayPropertyAsArray(stimuli,'UUID');
 %             isMatch=(uuids==stimulusUUID);
 %             iMatch=find(isMatch,1);
 %             if isempty(iMatch) ,
@@ -726,7 +726,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %             % elements of otherStimuli
 %             nStimuli=length(self.ChannelNames);
 %             other.Stimuli_ = cell(1,nStimuli);
-%             %uuids=ws.utility.cellArrayPropertyAsArray(selfStimuli,'UUID');
+%             %uuids=ws.cellArrayPropertyAsArray(selfStimuli,'UUID');
 %             for j=1:nStimuli ,
 %                 %uuidOfThisStimulusInSelf=self.StimulusUUIDs_{j};
 %                 thisStimulusInSelf=self.Stimuli_{j};

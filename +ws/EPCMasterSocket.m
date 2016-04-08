@@ -110,7 +110,7 @@ classdef EPCMasterSocket < handle
         
         %%
         function close(self)
-            import ws.utility.*
+            import ws.*
             self.IsOpen_=false;
             self.HasCommandOnOffSwitch_=[];
             if exist(self.CommandFileName_,'file') ,
@@ -217,7 +217,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setMode(self,electrodeIndex,newMode)
-            import ws.utility.*
+            import ws.*
             
             err=[]; %#ok<NASGU>
             if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
@@ -565,7 +565,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setIsCommandEnabled(self,electrodeIndex,newWantedValue)
-            import ws.utility.*
+            import ws.*
             if ~isscalar(newWantedValue) ,
                 errorId='EPCMasterSocket:InvalidValue';
                 errorMessage='Couldn''t set IsCommandEnabled because given value is not a scalar.';
@@ -639,7 +639,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setCurrentCommandGain(self,electrodeIndex,newWantedValue)
-            import ws.utility.*
+            import ws.*
 
             if newWantedValue<=0 ,
                 errorId='EPCMasterSocket:invalidValue';
@@ -721,7 +721,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setVoltageCommandGain(self,electrodeIndex,newValue)
-            import ws.utility.*
+            import ws.*
             % newValue should be in mV/V
 
             % Unlike the others, can set this to zero, meaning "turn off
@@ -779,7 +779,7 @@ classdef EPCMasterSocket < handle
         %%
         function err=setUIEnablement(self,newValueRaw)
             % Set whether the EPCMaster UI is enabled.  true==enabled.
-            import ws.utility.*
+            import ws.*
             
             err=[]; %#ok<NASGU>
             
@@ -874,7 +874,7 @@ classdef EPCMasterSocket < handle
     
         %%
         function [responseString,err]=getResponseString(self,commandIndex)
-            import ws.utility.*
+            import ws.*
             
             % fallback return values
             responseString='';
@@ -960,7 +960,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function [responseStrings,err]=getResponseStrings(self,commandIndex)
-            import ws.utility.*
+            import ws.*
             
             % Fallback values
             responseStrings={};
@@ -1072,7 +1072,7 @@ classdef EPCMasterSocket < handle
             % command file, but not actually try to read the command from
             % it and respond to it appropriately.
             
-            import ws.utility.*
+            import ws.*
 
             % Default return value
             err=[];

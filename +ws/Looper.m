@@ -525,7 +525,7 @@ classdef Looper < ws.RootModel
         function set.NSweepsPerRun(self, newValue)
             % Sometimes want to trigger the listeners without actually
             % setting, and without throwing an error
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
                 %value=self.validatePropArg('NSweepsPerRun',value);
                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
@@ -550,7 +550,7 @@ classdef Looper < ws.RootModel
         
         function set.SweepDurationIfFinite(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            if ws.utility.isASettableValue(value) , 
+            if ws.isASettableValue(value) , 
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
                     self.willSetSweepDurationIfFinite();
@@ -576,7 +576,7 @@ classdef Looper < ws.RootModel
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
-            if ws.utility.isASettableValue(newValue),             
+            if ws.isASettableValue(newValue),             
                 % Check value and set if valid
                 if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
                     % If get here, newValue is a valid value for this prop
@@ -605,7 +605,7 @@ classdef Looper < ws.RootModel
 %         
 %         function set.SweepDuration(self, newValue)
 %             % Fail quietly if a nonvalue
-%             if ws.utility.isASettableValue(newValue),             
+%             if ws.isASettableValue(newValue),             
 %                 % Do nothing if in continuous mode
 %                 if self.AreSweepsFiniteDuration ,
 %                     % Check value and set if valid
@@ -1014,7 +1014,7 @@ classdef Looper < ws.RootModel
 %                 self.completeTheOngoingRun_();
 %             else
 %                 % do something else                
-%                 reason = ws.utility.fif(didUserStop, 'user', 'problem') ;
+%                 reason = ws.fif(didUserStop, 'user', 'problem') ;
 %                 self.abortTheOngoingRun_(reason);
 %             end
 %             
@@ -1339,7 +1339,7 @@ classdef Looper < ws.RootModel
 %             commandFileName='si_command.txt';
 %             absoluteCommandFileName=fullfile(dirName,commandFileName);
 %             if exist(absoluteCommandFileName,'file') ,
-%                 ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
+%                 ws.deleteFileWithoutWarning(absoluteCommandFileName);
 %                 if exist(absoluteCommandFileName,'file') , 
 %                     isCommandFileGone=false;
 %                     errorMessage1='Unable to delete pre-existing ScanImage command file';
@@ -1356,7 +1356,7 @@ classdef Looper < ws.RootModel
 %             responseFileName='si_response.txt';
 %             absoluteResponseFileName=fullfile(dirName,responseFileName);
 %             if exist(absoluteResponseFileName,'file') ,
-%                 ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
+%                 ws.deleteFileWithoutWarning(absoluteResponseFileName);
 %                 if exist(absoluteResponseFileName,'file') , 
 %                     isResponseFileGone=false;
 %                     if isempty(errorMessage1) ,
@@ -1427,7 +1427,7 @@ classdef Looper < ws.RootModel
 %                         response=fscanf(fid,'%s',1);
 %                         fclose(fid);
 %                         if isequal(response,'OK') ,
-%                             ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
+%                             ws.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
 %                             isScanImageReady=true;
 %                             errorMessage='';
 %                             return
@@ -1442,7 +1442,7 @@ classdef Looper < ws.RootModel
 %             
 %             % If get here, must have failed
 %             if exist(responseAbsoluteFileName,'file') ,
-%                 ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
+%                 ws.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
 %             end
 %             isScanImageReady=false;
 %             errorMessage='ScanImage did not respond within the alloted time';
@@ -1592,7 +1592,7 @@ classdef Looper < ws.RootModel
 %             % file name referring to a file that is known to be
 %             % present, at least as of a few milliseconds ago.
 %             self.changeReadiness(-1);
-%             if ws.utility.isFileNameAbsolute(fileName) ,
+%             if ws.isFileNameAbsolute(fileName) ,
 %                 absoluteFileName = fileName ;
 %             else
 %                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -1638,7 +1638,7 @@ classdef Looper < ws.RootModel
 % 
 %             self.changeReadiness(-1);
 % 
-%             if ws.utility.isFileNameAbsolute(fileName) ,
+%             if ws.isFileNameAbsolute(fileName) ,
 %                 absoluteFileName = fileName ;
 %             else
 %                 absoluteFileName = fullfile(pwd(),fileName) ;

@@ -127,7 +127,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
            
            % Layout the figure and set the size
            self.layout_();
-           ws.utility.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
            % Initialize the guidata
            self.initializeGuidata_();
@@ -267,19 +267,19 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                    
             % "Toolbar" buttons
             wavesurferDirName=fileparts(which('wavesurfer'));
-            playIcon = ws.utility.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'play.png'));
+            playIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'play.png'));
             self.PlayButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'TooltipString','Play', ...
                           'CData',playIcon);
-            recordIcon = ws.utility.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'record.png'));
+            recordIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'record.png'));
             self.RecordButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'TooltipString','Record', ...
                           'CData',recordIcon);
-            stopIcon = ws.utility.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'stop.png'));
+            stopIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'stop.png'));
             self.StopButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
@@ -562,7 +562,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
             
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             figureWidth=750;
             
@@ -693,7 +693,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutAcquisitionPanel_(self,acquisitionPanelWidth,acquisitionPanelHeight)
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             %
             % Contents of acquisition panel
@@ -747,8 +747,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function layoutStimulationPanel_(self,stimulationPanelWidth,stimulationPanelHeight) %#ok<INUSL>
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
             
             %
             % Contents of stimulation panel
@@ -804,8 +804,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutDisplayPanel_(self,displayPanelWidth,displayPanelHeight) %#ok<INUSL>
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
             
             %
             % Contents of display panel
@@ -852,8 +852,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutLoggingPanel_(self,loggingPanelWidth,loggingPanelHeight)
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
             
             %
             % Contents of logging panel
@@ -1038,8 +1038,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.utility.onIff
-            import ws.utility.fif
+            import ws.onIff
+            import ws.fif
             
             isIdle = isequal(model.State,'idle');
 
@@ -1108,7 +1108,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Update the Stimulation/Source popupmenu
             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
-            stimulusLibrary=ws.utility.getSubproperty(model,'Stimulation','StimulusLibrary');
+            stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
             if isempty(stimulusLibrary) ,
                 set(self.SourcePopupmenu, ...
                     'String', {'(No library)'}, ...
@@ -1123,7 +1123,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 else
                     selectedOutputableNames = { selectedOutputable.Name } ;
                 end                
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
+                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
 %                 if isempty(outputables) ,
 %                     set(self.SourcePopupmenu, ...
 %                         'String',{'(No outputables)'}, ...
@@ -1168,7 +1168,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-            import ws.utility.*
+            import ws.*
 
             % If no model, can't really do anything
             model=self.Model;
@@ -1264,7 +1264,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     methods (Access = protected)
         function updateScopeMenu_(self,broadcaster,eventName,propertyName,source,event)  %#ok<INUSD>            
             % Update the scope menu match the model state
-            import ws.utility.onIff
+            import ws.onIff
             
             % A typical structure of the menus under the Scopes menu item:
             % 
@@ -1289,11 +1289,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Delete all the menu items in the Scopes submenu except the
             % first item, which is the "Remove" item.
-            ws.utility.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
+            ws.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
             self.ShowHideChannelMenuItems=[];
             
             % Delete all the items in the "Remove" subsubmenu
-            ws.utility.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
+            ws.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
             self.RemoveSubsubmenuItems=[];
             
             % 
@@ -1349,7 +1349,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function updateEnablementAndVisibilityOfDisplayControls_(self,varargin)
-            import ws.utility.*
+            import ws.*
             
             % Get the figureObject
             %figureGH=self.hGUIsArray;  % should be a scalar
@@ -1377,7 +1377,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function updateEnablementAndVisibilityOfLoggingControls_(self,varargin)
-            import ws.utility.*
+            import ws.*
 
             % Get the figureObject
             %figureGH=self.hGUIsArray;  % should be a scalar

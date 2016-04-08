@@ -56,7 +56,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
 %         %AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
 %         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
-%         %AnalogChannelUnits_ = repmat(ws.utility.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
+%         %AnalogChannelUnits_ = repmat(ws.SIUnit('V'),[1 0])  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
 %         %AnalogChannelNames_ = cell(1,0)
 % 
 %         StimulusLibrary_ 
@@ -86,7 +86,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %             self.Parent=parent;
 %             nChannels=length(self.AnalogChannelNames);
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
-%             V=ws.utility.SIUnit('V');  % by default, the units are volts
+%             V=ws.SIUnit('V');  % by default, the units are volts
 %             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
             %self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
         end
@@ -99,7 +99,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 
                 % Deal with the device names, setting the WSM DeviceName if
                 % it's not set yet.
-                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
+                deviceNames = ws.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
                 uniqueDeviceNames=unique(deviceNames);
                 if length(uniqueDeviceNames)>1 ,
                     error('ws:MoreThanOneDeviceName', ...
@@ -111,10 +111,10 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
                 end
 
                 % Get the channel IDs
-                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+                terminalIDs = ws.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
                 
                 % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
+                channelTypes = ws.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
                 isAnalog = strcmp(channelTypes,'ao');
                 isDigital = ~isAnalog;
 
@@ -257,7 +257,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 % %         end
 %         
 %         function result = get.DeviceNamePerAnalogChannel(self)
-%             result = ws.utility.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
+%             result = ws.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
 %         end
 %         
 % %         function result = get.AnalogTerminalNames(self)
@@ -296,7 +296,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end
         
 %         function set.TriggerScheme(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('TriggerScheme', value);
 %             self.TriggerScheme_ = value;
 %         end
@@ -306,7 +306,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end
 
 %         function set.TriggerScheme(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('TriggerScheme', value);
 %             %self.TriggerScheme = value;
 %             self.Parent.Triggering.StimulationTriggerScheme = value ;
@@ -358,7 +358,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     
     methods
 %         function set.IsDigitalChannelTimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
+%             if ws.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
 %                     coercedNewValue = logical(newValue) ;
 %                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
@@ -375,7 +375,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end  % function
 %         
 %         function set.DigitalOutputStateIfUntimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
+%             if ws.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
 %                         (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
 %                     coercedNewValue = logical(newValue) ;
@@ -398,7 +398,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         function acquireHardwareResources_(self)            
 %             if isempty(self.TheFiniteAnalogOutputTask_) ,
 %                 self.TheFiniteAnalogOutputTask_ = ...
-%                     ws.ni.FiniteOutputTask(self, ...
+%                     ws.FiniteOutputTask(self, ...
 %                                            'analog', ...
 %                                            'Wavesurfer Finite Analog Output Task', ...
 %                                            self.AnalogTerminalNames, ...
@@ -408,7 +408,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %             end
 %             if isempty(self.TheFiniteDigitalOutputTask_) ,
 %                 self.TheFiniteDigitalOutputTask_ = ...
-%                     ws.ni.FiniteOutputTask(self, ...
+%                     ws.FiniteOutputTask(self, ...
 %                                            'digital', ...
 %                                            'Wavesurfer Finite Digital Output Task', ...
 %                                            self.DigitalTerminalNames(self.IsDigitalChannelTimed), ...
@@ -418,7 +418,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %             end
 %             if isempty(self.TheUntimedDigitalOutputTask_) ,
 %                  self.TheUntimedDigitalOutputTask_ = ...
-%                     ws.ni.UntimedDigitalOutputTask(self, ...
+%                     ws.UntimedDigitalOutputTask(self, ...
 %                                            'Wavesurfer Untimed Digital Output Task', ...
 %                                            self.DigitalTerminalNames(~self.IsDigitalChannelTimed), ...
 %                                            self.DigitalChannelNames(~self.IsDigitalChannelTimed)) ;
@@ -587,7 +587,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %                 terminalID = nan ;
 %             else
 %                 terminalName = self.AnalogTerminalNames_{iChannel};
-%                 terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+%                 terminalID = ws.terminalIDFromTerminalName(terminalName);
 %             end
 %         end  % function
 % 
@@ -618,7 +618,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end  % function
         
 %         function channelUnits=get.AnalogChannelUnits(self)
-%             import ws.utility.*
+%             import ws.*
 %             wavesurferModel=self.Parent;
 %             if isempty(wavesurferModel) ,
 %                 ephys=[];
@@ -645,7 +645,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     
     methods (Access=protected)
         function analogChannelScales=getAnalogChannelScales_(self)
-            import ws.utility.*
+            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -671,7 +671,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     
 %         
 %         function set.AnalogChannelUnits(self,newValue)
-%             import ws.utility.*
+%             import ws.*
 %             oldValue=self.AnalogChannelUnits_;
 %             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
 %             editedNewValue=fif(isChangeable,newValue,oldValue);
@@ -681,7 +681,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end  % function
 %         
 %         function set.AnalogChannelScales(self,newValue)
-%             import ws.utility.*
+%             import ws.*
 %             oldValue=self.AnalogChannelScales_;
 %             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
 %             editedNewValue=fif(isChangeable,newValue,oldValue);
@@ -691,7 +691,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end  % function
         
 %         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
-%             import ws.utility.*
+%             import ws.*
 %             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
 %             oldUnits=self.AnalogChannelUnits_;
 %             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
@@ -866,7 +866,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end  % function
         
 %         function [nScans,nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMap)
-%             import ws.utility.*
+%             import ws.*
 %             
 %             % Calculate the episode index
 %             episodeIndexWithinRun=self.EpisodesCompleted_+1;
@@ -905,7 +905,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %         end  % function
 % 
 %         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap)
-%             import ws.utility.*
+%             import ws.*
 %             
 %             % Calculate the episode index
 %             episodeIndexWithinRun=self.EpisodesCompleted_+1;

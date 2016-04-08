@@ -75,8 +75,8 @@ classdef Logging < ws.Subsystem
         end
         
         function set.FileLocation(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if ws.utility.isString(newValue) ,
+            if ws.isASettableValue(newValue) ,
+                if ws.isString(newValue) ,
                     if exist(newValue,'dir') ,
                         originalValue=self.FileLocation_;
                         self.FileLocation_ = newValue;
@@ -102,8 +102,8 @@ classdef Logging < ws.Subsystem
         
         function set.FileBaseName(self, newValue)
             %fprintf('Entered set.FileBaseName()\n');            
-            if ws.utility.isASettableValue(newValue), 
-                if ws.utility.isString(newValue) ,
+            if ws.isASettableValue(newValue), 
+                if ws.isString(newValue) ,
                     originalValue=self.FileBaseName_;
                     self.FileBaseName_ = newValue;
                     % If file name has changed, reset the sweep index
@@ -127,7 +127,7 @@ classdef Logging < ws.Subsystem
         end
         
         function set.NextSweepIndex(self, newValue)
-            if ws.utility.isASettableValue(newValue), 
+            if ws.isASettableValue(newValue), 
                 if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
                     newValue=double(newValue) ;
                     self.NextSweepIndex_ = newValue;
@@ -149,7 +149,7 @@ classdef Logging < ws.Subsystem
 %         end
 
         function set.IsOKToOverwrite(self, newValue)
-            if ws.utility.isASettableValue(newValue), 
+            if ws.isASettableValue(newValue), 
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
@@ -166,7 +166,7 @@ classdef Logging < ws.Subsystem
         end
         
         function set.DoIncludeDate(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
                     self.DoIncludeDate_ = logical(newValue);
                 else
@@ -183,7 +183,7 @@ classdef Logging < ws.Subsystem
         end
 
         function set.DoIncludeSessionIndex(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
                     originalValue = self.DoIncludeSessionIndex_ ;
                     newValueForReals = logical(newValue) ;
@@ -206,7 +206,7 @@ classdef Logging < ws.Subsystem
         end
 
         function set.SessionIndex(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if self.DoIncludeSessionIndex ,
                     if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
                         originalValue = self.SessionIndex_ ;
@@ -297,10 +297,10 @@ classdef Logging < ws.Subsystem
                 % But need to delete pre-existing files, otherwise h5create
                 % will just add datasets to a pre-existing file.
                 if exist(self.CurrentRunAbsoluteFileName_, 'file') == 2 ,
-                    ws.utility.deleteFileWithoutWarning(self.CurrentRunAbsoluteFileName_);
+                    ws.deleteFileWithoutWarning(self.CurrentRunAbsoluteFileName_);
                 end
 %                 if exist(sidecarFileNameAbsolute, 'file') == 2 ,
-%                     ws.utility.deleteFileWithoutWarning(sidecarFileNameAbsolute);
+%                     ws.deleteFileWithoutWarning(sidecarFileNameAbsolute);
 %                 end
             else
                 % Check if the log file already exists, and error if so
@@ -322,8 +322,8 @@ classdef Logging < ws.Subsystem
             %numericPrecision=4;
             %stringOfAssignmentStatements= ws.most.util.structOrObj2Assignments(headerStruct, 'header', [], numericPrecision);
             doCreateFile=true;
-            %ws.h5.h5savestr(self.CurrentRunAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
-            ws.h5.h5save(self.CurrentRunAbsoluteFileName_, '/header', headerStruct, doCreateFile);
+            %ws.h5savestr(self.CurrentRunAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
+            ws.h5save(self.CurrentRunAbsoluteFileName_, '/header', headerStruct, doCreateFile);
             self.DidCreateCurrentDataFile_ = true ;
             
 %             % Save the "header" information to a sidecar file instead.
@@ -460,7 +460,7 @@ classdef Logging < ws.Subsystem
                 if numberOfPartialSweepsLogged == 0 ,
                     % If no sweeps logged, and we actually created the data file for the current run, delete the file
                     if self.DidCreateCurrentDataFile_ ,
-                        ws.utility.deleteFileWithoutWarning(originalAbsoluteLogFileName);
+                        ws.deleteFileWithoutWarning(originalAbsoluteLogFileName);
                     else
                         % nothing to do
                     end
@@ -479,7 +479,7 @@ classdef Logging < ws.Subsystem
                                 % don't need to check anything
                                 % But need to delete pre-existing files, otherwise h5create
                                 % will just add datasets to a pre-existing file.
-                                ws.utility.deleteFileWithoutWarning(newAbsoluteLogFileName);
+                                ws.deleteFileWithoutWarning(newAbsoluteLogFileName);
                             else
                                 exception = MException('wavesurfer:unableToRenameLogFile', ...
                                                        'Unable to rename data file after abort, because file %s already exists', newLogFileName);

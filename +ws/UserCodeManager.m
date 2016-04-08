@@ -45,7 +45,7 @@ classdef UserCodeManager < ws.Subsystem
         end
                 
         function set.ClassName(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if ischar(value) && (isempty(value) || isrow(value)) ,
                     [newObject,exception] = self.tryToInstantiateObject_(value) ;
                     if ~isempty(exception) ,
@@ -82,7 +82,7 @@ classdef UserCodeManager < ws.Subsystem
         end  % method
         
 %         function set.AbortCallsComplete(self, value)
-%             if ws.utility.isASettableValue(value) ,
+%             if ws.isASettableValue(value) ,
 %                 if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
 %                     valueAsLogical = logical(value>0) ;
 %                     self.AbortCallsComplete_ = valueAsLogical ;

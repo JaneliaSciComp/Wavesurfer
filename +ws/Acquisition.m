@@ -17,7 +17,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
 
                 % Deal with the device names, setting the WSM DeviceName if
                 % it's not set yet.
-                deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
+                deviceNames = ws.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
                 uniqueDeviceNames=unique(deviceNames);
                 if length(uniqueDeviceNames)>1 ,
                     error('ws:MoreThanOneDeviceName', ...
@@ -29,10 +29,10 @@ classdef Acquisition < ws.AcquisitionSubsystem
                 end
 
                 % Get the channel IDs
-                terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+                terminalIDs = ws.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
                 
                 % Figure out which are analog and which are digital
-                channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
+                channelTypes = ws.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
                 isAnalog = strcmp(channelTypes,'ai');
                 isDigital = ~isAnalog;
 
@@ -201,7 +201,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
                 [channelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getMonitorScalingsByName(analogChannelNames);
-                value=ws.utility.fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
+                value=ws.fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
             end
         end
     end  % methods block    

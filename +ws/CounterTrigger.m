@@ -1,4 +1,4 @@
-classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
+classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
     % This class represents a trigger source, i.e. an internally-generated
     % trigger output.  A trigger source has a device (e.g. 'Dev1'), a
     % counter (the index of the NI DAQmx counter), an inter-trigger
@@ -37,7 +37,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
     end
 
 %     properties (Access = protected, Transient=true)
-%         CounterTask_  % of type ws.ni.CounterTriggerTask, or empty        
+%         CounterTask_  % of type ws.CounterTriggerTask, or empty        
 %           % if setup() method is never called, this will always be empty
 %     end
     
@@ -75,7 +75,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         function set.RepeatCount(self, newValue)
             %fprintf('set.RepeatCount()\n');
             %dbstack
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
                     self.RepeatCount_ = double(newValue) ;
                 else
@@ -88,7 +88,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end
         
 %         function overrideRepeatCount(self,newValue)
-%             if ws.utility.isASettableValue(newValue) ,
+%             if ws.isASettableValue(newValue) ,
 %                 % self.validatePropArg('RepeatCount', newValue);            
 %                 self.validateRepeatCount_(newValue);
 %                 self.RepeatCountOverride_ = newValue;
@@ -115,7 +115,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end
         
         function set.Interval(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if isnumeric(value) && isscalar(value) && isreal(value) && value>0 ,
                     self.Interval_ = value ;
                 else
@@ -192,7 +192,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end
 
         function set.IsMarkedForDeletion(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if (islogical(value) || isnumeric(value)) && isscalar(value) ,
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else
@@ -205,8 +205,8 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end
         
         function set.Name(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) && ~isempty(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
                     self.Parent.update();
@@ -218,8 +218,8 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end
         
         function set.DeviceName(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) ,
                     self.DeviceName_ = value ;
                     self.syncPFIIDToCounterID_() ;
                 else
@@ -232,7 +232,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end
         
 %         function set.PFIID(self, value)
-%             if ws.utility.isASettableValue(value) ,
+%             if ws.isASettableValue(value) ,
 %                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
 %                     value = double(value) ;
 %                     self.PFIID_ = value ;
@@ -246,7 +246,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %         end
         
         function set.Edge(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
@@ -259,7 +259,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
         end  % function 
         
         function set.CounterID(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 && self.Parent.isCounterIDFree(value),
                     value = double(value) ;
                     self.CounterID_ = value ;
@@ -282,7 +282,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %             self.teardown();
 %             
 %             self.CounterTask_ = ...
-%                 ws.ni.CounterTriggerTask(self, ...
+%                 ws.CounterTriggerTask(self, ...
 %                                                self.DeviceName, ...
 %                                                self.CounterID, ...
 %                                                ['Wavesurfer Counter Self Trigger Task ' num2str(self.CounterID)]);
@@ -390,7 +390,7 @@ classdef CounterTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge   % & matlab.mixin.H
 %             s.PFIID=struct('Classes', 'numeric', ...
 %                            'Attributes', {{'scalar', 'integer'}}, ...
 %                            'AllowEmpty', false);
-% %             s.Edge=struct('Classes', 'ws.ni.TriggerEdge', ...
+% %             s.Edge=struct('Classes', 'ws.TriggerEdge', ...
 % %                           'Attributes', 'scalar', ...
 % %                           'AllowEmpty', false);
 %         end  % function

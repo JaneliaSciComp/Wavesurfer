@@ -27,8 +27,8 @@ classdef FastProtocol < ws.Model
         end
         
         function set.ProtocolFileName(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) ,
                     self.ProtocolFileName_ = value;
                 else
                     self.broadcast('Update');
@@ -45,7 +45,7 @@ classdef FastProtocol < ws.Model
         end
         
         function set.AutoStartType(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if ws.isAStartType(value) ,
                     self.AutoStartType_ = value;
                 else

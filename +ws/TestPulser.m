@@ -134,9 +134,9 @@ classdef TestPulser < ws.Model
         function self = TestPulser(parent,varargin)
             % Process args
             self@ws.Model(parent);
-            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -176,7 +176,7 @@ classdef TestPulser < ws.Model
             self.IsAutoYRepeating_=false;
             self.YLimits_=[-10 +10];
             
-            acquisition = ws.utility.getSubproperty(ephys,'Parent','Acquisition');
+            acquisition = ws.getSubproperty(ephys,'Parent','Acquisition');
             if isempty(acquisition) ,
                 self.SamplingRate_ = 20e3 ;  % Hz
             else
@@ -187,7 +187,7 @@ classdef TestPulser < ws.Model
             %self.Gain_=nan;
             %self.Resistance_=nan;
             self.UpdateRate_=nan;
-            %self.ResistanceUnits=ws.utility.SIUnit();
+            %self.ResistanceUnits=ws.SIUnit();
             %self.command = ws.SingleStimulus( ...
             %                   ws.function.TestPulse('PulseDuration', self.PulseDuration, ...
             %                                                     'PulseAmplitude', self.Amplitude ));
@@ -392,7 +392,7 @@ classdef TestPulser < ws.Model
         
         function value=get.Amplitude(self)
             if isempty(self.Electrode_)
-                %value=ws.utility.DoubleString('');
+                %value=ws.DoubleString('');
                 value=nan;
             else
                 value=self.Electrode_.TestPulseAmplitude;
@@ -401,7 +401,7 @@ classdef TestPulser < ws.Model
         
         function set.Amplitude(self, newValue)  % in units of the electrode command channel
             if ~isempty(self.Electrode_) ,
-                if ws.utility.isString(newValue) ,
+                if ws.isString(newValue) ,
                     newValueAsDouble = str2double(newValue) ;
                 elseif isnumeric(newValue) && isscalar(newValue) ,
                     newValueAsDouble = double(newValue) ;
@@ -465,7 +465,7 @@ classdef TestPulser < ws.Model
 %         end
         
         function commandsInVolts=get.CommandInVoltsPerElectrode(self)  % the command signals, in volts to be sent out the AO channels
-            import ws.utility.*
+            import ws.*
             commands=self.CommandPerElectrode;   % (nScans x nCommandChannels)
             commandChannelScales=self.CommandChannelScalePerElectrode;  % 1 x nCommandChannels
             inverseChannelScales=1./commandChannelScales;
@@ -579,7 +579,7 @@ classdef TestPulser < ws.Model
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
             stimulus=wavesurferModel.Stimulation;
-            %result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            %result=ws.objectArray('ws.SIUnit',[1 n]);
             result = cell(1,n) ;
             for i=1:n ,
                 unit=stimulus.channelUnitsFromName(commandChannelNames{i});
@@ -606,7 +606,7 @@ classdef TestPulser < ws.Model
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
             acquisition=wavesurferModel.Acquisition;
-            %result=ws.utility.objectArray('ws.utility.SIUnit',[1 n]);
+            %result=ws.objectArray('ws.SIUnit',[1 n]);
             result = cell(1,n) ;
             for i=1:n ,
                 unit = acquisition.analogChannelUnitsFromName(monitorChannelNames{i}) ;
@@ -642,8 +642,8 @@ classdef TestPulser < ws.Model
                     result(i) = false ;
                 end
 %                 if i==1 , 
-%                     volts=ws.utility.SIUnit('V');
-%                     amps=ws.utility.SIUnit('A');
+%                     volts=ws.SIUnit('V');
+%                     amps=ws.SIUnit('A');
 %                 end
 %                 result(i)=areSummable(commandUnitsPerElectrode(i),volts) && ...
 %                           areSummable(monitorUnitsPerElectrode(i),amps) ;
@@ -675,8 +675,8 @@ classdef TestPulser < ws.Model
                     result(i) = false ;
                 end                
 %                 if i==1 , 
-%                     volts=ws.utility.SIUnit('V');
-%                     amps=ws.utility.SIUnit('A');
+%                     volts=ws.SIUnit('V');
+%                     amps=ws.SIUnit('A');
 %                 end
 %                 result(i)=areSummable(commandUnitsPerElectrode(i),amps) && ...
 %                           areSummable(monitorUnitsPerElectrode(i),volts) ;
@@ -690,8 +690,8 @@ classdef TestPulser < ws.Model
                 value=false;
             else
                 value = isequal(commandUnits(end),'V') && isequal(monitorUnits(end),'A') ;
-%                 areSummable(commandUnits,ws.utility.SIUnit('V')) && ...
-%                       areSummable(monitorUnits,ws.utility.SIUnit('A')) ;
+%                 areSummable(commandUnits,ws.SIUnit('V')) && ...
+%                       areSummable(monitorUnits,ws.SIUnit('A')) ;
             end
         end  % function
 
@@ -702,8 +702,8 @@ classdef TestPulser < ws.Model
                 value=false;
             else
                 value = isequal(commandUnits(end),'A') && isequal(monitorUnits(end),'V') ;
-%                 value=areSummable(commandUnits,ws.utility.SIUnit('A')) && ...
-%                       areSummable(monitorUnits,ws.utility.SIUnit('V')) ;
+%                 value=areSummable(commandUnits,ws.SIUnit('A')) && ...
+%                       areSummable(monitorUnits,ws.SIUnit('V')) ;
             end
         end
 
@@ -713,7 +713,7 @@ classdef TestPulser < ws.Model
 %             elseif self.IsVC , 
 %                 value=1/self.GainUnits;                
 %             else
-%                 value=ws.utility.SIUnit.empty();
+%                 value=ws.SIUnit.empty();
 %             end
 %         end
         
@@ -726,7 +726,7 @@ classdef TestPulser < ws.Model
         
 %         function value=get.GainUnits(self)
 %             if isempty(self.Electrode_)
-%                 value=ws.utility.SIUnit.empty();                
+%                 value=ws.SIUnit.empty();                
 %             else
 %                 value=(self.MonitorUnits/self.CommandUnits);
 %             end
@@ -748,10 +748,10 @@ classdef TestPulser < ws.Model
             if self.IsRunning_ ,
                 value = self.GainOrResistanceUnitsPerElectrodeCached_ ;
             else
-                valueIfCC = ws.utility.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
-                valueIfVC = ws.utility.divideUnits(self.CommandUnitsPerElectrode,self.MonitorUnitsPerElectrode);
+                valueIfCC = ws.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
+                valueIfVC = ws.divideUnits(self.CommandUnitsPerElectrode,self.MonitorUnitsPerElectrode);
                 isVCPerElectrode=self.IsVCPerElectrode;
-                value = ws.utility.fif(isVCPerElectrode,valueIfVC,valueIfCC);
+                value = ws.fif(isVCPerElectrode,valueIfVC,valueIfCC);
                 %value(isVCPerElectrode)=1./value(isVCPerElectrode);
                 % for elements that are not convertible to resistance, just
                 % leave as gain
@@ -767,7 +767,7 @@ classdef TestPulser < ws.Model
             rawGainOrResistanceUnits = self.GainOrResistanceUnitsPerElectrode ;
             % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
             [gainOrResistanceUnits,gainOrResistance] = ...
-                ws.utility.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
+                ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
         
         function value=get.UpdateRate(self)
@@ -1256,7 +1256,7 @@ classdef TestPulser < ws.Model
     %             while (toc(timerVal)<0.010)
     %                 x=1+1; %#ok<NASGU>
     %             end            
-                ws.utility.restlessSleep(0.010);  % pause for 10 ms
+                ws.restlessSleep(0.010);  % pause for 10 ms
                 self.OutputTask_.stop();
                 % % Maybe try this: java.lang.Thread.sleep(10);
 

@@ -4,7 +4,7 @@ function h = uipanel(varargin)
     persistent defaultUIControlBackgroundColor
    
     if isempty(defaultUIControlBackgroundColor) ,
-        defaultUIControlBackgroundColor = ws.utility.getDefaultUIControlBackgroundColor() ;
+        defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
     end
     
     h = uipanel(varargin{:}, ...

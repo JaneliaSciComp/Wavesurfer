@@ -131,7 +131,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
                 
 %         function set.SampleRate(self, newValue)
-%             if ws.utility.isASettableValue(newValue) ,
+%             if ws.isASettableValue(newValue) ,
 %                 if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,
 %                     self.SampleRate_ = double(newValue) ;
 %                     wsModel = self.Parent ;
@@ -201,7 +201,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end
     
 %         function result = get.DeviceNamePerAnalogChannel(self)
-%             result = ws.utility.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
+%             result = ws.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
 %         end
                 
         function value = get.NAnalogChannels(self)
@@ -340,7 +340,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
     
     methods
 %         function set.IsDigitalChannelTimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
+%             if ws.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
 %                     coercedNewValue = logical(newValue) ;
 %                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
@@ -370,7 +370,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             else
                 terminalID = self.AnalogTerminalIDs_(channelIndex) ;
                 %terminalName = self.AnalogTerminalNames_{iChannel};
-                %terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+                %terminalID = ws.terminalIDFromTerminalName(terminalName);
             end
         end  % function
 
@@ -406,7 +406,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
         
         function channelUnits=get.AnalogChannelUnits(self)
-            import ws.utility.*
+            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -434,7 +434,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end
 
         function set.AnalogChannelUnits(self,newValue)
-            import ws.utility.*
+            import ws.*
             newValue = cellfun(@strtrim,newValue,'UniformOutput',false);
             oldValue=self.AnalogChannelUnits_;
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
@@ -445,7 +445,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
-            import ws.utility.*
+            import ws.*
             oldValue=self.AnalogChannelScales_;
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             editedNewValue=fif(isChangeable,newValue,oldValue);
@@ -455,7 +455,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
         
         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
-            import ws.utility.*
+            import ws.*
             newUnits = cellfun(@strtrim,newUnits,'UniformOutput',false);
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             oldUnits=self.AnalogChannelUnits_;
@@ -513,7 +513,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
-            newTerminalID = ws.utility.fif(isempty(self.AnalogTerminalIDs), ...
+            newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;
             newChannelPhysicalName = sprintf('AO%d',newTerminalID) ;
@@ -572,7 +572,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
-            if 1<=i && i<=self.NAnalogChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
+            if 1<=i && i<=self.NAnalogChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
                 self.AnalogChannelNames_{i} = newValue ;
                 self.StimulusLibrary.didSetChannelName(oldValue, newValue) ;
                 didSucceed = true ;
@@ -584,7 +584,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         
         function setSingleDigitalChannelName(self, i, newValue)
             oldValue = self.DigitalChannelNames_{i} ;
-            if 1<=i && i<=self.NDigitalChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
+            if 1<=i && i<=self.NDigitalChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
                 self.DigitalChannelNames_{i} = newValue ;
                 self.StimulusLibrary.didSetChannelName(oldValue, newValue) ;
                 didSucceed = true ;
@@ -683,7 +683,7 @@ end  % methods block
 %         end
         
         function wasSet = setIsDigitalChannelTimed_(self,newValue)
-            if ws.utility.isASettableValue(newValue),
+            if ws.isASettableValue(newValue),
                 nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
                 if isequal(size(newValue),[1 nDigitalChannels]) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
                     coercedNewValue = logical(newValue) ;
@@ -708,7 +708,7 @@ end  % methods block
         end  % function
         
         function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
-            if ws.utility.isASettableValue(newValue),
+            if ws.isASettableValue(newValue),
                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
                         (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
                     coercedNewValue = logical(newValue) ;

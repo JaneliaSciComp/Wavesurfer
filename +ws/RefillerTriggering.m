@@ -1,8 +1,8 @@
 classdef RefillerTriggering < ws.TriggeringSubsystem 
 
     properties (Access=protected, Transient=true)
-        %AcquisitionCounterTask_  % a ws.ni.CounterTriggerTask, or []
-        StimulationCounterTask_  % a ws.ni.CounterTriggerTask, or []
+        %AcquisitionCounterTask_  % a ws.CounterTriggerTask, or []
+        StimulationCounterTask_  % a ws.CounterTriggerTask, or []
         IsTriggeringBuiltin_
         IsTriggeringCounterBased_
         IsTriggeringExternal_
@@ -155,7 +155,7 @@ classdef RefillerTriggering < ws.TriggeringSubsystem
             counterID = triggerSource.CounterID ;
             taskName = sprintf('WaveSurfer Counter Trigger Task for CTR%d',triggerSource.CounterID) ;
             task = ...
-                ws.ni.CounterTriggerTask(triggerSource, ...
+                ws.CounterTriggerTask(triggerSource, ...
                                          triggerSource.DeviceName, ...
                                          counterID, ...
                                          taskName);

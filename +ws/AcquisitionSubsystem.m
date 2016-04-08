@@ -114,7 +114,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
 % 
 %                 % Deal with the device names, setting the WSM DeviceName if
 %                 % it's not set yet.
-%                 deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+%                 deviceNames = ws.deviceNamesFromTerminalNames(terminalNames);
 %                 uniqueDeviceNames=unique(deviceNames);
 %                 if length(uniqueDeviceNames)>1 ,
 %                     error('ws:MoreThanOneDeviceName', ...
@@ -126,10 +126,10 @@ classdef AcquisitionSubsystem < ws.Subsystem
 %                 end
 % 
 %                 % Get the channel IDs
-%                 terminalIDs = ws.utility.terminalIDsFromTerminalNames(terminalNames);
+%                 terminalIDs = ws.terminalIDsFromTerminalNames(terminalNames);
 %                 
 %                 % Figure out which are analog and which are digital
-%                 channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+%                 channelTypes = ws.channelTypesFromTerminalNames(terminalNames);
 %                 isAnalog = strcmp(channelTypes,'ai');
 %                 isDigital = ~isAnalog;
 % 
@@ -194,7 +194,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end
     
         function setAnalogChannelName(self, i, newValue)
-            if ws.utility.isString(newValue) && ~isempty(newValue) && ~self.isAnalogChannelName(newValue) && 1<=i && i<=self.NAnalogChannels ,
+            if ws.isString(newValue) && ~isempty(newValue) && ~self.isAnalogChannelName(newValue) && 1<=i && i<=self.NAnalogChannels ,
                 self.AnalogChannelNames_{i} = newValue ;
                 self.Parent.didChangeAnalogChannelName(i, newValue) ;
             end
@@ -374,7 +374,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function value = get.AnalogChannelUnits(self)            
-            import ws.utility.*
+            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -402,7 +402,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end
         
         function set.AnalogChannelUnits(self,newValue)
-            import ws.utility.*
+            import ws.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             self.AnalogChannelUnits_=fif(isChangeable,newValue,self.AnalogChannelUnits_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
@@ -410,7 +410,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
-            import ws.utility.*
+            import ws.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             self.AnalogChannelScales_=fif(isChangeable,newValue,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
@@ -418,7 +418,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function setAnalogChannelUnitsAndScales(self,newUnitsRaw,newScales)
-            import ws.utility.*            
+            import ws.*            
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
             self.AnalogChannelUnits_=fif(isChangeable,newUnits,self.AnalogChannelUnits_);
@@ -428,7 +428,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function setSingleAnalogChannelUnits(self,i,newValueRaw)
-            import ws.utility.*
+            import ws.*
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
             newValue = strtrim(newValueRaw) ;
@@ -438,7 +438,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function setSingleAnalogChannelScale(self,i,newValue)
-            import ws.utility.*
+            import ws.*
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
             self.AnalogChannelScales_(i)=fif(isChangeable,newValue,self.AnalogChannelScales_(i));
@@ -448,7 +448,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
-            if 1<=i && i<=self.NAnalogChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
+            if 1<=i && i<=self.NAnalogChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
                 self.AnalogChannelNames_{i} = newValue ;
                 didSucceed = true ;
             else
@@ -459,7 +459,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         
         function setSingleDigitalChannelName(self, i, newValue)
             oldValue = self.DigitalChannelNames_{i} ;
-            if 1<=i && i<=self.NDigitalChannels && ws.utility.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
+            if 1<=i && i<=self.NDigitalChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
                 self.DigitalChannelNames_{i} = newValue ;
                 didSucceed = true ;
             else
@@ -1038,7 +1038,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             deviceName = self.Parent.DeviceName ;
             
             newChannelDeviceName = deviceName ;
-            newTerminalID = ws.utility.fif(isempty(self.AnalogTerminalIDs), ...
+            newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;
             newChannelPhysicalName = sprintf('AI%d',newTerminalID) ;

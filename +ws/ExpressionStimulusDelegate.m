@@ -17,7 +17,7 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
     methods
         function self = ExpressionStimulusDelegate(parent,varargin)
             self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.utility.filterPVArgs(varargin, {'Expression'}, {});
+            pvArgs = ws.filterPVArgs(varargin, {'Expression'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -28,7 +28,7 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
         function set.Expression(self, value)
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
-                valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
+                valueWithoutBackslashes = ws.replaceBackslashesWithSlashes(value);
                 test = ws.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set

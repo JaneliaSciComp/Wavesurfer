@@ -110,7 +110,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
             isReadyBefore=self.IsReady;
             
             self.DegreeOfReadiness_ = ...
-                    ws.utility.fif(newDegreeOfReadinessRaw<=1, ...
+                    ws.fif(newDegreeOfReadinessRaw<=1, ...
                                    newDegreeOfReadinessRaw, ...
                                    1);
                         
@@ -122,7 +122,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
         end  % function                
         
 %         function setParent_(self, newValue)
-%             if ws.utility.isASettableValue(newValue) ,
+%             if ws.isASettableValue(newValue) ,
 %                 if isempty(newValue) ,
 %                     self.Parent_ = [] ;
 %                 elseif isscalar(newValue) && isa(newValue,'ws.Model') ,

@@ -163,7 +163,7 @@ classdef (Abstract) Coding < handle
                 encodingContainer = struct('className',{'cell'},'encoding',{encoding}) ;
             elseif isstruct(thing) ,
                 fieldNames=fieldnames(thing);
-                encoding=ws.utility.structWithDims(size(thing),fieldNames);
+                encoding=ws.structWithDims(size(thing),fieldNames);
                 for i=1:numel(thing) ,
                     for j=1:length(fieldNames) ,
                         thisFieldName=fieldNames{j};
@@ -192,7 +192,7 @@ classdef (Abstract) Coding < handle
                 end
             elseif isstruct(thing) ,
                 fieldNames=fieldnames(thing);
-                encoding=ws.utility.structWithDims(size(thing),fieldNames);
+                encoding=ws.structWithDims(size(thing),fieldNames);
                 for i=1:numel(thing) ,
                     for j=1:length(fieldNames) ,
                         thisFieldName=fieldNames{j};
@@ -223,7 +223,7 @@ classdef (Abstract) Coding < handle
             encoding = encodingContainer.encoding ;
             
             % Create the object to be returned
-            if ws.utility.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
+            if ws.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
                 result = encoding ;
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;
@@ -234,7 +234,7 @@ classdef (Abstract) Coding < handle
                 end
             elseif isequal(className,'struct') ,
                 fieldNames = fieldnames(encoding) ;
-                result = ws.utility.structWithDims(size(encoding),fieldNames);
+                result = ws.structWithDims(size(encoding),fieldNames);
                 for i=1:numel(encoding) ,
                     for j=1:length(fieldNames) ,
                         fieldName = fieldNames{j} ;

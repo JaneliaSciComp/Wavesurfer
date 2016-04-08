@@ -162,7 +162,7 @@ classdef UrPreferences < handle
             % If the prefernces file exists, deletes it.
             absoluteFileName = self.getAbsoluteFileName() ;
             if exist(absoluteFileName, 'file') ,
-                ws.utility.deleteFileWithoutWarning(absoluteFileName) ;
+                ws.deleteFileWithoutWarning(absoluteFileName) ;
             end
         end  % method
         

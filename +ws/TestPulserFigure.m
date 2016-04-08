@@ -148,7 +148,7 @@ classdef TestPulserFigure < ws.MCOSFigure
         function updateTrace(self,varargin)
             % If there are issues with either the host or the model, just return
             %fprintf('updateTrace!\n');
-            import ws.utility.*
+            import ws.*
             if ~self.AreUpdatesEnabled ,
                 return
             end
@@ -238,7 +238,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             %fprintf('\n\nTestPulserFigure.updateControlPropertiesImplementation:\n');
             %dbstack
             % If there are issues with the model, just return
-            import ws.utility.*
+            import ws.*
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
@@ -273,7 +273,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             electrodeNames=electrodeManager.TestPulseElectrodeNames;
             electrodeName=self.Model.ElectrodeName;
-            ws.utility.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
+            ws.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
                                                             electrodeNames, ...
                                                             electrodeName);
             set(self.ElectrodePopupMenu, ...
@@ -466,7 +466,7 @@ classdef TestPulserFigure < ws.MCOSFigure
 
             wavesurferDirName=fileparts(which('wavesurfer'));
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollUpButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
@@ -475,7 +475,7 @@ classdef TestPulserFigure < ws.MCOSFigure
 %                           'String','^', ...
 
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-            cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollDownButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
@@ -896,7 +896,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             % visible...
 %             if ~self.IsMinimumSizeSet_ && isequal(get(self.FigureGH,'Visible'),'on') ,
 %                 %fprintf('Setting the minimum size...\n');
-%                 originalWarningState=ws.utility.warningState('MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+%                 originalWarningState=ws.warningState('MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 %                 warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 %                 fpj=get(handle(self.FigureGH),'JavaFrame');
 %                 warning(originalWarningState,'MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');                
@@ -954,9 +954,9 @@ classdef TestPulserFigure < ws.MCOSFigure
                 end
             elseif nNewElectrodes<0 ,
                 % Delete the excess HG objects
-                ws.utility.deleteIfValidHGHandle(self.GainLabelTexts(nElectrodes+1:end));
-                ws.utility.deleteIfValidHGHandle(self.GainTexts(nElectrodes+1:end));
-                ws.utility.deleteIfValidHGHandle(self.GainUnitsTexts(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.GainLabelTexts(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.GainTexts(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.GainUnitsTexts(nElectrodes+1:end));
 
                 % Delete the excess HG handles
                 self.GainLabelTexts(nElectrodes+1:end)=[];

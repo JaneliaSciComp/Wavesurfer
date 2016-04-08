@@ -503,7 +503,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             popupPosition = get(self.DeviceNamePopup, 'Position') ;
             popupHeight = popupPosition(4) ;
             deviceNamePopupYOffset = figureHeight - topAreaHeight + (topAreaHeight - popupHeight) /2 ;
-            ws.utility.positionPopupmenuAndLabelBang(self.DeviceNamePopupLabelText,self.DeviceNamePopup, ...
+            ws.positionPopupmenuAndLabelBang(self.DeviceNamePopupLabelText,self.DeviceNamePopup, ...
                                                      deviceNamePopupXOffset,deviceNamePopupYOffset,deviceNamePopupWidth) ;
             
             % Position the AIs panel, and layout its contents
@@ -704,25 +704,25 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Channel Name
             channelNameColLeftX = panelToChannelNameColSpaceWidth ;
-            ws.utility.alignTextInRectangleBang(self.AIChannelNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.AIChannelNameColTitleText, ...
                                                 [channelNameColLeftX titleRowBottomY channelNameEditWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Terminal Name                                            
             terminalNameColLeftX = channelNameColLeftX + channelNameEditWidth + spaceBetweenChannelNameAndTerminalNameWidth ;
-            ws.utility.alignTextInRectangleBang(self.AITerminalNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.AITerminalNameColTitleText, ...
                                                 [terminalNameColLeftX titleRowBottomY terminalNamePopupWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Unit
             unitColLeftX = terminalNameColLeftX + terminalNamePopupWidth + spaceBetweenTerminalAndRestWidth ;
-            ws.utility.alignTextInRectangleBang(self.AIUnitsColTitleText, ...
+            ws.alignTextInRectangleBang(self.AIUnitsColTitleText, ...
                                                 [unitColLeftX titleRowBottomY unitsEditWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Scale Factor
             scaleColLeftX = unitColLeftX + unitsEditWidth + spaceBetweenUnitsAndScaleWidth ;
-            ws.utility.alignTextInRectangleBang(self.AIScaleColTitleText, ...
+            ws.alignTextInRectangleBang(self.AIScaleColTitleText, ...
                                                 [scaleColLeftX titleRowBottomY scaleEditWidth titleRowHeight], ...
                                                 'cm');
             
@@ -730,11 +730,11 @@ classdef ChannelsFigure < ws.MCOSFigure
             isActiveColLeftX = scaleColLeftX + scaleEditWidth + spaceBetweenScaleAndScaleUnitsWidth + ...
                                scaleUnitsTextWidth + ...
                                spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-            ws.utility.alignTextInRectangleBang(self.AIIsActiveColTitleText, [isActiveColLeftX titleRowBottomY isActiveColWidth titleRowHeight], 'cm');
+            ws.alignTextInRectangleBang(self.AIIsActiveColTitleText, [isActiveColLeftX titleRowBottomY isActiveColWidth titleRowHeight], 'cm');
             
             % Delete?
             isMarkedForDeletionColLeftX=isActiveColLeftX + isActiveColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-            ws.utility.alignTextInRectangleBang(self.AIIsMarkedForDeletionColTitleText, ...
+            ws.alignTextInRectangleBang(self.AIIsMarkedForDeletionColTitleText, ...
                                                 [isMarkedForDeletionColLeftX titleRowBottomY isMarkedForDeletionColWidth titleRowHeight], ...
                                                 'cm');
             
@@ -763,10 +763,10 @@ classdef ChannelsFigure < ws.MCOSFigure
                     'Position',[xColLeft aiYRowBottom-4 scaleUnitsTextWidth labelHeight]);
                 % active?
                 xColLeft = xColLeft + scaleUnitsTextWidth + spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-                ws.utility.centerCheckboxBang(self.AIIsActiveCheckboxes(i),[xColLeft+isActiveColWidth/2 aiYRowBottom+rowHeight/2]);
+                ws.centerCheckboxBang(self.AIIsActiveCheckboxes(i),[xColLeft+isActiveColWidth/2 aiYRowBottom+rowHeight/2]);
                 % delete?
                 xColLeft = xColLeft + isActiveColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-                ws.utility.centerCheckboxBang(self.AIIsMarkedForDeletionCheckboxes(i),[xColLeft+isMarkedForDeletionColWidth/2 aiYRowBottom+rowHeight/2]);                
+                ws.centerCheckboxBang(self.AIIsMarkedForDeletionCheckboxes(i),[xColLeft+isMarkedForDeletionColWidth/2 aiYRowBottom+rowHeight/2]);                
                 
                 % Prepare for next iteration
                 aiYRowBottom=aiYRowBottom-rowToRowHeight;
@@ -841,25 +841,25 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Channel Name
             channelNameColLeftX = panelToChannelNameColSpaceWidth ;
-            ws.utility.alignTextInRectangleBang(self.AOChannelNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.AOChannelNameColTitleText, ...
                                                 [channelNameColLeftX titleRowBottomY channelNameEditWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Terminal Name                                            
             terminalNameColLeftX = channelNameColLeftX + channelNameEditWidth + spaceBetweenChannelNameAndTerminalNameWidth ;
-            ws.utility.alignTextInRectangleBang(self.AOTerminalNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.AOTerminalNameColTitleText, ...
                                                 [terminalNameColLeftX titleRowBottomY terminalNamePopupWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Unit
             unitColLeftX = terminalNameColLeftX + terminalNamePopupWidth + spaceBetweenTerminalAndRestWidth ;
-            ws.utility.alignTextInRectangleBang(self.AOUnitsColTitleText, ...
+            ws.alignTextInRectangleBang(self.AOUnitsColTitleText, ...
                                                 [unitColLeftX titleRowBottomY unitsEditWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Scale Factor
             scaleColLeftX = unitColLeftX + unitsEditWidth + spaceBetweenUnitsAndScaleWidth ;
-            ws.utility.alignTextInRectangleBang(self.AOScaleColTitleText, ...
+            ws.alignTextInRectangleBang(self.AOScaleColTitleText, ...
                                                 [scaleColLeftX titleRowBottomY scaleEditWidth titleRowHeight], ...
                                                 'cm');
             
@@ -867,11 +867,11 @@ classdef ChannelsFigure < ws.MCOSFigure
             isActiveColLeftX = scaleColLeftX + scaleEditWidth + spaceBetweenScaleAndScaleUnitsWidth + ...
                                scaleUnitsTextWidth + ...
                                spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-            %ws.utility.alignTextInRectangleBang(self.AOIsActiveColTitleText, [isActiveColLeftX titleRowBottomY isActiveColWidth titleRowHeight], 'cm');
+            %ws.alignTextInRectangleBang(self.AOIsActiveColTitleText, [isActiveColLeftX titleRowBottomY isActiveColWidth titleRowHeight], 'cm');
             
             % Delete?
             isMarkedForDeletionColLeftX=isActiveColLeftX + isActiveColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-            ws.utility.alignTextInRectangleBang(self.AOIsMarkedForDeletionColTitleText, ...
+            ws.alignTextInRectangleBang(self.AOIsMarkedForDeletionColTitleText, ...
                                                 [isMarkedForDeletionColLeftX titleRowBottomY isMarkedForDeletionColWidth titleRowHeight], ...
                                                 'cm');
             
@@ -900,10 +900,10 @@ classdef ChannelsFigure < ws.MCOSFigure
                     'Position',[xColLeft aiYRowBottom-4 scaleUnitsTextWidth labelHeight]);
                 % active?
                 xColLeft = xColLeft + scaleUnitsTextWidth + spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-                %ws.utility.centerCheckboxBang(self.AOIsActiveCheckboxes(i),[xColLeft+isActiveColWidth/2 aiYRowBottom+rowHeight/2]);
+                %ws.centerCheckboxBang(self.AOIsActiveCheckboxes(i),[xColLeft+isActiveColWidth/2 aiYRowBottom+rowHeight/2]);
                 % delete?
                 xColLeft = xColLeft + isActiveColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-                ws.utility.centerCheckboxBang(self.AOIsMarkedForDeletionCheckboxes(i),[xColLeft+isMarkedForDeletionColWidth/2 aiYRowBottom+rowHeight/2]);                
+                ws.centerCheckboxBang(self.AOIsMarkedForDeletionCheckboxes(i),[xColLeft+isMarkedForDeletionColWidth/2 aiYRowBottom+rowHeight/2]);                
                 
                 % Prepare for next iteration
                 aiYRowBottom=aiYRowBottom-rowToRowHeight;
@@ -973,25 +973,25 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Channel Name
             channelNameColLeftX = panelToChannelNameColSpaceWidth ;
-            ws.utility.alignTextInRectangleBang(self.DIChannelNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.DIChannelNameColTitleText, ...
                                                 [channelNameColLeftX titleRowBottomY channelNameEditWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Terminal Name                                            
             terminalNameColLeftX = channelNameColLeftX + channelNameEditWidth + spaceBetweenChannelNameAndTerminalNameWidth ;
-            ws.utility.alignTextInRectangleBang(self.DITerminalNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.DITerminalNameColTitleText, ...
                                                 [terminalNameColLeftX titleRowBottomY terminalNamePopupWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Unit
             unitColLeftX = terminalNameColLeftX + terminalNamePopupWidth + spaceBetweenTerminalAndRestWidth ;
-%             ws.utility.alignTextInRectangleBang(self.DIUnitsColTitleText, ...
+%             ws.alignTextInRectangleBang(self.DIUnitsColTitleText, ...
 %                                                 [unitColLeftX titleRowBottomY unitsEditWidth titleRowHeight], ...
 %                                                 'cm');
             
             % Channel Scale Factor
             scaleColLeftX = unitColLeftX + unitsEditWidth + spaceBetweenUnitsAndScaleWidth ;
-%             ws.utility.alignTextInRectangleBang(self.DIScaleColTitleText, ...
+%             ws.alignTextInRectangleBang(self.DIScaleColTitleText, ...
 %                                                 [scaleColLeftX titleRowBottomY scaleEditWidth titleRowHeight], ...
 %                                                 'cm');
             
@@ -999,11 +999,11 @@ classdef ChannelsFigure < ws.MCOSFigure
             isActiveColLeftX = scaleColLeftX + scaleEditWidth + spaceBetweenScaleAndScaleUnitsWidth + ...
                                scaleUnitsTextWidth + ...
                                spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-            ws.utility.alignTextInRectangleBang(self.DIIsActiveColTitleText, [isActiveColLeftX titleRowBottomY isActiveColWidth titleRowHeight], 'cm');
+            ws.alignTextInRectangleBang(self.DIIsActiveColTitleText, [isActiveColLeftX titleRowBottomY isActiveColWidth titleRowHeight], 'cm');
             
             % Delete?
             isMarkedForDeletionColLeftX=isActiveColLeftX + isActiveColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-            ws.utility.alignTextInRectangleBang(self.DIIsMarkedForDeletionColTitleText, ...
+            ws.alignTextInRectangleBang(self.DIIsMarkedForDeletionColTitleText, ...
                                                 [isMarkedForDeletionColLeftX titleRowBottomY isMarkedForDeletionColWidth titleRowHeight], ...
                                                 'cm');
             
@@ -1032,10 +1032,10 @@ classdef ChannelsFigure < ws.MCOSFigure
                 %    'Position',[xColLeft diYRowBottom-4 scaleUnitsTextWidth labelHeight]);
                 % active?
                 xColLeft = xColLeft + scaleUnitsTextWidth + spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-                ws.utility.centerCheckboxBang(self.DIIsActiveCheckboxes(i),[xColLeft+isActiveColWidth/2 yRowBottom+rowHeight/2]);
+                ws.centerCheckboxBang(self.DIIsActiveCheckboxes(i),[xColLeft+isActiveColWidth/2 yRowBottom+rowHeight/2]);
                 % delete?
                 xColLeft = xColLeft + isActiveColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-                ws.utility.centerCheckboxBang(self.DIIsMarkedForDeletionCheckboxes(i),[xColLeft+isMarkedForDeletionColWidth/2 yRowBottom+rowHeight/2]);                
+                ws.centerCheckboxBang(self.DIIsMarkedForDeletionCheckboxes(i),[xColLeft+isMarkedForDeletionColWidth/2 yRowBottom+rowHeight/2]);                
                 
                 % Prepare for next iteration
                 yRowBottom=yRowBottom-rowToRowHeight;
@@ -1103,39 +1103,39 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Channel Name
             channelNameColLeftX = panelToChannelNameColSpaceWidth ;
-            ws.utility.alignTextInRectangleBang(self.DOChannelNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.DOChannelNameColTitleText, ...
                                                 [channelNameColLeftX titleRowBottomY channelNameEditWidth titleRowHeight], ...
                                                 'cm');
             
             % Channel Terminal Name                                            
             terminalNameColLeftX = channelNameColLeftX + channelNameEditWidth + spaceBetweenChannelNameAndTerminalNameWidth ;
-            ws.utility.alignTextInRectangleBang(self.DOTerminalNameColTitleText, ...
+            ws.alignTextInRectangleBang(self.DOTerminalNameColTitleText, ...
                                                 [terminalNameColLeftX titleRowBottomY terminalNamePopupWidth titleRowHeight], ...
                                                 'cm');
                                             
 %             % Channel Units
 %             unitsColLeftX = terminalNameColLeftX + terminalNamePopupWidth + spaceBetweenTerminalAndRestWidth ;
-%             ws.utility.alignTextInRectangleBang(self.DOUnitsColTitleText, ...
+%             ws.alignTextInRectangleBang(self.DOUnitsColTitleText, ...
 %                                                 [unitsColLeftX titleRowBottomY unitsEditWidth titleRowHeight], ...
 %                                                 'cm');
             
             % Channel Scale Factor
             %scaleColLeftX = unitsColLeftX + unitsEditWidth + spaceBetweenUnitsAndScaleWidth ;
-%             ws.utility.alignTextInRectangleBang(self.DOScaleColTitleText, ...
+%             ws.alignTextInRectangleBang(self.DOScaleColTitleText, ...
 %                                                 [scaleColLeftX titleRowBottomY scaleEditWidth titleRowHeight], ...
 %                                                 'cm');
             
             % Timed?                                
             isTimedColLeftX = doPanelWidth - ( isTimedColWidth + isOnColWidth + isMarkedForDeletionColWidth + withinPanelRightPadWidth ) ;
-            ws.utility.alignTextInRectangleBang(self.DOIsTimedColTitleText, [isTimedColLeftX titleRowBottomY isTimedColWidth titleRowHeight], 'cm');
+            ws.alignTextInRectangleBang(self.DOIsTimedColTitleText, [isTimedColLeftX titleRowBottomY isTimedColWidth titleRowHeight], 'cm');
             
             % On?                                
             isOnColLeftX = doPanelWidth - ( isOnColWidth + isMarkedForDeletionColWidth + withinPanelRightPadWidth ) ;
-            ws.utility.alignTextInRectangleBang(self.DOIsOnColTitleText, [isOnColLeftX titleRowBottomY isOnColWidth titleRowHeight], 'cm');
+            ws.alignTextInRectangleBang(self.DOIsOnColTitleText, [isOnColLeftX titleRowBottomY isOnColWidth titleRowHeight], 'cm');
             
             % Delete?
             isMarkedForDeletionColLeftX = doPanelWidth - ( isMarkedForDeletionColWidth + withinPanelRightPadWidth ) ;
-            ws.utility.alignTextInRectangleBang(self.DOIsMarkedForDeletionColTitleText, ...
+            ws.alignTextInRectangleBang(self.DOIsMarkedForDeletionColTitleText, ...
                                                 [isMarkedForDeletionColLeftX titleRowBottomY isMarkedForDeletionColWidth titleRowHeight], ...
                                                 'cm');
             
@@ -1164,13 +1164,13 @@ classdef ChannelsFigure < ws.MCOSFigure
                 %    'Position',[xColLeft diYRowBottom-4 scaleUnitsTextWidth labelHeight]);
                 % timed?
                 %xColLeft = isTimedColLeftX ;
-                ws.utility.centerCheckboxBang(self.DOIsTimedCheckboxes(i),[isTimedColLeftX+isTimedColWidth/2 yRowBottom+rowHeight/2]);
+                ws.centerCheckboxBang(self.DOIsTimedCheckboxes(i),[isTimedColLeftX+isTimedColWidth/2 yRowBottom+rowHeight/2]);
                 % on?
                 %xColLeft = xColLeft + isTimedColWidth + spaceBetweenScaleUnitsAndCheckboxColsWidth ;
-                ws.utility.centerCheckboxBang(self.DOIsOnRadiobuttons(i),[isOnColLeftX+isOnColWidth/2 yRowBottom+rowHeight/2]);
+                ws.centerCheckboxBang(self.DOIsOnRadiobuttons(i),[isOnColLeftX+isOnColWidth/2 yRowBottom+rowHeight/2]);
                 % delete?
                 %xColLeft = xColLeft + isOnColWidth + spaceBeforeIsMarkedForDeletionColWidth ;
-                ws.utility.centerCheckboxBang(self.DOIsMarkedForDeletionCheckboxes(i),[isMarkedForDeletionColLeftX+isMarkedForDeletionColWidth/2 yRowBottom+rowHeight/2]);                
+                ws.centerCheckboxBang(self.DOIsMarkedForDeletionCheckboxes(i),[isMarkedForDeletionColLeftX+isMarkedForDeletionColWidth/2 yRowBottom+rowHeight/2]);                
                 
                 % Prepare for next iteration
                 yRowBottom=yRowBottom-rowToRowHeight;
@@ -1233,17 +1233,17 @@ classdef ChannelsFigure < ws.MCOSFigure
 %             titleRowBottomY=digitalPanelsHeight-panelToTitleRowSpaceHeight-titleRowHeight;
 %             channelLabelColLeftX = panelToChannelNameColSpaceWidth;
 %             isTimedColLeftX=channelLabelColLeftX+outputLabelWidth+spaceBetweenTerminalAndRestWidth+spaceToCenterIsTimedAndIsOnColCompositeWidth;
-%             ws.utility.alignTextInRectangleBang(self.DOIsTimedColTitleText,[isTimedColLeftX titleRowBottomY isTimedColWidth titleRowHeight],'cm');
+%             ws.alignTextInRectangleBang(self.DOIsTimedColTitleText,[isTimedColLeftX titleRowBottomY isTimedColWidth titleRowHeight],'cm');
 %             isOnColLeftX=isTimedColLeftX+isTimedColWidth+spaceBetweenTimedAndIsOnColsWidth;
-%             ws.utility.alignTextInRectangleBang(self.DOIsOnColTitleText,[isOnColLeftX titleRowBottomY isOnColWidth titleRowHeight],'cm');
+%             ws.alignTextInRectangleBang(self.DOIsOnColTitleText,[isOnColLeftX titleRowBottomY isOnColWidth titleRowHeight],'cm');
 %             
 %             % Position the stuff in the DO rows            
 %             doYRowBottom=titleRowBottomY-spaceBelowTitleRowHeight-rowHeight;   
 %             for i=1:nDOs ,
 %                 set(self.DOLabelTexts(i), ...
 %                     'Position',[channelLabelColLeftX doYRowBottom-4 outputLabelWidth rowHeight]);  % shim to make look nice
-%                 ws.utility.centerCheckboxBang(self.DOIsTimedCheckboxes(i),[isTimedColLeftX+isTimedColWidth/2 doYRowBottom+rowHeight/2]);
-%                 ws.utility.centerCheckboxBang(self.DOIsOnRadiobuttons(i),[isOnColLeftX+isOnColWidth/2 doYRowBottom+rowHeight/2]);
+%                 ws.centerCheckboxBang(self.DOIsTimedCheckboxes(i),[isTimedColLeftX+isTimedColWidth/2 doYRowBottom+rowHeight/2]);
+%                 ws.centerCheckboxBang(self.DOIsOnRadiobuttons(i),[isOnColLeftX+isOnColWidth/2 doYRowBottom+rowHeight/2]);
 %                 doYRowBottom=doYRowBottom-rowToRowHeight;
 %             end
 %         end  % function
@@ -1274,7 +1274,7 @@ classdef ChannelsFigure < ws.MCOSFigure
 %         end        
 
         function updateControlPropertiesImplementation_(self,varargin)
-            %import ws.utility.*
+            %import ws.*
             model=self.Model;
             if isempty(model) || ~isvalid(model) ,
                 return
@@ -1286,7 +1286,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Update the device name popup
             allDeviceNames = model.AllDeviceNames ;
-            ws.utility.setPopupMenuItemsAndSelectionBang(self.DeviceNamePopup, allDeviceNames, model.DeviceName) ;
+            ws.setPopupMenuItemsAndSelectionBang(self.DeviceNamePopup, allDeviceNames, model.DeviceName) ;
             
             % update the panels
             self.updateAIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
@@ -1314,20 +1314,20 @@ classdef ChannelsFigure < ws.MCOSFigure
             nAIs=length(self.AIScaleEdits);            
             for i=1:nAIs ,
                 set(self.AIChannelNameEdits(i), 'String', channelNames{i} );                
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.AITerminalNamePopups(i), ...
+                ws.setPopupMenuItemsAndSelectionBang(self.AITerminalNamePopups(i), ...
                                                              allAITerminalNames, ...
                                                              terminalNameForEachChannel{i});
                 set(self.AITerminalNamePopups(i) , ...
-                    'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
+                    'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.AIUnitsEdits(i),'String',channelUnits{i}, ...
-                                         'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
+                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
-                                         'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
+                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AIScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
                 set(self.AIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsAnalogChannelActive(i), ...
-                                                 'Enable',ws.utility.onIff(isWavesurferIdle));                                     
+                                                 'Enable',ws.onIff(isWavesurferIdle));                                     
                 set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsAnalogChannelMarkedForDeletion(i), ...
-                                                            'Enable',ws.utility.onIff(isWavesurferIdle));                                     
+                                                            'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
             % Deal with enablement of add/delete buttons
@@ -1335,8 +1335,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             areAnyFreeAITerminals =  (nAIs<nAITerminals) ;
             isAIChannelMarkedForDeletion = model.Acquisition.IsAnalogChannelMarkedForDeletion ;
             isAnyAIChannelMarkedForDeletion = any(isAIChannelMarkedForDeletion) ;
-            set(self.AddAIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeAITerminals)) ;
-            set(self.DeleteAIChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyAIChannelMarkedForDeletion)) ;
+            set(self.AddAIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAITerminals)) ;
+            set(self.DeleteAIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyAIChannelMarkedForDeletion)) ;
         end  % function        
         
         function updateAOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
@@ -1358,20 +1358,20 @@ classdef ChannelsFigure < ws.MCOSFigure
             nAOChannels=length(self.AOChannelNameEdits);            
             for i=1:nAOChannels ,
                 set(self.AOChannelNameEdits(i), 'String', channelNames{i} );                
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.AOTerminalNamePopups(i), ...
+                ws.setPopupMenuItemsAndSelectionBang(self.AOTerminalNamePopups(i), ...
                                                              allAOTerminalNames, ...
                                                              terminalNameForEachChannel{i});
                 set(self.AOTerminalNamePopups(i) , ...
-                    'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
+                    'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.AOUnitsEdits(i),'String',channelUnits{i}, ...
-                                         'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
+                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
-                                         'Enable',ws.utility.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
+                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AOScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
                 %set(self.AOIsActiveCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelActive(i), ...
                 %                                 'Enable',onIff(isWavesurferIdle));                                     
                 set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelMarkedForDeletion(i), ...
-                                                            'Enable',ws.utility.onIff(isWavesurferIdle));                                     
+                                                            'Enable',ws.onIff(isWavesurferIdle));                                     
             end
             
             % Deal with enablement of add/delete buttons
@@ -1379,8 +1379,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             areAnyFreeAOTerminals =  (nAOChannels<nAOTerminals) ;
             isAOChannelMarkedForDeletion = model.Stimulation.IsAnalogChannelMarkedForDeletion ;
             isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;
-            set(self.AddAOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areAnyFreeAOTerminals)) ;
-            set(self.DeleteAOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyAOChannelMarkedForDeletion)) ;
+            set(self.AddAOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAOTerminals)) ;
+            set(self.DeleteAOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyAOChannelMarkedForDeletion)) ;
         end  % function
         
         function updateDIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
@@ -1396,15 +1396,15 @@ classdef ChannelsFigure < ws.MCOSFigure
             nDIChannels=length(self.DIChannelNameEdits);            
             for i=1:nDIChannels ,
                 set(self.DIChannelNameEdits(i), 'String', channelNames{i} );
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.DITerminalNamePopups(i), ...
+                ws.setPopupMenuItemsAndSelectionBang(self.DITerminalNamePopups(i), ...
                                                              allTerminalNames, ...
                                                              terminalNameForEachChannel{i});
                 set(self.DITerminalNamePopups(i) , ...
-                    'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
+                    'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.DIIsActiveCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelActive(i), ...
-                                                 'Enable',ws.utility.onIff(isWavesurferIdle));                                     
+                                                 'Enable',ws.onIff(isWavesurferIdle));                                     
                 set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelMarkedForDeletion(i), ...
-                                                            'Enable',ws.utility.onIff(isWavesurferIdle));                                     
+                                                            'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
             % Deal with enablement of add/delete buttons
@@ -1414,8 +1414,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDIChannelMarkedForDeletion = model.Acquisition.IsDigitalChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
-            set(self.AddDIChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals)) ;
-            set(self.DeleteDIChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
+            set(self.AddDIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals)) ;
+            set(self.DeleteDIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
         end  % function        
        
         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
@@ -1432,17 +1432,17 @@ classdef ChannelsFigure < ws.MCOSFigure
             nDOs=length(self.DOChannelNameEdits);            
             for i=1:nDOs ,
                 set(self.DOChannelNameEdits(i), 'String', channelNames{i} );
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.DOTerminalNamePopups(i), ...
+                ws.setPopupMenuItemsAndSelectionBang(self.DOTerminalNamePopups(i), ...
                                                              allTerminalNames, ...
                                                              terminalNameForEachChannel{i});
                 set(self.DOTerminalNamePopups(i) , ...
-                    'BackgroundColor',ws.utility.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
+                    'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor) ) ;
                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
-                                                'enable',ws.utility.onIff(isWavesurferIdle));
+                                                'enable',ws.onIff(isWavesurferIdle));
                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
-                                               'enable',ws.utility.onIff(~isTimed(i)));
+                                               'enable',ws.onIff(~isTimed(i)));
                 set(self.DOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Stimulation.IsDigitalChannelMarkedForDeletion(i), ...
-                                                            'Enable',ws.utility.onIff(isWavesurferIdle));                                     
+                                                            'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
             % Deal with enablement of add/delete buttons
@@ -1452,8 +1452,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDOChannelMarkedForDeletion = model.Stimulation.IsDigitalChannelMarkedForDeletion ;
             isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
-            set(self.AddDOChannelButton, 'Enable', ws.utility.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals) ) ;
-            set(self.DeleteDOChannelsButton, 'Enable', ws.utility.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion) ) ;                        
+            set(self.AddDOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals) ) ;
+            set(self.DeleteDOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion) ) ;                        
         end  % function        
        
 %         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
@@ -1468,9 +1468,9 @@ classdef ChannelsFigure < ws.MCOSFigure
 %             for i=1:nDOs ,
 %                 set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
 %                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
-%                                                 'enable',ws.utility.onIff(isWavesurferIdle));
+%                                                 'enable',ws.onIff(isWavesurferIdle));
 %                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
-%                                                'enable',ws.utility.onIff(~isTimed(i)));
+%                                                'enable',ws.onIff(~isTimed(i)));
 %             end            
 %         end        
         

@@ -109,7 +109,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function delete(self)
             % Delete all child controllers.
 %             for i=1:length(self.ChildControllers) ,
-%                 ws.utility.deleteIfValidHandle(self.ChildControllers{i});
+%                 ws.deleteIfValidHandle(self.ChildControllers{i});
 %             end
             self.ChildControllers={};
             self.ScopeControllers={};
@@ -224,7 +224,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             if ~isempty(yokeToScanimageMenuItem) ,
 %                 model=self.Model;
 %                 if ~isempty(model) ,
-%                     set(yokeToScanimageMenuItem,'Checked',ws.utility.onIff(model.IsYokedToScanImage));
+%                     set(yokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
 %                 end
 %             end            
 %         end
@@ -369,9 +369,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(-1);
             try
                 if ischar(fileName) && ~isempty(fileName) && isrow(fileName) ,
-                    doesFileExist=ws.utility.fileStatus(fileName);
+                    doesFileExist=ws.fileStatus(fileName);
                     if doesFileExist ,
-                        if ws.utility.isFileNameAbsolute(fileName) ,
+                        if ws.isFileNameAbsolute(fileName) ,
                             absoluteFileName=fileName;
                         else
                             absoluteFileName=fullfile(pwd(),fileName);
@@ -488,7 +488,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             %self.Figure.changeReadiness(-1);
-            if ws.utility.isFileNameAbsolute(fileName) ,
+            if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -1176,7 +1176,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         function updateEnablementAndVisibilityOfControls(self,varargin)
 %             % Updates the menu and button enablement to be appropriate for
 %             % the model state.
-%             import ws.utility.*
+%             import ws.*
 % 
 %             % If no model, can't really do anything
 %             if isempty(self.Model) ,

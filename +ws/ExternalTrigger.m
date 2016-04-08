@@ -1,4 +1,4 @@
-classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
     % A class that represents a trigger destination, i.e. a digital input
     % to the daq board that could potentially be used to trigger
     % acquisition, etc.  A trigger destination has a name, a device ID, 
@@ -58,8 +58,8 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         end
         
         function set.Name(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) && ~isempty(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
                     self.Parent.update();
@@ -71,8 +71,8 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         end
         
         function set.DeviceName(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) ,
                     self.DeviceName_ = value ;
                 else
                     self.Parent.update();
@@ -84,7 +84,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         end
         
         function set.PFIID(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 && self.Parent.isPFIIDFree(value) ,
                     value = double(value) ;
                     self.PFIID_ = value ;
@@ -98,7 +98,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         end
         
         function set.Edge(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
@@ -115,7 +115,7 @@ classdef ExternalTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.H
         end
 
         function set.IsMarkedForDeletion(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if (islogical(value) || isnumeric(value)) && isscalar(value) ,
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else

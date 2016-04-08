@@ -17,7 +17,7 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
     methods
         function self = FileStimulusDelegate(parent,varargin)
             self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.utility.filterPVArgs(varargin, {'FileName'}, {});
+            pvArgs = ws.filterPVArgs(varargin, {'FileName'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -29,7 +29,7 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
         function set.FileName(self, value)
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
-                valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
+                valueWithoutBackslashes = ws.replaceBackslashesWithSlashes(value);
                 test = ws.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set

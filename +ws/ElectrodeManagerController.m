@@ -129,7 +129,7 @@ classdef ElectrodeManagerController < ws.Controller
             wavesurferModel=ephys.Parent;
             validChoices=wavesurferModel.Acquisition.ChannelNames;
             % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.MonitorPopups);
             electrode=self.Model.Electrodes{isTheElectrode};
             electrode.MonitorChannelName=choice;
@@ -142,7 +142,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             wavesurferModel=ephys.Parent;
 %             validChoices=wavesurferModel.Acquisition.ChannelNames;
 %             % Do the rest
-%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.CurrentMonitorPopups);
 %             electrode=self.Model.Electrodes{isTheElectrode};
 %             electrode.CurrentMonitorChannelName=choice;
@@ -155,7 +155,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             wavesurferModel=ephys.Parent;
 %             validChoices=wavesurferModel.Acquisition.ChannelNames;
 %             % Do the rest
-%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.VoltageMonitorPopups);
 %             electrode=self.Model.Electrodes{isTheElectrode};
 %             electrode.VoltageMonitorChannelName=choice;
@@ -168,7 +168,7 @@ classdef ElectrodeManagerController < ws.Controller
             wavesurferModel=ephys.Parent;
             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
             % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CommandPopups);
             electrode=self.Model.Electrodes{isTheElectrode};
             electrode.CommandChannelName=choice;
@@ -181,7 +181,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             wavesurferModel=ephys.Parent;
 %             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
 %             % Do the rest
-%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.VoltageCommandPopups);
 %             electrode=self.Model.Electrodes{isTheElectrode};
 %             electrode.VoltageCommandChannelName=choice;
@@ -194,7 +194,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             wavesurferModel=ephys.Parent;
 %             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
 %             % Do the rest
-%             choice=ws.utility.getPopupMenuSelection(source,validChoices);
+%             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.CurrentCommandPopups);
 %             electrode=self.Model.Electrodes{isTheElectrode};
 %             electrode.CurrentCommandChannelName=choice;
@@ -206,7 +206,7 @@ classdef ElectrodeManagerController < ws.Controller
             electrode=self.Model.Electrodes{electrodeIndex};
             allowedModes=electrode.getAllowedModes();
             allowedModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false);
-            modeAsString=ws.utility.getPopupMenuSelection(source,allowedModesAsStrings);
+            modeAsString=ws.getPopupMenuSelection(source,allowedModesAsStrings);
             modeIndex=find(strcmp(modeAsString,allowedModesAsStrings),1);
             if ~isempty(modeIndex) ,
                 mode=allowedModes{modeIndex};
@@ -268,7 +268,7 @@ classdef ElectrodeManagerController < ws.Controller
 
         function typePopupActuated(self,source)
             %self.Figure.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
-            choice=ws.utility.getPopupMenuSelection(source,ws.Electrode.Types);
+            choice=ws.getPopupMenuSelection(source,ws.Electrode.Types);
             isTheElectrode=(source==self.Figure.TypePopups);
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.Type=choice;

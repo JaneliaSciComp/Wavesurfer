@@ -129,7 +129,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 electrodeID=self.ElectrodeIDs_(electrodeIndex);
                 %electrodeState=ws.dabs.axon.MulticlampTelegraph('getElectrode',electrodeID);
                 %ws.dabs.axon.MulticlampTelegraph('requestElectrodeState',electrodeID)
-                %ws.utility.sleep(0.05);  % Wait a bit for response (how short can we make this?)
+                %ws.sleep(0.05);  % Wait a bit for response (how short can we make this?)
                 %electrodeState=ws.dabs.axon.MulticlampTelegraph('collectElectrodeState',electrodeID);
                 electrodeState=ws.dabs.axon.MulticlampTelegraph('getElectrodeState',electrodeID);
                 if isempty(electrodeState) ,
@@ -161,7 +161,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setMode(self,electrodeIndex,newMode)
-%             import ws.utility.*
+%             import ws.*
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
@@ -328,7 +328,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setIsCommandEnabled(self,electrodeIndex,newWantedValue)
-%             import ws.utility.*
+%             import ws.*
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
@@ -378,7 +378,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setCurrentCommandGain(self,electrodeIndex,newWantedValue)
-%             import ws.utility.*
+%             import ws.*
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
@@ -439,7 +439,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setVoltageCommandGain(self,electrodeIndex,newValue)
-%             import ws.utility.*
+%             import ws.*
 %             % newValue should be in mV/V
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
@@ -488,7 +488,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 %         %%
 %         function setUIEnablement(self,newValueRaw)
 %             % Set whether the EPCMaster UI is enabled.  true==enabled.
-%             import ws.utility.*
+%             import ws.*
 %             newValue=logical(newValueRaw);
 %             if ~isscalar(newValue) ,
 %                 return
@@ -560,7 +560,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 %     
 %         %%
 %         function responseString=getResponseString(self,commandIndex)
-%             import ws.utility.*
+%             import ws.*
 %             responseFileId=fopen(self.ResponseFileName_,'r');
 %             if responseFileId<0 ,
 %                 % Couldn't open response file
@@ -637,7 +637,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 % 
 %         %%
 %         function responseStrings=getResponseStrings(self,commandIndex)
-%             import ws.utility.*
+%             import ws.*
 %             %fprintf('Just entered getResponseStrings()\n');
 %             %commandIndex
 %             responseFileId=fopen(self.ResponseFileName_,'r');
@@ -957,11 +957,11 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             units=unitsAsString ;
 %             topAndBottomUnits=strsplit(unitsAsString,'/');
 %             if isempty(topAndBottomUnits) ,
-%                 units=ws.utility.SIUnit();  % pure (why not?)
+%                 units=ws.SIUnit();  % pure (why not?)
 %             elseif length(topAndBottomUnits)==1 ,
-%                 units=ws.utility.SIUnit(topAndBottomUnits{1});
+%                 units=ws.SIUnit(topAndBottomUnits{1});
 %             else
-%                 units=ws.utility.SIUnit(topAndBottomUnits{1})/ws.utility.SIUnit(topAndBottomUnits{2}) ;
+%                 units=ws.SIUnit(topAndBottomUnits{1})/ws.SIUnit(topAndBottomUnits{2}) ;
 %             end                
         end  % function
 
@@ -1054,7 +1054,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                     rawScaleFactor=electrodeState.ScaleFactor*electrodeState.Alpha;
                     rawUnits=electrodeState.ScaleFactorUnits;
                     %rawUnits=ws.MulticlampCommanderSocket.unitsFromUnitsString(rawUnitsAsString);
-                    %targetUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('pA');
+                    %targetUnits=ws.SIUnit('V')/ws.SIUnit('pA');
                     [value,err]=ws.MulticlampCommanderSocket.convertToVoltsPerPicoamp(rawScaleFactor,rawUnits);
                 else
                     value=nan;
@@ -1076,7 +1076,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                     rawScaleFactor = electrodeState.ScaleFactor * electrodeState.Alpha ;
                     rawUnits=electrodeState.ScaleFactorUnits;
                     %rawUnits=ws.MulticlampCommanderSocket.unitsFromUnitsString(rawUnitsAsString);
-                    %targetUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('mV');
+                    %targetUnits=ws.SIUnit('V')/ws.SIUnit('mV');
                     %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
                     [value,err]=ws.MulticlampCommanderSocket.convertToVoltsPerMillivolt(rawScaleFactor,rawUnits);
                 else
@@ -1099,8 +1099,8 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             if isequal(electrodeState.OperatingMode,'I-Clamp') || isequal(electrodeState.OperatingMode,'I = 0') ,
                 rawScaleFactor=electrodeState.ExtCmdSens;
                 value = 1e12 * rawScaleFactor ;  % convert x A/V => y pA/V
-                %rawUnits=ws.utility.SIUnit('A')/ws.utility.SIUnit('V');
-                %targetUnits=ws.utility.SIUnit('pA')/ws.utility.SIUnit('V');
+                %rawUnits=ws.SIUnit('A')/ws.SIUnit('V');
+                %targetUnits=ws.SIUnit('pA')/ws.SIUnit('V');
                 %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
                 err=[];
             else
@@ -1117,8 +1117,8 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             if isequal(electrodeState.OperatingMode,'V-Clamp') ,
                 rawScaleFactor=electrodeState.ExtCmdSens;
                 value = 1e3 * rawScaleFactor ;  % convert x V/V => y mV/V
-                %rawUnits=ws.utility.SIUnit('V')/ws.utility.SIUnit('V');
-                %targetUnits=ws.utility.SIUnit('mV')/ws.utility.SIUnit('V');
+                %rawUnits=ws.SIUnit('V')/ws.SIUnit('V');
+                %targetUnits=ws.SIUnit('mV')/ws.SIUnit('V');
                 %[value,err]=ws.MulticlampCommanderSocket.numberForTargetUnits(targetUnits,rawScaleFactor,rawUnits);
                 err = [] ;
             else
@@ -1205,19 +1205,19 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
             % Sort by serialNumber
             serialNumber={sorted.serialNumber};
-            serialNumber=cellfun(@(c)(ws.utility.fif(isempty(c),-inf,c)),serialNumber);  % 700As have serialNumber == -inf, so they are left on left end
+            serialNumber=cellfun(@(c)(ws.fif(isempty(c),-inf,c)),serialNumber);  % 700As have serialNumber == -inf, so they are left on left end
             [~,i]=sort(serialNumber);
             sorted=sorted(i);
             
             % Sort by axoBusID
             axoBusID={sorted.axoBusID};
-            axoBusID=cellfun(@(c)(ws.utility.fif(isempty(c),+inf,c)),axoBusID);  % 700Bs have axoBusID == inf, so they are left on right end
+            axoBusID=cellfun(@(c)(ws.fif(isempty(c),+inf,c)),axoBusID);  % 700Bs have axoBusID == inf, so they are left on right end
             [~,i]=sort(axoBusID);
             sorted=sorted(i);
             
             % Sort by com port
             comPortID={sorted.comPortID};
-            comPortID=cellfun(@(c)(ws.utility.fif(isempty(c),+inf,c)),comPortID);  % 700Bs have comPortID == inf, so they are left on right end
+            comPortID=cellfun(@(c)(ws.fif(isempty(c),+inf,c)),comPortID);  % 700Bs have comPortID == inf, so they are left on right end
             [~,i]=sort(comPortID);
             sorted=sorted(i);
             

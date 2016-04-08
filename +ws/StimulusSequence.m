@@ -24,7 +24,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     methods
         function self = StimulusSequence(parent,varargin)
             self@ws.Model(parent);
-            pvArgs = ws.utility.filterPVArgs(varargin, {'Name'}, {});
+            pvArgs = ws.filterPVArgs(varargin, {'Name'}, {});
             
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -127,7 +127,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %                 if isGoodSoFar ,
 %                     if ~isempty(self.Parent) ,
 %                         mapsInLibrary=self.Parent.Maps;
-%                         if all(ws.utility.ismemberOfCellArray(newValue,mapsInLibrary)) ,
+%                         if all(ws.ismemberOfCellArray(newValue,mapsInLibrary)) ,
 %                             % If get here, everything checks out, ok to
 %                             % mutate our state
 %                             self.Maps_ = newValue;
@@ -167,7 +167,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end   % function
         
 %         function out = containsMaps(self, mapOrMaps)
-%             maps=ws.utility.cellifyIfNeeded(mapOrMaps);
+%             maps=ws.cellifyIfNeeded(mapOrMaps);
 %             out = false(size(maps));
 %             
 %             if isempty(maps)
@@ -348,7 +348,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 % %             % The maps argument should be an array of sound (non-broken) maps
 % %             
 % %             % Now repair the items
-% %             mapUUIDs=ws.utility.cellArrayPropertyAsArray(maps,'UUID');
+% %             mapUUIDs=ws.cellArrayPropertyAsArray(maps,'UUID');
 % %             itemUUIDs=self.MapUUIDs_;
 % %             nMaps=length(itemUUIDs);
 % %             self.Maps_={};
@@ -369,7 +369,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %                 value=false;
 %                 return
 %             end
-% %             uuidsAsInMaps=ws.utility.cellArrayPropertyAsArray(self.Maps,'UUID');
+% %             uuidsAsInMaps=ws.cellArrayPropertyAsArray(self.Maps,'UUID');
 % %             value=all(uuidsAsInMaps==self.MapUUIDs_);
 %             value=true;
 %         end
@@ -431,7 +431,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %             % Get the index within sourceMaps of source.Stimulus, then link
 %             % up the new binding with the corresponding element of
 %             % selfMaps
-%             sourceUUIDs=ws.utility.cellArrayPropertyAsArray(sourceMaps,'UUID');
+%             sourceUUIDs=ws.cellArrayPropertyAsArray(sourceMaps,'UUID');
 %             nMaps=length(self.Maps);
 %             for i=1:nMaps
 %                 itemUUID=self.MapUUIDs_(i);                

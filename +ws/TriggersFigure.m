@@ -45,7 +45,7 @@ classdef TriggersFigure < ws.MCOSFigure
            
            % Layout the figure and set the position
            self.layout_();
-           ws.utility.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
            % Initialize the guidata
            self.updateGuidata_();
@@ -211,7 +211,7 @@ classdef TriggersFigure < ws.MCOSFigure
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
             
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             topPadHeight=10;
             schemesAreaWidth=280;
@@ -291,8 +291,8 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutSweepBasedAcquisitionPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
 
             % Dimensions
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
@@ -324,8 +324,8 @@ classdef TriggersFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function layoutSweepBasedStimulationPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
 
             % Dimensions
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
@@ -357,8 +357,8 @@ classdef TriggersFigure < ws.MCOSFigure
 
     methods (Access = protected)
 %         function layoutContinuousPanel_(self,panelWidth,panelHeight) %#ok<INUSL>
-%             import ws.utility.positionEditLabelAndUnitsBang
-%             import ws.utility.positionPopupmenuAndLabelBang
+%             import ws.positionEditLabelAndUnitsBang
+%             import ws.positionPopupmenuAndLabelBang
 % 
 %             % Dimensions
 %             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
@@ -528,7 +528,7 @@ classdef TriggersFigure < ws.MCOSFigure
             isIdle=isequal(wsModel.State,'idle');
             isSweepBased = wsModel.AreSweepsFiniteDuration;
             
-            import ws.utility.onIff
+            import ws.onIff
             
             set(self.AcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
             
@@ -563,12 +563,12 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            %import ws.utility.setPopupMenuItemsAndSelectionBang
-            %import ws.utility.onIff
+            %import ws.setPopupMenuItemsAndSelectionBang
+            %import ws.onIff
             schemes = model.AcquisitionSchemes ;
             rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
             rawCurrentItem=model.AcquisitionTriggerScheme.Name;
-            ws.utility.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
+            ws.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
                                                          rawMenuItems, ...
                                                          rawCurrentItem);
         end  % function       
@@ -580,13 +580,13 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            %import ws.utility.setPopupMenuItemsAndSelectionBang
-            %import ws.utility.onIff
+            %import ws.setPopupMenuItemsAndSelectionBang
+            %import ws.onIff
             set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
             schemes = model.Schemes ;
             rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
             rawCurrentItem=model.StimulationTriggerScheme.Name;
-            ws.utility.setPopupMenuItemsAndSelectionBang(self.StimulationSchemePopupmenu, ...
+            ws.setPopupMenuItemsAndSelectionBang(self.StimulationSchemePopupmenu, ...
                                                          rawMenuItems, ...
                                                          rawCurrentItem);
         end  % function       
@@ -598,8 +598,8 @@ classdef TriggersFigure < ws.MCOSFigure
 %             if isempty(model) ,
 %                 return
 %             end
-%             import ws.utility.setPopupMenuItemsAndSelectionBang
-%             import ws.utility.onIff
+%             import ws.setPopupMenuItemsAndSelectionBang
+%             import ws.onIff
 %             rawMenuItems={model.CounterTriggers.Name};
 %             rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
 %             setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...

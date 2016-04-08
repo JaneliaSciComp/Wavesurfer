@@ -409,7 +409,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
         function set.SelectedOutputable(self, newSelection)
-            if ws.utility.isASettableValue(newSelection) ,
+            if ws.isASettableValue(newSelection) ,
                 if isempty(newSelection) ,
                     self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
                 elseif isscalar(newSelection) ,
@@ -518,7 +518,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
 
         function set.SelectedItem(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isempty(newValue) ,
                     self.SelectedItemClassName_ = '';  % this makes it so that no item is currently selected
                 elseif isscalar(newValue) ,
@@ -613,7 +613,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function result = isInUse(self, itemOrItems)
             % Note that this doesn't check if the items are selected.  This
             % is by design.
-            items=ws.utility.cellifyIfNeeded(itemOrItems);
+            items=ws.cellifyIfNeeded(itemOrItems);
             validateattributes(items, {'cell'}, {'vector'});
             for i=1:numel(items) ,
                 validateattributes(items{i}, {'ws.Stimulus' 'ws.StimulusMap' 'ws.StimulusSequence'}, {'scalar'});
@@ -667,7 +667,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.Maps_(iMatch) = [] ;
                 end
             elseif isa(item, 'ws.Stimulus')
-                isMatch = ws.utility.ismemberOfCellArray(self.Stimuli,{item}) ;
+                isMatch = ws.ismemberOfCellArray(self.Stimuli,{item}) ;
                 iMatch = find(isMatch,1) ;
                 if ~isempty(iMatch) ,
                     if self.SelectedStimulusIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
@@ -943,7 +943,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
 %         function addMapToSequence(self,sequence,map)
-%             if ws.utility.ismemberOfCellArray({sequence},self.Sequences) && ws.utility.ismemberOfCellArray({map},self.Maps) ,
+%             if ws.ismemberOfCellArray({sequence},self.Sequences) && ws.ismemberOfCellArray({map},self.Maps) ,
 %                 sequence.addMap(map);
 %             end
 %             self.broadcast('Update');
@@ -980,7 +980,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %         end  % function
 %         
 %         function deleteStimulus_(self, stimulus)
-%             isMatch=ws.utility.ismemberOfCellArray(self.Stimuli,{stimulus});
+%             isMatch=ws.ismemberOfCellArray(self.Stimuli,{stimulus});
 %             self.Stimuli_(isMatch) = [];
 %         end  % function
         

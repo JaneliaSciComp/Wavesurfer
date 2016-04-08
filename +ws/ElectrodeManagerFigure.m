@@ -154,7 +154,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % properties they should have, given the current state of the
             % model.
             
-            import ws.utility.*
+            import ws.*
             
 %             fprintf('ElectrodeManagerFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
@@ -239,7 +239,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 %                 isThisElectrodeSmart=~isThisElectrodeManual;
                 
                 % Update the type popup                
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
+                ws.setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
                                                   ws.Electrode.Types, ...
                                                   thisElectrode.Type);
                 %set(self.TypePopups(i),'BackgroundColor',fif(isElectrodeConnectionOpen(i),normalBackgroundColor,warningBackgroundColor));
@@ -256,7 +256,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 % Update the mode popup
                 listOfModes=thisElectrode.getAllowedModes();
                 listOfModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),listOfModes,'UniformOutput',false);
-                ws.utility.setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
+                ws.setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
                                                   listOfModesAsStrings, ...
                                                   ws.titleStringFromElectrodeMode(thisElectrode.Mode));
                 %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
@@ -272,7 +272,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current monitor popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingMonitorChannel(thisElectrode.CurrentMonitorChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    ws.utility.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
+                    ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
                                                       wavesurferModel.Acquisition.AnalogChannelNames, ...
                                                       thisElectrode.CurrentMonitorChannelName, ...
                                                       alwaysShowUnspecifiedAsMenuItem);
@@ -294,7 +294,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the voltage command popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingCommandChannel(thisElectrode.VoltageCommandChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    ws.utility.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
+                    ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                       wavesurferModel.Stimulation.AnalogChannelNames, ...
                                                       thisElectrode.VoltageCommandChannelName, ...
                                                       alwaysShowUnspecifiedAsMenuItem);
@@ -321,7 +321,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the voltage monitor popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingMonitorChannel(thisElectrode.VoltageMonitorChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    ws.utility.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
+                    ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
                                                       wavesurferModel.Acquisition.AnalogChannelNames, ...
                                                       thisElectrode.VoltageMonitorChannelName, ...
                                                       alwaysShowUnspecifiedAsMenuItem);
@@ -343,7 +343,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current command popup
                     nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingCommandChannel(thisElectrode.CurrentCommandChannelName);
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    ws.utility.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
+                    ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                       wavesurferModel.Stimulation.AnalogChannelNames, ...
                                                       thisElectrode.CurrentCommandChannelName, ...
                                                       alwaysShowUnspecifiedAsMenuItem);
@@ -394,7 +394,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % Makes sure the enablement of all existing controls is correct,
             % given the current state of the model.
             
-            import ws.utility.*
+            import ws.*
             
             % If the model is empty or broken, just return at this point
             model=self.Model;
@@ -890,7 +890,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 end  % for loop
             elseif nNewElectrodes<0 ,
                 % Delete the excess HG objects
-                import ws.utility.*
+                import ws.*
                 deleteIfValidHGHandle(self.LabelEdits(nElectrodes+1:end));
                 deleteIfValidHGHandle(self.TypePopups(nElectrodes+1:end));
                 deleteIfValidHGHandle(self.IndexWithinTypeEdits(nElectrodes+1:end));
@@ -948,7 +948,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % Resize the figure and position all the controls in the right
             % place, given the current number of electrodes.
             
-            import ws.utility.*
+            import ws.*
             
             nElectrodes=length(self.LabelEdits);
             %nElectrodes=4  % FOR DEBUGGING ONLY

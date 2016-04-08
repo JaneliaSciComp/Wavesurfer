@@ -20,7 +20,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
     methods
         function self = SquarePulseTrainStimulusDelegate(parent,varargin)
             self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.utility.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
+            pvArgs = ws.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -40,7 +40,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
         end  % function
         
 %         function set.Period(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('Period', value);
 %             self.Period = value;
 %             %self.notify('DurationChanged');
@@ -58,7 +58,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
         end  % function
 
 %         function set.PulseDuration(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('PulseDuration', value);
 %             self.PulseDuration = value;
 %             %self.notify('DurationChanged');

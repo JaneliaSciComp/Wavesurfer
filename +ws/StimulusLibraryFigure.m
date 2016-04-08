@@ -94,11 +94,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
            % elsewhere, or something           
            self.layout_();
            %set(self.FigureGH,'Position',[0 0 figureSize]);
-           mainFigureGH=ws.utility.getSubproperty(controller,'Parent','Figure','FigureGH');
+           mainFigureGH=ws.getSubproperty(controller,'Parent','Figure','FigureGH');
            if isempty(mainFigureGH) ,
-               ws.utility.centerFigureOnRootBang(self.FigureGH);
+               ws.centerFigureOnRootBang(self.FigureGH);
            else
-               ws.utility.positionFigureUpperLeftRelativeToParentUpperLeftBang(self.FigureGH,mainFigureGH,50*[1 1])
+               ws.positionFigureUpperLeftRelativeToParentUpperLeftBang(self.FigureGH,mainFigureGH,50*[1 1])
            end
            
            % Sync up with the model
@@ -106,7 +106,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
            
            % Subscribe to model event(s)
            model.subscribeMe(self,'Update','','update');
-           wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');
+           wavesurferModel=ws.getSubproperty(model,'Parent','Parent');
            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
                wavesurferModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
                %wavesurferModel.subscribeMe(self,'DidChangeNumberOfOutputChannels','','update');
@@ -323,7 +323,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             
             % This default implementation does nothing, and is appropriate
             % only if all the controls are fixed.
-            import ws.utility.deleteIfValidHGHandle
+            import ws.deleteIfValidHGHandle
 
             % Delete the existing ones
             deleteIfValidHGHandle(self.StimulusAdditionalParametersTexts);
@@ -419,7 +419,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function figureSize=layoutFixedControls_(self)
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             figureHeight=450;
             
@@ -449,9 +449,9 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             stimuliListboxTextYOffset=stimuliListboxYOffset+itemListboxHeight+heightFromListboxToLabel;
             mapsListboxTextYOffset=mapsListboxYOffset+itemListboxHeight+heightFromListboxToLabel;
             sequencesListboxTextYOffset=sequencesListboxYOffset+itemListboxHeight+heightFromListboxToLabel;
-            ws.utility.positionTextBang(self.StimuliListboxText,[listboxStackXOffset+labelXOffset stimuliListboxTextYOffset]);
-            ws.utility.positionTextBang(self.MapsListboxText,[listboxStackXOffset+labelXOffset mapsListboxTextYOffset]);
-            ws.utility.positionTextBang(self.SequencesListboxText,[listboxStackXOffset+labelXOffset sequencesListboxTextYOffset]);
+            ws.positionTextBang(self.StimuliListboxText,[listboxStackXOffset+labelXOffset stimuliListboxTextYOffset]);
+            ws.positionTextBang(self.MapsListboxText,[listboxStackXOffset+labelXOffset mapsListboxTextYOffset]);
+            ws.positionTextBang(self.SequencesListboxText,[listboxStackXOffset+labelXOffset sequencesListboxTextYOffset]);
             
             % Panels --- These all have the same position, but only the
             % "active" one is visible at any given moment.
@@ -478,7 +478,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutSequencePanel_(self,panelWidth,panelHeight)
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
@@ -517,7 +517,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function layoutMapPanel_(self,panelWidth,panelHeight)
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
@@ -564,8 +564,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutStimulusPanelFixedControls_(self,panelWidth,panelHeight) %#ok<INUSL>
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
             
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
@@ -629,8 +629,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutStimulusPanelNonfixedControls_(self)
-            import ws.utility.positionEditLabelAndUnitsBang
-            import ws.utility.positionPopupmenuAndLabelBang
+            import ws.positionEditLabelAndUnitsBang
+            import ws.positionPopupmenuAndLabelBang
             
             % Figure out where the stimulus function popup is, since we
             % position stuff relative to it
@@ -671,8 +671,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.utility.fif
-            import ws.utility.onIff
+            import ws.fif
+            import ws.onIff
             
             selectedItemClassName=stimulusLibrary.SelectedItemClassName;
             isSelectedItemASequence=isequal(selectedItemClassName,'ws.StimulusSequence');
@@ -745,8 +745,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.utility.fif
-            import ws.utility.onIff
+            import ws.fif
+            import ws.onIff
             
             selectedSequence=stimulusLibrary.SelectedSequence;
             
@@ -789,8 +789,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.utility.fif
-            import ws.utility.onIff
+            import ws.fif
+            import ws.onIff
 
             %invalidColor = [ 1 0.8 0.8 ] ;
             
@@ -861,8 +861,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.utility.fif
-            import ws.utility.onIff
+            import ws.fif
+            import ws.onIff
             
             selectedStimulus=stimulusLibrary.SelectedStimulus;
             
@@ -923,14 +923,14 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
         function updateControlEnablementImplementation_(self)
             %fprintf('Inside updateControlEnablement()...\n');
 
-            import ws.utility.fif
-            import ws.utility.onIff
+            import ws.fif
+            import ws.onIff
             
             model=self.Model;
             if isempty(model) ,
                 return
             end
-            wavesurferModel=ws.utility.getSubproperty(model,'Parent','Parent');   
+            wavesurferModel=ws.getSubproperty(model,'Parent','Parent');   
             isIdle=fif(isempty(wavesurferModel),true,isequal(wavesurferModel.State,'idle'));
             isSelection=~isempty(model.SelectedItem);
             isLibraryEmpty=model.IsEmpty;

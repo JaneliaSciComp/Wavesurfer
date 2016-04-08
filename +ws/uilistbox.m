@@ -5,7 +5,7 @@ function h = uilistbox(varargin)
 %     persistent defaultUIControlBackgroundColor
 %    
 %     if isempty(defaultUIControlBackgroundColor) ,
-%         defaultUIControlBackgroundColor = ws.utility.getDefaultUIControlBackgroundColor() ;
+%         defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
 %     end
     
     h = uicontrol(varargin{:} , ...

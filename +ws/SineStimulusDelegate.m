@@ -17,7 +17,7 @@ classdef SineStimulusDelegate < ws.StimulusDelegate
     methods
         function self = SineStimulusDelegate(parent,varargin)
             self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.utility.filterPVArgs(varargin, {'Frequency'}, {});
+            pvArgs = ws.filterPVArgs(varargin, {'Frequency'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
             for i = 1:length(propValues)
@@ -41,7 +41,7 @@ classdef SineStimulusDelegate < ws.StimulusDelegate
         end
         
 %         function set.Frequency(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('Frequency', value);
 %             self.Frequency = value;
 %         end

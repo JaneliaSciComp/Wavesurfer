@@ -143,7 +143,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 % %         end
 %         
 %         function result = get.DeviceNamePerAnalogChannel(self)
-%             result = ws.utility.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
+%             result = ws.deviceNamesFromTerminalNames(self.AnalogTerminalNames);
 %         end
 %         
 % %         function result = get.AnalogTerminalNames(self)
@@ -182,7 +182,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end
         
 %         function set.TriggerScheme(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('TriggerScheme', value);
 %             self.TriggerScheme_ = value;
 %         end
@@ -192,7 +192,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end
 
 %         function set.TriggerScheme(self, value)
-%             if ~ws.utility.isASettableValue(value), return, end            
+%             if ~ws.isASettableValue(value), return, end            
 %             self.validatePropArg('TriggerScheme', value);
 %             %self.TriggerScheme = value;
 %             self.Parent.Triggering.StimulationTriggerScheme = value ;
@@ -244,7 +244,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
     
     methods
 %         function set.IsDigitalChannelTimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
+%             if ws.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
 %                     coercedNewValue = logical(newValue) ;
 %                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
@@ -261,7 +261,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end  % function
 %         
 %         function set.DigitalOutputStateIfUntimed(self,newValue)
-%             if ws.utility.isASettableValue(newValue),
+%             if ws.isASettableValue(newValue),
 %                 if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
 %                         (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
 %                     coercedNewValue = logical(newValue) ;
@@ -288,7 +288,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %                 channelNames = mdfStructure.outputChannelNames ;                                
 %                 
 %                 % Check that they're all on the same device (for now)
-%                 deviceNames = ws.utility.deviceNamesFromTerminalNames(terminalNames);
+%                 deviceNames = ws.deviceNamesFromTerminalNames(terminalNames);
 %                 uniqueDeviceNames = unique(deviceNames);
 %                 if ~isscalar(uniqueDeviceNames) ,
 %                     error('ws:MoreThanOneDeviceName', ...
@@ -296,7 +296,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %                 end
 %                 
 %                 % Figure out which are analog and which are digital
-%                 channelTypes = ws.utility.channelTypesFromTerminalNames(terminalNames);
+%                 channelTypes = ws.channelTypesFromTerminalNames(terminalNames);
 %                 isAnalog = strcmp(channelTypes,'ao');
 %                 isDigital = ~isAnalog;
 % 
@@ -309,7 +309,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %                 % Set the analog channel scales, units
 %                 nAnalogChannels = sum(isAnalog) ;
 %                 self.AnalogChannelScales_ = ones(1,nAnalogChannels);  % by default, scale factor is unity (in V/V, because see below)
-%                 %V=ws.utility.SIUnit('V');  % by default, the units are volts                
+%                 %V=ws.SIUnit('V');  % by default, the units are volts                
 %                 self.AnalogChannelUnits_ = repmat({'V'},[1 nAnalogChannels]);
 %                 
 %                 % Set defaults for digital channels
@@ -335,7 +335,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
                 deviceNameForEachChannelInAOTask = self.AnalogDeviceNames(isInTaskForEachAOChannel) ;
                 terminalIDForEachChannelInAOTask = self.AnalogTerminalIDs(isInTaskForEachAOChannel) ;                
                 self.TheFiniteAnalogOutputTask_ = ...
-                    ws.ni.FiniteOutputTask('analog', ...
+                    ws.FiniteOutputTask('analog', ...
                                            'WaveSurfer Finite Analog Output Task', ...
                                            deviceNameForEachChannelInAOTask, ...
                                            terminalIDForEachChannelInAOTask, ...
@@ -350,7 +350,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
                 deviceNameForEachChannelInDOTask = self.DigitalDeviceNames(isInTaskForEachDOChannel) ;
                 terminalIDForEachChannelInDOTask = self.DigitalTerminalIDs(isInTaskForEachDOChannel) ;                
                 self.TheFiniteDigitalOutputTask_ = ...
-                    ws.ni.FiniteOutputTask('digital', ...
+                    ws.FiniteOutputTask('digital', ...
                                            'WaveSurfer Finite Digital Output Task', ...
                                            deviceNameForEachChannelInDOTask, ...
                                            terminalIDForEachChannelInDOTask, ...
@@ -601,7 +601,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %                 terminalID = nan ;
 %             else
 %                 terminalName = self.AnalogTerminalNames_{iChannel};
-%                 terminalID = ws.utility.terminalIDFromTerminalName(terminalName);
+%                 terminalID = ws.terminalIDFromTerminalName(terminalName);
 %             end
 %         end  % function
 % 
@@ -632,7 +632,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end  % function
         
 %         function channelUnits=get.AnalogChannelUnits(self)
-%             import ws.utility.*
+%             import ws.*
 %             wavesurferModel=self.Parent;
 %             if isempty(wavesurferModel) ,
 %                 ephys=[];
@@ -656,7 +656,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end  % function
 %         
 %         function analogChannelScales=get.AnalogChannelScales(self)
-%             import ws.utility.*
+%             import ws.*
 %             wavesurferModel=self.Parent;
 %             if isempty(wavesurferModel) ,
 %                 ephys=[];
@@ -680,7 +680,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end  % function
 %         
 %         function set.AnalogChannelUnits(self,newValue)
-%             import ws.utility.*
+%             import ws.*
 %             oldValue=self.AnalogChannelUnits_;
 %             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
 %             editedNewValue=fif(isChangeable,newValue,oldValue);
@@ -690,7 +690,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end  % function
 %         
 %         function set.AnalogChannelScales(self,newValue)
-%             import ws.utility.*
+%             import ws.*
 %             oldValue=self.AnalogChannelScales_;
 %             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
 %             editedNewValue=fif(isChangeable,newValue,oldValue);
@@ -700,7 +700,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %         end  % function
         
 %         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
-%             import ws.utility.*
+%             import ws.*
 %             isChangeable= ~(self.getNumberOfElectrodesClaimingChannel()==1);
 %             oldUnits=self.AnalogChannelUnits_;
 %             editedNewUnits=fif(isChangeable,newUnits,oldUnits);
@@ -806,7 +806,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %             untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
 %             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
 %             self.TheUntimedDigitalOutputTask_ = ...
-%                 ws.ni.UntimedDigitalOutputTask(self, ...
+%                 ws.UntimedDigitalOutputTask(self, ...
 %                                                'Wavesurfer Untimed Digital Output Task', ...
 %                                                untimedDigitalTerminalNames, ...
 %                                                untimedDigitalChannelNames) ;
@@ -889,7 +889,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
             analogChannelScales=self.AnalogChannelScales(isInTaskForEachAnalogChannel);
             inverseAnalogChannelScales=1./analogChannelScales;
             sanitizedInverseAnalogChannelScales = ...
-                ws.utility.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+                ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
 
             % scale the data by the channel scales
             if isempty(aoData) ,
@@ -911,7 +911,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
         end  % function
 
         function [nScans,nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap, episodeIndexWithinRun)
-            %import ws.utility.*
+            %import ws.*
             
             % % Calculate the episode index
             % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
@@ -1005,7 +1005,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %             untimedDigitalTerminalNames = self.DigitalTerminalNames(isDigitalChannelUntimed) ;
 %             untimedDigitalChannelNames = self.DigitalChannelNames(isDigitalChannelUntimed) ;            
 %             self.TheUntimedDigitalOutputTask_ = ...
-%                 ws.ni.UntimedDigitalOutputTask(self, ...
+%                 ws.UntimedDigitalOutputTask(self, ...
 %                                                'Wavesurfer Untimed Digital Output Task', ...
 %                                                untimedDigitalTerminalNames, ...
 %                                                untimedDigitalChannelNames) ;

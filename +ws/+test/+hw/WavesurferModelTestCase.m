@@ -6,14 +6,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
@@ -174,7 +174,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             %clear tasks
 %             % Clear the daq system (Shouldn't have to do this!!!)
 %             daqSystem = ws.dabs.ni.daqmx.System();
-%             ws.utility.deleteIfValidHandle(daqSystem.tasks);
+%             ws.deleteIfValidHandle(daqSystem.tasks);
 
 %             % Make a new WavesurferModel
 %             wsModel2=ws.WavesurferModel();
@@ -213,7 +213,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
            
             % All map durations should be not free
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.utility.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
+            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
             self.verifyTrue(all(isDurationOverridden));
             
             % Save the protocol to disk
@@ -233,7 +233,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % All map durations should be not free, again
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.utility.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
+            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
             self.verifyTrue(all(isDurationOverridden));
             %keyboard
         end  % function      
@@ -331,8 +331,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'CurrentMonitorScaling' 5};
             settings(end+1,:)={'VoltageCommandScaling' 8};
             settings(end+1,:)={'CurrentCommandScaling' 9};
-%             settings(end+1,:)={'VoltageUnits' ws.utility.SIUnit('uV')};
-%             settings(end+1,:)={'CurrentUnits' ws.utility.SIUnit('kA')};
+%             settings(end+1,:)={'VoltageUnits' ws.SIUnit('uV')};
+%             settings(end+1,:)={'CurrentUnits' ws.SIUnit('kA')};
             
             % Set the settings
             electrode=em.Ephys.ElectrodeManager.Electrodes{1}; %#ok<NASGU>
@@ -358,7 +358,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
 %             % Shouldn't have to do this, but...
 %             daqSystem = ws.dabs.ni.daqmx.System();
-%             ws.utility.deleteIfValidHandle(daqSystem.tasks);
+%             ws.deleteIfValidHandle(daqSystem.tasks);
 
 %             % Create a fresh WavesurferModel
 %             thisDirName=fileparts(mfilename('fullpath'));
@@ -402,7 +402,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             
 %             % Create a fresh WavesurferModel (this will fail if em has not been
 %             % garbage collected b/c of aliasing)
-%             [isAliasing,pathToAlias]=ws.utility.checkForAliasing(em,protocolSettings)
+%             [isAliasing,pathToAlias]=ws.checkForAliasing(em,protocolSettings)
 %             
 %             keyboard
 %             clear em

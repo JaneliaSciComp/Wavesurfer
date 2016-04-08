@@ -30,7 +30,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure
            
            % Layout the figure and set the size
            self.layout_();
-           ws.utility.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
            % Initialize the guidata
            self.updateGuidata_();
@@ -198,7 +198,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end            
-            import ws.utility.onIff
+            import ws.onIff
             isIdle=isequal(wavesurferModel.State,'idle');
             selectedIndex = wavesurferModel.IndexOfSelectedFastProtocol;
             isARowSelected= ~isempty(selectedIndex);

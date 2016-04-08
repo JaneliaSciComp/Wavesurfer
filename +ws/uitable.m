@@ -4,7 +4,7 @@ function h = uitable(varargin)
 %     persistent defaultUIControlBackgroundColor
 %    
 %     if isempty(defaultUIControlBackgroundColor) ,
-%         defaultUIControlBackgroundColor = ws.utility.getDefaultUIControlBackgroundColor() ;
+%         defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
 %     end
     
     h = uitable(varargin{:}, ...

@@ -33,7 +33,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
            % Layout the figure and set the size
            self.layout_();
            %set(self.FigureGH,'Position',[0 0 figureSize]);
-           ws.utility.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
            % Initialize the guidata
            self.updateGuidata_();
@@ -132,7 +132,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
             
-            import ws.utility.positionEditLabelAndUnitsBang
+            import ws.positionEditLabelAndUnitsBang
             
             leftPadWidth=10;
             rightPadWidth=10;
@@ -244,9 +244,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 return
             end
             isIdle = isequal(wavesurferModel.State,'idle') ;
-            set(self.ClassNameEdit, 'Enable', ws.utility.onIff(isIdle) );
-            %set(self.ChooseButton, 'Enable', ws.utility.onIff(isIdle) );
-            set(self.ReinstantiateButton, 'Enable', ws.utility.onIff(isIdle&&~isempty(model.ClassName)) );
+            set(self.ClassNameEdit, 'Enable', ws.onIff(isIdle) );
+            %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
+            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
         end
     end
     

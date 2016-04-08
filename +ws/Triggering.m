@@ -100,7 +100,7 @@ classdef Triggering < ws.TriggeringSubsystem
     
     methods (Access=protected)
         function teardownBuiltinTriggerTask_(self) 
-            ws.utility.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to delete b/c DABS task
+            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to delete b/c DABS task
             self.BuiltinTriggerDABSTask_ = [] ;
         end
     end

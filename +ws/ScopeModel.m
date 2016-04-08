@@ -104,10 +104,10 @@ classdef ScopeModel < ws.Model
             %
             
             % Filter out not-publically-settable props
-            validPropNames=[ws.utility.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
+            validPropNames=[ws.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
             %mandatoryPropNames={'Tag'};
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
 
             % Make sure there's the same number of props as vals
             propNamesRaw = pvArgs(1:2:end);
@@ -144,7 +144,7 @@ classdef ScopeModel < ws.Model
 %         end
         
         function set.Title(self, newValue)            
-            if ws.utility.isString(newValue) && ~isempty(newValue) ,
+            if ws.isString(newValue) && ~isempty(newValue) ,
                 self.Title_ = newValue ;
             end
             self.broadcast('Update');            
@@ -167,7 +167,7 @@ classdef ScopeModel < ws.Model
         end
         
         function set.ChannelName(self, newValue)
-            if ws.utility.isString(newValue) && ~isempty(newValue) ,
+            if ws.isString(newValue) && ~isempty(newValue) ,
                 self.ChannelNames_ = {newValue} ;
             end
             self.broadcast('Update');            
@@ -236,7 +236,7 @@ classdef ScopeModel < ws.Model
         end
         
         function set.IsGridOn(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.IsGridOn_ = logical(newValue) ;
                 else
@@ -253,7 +253,7 @@ classdef ScopeModel < ws.Model
         end
             
         function set.AreColorsNormal(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.AreColorsNormal_ = logical(newValue) ;
                 else
@@ -270,7 +270,7 @@ classdef ScopeModel < ws.Model
         end
             
         function set.DoShowButtons(self,newValue)
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                     self.DoShowButtons_ = logical(newValue) ;
                 else
@@ -388,7 +388,7 @@ classdef ScopeModel < ws.Model
         function set.Tag(self,newValue)
             % Make sure it's a valid field name before setting the Tag to
             % it
-            if ws.utility.isString(newValue) && ~isempty(newValue) ,
+            if ws.isString(newValue) && ~isempty(newValue) ,
                 isValidFieldName=true;
                 try
                     s=struct();
@@ -408,14 +408,14 @@ classdef ScopeModel < ws.Model
         end
         
         function set.XUnits(self,newValue)
-            if ws.utility.isString(newValue) ,
+            if ws.isString(newValue) ,
                 self.XUnits_ = strtrim(newValue) ;
             end
             self.broadcast('Update');
         end
         
         function set.YUnits(self,newValue)
-            if ws.utility.isString(newValue) ,
+            if ws.isString(newValue) ,
                 self.YUnits_ = strtrim(newValue) ;
             end
             self.broadcast('Update');
@@ -445,7 +445,7 @@ classdef ScopeModel < ws.Model
     methods
         function addChannel(self, newChannelName)
             % If newChannelName is not a string, or is empty, just return
-            if ~ws.utility.isString(newChannelName) || isempty(newChannelName) ,
+            if ~ws.isString(newChannelName) || isempty(newChannelName) ,
                 return
             end
             
@@ -632,7 +632,7 @@ classdef ScopeModel < ws.Model
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            import ws.utility.*
+            import ws.*
             yMin=+inf;
             yMax=-inf;
             for iChannel = 1:self.NChannels

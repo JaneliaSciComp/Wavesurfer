@@ -62,9 +62,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                                            'ErrorFcn',@(object,event,varargin)(self.heartbeatError(object,event)));            
             
             % Process args
-            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -524,7 +524,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             commandScales=cellfun(@(electrode)(electrode.CommandScaling), ...
 %                                   self.Electrodes_ , ...
 %                                   'UniformOutput',false);
-%             queryChannelUnits=repmat(ws.utility.SIUnit(),[1 nQueryChannels]);
+%             queryChannelUnits=repmat(ws.SIUnit(),[1 nQueryChannels]);
 %             queryChannelScales=ones([1 nQueryChannels]);
 %             for i=1:nQueryChannels ,
 %                 if isQueryChannelScaleManaged(i), 
@@ -977,7 +977,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 % %             self.setPropertyTags('Parent_', 'ExcludeFromFileTypes', {'*'});
 %             
 %             % First: Exclude everything from all file types.
-%             propertyNames=ws.utility.findPropertiesSuchThat(self);
+%             propertyNames=ws.findPropertiesSuchThat(self);
 %             for i=1:length(propertyNames)
 %                 propertyName=propertyNames{i};
 %                 self.setPropertyTags(propertyName, 'ExcludeFromFileTypes', {'*'});
@@ -1084,7 +1084,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of setting.
             
-            import ws.utility.*
+            import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             
@@ -1111,7 +1111,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of getting.
             
-            import ws.utility.*
+            import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             

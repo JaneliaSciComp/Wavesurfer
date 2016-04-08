@@ -4,14 +4,14 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
@@ -22,7 +22,7 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             terminalIDs = [0 1] ;
             %channelNames = { 'ao0' 'ao1' } ;
             fs=20000;  % Hz
-            theTask = ws.ni.FiniteOutputTask('analog', taskName, deviceNames, terminalIDs, fs);
+            theTask = ws.FiniteOutputTask('analog', taskName, deviceNames, terminalIDs, fs);
             %theTask.SampleRate = fs ;
             
             T = 1 ;  % s
@@ -49,7 +49,7 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             terminalIDs = [0 1] ;
             %channelNames = { 'do0' 'do1' } ;
             fs=20000;  % Hz
-            theTask = ws.ni.FiniteOutputTask('digital', taskName, deviceNames, terminalIDs, fs);
+            theTask = ws.FiniteOutputTask('digital', taskName, deviceNames, terminalIDs, fs);
             %theTask.SampleRate = fs ;
             
             T = 1 ;  % s
