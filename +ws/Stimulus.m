@@ -40,7 +40,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         Amplitude_ = '5'
         DCOffset_ = '0'
         Delegate_
-          % Invariant: this is a scalar ws.stimulus.StimulusDelegate,
+          % Invariant: this is a scalar ws.StimulusDelegate,
           % never empty
     end
     
@@ -51,7 +51,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     methods
         function self = Stimulus(parent,varargin)
             self@ws.Model(parent) ;
-            self.Delegate_ = ws.stimulus.SquarePulseStimulusDelegate(self);  
+            self.Delegate_ = ws.SquarePulseStimulusDelegate(self);  
             pvArgs = ws.utility.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
@@ -85,7 +85,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
 
         function set.Delay(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.Delay_ = value;
@@ -96,7 +96,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function set.Duration(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isreal(test) && isfinite(test) && test>=0 ,
                 % if we get here without error, safe to set
                 self.Duration_ = value;
@@ -107,7 +107,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end  % function
         
         function set.Amplitude(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
@@ -118,7 +118,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end
         
         function set.DCOffset(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.DCOffset_ = value;
@@ -149,7 +149,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         end   % function
         
         function val = get.EndTime(self)
-            val = ws.stimulus.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.stimulus.Stimulus.evaluateSweepExpression(self.Duration,1);
+            val = ws.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.Stimulus.evaluateSweepExpression(self.Duration,1);
         end
         
         function output = get.Delegate(self)
@@ -163,7 +163,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
                         
             % Compute the delay from the expression for it
-            delay = ws.stimulus.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
+            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(delay) || ~isnumeric(delay) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
                 data=zeros(size(t));
@@ -179,7 +179,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
                 % data should be same size as t at this point
             
             % Compute the amplitude from the expression for it
-            amplitude = ws.stimulus.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
+            amplitude = ws.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(amplitude) || ~isnumeric(amplitude) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
                 data=zeros(size(t));
@@ -187,7 +187,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             end
 
             % Compute the delay from the expression for it
-            dcOffset = ws.stimulus.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
+            dcOffset = ws.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(dcOffset) || ~isnumeric(dcOffset) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
                 data=zeros(size(t));
@@ -198,7 +198,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             data = amplitude*data + dcOffset;
 
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
+            duration = ws.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 data=zeros(size(t));
@@ -267,7 +267,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     methods
         function value=isequal(self,other)
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.stimulus.Stimulus');
+            value=isequalHelper(self,other,'ws.Stimulus');
         end                            
     end
     
@@ -286,7 +286,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
     
     methods 
         function other = copyGivenParent(self,parent)
-            other=ws.stimulus.Stimulus(parent);
+            other=ws.Stimulus(parent);
             
             other.Name_ = self.Name_ ;
             other.Delay_ = self.Delay_ ;
@@ -295,7 +295,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
             other.DCOffset_ = self.DCOffset_ ;
             
             % Make a new delegate of the right kind
-            delegateClassName=sprintf('ws.stimulus.%sStimulusDelegate',self.TypeString);
+            delegateClassName=sprintf('ws.%sStimulusDelegate',self.TypeString);
             delegate=feval(delegateClassName,other);
             other.Delegate_ = delegate;
             
@@ -383,7 +383,7 @@ classdef Stimulus < ws.Model & ws.mixin.ValueComparable
         function set.TypeString(self,newValue)
             if ismember(newValue,self.AllowedTypeStrings) ,
                 if ~isequal(newValue,self.TypeString) ,
-                    delegateClassName=sprintf('ws.stimulus.%sStimulusDelegate',newValue);
+                    delegateClassName=sprintf('ws.%sStimulusDelegate',newValue);
                     delegate=feval(delegateClassName,self);
                     self.Delegate_ = delegate;
                 end

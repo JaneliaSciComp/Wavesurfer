@@ -1,4 +1,4 @@
-classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
+classdef ChirpStimulusDelegate < ws.StimulusDelegate
     properties (Constant)
         TypeString='Chirp'
         AdditionalParameterNames={'InitialFrequency' 'FinalFrequency'}
@@ -18,7 +18,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         function self = ChirpStimulusDelegate(parent,varargin)
-            self=self@ws.stimulus.StimulusDelegate(parent);
+            self=self@ws.StimulusDelegate(parent);
             pvArgs = ws.utility.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
@@ -28,7 +28,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end  % function
         
         function set.InitialFrequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.InitialFrequency_ = value;
@@ -43,7 +43,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.FinalFrequency(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.FinalFrequency_ = value;
@@ -60,7 +60,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
     
 %     methods (Access=protected)
 %         function value=isequalElement(self,other)
-%             isEqualAsStimuli=isequalElement@ws.stimulus.Stimulus(self,other);
+%             isEqualAsStimuli=isequalElement@ws.Stimulus(self,other);
 %             if ~isEqualAsStimuli ,
 %                 value=false;
 %                 return
@@ -73,21 +73,21 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
+            duration = ws.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 y=zeros(size(t));
                 return
             end   
             
             % Compute the duration from the expression for it
-            f0 = ws.stimulus.Stimulus.evaluateSweepExpression(self.InitialFrequency,sweepIndexWithinSet) ;
+            f0 = ws.Stimulus.evaluateSweepExpression(self.InitialFrequency,sweepIndexWithinSet) ;
             if isempty(f0) || ~isnumeric(f0) || ~isscalar(f0) || ~isreal(f0) || ~isfinite(f0) || f0<0 ,
                 y=zeros(size(t));
                 return
             end   
             
             % Compute the duration from the expression for it
-            ff = ws.stimulus.Stimulus.evaluateSweepExpression(self.FinalFrequency,sweepIndexWithinSet) ;
+            ff = ws.Stimulus.evaluateSweepExpression(self.FinalFrequency,sweepIndexWithinSet) ;
             if isempty(ff) || ~isnumeric(ff) || ~isscalar(ff) || ~isreal(ff) || ~isfinite(ff) || ff<0 ,
                 y=zeros(size(t));
                 return
@@ -113,7 +113,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
 %         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.stimulus.Stimulus(self);
+%             defineDefaultPropertyAttributes@ws.Stimulus(self);
 %             self.setPropertyAttributeFeatures('InitialFrequency', 'Classes', 'numeric', 'Attributes', {'scalar', 'real', 'finite', 'positive'});
 %             self.setPropertyAttributeFeatures('FinalFrequency', 'Classes', 'numeric', 'Attributes', {'scalar', 'real', 'finite', 'positive'});
 %         end
@@ -121,7 +121,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
 
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
 %             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
@@ -134,7 +134,7 @@ classdef ChirpStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function value=isequal(self,other)
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.stimulus.ChirpStimulusDelegate');
+            value=isequalHelper(self,other,'ws.ChirpStimulusDelegate');
         end                            
     end
     

@@ -13,7 +13,7 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
             self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim2), 'The map does contain the specified stimulus.');
             
             st3 = self.DefaultLibrary.addNewStimulus('Chirp');
-            %st1 = ws.stimulus.ChirpStimulus();
+            %st1 = ws.ChirpStimulus();
             self.verifyFalse(self.DefaultMap.containsStimulus(st3), 'The map does not contain the specified stimulus.');
             
             self.verifyEqual(self.DefaultMap.containsStimulus({self.DefaultStim1, st3, self.DefaultStim2, st3, st3}), ...
@@ -29,14 +29,14 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function createDefaultMap(self)
-            stimLib = ws.stimulus.StimulusLibrary([]);  % no parent
+            stimLib = ws.StimulusLibrary([]);  % no parent
             
             st1 = stimLib.addNewStimulus('SquarePulseTrain');
             st1.DCOffset = 0;
             st1.Delegate.Period = 0.5;  % s
             st1.Delegate.PulseDuration = 0.25;  % s
             
-            %st2 = ws.stimulus.SquarePulseTrainStimulus('PulseDuration', 0.25, 'Period', 0.5);
+            %st2 = ws.SquarePulseTrainStimulus('PulseDuration', 0.25, 'Period', 0.5);
             st2 = stimLib.addNewStimulus('SquarePulseTrain');
             st2.DCOffset = 0;
             st2.Delegate.Period = 0.5;  % s

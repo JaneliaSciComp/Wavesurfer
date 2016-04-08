@@ -65,7 +65,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentP
 %                 else
 %                     self.StimulusLibrary_=[];
 %                 end
-%             elseif isa(newValue, 'ws.stimulus.StimulusLibrary') && isscalar(newValue) ,
+%             elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
 %                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
 %                     self.StimulusLibrary_=newValue;
 %                     self.StimulusLibrary_.Parent=self;
@@ -827,7 +827,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.mixin.DependentP
                 isThereAMap = false ;
                 indexOfMapIfSequence=[];  % arbitrary: doesn't get used if isThereAMap==false
             else
-                if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
+                if isa(self.SelectedOutputableCache_,'ws.StimulusMap')
                     isThereAMap=true;
                     indexOfMapIfSequence=[];
                 else

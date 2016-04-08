@@ -1,4 +1,4 @@
-classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
+classdef FileStimulusDelegate < ws.StimulusDelegate
     properties (Constant)
         TypeString='File'
         AdditionalParameterNames={'FileName'}
@@ -16,7 +16,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         function self = FileStimulusDelegate(parent,varargin)
-            self=self@ws.stimulus.StimulusDelegate(parent);
+            self=self@ws.StimulusDelegate(parent);
             pvArgs = ws.utility.filterPVArgs(varargin, {'FileName'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
@@ -30,7 +30,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
-                test = ws.stimulus.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
+                test = ws.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set
                     self.FileName_ = valueWithoutBackslashes;
@@ -50,7 +50,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
         % digital signals should be returned as doubles and are thresholded at 0.5
         function y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  %#ok<INUSL>
             %eval(['i=sweepIndexWithinSet; fileNameAfterEvaluation=' self.FileName ';']);
-            fileNameAfterEvaluation = ws.stimulus.Stimulus.evaluateStringSweepTemplate(self.FileName,sweepIndexWithinSet);
+            fileNameAfterEvaluation = ws.Stimulus.evaluateStringSweepTemplate(self.FileName,sweepIndexWithinSet);
             if isempty(fileNameAfterEvaluation) ,
                 y=zeros(size(t));
             else
@@ -72,7 +72,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
 
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
 %             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
@@ -85,7 +85,7 @@ classdef FileStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function value=isequal(self,other)
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.stimulus.FileStimulusDelegate');
+            value=isequalHelper(self,other,'ws.FileStimulusDelegate');
         end                            
     end
     

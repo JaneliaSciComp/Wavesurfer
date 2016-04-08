@@ -1,4 +1,4 @@
-classdef RampStimulusDelegate < ws.stimulus.StimulusDelegate
+classdef RampStimulusDelegate < ws.StimulusDelegate
     properties (Constant)
         TypeString='Ramp'
         AdditionalParameterNames=cell(0,1)
@@ -8,14 +8,14 @@ classdef RampStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         function self = RampStimulusDelegate(parent,varargin)
-            self=self@ws.stimulus.StimulusDelegate(parent);
+            self=self@ws.StimulusDelegate(parent);
         end                
     end
     
     methods
         function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
             % Compute the duration from the expression for it
-            duration = ws.stimulus.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
+            duration = ws.Stimulus.evaluateSweepExpression(stimulus.Duration,sweepIndexWithinSet) ;
             % Screen for illegal values
             if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 duration=0;
@@ -31,7 +31,7 @@ classdef RampStimulusDelegate < ws.stimulus.StimulusDelegate
     
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
 %             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});

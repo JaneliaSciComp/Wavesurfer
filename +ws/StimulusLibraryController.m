@@ -100,7 +100,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
                 selectedItem.deleteMarkedMaps();
             end
         end  % function
@@ -134,7 +134,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteChannelsFromMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
                 selectedItem.deleteMarkedBindings();
             end
         end  % function
@@ -147,7 +147,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
@@ -167,7 +167,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
@@ -187,7 +187,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.Stimulus') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.Stimulus') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
@@ -325,7 +325,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 return
             end
             iMenuItem=get(source,'Value');
-            allowedTypeStrings=ws.stimulus.Stimulus.AllowedTypeStrings;
+            allowedTypeStrings=ws.Stimulus.AllowedTypeStrings;
             if 1<=iMenuItem && iMenuItem<=length(allowedTypeStrings) ,
                 newTypeString=allowedTypeStrings{iMenuItem};
                 selectedItem.TypeString=newTypeString;
@@ -426,7 +426,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 self.prvStimulusMapController.Model = mlObj;
                 nextDetailControl = self.prvStimulusMapDetailControl;
             elseif isa(evt.NewValue, 'Wavesurfer.Controls.StimulusViewModel')
-                if isa(mlObj, 'ws.stimulus.SingleStimulus')
+                if isa(mlObj, 'ws.SingleStimulus')
                     self.prvSingleStimulusController.Model = mlObj;
                     nextDetailControl = self.prvSingleStimulusDetailControl;
                 else

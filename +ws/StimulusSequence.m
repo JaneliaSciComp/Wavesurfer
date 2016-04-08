@@ -50,7 +50,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         function set.Parent(self, newParent)
 %             if isa(newParent,'nan'), return, end            
 %             %self.validatePropArg('Parent', newParent);
-%             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
+%             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.StimulusLibrary') && isscalar(newParent)) ,
 %                 if isempty(newParent) ,
 %                     self.Parent=[];
 %                 else
@@ -117,7 +117,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %                 isGoodSoFar=true;
 %                 for i=1:nElements ,
 %                     putativeMap=newValue{i};
-%                     if isa(putativeMap,'ws.stimulus.StimulusMap') && isscalar(putativeMap) ,
+%                     if isa(putativeMap,'ws.StimulusMap') && isscalar(putativeMap) ,
 %                         % do nothing
 %                     else
 %                         isGoodSoFar=false;
@@ -157,7 +157,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end
         
         function out = containsMap(self, queryMap)
-            if isa(queryMap,'ws.stimulus.StimulusMap') && isscalar(queryMap) ,
+            if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
                 maps = self.Maps ;
                 isMatch=cellfun(@(item)(item==queryMap),maps);
                 out = any(isMatch) ;
@@ -176,7 +176,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %             
 %             validateattributes(maps, {'cell'}, {'vector'});
 %             for i = 1:numel(maps) ,                
-%                 validateattributes(maps{i}, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%                 validateattributes(maps{i}, {'ws.StimulusMap'}, {'scalar'});
 %             end
 %             
 %             for index = 1:numel(maps)
@@ -219,7 +219,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end   % function
         
 %         function insertMap(self, map, index)
-%             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             validateattributes(map, {'ws.StimulusMap'}, {'scalar'});
 %             if ~(map.Parent==self.Parent) ,  % map must be a member of same library
 %                 return
 %             end
@@ -254,7 +254,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 
         
 %         function replaceMap(self, map, index)
-%             validateattributes(map, {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             validateattributes(map, {'ws.StimulusMap'}, {'scalar'});
 %             assert(index > 0, 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be positive.', index);
 %             assert(index <= numel(self.Maps), 'wavesurfer:stimcycle:invalidindex', 'Cycle index must be less than or equal to cyleCount');
 %             if self.Maps(index) ~= map ,
@@ -263,7 +263,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 %         end   % function
         
         function deleteMapByValue(self, queryMap)
-            if isa(queryMap,'ws.stimulus.StimulusMap') && isscalar(queryMap) ,
+            if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
                 for index = numel(self.Maps):-1:1 ,
                     if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
                         self.deleteMap(index);
@@ -276,12 +276,12 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
         end   % function
         
 %         function removeElements(self)
-%             self.Maps = ws.stimulus.StimulusMap.empty();
+%             self.Maps = ws.StimulusMap.empty();
 %         end   % function
         
 %         function replaceElement(self, originalElement, newElement)
-%             validateattributes(originalElement, {'ws.stimulus.StimulusMap'}, {'scalar'});
-%             validateattributes(newElement     , {'ws.stimulus.StimulusMap'}, {'scalar'});
+%             validateattributes(originalElement, {'ws.StimulusMap'}, {'scalar'});
+%             validateattributes(newElement     , {'ws.StimulusMap'}, {'scalar'});
 %             
 %             for idx = numel(self.Maps):-1:1 ,
 %                 if ~isempty(self.Maps{idx}) && self.Maps{idx} == originalElement
@@ -310,7 +310,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 % %             for i=1:nMaps ,
 % %                 item=items{i};
 % %                 itemUUID=itemUUIDs(i);
-% %                 if isfinite(itemUUID) && ~(item.isvalid() && isa(item,'ws.stimulus.StimulusMap')) , 
+% %                 if isfinite(itemUUID) && ~(item.isvalid() && isa(item,'ws.StimulusMap')) , 
 % %                     value=false;
 % %                     break
 % %                 end
@@ -386,7 +386,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
 
     methods
         function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.stimulus.StimulusSequence');
+            value=isequalHelper(self,other,'ws.StimulusSequence');
         end  % function    
     end  % methods
     
@@ -400,7 +400,7 @@ classdef StimulusSequence < ws.Model & ws.mixin.ValueComparable
     
     methods
         function other = copyGivenParent(self,parent)
-            other = ws.stimulus.StimulusSequence(parent) ;
+            other = ws.StimulusSequence(parent) ;
             other.Name_ = self.Name_ ;
             other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
             other.IndexOfEachMapInLibrary_ = self.IndexOfEachMapInLibrary_ ;            

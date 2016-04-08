@@ -1,4 +1,4 @@
-classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
+classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
     
     properties (Constant)
         TypeString='SquarePulseTrain'
@@ -19,7 +19,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         function self = SquarePulseTrainStimulusDelegate(parent,varargin)
-            self=self@ws.stimulus.StimulusDelegate(parent);
+            self=self@ws.StimulusDelegate(parent);
             pvArgs = ws.utility.filterPVArgs(varargin, {'PulseDuration' 'Period'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
@@ -29,7 +29,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end
         
         function set.Period(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.Period_ = value;
@@ -47,7 +47,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
 %         end
         
         function set.PulseDuration(self, value)
-            test = ws.stimulus.Stimulus.evaluateSweepExpression(value,1) ;
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>0 ,
                 % if we get here without error, safe to set
                 self.PulseDuration_ = value;
@@ -75,7 +75,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     
 %     methods (Access=protected)
 %         function value=isequalElement(self,other)
-%             isEqualAsStimuli=isequalElement@ws.stimulus.Stimulus(self,other);
+%             isEqualAsStimuli=isequalElement@ws.Stimulus(self,other);
 %             if ~isEqualAsStimuli ,
 %                 value=false;
 %                 return
@@ -88,13 +88,13 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
             % Compute the period from the expression for it
-            period = ws.stimulus.Stimulus.evaluateSweepExpression(self.Period,sweepIndexWithinSet) ;
+            period = ws.Stimulus.evaluateSweepExpression(self.Period,sweepIndexWithinSet) ;
             if isempty(period) || ~isnumeric(period) || ~isscalar(period) || ~isreal(period) || ~isfinite(period) || period<=0 ,
                 period=nan;  % s
             end
             
             % Compute the period from the expression for it
-            pulseDuration = ws.stimulus.Stimulus.evaluateSweepExpression(self.PulseDuration,sweepIndexWithinSet) ;
+            pulseDuration = ws.Stimulus.evaluateSweepExpression(self.PulseDuration,sweepIndexWithinSet) ;
             if isempty(pulseDuration) || ~isnumeric(pulseDuration) || ~isscalar(pulseDuration) || ~isreal(pulseDuration) || ~isfinite(pulseDuration) || ...
                pulseDuration<=0 ,
                 pulseDuration=nan;  % s
@@ -111,7 +111,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
         end        
         
 %         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.stimulus.Stimulus(self);
+%             defineDefaultPropertyAttributes@ws.Stimulus(self);
 %             self.setPropertyAttributeFeatures('PulseDuration', 'Classes', 'numeric', 'Attributes', {'scalar', 'real', 'finite', 'positive'});
 %             self.setPropertyAttributeFeatures('Period', 'Classes', 'numeric', 'Attributes', {'scalar', 'real', 'finite', 'positive'});
 %         end
@@ -119,7 +119,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
 %             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
@@ -132,7 +132,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function value=isequal(self,other)
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.stimulus.SquarePulseTrainStimulusDelegate');
+            value=isequalHelper(self,other,'ws.SquarePulseTrainStimulusDelegate');
         end                            
     end
     

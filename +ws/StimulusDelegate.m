@@ -19,7 +19,7 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
 %         end
 %         
 %         function set.Parent(self,newValue)
-%             if isa(newValue,'ws.stimulus.Stimulus') && isscalar(newValue) ,
+%             if isa(newValue,'ws.Stimulus') && isscalar(newValue) ,
 %                 self.Parent_ = newValue;
 %             end
 %         end
@@ -55,7 +55,7 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.mixin.ValueComparable
     methods
         function value=isequal(self,other)
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.stimulus.StimulusDelegate');
+            value=isequalHelper(self,other,'ws.StimulusDelegate');
         end                            
     end
     

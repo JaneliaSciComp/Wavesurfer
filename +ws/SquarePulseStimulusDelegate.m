@@ -1,4 +1,4 @@
-classdef SquarePulseStimulusDelegate < ws.stimulus.StimulusDelegate
+classdef SquarePulseStimulusDelegate < ws.StimulusDelegate
     properties (Constant)
         TypeString='SquarePulse'
         AdditionalParameterNames=cell(0,1)
@@ -8,7 +8,7 @@ classdef SquarePulseStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         function self = SquarePulseStimulusDelegate(parent,varargin)
-            self=self@ws.stimulus.StimulusDelegate(parent);
+            self=self@ws.StimulusDelegate(parent);
         end                
     end
     
@@ -21,7 +21,7 @@ classdef SquarePulseStimulusDelegate < ws.stimulus.StimulusDelegate
     
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
 %             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});

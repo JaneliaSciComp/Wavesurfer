@@ -1,4 +1,4 @@
-classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
+classdef ExpressionStimulusDelegate < ws.StimulusDelegate
     properties (Constant)
         TypeString='Expression'
         AdditionalParameterNames={'Expression'}
@@ -16,7 +16,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
     
     methods
         function self = ExpressionStimulusDelegate(parent,varargin)
-            self=self@ws.stimulus.StimulusDelegate(parent);
+            self=self@ws.StimulusDelegate(parent);
             pvArgs = ws.utility.filterPVArgs(varargin, {'Expression'}, {});
             propNames = pvArgs(1:2:end);
             propValues = pvArgs(2:2:end);               
@@ -29,7 +29,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
             if ischar(value) && (isempty(value) || isrow(value)) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.utility.replaceBackslashesWithSlashes(value);
-                test = ws.stimulus.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
+                test = ws.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
                 if ischar(test) ,
                     % if we get here without error, safe to set
                     self.Expression_ = valueWithoutBackslashes;
@@ -69,7 +69,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
 
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.stimulus.StimulusDelegate(self);
+%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
 %             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
 %             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
@@ -82,7 +82,7 @@ classdef ExpressionStimulusDelegate < ws.stimulus.StimulusDelegate
     methods
         function value=isequal(self,other)
             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.stimulus.ExpressionStimulusDelegate');
+            value=isequalHelper(self,other,'ws.ExpressionStimulusDelegate');
         end                            
     end
     

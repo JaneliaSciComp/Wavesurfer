@@ -88,7 +88,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentPropertie
 %             self.AnalogChannelScales_=ones(1,nChannels);  % by default, scale factor is unity (in V/V, because see below)
 %             V=ws.utility.SIUnit('V');  % by default, the units are volts
 %             self.AnalogChannelUnits_=repmat(V,[1 nChannels]);
-            %self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
+            %self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
         function initializeFromMDFStructure(self, mdfStructure)       
@@ -179,7 +179,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentPropertie
 %                 else
 %                     self.StimulusLibrary_=[];
 %                 end
-%             elseif isa(newValue, 'ws.stimulus.StimulusLibrary') && isscalar(newValue) ,
+%             elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
 %                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
 %                     self.StimulusLibrary_=newValue;
 %                     self.StimulusLibrary_.Parent=self;
@@ -777,7 +777,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentPropertie
 %             defineDefaultPropertyAttributes@ws.Subsystem(self);
 %             
 %             self.setPropertyAttributeFeatures('SampleRate', 'Attributes', {'positive', 'integer', 'scalar'});
-%             %self.setPropertyAttributeFeatures('SelectedOutputable', 'Classes', {'ws.stimulus.StimulusSequence', 'ws.stimulus.StimulusMap'}, 'Attributes', {'scalar'});
+%             %self.setPropertyAttributeFeatures('SelectedOutputable', 'Classes', {'ws.StimulusSequence', 'ws.StimulusMap'}, 'Attributes', {'scalar'});
 %             self.setPropertyAttributeFeatures('TriggerScheme', 'Classes', 'ws.TriggerScheme', 'Attributes', {'scalar'}, 'AllowEmpty', false);
 %             self.setPropertyAttributeFeatures('DoRepeatSequence', 'Classes', 'logical', 'Attributes', {'scalar'}, 'AllowEmpty', false);
 %         end
@@ -833,7 +833,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.mixin.DependentPropertie
 %                 isThereAMap = false ;
 %                 indexOfMapIfSequence=[];  % arbitrary: doesn't get used if isThereAMap==false
 %             else
-%                 if isa(self.SelectedOutputableCache_,'ws.stimulus.StimulusMap')
+%                 if isa(self.SelectedOutputableCache_,'ws.StimulusMap')
 %                     isThereAMap=true;
 %                     indexOfMapIfSequence=[];
 %                 else

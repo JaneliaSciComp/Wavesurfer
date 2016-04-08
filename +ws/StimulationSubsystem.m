@@ -85,7 +85,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.mixin.Dependent
     methods
         function self = StimulationSubsystem(parent)
             self@ws.Subsystem(parent) ;            
-            self.StimulusLibrary_ = ws.stimulus.StimulusLibrary(self);  % create a StimulusLibrary
+            self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
         function value=get.StimulusLibrary(self)
@@ -99,7 +99,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.mixin.Dependent
                 else
                     self.StimulusLibrary_ = [] ;
                 end
-            elseif isa(newValue, 'ws.stimulus.StimulusLibrary') && isscalar(newValue) ,
+            elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
                     self.StimulusLibrary_ = newValue.copyGivenParent(self) ;
                     %self.StimulusLibrary_.Parent = self ;

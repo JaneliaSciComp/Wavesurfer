@@ -54,7 +54,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %         function set.Parent(self, newParent)
 %             if isa(newParent,'nan'), return, end            
 %             %self.validatePropArg('Parent', newParent);
-%             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.stimulus.StimulusLibrary') && isscalar(newParent)) ,
+%             if (isa(newParent,'double') && isempty(newParent)) || (isa(newParent,'ws.StimulusLibrary') && isscalar(newParent)) ,
 %                 if isempty(newParent) ,
 %                     self.Parent=[];
 %                 else
@@ -160,7 +160,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                     stimulus = newValue{i} ;
                     if (isempty(stimulus) && isa(stimulus,'double')) ,
                         indexOfEachStimulusInLibrary{i} = [] ;
-                    elseif isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus) ,
+                    elseif isa(stimulus,'ws.Stimulus') && isscalar(stimulus) ,
                         indexOfThisStimulusInLibrary = self.Parent.getStimulusIndex(stimulus) ;
                         if isempty(indexOfThisStimulusInLibrary)
                             % This stim is not in library
@@ -344,7 +344,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             out = false(size(stimuli));
             
             for index = 1:numel(stimuli)
-                validateattributes(stimuli{index}, {'ws.stimulus.Stimulus'}, {'vector'});
+                validateattributes(stimuli{index}, {'ws.Stimulus'}, {'vector'});
             end
             
             if isempty(stimuli)
@@ -381,7 +381,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
                 isStimulusOK = true ;
                 indexOfThisStimulusInLibrary = [] ;
             else
-                if isa(stimulus,'ws.stimulus.Stimulus') && isscalar(stimulus) ,
+                if isa(stimulus,'ws.Stimulus') && isscalar(stimulus) ,
                     indexOfThisStimulusInLibrary = self.Parent.getStimulusIndex(stimulus) ;
                     isStimulusOK = ~isempty(indexOfThisStimulusInLibrary) ;
                 else
@@ -694,7 +694,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
     
     methods
         function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.stimulus.StimulusMap');
+            value=isequalHelper(self,other,'ws.StimulusMap');
         end  % function    
     end  % methods
     
@@ -714,7 +714,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
             % from matlab.mixin.Copyable.
             
             % Do the easy part
-            other=ws.stimulus.StimulusMap(parent);
+            other=ws.StimulusMap(parent);
             other.Name_ = self.Name_ ;
             other.ChannelNames_ = self.ChannelNames_ ;
             other.IndexOfEachStimulusInLibrary_ = self.IndexOfEachStimulusInLibrary_ ;
@@ -790,7 +790,7 @@ classdef StimulusMap < ws.Model & ws.mixin.ValueComparable
 %                                 'Attributes', {{'scalar', 'nonnegative', 'real', 'finite'}});
 %             s.ChannelNames = struct('Classes', 'string');
 %             s.Multipliers = struct('Classes', 'numeric', 'Attributes', {{'row', 'real', 'finite'}});
-%             s.Stimuli = struct('Classes', 'ws.stimulus.StimulusMap');                            
+%             s.Stimuli = struct('Classes', 'ws.StimulusMap');                            
 %         end  % function
 %         
 % %         function self = loadobj(self)

@@ -848,7 +848,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 % Empty is never an option.  It is only ever empty when the library is changed
 %                 % and a cycle or map has not been chosen.  the combobox should never be able to
 %                 % be actively changed to empty.
-%                 % self.Model.Stimulation.SelectedOutputable = ws.stimulus.StimulusSequence.empty();
+%                 % self.Model.Stimulation.SelectedOutputable = ws.StimulusSequence.empty();
 %                 %
 %                 % Ummm, now it's an option...  (ALT, 2014-07-17)
 %                 %self.LibraryViewModel.SelectedOutputableViewmodel = ws.ui.viewmodel.StimulusLibraryViewModel.empty();                       
@@ -1698,7 +1698,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             % there is really nothing to do but show an empty editor if this is first time
 %             % to open, or leave it showing whatever is already open if it is open.
 %             if isempty(self.LibraryViewModel.Library) && ~isempty(self.LibraryViewModel.SelectedOutputableViewmodel)
-%                 if isa(self.LibraryViewModel.SelectedOutputableViewmodel, 'ws.stimulus.StimulusSequence')
+%                 if isa(self.LibraryViewModel.SelectedOutputableViewmodel, 'ws.StimulusSequence')
 %                     itIsA = 'cycle';
 %                 else
 %                     itIsA = 'map';
@@ -1710,7 +1710,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 if strcmp(result, 'Yes')
 %                     mlObj = self.LibraryViewModel.findml(self.LibraryViewModel.SelectedOutputableViewmodel);
 %                     if ~isempty(mlObj)
-%                         mlObj.Library = ws.stimulus.StimulusLibrary();
+%                         mlObj.Library = ws.StimulusLibrary();
 %                         mlObj.Library.Store = 'untitled';
 %                     end
 %                 end

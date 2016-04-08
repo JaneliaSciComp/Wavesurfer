@@ -675,9 +675,9 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             import ws.utility.onIff
             
             selectedItemClassName=stimulusLibrary.SelectedItemClassName;
-            isSelectedItemASequence=isequal(selectedItemClassName,'ws.stimulus.StimulusSequence');
-            isSelectedItemAMap=isequal(selectedItemClassName,'ws.stimulus.StimulusMap');
-            isSelectedItemAStimulus=isequal(selectedItemClassName,'ws.stimulus.Stimulus');
+            isSelectedItemASequence=isequal(selectedItemClassName,'ws.StimulusSequence');
+            isSelectedItemAMap=isequal(selectedItemClassName,'ws.StimulusMap');
+            isSelectedItemAStimulus=isequal(selectedItemClassName,'ws.Stimulus');
             
             sequences=stimulusLibrary.Sequences;
             sequenceNames=cellfun(@(sequence)(sequence.Name),sequences,'UniformOutput',false);
@@ -887,7 +887,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                     'String',{'N/A'}, ...
                     'Value',1);
             else
-                isMatch=cellfun(@(typeString)(isequal(typeString,selectedStimulus.TypeString)),ws.stimulus.Stimulus.AllowedTypeStrings);
+                isMatch=cellfun(@(typeString)(isequal(typeString,selectedStimulus.TypeString)),ws.Stimulus.AllowedTypeStrings);
                 index=find(isMatch,1);
                 if isempty(index) ,
                     % this should never happen
@@ -896,7 +896,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                         'Value',1);
                 else
                     set(self.StimulusFunctionPopupmenu, ...
-                        'String',ws.stimulus.Stimulus.AllowedTypeDisplayStrings, ...
+                        'String',ws.Stimulus.AllowedTypeDisplayStrings, ...
                         'Value',index);
                 end
             end
@@ -941,17 +941,17 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             
             % Edit menu items
             set(self.AddSequenceMenuItem,'Enable',onIff(isIdle));
-            set(self.DeleteSequenceMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.stimulus.StimulusSequence')));
-            set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusSequence')));
+            set(self.DeleteSequenceMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
+            set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence')));
             set(self.DeleteMapsFromSequenceMenuItem, ...
-                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusSequence') && any(model.SelectedItem.IsMarkedForDeletion) ));
+                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence') && any(model.SelectedItem.IsMarkedForDeletion) ));
             set(self.AddMapMenuItem,'Enable',onIff(isIdle));
-            set(self.DeleteMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.stimulus.StimulusMap')));
-            set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusMap')));
+            set(self.DeleteMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
+            set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap')));
             set(self.DeleteChannelsFromMapMenuItem, ...
-                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.stimulus.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
+                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
             set(self.AddStimulusMenuItem,'Enable',onIff(isIdle));
-            set(self.DeleteStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.stimulus.Stimulus')));
+            set(self.DeleteStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
             %set(self.DeleteItemMenuItem,'Enable',onIff(isIdle&&isSelection));
             
             % Tools menu items
@@ -963,18 +963,18 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             set(self.StimuliListbox,'Enable',onIff(isIdle));
 
             % The sequence panel
-            isSelectionASequence=isSelection&&(isequal(model.SelectedItemClassName,'ws.stimulus.StimulusSequence'));
+            isSelectionASequence=isSelection&&(isequal(model.SelectedItemClassName,'ws.StimulusSequence'));
             set(self.SequenceNameEdit,'Enable',onIff(isIdle&&isSelectionASequence));
             set(self.SequenceTable,'Enable',onIff(isIdle&&isSelectionASequence));
             
             % The map panel
-            isSelectionAMap=isSelection&&(isequal(model.SelectedItemClassName,'ws.stimulus.StimulusMap'));
+            isSelectionAMap=isSelection&&(isequal(model.SelectedItemClassName,'ws.StimulusMap'));
             set(self.MapNameEdit,'Enable',onIff(isIdle&&isSelectionAMap));
             set(self.MapDurationEdit,'Enable',onIff(isIdle&&isSelectionAMap&&model.SelectedItem.IsDurationFree));
             set(self.MapTable,'Enable',onIff(isIdle&&isSelectionAMap));
             
             % The stimulus panel
-            isSelectionAStimulus=isSelection&&(isequal(model.SelectedItemClassName,'ws.stimulus.Stimulus'));
+            isSelectionAStimulus=isSelection&&(isequal(model.SelectedItemClassName,'ws.Stimulus'));
             set(self.StimulusNameEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
             set(self.StimulusDelayEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
             set(self.StimulusDurationEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));

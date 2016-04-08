@@ -86,20 +86,20 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         end  % function
         
 %         function testSavingOfChannelBinding(self)
-%             stimulus1=ws.stimulus.ChirpStimulus('InitialFrequency',1.4545, ...
+%             stimulus1=ws.ChirpStimulus('InitialFrequency',1.4545, ...
 %                                                    'FinalFrequency',45.3);  
 %             stimulus1.Delay=0.11;
 %             stimulus1.Amplitude='6.28';
 %             stimulus1.Name='Melvin';
 %             
-%             stimulus2=ws.stimulus.SquarePulseStimulus();
+%             stimulus2=ws.SquarePulseStimulus();
 %             stimulus2.Delay=0.12;
 %             stimulus2.Amplitude='6.29';
 %             stimulus2.Name='Bill';
 %             
 %             stimuli={stimulus1 stimulus2};
 %             
-%             channelBinding=ws.stimulus.ChannelBinding('ChannelName', 'ao0', ...
+%             channelBinding=ws.ChannelBinding('ChannelName', 'ao0', ...
 %                                                          'Stimulus', stimulus1, ...
 %                                                          'Multiplier', 1);
 %             
@@ -172,7 +172,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             
-            %stimulusLibrary=ws.stimulus.StimulusLibrary();
+            %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);            
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);            
@@ -197,13 +197,13 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             
-            %stimulusLibrary=ws.stimulus.StimulusLibrary();
+            %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
             
-            stimulusLibraryCheck=ws.stimulus.StimulusLibrary([]);
+            stimulusLibraryCheck=ws.StimulusLibrary([]);
             stimulusLibraryCheck.mimic(stimulusLibrary);
             
             self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
@@ -220,7 +220,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibrary=self.createPopulatedStimulusLibrary();
 
             % create a library
-            %stimulusLibrary=ws.stimulus.StimulusLibrary();
+            %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);            
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);            
