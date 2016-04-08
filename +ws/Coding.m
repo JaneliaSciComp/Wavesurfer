@@ -253,6 +253,18 @@ classdef (Abstract) Coding < handle
                           className) ;
                 end                    
                 
+                % For backwards-compatibility with older files
+                prefixesToFix = {'ws.system.' 'ws.stimulus.' 'ws.mixin.'} ;
+                for i = 1:length(prefixesToFix) ,
+                    prefix = prefixesToFix{i} ;
+                    prefixLength = length(prefix) ;
+                    if strncmp(className,prefix,prefixLength) ,
+                        suffix = className(prefixLength+1:end) ;
+                        className = ['ws.' suffix] ;
+                        break
+                    end
+                end
+                
                 % Instantiate the object
                 result = feval(className,parent) ;
 
