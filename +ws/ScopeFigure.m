@@ -769,7 +769,7 @@ classdef ScopeFigure < ws.MCOSFigure
             self.updateYAxisLimits_();
             
             % Update the graphics objects to match the model
-            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10);
+            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
             self.updateYAxisLabel_(axesForeground);
             self.updateLineXDataAndYData_();
         end  % function
@@ -991,7 +991,7 @@ classdef ScopeFigure < ws.MCOSFigure
             % and that of the Acquisition subsystem.
             %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
             if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10);
+                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
             else
                 firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
@@ -1002,7 +1002,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 else
                     unitsString = units ;
                 end
-                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10);
+                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
             end
         end  % function
         
