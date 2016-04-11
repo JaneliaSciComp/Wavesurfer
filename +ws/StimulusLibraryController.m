@@ -23,7 +23,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function        
         
         function ClearLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-            choice = questdlg('Are you sure you want to clear the library?', ...
+            choice = ws.questdlg('Are you sure you want to clear the library?', ...
                               'Clear Library?', 'Clear', 'Don''t Clear', 'Don''t Clear');
             
             if isequal(choice,'Clear') ,
@@ -153,7 +153,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 if isInUse ,
                     str1 = 'This sequence is referenced by one or more items in the library.  Deleting it will alter those items.';
                     str2 = 'Delete Sequence?';
-                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
                             model.deleteItem(selectedItem);
@@ -173,7 +173,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 if isInUse ,
                     str1 = 'This map is referenced by one or more items in the library.  Deleting it will alter those items.';
                     str2 = 'Delete Map?';
-                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
                             model.deleteItem(selectedItem);
@@ -193,7 +193,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 if isInUse ,
                     str1 = 'This stimulus is referenced by one or more items in the library.  Deleting it will alter those items.';
                     str2 = 'Delete Stimulus?';
-                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
                             model.deleteItem(selectedItem);
@@ -213,7 +213,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
 %                 if isInUse ,
 %                     str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
 %                     str2 = 'Delete Item?';
-%                     choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+%                     choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
 %                     switch choice 
 %                         case 'Delete'
 %                             model.deleteItem(selectedItem);

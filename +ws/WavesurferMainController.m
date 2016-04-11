@@ -391,7 +391,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
-                    errordlg(me.message,'Error','modal');
+                    ws.errordlg(me.message,'Error','modal');
 %                 end
             end                
         end  % function
@@ -805,9 +805,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                              fileName);
                         %self.Figure.changeReadiness(+1);
                         %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;
-                        errordlg(errorMessage, ...
-                                 'Missing Protocol File', ...
-                                 'modal');
+                        ws.errordlg(errorMessage, 'Missing Protocol File', 'modal');
                         return     
                     end
                 end
@@ -1704,7 +1702,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                     itIsA = 'map';
 %                 end
 %                 
-%                 result = questdlg(sprintf('The current stimulus %s is not part of a library.  Would you like to put it into a new library?', itIsA), ...
+%                 result = ws.questdlg(sprintf('The current stimulus %s is not part of a library.  Would you like to put it into a new library?', itIsA), ...
 %                     'Create Library', 'Yes', 'No', 'Yes');
 %                 
 %                 if strcmp(result, 'Yes')
@@ -1903,17 +1901,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
     %% COMMANDS
     methods
-%         function controlActuated(self,controlName,source,event)            
-%             try
-%                 methodName=[controlName 'Actuated'];
-%                 if ismethod(self,methodName) ,
-%                     self.(methodName)(source,event);
-%                 end
-%             catch me
-%                     errordlg(me.message,'Error','modal');
-%             end            
-%         end  % function       
-
         % File menu items
         function LoadMachineDataFileMenuItemActuated(self,source,event) %#ok<INUSD>
             self.pickMDFFileAndInitializeUsingIt() ;

@@ -350,12 +350,11 @@ classdef Controller < handle
 %                     report = me.getReport()
 
                  if isempty(me.cause) 
-                     errordlg(me.message,'Error','modal');
+                     ws.errordlg(me.message,'Error','modal');
                  else
                      firstCause = me.cause{1} ;
                      errorString = sprintf('%s:\n%s',me.message,firstCause.message) ;
-                     errordlg(errorString, ...
-                              'Error','modal');
+                     ws.errordlg(errorString, 'Error', 'modal');
                  end                     
 %                end
             end

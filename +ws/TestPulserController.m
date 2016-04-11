@@ -73,7 +73,7 @@ classdef TestPulserController < ws.Controller
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
-                    errordlg(me.message,'Error','modal');
+                    ws.errordlg(me.message,'Error','modal');
 %                 end
             end
         end  % function
