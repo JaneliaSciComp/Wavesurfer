@@ -132,8 +132,6 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
             
-            import ws.positionEditLabelAndUnitsBang
-            
             leftPadWidth=10;
             rightPadWidth=10;
             bottomPadHeight=10;

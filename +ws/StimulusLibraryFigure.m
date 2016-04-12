@@ -419,8 +419,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function figureSize=layoutFixedControls_(self)
-            import ws.positionEditLabelAndUnitsBang
-            
             figureHeight=450;
             
             itemChoosingAreaWidth=200;
@@ -478,8 +476,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutSequencePanel_(self,panelWidth,panelHeight)
-            import ws.positionEditLabelAndUnitsBang
-            
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
             heightFromTopToEdit=10;
@@ -494,7 +490,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             editPosition=get(self.SequenceNameEdit,'Position');
             editHeight=editPosition(4);
             editYOffset=panelHeight-heightOfPanelTitle-heightFromTopToEdit-editHeight;
-            positionEditLabelAndUnitsBang(self.SequenceNameText,self.SequenceNameEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.SequenceNameText,self.SequenceNameEdit,[], ....
                                           editXOffset,editYOffset,editWidth)
             
             %                          
@@ -517,8 +513,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function layoutMapPanel_(self,panelWidth,panelHeight)
-            import ws.positionEditLabelAndUnitsBang
-            
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
             heightFromTopToEdit=10;
@@ -535,11 +529,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             editPosition=get(self.MapNameEdit,'Position');
             editHeight=editPosition(4);
             editsYOffset=panelHeight-heightOfPanelTitle-heightFromTopToEdit-editHeight;
-            positionEditLabelAndUnitsBang(self.MapNameText,self.MapNameEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.MapNameText,self.MapNameEdit,[], ....
                                           nameEditXOffset,editsYOffset,nameEditWidth)
             
             % Duration edit and label
-            positionEditLabelAndUnitsBang(self.MapDurationText,self.MapDurationEdit,self.MapDurationUnitsText, ....
+            ws.positionEditLabelAndUnitsBang(self.MapDurationText,self.MapDurationEdit,self.MapDurationUnitsText, ....
                                           durationEditXOffset,editsYOffset,durationEditWidth)
             
             %                          
@@ -564,9 +558,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutStimulusPanelFixedControls_(self,panelWidth,panelHeight) %#ok<INUSL>
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-            
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
             heightFromTopToNameEdit=10;
@@ -580,7 +571,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             editPosition=get(self.StimulusNameEdit,'Position');
             editHeight=editPosition(4);
             editYOffset=panelHeight-heightOfPanelTitle-heightFromTopToNameEdit-editHeight;
-            positionEditLabelAndUnitsBang(self.StimulusNameText,self.StimulusNameEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.StimulusNameText,self.StimulusNameEdit,[], ....
                                           editXOffset,editYOffset,editWidth)
             
             % other edits
@@ -602,7 +593,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 else
                     unitsTextGH=[];
                 end
-                positionEditLabelAndUnitsBang(textGH,editGH,unitsTextGH, ....
+                ws.positionEditLabelAndUnitsBang(textGH,editGH,unitsTextGH, ....
                                               editXOffset,editYOffset,editWidth);
             end
             
@@ -610,7 +601,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             popupmenuPosition=get(self.StimulusFunctionPopupmenu,'Position');
             popupmenuHeight=popupmenuPosition(4);
             popupmenuYOffset=editYOffset-heightBetweenEdits-popupmenuHeight;
-            positionPopupmenuAndLabelBang(self.StimulusFunctionText,self.StimulusFunctionPopupmenu, ...
+            ws.positionPopupmenuAndLabelBang(self.StimulusFunctionText,self.StimulusFunctionPopupmenu, ...
                                           editXOffset,popupmenuYOffset,popupmenuWidth)
 
         end  % function
@@ -629,9 +620,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutStimulusPanelNonfixedControls_(self)
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-            
             % Figure out where the stimulus function popup is, since we
             % position stuff relative to it
             popupmenuPosition=get(self.StimulusFunctionPopupmenu,'Position');
@@ -657,7 +645,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 textGH=self.StimulusAdditionalParametersTexts(i);
                 editGH=self.StimulusAdditionalParametersEdits(i);
                 unitsTextGH=self.StimulusAdditionalParametersUnitsTexts(i);
-                positionEditLabelAndUnitsBang(textGH,editGH,unitsTextGH, ....
+                ws.positionEditLabelAndUnitsBang(textGH,editGH,unitsTextGH, ....
                                               popupmenuXOffset,editYOffset,editWidth);
             end            
         end  % function

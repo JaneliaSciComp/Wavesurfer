@@ -1,4 +1,4 @@
-function positionEditLabelAndUnitsBang(labelGH,editGH,unitsGH,editXOffset,editYOffset,editWidth,fixedLabelWidth)
+function ws.positionEditLabelAndUnitsBang(labelGH,editGH,unitsGH,editXOffset,editYOffset,editWidth,fixedLabelWidth)
     % Position the edit at the given position with the given width, and
     % position the label (a text uicontrol) and the units (ditto) on
     % either side.  We assume the units are already set to pixels.

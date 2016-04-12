@@ -211,8 +211,6 @@ classdef TriggersFigure < ws.MCOSFigure
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
             
-            import ws.positionEditLabelAndUnitsBang
-            
             topPadHeight=10;
             schemesAreaWidth=280;
             tablePanelsAreaWidth=500;
@@ -291,9 +289,6 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutSweepBasedAcquisitionPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-
             % Dimensions
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightFromTopToPopupmenu=6;
@@ -305,7 +300,7 @@ classdef TriggersFigure < ws.MCOSFigure
             position=get(self.AcquisitionSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-height;  %checkboxYOffset-heightFromPopupmenuToRest-height;
-            positionPopupmenuAndLabelBang(self.AcquisitionSchemeText,self.AcquisitionSchemePopupmenu, ...
+            ws.positionPopupmenuAndLabelBang(self.AcquisitionSchemeText,self.AcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
 
 %             % Checkbox
@@ -324,9 +319,6 @@ classdef TriggersFigure < ws.MCOSFigure
 
     methods (Access = protected)
         function layoutSweepBasedStimulationPanel_(self,panelWidth,panelHeight)  %#ok<INUSL>
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-
             % Dimensions
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightFromTopToCheckbox=2;
@@ -350,31 +342,11 @@ classdef TriggersFigure < ws.MCOSFigure
             position=get(self.StimulationSchemePopupmenu,'Position');
             height=position(4);
             popupmenuYOffset=checkboxYOffset-heightFromCheckboxToRest-height;
-            positionPopupmenuAndLabelBang(self.StimulationSchemeText,self.StimulationSchemePopupmenu, ...
+            ws.positionPopupmenuAndLabelBang(self.StimulationSchemeText,self.StimulationSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
         end  % function
     end
 
-    methods (Access = protected)
-%         function layoutContinuousPanel_(self,panelWidth,panelHeight) %#ok<INUSL>
-%             import ws.positionEditLabelAndUnitsBang
-%             import ws.positionPopupmenuAndLabelBang
-% 
-%             % Dimensions
-%             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-%             heightFromTopToRest=6;
-%             rulerXOffset=60;
-%             popupmenuWidth=200;
-%             
-%             % Source popupmenu
-%             position=get(self.ContinuousSchemePopupmenu,'Position');
-%             height=position(4);
-%             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToRest-height;
-%             positionPopupmenuAndLabelBang(self.ContinuousSchemeText,self.ContinuousSchemePopupmenu, ...
-%                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
-%         end
-    end
-    
     methods (Access = protected)
         function layoutCounterTriggersPanel_(self,panelWidth,panelHeight)
             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title

@@ -562,8 +562,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
             
-            import ws.positionEditLabelAndUnitsBang
-            
             figureWidth=750;
             
             toolbarAreaHeight=36;
@@ -693,8 +691,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutAcquisitionPanel_(self,acquisitionPanelWidth,acquisitionPanelHeight)
-            import ws.positionEditLabelAndUnitsBang
-            
             %
             % Contents of acquisition panel
             %
@@ -730,26 +726,23 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 
             % Sample rate row
             gridRowYOffset=radiobuttonBarYOffset-heightFromRadiobuttonBarToGrid-gridRowHeight;
-            positionEditLabelAndUnitsBang(self.AcquisitionSampleRateText,self.AcquisitionSampleRateEdit,self.AcquisitionSampleRateUnitsText, ....
+            ws.positionEditLabelAndUnitsBang(self.AcquisitionSampleRateText,self.AcquisitionSampleRateEdit,self.AcquisitionSampleRateUnitsText, ....
                                           editXOffset,gridRowYOffset,editWidth)
                                       
             % # of sweeps row
             gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            positionEditLabelAndUnitsBang(self.NSweepsText,self.NSweepsEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.NSweepsText,self.NSweepsEdit,[], ....
                                           editXOffset,gridRowYOffset,editWidth)
             
             % Sweep duration row
             gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            positionEditLabelAndUnitsBang(self.SweepDurationText,self.SweepDurationEdit,self.SweepDurationUnitsText, ....
+            ws.positionEditLabelAndUnitsBang(self.SweepDurationText,self.SweepDurationEdit,self.SweepDurationUnitsText, ....
                                           editXOffset,gridRowYOffset,editWidth)            
         end  % function
     end
 
     methods (Access = protected)
         function layoutStimulationPanel_(self,stimulationPanelWidth,stimulationPanelHeight) %#ok<INUSL>
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-            
             %
             % Contents of stimulation panel
             %
@@ -778,14 +771,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Sample rate row
             gridRowYOffset=stimulationEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
-            positionEditLabelAndUnitsBang(self.StimulationSampleRateText,self.StimulationSampleRateEdit,self.StimulationSampleRateUnitsText, ....
+            ws.positionEditLabelAndUnitsBang(self.StimulationSampleRateText,self.StimulationSampleRateEdit,self.StimulationSampleRateUnitsText, ....
                                           editXOffset,gridRowYOffset,editWidth)
                                       
             % Source popupmenu
             position=get(self.SourcePopupmenu,'Position');
             height=position(4);
             gridRowYOffset=gridRowYOffset-heightFromSampleRateEditToSourcePopupmenu-height;
-            positionPopupmenuAndLabelBang(self.SourceText,self.SourcePopupmenu, ...
+            ws.positionPopupmenuAndLabelBang(self.SourceText,self.SourcePopupmenu, ...
                                           editXOffset,gridRowYOffset,popupmenuWidth)
             
             % Edit... button
@@ -804,9 +797,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutDisplayPanel_(self,displayPanelWidth,displayPanelHeight) %#ok<INUSL>
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-            
             %
             % Contents of display panel
             %
@@ -831,12 +821,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Update rate row
             yOffset=displayEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
-            positionEditLabelAndUnitsBang(self.UpdateRateText,self.UpdateRateEdit,self.UpdateRateUnitsText, ....
+            ws.positionEditLabelAndUnitsBang(self.UpdateRateText,self.UpdateRateEdit,self.UpdateRateUnitsText, ....
                                           editXOffset,yOffset,editWidth)
                                       
             % Span row
             yOffset=yOffset-heightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.SpanText,self.SpanEdit,self.SpanUnitsText, ....
+            ws.positionEditLabelAndUnitsBang(self.SpanText,self.SpanEdit,self.SpanUnitsText, ....
                                           editXOffset,yOffset,editWidth)
                                                   
             % Auto span checkbox
@@ -852,9 +842,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access = protected)
         function layoutLoggingPanel_(self,loggingPanelWidth,loggingPanelHeight)
-            import ws.positionEditLabelAndUnitsBang
-            import ws.positionPopupmenuAndLabelBang
-            
             %
             % Contents of logging panel
             %
@@ -884,7 +871,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Location edit and label
             locationEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
-            positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
                                           xOffsetOfEdits,locationEditYOffset,widthOfBaseNameAndLocationEdits);
 
             % Show button
@@ -901,7 +888,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % BaseName Edit and label
             baseNameEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
-            positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
                                           xOffsetOfEdits,baseNameEditYOffset,widthOfBaseNameAndLocationEdits)
 
             
@@ -938,7 +925,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             sessionIndexEditXOffset =  ...
                 sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
             sessionIndexEditYOffset = dataSessionAndSweepRowYOffset ;
-            positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
+            ws.positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
                                           sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
                                       
             % Increment session index button
@@ -953,7 +940,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Next Sweep edit and label
             nextSweepEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextSweepEditWidth ;
             nextSweepEditYOffset = dataSessionAndSweepRowYOffset ;
-            positionEditLabelAndUnitsBang(self.NextSweepText,self.NextSweepEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.NextSweepText,self.NextSweepEdit,[], ....
                                           nextSweepEditXOffset,nextSweepEditYOffset,nextSweepEditWidth, ...
                                           nextSweepLabelFixedWidth);
             
@@ -963,7 +950,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %
             fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
             fileNameEditYOffset = nextSweepEditYOffset - heightBetweenEdits - editHeight ;
-            positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
+            ws.positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
                                           xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
                                           fileNameLabelFixedWidth) ;
                                       
