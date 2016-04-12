@@ -28,7 +28,8 @@ classdef IPCSubscriber < ws.ZMQConnecter
             try
                 %fprintf('Just before recv\n');
                 %fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
-                serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
+                %serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
+                serializedMessage = self.Socket.recv(262144, 'ZMQ_DONTWAIT') ;                
                 %serializedMessage = zmq.core.recv(self.Socket) ;  % this should block
                 %fprintf('Just after recv\n');
             catch me
@@ -116,7 +117,8 @@ classdef IPCSubscriber < ws.ZMQConnecter
         function connect(self,portNumber)
             self.connect@ws.ZMQConnecter(portNumber);
             %fprintf('IPCSubscriber::connect(): About to call zmq.core.setsockopt()\n') ;
-            zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
+            %zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
+            self.Socket.set('ZMQ_SUBSCRIBE', '');  % accept all messages
         end  % function
 
     end  % methods

@@ -1,4 +1,4 @@
-function ws.positionPopupmenuAndLabelBang(labelGH,popupmenuGH,popupmenuXOffset,popupmenuYOffset,popupmenuWidth)
+function positionPopupmenuAndLabelBang(labelGH,popupmenuGH,popupmenuXOffset,popupmenuYOffset,popupmenuWidth)
     % Position the popupmenu at the given position with the given width, and
     % position the label (a text uicontrol) on the left of it.
     % We assume the units are already set to pixels.

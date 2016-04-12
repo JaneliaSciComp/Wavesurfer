@@ -268,11 +268,13 @@ int WINAPI WinMain (HINSTANCE hInstance,
 
     // wait for user
     std::cout << "About to exit normally from launch_satellite_engine.exe" << std::endl ;
+    /*
     if (is_debug)
         {
         std::cout << std::endl ;
         system("pause");
         }
+    */
     //std::cout << "Press any key to exit..." << std::endl ;
     //kbhit() ;
 

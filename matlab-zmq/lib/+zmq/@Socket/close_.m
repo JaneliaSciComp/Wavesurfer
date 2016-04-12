@@ -1,4 +1,4 @@
-function close(obj, endpoint)
+function close_(obj, endpoint)
     status = zmq.core.close(obj.socketPointer);
     if (status == 0)
         obj.socketPointer = 0; % ensure NULL pointer
