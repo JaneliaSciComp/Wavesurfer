@@ -38,8 +38,8 @@ function positionEditLabelAndUnitsBang(labelGH,editGH,unitsGH,editXOffset,editYO
     end
 
     % Position the edit itself
-    set(editGH,'Position',[editXOffset editYOffset editWidth editHeight], ...
-               'BackgroundColor','w');
+    set(editGH,'Position',[editXOffset editYOffset editWidth editHeight]) ;
+    %           'BackgroundColor','w');
     
     % Position the label to the left of the edit
     labelExtentFull=get(labelGH,'Extent');

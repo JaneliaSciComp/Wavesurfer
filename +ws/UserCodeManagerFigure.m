@@ -172,8 +172,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             editXOffset=leftPadWidth+labelWidth;
             
             editYOffset=figureHeight-topPadHeight-editHeight;
-            positionEditLabelAndUnitsBang(self.ClassNameText,self.ClassNameEdit,[], ....
-                                          editXOffset,editYOffset,editWidth)
+            ws.positionEditLabelAndUnitsBang(self.ClassNameText,self.ClassNameEdit,[], ....
+                                             editXOffset,editYOffset,editWidth)
 
 %             % "Choose..." button                          
 %             chooseButtonXOffset = editXOffset + editWidth + widthFromEditToChooseButton ;
@@ -228,7 +228,13 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 return
             end
 
-            set(self.ClassNameEdit,'String',model.ClassName);            
+            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
+            isClassNameValid = model.IsClassNameValid ;
+            backgroundColor = ws.fif(isClassNameValid,normalBackgroundColor,warningBackgroundColor) ;
+            set(self.ClassNameEdit, ...
+                'String', model.ClassName, ...
+                'BackgroundColor', backgroundColor );
             %set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
         end
     end

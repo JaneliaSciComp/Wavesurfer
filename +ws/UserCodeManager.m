@@ -7,11 +7,13 @@ classdef UserCodeManager < ws.Subsystem
     
     properties (Dependent = true, SetAccess = immutable)
         TheObject  % an instance of ClassName, or []
+        IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, tells whether the ClassName is valid.
     end
     
     properties (Access = protected)
         ClassName_ = '' 
         %AbortCallsComplete_ = true  % If true and the equivalent abort function is empty, complete will be called when abort happens.
+        IsClassNameValid_ = true  % an empty classname counts as a valid one.
     end
 
     properties (Access = protected, Transient=true)
@@ -36,6 +38,10 @@ classdef UserCodeManager < ws.Subsystem
             result = self.ClassName_;
         end
                 
+        function result = get.IsClassNameValid(self)
+            result = self.IsClassNameValid_ ;
+        end
+                
 %         function result = get.AbortCallsComplete(self)
 %             result = self.AbortCallsComplete_;
 %         end
@@ -45,40 +51,27 @@ classdef UserCodeManager < ws.Subsystem
         end
                 
         function set.ClassName(self, value)
-            if ws.isASettableValue(value) ,
-                if ischar(value) && (isempty(value) || isrow(value)) ,
-                    [newObject,exception] = self.tryToInstantiateObject_(value) ;
-                    if ~isempty(exception) ,
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'Invalid value for property ''ClassName'' supplied: Unable to instantiate object.');
-                    end
-                    self.ClassName_ = value;
-                    self.TheObject_ = newObject;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'Invalid value for property ''ClassName'' supplied.');
-                end
+            if ws.isString(value) ,
+                % If it's a string, we'll keep it, but we have to check if
+                % it's a valid class name
+                trimmedValue = strtrim(value) ;
+                self.ClassName_ = trimmedValue ;
+                self.tryToInstantiateObject_() ;
+                self.broadcast('Update');
+            else
+                self.broadcast('Update');  % replace the bad value with the old value in the view
+                error('most:Model:invalidPropVal', ...
+                      'Invalid value for property ''ClassName'' supplied.');
             end
-            self.broadcast('Update');
         end  % function
         
         function reinstantiateUserObject(self)
-            if isempty(self.ClassName) ,
-                % do nothing except synching the view to the model
-                self.broadcast('Update');
-            else
-                [newObject,err] = self.tryToInstantiateObject_(self.ClassName) ;
-                if isempty(err) ,
-                    self.TheObject_ = newObject;
-                    self.broadcast('Update');                    
-                else
-                    self.broadcast('Update');
-                    error('wavesurfer:errorWhileReinstantiatingUserObject', ...
-                          'Unable to reinstantiate user object: %s.  Left original object in place.',err.message);
-                end
-            end
+            self.tryToInstantiateObject_() ;
+            self.broadcast('Update');
+            %if ~isempty(err) ,
+            %    error('wavesurfer:errorWhileReinstantiatingUserObject', ...
+            %          'Unable to reinstantiate user object: %s.',err.message);
+            %end
         end  % method
         
 %         function set.AbortCallsComplete(self, value)
@@ -98,10 +91,8 @@ classdef UserCodeManager < ws.Subsystem
         function startingRun(self)
             % Instantiate a user object, if one doesn't already exist
             if isempty(self.TheObject_) ,
-                [newObject,exception] = self.tryToInstantiateObject_(self.ClassName) ;
-                if isempty(exception) ,
-                    self.TheObject_ = newObject ;
-                else
+                exception = self.tryToInstantiateObject_() ;
+                if ~isempty(exception) ,
                     throw(exception);
                 end
             end            
@@ -110,10 +101,8 @@ classdef UserCodeManager < ws.Subsystem
         function invoke(self, rootModel, eventName, varargin)
             try
                 if isempty(self.TheObject_) ,
-                    [newObject,exception] = self.tryToInstantiateObject_(self.ClassName) ;
-                    if isempty(exception) ,
-                        self.TheObject_ = newObject ;
-                    else
+                    exception = self.tryToInstantiateObject_() ;
+                    if ~isempty(exception) ,
                         throw(exception);
                     end
                 end
@@ -167,19 +156,34 @@ classdef UserCodeManager < ws.Subsystem
     end  % methods
        
     methods (Access=protected)
-        function [newObject,exception] = tryToInstantiateObject_(self, className)
+        function exception = tryToInstantiateObject_(self)
+            % This method syncs self.TheObject_ and
+            % self.IsClassNameValid_, given the value of self.ClassName_ .
+            % If object creation is attempted and fails, exception will be
+            % nonempty, and will be an MException.  But the object should
+            % nevertheless be left in a self-consistent state, natch.
+            className = self.ClassName_ ;
             if isempty(className) ,
                 % this is ok, and in this case we just don't
                 % instantiate an object
-                newObject = [] ;
+                self.IsClassNameValid_ = true ;
+                self.TheObject_ = [] ;
                 exception = [] ;
             else
                 % value is non-empty
-                try                       
+                try 
                     newObject = feval(className,self.Parent) ;  % if this fails, self will still be self-consistent
-                    exception = [] ;
+                    didSucceed = true ;
                 catch exception
-                    newObject = [] ;
+                    didSucceed = false ;
+                end
+                if didSucceed ,                    
+                    exception = [] ;
+                    self.IsClassNameValid_ = true ;
+                    self.TheObject_ = newObject ;
+                else
+                    self.IsClassNameValid_ = false ;
+                    self.TheObject_ = [] ;
                 end
             end
         end  % function
