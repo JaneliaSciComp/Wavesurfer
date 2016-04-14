@@ -11,7 +11,6 @@ classdef FastProtocolsFigure < ws.MCOSFigure
             set(self.FigureGH, ...
                 'Tag','fastProtocolsFigureWrapper', ...
                 'Units','Pixels', ...
-                'Color',get(0,'defaultUIControlBackgroundColor'), ...
                 'Resize','off', ...
                 'Name','Fast Protocols', ...
                 'MenuBar','none', ...
@@ -31,7 +30,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure
            
            % Layout the figure and set the size
            self.layout_();
-           ws.utility.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
            % Initialize the guidata
            self.updateGuidata_();
@@ -54,19 +53,19 @@ classdef FastProtocolsFigure < ws.MCOSFigure
             % throughout the life of the window.
             
             self.Table = ...
-                uitable('Parent',self.FigureGH, ...
+                ws.uitable('Parent',self.FigureGH, ...
                         'ColumnName',{'Protocol File' 'Action'}, ...
                         'ColumnFormat',{'char' {'Do Nothing' 'Play' 'Record'}}, ...
                         'ColumnEditable',[true true]);
             
             self.ClearRowButton = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'TooltipString','Clear the current row', ...
                           'String','Clear Row');
 
             self.SelectFileButton = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'TooltipString','Choose the protocol file for the current row', ...
                           'String','Select File...');
@@ -101,16 +100,16 @@ classdef FastProtocolsFigure < ws.MCOSFigure
                         set(propertyThing,'CellSelectionCallback',@(source,event)(self.controlActuated(propertyName,source,event)));                        
                     end
                     
-                    % Set Font
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'FontName','Tahoma');
-                        set(propertyThing,'FontSize',8);
-                    end
-                    
-                    % Set Units
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'Units','pixels');
-                    end                    
+%                     % Set Font
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'FontName','Tahoma');
+%                         set(propertyThing,'FontSize',8);
+%                     end
+%                     
+%                     % Set Units
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'Units','pixels');
+%                     end                    
                 end
             end
         end  % function        
@@ -199,7 +198,7 @@ classdef FastProtocolsFigure < ws.MCOSFigure
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end            
-            import ws.utility.onIff
+            import ws.onIff
             isIdle=isequal(wavesurferModel.State,'idle');
             selectedIndex = wavesurferModel.IndexOfSelectedFastProtocol;
             isARowSelected= ~isempty(selectedIndex);

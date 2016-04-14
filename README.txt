@@ -26,7 +26,9 @@ Matlab R2013b or later (64-bit)
 Installation
 ------------
 
-1.  Download the .zip file from GitHub.
+1.  Download the .zip file for the latest release from GitHub here:
+
+        https://github.com/JaneliaSciComp/Wavesurfer/releases
 
 2.  Extract the .zip file contents to a convenient location.
 
@@ -35,31 +37,31 @@ Installation
 4.  At the Matlab command line, execute "installWavesurfer".  This
     will permanently modify your Matlab path so that all components
     needed by WaveSurfer are on it.  (If you don't want to permanently
-    modify the path, execute "installWavesruferForNow" instead of the
+    modify the path, execute "installWavesurferForNow" instead of the
     above.  This modifies the path only for the current Matlab
     session.)
 
-5.  To use WaveSurfer, you must create a "machine data file".  This
-    file specifies which National Instruments board you want to use
-    with WaveSurfer, and which channels, and a few other things.  An
-    example machine data file is located at:
+5.  At the Matlab command line, execute "wavesurfer".  You should now
+    be presented with the WaveSurfer user interface.
 
-        +ws/+test/+hw/Machine_Data_File_WS_Test.m
+6.  Go to Tools > Device & Channels... to specify what DAQ board you
+    want to use, what channels you want to use, and to set channel
+    units and scales, if desired.
 
-    within the WaveSurfer directory.  You should copy this file to a
-    convenient location, and customize it as needed.
+7.  In the main window, click the Stimulation > Enabled checkbox to
+    turn on stmulation.  Click the Display > Enabled checkbox to show
+    the "oscilloscope" windows where acquired data will be displayed.
 
-6.  At the Matlab command line, execute "wavesurfer".  You should now
-    be presented with the WaveSurfer UI, but almost all the controls
-    will be grayed.
+8.  In the main window, click the play button (the one with the black
+    righward-pointing arrow) to acquire data without saving to disk.
+    Click the record button (the one with the red circle) to acquire
+    data and save it to disk.
 
-7.  Go to File > Load Machine Data File... and select the file you
-    created in step 5 above.
+9.  To save your device settings, channel settings, and window
+    positions, go to File > Save Protocol.  These can then be loaded
+    in a new WaveSurfer sessions by going to File > Open Protocol...
 
-8.  Most of the WaveSurfer controls will ungray, and at this point
-    everything should be more-or-less self-explanatory.
-
-9.  If you have questions, please contact the WaveSurfer developer(s).
+10.  If you have questions, please contact the WaveSurfer developers.
 
 
 Copyright
@@ -297,3 +299,29 @@ Version History
 0.91     Feb 12, 2016    All things that used to be set in the MDF
                          file are now settable in the GUI, and stored
                          in the protocol file. 
+
+0.912    Mar 01, 2016    Fixed bug in README.
+
+0.913    Mar 02, 2016    Fixed bug which resulted in actual sampling
+                         rate being slightly different from nominal
+                         sampling rate for sampling rates (in Hz) that
+                         do not evenly divide 100 MHz.
+
+0.914    Mar 11, 2016    Fixed bug where data was saved without
+                         scaling coefficients.  Added code to
+                         ws.loadDataFile() convert nominal sampling rate
+                         for pre-0.913 data files to correct sampling
+                         rate.  Added code to ws.loadDataFile() to
+                         error if asked to return floating-point
+                         (scaled) data when the data file lacks
+                         scaling coefficients, as a safeguard.
+
+0.915    Mar 22, 2016    Added tool,
+                         ws.addScalingToHDF5FilesRecursively(), to
+                         automatically append device scaling
+                         information to .h5 data files that currently
+                         lack it.
+
+0.916    Apr 14, 2016    All AI channels now explicitly set to
+                         differential terminal configuration.
+                         Stability and UI improvements.

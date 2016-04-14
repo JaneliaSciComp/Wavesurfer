@@ -2,7 +2,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
     
     methods (Test)
         function testConstructor(self)
-            library = ws.stimulus.StimulusLibrary();
+            library = ws.StimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;
             self.verifyEmptyLibrary(library);
         end
@@ -56,7 +56,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
         end
         
         function testRemovalOfSelectedOutputable(self)
-            library = ws.stimulus.StimulusLibrary([]);
+            library = ws.StimulusLibrary([]);
             outputChannelNames={'ao0' 'ao1'};
             library.setToSimpleLibraryWithUnitPulse(outputChannelNames);
             self.verifyTrue(library.isSelfConsistent()) ;

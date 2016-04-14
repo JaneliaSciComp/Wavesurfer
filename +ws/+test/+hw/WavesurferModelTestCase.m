@@ -6,14 +6,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
@@ -92,7 +92,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %em.decodeProperties(protocolSettingsCheck);
-            em = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old em object
+            em = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old em object
 
             % compare the stim library in model to the copy of the
             % populated version
@@ -174,7 +174,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             %clear tasks
 %             % Clear the daq system (Shouldn't have to do this!!!)
 %             daqSystem = ws.dabs.ni.daqmx.System();
-%             ws.utility.deleteIfValidHandle(daqSystem.tasks);
+%             ws.deleteIfValidHandle(daqSystem.tasks);
 
 %             % Make a new WavesurferModel
 %             wsModel2=ws.WavesurferModel();
@@ -184,7 +184,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsAsRead=s.protocolSettings;
             %wsModel2.decodeProperties(protocolSettingsCheck);
-            wsModelAsDecoded = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsAsRead) ;
+            wsModelAsDecoded = ws.Coding.decodeEncodingContainer(protocolSettingsAsRead) ;
 
             % Check the self-consistency of the stim library
             self.verifyTrue(wsModelAsDecoded.Stimulation.StimulusLibrary.isSelfConsistent());
@@ -213,7 +213,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
            
             % All map durations should be not free
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.utility.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
+            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
             self.verifyTrue(all(isDurationOverridden));
             
             % Save the protocol to disk
@@ -229,11 +229,11 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %em.decodeProperties(protocolSettingsCheck);
-            em = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
+            em = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
 
             % All map durations should be not free, again
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.utility.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
+            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
             self.verifyTrue(all(isDurationOverridden));
             %keyboard
         end  % function      
@@ -249,11 +249,11 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'AreSweepsFiniteDuration' true};            
             settings(end+1,:)={'NSweepsPerRun' 11};
 
-            settings(end+1,:)={'Acquisition.SampleRate' 19979};
+            settings(end+1,:)={'Acquisition.SampleRate' 100e6/5001};
             settings(end+1,:)={'Acquisition.Duration' 2.17};
             
             settings(end+1,:)={'Stimulation.IsEnabled' true};
-            settings(end+1,:)={'Stimulation.SampleRate' 18979};
+            settings(end+1,:)={'Stimulation.SampleRate' 100e6/4999};
             
             settings(end+1,:)={'Display.IsEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
@@ -293,7 +293,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettingsCheck=s.protocolSettings;
             %wsModelCheck.releaseHardwareResources();
             %wsModelCheck.decodeProperties(protocolSettingsCheck);
-            wsModelCheck = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
+            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
 
             % Check that all settings are as set
             for i=1:nSettings ,
@@ -331,8 +331,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'CurrentMonitorScaling' 5};
             settings(end+1,:)={'VoltageCommandScaling' 8};
             settings(end+1,:)={'CurrentCommandScaling' 9};
-%             settings(end+1,:)={'VoltageUnits' ws.utility.SIUnit('uV')};
-%             settings(end+1,:)={'CurrentUnits' ws.utility.SIUnit('kA')};
+%             settings(end+1,:)={'VoltageUnits' ws.SIUnit('uV')};
+%             settings(end+1,:)={'CurrentUnits' ws.SIUnit('kA')};
             
             % Set the settings
             electrode=em.Ephys.ElectrodeManager.Electrodes{1}; %#ok<NASGU>
@@ -358,7 +358,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
 %             % Shouldn't have to do this, but...
 %             daqSystem = ws.dabs.ni.daqmx.System();
-%             ws.utility.deleteIfValidHandle(daqSystem.tasks);
+%             ws.deleteIfValidHandle(daqSystem.tasks);
 
 %             % Create a fresh WavesurferModel
 %             thisDirName=fileparts(mfilename('fullpath'));
@@ -369,7 +369,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %emCheck.decodeProperties(protocolSettingsCheck);
-            emCheck = ws.mixin.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
+            emCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
             
             % Check that all settings are as set
             electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>
@@ -402,7 +402,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             
 %             % Create a fresh WavesurferModel (this will fail if em has not been
 %             % garbage collected b/c of aliasing)
-%             [isAliasing,pathToAlias]=ws.utility.checkForAliasing(em,protocolSettings)
+%             [isAliasing,pathToAlias]=ws.checkForAliasing(em,protocolSettings)
 %             
 %             keyboard
 %             clear em

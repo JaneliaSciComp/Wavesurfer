@@ -350,12 +350,11 @@ classdef Controller < handle
 %                     report = me.getReport()
 
                  if isempty(me.cause) 
-                     errordlg(me.message,'Error','modal');
+                     ws.errordlg(me.message,'Error','modal');
                  else
                      firstCause = me.cause{1} ;
                      errorString = sprintf('%s:\n%s',me.message,firstCause.message) ;
-                     errordlg(errorString, ...
-                              'Error','modal');
+                     ws.errordlg(errorString, 'Error', 'modal');
                  end                     
 %                end
             end
@@ -366,12 +365,11 @@ classdef Controller < handle
         function setWithBenefits(object,propertyName,newValue)
             % Do object.(propertyName)=newValue, but catch any
             % most:Model:invalidPropVal exception generated.  If that
-            % exception is generated, set the property to
-            % nan.The, which will (if the model is as it
-            % should be) fire whatever events are normally fired when the
-            % property is changed, without actually changing the model.
-            % This should cause any dependent views to be updated to
-            % reflect the original property value.
+            % exception is generated, just ignore it.  The model is
+            % responsible for broadcasting an Update event in the case of a
+            % attempt to set an invalid value, which should cause the
+            % invalid value to be cleared from the view, and replaced with
+            % the preexisting value.
             try 
                 object.(propertyName)=newValue;
             catch exception

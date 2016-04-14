@@ -1,4 +1,4 @@
-classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
     % A class that represents the built-in trigger, a trigger on
     % PFI8, that we "manually" throw at the start of each leg of the run.  This
     % trigger can trigger AI/AO/DI/DO tasks directly, and can also trigger
@@ -105,8 +105,8 @@ classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.He
         end
         
         function set.DeviceName(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) && ~isempty(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) && ~isempty(value) ,
                     self.DeviceName_ = value ;
                 else
                     self.broadcast('Update');
@@ -118,8 +118,8 @@ classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.He
         end
         
         function set.Name(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) && ~isempty(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
                     self.broadcast('Update');
@@ -131,8 +131,8 @@ classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.He
         end
         
 %         function set.DeviceName(self, value)
-%             if ws.utility.isASettableValue(value) ,
-%                 if ws.utility.isString(value) ,
+%             if ws.isASettableValue(value) ,
+%                 if ws.isString(value) ,
 %                     self.DeviceName_ = value ;
 %                 else
 %                     self.broadcast('Update');
@@ -144,7 +144,7 @@ classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.He
 %         end
         
 %         function set.PFIID(self, value)
-%             if ws.utility.isASettableValue(value) ,
+%             if ws.isASettableValue(value) ,
 %                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
 %                     value = double(value) ;
 %                     self.PFIID_ = value ;
@@ -158,7 +158,7 @@ classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.He
 %         end
 %         
 %         function set.Edge(self, value)
-%             if ws.utility.isASettableValue(value) ,
+%             if ws.isASettableValue(value) ,
 %                 if ws.isAnEdgeType(value) ,
 %                     self.Edge_ = value;
 %                 else
@@ -176,7 +176,7 @@ classdef BuiltinTrigger < ws.Model %& ws.ni.HasPFIIDAndEdge  % & matlab.mixin.He
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function

@@ -38,6 +38,7 @@ classdef RootModel < ws.Model
 %         VersionString
         AllDeviceNames
         DeviceName
+        SampleClockTimebaseFrequency
         NDIOTerminals
         NPFITerminals
         NCounters
@@ -122,6 +123,8 @@ classdef RootModel < ws.Model
 %         %IsDeeplyIntoPerformingSweep_ = false
 %         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
 
+        SampleClockTimebaseFrequency_ = 100e6 ;  % Hz, X series devices use a 100 MHz sample timebase by default, and we don't change that ever
+        
         NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
                             % file load than it did when the protocol file was saved
         NPFITerminals_ = 0 
@@ -169,6 +172,10 @@ classdef RootModel < ws.Model
 
         function value = get.DeviceName(self)
             value = self.DeviceName_ ;
+        end  % function
+
+        function value = get.SampleClockTimebaseFrequency(self)
+            value = self.SampleClockTimebaseFrequency_ ;
         end  % function
 
         function set.DeviceName(self, newValue)
@@ -286,7 +293,8 @@ classdef RootModel < ws.Model
                 end
                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
                     % cellstring, each element of the form '<device name>/ai<channel ID>'
-                result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
+                nSingleEnded = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode                
+                result = round(nSingleEnded/2) ;  % the number of channels available if you use them all in differential mode, which we do
             end
         end
         
@@ -489,6 +497,30 @@ classdef RootModel < ws.Model
             nOccurancesOfAcquisitionTerminal = nOccurancesOfTerminal(1:nAcquisitionChannels) ;
             nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
         end        
+        
+        function [sampleFrequency,timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+            % Coerce to be finite and not nan
+            if isfinite(desiredSampleFrequency) ,
+                protoResult1 = desiredSampleFrequency;
+            else
+                protoResult1 = 20000;  % the default
+            end
+            
+            % We know it's finite and not nan here
+            
+            % Limit to the allowed range of sampling frequencies
+            protoResult2 = max(protoResult1,10) ;  % 10 Hz minimum
+            timebaseFrequency = self.SampleClockTimebaseFrequency;  % Hz
+            maximumFrequency = timebaseFrequency/100 ;  % maximum, 1 MHz for X-series 
+            protoResult3 = min(protoResult2, maximumFrequency) ;
+            
+            %% Make the sample rate an integer, and a factor of timebaseFrequency
+            %sampleFrequency = ws.RootModel.coerceSampleFrequencyToFactorOfTimebase(protoResult3, timebaseFrequency) ;
+            
+            % Limit to an integer multiple of the timebase interval
+            timebaseTicksPerSample = floor(timebaseFrequency/protoResult3) ;  % err on the side of sampling faster
+            sampleFrequency = timebaseFrequency/timebaseTicksPerSample ;
+        end
     end  % public methods
 
     methods (Access=protected)
@@ -499,7 +531,7 @@ classdef RootModel < ws.Model
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Coding.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
@@ -509,5 +541,51 @@ classdef RootModel < ws.Model
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
         end
     end
+    
+%     methods (Static=true)
+%         function coercedSampleFrequency = coerceSampleFrequencyToFactorOfTimebase(desiredSampleFrequency, timebaseFrequency)
+%             % Given a desiredSampleFrequency and an (integral)
+%             % timebaseFrequency, determines the coercedSampleFrequency such
+%             % that coercedSampleFrequency * n == timebaseFrequency, where
+%             % coercedSampleFrequency and n are both integral, and
+%             % coercedSampleFrequency is greater than or equal
+%             % desiredSampleFrequency.  Given these constraints,
+%             % coercedSampleFrequency is as close as possible to
+%             % desiredSampleFrequency on a log scale.
+%             
+%             if desiredSampleFrequency >= timebaseFrequency ,
+%                 coercedSampleFrequency = timebaseFrequency ;
+%             else
+%                 if timebaseFrequency == 1e8 ,  % 100 MHz, timebase for X series by default
+%                     powersOfTen = 10.^((0:7)') ;
+%                     possibleFactorsMatrix = bsxfun(@times, powersOfTen, [1 2 5]) ;
+%                     possibleFactors = [reshape(possibleFactorsMatrix, [1 numel(possibleFactorsMatrix)]) 10e8] ;
+%                     log10PossibleFactors = log10(possibleFactors) ;
+%                     log10DesiredSampleFrequency = log10(desiredSampleFrequency) ;
+%                     logDistances =  log10PossibleFactors - log10DesiredSampleFrequency ;  % negative=> too slow, positive=> fast enough
+%                     % We want the lowest-magnitude nonnegative logDistance
+%                     isTooLow = logDistances<0 ;
+%                     nonnegativeLogDistances = logDistances(~isTooLow) ;
+%                     if isempty(nonnegativeLogDistances) ,
+%                         % all the options are too low, to just return the
+%                         % timebaseFrequency
+%                         coercedSampleFrequency = timebaseFrequency ;
+%                     else
+%                         log10CoercedSampleFrequency = nonnegativeLogDistances(1) ;
+%                         coercedSampleFrequency = round(10^log10CoercedSampleFrequency) ;
+%                         if ~isequal(unique(factor(coercedSampleFrequency)),[2 5]) ,
+%                             error('wavesurfer:internalError', ...
+%                                   ['There was an internal error with Wavesurfer: Programming error in coerceSampleFrequencyToFactorOfTimebase().  ' ...
+%                                    'Please report to the WaveSurfer developers.']) ;
+%                         end
+%                     end
+%                 else
+%                     error('wavesurfer:internalError', ...
+%                           'There was an internal error with Wavesurfer: Unsupported timebase frequency.  Please report to the WaveSurfer developers.') ;
+%                 end            
+%             end
+%             
+%         end
+%     end
     
 end  % classdef

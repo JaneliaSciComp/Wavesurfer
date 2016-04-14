@@ -25,11 +25,26 @@ classdef Socket < handle
             if (obj.socketPointer ~= 0)
                 % Disconnect/Unbind all the endpoints
                 cellfun(@(b) obj.unbind(b), obj.bindings, 'UniformOutput', false);
+%                 for i = 1:length(obj.bindings) ,
+%                     b = obj.bindings{i} ;
+%                     obj.unbind(b) ;
+%                 end
+                obj.bindings = {} ;
                 cellfun(@(c) obj.disconnect(c), obj.connections, 'UniformOutput', false);
+%                 for i = 1:length(obj.connections) ,
+%                     c = obj.connections{i} ;
+%                     obj.disconnect(c) ;
+%                 end
+                obj.connections = {} ;
                 % Avoid linger time
                 obj.set('linger', 0);
                 % close
-                obj.close;
+                %obj.close;
+                %status = zmq.core.close(obj.socketPointer);
+                zmq.core.close(obj.socketPointer);
+                %if (status == 0)
+                obj.socketPointer = 0; % ensure NULL pointer
+                %end                
             end
         end
     end

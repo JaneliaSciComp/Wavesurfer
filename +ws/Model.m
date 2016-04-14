@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
+classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         Parent  
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
@@ -87,13 +87,13 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
     
     methods         
         function propNames = listPropertiesForPersistence(self)
-            propNamesRaw = listPropertiesForPersistence@ws.mixin.Coding(self) ;            
+            propNamesRaw = listPropertiesForPersistence@ws.Coding(self) ;            
             propNames=setdiff(propNamesRaw, ...
                               {'Parent_'}) ;
         end  % function 
 
         function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.mixin.Coding(self) ;            
+            propNamesRaw = listPropertiesForHeader@ws.Coding(self) ;            
             propNames=setdiff(propNamesRaw, ...
                               {'Parent'}) ;
         end  % function         
@@ -110,7 +110,7 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
             isReadyBefore=self.IsReady;
             
             self.DegreeOfReadiness_ = ...
-                    ws.utility.fif(newDegreeOfReadinessRaw<=1, ...
+                    ws.fif(newDegreeOfReadinessRaw<=1, ...
                                    newDegreeOfReadinessRaw, ...
                                    1);
                         
@@ -122,7 +122,7 @@ classdef (Abstract) Model < ws.mixin.Coding & ws.EventBroadcaster
         end  % function                
         
 %         function setParent_(self, newValue)
-%             if ws.utility.isASettableValue(newValue) ,
+%             if ws.isASettableValue(newValue) ,
 %                 if isempty(newValue) ,
 %                     self.Parent_ = [] ;
 %                 elseif isscalar(newValue) && isa(newValue,'ws.Model') ,

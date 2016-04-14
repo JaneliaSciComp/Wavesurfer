@@ -213,7 +213,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
-                    errordlg(me.message,'Error','modal');
+                    ws.errordlg(me.message,'Error','modal');
 %                 end
             end
         end  % method
@@ -269,7 +269,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             % if it should go ahead and close.
             
             % If acquisition is happening, ignore the close window request
-            wavesurferModel = ws.utility.getSubproperty(self,'Model','Parent','Parent') ;
+            wavesurferModel = ws.getSubproperty(self,'Model','Parent','Parent') ;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
                 isIdle=isequal(wavesurferModel.State,'idle');
                 if isIdle ,

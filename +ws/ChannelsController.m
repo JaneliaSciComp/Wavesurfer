@@ -11,7 +11,7 @@ classdef ChannelsController < ws.Controller
         
         function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
             allDeviceNames = self.Model.AllDeviceNames ;
-            deviceName = ws.utility.getPopupMenuSelection(source, allDeviceNames) ;
+            deviceName = ws.getPopupMenuSelection(source, allDeviceNames) ;
             if isempty(deviceName) ,
                 self.Figure.update() ;
             else
@@ -31,7 +31,7 @@ classdef ChannelsController < ws.Controller
             wavesurferModel = self.Model ;
             validChoices = wavesurferModel.getAllAITerminalNames() ;
             % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(3:end) ;
             terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
@@ -95,7 +95,7 @@ classdef ChannelsController < ws.Controller
             wavesurferModel = self.Model ;
             validChoices = wavesurferModel.getAllAOTerminalNames() ;
             % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(3:end) ;
             terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
@@ -154,7 +154,7 @@ classdef ChannelsController < ws.Controller
             wavesurferModel = self.Model ;
             validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
             % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(4:end) ;
             terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.DITerminalNamePopups) ;
@@ -196,7 +196,7 @@ classdef ChannelsController < ws.Controller
             wavesurferModel = self.Model ;
             validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
             % Do the rest
-            choice=ws.utility.getPopupMenuSelection(source,validChoices);
+            choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(4:end) ;
             terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;

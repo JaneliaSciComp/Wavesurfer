@@ -146,13 +146,13 @@ classdef Refiller < ws.RootModel
 %             self.IndexOfSelectedFastProtocol=1;
             
             % Create all subsystems.
-            %self.Acquisition_ = ws.system.RefillerAcquisition(self);
-            self.Stimulation_ = ws.system.RefillerStimulation(self);
-            %self.Display = ws.system.Display(self);
-            self.Triggering_ = ws.system.RefillerTriggering(self);
-            self.UserCodeManager_ = ws.system.UserCodeManager(self);
-            %self.Logging = ws.system.Logging(self);
-            %self.Ephys = ws.system.Ephys(self);
+            %self.Acquisition_ = ws.RefillerAcquisition(self);
+            self.Stimulation_ = ws.RefillerStimulation(self);
+            %self.Display = ws.Display(self);
+            self.Triggering_ = ws.RefillerTriggering(self);
+            self.UserCodeManager_ = ws.UserCodeManager(self);
+            %self.Logging = ws.Logging(self);
+            %self.Ephys = ws.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -494,7 +494,7 @@ classdef Refiller < ws.RootModel
 %         function set.NSweepsPerRun(self, newValue)
 %             % Sometimes want to trigger the listeners without actually
 %             % setting, and without throwing an error
-%             if ws.utility.isASettableValue(newValue) ,
+%             if ws.isASettableValue(newValue) ,
 %                 % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
 %                 %value=self.validatePropArg('NSweepsPerRun',value);
 %                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
@@ -519,7 +519,7 @@ classdef Refiller < ws.RootModel
         
         function set.SweepDurationIfFinite(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            if ws.utility.isASettableValue(value) , 
+            if ws.isASettableValue(value) , 
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
                     self.willSetSweepDurationIfFinite();
@@ -545,7 +545,7 @@ classdef Refiller < ws.RootModel
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
-            if ws.utility.isASettableValue(newValue),             
+            if ws.isASettableValue(newValue),             
                 % Check value and set if valid
                 if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
                     % If get here, newValue is a valid value for this prop
@@ -774,12 +774,12 @@ classdef Refiller < ws.RootModel
 %             result = self.FastProtocols_;
 %         end
         
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys ;
-            if ~isempty(ephys) ,
-                ephys.didSetAcquisitionSampleRate(newValue) ;
-            end
-        end
+%         function didSetAcquisitionSampleRate(self,newValue)
+%             ephys = self.Ephys ;
+%             if ~isempty(ephys) ,
+%                 ephys.didSetAcquisitionSampleRate(newValue) ;
+%             end
+%         end
         
 %         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
 %             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
@@ -824,7 +824,7 @@ classdef Refiller < ws.RootModel
             
             % Make our own settings mimic those of wavesurferModelSettings
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
-            wsModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             %keyboard
             self.mimicWavesurferModel_(wsModel) ;
             
@@ -1139,12 +1139,12 @@ classdef Refiller < ws.RootModel
     end % protected methods block
     
     methods (Access = protected)        
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function        
@@ -1210,7 +1210,7 @@ classdef Refiller < ws.RootModel
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Coding.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             

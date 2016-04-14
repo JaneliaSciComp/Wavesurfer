@@ -110,12 +110,12 @@ classdef (Abstract=true) EventBroadcaster < handle
         function disableBroadcasts(self)
             %fprintf('EventBroadcaster::disableBroadcasts()\n');
 %             className = class(self);
-%             if isequal(className,'ws.system.UserCodeManager') ,
+%             if isequal(className,'ws.UserCodeManager') ,
 %                 fprintf('UserCodeManager::disableBroadcasts()\n');
 %                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
             self.BroadcastEnablement_.disable();
-%             if isequal(class(self),'ws.system.UserCodeManager') ,
+%             if isequal(class(self),'ws.UserCodeManager') ,
 %                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
         end
@@ -123,13 +123,13 @@ classdef (Abstract=true) EventBroadcaster < handle
         function enableBroadcastsMaybe(self)
             %fprintf('EventBroadcaster::enableBroadcasts()\n');
 %             className = class(self);
-%             if isequal(className,'ws.system.UserCodeManager') ,
+%             if isequal(className,'ws.UserCodeManager') ,
 %                 fprintf('UserCodeManager::enableBroadcastsMaybe()\n');
 %                 %dbstack
 %                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
             self.BroadcastEnablement_.enableMaybe();
-%             if isequal(class(self),'ws.system.UserCodeManager') ,
+%             if isequal(class(self),'ws.UserCodeManager') ,
 %                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
 %             end
         end
