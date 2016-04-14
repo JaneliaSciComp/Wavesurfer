@@ -56,8 +56,12 @@ classdef UserCodeManager < ws.Subsystem
                 % it's a valid class name
                 trimmedValue = strtrim(value) ;
                 self.ClassName_ = trimmedValue ;
-                self.tryToInstantiateObject_() ;
+                err = self.tryToInstantiateObject_() ;
                 self.broadcast('Update');
+                if ~isempty(err) ,
+                  error('wavesurfer:errorWhileInstantiatingUserObject', ...
+                        'Unable to instantiate user object: %s.',err.message);
+                end
             else
                 self.broadcast('Update');  % replace the bad value with the old value in the view
                 error('most:Model:invalidPropVal', ...
@@ -66,12 +70,12 @@ classdef UserCodeManager < ws.Subsystem
         end  % function
         
         function reinstantiateUserObject(self)
-            self.tryToInstantiateObject_() ;
+            err = self.tryToInstantiateObject_() ;
             self.broadcast('Update');
-            %if ~isempty(err) ,
-            %    error('wavesurfer:errorWhileReinstantiatingUserObject', ...
-            %          'Unable to reinstantiate user object: %s.',err.message);
-            %end
+            if ~isempty(err) ,
+                error('wavesurfer:errorWhileInstantiatingUserObject', ...
+                      'Unable to instantiate user object: %s.',err.message);
+            end
         end  % method
         
 %         function set.AbortCallsComplete(self, value)
