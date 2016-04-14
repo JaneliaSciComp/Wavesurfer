@@ -99,36 +99,4 @@ classdef FastProtocolsController < ws.Controller
        propBindings = struct(); 
     end
     
-%     methods
-%         function controlActuated(self,controlName,source,event)            
-%             %figureObject=self.Figure;
-% 
-%             try
-%                 type=get(source,'Type');
-%                 if isequal(type,'uitable') ,
-%                     %event
-%                     if isfield(event,'EditData') ,
-%                         methodName=[controlName 'CellEdited'];
-%                     else
-%                         methodName=[controlName 'CellSelected'];
-%                     end
-%                     if ismethod(self,methodName) ,
-%                         self.(methodName)(source,event);
-%                     end                    
-%                 elseif isequal(type,'uicontrol') ,
-%                     methodName=[controlName 'Actuated'];
-%                     if ismethod(self,methodName) ,
-%                         self.(methodName)(source,event);
-%                     end
-%                 end
-%             catch me
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-%                     errordlg(me.message,'Error','modal');
-%                 end
-%             end
-%         end  % function       
-%     end    
-end
+end  % classdef

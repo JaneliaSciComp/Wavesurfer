@@ -5,14 +5,14 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             daqSystem = ws.dabs.ni.daqmx.System();
-            ws.utility.deleteIfValidHandle(daqSystem.tasks);
+            ws.deleteIfValidHandle(daqSystem.tasks);
         end
     end
 

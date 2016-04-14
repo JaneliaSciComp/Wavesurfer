@@ -37,10 +37,12 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             % Note that when this is called, the controller is in a
             % not-completely-initialized state, so it's not safe to do much
             % of anything with it except copy a pointer to it.
+            backgroundColor = ws.getDefaultUIControlBackgroundColor() ;
             self.FigureGH_=figure('Units','Pixels', ...
-                                  'Color',get(0,'defaultUIControlBackgroundColor'), ...
+                                  'Color',backgroundColor, ...
                                   'Visible','off', ...
                                   'HandleVisibility','off', ...
+                                  'DockControls','off', ...
                                   'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
             if exist('model','var')
                 self.setModel_(model);
@@ -89,7 +91,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
         function set.AreUpdatesEnabled(self,newValue)
-            import ws.utility.*
+            import ws.*
 
             %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
             %fprintf('  class of self: %s\n',class(self));
@@ -204,7 +206,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
 %         function changeReadiness(self,delta)
-%             import ws.utility.*
+%             import ws.*
 % 
 %             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
 %                 return
@@ -239,7 +241,15 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             self.updateReadinessImplementation_();
         end
 
-    end  % methods
+        function positionUpperLeftRelativeToOtherUpperRight(self, other, offset)
+            % Positions the upper left corner of the figure relative to the upper
+            % *right* corner of the other figure.  offset is 2x1, with the 1st
+            % element the number of pixels from the right side of the other figure,
+            % the 2nd the number of pixels from the top of the other figure.
+
+            ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH, offset) ;
+        end
+    end  % public methods
 
     methods (Access=protected)
         createFixedControls_(self)
@@ -286,7 +296,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             % subclasses if needed.
             figureSize=self.layoutFixedControls_();
             figureSizeModified=self.layoutNonfixedControls_(figureSize);
-            ws.utility.resizeLeavingUpperLeftFixedBang(self.FigureGH_,figureSizeModified);            
+            ws.resizeLeavingUpperLeftFixedBang(self.FigureGH_,figureSizeModified);            
         end
         
         function updateImplementation_(self)
@@ -326,7 +336,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     methods (Access=protected)
         function setIsVisible_(self, newValue)
             if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
-                set(self.FigureGH_, 'Visible', ws.utility.onIff(newValue));
+                set(self.FigureGH_, 'Visible', ws.onIff(newValue));
             end
         end  % function
     end  % methods

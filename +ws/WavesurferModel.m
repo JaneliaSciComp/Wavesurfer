@@ -147,6 +147,9 @@ classdef WavesurferModel < ws.RootModel
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
+%             if ~exist('mode','var') || isempty(mode),
+%                 mode = 'release' ;
+%             end
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
@@ -175,16 +178,36 @@ classdef WavesurferModel < ws.RootModel
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
                 % files they need.
-                [pathToRepoRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+                %matlabBinPath = fullfile(matlabroot(),'bin','win64') ;
+                [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+%                 if isequal(mode,'superdebug') ,
                 looperLaunchString = ...
                     sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
-                            pathToRepoRoot , ...
+                            pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
+%                 else            
+%                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
+%                     looperLaunchString = ...
+%                         sprintf('start %s "%s" "looper" "%s" "%s"' , ...
+%                                 pathOfLaunchSatelliteEngineExe,  ...
+%                                 mode, ...
+%                                 pathToWavesurferRoot , ...
+%                                 pathToMatlabZmqLib ) ;
+%                 end
                 system(looperLaunchString) ;
+%                 if isequal(mode,'superdebug') ,
                 refillerLaunchString = ...
                     sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
-                            pathToRepoRoot , ...
+                            pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
+%                 else
+%                     refillerLaunchString = ...
+%                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...
+%                                 pathOfLaunchSatelliteEngineExe,  ...
+%                                 mode, ...
+%                                 pathToWavesurferRoot , ...
+%                                 pathToMatlabZmqLib ) ;                        
+%                 end
                 system(refillerLaunchString) ;
                 
                 %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
@@ -235,13 +258,13 @@ classdef WavesurferModel < ws.RootModel
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems.
-            self.Acquisition_ = ws.system.Acquisition(self);
-            self.Stimulation_ = ws.system.Stimulation(self);
-            self.Display_ = ws.system.Display(self);
-            self.Triggering_ = ws.system.Triggering(self);
-            self.UserCodeManager_ = ws.system.UserCodeManager(self);
-            self.Logging_ = ws.system.Logging(self);
-            self.Ephys_ = ws.system.Ephys(self);
+            self.Acquisition_ = ws.Acquisition(self);
+            self.Stimulation_ = ws.Stimulation(self);
+            self.Display_ = ws.Display(self);
+            self.Triggering_ = ws.Triggering(self);
+            self.UserCodeManager_ = ws.UserCodeManager(self);
+            self.Logging_ = ws.Logging(self);
+            self.Ephys_ = ws.Ephys(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -300,7 +323,7 @@ classdef WavesurferModel < ws.RootModel
             end
             
             %if ~isempty(self) ,
-            %import ws.utility.*
+            %import ws.*
 %             if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
 %                 delete(self.PollingTimer_);
 %                 self.PollingTimer_ = [] ;
@@ -564,7 +587,7 @@ classdef WavesurferModel < ws.RootModel
         function set.NSweepsPerRun(self, newValue)
             % Sometimes want to trigger the listeners without actually
             % setting, and without throwing an error
-            if ws.utility.isASettableValue(newValue) ,
+            if ws.isASettableValue(newValue) ,
                 % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
                 %value=self.validatePropArg('NSweepsPerRun',value);
                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
@@ -589,7 +612,7 @@ classdef WavesurferModel < ws.RootModel
         
         function set.SweepDurationIfFinite(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            if ws.utility.isASettableValue(value) , 
+            if ws.isASettableValue(value) , 
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
                     self.willSetSweepDurationIfFinite();
@@ -617,7 +640,7 @@ classdef WavesurferModel < ws.RootModel
         
         function set.SweepDuration(self, newValue)
             % Fail quietly if a nonvalue
-            if ws.utility.isASettableValue(newValue),             
+            if ws.isASettableValue(newValue),             
                 % Check value and set if valid
                 if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
                     % If get here, newValue is a valid value for this prop
@@ -1762,12 +1785,12 @@ classdef WavesurferModel < ws.RootModel
     end % protected methods block
         
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name) ;
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             %if isequal(name,'IsDIChannelTerminalOvercommitted_')
             %    dbstack
@@ -1799,7 +1822,8 @@ classdef WavesurferModel < ws.RootModel
             
             aiChannelName = self.Acquisition.addAnalogChannel() ;  %#ok<NASGU>
             aoChannelName = self.Stimulation.addAnalogChannel() ;
-            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;            
+            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+            self.Display.IsEnabled = true ;
         end
     end  % methods block
     
@@ -1830,7 +1854,7 @@ classdef WavesurferModel < ws.RootModel
     end  % methods block
         
     methods (Access = protected)        
-%         % Allows ws.mixin.DependentProperties to initiate registered dependencies on
+%         % Allows ws.DependentProperties to initiate registered dependencies on
 %         % properties that are not otherwise publicly settable.
 %         function zprvPrivateSet(self, propertyName)
 %             self.(propertyName) = NaN;
@@ -1883,7 +1907,7 @@ classdef WavesurferModel < ws.RootModel
             commandFileName='si_command.txt';
             absoluteCommandFileName=fullfile(dirName,commandFileName);
             if exist(absoluteCommandFileName,'file') ,
-                ws.utility.deleteFileWithoutWarning(absoluteCommandFileName);
+                ws.deleteFileWithoutWarning(absoluteCommandFileName);
                 if exist(absoluteCommandFileName,'file') , 
                     isCommandFileGone=false;
                     errorMessage1='Unable to delete pre-existing ScanImage command file';
@@ -1900,7 +1924,7 @@ classdef WavesurferModel < ws.RootModel
             responseFileName='si_response.txt';
             absoluteResponseFileName=fullfile(dirName,responseFileName);
             if exist(absoluteResponseFileName,'file') ,
-                ws.utility.deleteFileWithoutWarning(absoluteResponseFileName);
+                ws.deleteFileWithoutWarning(absoluteResponseFileName);
                 if exist(absoluteResponseFileName,'file') , 
                     isResponseFileGone=false;
                     if isempty(errorMessage1) ,
@@ -1986,7 +2010,7 @@ classdef WavesurferModel < ws.RootModel
                         response=fscanf(fid,'%s',1);
                         fclose(fid);
                         if isequal(response,'OK') ,
-                            ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
+                            ws.deleteFileWithoutWarning(responseAbsoluteFileName);  % We read it, so delete it now
                             isScanImageReady=true;
                             errorMessage='';
                             return
@@ -2001,7 +2025,7 @@ classdef WavesurferModel < ws.RootModel
             
             % If get here, must have failed
             if exist(responseAbsoluteFileName,'file') ,
-                ws.utility.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
+                ws.deleteFileWithoutWarning(responseAbsoluteFileName);  % If it exists, it's now a response to an old command
             end
             isScanImageReady=false;
             errorMessage='ScanImage did not respond within the alloted time';
@@ -2168,7 +2192,7 @@ classdef WavesurferModel < ws.RootModel
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             self.changeReadiness(-1);
-            if ws.utility.isFileNameAbsolute(fileName) ,
+            if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -2179,7 +2203,7 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
             %self.decodeProperties(wavesurferModelSettings);
             %keyboard
-            newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
@@ -2227,7 +2251,7 @@ classdef WavesurferModel < ws.RootModel
             
             self.changeReadiness(-1);
 
-            if ws.utility.isFileNameAbsolute(fileName) ,
+            if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -2239,7 +2263,7 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             
             %self.decodeProperties(wavesurferModelSettings);
-            newModel = ws.mixin.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
             self.mimicUserSettings_(newModel) ;
             
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
@@ -2754,12 +2778,12 @@ classdef WavesurferModel < ws.RootModel
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
-            self.FastProtocols_ = ws.mixin.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+            self.FastProtocols_ = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
         end  % function
         
         function setDeviceName_(self, newValue)
-            if ws.utility.isASettableValue(newValue) ,
-                if ws.utility.isString(newValue) && ~isempty(newValue) ,
+            if ws.isASettableValue(newValue) ,
+                if ws.isString(newValue) && ~isempty(newValue) ,
                     allDeviceNames = self.AllDeviceNames ;
                     isAMatch = strcmpi(newValue,allDeviceNames) ;
                     if any(isAMatch) ,

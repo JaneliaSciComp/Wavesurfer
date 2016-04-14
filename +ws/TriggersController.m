@@ -138,7 +138,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %                     case 1
 %                         destination.PFIID = str2num(value); %#ok<ST2NM> Want '' to return empty not NaN (str2double)
 %                     case 2
-%                         destination.Edge = ws.ni.TriggerEdge.(value);
+%                         destination.Edge = ws.TriggerEdge.(value);
 %                 end
 %             catch me  %#ok<NASGU>
 %                 %ws.ui.controller.ErrorWindow.showError(me, 'Invalid Property Value', true);
@@ -163,7 +163,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
-                    errordlg(me.message,'Error','modal');
+                    ws.errordlg(me.message,'Error','modal');
 %                 end
             end
         end  % function       

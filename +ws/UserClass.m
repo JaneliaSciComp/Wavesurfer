@@ -1,4 +1,4 @@
-classdef UserClass < ws.mixin.Coding
+classdef UserClass < ws.Coding
 
     methods (Abstract=true)
         % these are called in the frontend process

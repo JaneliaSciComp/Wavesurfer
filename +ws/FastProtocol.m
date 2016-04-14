@@ -27,8 +27,8 @@ classdef FastProtocol < ws.Model
         end
         
         function set.ProtocolFileName(self, value)
-            if ws.utility.isASettableValue(value) ,
-                if ws.utility.isString(value) ,
+            if ws.isASettableValue(value) ,
+                if ws.isString(value) ,
                     self.ProtocolFileName_ = value;
                 else
                     self.broadcast('Update');
@@ -45,7 +45,7 @@ classdef FastProtocol < ws.Model
         end
         
         function set.AutoStartType(self, value)
-            if ws.utility.isASettableValue(value) ,
+            if ws.isASettableValue(value) ,
                 if ws.isAStartType(value) ,
                     self.AutoStartType_ = value;
                 else
@@ -108,7 +108,7 @@ classdef FastProtocol < ws.Model
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function

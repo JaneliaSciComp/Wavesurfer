@@ -23,7 +23,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function        
         
         function ClearLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-            choice = questdlg('Are you sure you want to clear the library?', ...
+            choice = ws.questdlg('Are you sure you want to clear the library?', ...
                               'Clear Library?', 'Clear', 'Don''t Clear', 'Don''t Clear');
             
             if isequal(choice,'Clear') ,
@@ -100,7 +100,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
                 selectedItem.deleteMarkedMaps();
             end
         end  % function
@@ -134,7 +134,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteChannelsFromMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
                 selectedItem.deleteMarkedBindings();
             end
         end  % function
@@ -147,13 +147,13 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusSequence') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
                     str1 = 'This sequence is referenced by one or more items in the library.  Deleting it will alter those items.';
                     str2 = 'Delete Sequence?';
-                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
                             model.deleteItem(selectedItem);
@@ -167,13 +167,13 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.StimulusMap') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
                     str1 = 'This map is referenced by one or more items in the library.  Deleting it will alter those items.';
                     str2 = 'Delete Map?';
-                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
                             model.deleteItem(selectedItem);
@@ -187,13 +187,13 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         function DeleteStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.stimulus.Stimulus') ,
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.Stimulus') ,
                 isInUse = model.isInUse(selectedItem);
 
                 if isInUse ,
                     str1 = 'This stimulus is referenced by one or more items in the library.  Deleting it will alter those items.';
                     str2 = 'Delete Stimulus?';
-                    choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+                    choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
                     switch choice 
                         case 'Delete'
                             model.deleteItem(selectedItem);
@@ -213,7 +213,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
 %                 if isInUse ,
 %                     str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
 %                     str2 = 'Delete Item?';
-%                     choice = questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
+%                     choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
 %                     switch choice 
 %                         case 'Delete'
 %                             model.deleteItem(selectedItem);
@@ -325,7 +325,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 return
             end
             iMenuItem=get(source,'Value');
-            allowedTypeStrings=ws.stimulus.Stimulus.AllowedTypeStrings;
+            allowedTypeStrings=ws.Stimulus.AllowedTypeStrings;
             if 1<=iMenuItem && iMenuItem<=length(allowedTypeStrings) ,
                 newTypeString=allowedTypeStrings{iMenuItem};
                 selectedItem.TypeString=newTypeString;
@@ -426,7 +426,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 self.prvStimulusMapController.Model = mlObj;
                 nextDetailControl = self.prvStimulusMapDetailControl;
             elseif isa(evt.NewValue, 'Wavesurfer.Controls.StimulusViewModel')
-                if isa(mlObj, 'ws.stimulus.SingleStimulus')
+                if isa(mlObj, 'ws.SingleStimulus')
                     self.prvSingleStimulusController.Model = mlObj;
                     nextDetailControl = self.prvSingleStimulusDetailControl;
                 else

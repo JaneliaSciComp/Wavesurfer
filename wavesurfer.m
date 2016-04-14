@@ -28,9 +28,13 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     else
         wasProtocolOrMDFFileNameGivenAtCommandLine=true;
     end
+%     if ~exist('mode','var') || isempty(mode),
+%         mode = 'release' ;
+%     end
 
     % Create the application (model) object.
-    model = ws.WavesurferModel(true);  % arg is isITheOneTrueWavesurferModel
+    isITheOneTrueWavesurferModel = true ;
+    model = ws.WavesurferModel(isITheOneTrueWavesurferModel);
 
     % Start the controller, if desired
     if isCommandLineOnly ,

@@ -13,7 +13,6 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             set(self.FigureGH, ...
                 'Tag','userFunctionsFigureWrapper', ...
                 'Units','Pixels', ...
-                'Color',get(0,'defaultUIControlBackgroundColor'), ...
                 'Resize','off', ...
                 'Name','User Code', ...
                 'MenuBar','none', ...
@@ -34,7 +33,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
            % Layout the figure and set the size
            self.layout_();
            %set(self.FigureGH,'Position',[0 0 figureSize]);
-           ws.utility.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
            % Initialize the guidata
            self.updateGuidata_();
@@ -56,25 +55,25 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
             self.ClassNameText = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','text', ...
                           'String','Class Name:');
             self.ClassNameEdit = ...
-                uicontrol('Parent',self.FigureGH, ...
-                          'Style','edit');
+                ws.uiedit('Parent',self.FigureGH, ...
+                          'HorizontalAlignment','left');
                       
             self.ReinstantiateButton = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
                           'String','Reinstantiate');
                       
 %             self.ChooseButton = ...
-%                 uicontrol('Parent',self.FigureGH, ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'String','Choose...');
                       
 %             self.AbortCallsCompleteCheckbox = ...
-%                 uicontrol('Parent',self.FigureGH, ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','checkbox', ...
 %                           'String','Abort Calls Complete');
         end  % function
@@ -108,20 +107,20 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                         set(propertyThing,'CellSelectionCallback',@(source,event)(self.controlActuated(propertyName,source,event)));                        
                     end
                     
-                    % Set Font
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'FontName','Tahoma');
-                        set(propertyThing,'FontSize',8);
-                    end
+%                     % Set Font
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'FontName','Tahoma');
+%                         set(propertyThing,'FontSize',8);
+%                     end
+%                     
+%                     % Set Units
+%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
+%                         set(propertyThing,'Units','pixels');
+%                     end                    
                     
-                    % Set Units
-                    if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-                        set(propertyThing,'Units','pixels');
-                    end                    
-                    
-                    if ( isequal(get(propertyThing,'Type'),'uicontrol') && isequal(get(propertyThing,'Style'),'edit') ) ,                    
-                        set(propertyThing,'HorizontalAlignment','left');
-                    end
+%                     if ( isequal(get(propertyThing,'Type'),'uicontrol') && isequal(get(propertyThing,'Style'),'edit') ) ,                    
+%                         set(propertyThing,'HorizontalAlignment','left');
+%                     end
                 end
             end
         end  % function        
@@ -132,8 +131,6 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             % We return the figure size so that the figure can be properly
             % resized after the initial layout, and we can keep all the
             % layout info in one place.
-            
-            import ws.utility.positionEditLabelAndUnitsBang
             
             leftPadWidth=10;
             rightPadWidth=10;
@@ -173,8 +170,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             editXOffset=leftPadWidth+labelWidth;
             
             editYOffset=figureHeight-topPadHeight-editHeight;
-            positionEditLabelAndUnitsBang(self.ClassNameText,self.ClassNameEdit,[], ....
-                                          editXOffset,editYOffset,editWidth)
+            ws.positionEditLabelAndUnitsBang(self.ClassNameText,self.ClassNameEdit,[], ....
+                                             editXOffset,editYOffset,editWidth)
 
 %             % "Choose..." button                          
 %             chooseButtonXOffset = editXOffset + editWidth + widthFromEditToChooseButton ;
@@ -229,7 +226,13 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 return
             end
 
-            set(self.ClassNameEdit,'String',model.ClassName);            
+            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
+            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
+            isClassNameValid = model.IsClassNameValid ;
+            backgroundColor = ws.fif(isClassNameValid,normalBackgroundColor,warningBackgroundColor) ;
+            set(self.ClassNameEdit, ...
+                'String', model.ClassName, ...
+                'BackgroundColor', backgroundColor );
             %set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
         end
     end
@@ -245,9 +248,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 return
             end
             isIdle = isequal(wavesurferModel.State,'idle') ;
-            set(self.ClassNameEdit, 'Enable', ws.utility.onIff(isIdle) );
-            %set(self.ChooseButton, 'Enable', ws.utility.onIff(isIdle) );
-            set(self.ReinstantiateButton, 'Enable', ws.utility.onIff(isIdle&&~isempty(model.ClassName)) );
+            set(self.ClassNameEdit, 'Enable', ws.onIff(isIdle) );
+            %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
+            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
         end
     end
     

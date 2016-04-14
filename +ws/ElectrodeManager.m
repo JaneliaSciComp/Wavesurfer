@@ -62,9 +62,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                                            'ErrorFcn',@(object,event,varargin)(self.heartbeatError(object,event)));            
             
             % Process args
-            validPropNames=ws.utility.findPropertiesSuchThat(self,'SetAccess','public');
+            validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
             mandatoryPropNames=cell(1,0);
-            pvArgs = ws.utility.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
             propNamesRaw = pvArgs(1:2:end);
             propValsRaw = pvArgs(2:2:end);
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
@@ -139,7 +139,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end
 %         
 %         function set.Parent(self,newValue)
-%             if isempty(newValue) || isa(newValue,'ws.system.Ephys') ,
+%             if isempty(newValue) || isa(newValue,'ws.Ephys') ,
 %                 self.Parent_=newValue;
 %             end
 %         end
@@ -524,7 +524,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             commandScales=cellfun(@(electrode)(electrode.CommandScaling), ...
 %                                   self.Electrodes_ , ...
 %                                   'UniformOutput',false);
-%             queryChannelUnits=repmat(ws.utility.SIUnit(),[1 nQueryChannels]);
+%             queryChannelUnits=repmat(ws.SIUnit(),[1 nQueryChannels]);
 %             queryChannelScales=ones([1 nQueryChannels]);
 %             for i=1:nQueryChannels ,
 %                 if isQueryChannelScaleManaged(i), 
@@ -977,7 +977,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 % %             self.setPropertyTags('Parent_', 'ExcludeFromFileTypes', {'*'});
 %             
 %             % First: Exclude everything from all file types.
-%             propertyNames=ws.utility.findPropertiesSuchThat(self);
+%             propertyNames=ws.findPropertiesSuchThat(self);
 %             for i=1:length(propertyNames)
 %                 propertyName=propertyNames{i};
 %                 self.setPropertyTags(propertyName, 'ExcludeFromFileTypes', {'*'});
@@ -996,12 +996,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             
 %         end
 %         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.mixin.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end
@@ -1070,7 +1070,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_);
         end  % function
         
-%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.mixin.Copyable
+%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
 %             className=class(self);
 %             other=feval(className,parent);
 %             other.mimic(self);
@@ -1084,7 +1084,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of setting.
             
-            import ws.utility.*
+            import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             
@@ -1111,7 +1111,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of getting.
             
-            import ws.utility.*
+            import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             
@@ -1150,7 +1150,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         function s = propertyAttributes()
 %             s = struct();
 %             
-%             s.Parent = struct('Classes', 'ws.system.Ephys', 'AllowEmpty', true);
+%             s.Parent = struct('Classes', 'ws.Ephys', 'AllowEmpty', true);
 %             s.Electrodes = struct('Classes', 'cell', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
 %             s.IsElectrodeMarkedForTestPulse = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
 %             s.IsElectrodeMarkedForRemoval = struct('Classes', 'logical', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);

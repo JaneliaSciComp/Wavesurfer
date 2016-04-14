@@ -109,7 +109,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function delete(self)
             % Delete all child controllers.
 %             for i=1:length(self.ChildControllers) ,
-%                 ws.utility.deleteIfValidHandle(self.ChildControllers{i});
+%                 ws.deleteIfValidHandle(self.ChildControllers{i});
 %             end
             self.ChildControllers={};
             self.ScopeControllers={};
@@ -224,7 +224,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             if ~isempty(yokeToScanimageMenuItem) ,
 %                 model=self.Model;
 %                 if ~isempty(model) ,
-%                     set(yokeToScanimageMenuItem,'Checked',ws.utility.onIff(model.IsYokedToScanImage));
+%                     set(yokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
 %                 end
 %             end            
 %         end
@@ -369,9 +369,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(-1);
             try
                 if ischar(fileName) && ~isempty(fileName) && isrow(fileName) ,
-                    doesFileExist=ws.utility.fileStatus(fileName);
+                    doesFileExist=ws.fileStatus(fileName);
                     if doesFileExist ,
-                        if ws.utility.isFileNameAbsolute(fileName) ,
+                        if ws.isFileNameAbsolute(fileName) ,
                             absoluteFileName=fileName;
                         else
                             absoluteFileName=fullfile(pwd(),fileName);
@@ -391,7 +391,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 if isInDebugMode ,
 %                     rethrow(me);
 %                 else
-                    errordlg(me.message,'Error','modal');
+                    ws.errordlg(me.message,'Error','modal');
 %                 end
             end                
         end  % function
@@ -488,7 +488,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             %self.Figure.changeReadiness(-1);
-            if ws.utility.isFileNameAbsolute(fileName) ,
+            if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
@@ -805,9 +805,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                              fileName);
                         %self.Figure.changeReadiness(+1);
                         %self.Window.Cursor=System.Windows.Input.Cursors.Arrow;
-                        errordlg(errorMessage, ...
-                                 'Missing Protocol File', ...
-                                 'modal');
+                        ws.errordlg(errorMessage, 'Missing Protocol File', 'modal');
                         return     
                     end
                 end
@@ -848,7 +846,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 % Empty is never an option.  It is only ever empty when the library is changed
 %                 % and a cycle or map has not been chosen.  the combobox should never be able to
 %                 % be actively changed to empty.
-%                 % self.Model.Stimulation.SelectedOutputable = ws.stimulus.StimulusSequence.empty();
+%                 % self.Model.Stimulation.SelectedOutputable = ws.StimulusSequence.empty();
 %                 %
 %                 % Ummm, now it's an option...  (ALT, 2014-07-17)
 %                 %self.LibraryViewModel.SelectedOutputableViewmodel = ws.ui.viewmodel.StimulusLibraryViewModel.empty();                       
@@ -1176,7 +1174,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         function updateEnablementAndVisibilityOfControls(self,varargin)
 %             % Updates the menu and button enablement to be appropriate for
 %             % the model state.
-%             import ws.utility.*
+%             import ws.*
 % 
 %             % If no model, can't really do anything
 %             if isempty(self.Model) ,
@@ -1698,19 +1696,19 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             % there is really nothing to do but show an empty editor if this is first time
 %             % to open, or leave it showing whatever is already open if it is open.
 %             if isempty(self.LibraryViewModel.Library) && ~isempty(self.LibraryViewModel.SelectedOutputableViewmodel)
-%                 if isa(self.LibraryViewModel.SelectedOutputableViewmodel, 'ws.stimulus.StimulusSequence')
+%                 if isa(self.LibraryViewModel.SelectedOutputableViewmodel, 'ws.StimulusSequence')
 %                     itIsA = 'cycle';
 %                 else
 %                     itIsA = 'map';
 %                 end
 %                 
-%                 result = questdlg(sprintf('The current stimulus %s is not part of a library.  Would you like to put it into a new library?', itIsA), ...
+%                 result = ws.questdlg(sprintf('The current stimulus %s is not part of a library.  Would you like to put it into a new library?', itIsA), ...
 %                     'Create Library', 'Yes', 'No', 'Yes');
 %                 
 %                 if strcmp(result, 'Yes')
 %                     mlObj = self.LibraryViewModel.findml(self.LibraryViewModel.SelectedOutputableViewmodel);
 %                     if ~isempty(mlObj)
-%                         mlObj.Library = ws.stimulus.StimulusLibrary();
+%                         mlObj.Library = ws.StimulusLibrary();
 %                         mlObj.Library.Store = 'untitled';
 %                     end
 %                 end
@@ -1903,17 +1901,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
     %% COMMANDS
     methods
-%         function controlActuated(self,controlName,source,event)            
-%             try
-%                 methodName=[controlName 'Actuated'];
-%                 if ismethod(self,methodName) ,
-%                     self.(methodName)(source,event);
-%                 end
-%             catch me
-%                     errordlg(me.message,'Error','modal');
-%             end            
-%         end  % function       
-
         % File menu items
         function LoadMachineDataFileMenuItemActuated(self,source,event) %#ok<INUSD>
             self.pickMDFFileAndInitializeUsingIt() ;

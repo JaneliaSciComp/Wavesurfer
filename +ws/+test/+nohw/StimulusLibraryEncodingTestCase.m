@@ -55,9 +55,9 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         end  % function
         
         function testCopyingOfStimuli(self)
-            import ws.utility.cellisequal
-            import ws.utility.cellisequaln
-            import ws.utility.cellne
+            import ws.cellisequal
+            import ws.cellisequaln
+            import ws.cellne
             
             % create some stimuli, etc.
             %stimuli=self.makeExampleStimulusParts();
@@ -86,20 +86,20 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         end  % function
         
 %         function testSavingOfChannelBinding(self)
-%             stimulus1=ws.stimulus.ChirpStimulus('InitialFrequency',1.4545, ...
+%             stimulus1=ws.ChirpStimulus('InitialFrequency',1.4545, ...
 %                                                    'FinalFrequency',45.3);  
 %             stimulus1.Delay=0.11;
 %             stimulus1.Amplitude='6.28';
 %             stimulus1.Name='Melvin';
 %             
-%             stimulus2=ws.stimulus.SquarePulseStimulus();
+%             stimulus2=ws.SquarePulseStimulus();
 %             stimulus2.Delay=0.12;
 %             stimulus2.Amplitude='6.29';
 %             stimulus2.Name='Bill';
 %             
 %             stimuli={stimulus1 stimulus2};
 %             
-%             channelBinding=ws.stimulus.ChannelBinding('ChannelName', 'ao0', ...
+%             channelBinding=ws.ChannelBinding('ChannelName', 'ao0', ...
 %                                                          'Stimulus', stimulus1, ...
 %                                                          'Multiplier', 1);
 %             
@@ -147,8 +147,8 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             
             %isMapLiveAndConsistent=cellfun(@isLiveAndSelfConsistent,mapsCheck);
             %self.verifyTrue(all(isMapLiveAndConsistent));  % test soundness of the restored ones
-            self.verifyTrue(all(ws.utility.cellisequal(maps,mapsCheck)));  % test value equality
-            self.verifyTrue(all(ws.utility.cellne(maps,mapsCheck)));  % test (lack of) identity
+            self.verifyTrue(all(ws.cellisequal(maps,mapsCheck)));  % test value equality
+            self.verifyTrue(all(ws.cellne(maps,mapsCheck)));  % test (lack of) identity
         end  % function
         
         function testSavingOfStimulusSequences(self)
@@ -164,15 +164,15 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %cellfun(@(seq)(seq.revive(stimulusLibrary.Maps)),sequencesCheck);
             
             %self.verifyTrue(all(cellfun(@isLiveAndSelfConsistent,sequencesCheck)));  % test soundness of the restored one
-            self.verifyTrue(all(ws.utility.cellisequal(sequences,sequencesCheck)));  % test value equality
-            self.verifyTrue(all(ws.utility.cellne(sequences,sequencesCheck)));  % test (lack of) identity
+            self.verifyTrue(all(ws.cellisequal(sequences,sequencesCheck)));  % test value equality
+            self.verifyTrue(all(ws.cellne(sequences,sequencesCheck)));  % test (lack of) identity
         end  % function
         
         function testSavingOfStimulusLibrary(self)
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             
-            %stimulusLibrary=ws.stimulus.StimulusLibrary();
+            %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);            
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);            
@@ -197,13 +197,13 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             
-            %stimulusLibrary=ws.stimulus.StimulusLibrary();
+            %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);
             stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
             
-            stimulusLibraryCheck=ws.stimulus.StimulusLibrary([]);
+            stimulusLibraryCheck=ws.StimulusLibrary([]);
             stimulusLibraryCheck.mimic(stimulusLibrary);
             
             self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
@@ -220,7 +220,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibrary=self.createPopulatedStimulusLibrary();
 
             % create a library
-            %stimulusLibrary=ws.stimulus.StimulusLibrary();
+            %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);            
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);            

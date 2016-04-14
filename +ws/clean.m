@@ -31,7 +31,7 @@ function clean()
 
     % delete any ongoing daq tasks
     daqSystem = ws.dabs.ni.daqmx.System();
-    ws.utility.deleteIfValidHandle(daqSystem.tasks);
+    ws.deleteIfValidHandle(daqSystem.tasks);
 end  % function
 
 % function localMakeBackup(filename)

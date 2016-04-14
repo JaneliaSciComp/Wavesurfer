@@ -69,14 +69,13 @@ classdef ScopeFigure < ws.MCOSFigure
             set(self.FigureGH, ...
                 'Tag',model.Tag,...
                 'Name', model.Title, ...
-                'Color',get(0,'defaultUIControlBackgroundColor'), ...
                 'NumberTitle', 'off',...
                 'Units', 'pixels',...
                 'HandleVisibility', 'off',...
                 'Menubar','none', ...
                 'Toolbar','none', ...
                 'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
-                'ResizeFcn',@(sourse,event)(self.layout_()));
+                'ResizeFcn',@(sourse,event)(self.layout_()) );
 %                'Renderer','OpenGL', ...            
 %                'Color', model.BackgroundColor,...
             
@@ -117,15 +116,19 @@ classdef ScopeFigure < ws.MCOSFigure
             self.updateGuidata_();
             
             % sync up self to model
-            self.update();            
+            self.update();
+            
+            % position next to main window
+            mainFigure = controller.Parent.Figure ;
+            self.positionUpperLeftRelativeToOtherUpperRight(mainFigure, [40 0]) ;
         end  % constructor
         
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
             %fprintf('ScopeFigure::delete()\n');
-            ws.utility.deleteIfValidHGHandle(self.LineGHs_);
-            ws.utility.deleteIfValidHGHandle(self.AxesGH_);            
+            ws.deleteIfValidHGHandle(self.LineGHs_);
+            ws.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function
         
         function set(self,propName,value)
@@ -365,7 +368,7 @@ classdef ScopeFigure < ws.MCOSFigure
         end  % function
 
 %         function syncTitleAndTagsToModel(self)
-%             import ws.utility.onIff
+%             import ws.onIff
 %             
 %             model=self.Model;
 %             set(self.FigureGH, ...
@@ -412,7 +415,7 @@ classdef ScopeFigure < ws.MCOSFigure
 %             self.updateLineXDataAndYData_();
 %             
 %             % Update the enablement of controls
-%             %import ws.utility.onIff
+%             %import ws.onIff
 %             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(isWavesurferIdle));
 %             %set(self.YLimitsMenuItemGH_,'Enable',onIff(isWavesurferIdle));            
 %             %set(self.SetYLimTightToDataButtonGH_,'Enable',onIff(true));
@@ -425,19 +428,19 @@ classdef ScopeFigure < ws.MCOSFigure
 %             wavesurferDirName=fileparts(which('wavesurfer'));
 % 
 %             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 %             self.SetYLimTightToDataIcon_ = cdata ;
 %                                      
 %             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 %             self.SetYLimTightToDataLockedIcon_ = cdata ;
 % 
 %             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
+%             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
 %             self.YScrollUpIcon_ = cdata ;
 %             
 %             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
+%             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;                      
 %             self.YScrollDownIcon_ = cdata ;
 %         end
 
@@ -451,8 +454,8 @@ classdef ScopeFigure < ws.MCOSFigure
                      'Units','pixels', ...
                      'HandleVisibility','off', ...
                      'Box','on' );
-%                      'XGrid', ws.utility.onIff(model.IsGridOn), ...
-%                      'YGrid', ws.utility.onIff(model.IsGridOn) );
+%                      'XGrid', ws.onIff(model.IsGridOn), ...
+%                      'YGrid', ws.onIff(model.IsGridOn) );
             %         'Position', [0.11 0.11 0.87 0.83], ...
 %                      'XColor', model.ForegroundColor, ...
 %                      'YColor', model.ForegroundColor, ...
@@ -489,7 +492,7 @@ classdef ScopeFigure < ws.MCOSFigure
 %             wavesurferDirName=fileparts(which('wavesurfer'));
 %             
 %             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 % %            toolbarGH = findall(self.FigureGH, 'tag', 'FigureToolBar');
 % %             self.SetYLimTightToDataButtonGH_ = ...
 % %                 uipushtool(toolbarGH, ...
@@ -497,7 +500,7 @@ classdef ScopeFigure < ws.MCOSFigure
 % %                            'TooltipString', 'Set y-axis limits tight to data', ....
 % %                            'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataButtonGH',source,event));
 %             self.SetYLimTightToDataButtonGH_ = ...
-%                 uicontrol('Parent',self.FigureGH, ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'Units','pixels', ...
 %                           'FontSize',9, ...
@@ -507,14 +510,14 @@ classdef ScopeFigure < ws.MCOSFigure
 %                        
 %             % Add a second toolbar button           
 %             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-%             cdata = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+%             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 % %             self.SetYLimTightToDataLockedButtonGH_ = ...
 % %                 uitoggletool(toolbarGH, ...
 % %                              'CData', cdata, ...
 % %                              'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
 % %                              'ClickedCallback', @(source,event)self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event));
 %             self.SetYLimTightToDataLockedButtonGH_ = ...
-%                 uicontrol('Parent',self.FigureGH, ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','togglebutton', ...
 %                           'Units','pixels', ...
 %                           'FontSize',9, ...
@@ -572,36 +575,26 @@ classdef ScopeFigure < ws.MCOSFigure
                                       
             % Y axis control buttons
             self.YZoomInButtonGH_ = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'Units','pixels', ...
-                          'FontSize',9, ...
                           'String','+', ...
                           'Callback',@(source,event)(self.controlActuated('YZoomInButtonGH',source,event)));
             self.YZoomOutButtonGH_ = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'Units','pixels', ...
-                          'FontSize',9, ...
                           'String','-', ...
                           'Callback',@(source,event)(self.controlActuated('YZoomOutButtonGH',source,event)));
             self.YScrollUpButtonGH_ = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'Units','pixels', ...
-                          'FontSize',9, ...
                           'Callback',@(source,event)(self.controlActuated('YScrollUpButtonGH',source,event)));
             self.YScrollDownButtonGH_ = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'Units','pixels', ...
-                          'FontSize',9, ...
                           'Callback',@(source,event)(self.controlActuated('YScrollDownButtonGH',source,event)));
             self.SetYLimTightToDataButtonGH_ = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'Units','pixels', ...
-                          'FontSize',9, ...
                           'TooltipString', 'Set y-axis limits tight to data', ....
                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
             % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
@@ -613,10 +606,8 @@ classdef ScopeFigure < ws.MCOSFigure
             % --- sometimes it's hard to tell even when a togglebutton is
             % toggled.
             self.SetYLimTightToDataLockedButtonGH_ = ...
-                uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'Units','pixels', ...
-                          'FontSize',9, ...
                           'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));                      
                       
@@ -649,28 +640,28 @@ classdef ScopeFigure < ws.MCOSFigure
             if isempty(persistentYScrollUpIcon) ,
                 wavesurferDirName=fileparts(which('wavesurfer'));
                 iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-                persistentYScrollUpIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+                persistentYScrollUpIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             end
 
             persistent persistentYScrollDownIcon
             if isempty(persistentYScrollDownIcon) ,
                 wavesurferDirName=fileparts(which('wavesurfer'));
                 iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-                persistentYScrollDownIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+                persistentYScrollDownIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             end
 
             persistent persistentYTightToDataIcon
             if isempty(persistentYTightToDataIcon) ,
                 wavesurferDirName=fileparts(which('wavesurfer'));
                 iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-                persistentYTightToDataIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+                persistentYTightToDataIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             end
             
             persistent persistentYTightToDataLockedIcon
             if isempty(persistentYTightToDataLockedIcon) ,
                 wavesurferDirName=fileparts(which('wavesurfer'));
                 iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-                persistentYTightToDataLockedIcon = ws.utility.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+                persistentYTightToDataLockedIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             end
             
             % Update the title, tag
@@ -684,30 +675,30 @@ classdef ScopeFigure < ws.MCOSFigure
             %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
             
             %set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
-            set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.utility.onIff(areYLimitsLockedTightToData));            
+            set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
 
             % Update the Show Grid togglemenu
             isGridOn = self.Model.IsGridOn ;
-            set(self.ShowGridMenuItemGH_,'Checked',ws.utility.onIff(isGridOn));
+            set(self.ShowGridMenuItemGH_,'Checked',ws.onIff(isGridOn));
 
             % Update the Invert Colors togglemenu
             areColorsNormal = self.Model.AreColorsNormal ;
-            set(self.InvertColorsMenuItemGH_,'Checked',ws.utility.onIff(~areColorsNormal));
+            set(self.InvertColorsMenuItemGH_,'Checked',ws.onIff(~areColorsNormal));
 
             % Update the Do Show Buttons togglemenu
             doShowButtons = self.Model.DoShowButtons ;
-            set(self.DoShowButtonsMenuItemGH_,'Checked',ws.utility.onIff(doShowButtons));
+            set(self.DoShowButtonsMenuItemGH_,'Checked',ws.onIff(doShowButtons));
 
             % Update the colors
             areColorsNormal = self.Model.AreColorsNormal ;
-            defaultUIControlBackgroundColor = get(0,'defaultUIControlBackgroundColor') ;
-            controlBackground  = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
-            controlForeground = ws.utility.fif(areColorsNormal,'k','w') ;
-            figureBackground = ws.utility.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
+            controlBackground  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForeground = ws.fif(areColorsNormal,'k','w') ;
+            figureBackground = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             set(self.FigureGH,'Color',figureBackground);
-            axesBackground = ws.utility.fif(areColorsNormal,'w','k') ;
+            axesBackground = ws.fif(areColorsNormal,'w','k') ;
             set(self.AxesGH_,'Color',axesBackground);
-            axesForeground = ws.utility.fif(areColorsNormal,'k','g') ;
+            axesForeground = ws.fif(areColorsNormal,'k','g') ;
             set(self.AxesGH_,'XColor',axesForeground);
             set(self.AxesGH_,'YColor',axesForeground);
             set(self.AxesGH_,'ZColor',axesForeground);
@@ -759,8 +750,8 @@ classdef ScopeFigure < ws.MCOSFigure
             else
                 yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
                 yScrollDownIcon = 1-persistentYScrollDownIcon ;                
-                yTightToDataIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
-                yTightToDataLockedIcon = ws.utility.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
+                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
+                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
             end                
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
@@ -769,8 +760,8 @@ classdef ScopeFigure < ws.MCOSFigure
             
             % Update the axes grid on/off
             set(self.AxesGH_, ...
-                'XGrid', ws.utility.onIff(isGridOn), ...
-                'YGrid', ws.utility.onIff(isGridOn) ...
+                'XGrid', ws.onIff(isGridOn), ...
+                'YGrid', ws.onIff(isGridOn) ...
                 );
             
             % Update the axis limits
@@ -778,7 +769,7 @@ classdef ScopeFigure < ws.MCOSFigure
             self.updateYAxisLimits_();
             
             % Update the graphics objects to match the model
-            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10);
+            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
             self.updateYAxisLabel_(axesForeground);
             self.updateLineXDataAndYData_();
         end  % function
@@ -790,8 +781,8 @@ classdef ScopeFigure < ws.MCOSFigure
             end
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
             
-            %import ws.utility.onIff
-            onIffNotAreYLimitsLockedTightToData = ws.utility.onIff(~areYLimitsLockedTightToData) ;
+            %import ws.onIff
+            onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
             set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
@@ -818,7 +809,7 @@ classdef ScopeFigure < ws.MCOSFigure
             % subclasses if needed.
             %figureSize=self.layoutFixedControls_();
             %figureSizeModified=self.layoutNonfixedControls_(figureSize);
-            %ws.utility.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
+            %ws.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
         end  % function
         
         function layoutFixedControls_(self)
@@ -917,13 +908,13 @@ classdef ScopeFigure < ws.MCOSFigure
             zoomOutButtonX=yRangeButtonsX;
             zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
             set(self.YZoomOutButtonGH_, ...
-                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[zoomOutButtonX zoomOutButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             zoomInButtonX=yRangeButtonsX;
             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
             set(self.YZoomInButtonGH_, ...
-                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[zoomInButtonX zoomInButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
@@ -931,13 +922,13 @@ classdef ScopeFigure < ws.MCOSFigure
             scrollUpButtonX=yRangeButtonsX;
             scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
             set(self.YScrollUpButtonGH_, ...
-                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[scrollUpButtonX scrollUpButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             scrollDownButtonX=yRangeButtonsX;
             scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
             set(self.YScrollDownButtonGH_, ...
-                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[scrollDownButtonX scrollDownButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
                         
@@ -946,12 +937,12 @@ classdef ScopeFigure < ws.MCOSFigure
             zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
             setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
             set(self.SetYLimTightToDataButtonGH_, ...
-                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
             set(self.SetYLimTightToDataLockedButtonGH_, ...
-                'Visible',ws.utility.onIff(doShowButtons) , ...
+                'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
@@ -991,7 +982,7 @@ classdef ScopeFigure < ws.MCOSFigure
         function updateLineXDataAndYData_(self)
             for iChannel = 1:self.Model.NChannels ,                
                 thisLineGH = self.LineGHs_(iChannel);
-                ws.utility.setifhg(thisLineGH, 'XData', self.XForPlotting_, 'YData', self.YForPlotting_(:,iChannel));
+                ws.setifhg(thisLineGH, 'XData', self.XForPlotting_, 'YData', self.YForPlotting_(:,iChannel));
             end                     
         end  % function
         
@@ -1000,7 +991,7 @@ classdef ScopeFigure < ws.MCOSFigure
             % and that of the Acquisition subsystem.
             %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
             if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10);
+                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
             else
                 firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
@@ -1011,7 +1002,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 else
                     unitsString = units ;
                 end
-                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10);
+                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
             end
         end  % function
         
@@ -1021,7 +1012,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 return
             end
             xlimInModel=self.Model.XLim;
-            %ws.utility.setifhg(self.AxesGH_, 'XLim', xl);
+            %ws.setifhg(self.AxesGH_, 'XLim', xl);
             if ~isequal(xlimInModel,self.XLim) ,                
                 % Set this directly, instead of calling the XLim setter
                 % This means that we don't fire the DidSetXLim method.
@@ -1038,7 +1029,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 return
             end
             ylimInModel=self.Model.YLim;
-            %ws.utility.setifhg(self.AxesGH_, 'YLim', yl);
+            %ws.setifhg(self.AxesGH_, 'YLim', yl);
             if ~isequal(ylimInModel,self.YLim) ,   
                 % Set this directly, instead of calling the YLim setter
                 % This means that we don't fire the DidSetYLim method.
@@ -1055,7 +1046,7 @@ classdef ScopeFigure < ws.MCOSFigure
 %                 return
 %             end
 %             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-%             set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.utility.onIff(areYLimitsLockedTightToData));            
+%             set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.onIff(areYLimitsLockedTightToData));            
 %         end  % function        
         
         

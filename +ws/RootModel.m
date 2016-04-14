@@ -293,7 +293,8 @@ classdef RootModel < ws.Model
                 end
                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
                     % cellstring, each element of the form '<device name>/ai<channel ID>'
-                result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
+                nSingleEnded = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode                
+                result = round(nSingleEnded/2) ;  % the number of channels available if you use them all in differential mode, which we do
             end
         end
         
@@ -530,7 +531,7 @@ classdef RootModel < ws.Model
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.mixin.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Coding.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             

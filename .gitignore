@@ -20,6 +20,7 @@ wsbuild/EphusTestFramework/obj/
 *.user.user
 BuildLog.htm
 *.user
+*.res
 *.tlog
 *.lastbuildstate
 +dabs/+axon/MultiClampTelegraph.log

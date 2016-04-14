@@ -21,11 +21,17 @@ classdef Context < handle
                 for n = 1:length(obj.spawnedSockets)
                     socketObj = obj.spawnedSockets{n};
                     if (isvalid(socketObj))
-                        socketObj.delete()
+                        socketObj.delete() ;  
+                          % call this explicitly, so that any Socket
+                          % references outside obj will be rendered
+                          % invalid, instead of having some (now wild)
+                          % pointers hanging around
                     end
                 end
                 zmq.core.ctx_shutdown(obj.contextPointer);
-                obj.term;
+                %obj.term;
+                zmq.core.ctx_term(obj.contextPointer);
+                obj.contextPointer = 0;  % ensure NULL pointer                
             end
         end
     end
