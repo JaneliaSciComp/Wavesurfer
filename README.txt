@@ -321,3 +321,7 @@ Version History
                          automatically append device scaling
                          information to .h5 data files that currently
                          lack it.
+
+0.916    Apr 14, 2016    All AI channels now explicitly set to
+                         differential terminal configuration.
+                         Stability and UI improvements.
