@@ -325,3 +325,6 @@ Version History
 0.916    Apr 14, 2016    All AI channels now explicitly set to
                          differential terminal configuration.
                          Stability and UI improvements.
+
+0.917    Apr 15, 2016    Fixed bug in UI display of AO channel scale
+                         units.  Verified bug went no deeper.
