@@ -879,15 +879,16 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
                 channelNamesInTask = self.AnalogChannelNames(isInTaskForEachAnalogChannel) ;
                 isChannelAnalog = true(1,nAnalogChannelsInTask) ;
                 [aoData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;
+                    stimulusMap.calculateSignals(self.SampleRate, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
+                  % each signal of aoData is in native units
             end
             
             % Want to return the number of scans in the stimulus data
             nScans = size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AnalogChannelScales(isInTaskForEachAnalogChannel);
-            inverseAnalogChannelScales=1./analogChannelScales;
+            analogChannelScales=self.AnalogChannelScales(isInTaskForEachAnalogChannel);  % (native units)/V
+            inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
             sanitizedInverseAnalogChannelScales = ...
                 ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
 
@@ -897,7 +898,8 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
             else
                 aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
             end
-
+            % all signals in aoDataScaled are in V
+            
             % limit the data to [-10 V, +10 V]
             aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
 
