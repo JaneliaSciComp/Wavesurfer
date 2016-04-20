@@ -17,7 +17,18 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             fig = ws.StimulusLibraryFigure(stimulusLibraryModel,self) ;
             self.Figure_ = fig ;
         end  % constructor
-                
+        
+        function delete(self)
+            if isempty(self.PlotFigureGH_) ,
+                % nothing to do
+            else                
+                if ishghandle(self.PlotFigureGH_) ,
+                    delete(self.PlotFigureGH_) ;
+                end
+                self.PlotFigureGH_ = [] ;
+            end
+        end
+        
         function debug(self) %#ok<MANU>
             keyboard
         end  % function        
@@ -239,9 +250,20 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             figure(self.PlotFigureGH_);  % bring plot figure to fore
             clf(self.PlotFigureGH_);  % clear the figure
             
-            samplingRate=20000;  % Hz, just for previewing
-            ax=[];  % let plot method make an axes
-            selectedItem.plot(self.PlotFigureGH_, ax, samplingRate);
+            samplingRate = model.Parent.SampleRate ;  % Hz 
+            channelNames = model.Parent.ChannelNames ;
+            if isa(selectedItem, 'ws.StimulusSequence') ,
+                self.plotStimulusSequence_(selectedItem, samplingRate, channelNames) ;
+            elseif isa(selectedItem, 'ws.StimulusMap') ,
+                ax = [] ;  % means to make own axes
+                self.plotStimulusMap_(ax, selectedItem, samplingRate, channelNames) ;
+            elseif isa(selectedItem, 'ws.StimulusMap') ,
+                ax = [] ;  % means to make own axes
+                self.plotStimulus_(ax, selectedItem, samplingRate) ;
+            else
+                % this should never happen
+            end                
+            
             set(self.PlotFigureGH_, 'Name', sprintf('Stimulus Preview: %s', selectedItem.Name));
         end  % function                
         
@@ -564,6 +586,128 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             isIdle=isequal(wavesurferModel.State,'idle');
             out=~isIdle;  % if doing something, window should stay put
         end        
+        
+        function plotStimulusSequence_(self, sequence, samplingRate, channelNames)
+        %function plot(self, fig, dummyAxes, samplingRate)  %#ok<INUSL>
+            % Plot the current stimulus sequence in figure self.PlotFigureGH_, which is
+            % assumed to be empty.
+            fig = self.PlotFigureGH_ ;
+            maps = sequence.Maps ;
+            nMaps=length(maps);
+            plotHeight=1/nMaps;
+            for idx = 1:nMaps ,
+                %ax = subplot(selectedItem.CycleCount, 1, idx);  
+                % subplot doesn't allow for direct specification of the
+                % target figure
+                ax=axes('Parent',fig, ...
+                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
+                map=maps{idx};
+                %map.plot(fig, ax, samplingRate);
+                self.plotStimulusMap_(ax, map, samplingRate, channelNames) ;
+                ylabel(ax,sprintf('Map %d',idx),'FontSize',10,'Interpreter','none') ;
+            end
+        end  % function
+        
+        function plotStimulusMap_(self, ax, map, samplingRate, channelNames)
+        %function lines = plot(selectedItem, fig, ax, sampleRate)
+            fig = self.PlotFigureGH_ ;            
+            if ~exist('ax','var') || isempty(ax)
+                % Make our own axes
+                ax = axes('Parent',fig);
+            end            
+            
+            % % Get the channel names
+            % channelNamesInThisMap=map.ChannelNames;
+            
+            % Try to determine whether channels are analog or digital.  Fallback to analog, if needed.
+            nChannelsInThisMap = length(channelNames) ;
+            isChannelAnalog = true(1,nChannelsInThisMap) ;
+            stimulusLibrary = self.Model ;
+            if ~isempty(stimulusLibrary) ,
+                stimulation = stimulusLibrary.Parent ;
+                if ~isempty(stimulation) ,                                    
+                    for i = 1:nChannelsInThisMap ,
+                        channelName = channelNames{i} ;
+                        isChannelAnalog(i) = stimulation.isAnalogChannelName(channelName) ;
+                    end
+                end
+            end
+            
+            % calculate the signals
+            data = map.calculateSignals(samplingRate,channelNames,isChannelAnalog);
+            n=size(data,1);
+            nChannels = length(channelNames) ;
+            %assert(nChannels==size(data,2)) ;
+            
+            lines = zeros(1, size(data,2));
+            
+            dt=1/samplingRate;  % s
+            time = dt*(0:(n-1))';
+            
+            %clist = 'bgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmk';
+            clist = ws.make_color_sequence() ;
+            
+            %set(ax, 'NextPlot', 'Add');
+
+            % Get the list of all the channels in the stimulation subsystem
+            stimulation=stimulusLibrary.Parent;
+            channelNames=stimulation.ChannelNames;
+            
+            for idx = 1:nChannels ,
+                % Determine the index of the output channel among all the
+                % output channels
+                thisChannelName = channelNames{idx} ;
+                indexOfThisChannelInOverallList = find(strcmp(thisChannelName,channelNames),1) ;
+                if isempty(indexOfThisChannelInOverallList) ,
+                    % In this case the, the channel is not even in the list
+                    % of possible channels.  (This may be b/c is the
+                    % channel name is empty, which represents the channel
+                    % name being unspecified in the binding.)
+                    lines(idx) = line('Parent',ax, ...
+                                      'XData',[], ...
+                                      'YData',[]);
+                else
+                    lines(idx) = line('Parent',ax, ...
+                                      'XData',time, ...
+                                      'YData',data(:,idx), ...
+                                      'Color',clist(indexOfThisChannelInOverallList,:));
+                end
+            end
+            
+            ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
+            legend(ax, channelNames, 'Interpreter', 'None');
+            %title(ax,sprintf('Stimulus Map: %s', selectedItem.Name));
+            xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
+            ylabel(ax,map.Name,'FontSize',10,'Interpreter','none');
+            
+            %set(ax, 'NextPlot', 'Replace');
+        end  % function
+
+        function plotStimulus_(self, ax, stimulus, samplingRate)
+        %function h = plot(self, fig, ax, sampleRate)
+            fig = self.PlotFigureGH_ ;            
+            if ~exist('ax','var') || isempty(ax)
+                ax = axes('Parent',fig);
+            end
+            
+            dt=1/samplingRate;  % s
+            T=stimulus.EndTime;  % s
+            n=round(T/dt);
+            t = dt*(0:(n-1))';  % s
+
+            y = stimulus.calculateSignal(t);            
+            
+            h = line('Parent',ax, ...
+                     'XData',t, ...
+                     'YData',y);
+            
+            ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
+            %title(ax,sprintf('Stimulus using %s', ));
+            xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
+            ylabel(ax,stimulus.Name,'FontSize',10,'Interpreter','none');
+        end        
+        
+        
     end  % protected methods block
 
     properties (SetAccess=protected)

@@ -323,23 +323,23 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %             end
 %         end  % function
 
-        function plot(self, fig, dummyAxes, samplingRate)  %#ok<INUSL>
-            % Plot the current stimulus sequence in figure fig, which is
-            % assumed to be empty.
-            % axes argument is ignored
-            nMaps=length(self.Maps);
-            plotHeight=1/nMaps;
-            for idx = 1:nMaps ,
-                %ax = subplot(self.CycleCount, 1, idx);  
-                % subplot doesn't allow for direct specification of the
-                % target figure
-                ax=axes('Parent',fig, ...
-                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
-                map=self.Maps{idx};
-                map.plot(fig, ax, samplingRate);
-                ylabel(ax,sprintf('Map %d',idx),'FontSize',10,'Interpreter','none');
-            end
-        end  % function
+%         function plot(self, fig, dummyAxes, samplingRate)  %#ok<INUSL>
+%             % Plot the current stimulus sequence in figure fig, which is
+%             % assumed to be empty.
+%             % axes argument is ignored
+%             nMaps=length(self.Maps);
+%             plotHeight=1/nMaps;
+%             for idx = 1:nMaps ,
+%                 %ax = subplot(self.CycleCount, 1, idx);  
+%                 % subplot doesn't allow for direct specification of the
+%                 % target figure
+%                 ax=axes('Parent',fig, ...
+%                         'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
+%                 map=self.Maps{idx};
+%                 map.plot(fig, ax, samplingRate);
+%                 ylabel(ax,sprintf('Map %d',idx),'FontSize',10,'Interpreter','none');
+%             end
+%         end  % function
     end  % methods
     
     methods (Access = protected)
