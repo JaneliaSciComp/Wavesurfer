@@ -147,7 +147,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
 %             progressBar.IsIndeterminate = true;
 %             
-%             %self.showChildFigure('ws.ui.controller.ephys.TestPulse');
+%             %self.showAndRaiseChildFigure_('ws.ui.controller.ephys.TestPulse');
 %             
 %             try
 %                 self.Model.start(ws.ApplicationState.TestPulsing);
@@ -1619,7 +1619,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end
         
-        function controller=showChildFigure(self, className, varargin)
+        function showAndRaiseChildFigure_(self, className, varargin)
             [controller,didCreate] = self.createChildControllerIfNonexistant(className,varargin{:});
             if didCreate ,
                 % no need to update
@@ -1627,6 +1627,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 controller.updateFigure();  % figure might be out-of-date
             end
             controller.showFigure();
+            controller.raiseFigure();
         end
         
         function specs = createControllerSpecs(~)
@@ -1720,7 +1721,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 end
 %             end
 %             
-%             self.showChildFigure('ws.ui.controller.stimulus.StimulusLibraryEditorController');
+%             self.showAndRaiseChildFigure_('ws.ui.controller.stimulus.StimulusLibraryEditorController');
 %         end  % function
 
     end  % protected methods
@@ -1945,31 +1946,31 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         % Tools menu
         function FastProtocolsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('FastProtocolsController');
+            self.showAndRaiseChildFigure_('FastProtocolsController');
         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('ChannelsController');
+            self.showAndRaiseChildFigure_('ChannelsController');
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('TriggersController');
+            self.showAndRaiseChildFigure_('TriggersController');
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('StimulusLibraryController');
+            self.showAndRaiseChildFigure_('StimulusLibraryController');
         end
         
         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('UserCodeManagerController');
+            self.showAndRaiseChildFigure_('UserCodeManagerController');
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('ElectrodeManagerController');
+            self.showAndRaiseChildFigure_('ElectrodeManagerController');
         end
         
         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('TestPulserController');
+            self.showAndRaiseChildFigure_('TestPulserController');
         end
         
         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -2001,7 +2002,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
-            %self.showChildFigure('ws.ui.controller.AboutWindow');
+            %self.showAndRaiseChildFigure_('ws.ui.controller.AboutWindow');
             msgbox(sprintf('This is WaveSurfer %s.',ws.versionString()),'About','modal');
         end
         
@@ -2063,7 +2064,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('StimulusLibraryController');
+            self.showAndRaiseChildFigure_('StimulusLibraryController');
         end
         
         function FastProtocolButtonsActuated(self,source,event)  %#ok<INUSD>

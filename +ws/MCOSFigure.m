@@ -355,7 +355,11 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     
     methods
         function raise(self)
-            figureGHs=allchild(0);  % the old MOST Controller superclass liked to make things with HandleVisibility=='off'
+            figureGHs=allchild(0);  % ws.MCOSFigure defaults to figures having HandleVisibility=='off'
+            % sometimes figureGHs is a col vector, which seems odd...
+            if iscolumn(figureGHs) ,
+                figureGHs = figureGHs' ;
+            end
             isMe=(figureGHs==self.FigureGH_);
             i=find(isMe,1);
             if isempty(i) ,
@@ -366,7 +370,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
                 set(0,'Children',newRootChildren);
             end
         end  % function       
-    end  % methods    
+    end  % methods
     
     methods (Access = protected)
         function updateGuidata_(self)
