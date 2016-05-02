@@ -198,7 +198,7 @@ classdef Controller < handle
         function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
             figureObject = self.Figure;
             tag = get(figureObject, 'Tag');
-            if isfield(layoutOfWindowsInClass, tag)
+            if isfield(layoutOfWindowsInClass, tag) ,
                 layoutOfThisWindow = layoutOfWindowsInClass.(tag);
                 rawPosition = layoutOfThisWindow.Position ;
                 %outerPositionBeforeMove = get(figureObject,'OuterPosition')

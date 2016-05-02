@@ -486,7 +486,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 
             % get the figure's OuterPosition
             %dbstack
-            %figurePosition = get(self.FigureGH,'OuterPosition')
+            figurePosition = get(self.FigureGH,'OuterPosition') ;
             %monitorPositions
             
             % define some local functions we'll need

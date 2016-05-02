@@ -18,6 +18,9 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     %   object, wsController.  It is an error to use this form when
     %   isCommandLineOnly is true.
 
+    % Takes a while to start, to give some feedback
+    fprintf('Starting WaveSurfer...');
+    
     % Deal with arguments
     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
         isCommandLineOnly=false;
@@ -48,7 +51,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     drawnow() ;  
       % Have to do this to give OuterPosition a chance to catch up to
       % reality, since we query that when deciding whether to move figures
-      % that are possibly off-screen.
+      % that are possibly off-screen.  Kind of annoying...
     
     % Load the protocol/MDF file, if one was given
     if wasProtocolOrMDFFileNameGivenAtCommandLine ,
@@ -86,4 +89,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     if nargout>=2 ,
         varargout{2}=controller;
     end
+    
+    % Declare WS started
+    fprintf('done.\n');    
 end  % function
