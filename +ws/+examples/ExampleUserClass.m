@@ -24,6 +24,12 @@ classdef ExampleUserClass < ws.UserClass
             fprintf('%s  Instantiating an instance of ExampleUserClass.\n',self.Greeting);
         end
         
+        function delete(self)
+            % Called when there are no more references to the object, just
+            % prior to its memory being freed.
+            fprintf('%s  An instance of ExampleUserClass is being deleted.\n',self.Greeting);
+        end
+        
         % These methods are called in the frontend process
         function startingRun(self,wsModel,eventName)
             % Called just before each set of sweeps (a.k.a. each

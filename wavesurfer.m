@@ -31,7 +31,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     else
         wasProtocolOrMDFFileNameGivenAtCommandLine=true;
     end
-%     if ~exist('mode','var') || isempty(mode),
+%     if ~exist('mode','var') || isempty(mode) ,
 %         mode = 'release' ;
 %     end
 
