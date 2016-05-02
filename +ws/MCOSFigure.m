@@ -484,8 +484,10 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             % For each monitor, calculate the translation needed to get the
             % figure onto it.
 
-            % get the figure's OuterPosition            
-            figurePosition = get(self.FigureGH,'OuterPosition') ;
+            % get the figure's OuterPosition
+            %dbstack
+            %figurePosition = get(self.FigureGH,'OuterPosition')
+            %monitorPositions
             
             % define some local functions we'll need
             function translation = translationToFit2D(offset, sz, screenOffset, screenSize)

@@ -201,8 +201,11 @@ classdef Controller < handle
             if isfield(layoutOfWindowsInClass, tag)
                 layoutOfThisWindow = layoutOfWindowsInClass.(tag);
                 rawPosition = layoutOfThisWindow.Position ;
+                %outerPositionBeforeMove = get(figureObject,'OuterPosition')
                 set(figureObject, 'Position', rawPosition);
+                %outerPositionAfterMove = get(figureObject,'OuterPosition')
                 figureObject.constrainPositionToMonitors(monitorPositions) ;
+                %outerPositionAfterConstrain = get(figureObject,'OuterPosition')
                 if isfield(layoutOfThisWindow,'Visible') ,
                     set(figureObject, 'Visible', layoutOfThisWindow.Visible);
                 end

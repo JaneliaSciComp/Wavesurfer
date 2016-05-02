@@ -42,11 +42,14 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
         controller=[];
     else
         controller = ws.WavesurferMainController(model);    
-%         controller.initialize();
-%           % prompts it to sync the view with the model
-%           % Why does this not happen automatically when you create the controller?
     end
 
+    % Do a drawnow()...
+    drawnow() ;  
+      % Have to do this to give OuterPosition a chance to catch up to
+      % reality, since we query that when deciding whether to move figures
+      % that are possibly off-screen.
+    
     % Load the protocol/MDF file, if one was given
     if wasProtocolOrMDFFileNameGivenAtCommandLine ,
         [~,~,extension] = fileparts(protocolOrMDFFileName) ;
@@ -64,6 +67,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
                 model.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
             else
                 % Need to do via controller, to keep the figure updated
+                drawnow('expose') ;
                 controller.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
             end
         else
