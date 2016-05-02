@@ -267,9 +267,13 @@ classdef RootModel < ws.Model
     methods (Static)
         function deviceNames = getAllDeviceNamesFromHardware()
             daqmxSystem = ws.dabs.ni.daqmx.System() ;
-            deviceNameAsCommaSeparatedList = daqmxSystem.devNames ;
-            deviceNameWithWhitespace = strsplit(deviceNameAsCommaSeparatedList,',') ;
-            deviceNames = strtrim(deviceNameWithWhitespace) ;
+            devicesNamesAsCommaSeparatedList = daqmxSystem.devNames ;
+            if isempty(devicesNamesAsCommaSeparatedList) ,
+                deviceNames = cell(1,0) ;
+            else
+                deviceNamesWithWhitespace = strsplit(devicesNamesAsCommaSeparatedList,',') ;
+                deviceNames = strtrim(deviceNamesWithWhitespace) ;
+            end
         end
         
         function result = getNumberOfAITerminalsFromDevice(deviceName)

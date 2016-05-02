@@ -566,26 +566,26 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     end  % protected methods block
     
     methods (Access = protected)
-        function out = shouldWindowStayPutQ(self, varargin)
-            % If acquisition is happening, ignore the close window request
-            model=self.Model;
-            if isempty(model) ,
-                out=false;
-                return
-            end
-            stimulationSubsystem=model.Parent;
-            if isempty(stimulationSubsystem) ,
-                out=false;
-                return
-            end
-            wavesurferModel=stimulationSubsystem.Parent;
-            if isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                out=false;
-                return
-            end            
-            isIdle=isequal(wavesurferModel.State,'idle');
-            out=~isIdle;  % if doing something, window should stay put
-        end        
+%         function out = shouldWindowStayPutQ(self, varargin)
+%             % If acquisition is happening, ignore the close window request
+%             model=self.Model;
+%             if isempty(model) ,
+%                 out=false;
+%                 return
+%             end
+%             stimulationSubsystem=model.Parent;
+%             if isempty(stimulationSubsystem) ,
+%                 out=false;
+%                 return
+%             end
+%             wavesurferModel=stimulationSubsystem.Parent;
+%             if isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                 out=false;
+%                 return
+%             end            
+%             isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
+%             out=~isIdle;  % if doing something, window should stay put
+%         end        
         
         function plotStimulusSequence_(self, sequence, samplingRate, channelNames)
         %function plot(self, fig, dummyAxes, samplingRate)  %#ok<INUSL>

@@ -67,10 +67,6 @@ classdef YLimDialogController < ws.Controller
     
     methods (Access=protected)
         function shouldStayPut = shouldWindowStayPutQ(self, varargin) %#ok<INUSD>
-            % This method is inhierited from AbstractController, and is
-            % called after the user indicates she wants to close the
-            % window.  Returns true if the window should _not_ close, false
-            % if it should go ahead and close.
             shouldStayPut=false;
         end  % function
     end % protected methods block

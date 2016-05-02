@@ -105,6 +105,27 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
         end  % function        
     end
 
+    methods
+        function root = getRoot(self)
+            % Go up the parentage tree to find the root model object
+            if isempty(self.Parent) || ~isvalid(self.Parent) ,
+                root = self ;
+            else
+                root = self.Parent.getRoot() ;
+            end                
+        end
+        
+        function result = isRootIdleSensuLato(self)
+            root = self.getRoot() ;
+            if isprop(root,'State') ,
+                state = root.State ;
+                result = isequal(state,'idle') || isequal(state,'no_device') ; 
+            else
+                result = true;  % if the root doesn't have a State, then we'll assume it's not running/test-pulsing
+            end
+        end
+    end
+    
     methods (Access = protected)
         function setReadiness_(self, newDegreeOfReadinessRaw)
             isReadyBefore=self.IsReady;

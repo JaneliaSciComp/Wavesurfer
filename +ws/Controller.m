@@ -195,38 +195,14 @@ classdef Controller < handle
     end
     
     methods (Access = protected)
-        function decodeWindowLayout(self, layoutOfWindowsInClass)
+        function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
             figureObject = self.Figure;
-            %figureGH=figureObject.FigureGH;
             tag = get(figureObject, 'Tag');
             if isfield(layoutOfWindowsInClass, tag)
                 layoutOfThisWindow = layoutOfWindowsInClass.(tag);
-
-%                 if isfield(layoutOfThisWindow, 'Toggle')
-%                     toggleState = layoutOfThisWindow.Toggle;
-%                 else
-%                     % This branch is only to support legacy .usr files that
-%                     % don't have up-to-date layout info.
-%                     toggleState = [];
-%                 end
-
-%                 if ~isempty(toggleState)
-%                 if false ,
-%                     assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(figureObject));
-% 
-%                     ws.most.gui.AdvancedPanelToggler.loadToggleState(figureObject,toggleState);
-% 
-%                     % gui is toggleable; for position, only set x- and
-%                     % y-pos, not width and height, as those are controlled
-%                     % by toggle-state.
-%                     pos = get(figureObject,'Position');
-%                     pos(1:2) = layoutOfThisWindow.Position(1:2);
-%                     set(figureObject,'Position',pos);
-%                 else
-                    % Not a toggleable GUI.
-                set(figureObject, 'Position', layoutOfThisWindow.Position);
-%                 end
-
+                rawPosition = layoutOfThisWindow.Position ;
+                set(figureObject, 'Position', rawPosition);
+                figureObject.constrainPositionToMonitors(monitorPositions) ;
                 if isfield(layoutOfThisWindow,'Visible') ,
                     set(figureObject, 'Visible', layoutOfThisWindow.Visible);
                 end
@@ -271,12 +247,25 @@ classdef Controller < handle
 
     % This method is expected to be overriden by actual application controller implementations.
     methods (Access = protected)
-        function out = shouldWindowStayPutQ(self, source, event) %#ok<INUSD>
-            % This method is a hook for application specific controllers to intercept the
-            % close (or hide) attempt and cancel it.  Controllers should return false to
-            % continue the close/hide or true to cancel.
-            out = false;
-        end
+%         function out = shouldWindowStayPutQ(self, source, event) %#ok<INUSD>
+%             % This method is a hook for application specific controllers to intercept the
+%             % close (or hide) attempt and cancel it.  Controllers should return false to
+%             % continue the close/hide or true to cancel.
+%             out = false;
+%         end
+        
+        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
+            % This is called after the user indicates she wants to close
+            % the window.  Returns true if the window should _not_ close,
+            % false if it should go ahead and close.
+            model = self.Model ;
+            if isempty(model) || ~isvalid(model) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~model.isRootIdleSensuLato() ;
+            end
+        end  % function
+        
     end
     
     methods (Access = protected)
@@ -383,12 +372,53 @@ classdef Controller < handle
                     rethrow(exception);
                 end
             end
-        end
-    end
+        end  % function
+        
+        function monitorPositions = getMonitorPositions(doForceForOldMatlabs)
+            % Get the monitor positions for the current monitor
+            % configuration, dealing with brokenness in olf Matlab versions
+            % as best we can.
+            
+            % Deal with args
+            if ~exist('doForceForOldMatlabs', 'var') || isempty(doForceForOldMatlabs) ,
+                doForceForOldMatlabs = false ;
+            end
+            
+            if verLessThan('matlab','8.4') ,
+                % MonitorPositions is broken in this version, so just get
+                % primary screen positions.
+                
+                if doForceForOldMatlabs ,
+                    % Get the (primary) screen size in pels
+                    originalScreenUnits = get(0,'Units') ;    
+                    set(0,'Units','pixels') ;    
+                    monitorPositions = get(0,'ScreenSize') ;
+                    set(0,'Units',originalScreenUnits) ;
+                else
+                    monitorPositions = [-1e12 -1e12 2e12 2e12] ;  
+                      % a huge screen, than any window will presumably be within, thus the window will not be moved
+                      % don't want to use infs b/c topOffset = offset +
+                      % size, which for infs would be topOffset == -inf +
+                      % inf == nan.
+                end                    
+            else
+                % This version has a working MonitorPositions, so use that.
+
+                % Get the monitor positions in pels
+                originalScreenUnits = get(0,'Units') ;    
+                set(0,'Units','pixels') ;    
+                monitorPositions = get(0,'MonitorPositions') ;  % 
+                set(0,'Units',originalScreenUnits) ;
+                %monitorPositions = bsxfun(@plus, monitorPositionsAlaMatlab, [-1 -1 0 0]) ;  % not-insane style
+            end
+        end  % function        
+    end  % static methods block
     
     methods (Access=protected, Sealed = true)
-        function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout)
-            % Load a mulitiple window layout from an already loaded struct.
+        function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
+            % Find a layout that applies to whatever subclass of controller
+            % self happens to be (if any), and use it to position self's
+            % figure's window.
             
             if isempty(multiWindowLayout)
                 return
@@ -398,7 +428,7 @@ classdef Controller < handle
             
             if isfield(multiWindowLayout, layoutVarNameForThisClass) ,
                 layoutForThisClass=multiWindowLayout.(layoutVarNameForThisClass);
-                self.decodeWindowLayout(layoutForThisClass);
+                self.decodeWindowLayout(layoutForThisClass, monitorPositions);
 %                 if self.IsSuiGeneris ,
 %                     windowLayout = layoutForThisClass;
 %                     self.decodeWindowLayout(windowLayout);

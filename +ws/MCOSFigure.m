@@ -479,4 +479,72 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end  % function       
     end  % methods
     
+    methods
+        function constrainPositionToMonitors(self, monitorPositions)
+            % For each monitor, calculate the translation needed to get the
+            % figure onto it.
+
+            % get the figure's OuterPosition            
+            figurePosition = get(self.FigureGH,'OuterPosition') ;
+            
+            % define some local functions we'll need
+            function translation = translationToFit2D(offset, sz, screenOffset, screenSize)
+                xTranslation = translationToFit1D(offset(1), sz(1), screenOffset(1), screenSize(1)) ;
+                yTranslation = translationToFit1D(offset(2), sz(2), screenOffset(2), screenSize(2)) ;
+                translation = [xTranslation yTranslation] ;
+            end
+
+            function translation = translationToFit1D(offset, sz, screenOffset, screenSize)
+                % Calculate a translation that will get a thing of size size at offset
+                % offset onto a screen at offset screenOffset, of size screenSize.  All
+                % args are *scalars*, as is the returned value
+                topOffset = offset + sz ;  % or right offset, really
+                screenTop = screenOffset+screenSize ;
+                if offset < screenOffset ,
+                    newOffset = screenOffset ;
+                    translation =  newOffset - offset ;
+                elseif topOffset > screenTop ,
+                    newOffset = screenTop - sz ;
+                    translation =  newOffset - offset ;
+                else
+                    translation = 0 ;
+                end
+            end
+            
+            % Get the offset, size of the figure
+            figureOffset = figurePosition(1:2) ;
+            figureSize = figurePosition(3:4) ;
+            
+            % Compute the translation needed to get the figure onto each of
+            % the monitors
+            nMonitors = size(monitorPositions, 1) ;
+            figureTranslationForEachMonitor = zeros(nMonitors,2) ;
+            for i = 1:nMonitors ,
+                monitorPosition = monitorPositions(i,:) ;
+                monitorOffset = monitorPosition(1:2) ;
+                monitorSize = monitorPosition(3:4) ;
+                figureTranslationForThisMonitor = translationToFit2D(figureOffset, figureSize, monitorOffset, monitorSize) ;
+                figureTranslationForEachMonitor(i,:) = figureTranslationForThisMonitor ;
+            end
+
+            % Calculate the magnitude of the translation for each monitor
+            sizeOfFigureTranslationForEachMonitor = hypot(figureTranslationForEachMonitor(:,1), figureTranslationForEachMonitor(:,2)) ;
+            
+            % Pick the smallest translation that gets the figure onto
+            % *some* monitor
+            [~,indexOfSmallestFigureTranslation] = min(sizeOfFigureTranslationForEachMonitor) ;
+            if isempty(indexOfSmallestFigureTranslation) ,
+                figureTranslation = [0 0] ;
+            else
+                figureTranslation = figureTranslationForEachMonitor(indexOfSmallestFigureTranslation,:) ;
+            end        
+
+            % Compute the new position
+            newFigurePosition = [figureOffset+figureTranslation figureSize] ;            
+            
+            % Set it
+            set(self.FigureGH,'OuterPosition',newFigurePosition) ;
+        end  % function        
+    end  % public methods block
+    
 end  % classdef
