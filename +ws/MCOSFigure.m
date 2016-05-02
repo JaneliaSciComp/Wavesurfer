@@ -486,7 +486,8 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 
             % get the figure's OuterPosition
             %dbstack
-            figurePosition = get(self.FigureGH,'OuterPosition') ;
+            figureOuterPosition = get(self.FigureGH, 'OuterPosition') ;
+            figurePosition = get(self.FigureGH, 'Position') ;
             %monitorPositions
             
             % define some local functions we'll need
@@ -514,6 +515,8 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             end
             
             % Get the offset, size of the figure
+            figureOuterOffset = figureOuterPosition(1:2) ;
+            figureOuterSize = figureOuterPosition(3:4) ;
             figureOffset = figurePosition(1:2) ;
             figureSize = figurePosition(3:4) ;
             
@@ -525,7 +528,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
                 monitorPosition = monitorPositions(i,:) ;
                 monitorOffset = monitorPosition(1:2) ;
                 monitorSize = monitorPosition(3:4) ;
-                figureTranslationForThisMonitor = translationToFit2D(figureOffset, figureSize, monitorOffset, monitorSize) ;
+                figureTranslationForThisMonitor = translationToFit2D(figureOuterOffset, figureOuterSize, monitorOffset, monitorSize) ;
                 figureTranslationForEachMonitor(i,:) = figureTranslationForThisMonitor ;
             end
 
@@ -542,10 +545,14 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             end        
 
             % Compute the new position
-            newFigurePosition = [figureOffset+figureTranslation figureSize] ;            
+            newFigurePosition = [figureOffset+figureTranslation figureSize] ;  
+              % Apply the translation to the Position, not the
+              % OuterPosition, as this seems to be more reliable.  Setting
+              % the OuterPosition causes the layouts to get messed up
+              % sometimes.  (Maybe setting the 'OuterSize' is the problem?)
             
             % Set it
-            set(self.FigureGH,'OuterPosition',newFigurePosition) ;
+            set(self.FigureGH, 'Position', newFigurePosition) ;
         end  % function        
     end  % public methods block
     
