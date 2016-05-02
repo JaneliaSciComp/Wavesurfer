@@ -25,7 +25,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
         isCommandLineOnly=false;
     end
-    if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName),
+    if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName) ,
         wasProtocolOrMDFFileNameGivenAtCommandLine=false;
         protocolOrMDFFileName='';
     else
