@@ -21,13 +21,15 @@ classdef ExampleUserClass < ws.UserClass
     methods        
         function self = ExampleUserClass(rootModel)
             % creates the "user object"
-            fprintf('%s  Instantiating an instance of ExampleUserClass.\n',self.Greeting);
+            fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
+                    self.Greeting);
         end
         
         function delete(self)
             % Called when there are no more references to the object, just
             % prior to its memory being freed.
-            fprintf('%s  An instance of ExampleUserClass is being deleted.\n',self.Greeting);
+            fprintf('%s  An instance of ExampleUserClass is being deleted.\n', ...
+                    self.Greeting);
         end
         
         % These methods are called in the frontend process
@@ -35,44 +37,52 @@ classdef ExampleUserClass < ws.UserClass
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             self.TimeAtStartOfLastRunAsString_ = datestr( datetime() ) ;
-            fprintf('%s  About to start a run.  Current time: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  About to start a run.  Current time: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
         function completingRun(self,wsModel,eventName)
             % Called just after each set of sweeps (a.k.a. each
             % "run")
-            fprintf('%s  Completed a run.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  Completed a run.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
         function stoppingRun(self,wsModel,eventName)
             % Called if a sweep goes wrong
-            fprintf('%s  User stopped a run.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  User stopped a run.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
         function abortingRun(self,wsModel,eventName)
             % Called if a run goes wrong, after the call to
             % abortingSweep()
-            fprintf('%s  Oh noes!  A run aborted.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  Oh noes!  A run aborted.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
         function startingSweep(self,wsModel,eventName)
             % Called just before each sweep
-            fprintf('%s  About to start a sweep.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  About to start a sweep.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
         function completingSweep(self,wsModel,eventName)
             % Called after each sweep completes
-            fprintf('%s  Completed a sweep.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  Completed a sweep.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
         function stoppingSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
-            fprintf('%s  User stopped a sweep.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfRunAsString_);
+            fprintf('%s  User stopped a sweep.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfRunAsString_);
         end        
         
         function abortingSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
-            fprintf('%s  Oh noes!  A sweep aborted.  Time at start of run: %s\n',self.Greeting,self.TimeAtStartOfLastRunAsString_);
+            fprintf('%s  Oh noes!  A sweep aborted.  Time at start of run: %s\n', ...
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
         function dataAvailable(self,wsModel,eventName)
@@ -81,6 +91,7 @@ classdef ExampleUserClass < ws.UserClass
             analogData = wsModel.Acquisition.getLatestAnalogData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             nScans = size(analogData,1);
+            whos
             fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
         end
         
