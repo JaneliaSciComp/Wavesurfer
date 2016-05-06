@@ -824,42 +824,46 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
             % things
             if isempty(self.SelectedOutputableCache_) ,
-                isThereAMap = false ;
-                indexOfMapIfSequence=[];  % arbitrary: doesn't get used if isThereAMap==false
+                isThereAMapForThisEpisode = false ;
+                isSourceASequence = false ;  % arbitrary: doesn't get used if isThereAMap==false
+                indexOfMapWithinOutputable=[];  % arbitrary: doesn't get used if isThereAMap==false
             else
                 if isa(self.SelectedOutputableCache_,'ws.StimulusMap')
-                    isThereAMap=true;
-                    indexOfMapIfSequence=[];
+                    isSourceASequence = false ;
+                    nMapsInOutputable=1;
                 else
                     % outputable must be a sequence                
-                    nMapsInSequence=length(self.SelectedOutputableCache_.Maps);
-                    if episodeIndexWithinSweep <= nMapsInSequence ,
-                        isThereAMap=true;
-                        indexOfMapIfSequence=episodeIndexWithinSweep;
-                    else
-                        if self.DoRepeatSequence ,
-                            if nMapsInSequence>0 ,
-                                isThereAMap=true;
-                                indexOfMapIfSequence=mod(episodeIndexWithinSweep-1,nMapsInSequence)+1;
-                            else
-                                % Special case for when a sequence has zero
-                                % maps in it
-                                isThereAMap=false;
-                                indexOfMapIfSequence = -1 ;  % arbitrary: doesn't get used if isThereAMap==false
-                            end                            
+                    isSourceASequence = true ;
+                    nMapsInOutputable=length(self.SelectedOutputableCache_.Maps);
+                end
+
+                % Sort out whether there's a map for this episode
+                if episodeIndexWithinSweep <= nMapsInOutputable ,
+                    isThereAMapForThisEpisode=true;
+                    indexOfMapWithinOutputable=episodeIndexWithinSweep;
+                else
+                    if self.DoRepeatSequence ,
+                        if nMapsInOutputable>0 ,
+                            isThereAMapForThisEpisode=true;
+                            indexOfMapWithinOutputable=mod(episodeIndexWithinSweep-1,nMapsInOutputable)+1;
                         else
-                            isThereAMap=false;
-                            indexOfMapIfSequence = -1 ;  % arbitrary: doesn't get used if isThereAMap==false
-                        end
+                            % Special case for when a sequence has zero
+                            % maps in it
+                            isThereAMapForThisEpisode=false;
+                            indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+                        end                            
+                    else
+                        isThereAMapForThisEpisode=false;
+                        indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
                     end
-                end            
+                end
             end
-            if isThereAMap ,
-                if isempty(indexOfMapIfSequence) ,
+            if isThereAMapForThisEpisode ,
+                if isSourceASequence ,
+                    stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapWithinOutputable};
+                else                    
                     % this means the outputable is a "naked" map
                     stimulusMap=self.SelectedOutputableCache_;
-                else
-                    stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapIfSequence};
                 end
             else
                 stimulusMap = [] ;
