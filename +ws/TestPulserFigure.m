@@ -28,11 +28,14 @@ classdef TestPulserFigure < ws.MCOSFigure
         ZoomOutButton
         ScrollUpButton
         ScrollDownButton
+        TestPulserMenuGH_; %Grahpics handle to Test Pulser Menu
+        YLimitsMenuItemGH_; %Graphics handle to YLimits Menu Item
+        
     end  % properties
     
     properties (Access=protected)
         %IsMinimumSizeSet_ = false
-        YLimits_ = [-10 +10]   % the current y limits        
+        YLimits_ = [-10 +10]   % the current y limits   
     end
 
 %     properties (Dependent=true, Hidden=true)
@@ -317,8 +320,10 @@ classdef TestPulserFigure < ws.MCOSFigure
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
             set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
+            self.Model.YUnits=self.Model.MonitorUnits;
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
+            set(self.YLimitsMenuItemGH_,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ZoomOutButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ScrollUpButton,'Enable',onIff(~self.Model.IsAutoY));
@@ -329,7 +334,17 @@ classdef TestPulserFigure < ws.MCOSFigure
     end  % protected methods block
     
     methods (Access=protected)
-        function createFixedControls(self)            
+        function createFixedControls(self)
+            
+            % Add a menu, and a single menu item
+            self.TestPulserMenuGH_ = ...
+                uimenu('Parent',self.FigureGH, ...
+                          'Label','Graph Options');
+             self.YLimitsMenuItemGH_ = ...
+                uimenu('Parent',self.TestPulserMenuGH_, ...
+                       'Label','Y Limits...', ...
+                       'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event)); 
+                   
             % Start/stop button
             self.StartStopButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
