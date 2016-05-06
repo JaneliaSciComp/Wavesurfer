@@ -76,7 +76,7 @@ classdef ExampleUserClass < ws.UserClass
         function stoppingSweep(self,wsModel,eventName)
             % Called if a sweep goes wrong
             fprintf('%s  User stopped a sweep.  Time at start of run: %s\n', ...
-                    self.Greeting,self.TimeAtStartOfRunAsString_);
+                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
         function abortingSweep(self,wsModel,eventName)
