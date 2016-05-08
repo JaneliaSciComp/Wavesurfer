@@ -91,7 +91,6 @@ classdef ExampleUserClass < ws.UserClass
             analogData = wsModel.Acquisition.getLatestAnalogData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             nScans = size(analogData,1);
-            whos
             fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
         end
         
