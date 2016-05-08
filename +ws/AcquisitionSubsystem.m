@@ -47,6 +47,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         %IsAnalogChannelTerminalOvercommitted
         %IsDigitalChannelTerminalOvercommitted
         AnalogScalingCoefficients
+        DataCacheDurationWhenContinuous
     end
     
     properties (Access = protected) 
@@ -67,6 +68,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         IsDigitalChannelActive_ = true(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
+        DataCacheDurationWhenContinuous_ = 10  % s
         %IsAnalogChannelTerminalOvercommitted_ = false(1,0)
         %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
@@ -83,7 +85,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
         %LatestAnalogData_ = [] ;
         LatestRawAnalogData_ = [] ;
         LatestRawDigitalData_ = [] ;
-        DataCacheDurationWhenContinuous_ = 10;  % s
         RawAnalogDataCache_ = [];
         RawDigitalDataCache_ = [];
         IndexOfLastScanInCache_ = [];
@@ -518,12 +519,12 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function out = get.Duration(self)
-            out = self.Parent.SweepDurationIfFinite ;
+            out = self.Parent.SweepDuration ;
         end  % function
         
         function set.Duration(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            self.Parent.SweepDurationIfFinite = value ;
+            self.Parent.SweepDuration = value ;
         end  % function
         
         function out = get.ExpectedScanCount(self)
@@ -568,6 +569,24 @@ classdef AcquisitionSubsystem < ws.Subsystem
             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
         end
         
+        function result = get.DataCacheDurationWhenContinuous(self) 
+           result = self.DataCacheDurationWhenContinuous_ ;
+        end  % function
+        
+        function set.DataCacheDurationWhenContinuous(self, newValue)
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>=0 ,                
+                self.DataCacheDurationWhenContinuous_ =  newValue ;
+                isValueValid = true ;
+            else
+                isValueValid = false ;
+            end
+            %self.broadcast('DidSetSampleRate');  % no need to broadcast,
+            %since not reflected in UI
+            if ~isValueValid ,
+                error('most:Model:invalidPropVal', ...
+                      'DataCacheDurationWhenContinuous must be a nonnegative finite numeric scalar');
+            end                
+        end  % function
         
 %         function completingRun(self)
 %             %fprintf('Acquisition::completingRun()\n');

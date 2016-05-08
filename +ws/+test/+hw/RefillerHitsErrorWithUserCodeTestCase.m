@@ -32,14 +32,15 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
 
             wsModel.AreSweepsContinuous = true ;
 
-            wsModel.UserCodeManager.ClassName = 'ws.examples.TemplateUserClass' ;
+            wsModel.UserCodeManager.ClassName = 'ws.examples.ExampleUserClass' ;
+            wsModel.UserCodeManager.TheObject.Greeting = 'This is a test.  This is only a test.' ;
             
             aTimer = timer('ExecutionMode', 'singleShot', ...
                            'StartDelay', 10, ...
                            'TimerFcn', @(event,arg2)(wsModel.stop()) ) ;
             
             start(aTimer) ;
-            wsModel.play() ;  % this throws at present, because the refiller hits an error andd never responds
+            wsModel.play() ;
             stop(aTimer) ;
             delete(aTimer) ;
 

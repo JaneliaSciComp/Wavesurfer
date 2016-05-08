@@ -18,14 +18,9 @@ classdef ScopeModel < ws.Model
           % Indicates whether scope is visible when the Display subsystem
           % is enabled.  If display subsystem is disabled, the scopes are
           % all made invisible, but this stores who will be made
-          % immediately visible if the display system is reenabled.  Note
-          % that this is not persisted in the protocol (.cfg) file --- 
-          % persistence of window visibility
-          % is all stored in the .usr file, and all other WavesurferModel properties
-          % (of which ScopeModels are a part) are all persisted in the .cfg
-          % file.  We want it to be clear to user where different kinds of
-          % things are stored, not confuse them by having some aspects of
-          % window visibilty stored in .usr, and some in .cfg.
+          % immediately visible if the display system is reenabled.
+          % Note that this is not persisted in the usual way, for
+          % historical reasons (see IsVisibleWhenDisplayEnabled_ below).
         Tag        % This should be a unique tag that identifies this ScopeModel (i.e. a string).
                    % This is used as the Tag for any ScopeFigure that uses
                    % this ScopeModel as its model, and should be usable as

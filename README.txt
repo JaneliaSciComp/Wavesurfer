@@ -328,3 +328,7 @@ Version History
 
 0.917    Apr 15, 2016    Fixed bug in UI display of AO channel scale
                          units.  Verified bug went no deeper.
+
+0.918    May  8, 2016    Fixed many small bugs, changed
+                         TemplateUserClass to ExampleUserClass,
+                         cleaned up ws.examples package.

@@ -23,18 +23,18 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     end  % methods block
     
     methods (Access = protected)
-        function out = shouldWindowStayPutQ(self, varargin)
-            % If acquisition is happening, ignore the close window request
-            wavesurferModel=self.Model.Parent;
-            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=isequal(wavesurferModel.State,'idle');
-                if ~isIdle ,
-                    out=true;
-                    return
-                end
-            end
-            out=false;
-        end  % function        
+%         function out = shouldWindowStayPutQ(self, varargin)
+%             % If acquisition is happening, ignore the close window request
+%             wavesurferModel=self.Model.Parent;
+%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                 isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
+%                 if ~isIdle ,
+%                     out=true;
+%                     return
+%                 end
+%             end
+%             out=false;
+%         end  % function        
     end  % protected methods block
     
     methods (Access = protected)                
