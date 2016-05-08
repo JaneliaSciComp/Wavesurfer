@@ -3,7 +3,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
     
     properties (Dependent = true)
         SampleRate  % Hz
-        DoRepeatSequence 
+        DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
         StimulusLibrary
         AnalogChannelScales
           % A row vector of scale factors to convert each channel from native units to volts on the coax.

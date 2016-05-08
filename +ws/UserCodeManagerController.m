@@ -36,28 +36,28 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
         end  % function       
     end
 
-    methods (Access=protected)
-        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This method is inhierited from AbstractController, and is
-            % called after the user indicates she wants to close the
-            % window.  Returns true if the window should _not_ close, false
-            % if it should go ahead and close.
-            shouldStayPut=false;
-            
-            % If acquisition is happening, ignore the close window request
-            model=self.Model;
-            if ~isempty(model) && isvalid(model) ,            
-                wavesurferModel=model.Parent;
-                if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                    isIdle=isequal(wavesurferModel.State,'idle');
-                    if ~isIdle ,
-                        shouldStayPut=true;
-                        return
-                    end
-                end
-            end
-        end  % function
-    end % protected methods block    
+%     methods (Access=protected)
+%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
+%             % This method is inhierited from AbstractController, and is
+%             % called after the user indicates she wants to close the
+%             % window.  Returns true if the window should _not_ close, false
+%             % if it should go ahead and close.
+%             shouldStayPut=false;
+%             
+%             % If acquisition is happening, ignore the close window request
+%             model=self.Model;
+%             if ~isempty(model) && isvalid(model) ,            
+%                 wavesurferModel=model.Parent;
+%                 if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                     isIdle=isequal(wavesurferModel.State,'idle');
+%                     if ~isIdle ,
+%                         shouldStayPut=true;
+%                         return
+%                     end
+%                 end
+%             end
+%         end  % function
+%     end % protected methods block    
 
     properties (SetAccess=protected)
        propBindings = struct(); 

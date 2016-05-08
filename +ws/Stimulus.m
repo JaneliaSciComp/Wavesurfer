@@ -216,31 +216,31 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             end
         end
         
-        function h = plot(self, fig, ax, sampleRate)
-            if ~exist('ax','var') || isempty(ax)
-                ax = axes('Parent',fig);
-            end
-            
-            if ~exist('sampleRate','var') || isempty(sampleRate)
-                sampleRate = 20000;  % Hz
-            end
-            
-            dt=1/sampleRate;  % s
-            T=self.EndTime;  % s
-            n=round(T/dt);
-            t = dt*(0:(n-1))';  % s
-
-            y = self.calculateSignal(t);            
-            
-            h = line('Parent',ax, ...
-                     'XData',t, ...
-                     'YData',y);
-            
-            ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
-            %title(ax,sprintf('Stimulus using %s', ));
-            xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
-            ylabel(ax,self.Name,'FontSize',10,'Interpreter','none');
-        end        
+%         function h = plot(self, fig, ax, sampleRate)
+%             if ~exist('ax','var') || isempty(ax)
+%                 ax = axes('Parent',fig);
+%             end
+%             
+%             if ~exist('sampleRate','var') || isempty(sampleRate)
+%                 sampleRate = 20000;  % Hz
+%             end
+%             
+%             dt=1/sampleRate;  % s
+%             T=self.EndTime;  % s
+%             n=round(T/dt);
+%             t = dt*(0:(n-1))';  % s
+% 
+%             y = self.calculateSignal(t);            
+%             
+%             h = line('Parent',ax, ...
+%                      'XData',t, ...
+%                      'YData',y);
+%             
+%             ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
+%             %title(ax,sprintf('Stimulus using %s', ));
+%             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
+%             ylabel(ax,self.Name,'FontSize',10,'Interpreter','none');
+%         end        
     end  % public methods block
     
     methods (Access = protected)

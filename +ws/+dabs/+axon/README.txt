@@ -16,3 +16,19 @@ most of the dabs.ni stuff is compiled with at present.
 
 Adam L. Taylor
 March 27, 2015
+
+-----
+
+It's best to compile this .mex file (and all others in WS) using
+VS2008, because 64-bit Matlab R2013b onward (as of this writing) all
+depend on the MSVC 2005 and MSVC 2008 redistributables.  So if you compile
+with VS 2008, you don't end up with an added dependency on an
+additional MSVC redistributable.
+
+I just compiled the mex file using VS2008, and checked using "dumpbin
+/dependents" that it now relies on msvcr90.dll, which is the MSVC 2008
+one (there's a table on the wiki page about MS Visual C++).
+
+Adam L. Taylor
+April 19, 2015
+

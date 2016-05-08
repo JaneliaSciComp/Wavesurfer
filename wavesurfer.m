@@ -18,17 +18,20 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     %   object, wsController.  It is an error to use this form when
     %   isCommandLineOnly is true.
 
+    % Takes a while to start, to give some feedback
+    fprintf('Starting WaveSurfer...');
+    
     % Deal with arguments
     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
         isCommandLineOnly=false;
     end
-    if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName),
+    if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName) ,
         wasProtocolOrMDFFileNameGivenAtCommandLine=false;
         protocolOrMDFFileName='';
     else
         wasProtocolOrMDFFileNameGivenAtCommandLine=true;
     end
-%     if ~exist('mode','var') || isempty(mode),
+%     if ~exist('mode','var') || isempty(mode) ,
 %         mode = 'release' ;
 %     end
 
@@ -42,11 +45,14 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
         controller=[];
     else
         controller = ws.WavesurferMainController(model);    
-%         controller.initialize();
-%           % prompts it to sync the view with the model
-%           % Why does this not happen automatically when you create the controller?
     end
 
+    % Do a drawnow()...
+    drawnow() ;  
+      % Have to do this to give OuterPosition a chance to catch up to
+      % reality, since we query that when deciding whether to move figures
+      % that are possibly off-screen.  Kind of annoying...
+    
     % Load the protocol/MDF file, if one was given
     if wasProtocolOrMDFFileNameGivenAtCommandLine ,
         [~,~,extension] = fileparts(protocolOrMDFFileName) ;
@@ -64,6 +70,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
                 model.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
             else
                 % Need to do via controller, to keep the figure updated
+                drawnow('expose') ;
                 controller.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
             end
         else
@@ -82,4 +89,7 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     if nargout>=2 ,
         varargout{2}=controller;
     end
+    
+    % Declare WS started
+    fprintf('done.\n');    
 end  % function

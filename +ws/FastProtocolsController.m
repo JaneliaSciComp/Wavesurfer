@@ -76,23 +76,23 @@ classdef FastProtocolsController < ws.Controller
     end  %methods block
     
     methods (Access=protected)
-        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This method is inhierited from AbstractController, and is
-            % called after the user indicates she wants to close the
-            % window.  Returns true if the window should _not_ close, false
-            % if it should go ahead and close.
-            shouldStayPut=false;
-            
-            % If acquisition is happening, ignore the close window request
-            wavesurferModel=self.Model;
-            if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
-                return
-            end            
-            isIdle=isequal(wavesurferModel.State,'idle');
-            if ~isIdle ,
-                shouldStayPut=true;
-            end
-        end  % function
+%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
+%             % This method is inhierited from AbstractController, and is
+%             % called after the user indicates she wants to close the
+%             % window.  Returns true if the window should _not_ close, false
+%             % if it should go ahead and close.
+%             shouldStayPut=false;
+%             
+%             % If acquisition is happening, ignore the close window request
+%             wavesurferModel=self.Model;
+%             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
+%                 return
+%             end            
+%             isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
+%             if ~isIdle ,
+%                 shouldStayPut=true;
+%             end
+%         end  % function
     end % protected methods block    
     
     properties (SetAccess=protected)
