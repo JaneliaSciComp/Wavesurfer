@@ -805,7 +805,8 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
 
             
             %Create default arguments, as needed
-            error(nargchk(3,12,nargin,'struct'));
+            %error(nargchk(3,12,nargin,'struct'));
+            narginchk(3,12) ;
 
             if nargin < 4 || isempty(chanNames)
                 chanNames = '';
@@ -893,7 +894,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             %               
                         
             %Create default arguments, as needed
-            error(nargchk(3,10,nargin,'struct'));
+            narginchk(3,10);
             
             if nargin < 4 || isempty(chanNames)
                 chanNames = '';
@@ -1122,7 +1123,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
         function [outputData, sampsPerChanRead] =  readCounterData(obj,numSampsPerChan, timeout, maxOutputDataSize)
             
             %Process input arguments
-            error(nargchk(1,4,nargin,'struct'));
+            narginchk(1,4);
             
             if nargin < 2 || isempty(numSampsPerChan) || isinf(numSampsPerChan) || numSampsPerChan < 0
                 numSampsPerChan = -1;
@@ -1180,7 +1181,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             %   autoStart: <OPTIONAL - Default=false> Specifies whether or not this function automatically starts the task if you do not start it.
  
             %Process input arguments
-            error(nargchk(3,5,nargin,'struct'));
+            narginchk(3,5);
             
             if nargin < 4 || isempty(timeout) || isinf(timeout) || timeout < 0
                 timeout = -1;
@@ -1206,7 +1207,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
             
             
             %Process input arguments
-            error(nargchk(3,5,nargin,'struct'));
+            narginchk(3,5);
             
             if nargin < 4 || isempty(timeout) || isinf(timeout) || timeout < 0
                 timeout = -1;

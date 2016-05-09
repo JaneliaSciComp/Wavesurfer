@@ -49,7 +49,7 @@ classdef Device < ws.dabs.ni.daqmx.private.DAQmxClass
 %                 return;
 %             end
             
-            error(nargchk(1,inf,nargin,'struct'));            
+            narginchk(1,inf);            
             
             if ~ischar(devname) || isempty(strtrim(devname))
                 error('Invalid devname specified.');

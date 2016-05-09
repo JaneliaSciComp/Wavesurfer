@@ -8,7 +8,7 @@ classdef UntimedDigitalOutputTask < handle
     end
     
     properties (Dependent = true)
-        ChannelData
+        ChannelData  % a logical array of the same shape as TerminalIDs (1 x number of channels in task)
     end
     
     properties (Access = protected, Transient = true)

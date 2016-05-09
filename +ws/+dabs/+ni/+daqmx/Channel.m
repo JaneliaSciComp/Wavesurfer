@@ -70,7 +70,8 @@ classdef Channel < ws.dabs.ni.daqmx.private.DAQmxClass
                 return;
             end
 
-            error(nargchk(5,inf,nargin,'struct'));                    
+            %error(nargchk(5,inf,nargin,'struct'));                    
+            narginchk(5,inf);                    
             
             %Validate that task can accept channels of desired type
             if isempty(task.taskType)

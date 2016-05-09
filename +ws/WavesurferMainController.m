@@ -147,7 +147,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
 %             progressBar.IsIndeterminate = true;
 %             
-%             %self.showChildFigure('ws.ui.controller.ephys.TestPulse');
+%             %self.showAndRaiseChildFigure_('ws.ui.controller.ephys.TestPulse');
 %             
 %             try
 %                 self.Model.start(ws.ApplicationState.TestPulsing);
@@ -352,11 +352,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             ws.Controller.setWithBenefits(self.Model.Logging,'IsOKToOverwrite',newValue);
         end
         
-    end  % public methods
-    
-    methods  %(Access = protected)
         function pickMDFFileAndInitializeUsingIt(self)
-            absoluteFileName = ws.WavesurferMainController.promptUserForMDFFileName();
+            absoluteFileName = ws.WavesurferMainController.promptUserForMDFFileName_();
             if isempty(absoluteFileName) ,
                 return
             end
@@ -506,8 +503,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.setProtocolFileNameInMenu(fileName);
             %self.updateProtocolFileNameInMenu();
             %self.nukeAndRepaveScopeControllers();
-            self.decodeMultiWindowLayoutForSuiGenerisControllers(layoutForAllWindows);
-            self.decodeMultiWindowLayoutForExistingScopeControllers(layoutForAllWindows);
+            monitorPositions = ws.Controller.getMonitorPositions() ;
+            self.decodeMultiWindowLayoutForSuiGenerisControllers_(layoutForAllWindows, monitorPositions) ;
+            self.decodeMultiWindowLayoutForExistingScopeControllers_(layoutForAllWindows, monitorPositions) ;
             %self.Model.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             %self.Figure.changeReadiness(+1);
         end  % function
@@ -662,7 +660,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             
             isFileNameKnown=~isempty(fullpath);
-            actualFileName = ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName( ...
+            actualFileName = ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                                  isFileNameKnown, fullpath, 'usr', 'load', startLoc);
                 
             if ~isempty(actualFileName)
@@ -682,7 +680,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             
             isFileNameKnown=~isempty(fullpath);
             actualFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
             
             if ~isempty(actualFileName)
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualFileName);
@@ -696,7 +694,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 
         function saveUserSettings(self, isFileNameKnown, fileName, fileChooserInitialFileName)
             absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName( ...
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
                     fileName, ...
                     'usr', ...
@@ -716,7 +714,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         function saveConfigSettings(self, isFileNameKnown, fileName, fileChooserInitialFileName)
             absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName( ...
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
                     fileName, ...
                     'cfg', ...
@@ -1430,9 +1428,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %            
 %         end
         
-        function decodeMultiWindowLayoutForSuiGenerisControllers(self, multiWindowLayout)
+        function decodeMultiWindowLayoutForSuiGenerisControllers_(self, multiWindowLayout, monitorPositions)
             % load the layout of the main window
-            self.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout);
+            self.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
                         
             % Go through the list of possible controller types, see if any
             % have layout information.  For each, take the appropriate
@@ -1463,7 +1461,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                             % create the controller and then decode the
                             % layout.
                             controller = self.createChildControllerIfNonexistant(controllerName);
-                            controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout);                            
+                            controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
                         else
                             % The controller doesn't exist, but there's no
                             % layout info for it, so all is well.
@@ -1473,7 +1471,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                         if isfield(multiWindowLayout, layoutVarName) ,
                             % The controller exists, and there's layout
                             % info for it, so lay it out
-                            controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout);                            
+                            controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
                         else
                             % The controller exists, but there's no layout
                             % info for it in the multiWindowLayout.  This
@@ -1489,7 +1487,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end    
         end  % function
         
-        function decodeMultiWindowLayoutForExistingScopeControllers(self, multiWindowLayout)
+        function decodeMultiWindowLayoutForExistingScopeControllers_(self, multiWindowLayout, monitorPositions)
             % When this is envoked, the existing scope controllers should
             % already be the same as the ones specified in the
             % multiWindowLayout, usual because of a recent call to
@@ -1497,7 +1495,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             
             for i=1:length(self.ScopeControllers) ,
                 controller=self.ScopeControllers{i};
-                controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout);
+                controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
             end
         end  % function
         
@@ -1604,7 +1602,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % If acquisition is happening, ignore the close window request
             wavesurferModel=self.Model;
             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=isequal(wavesurferModel.State,'idle');
+                isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
                 if ~isIdle ,
                     isOKToQuit=false;
                     return
@@ -1619,7 +1617,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end
         
-        function controller=showChildFigure(self, className, varargin)
+        function showAndRaiseChildFigure_(self, className, varargin)
             [controller,didCreate] = self.createChildControllerIfNonexistant(className,varargin{:});
             if didCreate ,
                 % no need to update
@@ -1627,6 +1625,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 controller.updateFigure();  % figure might be out-of-date
             end
             controller.showFigure();
+            controller.raiseFigure();
         end
         
         function specs = createControllerSpecs(~)
@@ -1720,7 +1719,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 end
 %             end
 %             
-%             self.showChildFigure('ws.ui.controller.stimulus.StimulusLibraryEditorController');
+%             self.showAndRaiseChildFigure_('ws.ui.controller.stimulus.StimulusLibraryEditorController');
 %         end  % function
 
     end  % protected methods
@@ -1737,43 +1736,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     
     
     methods (Static = true, Access = protected)
-%         function fileName = zFileHelper(fileName, fileFcn, verifyFcn, defaultExtension)
-%             % A function that tries to obtain a valid absolute file name
-%             % for the caller. If fileName is nonempty, the function will
-%             % try to use that as a fileName, possibly adding a leading path
-%             % and a following defaultExtension if it lacks these things. If
-%             % fileName is elmpty, fileFcn is called, which in a common use
-%             % case with throw up a file chooser dialog.  fileFcn must
-%             % return a local filename and an abolute path to the dir
-%             % containing that file.  If the the returned "file name" is
-%             % zero, that signals a failure to obtain a file name.  (E.g. if
-%             % the user clicked on "Cancel".)  Regardless of how the absolute
-%             % file name was arrived at, verifyFcn is called on the file
-%             % name before return, which would typically throw an exception
-%             % if the file name is invalid in the sense defined by
-%             % verifyFcn. The return value of verifyFcn, if any, is ignored.
-%             if isempty(fileName)
-%                 [f, p] = fileFcn();
-%                 if isnumeric(f)
-%                     return;
-%                 end
-%                 fileName = fullfile(p, f);
-%             else
-%                 [p, f, e] = fileparts(fileName);
-%                 if isempty(p)
-%                     p = pwd();
-%                 end
-%                 if isempty(e)
-%                     e = defaultExtension;
-%                 end
-%                 f = [f e];
-%                 fileName = fullfile(p, f);
-%             end
-%             
-%             verifyFcn(fileName);
-%         end
-        
-        function absoluteFileName = obtainAndVerifyAbsoluteFileName(isFileNameKnown, fileName, cfgOrUsr, loadOrSave, fileChooserInitialFileName)
+        function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, cfgOrUsr, loadOrSave, fileChooserInitialFileName)
             % A function that tries to obtain a valid absolute file name
             % for the caller. If isFileNameKnown is true, the function
             % will try to use fileName, possibly adding a leading
@@ -1849,7 +1812,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function        
 
-        function absoluteFileName = promptUserForMDFFileName()
+        function absoluteFileName = promptUserForMDFFileName_()
             fileChooserInitialFileName = ws.Preferences.sharedPreferences().loadPref('LastMDFFilePath');
             
             % Obtain an absolute file name
@@ -1945,31 +1908,31 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         % Tools menu
         function FastProtocolsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('FastProtocolsController');
+            self.showAndRaiseChildFigure_('FastProtocolsController');
         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('ChannelsController');
+            self.showAndRaiseChildFigure_('ChannelsController');
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('TriggersController');
+            self.showAndRaiseChildFigure_('TriggersController');
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('StimulusLibraryController');
+            self.showAndRaiseChildFigure_('StimulusLibraryController');
         end
         
         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('UserCodeManagerController');
+            self.showAndRaiseChildFigure_('UserCodeManagerController');
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('ElectrodeManagerController');
+            self.showAndRaiseChildFigure_('ElectrodeManagerController');
         end
         
         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('TestPulserController');
+            self.showAndRaiseChildFigure_('TestPulserController');
         end
         
         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -2001,7 +1964,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
-            %self.showChildFigure('ws.ui.controller.AboutWindow');
+            %self.showAndRaiseChildFigure_('ws.ui.controller.AboutWindow');
             msgbox(sprintf('This is WaveSurfer %s.',ws.versionString()),'About','modal');
         end
         
@@ -2063,7 +2026,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-            self.showChildFigure('StimulusLibraryController');
+            self.showAndRaiseChildFigure_('StimulusLibraryController');
         end
         
         function FastProtocolButtonsActuated(self,source,event)  %#ok<INUSD>

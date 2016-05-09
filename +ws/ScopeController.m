@@ -262,25 +262,25 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
     end        
     
     methods (Access=protected)
-        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This method is inhierited from AbstractController, and is
-            % called after the user indicates she wants to close the
-            % window.  Returns true if the window should _not_ close, false
-            % if it should go ahead and close.
-            
-            % If acquisition is happening, ignore the close window request
-            wavesurferModel = ws.getSubproperty(self,'Model','Parent','Parent') ;
-            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
-                isIdle=isequal(wavesurferModel.State,'idle');
-                if isIdle ,
-                    shouldStayPut=false;
-                else                 
-                    shouldStayPut=true;
-                end
-            else
-                shouldStayPut=false;                
-            end
-        end  % function
+%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
+%             % This method is inhierited from AbstractController, and is
+%             % called after the user indicates she wants to close the
+%             % window.  Returns true if the window should _not_ close, false
+%             % if it should go ahead and close.
+%             
+%             % If acquisition is happening, ignore the close window request
+%             wavesurferModel = ws.getSubproperty(self,'Model','Parent','Parent') ;
+%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
+%                 isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
+%                 if isIdle ,
+%                     shouldStayPut=false;
+%                 else                 
+%                     shouldStayPut=true;
+%                 end
+%             else
+%                 shouldStayPut=false;                
+%             end
+%         end  % function
     end % protected methods block
     
     methods (Access=protected)
@@ -298,37 +298,13 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 %             end
         end
         
-        function decodeWindowLayout(self, layoutOfWindowsInClass)
+        function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
             window = self.Figure ;
             tag = get(window, 'Tag');
-            if isfield(layoutOfWindowsInClass, tag)
+            if isfield(layoutOfWindowsInClass, tag) ,
                 thisWindowLayout = layoutOfWindowsInClass.(tag);
-
-%                 if isfield(thisWindowLayout, 'Toggle')
-%                     toggleState = thisWindowLayout.Toggle;
-%                 else
-%                     % This branch is only to support legacy .usr files that
-%                     % don't have up-to-date layout info.
-%                     toggleState = [];
-%                 end
-
-%                 if ~isempty(toggleState)
-%                     assert(ws.most.gui.AdvancedPanelToggler.isFigToggleable(window));
-% 
-%                     ws.most.gui.AdvancedPanelToggler.loadToggleState(window,toggleState);
-% 
-%                     % gui is toggleable; for position, only set x- and
-%                     % y-pos, not width and height, as those are controlled
-%                     % by toggle-state.
-%                     pos = get(window,'Position');
-%                     pos(1:2) = thisWindowLayout.Position(1:2);
-%                     set(window,'Position',pos);
-%                 else
-%                     % Not a toggleable GUI.
-%                     set(window, 'Position', thisWindowLayout.Position);
-%                 end
                 set(window, 'Position', thisWindowLayout.Position);
-
+                window.constrainPositionToMonitors(monitorPositions) ;
                 if isfield(thisWindowLayout,'IsVisibleWhenDisplayEnabled') ,
                     %set(window, 'Visible', layoutInfo.Visible);
                     % Have to do this at the controller level, so that the

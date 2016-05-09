@@ -937,6 +937,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
                 end            
             end
+            self.broadcast('Update');
         end        
         
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
@@ -946,6 +947,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
                 end            
             end
+            self.broadcast('Update');
         end        
         
         function debug(self) %#ok<MANU>

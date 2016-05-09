@@ -333,7 +333,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\WriteDigitalData.cpp"
+				RelativePath=".\writeDigitalData.cpp"
 				>
 			</File>
 		</Filter>

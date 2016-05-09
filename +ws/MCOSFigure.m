@@ -355,7 +355,11 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     
     methods
         function raise(self)
-            figureGHs=allchild(0);  % the old MOST Controller superclass liked to make things with HandleVisibility=='off'
+            figureGHs=allchild(0);  % ws.MCOSFigure defaults to figures having HandleVisibility=='off'
+            % sometimes figureGHs is a col vector, which seems odd...
+            if iscolumn(figureGHs) ,
+                figureGHs = figureGHs' ;
+            end
             isMe=(figureGHs==self.FigureGH_);
             i=find(isMe,1);
             if isempty(i) ,
@@ -366,7 +370,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
                 set(0,'Children',newRootChildren);
             end
         end  % function       
-    end  % methods    
+    end  % methods
     
     methods (Access = protected)
         function updateGuidata_(self)
@@ -474,5 +478,82 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             end
         end  % function       
     end  % methods
+    
+    methods
+        function constrainPositionToMonitors(self, monitorPositions)
+            % For each monitor, calculate the translation needed to get the
+            % figure onto it.
+
+            % get the figure's OuterPosition
+            %dbstack
+            figureOuterPosition = get(self.FigureGH, 'OuterPosition') ;
+            figurePosition = get(self.FigureGH, 'Position') ;
+            %monitorPositions
+            
+            % define some local functions we'll need
+            function translation = translationToFit2D(offset, sz, screenOffset, screenSize)
+                xTranslation = translationToFit1D(offset(1), sz(1), screenOffset(1), screenSize(1)) ;
+                yTranslation = translationToFit1D(offset(2), sz(2), screenOffset(2), screenSize(2)) ;
+                translation = [xTranslation yTranslation] ;
+            end
+
+            function translation = translationToFit1D(offset, sz, screenOffset, screenSize)
+                % Calculate a translation that will get a thing of size size at offset
+                % offset onto a screen at offset screenOffset, of size screenSize.  All
+                % args are *scalars*, as is the returned value
+                topOffset = offset + sz ;  % or right offset, really
+                screenTop = screenOffset+screenSize ;
+                if offset < screenOffset ,
+                    newOffset = screenOffset ;
+                    translation =  newOffset - offset ;
+                elseif topOffset > screenTop ,
+                    newOffset = screenTop - sz ;
+                    translation =  newOffset - offset ;
+                else
+                    translation = 0 ;
+                end
+            end
+            
+            % Get the offset, size of the figure
+            figureOuterOffset = figureOuterPosition(1:2) ;
+            figureOuterSize = figureOuterPosition(3:4) ;
+            figureOffset = figurePosition(1:2) ;
+            figureSize = figurePosition(3:4) ;
+            
+            % Compute the translation needed to get the figure onto each of
+            % the monitors
+            nMonitors = size(monitorPositions, 1) ;
+            figureTranslationForEachMonitor = zeros(nMonitors,2) ;
+            for i = 1:nMonitors ,
+                monitorPosition = monitorPositions(i,:) ;
+                monitorOffset = monitorPosition(1:2) ;
+                monitorSize = monitorPosition(3:4) ;
+                figureTranslationForThisMonitor = translationToFit2D(figureOuterOffset, figureOuterSize, monitorOffset, monitorSize) ;
+                figureTranslationForEachMonitor(i,:) = figureTranslationForThisMonitor ;
+            end
+
+            % Calculate the magnitude of the translation for each monitor
+            sizeOfFigureTranslationForEachMonitor = hypot(figureTranslationForEachMonitor(:,1), figureTranslationForEachMonitor(:,2)) ;
+            
+            % Pick the smallest translation that gets the figure onto
+            % *some* monitor
+            [~,indexOfSmallestFigureTranslation] = min(sizeOfFigureTranslationForEachMonitor) ;
+            if isempty(indexOfSmallestFigureTranslation) ,
+                figureTranslation = [0 0] ;
+            else
+                figureTranslation = figureTranslationForEachMonitor(indexOfSmallestFigureTranslation,:) ;
+            end        
+
+            % Compute the new position
+            newFigurePosition = [figureOffset+figureTranslation figureSize] ;  
+              % Apply the translation to the Position, not the
+              % OuterPosition, as this seems to be more reliable.  Setting
+              % the OuterPosition causes the layouts to get messed up
+              % sometimes.  (Maybe setting the 'OuterSize' is the problem?)
+            
+            % Set it
+            set(self.FigureGH, 'Position', newFigurePosition) ;
+        end  % function        
+    end  % public methods block
     
 end  % classdef

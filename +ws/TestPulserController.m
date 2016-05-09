@@ -169,30 +169,42 @@ classdef TestPulserController < ws.Controller
     end  % methods
     
     methods (Access=protected)
+%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
+%             % This method is inhierited from AbstractController, and is
+%             % called after the user indicates she wants to close the
+%             % window.  Returns true if the window should _not_ close, false
+%             % if it should go ahead and close.
+% 
+%             % If acquisition is happening, ignore the close window request
+%             testPulser=self.Model;
+%             if ~isempty(testPulser) && isvalid(testPulser) ,
+%                 ephys=testPulser.Parent;            
+%                 if ~isempty(ephys) && isvalid(ephys) ,
+%                     wavesurferModel=ephys.Parent;
+%                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                         isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
+%                         if ~isIdle ,
+%                             shouldStayPut=true;
+%                             return
+%                         end
+%                     end
+%                 end
+%             end
+% 
+%             shouldStayPut=(self.Model.IsRunning);  % If the Test Pulser is running, ignore the close request
+%         end  % function
+
         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This method is inhierited from AbstractController, and is
-            % called after the user indicates she wants to close the
-            % window.  Returns true if the window should _not_ close, false
-            % if it should go ahead and close.
-
-            % If acquisition is happening, ignore the close window request
-            testPulser=self.Model;
-            if ~isempty(testPulser) && isvalid(testPulser) ,
-                ephys=testPulser.Parent;            
-                if ~isempty(ephys) && isvalid(ephys) ,
-                    wavesurferModel=ephys.Parent;
-                    if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                        isIdle=isequal(wavesurferModel.State,'idle');
-                        if ~isIdle ,
-                            shouldStayPut=true;
-                            return
-                        end
-                    end
-                end
+            % This is called after the user indicates she wants to close
+            % the window.  Returns true if the window should _not_ close,
+            % false if it should go ahead and close.
+            model = self.Model ;
+            if isempty(model) || ~isvalid(model) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~model.isRootIdleSensuLato() || model.IsRunning;
             end
-
-            shouldStayPut=(self.Model.IsRunning);  % If the Test Pulser is running, ignore the close request
-        end  % function
+        end
     end % protected methods block
     
     properties (SetAccess=protected)
