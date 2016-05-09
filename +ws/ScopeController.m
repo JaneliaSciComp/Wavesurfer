@@ -221,7 +221,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
         function yLimitsMenuItemActuated(self)
             self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
             self.MyYLimDialogController=...
-                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'));
+                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLim');
         end  % method        
         
         function showGridMenuItemActuated(self)

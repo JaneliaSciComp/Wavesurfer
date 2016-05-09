@@ -87,7 +87,7 @@ classdef TestPulserController < ws.Controller
         function yLimitsMenuItemActuated(self)
             self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
             self.MyYLimDialogController=...
-                ws.YLimDialogForTestPulserController(self,self.Model,get(self.Figure,'Position'));
+                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLimits');
         end  % method  
         
         function startStopButtonPressed(self)
