@@ -1,4 +1,10 @@
 classdef TestPulserFigure < ws.MCOSFigure
+    properties (Dependent=true)
+        %The user modifies the YLim data, and this allows
+        %TestPluserController to access them when they are changed.
+        YLimitsMenuItemGH;
+    end
+    
     properties  (SetAccess=protected)
         StartStopButton
         ElectrodePopupMenuLabelText
@@ -28,14 +34,14 @@ classdef TestPulserFigure < ws.MCOSFigure
         ZoomOutButton
         ScrollUpButton
         ScrollDownButton
-        TestPulserMenuGH_; %Grahpics handle to Test Pulser Menu
-        YLimitsMenuItemGH_; %Graphics handle to YLimits Menu Item
-        
+        YLimitsButton
     end  % properties
     
     properties (Access=protected)
         %IsMinimumSizeSet_ = false
-        YLimits_ = [-10 +10]   % the current y limits   
+        YLimits_ = [-10 +10]   % the current y limits
+        TestPulserMenuGH_; %Grahpics handle to Test Pulser Menu
+        YLimitsMenuItemGH_; %Graphics handle to YLimits Menu Item
     end
 
 %     properties (Dependent=true, Hidden=true)
@@ -209,6 +215,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             set(self.TraceLine,'YData',monitor);
         end  % method
         
+        function result = get.YLimitsMenuItemGH(self)
+            result = self.YLimitsMenuItemGH_;
+        end
 %         function updateIsReady(self,varargin)            
 %             if isempty(self.Model) || self.Model.IsReady ,
 %                 set(self.FigureGH,'pointer','arrow');
@@ -328,6 +337,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             set(self.ZoomOutButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ScrollUpButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ScrollDownButton,'Enable',onIff(~self.Model.IsAutoY));
+            set(self.YLimitsButton,'Enable',onIff(~self.Model.IsAutoY));
             self.updateTrace();
         end  % method        
                 
@@ -496,6 +506,15 @@ classdef TestPulserFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+            
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
+            cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            self.YLimitsButton= ...
+                ws.uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'CData',cdata, ...
+                          'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+
 %                           'String','v', ...
                     
 %             % Gain text
@@ -844,6 +863,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
             set(self.ZoomInButton, ...
                 'Position',[zoomInButtonX zoomInButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            
+            % the y limits button
+            yLimitsButtonX=yRangeButtonsX;
+            yLimitsButtonY=zoomInButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want above otehr zoom buttons
+            set(self.YLimitsButton, ...
+                'Position',[yLimitsButtonX yLimitsButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
             % the scroll buttons
