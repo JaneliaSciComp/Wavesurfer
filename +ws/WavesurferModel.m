@@ -1176,9 +1176,13 @@ classdef WavesurferModel < ws.RootModel
             % Call the user method, if any
             self.callUserMethod_('startingRun');  
                         
-            % Note the time, b/c the logging subsystem needs it, and we
-            % want to note it *just* before the start of the run
-            self.ClockAtRunStart_ = clock() ;
+            % We now do this clock() call in the looper, so that it can be
+            % as close as possible in time to the tic() call that the sweep timestamps are
+            % based on.
+            % % Note the time, b/c the logging subsystem needs it, and we
+            % % want to note it *just* before the start of the run
+            % clockAtRunStart = clock() ;
+            % self.ClockAtRunStart_ = clockAtRunStart ;
             
             % Tell all the subsystems except the logging subsystem to prepare for the run
             % The logging subsystem has to wait until we obtain the analog
@@ -1223,9 +1227,11 @@ classdef WavesurferModel < ws.RootModel
                 if isa(looperResponse,'MException') ,
                     compositeLooperError = looperResponse ;
                     analogScalingCoefficients = [] ;
+                    clockAtRunStartTic = [] ;
                 else
                     compositeLooperError = [] ;
-                    analogScalingCoefficients = looperResponse ;
+                    analogScalingCoefficients = looperResponse.ScalingCoefficients ;
+                    clockAtRunStartTic = looperResponse.ClockAtRunStartTic ;
                 end
             else
                 % If there was an error in the
@@ -1234,6 +1240,7 @@ classdef WavesurferModel < ws.RootModel
                 % bigger fish to fry, in a sense.
                 compositeLooperError = err ;
                 analogScalingCoefficients = [] ;
+                clockAtRunStartTic = [] ;
             end            
             if isempty(compositeLooperError) ,
                 summaryLooperError = [] ;
@@ -1305,7 +1312,8 @@ classdef WavesurferModel < ws.RootModel
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
             self.Acquisition.cacheAnalogScalingCoefficents_(analogScalingCoefficients) ;
-
+            self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
+            
             % Now tell the logging subsystem that a run is about to start,
             % since the analog scaling coeffs have been set
             try
