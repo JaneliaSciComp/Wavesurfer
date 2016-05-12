@@ -1,10 +1,4 @@
 classdef TestPulserFigure < ws.MCOSFigure
-    properties (Dependent=true)
-        %The user modifies the YLim data, and this allows
-        %TestPluserController to access them when they are changed.
-        YLimitsMenuItemGH;
-    end
-    
     properties  (SetAccess=protected)
         StartStopButton
         ElectrodePopupMenuLabelText
@@ -40,8 +34,6 @@ classdef TestPulserFigure < ws.MCOSFigure
     properties (Access=protected)
         %IsMinimumSizeSet_ = false
         YLimits_ = [-10 +10]   % the current y limits
-        TestPulserMenuGH_; %Grahpics handle to Test Pulser Menu
-        YLimitsMenuItemGH_; %Graphics handle to YLimits Menu Item
     end
 
 %     properties (Dependent=true, Hidden=true)
@@ -215,9 +207,6 @@ classdef TestPulserFigure < ws.MCOSFigure
             set(self.TraceLine,'YData',monitor);
         end  % method
         
-        function result = get.YLimitsMenuItemGH(self)
-            result = self.YLimitsMenuItemGH_;
-        end
 %         function updateIsReady(self,varargin)            
 %             if isempty(self.Model) || self.Model.IsReady ,
 %                 set(self.FigureGH,'pointer','arrow');
@@ -332,7 +321,6 @@ classdef TestPulserFigure < ws.MCOSFigure
             self.Model.YUnits=self.Model.MonitorUnits;
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
-            set(self.YLimitsMenuItemGH_,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ZoomOutButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ScrollUpButton,'Enable',onIff(~self.Model.IsAutoY));
@@ -346,15 +334,6 @@ classdef TestPulserFigure < ws.MCOSFigure
     methods (Access=protected)
         function createFixedControls(self)
             
-            % Add a menu, and a single menu item
-            self.TestPulserMenuGH_ = ...
-                uimenu('Parent',self.FigureGH, ...
-                          'Label','Graph Options');
-             self.YLimitsMenuItemGH_ = ...
-                uimenu('Parent',self.TestPulserMenuGH_, ...
-                       'Label','Y Limits...', ...
-                       'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event)); 
-                   
             % Start/stop button
             self.StartStopButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -867,7 +846,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % the y limits button
             yLimitsButtonX=yRangeButtonsX;
-            yLimitsButtonY=zoomInButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want above otehr zoom buttons
+            yLimitsButtonY=zoomInButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want above other zoom buttons
             set(self.YLimitsButton, ...
                 'Position',[yLimitsButtonX yLimitsButtonY ...
                             yRangeButtonSize yRangeButtonSize]);

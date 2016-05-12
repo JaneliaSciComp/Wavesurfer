@@ -39,8 +39,6 @@ classdef TestPulserController < ws.Controller
                     
                     % Act on the control
                     switch source ,
-                        case fig.YLimitsMenuItemGH,
-                            self.yLimitsMenuItemActuated();
                         case fig.ElectrodePopupMenu ,
                             self.electrodePopupMenuTouched();
                         case fig.SubtractBaselineCheckbox ,
@@ -85,12 +83,6 @@ classdef TestPulserController < ws.Controller
 %                 end
             end
         end  % function
-        
-        function yLimitsMenuItemActuated(self)
-            self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
-            self.MyYLimDialogController=...
-                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLimits');
-        end  % method  
         
         function startStopButtonPressed(self)
             %self.Figure.changeReadiness(-1);
