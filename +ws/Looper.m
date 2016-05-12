@@ -990,7 +990,8 @@ classdef Looper < ws.RootModel
             
             % Initialize timing variables
             clockAtRunStartTic = clock() ;
-            self.FromRunStartTicId_ = tic() ;            
+            fromRunStartTicId = tic() ;
+            self.FromRunStartTicId_ = fromRunStartTicId ;            
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
