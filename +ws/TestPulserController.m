@@ -1,4 +1,8 @@
 classdef TestPulserController < ws.Controller
+    properties
+        MyYLimDialogController=[]
+    end
+    
     methods            
         function self=TestPulserController(wavesurferController,wavesurferModel)
 %             testPulser=wavesurferModel.Ephys.TestPulser;
@@ -31,8 +35,8 @@ classdef TestPulserController < ws.Controller
                         %fprintf('about to stop...\n');
                         self.Model.stop();
                         %fprintf('done stopping...\n');
-                    end                
-
+                    end
+                    
                     % Act on the control
                     switch source ,
                         case fig.ElectrodePopupMenu ,
@@ -51,6 +55,8 @@ classdef TestPulserController < ws.Controller
                             self.zoomInButtonPressed();
                         case fig.ZoomOutButton ,
                             self.zoomOutButtonPressed();
+                        case fig.YLimitsButton ,
+                            self.YLimitsButtonPressed();
                         case fig.ScrollUpButton ,
                             self.scrollUpButtonPressed();
                         case fig.ScrollDownButton ,
@@ -127,6 +133,12 @@ classdef TestPulserController < ws.Controller
         
         function zoomOutButtonPressed(self)
             self.Model.zoomOut();
+        end
+        
+        function YLimitsButtonPressed(self)
+            self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
+            self.MyYLimDialogController=...
+                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLimits');
         end
         
         function scrollUpButtonPressed(self)
