@@ -989,11 +989,14 @@ classdef Looper < ws.RootModel
             scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
             
             % Initialize timing variables
-            self.FromRunStartTicId_ = tic() ;
+            clockAtRunStartTic = clock() ;
+            fromRunStartTicId = tic() ;
+            self.FromRunStartTicId_ = fromRunStartTicId ;            
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',scalingCoefficients) ;
+            coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;
+            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',coeffsAndClock) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
