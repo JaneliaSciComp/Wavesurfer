@@ -2750,7 +2750,6 @@ classdef WavesurferModel < ws.RootModel
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
-                    disp(['in WavesurferModel, ', thisPropertyName]);
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,

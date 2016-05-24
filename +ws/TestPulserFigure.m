@@ -263,7 +263,6 @@ classdef TestPulserFigure < ws.MCOSFigure
             isWavesurferTestPulsing=self.Model.IsRunning;
             isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;
             
-            dbstack
             % Update the graphics objects to match the model and/or host
             isStartStopButtonEnabled= ...
                 isWavesurferIdleOrTestPulsing && ...
@@ -307,7 +306,6 @@ classdef TestPulserFigure < ws.MCOSFigure
                                   'Enable',onIff(isWavesurferIdleOrTestPulsing));
             set(self.DurationEditUnitsText,'Enable',onIff(isWavesurferIdleOrTestPulsing));
             nElectrodes=length(self.GainLabelTexts);
-          %  nElectrodes=self.Model.NElectrodes;
             for i=1:nElectrodes ,
                 if self.Model.IsCCPerElectrode(i) || self.Model.IsVCPerElectrode(i) ,
                     set(self.GainLabelTexts(i),'String',sprintf('%s Resistance: ',self.Model.Electrodes{i}.Name));
@@ -315,6 +313,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                     set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',self.Model.Electrodes{i}.Name));
                 end
                 %set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
+                set(self.GainUnitsTexts(i),'String','');
             end
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
             self.YLimits_ = self.Model.YLimits;
