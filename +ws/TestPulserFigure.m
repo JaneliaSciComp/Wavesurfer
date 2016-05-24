@@ -94,6 +94,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                     end
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+                        wavesurferModel.subscribeMe(self,'Update','','update');                        
                         wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
 %                         acquisition=wavesurferModel.Acquisition;
 %                         if ~isempty(acquisition) && isvalid(acquisition) ,
@@ -223,7 +224,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             % Syncs self with model, making no prior assumptions about what
             % might have changed or not changed in the model.
             %fprintf('update!\n');
-%            self.updateControlsInExistance();
+            self.updateControlsInExistance();
             self.updateControlPropertiesImplementation_();
             self.layout();
             % update readiness, without the drawnow()
@@ -243,7 +244,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            self.updateControlsInExistance(); %this way has the correct number of electrode controls in figure
+%            self.updateControlsInExistance(); %this way has the correct number of electrode controls in figure
                         
 %             fprintf('TestPulserFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
