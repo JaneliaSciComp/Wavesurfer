@@ -316,20 +316,30 @@ classdef Controller < handle
         function controlActuated(self,controlName,source,event)            
             try
                 %controlName
-                type=get(source,'Type');
-                if isequal(type,'uitable') ,
-                    if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
-                        methodName=[controlName 'CellEdited'];
-                    else
-                        methodName=[controlName 'CellSelected'];
-                    end
-                    if ismethod(self,methodName) ,
-                        self.(methodName)(source,event);
-                    end                    
-                elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
+                if isempty(source) ,
+                    % this means the control actuated was a 'faux' control
                     methodName=[controlName 'Actuated'];
                     if ismethod(self,methodName) ,
                         self.(methodName)(source,event);
+                    end
+                else
+                    type=get(source,'Type');
+                    if isequal(type,'uitable') ,
+                        if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
+                            methodName=[controlName 'CellEdited'];
+                        else
+                            methodName=[controlName 'CellSelected'];
+                        end
+                        if ismethod(self,methodName) ,
+                            self.(methodName)(source,event);
+                        end                    
+                    elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
+                        methodName=[controlName 'Actuated'];
+                        if ismethod(self,methodName) ,
+                            self.(methodName)(source,event);
+                        end
+                    else
+                        % odd --- just ignore
                     end
                 end
             catch me
