@@ -2033,9 +2033,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             isMatch=(source==self.Figure.FastProtocolButtons);
             index=find(isMatch,1);
             if ~isempty(index) ,
-                profile on;
                 self.applyFastProtocol(index);
-                profile viewer;
             end
         end
     end  % methods
