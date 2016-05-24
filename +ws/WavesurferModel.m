@@ -2222,7 +2222,7 @@ classdef WavesurferModel < ws.RootModel
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
-            self.changeReadiness(+1);       
+            self.changeReadiness(+1);
             %self.broadcast('Update');
         end  % function
     end
@@ -2643,6 +2643,9 @@ classdef WavesurferModel < ws.RootModel
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -2651,7 +2654,7 @@ classdef WavesurferModel < ws.RootModel
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;                    
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -2659,6 +2662,9 @@ classdef WavesurferModel < ws.RootModel
                     end
                 end
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
         end  % function
     end  % public methods block
 
@@ -2744,6 +2750,7 @@ classdef WavesurferModel < ws.RootModel
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
+                    disp(['in WavesurferModel, ', thisPropertyName]);
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
@@ -2778,7 +2785,7 @@ classdef WavesurferModel < ws.RootModel
                 wavesurferModelSettings = self.encodeForPersistence() ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
                 self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
-            end            
+            end
         end  % function
     end  % protected methods block
     

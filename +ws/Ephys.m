@@ -274,6 +274,13 @@ classdef Ephys < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            self.ElectrodeManager.disableBroadcasts();
+            self.TestPulser.disableBroadcasts();
+%             for i=1:self.Parent.Display.NScopes
+%                 self.Parent.Display.Scopes{i}.disableBroadcasts();
+%             end
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -293,6 +300,14 @@ classdef Ephys < ws.Subsystem
                     end                    
                 end
             end
+            
+            % Re-enable broadcasts
+%             for i=1:self.Parent.Display.NScopes
+%                 self.Parent.Display.Scopes{i}.enableBroadcastsMaybe();
+%             end
+            self.TestPulser.enableBroadcastsMaybe();
+            self.ElectrodeManager.enableBroadcastsMaybe();
+            self.enableBroadcastsMaybe();
         end  % function
     end  % public methods block
 

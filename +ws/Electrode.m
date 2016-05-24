@@ -488,21 +488,54 @@ classdef Electrode < ws.Model % & ws.Mimic
         function mimic(self, other)
             % Note that currently this only sets public properties, with
             % all that that implies.
-            self.Name=other.Name;
-            self.Type=other.Type;
-            self.IndexWithinType=other.IndexWithinType;
-            self.Mode=other.Mode;
-            self.VoltageCommandChannelName=other.VoltageCommandChannelName;
-            self.CurrentMonitorChannelName=other.CurrentMonitorChannelName;
-            self.CurrentCommandChannelName=other.CurrentCommandChannelName;
-            self.VoltageMonitorChannelName=other.VoltageMonitorChannelName;
-            self.TestPulseAmplitudeInVC=other.TestPulseAmplitudeInVC;
-            self.TestPulseAmplitudeInCC=other.TestPulseAmplitudeInCC;
-            self.VoltageCommandScaling=other.VoltageCommandScaling;
-            self.CurrentMonitorScaling=other.CurrentMonitorScaling;
-            self.CurrentCommandScaling=other.CurrentCommandScaling;
-            self.VoltageMonitorScaling=other.VoltageMonitorScaling;
-            self.IsCommandEnabled=other.IsCommandEnabled;            
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
+% %             self.Name=other.Name;
+% %             self.IndexWithinType=other.IndexWithinType;
+% %             self.Mode=other.Mode;
+% %             self.VoltageCommandChannelName=other.VoltageCommandChannelName;
+% %             self.CurrentMonitorChannelName=other.CurrentMonitorChannelName;
+% %             self.CurrentCommandChannelName=other.CurrentCommandChannelName;
+% %             self.VoltageMonitorChannelName=other.VoltageMonitorChannelName;
+% %             self.TestPulseAmplitudeInVC=other.TestPulseAmplitudeInVC;
+% %             self.TestPulseAmplitudeInCC=other.TestPulseAmplitudeInCC;
+% %             self.VoltageCommandScaling=other.VoltageCommandScaling;
+% %             self.CurrentMonitorScaling=other.CurrentMonitorScaling;
+% %             self.CurrentCommandScaling=other.CurrentCommandScaling;
+% %             self.VoltageMonitorScaling=other.VoltageMonitorScaling;
+% %             self.IsCommandEnabled=other.IsCommandEnabled;
+% %             self.Type=other.Type;
+            %disp('in Electrode, mimic before mayhavechanged');
+
+
+            
+            self.Name_=other.Name;
+            self.IndexWithinType_=other.IndexWithinType;
+            self.Mode_=other.Mode;
+            self.VoltageCommandChannelName_=other.VoltageCommandChannelName;
+            self.CurrentMonitorChannelName_=other.CurrentMonitorChannelName;
+            self.CurrentCommandChannelName_=other.CurrentCommandChannelName;
+            self.VoltageMonitorChannelName_=other.VoltageMonitorChannelName;
+            self.TestPulseAmplitudeInVC_=other.TestPulseAmplitudeInVC;
+            self.TestPulseAmplitudeInCC_=other.TestPulseAmplitudeInCC;
+            self.VoltageCommandScaling_=other.VoltageCommandScaling;
+            self.CurrentMonitorScaling_=other.CurrentMonitorScaling;
+            self.CurrentCommandScaling_=other.CurrentCommandScaling;
+            self.VoltageMonitorScaling_=other.VoltageMonitorScaling;
+            self.IsCommandEnabled_=other.IsCommandEnabled;
+            self.setType_(other.Type);
+%            self.mayHaveChanged(); % Want to call it once, argument doesn't matter
+       %     self.mayHaveChanged('Name');
+       %     self.mayHaveChanged('IndexWithinType');
+%             self.mayHaveChanged({'Name', 'IndexWithinType', 'Mode', 'VoltageCommandChannelName', ...
+%                 'CurrentMonitorChannelName', 'CurrentCommandChannelName', 'VoltageMonitorChannelName',...
+%                 'TestPulseAmplitudeInVC', 'TestPulseAmplitudeInCC', 'VoltageCommandScaling',...
+%                  'CurrentMonitorScaling', 'CurrentCommandScaling', 'VoltageMonitorScaling', 'IsCommandEnabled','Type'});
+             
+             % Re-enable broadcasts
+             self.enableBroadcastsMaybe();
         end  % function
 
 %         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
@@ -786,10 +819,35 @@ classdef Electrode < ws.Model % & ws.Mimic
             end
         end
         
+        function setType_(self,newValue)
+            isMatch=strcmp(newValue,self.Types);
+            newTypeIndex=find(isMatch,1);
+            if ~isempty(newTypeIndex) ,
+                % Some trode types can't do 'i_equals_zero' mode, so check for that
+                % and change to 'cc' if needed
+                newType=self.Types{newTypeIndex};
+                mode=self.Mode;
+                if ~ws.Electrode.isModeAllowedForType(mode,newType) ,
+                    newMode = ws.Electrode.findClosestAllowedModeForType(mode,newType) ;
+                    self.Mode = newMode;
+                end                
+                % Actually change the type index
+                self.TypeIndex_=newTypeIndex;
+                % Set IndexWithinType_ as needed
+                if isequal(newValue,'Manual') ,
+                    self.IndexWithinType_=[];
+                else
+                    if isempty(self.IndexWithinType_) ,
+                        self.IndexWithinType_=1;
+                    end
+                end
+            end                       
+        end  % function
     end  % protected methods block
     
     methods (Access=protected)
         function mayHaveChanged(self,propertyName)
+%            dbstack
             electrodeManager=self.Parent_;
             if isempty(electrodeManager) || ~isvalid(electrodeManager) ,
                 return

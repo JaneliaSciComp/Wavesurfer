@@ -37,6 +37,14 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
         function out = get.Parent(self)
             out = self.Parent_ ;
         end
+        
+        function mimic(self,other)
+            % mimic function that disables, then re-enables broadcasts for
+            % speed
+            self.disableBroadcasts();
+            self.mimic@ws.Coding(other);
+            self.enableBroadcastsMaybe();
+        end
 
 %         function set.Parent(self, newValue)
 %             self.setParent_(newValue) ;

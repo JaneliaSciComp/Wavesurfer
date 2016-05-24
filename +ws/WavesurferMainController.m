@@ -489,7 +489,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
-            end            
+            end
             saveStruct = self.Model.loadProtocolFileForRealsSrsly(absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
@@ -2033,7 +2033,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             isMatch=(source==self.Figure.FastProtocolButtons);
             index=find(isMatch,1);
             if ~isempty(index) ,
+                profile on;
                 self.applyFastProtocol(index);
+                profile viewer;
             end
         end
     end  % methods

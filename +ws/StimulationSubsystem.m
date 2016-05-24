@@ -306,6 +306,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             % ignore            
             %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
+%            if ~isempty(intersect(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) % can now pass it cell array
                 return
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();                        
@@ -632,6 +633,9 @@ end  % methods block
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -653,6 +657,9 @@ end  % methods block
                     end
                 end
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
         end  % function
     end  % public methods block
 

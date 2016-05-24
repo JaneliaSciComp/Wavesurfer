@@ -223,7 +223,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             % Syncs self with model, making no prior assumptions about what
             % might have changed or not changed in the model.
             %fprintf('update!\n');
-            self.updateControlsInExistance();
+%            self.updateControlsInExistance();
             self.updateControlPropertiesImplementation_();
             self.layout();
             % update readiness, without the drawnow()
@@ -243,7 +243,8 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            
+            self.updateControlsInExistance(); %this way has the correct number of electrode controls in figure
+                        
 %             fprintf('TestPulserFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
 %             fprintf('\n');            
@@ -262,6 +263,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             isWavesurferTestPulsing=self.Model.IsRunning;
             isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;
             
+            dbstack
             % Update the graphics objects to match the model and/or host
             isStartStopButtonEnabled= ...
                 isWavesurferIdleOrTestPulsing && ...
@@ -305,6 +307,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                                   'Enable',onIff(isWavesurferIdleOrTestPulsing));
             set(self.DurationEditUnitsText,'Enable',onIff(isWavesurferIdleOrTestPulsing));
             nElectrodes=length(self.GainLabelTexts);
+          %  nElectrodes=self.Model.NElectrodes;
             for i=1:nElectrodes ,
                 if self.Model.IsCCPerElectrode(i) || self.Model.IsVCPerElectrode(i) ,
                     set(self.GainLabelTexts(i),'String',sprintf('%s Resistance: ',self.Model.Electrodes{i}.Name));
@@ -312,13 +315,11 @@ classdef TestPulserFigure < ws.MCOSFigure
                     set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',self.Model.Electrodes{i}.Name));
                 end
                 %set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
-                set(self.GainUnitsTexts(i),'String','');
             end
             set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
             set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
-            self.Model.YUnits=self.Model.MonitorUnits;
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));

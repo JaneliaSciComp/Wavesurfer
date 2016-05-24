@@ -584,6 +584,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     methods
         function mimic(self, other)
             % Cause self to resemble other.
+
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -592,9 +595,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Scopes_'})) ,
+                    disp('in Display, before scope created');
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
                     target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
                     self.(thisPropertyName) = target ;
+                    disp('in Display, after scope created');
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -602,6 +607,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     end
                 end
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+
         end  % function
     end  % public methods block
     

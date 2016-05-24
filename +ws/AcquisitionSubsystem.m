@@ -679,6 +679,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             % ignore
             %fprintf('Acquisition.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
             if any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
+%            if ~isempty(intersect(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) % can now pass it cell array
                 return
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
