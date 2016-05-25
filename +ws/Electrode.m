@@ -847,7 +847,6 @@ classdef Electrode < ws.Model % & ws.Mimic
     
     methods (Access=protected)
         function mayHaveChanged(self,propertyName)
-%            dbstack
             electrodeManager=self.Parent_;
             if isempty(electrodeManager) || ~isvalid(electrodeManager) ,
                 return

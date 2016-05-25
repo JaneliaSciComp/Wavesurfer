@@ -1077,6 +1077,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
         
 %         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable

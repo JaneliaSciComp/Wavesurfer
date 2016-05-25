@@ -478,6 +478,9 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
             
+            % Broadcast update
+            self.broadcast('Update');
+            
         end  % function
     end  % public methods block
     

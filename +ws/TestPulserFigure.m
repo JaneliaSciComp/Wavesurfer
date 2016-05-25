@@ -94,7 +94,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                     end
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                        wavesurferModel.subscribeMe(self,'Update','','update');                        
+%                        wavesurferModel.subscribeMe(self,'Update','','update');                        
                         wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
 %                         acquisition=wavesurferModel.Acquisition;
 %                         if ~isempty(acquisition) && isvalid(acquisition) ,
@@ -244,7 +244,6 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-%            self.updateControlsInExistance(); %this way has the correct number of electrode controls in figure
                         
 %             fprintf('TestPulserFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack

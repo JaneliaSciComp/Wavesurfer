@@ -306,7 +306,6 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             % ignore            
             %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
-%            if ~isempty(intersect(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) % can now pass it cell array
                 return
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();                        
@@ -660,6 +659,9 @@ end  % methods block
             
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
     end  % public methods block
 

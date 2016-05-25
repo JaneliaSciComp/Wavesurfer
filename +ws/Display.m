@@ -609,6 +609,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
 
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
     end  % public methods block
     

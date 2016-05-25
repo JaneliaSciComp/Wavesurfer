@@ -410,7 +410,6 @@ classdef ScopeModel < ws.Model
         end
         
         function set.YUnits(self,newValue)
-%            dbstack
             if ws.isString(newValue) ,
                 self.YUnits_ = strtrim(newValue) ;
             end

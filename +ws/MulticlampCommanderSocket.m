@@ -104,6 +104,9 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end
         
         %%
