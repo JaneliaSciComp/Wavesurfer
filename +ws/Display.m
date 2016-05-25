@@ -1,5 +1,5 @@
 classdef Display < ws.Subsystem   %& ws.EventSubscriber
-    %Display Manages the display and update of one or more Scope objects.
+    %Display Manages the display
     
     properties (Dependent = true)
         UpdateRate  % the rate at which the scopes are updated, in Hz
@@ -11,38 +11,54 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsXSpanSlavedToAcquistionDurationSettable
           % true iff IsXSpanSlavedToAcquistionDuration is currently
           % settable
-        Scopes  % a cell array of ws.ScopeModel objects
-        NScopes
+        PlotModels  % a cell array of ws.ScopeModel objects
+        NPlots
+        IsGridOn
+        AreColorsNormal        
+        DoShowButtons        
     end
 
     properties (Access = protected)
-        Scopes_  % a cell array of ws.ScopeModel objects
+        PlotModels_  % a cell array of ws.ScopeModel objects
         XSpan_ 
         UpdateRate_
         XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
         IsXSpanSlavedToAcquistionDuration_
           % if true, the x span for all the scopes is set to the acquisiton
           % sweep duration
+        IsGridOn_ = true
+        AreColorsNormal_ = true  % if false, colors are inverted, approximately
+        DoShowButtons_ = true % if false, don't show buttons in the figure  
     end
     
     properties (Access = protected, Transient=true)
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
+        BufferFactor_ = 1        
     end
     
     events
-        NScopesMayHaveChanged
-        DidSetScopeIsVisibleWhenDisplayEnabled
+        %Update
+        %DidSetScopeIsVisibleWhenDisplayEnabled
         %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
-    end
+        %ChannelAdded
+        DataAdded
+        DataCleared
+        DidSetXUnits
+        %WindowVisibilityNeedsToBeUpdated
+        UpdateXAxisLimits
+        %UpdateYAxisLimits
+        %UpdateAreYLimitsLockedTightToData
+    end  % events
 
+    
     methods
         function self = Display(parent)
             self@ws.Subsystem(parent) ;
-            self.Scopes_ = cell(1,0) ;
+            self.PlotModels_ = cell(1,0) ;
             self.XOffset_ = 0;  % s
             self.XSpan_ = 1;  % s
             self.UpdateRate_ = 10;  % Hz
@@ -51,16 +67,16 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function delete(self)
-            %self.removeScopes();
-            self.Scopes_ = cell(1,0) ;
+            %self.removeScopes_();
+            self.PlotModels_ = cell(1,0) ;
         end
         
         function value = get.UpdateRate(self)
             value = self.UpdateRate_;
         end
         
-        function value = get.Scopes(self)
-            value = self.Scopes_ ;
+        function value = get.PlotModels(self)
+            value = self.PlotModels_ ;
         end
         
         function set.UpdateRate(self, newValue)
@@ -103,8 +119,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 else
                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                         self.XSpan_ = double(newValue);
-                        for idx = 1:numel(self.Scopes) ,
-                            self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                        for idx = 1:numel(self.PlotModels) ,
+                            self.PlotModels_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                         end
                     else
                         self.broadcast('UpdateXSpan');
@@ -124,8 +140,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if ws.isASettableValue(newValue) ,
                 if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                     self.XOffset_ = double(newValue);
-                    for idx = 1:numel(self.Scopes)
-                        self.Scopes_{idx}.XOffset = newValue;
+                    for idx = 1:numel(self.PlotModels)
+                        self.PlotModels_{idx}.XOffset = newValue;
                     end
                 else
                     self.broadcast('Update');
@@ -148,8 +164,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if self.IsXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
-                    for idx = 1:numel(self.Scopes) ,
-                        self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                    for idx = 1:numel(self.PlotModels) ,
+                        self.PlotModels_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                     end
                 else
                     self.broadcast('Update');
@@ -165,22 +181,22 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end  % function       
         
         function self=didSetAnalogChannelUnitsOrScales(self)
-            scopes=self.Scopes;
-            for i=1:length(scopes) ,
-                scopes{i}.didSetAnalogChannelUnitsOrScales();
+            plotModels=self.PlotModels;
+            for i=1:length(plotModels) ,
+                plotModels{i}.didSetAnalogChannelUnitsOrScales();
             end
         end       
         
-        function didSetDeviceName(self)
-            %self.initializeScopes_() ;
+        function didSetDeviceName(self)  %#ok<MANU>
+            %self.initializePlotModels_() ;
         end
         
-        function addScope(self, scopeTag, scopeTitle, channelNames)
+        function addPlot_(self, scopeTag, scopeTitle, channelNames)
             if isempty(scopeTag)
-                scopeTag = sprintf('Scope_%d', self.NScopes + 1);
+                scopeTag = sprintf('Scope_%d', self.NPlots + 1);
             end
             if isempty(scopeTitle)
-                scopeTitle = sprintf('Scope %d', self.NScopes + 1);
+                scopeTitle = sprintf('Scope %d', self.NPlots + 1);
             end
             
             % Create the scope model
@@ -195,8 +211,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 scopeModel.addChannel(channelName);
             end
             
-            % Add the new scope to Scopes
-            self.Scopes_{end + 1} = scopeModel;
+            % Add the new scope to PlotModels
+            self.PlotModels_{end + 1} = scopeModel;
             %self.IsScopeVisibleWhenDisplayEnabled(end+1) = true;
 
             % We want to know if the visibility of the scope changes
@@ -205,35 +221,35 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             % Let anyone who cares know that the number of scopes has
             % changed
-            self.broadcast('NScopesMayHaveChanged');
+            self.broadcast('Update');
         end
 
 %         function registerScopeController(self,scopeController)
 %             %scopeController.subscribeMe(self,'ScopeVisibilitySet','','scopeVisibleDidChange');
 %          end
 
-        function removeScope(self, index)
-            self.Scopes_(index) = [];
-            self.broadcast('NScopesMayHaveChanged');
+        function removeScope_(self, index)
+            self.PlotModels_(index) = [];
+            self.broadcast('Update');
         end
         
-        function removeScopes(self)
-            if ~isempty(self.Scopes_) ,
-                self.Scopes_ = cell(1,0);
-                self.broadcast('NScopesMayHaveChanged');
+        function removeScopes_(self)
+            if ~isempty(self.PlotModels_) ,
+                self.PlotModels_ = cell(1,0);
+                self.broadcast('Update');
             end
         end
         
         function toggleIsVisibleWhenDisplayEnabled(self,scopeIndex)
-            originalState = self.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled ;
-            % self.Scopes_{scopeIndex}.IsVisibleWhenDisplayEnabled = ~originalState ;  
+            originalState = self.PlotModels{scopeIndex}.IsVisibleWhenDisplayEnabled ;
+            % self.PlotModels_{scopeIndex}.IsVisibleWhenDisplayEnabled = ~originalState ;  
             %   Doing things with the single line above doesn't work, b/c
-            %   self.Scopes_{scopeIndex} is set to empty for a time, and
+            %   self.PlotModels_{scopeIndex} is set to empty for a time, and
             %   that causes havoc for the some of the event handlers that
             %   fire when IsVisibleWhenDisplayEnabled is set.  I don't
             %   understand why that element is briefly set to empty, but
             %   doing things as below fixes it.  -- ALT, 2015-08-04
-            theScopeModel = self.Scopes_{scopeIndex} ;
+            theScopeModel = self.PlotModels_{scopeIndex} ;
             theScopeModel.IsVisibleWhenDisplayEnabled = ~originalState ;
         end
         
@@ -264,7 +280,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
             channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+            self.addPlot_(scopeTag, scopeTitle, channelNamesForNewScope);
         end
         
         function didAddDigitalInputChannel(self)
@@ -276,15 +292,15 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
             channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+            self.addPlot_(scopeTag, scopeTitle, channelNamesForNewScope);
         end
 
         function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName(nameOfRemovedChannels) ;
+            self.removeScopesByName_(nameOfRemovedChannels) ;
         end
         
         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName(nameOfRemovedChannels) ;
+            self.removeScopesByName_(nameOfRemovedChannels) ;
         end
         
 %         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
@@ -303,31 +319,82 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
         
-        function removeScopesByName(self, namesOfChannelsToRemove)
+        function removeScopesByName_(self, namesOfChannelsToRemove)
             self.disableBroadcasts() ;
             nChannels = length(namesOfChannelsToRemove) ;
             for i = 1:nChannels ,
                 channelName = namesOfChannelsToRemove{i} ;
-                self.removeScopeByName(channelName) ;
+                self.removeScopeByName_(channelName) ;
             end
             self.enableBroadcastsMaybe() ;
-            self.broadcast('NScopesMayHaveChanged');
+            self.broadcast('Update');
         end  % function
         
-        function removeScopeByName(self, nameOfChannelToRemove)
+        function removeScopeByName_(self, nameOfChannelToRemove)
             [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;
             if ~isempty(theScope) ,
-                self.removeScope(indexOfTheScope) ;
+                self.removeScope_(indexOfTheScope) ;
             end
         end  % function
-    end
+        
+        function set.IsGridOn(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.IsGridOn_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.IsGridOn(self)
+            result = self.IsGridOn_ ;
+        end
+            
+        function set.AreColorsNormal(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.AreColorsNormal_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.AreColorsNormal(self)
+            result = self.AreColorsNormal_ ;
+        end
+            
+        function set.DoShowButtons(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.DoShowButtons_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.DoShowButtons(self)
+            result = self.DoShowButtons_ ;
+        end        
+    end  % public methods block
     
     methods (Access=protected)
         function [theScope, indexOfTheScope] = getScopeByName_(self, channelName)
-            nScopes = self.NScopes ;
+            nScopes = self.NPlots ;
             didFindIt = false ;
             for i = 1:nScopes ,
-                thisScope = self.Scopes{i} ;
+                thisScope = self.PlotModels{i} ;
                 thisScopeChannelNames = thisScope.ChannelNames ;
                 if ~isempty(thisScopeChannelNames) ,                    
                     thisScopeChannelName = thisScopeChannelNames{1} ;
@@ -365,7 +432,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.CachedDisplayXSpan_ = [];
         end        
         
-%         function initializeScopes_(self)
+%         function initializePlotModels_(self)
 %             % Set up the initial set of scope models, one per AI channel
 %             activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
 %             for iChannel = 1:length(activeChannelNames) ,
@@ -392,8 +459,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             %ticId=tic();                     
             if self.ClearOnNextData_
                 %fprintf('About to clear scopes...\n');
-                for sdx = 1:numel(self.Scopes)
-                    self.Scopes{sdx}.clearData();
+                for sdx = 1:numel(self.PlotModels)
+                    self.PlotModels{sdx}.clearData();
                 end
             end            
             self.ClearOnNextData_ = false;
@@ -414,7 +481,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             %T=zeros(3,1);
             activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             isActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
-            for sdx = 1:numel(self.Scopes)
+            for sdx = 1:numel(self.PlotModels)
                 % Figure out which channels go in this scope, and the
                 % corresponding channel names
                 % Although this looks like it might be slow, in practice it
@@ -429,7 +496,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 for cdx = 1:length(activeInputChannelNames)
                     %channelName = sprintf('Acq_%d', inputTerminalIDs(cdx));
                     channelName=activeInputChannelNames{cdx};
-                    if any(strcmp(channelName, self.Scopes{sdx}.ChannelNames)) ,
+                    if any(strcmp(channelName, self.PlotModels{sdx}.ChannelNames)) ,
                         channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
                         if isActiveChannelAnalog(cdx)
                             jInAnalogData(end + 1) = cdx; %#ok<AGROW>
@@ -443,11 +510,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 % Add the data for the appropriate channels to this scope
                 if ~isempty(jInAnalogData) ,
                     dataForThisScope=scaledAnalogData(:, jInAnalogData);
-                    self.Scopes{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    self.PlotModels{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 if ~isempty(jInDigitalData) ,
                     dataForThisScope=bitget(rawDigitalData, jInDigitalData);
-                    self.Scopes{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    self.PlotModels{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);
             %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);
@@ -467,8 +534,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             % Want any listeners on XSpan set to get called
             %if self.IsXSpanSlavedToAcquistionDuration ,
-            for idx = 1:numel(self.Scopes) ,
-                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            for idx = 1:numel(self.PlotModels) ,
+                self.PlotModels_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
             end
             self.broadcast('UpdateXSpan');
             %end    
@@ -481,16 +548,16 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             % Want any listeners on XSpan set to get called
             %if self.IsXSpanSlavedToAcquistionDuration ,
-            for idx = 1:numel(self.Scopes) ,
-                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+            for idx = 1:numel(self.PlotModels) ,
+                self.PlotModels_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
             end
             self.broadcast('UpdateXSpan');
             %end    
             %self.XSpan = nan;
         end
         
-        function out = get.NScopes(self)
-            out = length(self.Scopes);
+        function out = get.NPlots(self)
+            out = length(self.PlotModels);
         end
                 
 %         % Need to override the decodeProperties() method supplied by
@@ -504,36 +571,36 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             assert(isstruct(propSet));
 %             
 %             % Need to clear the existing scopes first
-%             self.removeScopes();
+%             self.removeScopes_();
 %             
 %             % Now call the superclass method
 %             %originalValues=self.decodeProperties@ws.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
 %             self.decodeProperties@ws.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
 % 
 %             % Update the view
-%             self.broadcast('NScopesMayHaveChanged');
+%             self.broadcast('Update');
 %         end  % function
         
         function didSetScopeIsVisibleWhenDisplayEnabled(self)
-            self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
+            %self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
         end
     end  % pulic methods block
     
-    methods (Access = protected)        
-        % Need to override the decodeUnwrappedEncodingCore_() method supplied
-        % by ws.Coding() to get correct behavior when the number of
-        % scopes changes.
-        function decodeUnwrappedEncodingCore_(self, encoding)            
-            % Need to clear the existing scopes first
-            self.removeScopes();
-            
-            % Now call the superclass method
-            self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
-
-            % Update the view
-            %self.broadcast('NScopesMayHaveChanged');  % do I need this?
-        end  % function        
-    end  % protected methods block
+%     methods (Access = protected)        
+%         % Need to override the decodeUnwrappedEncodingCore_() method supplied
+%         % by ws.Coding() to get correct behavior when the number of
+%         % scopes changes.
+%         function decodeUnwrappedEncodingCore_(self, encoding)            
+%             % Need to clear the existing scopes first
+%             self.removeScopes_();
+%             
+%             % Now call the superclass method
+%             self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
+% 
+%             % Update the view
+%             %self.broadcast('Update');  % do I need this?
+%         end  % function        
+%     end  % protected methods block
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.Coding.
@@ -544,10 +611,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
-%             if isequal(name,'Scopes') ,
+%             if isequal(name,'PlotModels') ,
 %                 % Make sure they back-reference to the right Display (i.e. self)
-%                 for i=1:length(self.Scopes)
-%                     setPropertyValue_(self.Scopes(i),'Parent',self);
+%                 for i=1:length(self.PlotModels)
+%                     setPropertyValue_(self.PlotModels(i),'Parent',self);
 %                 end                
 %             end                
         end  % function
@@ -591,7 +658,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Scopes_'})) ,
+                if any(strcmp(thisPropertyName,{'PlotModels_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
                     target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
                     self.(thisPropertyName) = target ;

@@ -395,38 +395,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end  % methods block
 
     methods (Access = protected)
-%         function updateScopeVisibilityRecords(self)
-%             if isempty(self.Model) || ~isvalid(self.Model),
-%                 return
-%             end
-%             if isempty(self.Model.Display) || ~isvalid(self.Model.Display),
-%                 return
-%             end
-%             if self.Model.Display.IsEnabled ,
-%                 nScopes=length(self.ScopeControllers);
-%                 if self.Model.Display.NScopes ~= nScopes ,
-%                     % something's not right...
-%                     return
-%                 end
-%                 for i=1:nScopes ,
-%                     scopeController=self.ScopeControllers(i);
-%                     if isvalid(scopeController) ,  % scopeController can be invalid, e.g., when the wavesurferController is being deleted
-%                         visible=get(scopeController.Window,'Visible');
-%                         if ischar(visible) ,
-%                             isVisible=trueIffOn(visible);
-%                         else
-%                             isVisible=visible;
-%                         end
-%                         self.Model.Display.Scopes(i).IsVisibleWhenDisplayEnabled=isVisible;
-%                     end
-%                 end
-%             end
-%         end  % function
-        
-%         function addScope(varargin)
-%             %warndlg('Scope management is not fuly implemented.', 'Scope Management');
-%         end
-        
         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
             % This method is inhierited from AbstractController, and is
             % called after the user indicates she wants to close the
@@ -773,24 +741,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             if isempty(self.Model)                
                 % If there's no model, not much to configure
             else
-                % Additional bindings for (dis/en)abled control states not supported in
-                % controller.
-%                 self.Model.subscribeMe(self,'PostSet','FastProtocols','didSetFastProtocols');                
-%                 for i = 1:numel(self.Model.FastProtocols) ,
-%                     thisFastProtocol=self.Model.FastProtocols(i);
-%                     thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','didSetFastProtocols');
-%                     thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','didSetFastProtocols');
-%                 end                                
-                %self.Model.subscribeMe(self,'PreSet','State','willSetModelState');
-                %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
                 self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
-                %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-                %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
-                %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
-                %self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
-                %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
-                %self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
-                %self.Model.Logging.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfLoggingControls');
                 self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
             end            
         end  % function
@@ -1054,32 +1005,32 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end        
     end
     
-    methods (Access = public)
-        function removeScope(self, source)
-            % Called when one the menu items to remove a scope is called.
-            
-            % Get the scope index
-            tag = get(source,'Tag');
-            indexAsString=tag(end-2:end-1);
-            scopeIndex=str2double(indexAsString);
-            
-            % Delete the controller and thereby the window, and update our
-            % records appropriately
-            thisScopeController=self.ScopeControllers{scopeIndex};
-            isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
-            
-            % thisScopeController.delete();
-            thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-            self.ScopeControllers(scopeIndex)=[];
-            self.ChildControllers(isMatchAsChild)=[];
-            
-            % Delete the ScopeModel     
-            self.Model.Display.removeScope(scopeIndex);
-            
-            % % Update the scope menu (this is handled via event)
-            % self.updateScopeMenu();
-        end
-    end  % public methods block
+%     methods (Access = public)
+%         function removeScope(self, source)
+%             % Called when one the menu items to remove a scope is called.
+%             
+%             % Get the scope index
+%             tag = get(source,'Tag');
+%             indexAsString=tag(end-2:end-1);
+%             scopeIndex=str2double(indexAsString);
+%             
+%             % Delete the controller and thereby the window, and update our
+%             % records appropriately
+%             thisScopeController=self.ScopeControllers{scopeIndex};
+%             isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
+%             
+%             % thisScopeController.delete();
+%             thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%             self.ScopeControllers(scopeIndex)=[];
+%             self.ChildControllers(isMatchAsChild)=[];
+%             
+%             % Delete the ScopeModel     
+%             self.Model.Display.removeScope(scopeIndex);
+%             
+%             % % Update the scope menu (this is handled via event)
+%             % self.updateScopeMenu();
+%         end
+%     end  % public methods block
     
     methods
 %         function nukeAndRepaveScopeControllers(self,varargin)
@@ -1999,7 +1950,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         % Tools > Scopes > Remove subsubmenu
         function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>
-            self.removeScope(source);
+            %self.removeScope(source);
         end
         
         % Help menu

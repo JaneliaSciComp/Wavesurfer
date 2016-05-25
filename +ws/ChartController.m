@@ -1,11 +1,11 @@
-classdef ScopeController < ws.Controller & ws.EventSubscriber
+classdef ChartController < ws.Controller   %& ws.EventSubscriber
     
     properties
         MyYLimDialogController=[]
     end
 
     methods
-        function self=ScopeController(wavesurferController,scopeModel)
+        function self=ChartController(wavesurferController,scopeModel)
             %self = self@ws.Controller(wavesurferController,scopeModel,{},figureClassNames);  % as third arg, should start out hidden
             self = self@ws.Controller(wavesurferController, scopeModel);
 

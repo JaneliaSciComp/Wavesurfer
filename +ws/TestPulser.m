@@ -1607,13 +1607,13 @@ classdef TestPulser < ws.Model
 %         end  % function
 %     end
     
-    methods (Access=protected)
-        % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
-        % after.
-        function decodeUnwrappedEncodingCore_(self, encoding)
-            decodeUnwrappedEncodingCore_@ws.Coding(self, encoding) ;
-            self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
-        end  % function
-    end
+%     methods (Access=protected)
+%         % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
+%         % after.
+%         function decodeUnwrappedEncodingCore_(self, encoding)
+%             decodeUnwrappedEncodingCore_@ws.Coding(self, encoding) ;
+%             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
+%         end  % function
+%     end
     
 end  % classdef

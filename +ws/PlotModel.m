@@ -1,9 +1,9 @@
-classdef ScopeModel < ws.Model
+classdef PlotModel < ws.Model
     
     properties (Dependent=true)  %(SetObservable = true)
         Title        % This is the window title used by any ScopeFigures that use this
                      % ScopeModel as their Model.
-        XUnits
+        %XUnits
         YUnits
         YScale   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
         AreYLimitsLockedTightToData
@@ -11,82 +11,78 @@ classdef ScopeModel < ws.Model
         XSpan  % the difference between the xcoord shown at the rightmost edge of the plot and XOffset
         XLim
         YLim
-        IsGridOn
-        AreColorsNormal        
-        DoShowButtons
-        IsVisibleWhenDisplayEnabled
+        %IsVisibleWhenDisplayEnabled
           % Indicates whether scope is visible when the Display subsystem
           % is enabled.  If display subsystem is disabled, the scopes are
           % all made invisible, but this stores who will be made
           % immediately visible if the display system is reenabled.
           % Note that this is not persisted in the usual way, for
           % historical reasons (see IsVisibleWhenDisplayEnabled_ below).
-        Tag        % This should be a unique tag that identifies this ScopeModel (i.e. a string).
-                   % This is used as the Tag for any ScopeFigure that uses
-                   % this ScopeModel as its model, and should be usable as
-                   % a field name in a structure, for saving/loading
-                   % purposes.
-        ChannelNames   % row cell array, the channel names shown in this scope.  At present, guaranteed to be a singleton
+%         Tag        % This should be a unique tag that identifies this ScopeModel (i.e. a string).
+%                    % This is used as the Tag for any ScopeFigure that uses
+%                    % this ScopeModel as its model, and should be usable as
+%                    % a field name in a structure, for saving/loading
+%                    % purposes.
+%        ChannelNames   % row cell array, the channel names shown in this scope.  At present, guaranteed to be a singleton
         ChannelName  % convenience method for setting ChannelNames to {ChannelName}
     end
 
     properties (Dependent=true, SetAccess=immutable)
-        ChannelColorIndex  
-        NChannels
+        %ChannelColorIndex  
+        %NChannels
         XData
         YData
     end
     
     properties (Access = protected)
-        Tag_ = ''  % This should be a unique tag that identifies this ScopeModel.
-                   % This is used as the Tag for any ScopeFigure that uses
-                   % this ScopeModel as its model, and should be usable as
-                   % a field name in a structure, for saving/loading
-                   % purposes.
-        Title_ = ''  % This is the window title used by any ScopeFigures that use this
-                     % ScopeModel as their Model.        
-        XUnits_ = 's'
-        YUnits_ = ''  % pure, which is correct for digital lines
-        YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
+%         Tag_ = ''  % This should be a unique tag that identifies this ScopeModel.
+%                    % This is used as the Tag for any ScopeFigure that uses
+%                    % this ScopeModel as its model, and should be usable as
+%                    % a field name in a structure, for saving/loading
+%                    % purposes.
+%         Title_ = ''  % This is the window title used by any ScopeFigures that use this
+%                      % ScopeModel as their Model.        
+%         XUnits_ = 's'
+%         YUnits_ = ''  % pure, which is correct for digital lines
+%         YScale_ = 1   % implicitly in units of V/YUnits (need this to keep the YLim fixed in terms of volts at the ADC when the channel units/scale changes
         AreYLimitsLockedTightToData_ = false
-        XOffset_ = 0
-        XSpan_ = 1
+%         XOffset_ = 0
+%         XSpan_ = 1
         YLim_ = [-10 +10]
-        ChannelNames_ = cell(1,0)  % row vector
-        ChannelColorIndex_ = zeros(1,0)
-        IsGridOn_ = true
-        AreColorsNormal_ = true  % if false, colors are inverted, approximately
-        DoShowButtons_ = true % if false, don't show buttons in the figure
+        %ChannelNames_ = cell(1,0)  % row vector
+        %ChannelColorIndex_ = zeros(1,0)
+        %IsGridOn_ = true
+        %AreColorsNormal_ = true  % if false, colors are inverted, approximately
+        %DoShowButtons_ = true % if false, don't show buttons in the figure
     end
 
     properties (Access = protected, Transient=true)
         %Parent_
-        XData_  % a double array, holding x data for each channel
-        YData_ = cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
-          % Invariant: For all i,j length(YData{i})==length(YData{j})        
-        BufferFactor_ = 1
-        RunningMin_ = zeros(1,0)  % length == self.NChannels
-        RunningMax_ = zeros(1,0)
-        RunningMean_ = zeros(1,0)
-        IsVisibleWhenDisplayEnabled_  
-          % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
-          % "layout" part of the .cfg file.  Long-term, would be cleaner to
-          % store it here, it seems to me.
+        %XData_  % a double array, holding x data for each channel
+        YData_ = zeros(0,1)
+%        BufferFactor_ = 1
+        %RunningMin_ = zeros(1,0)  % length == self.NChannels
+        %RunningMax_ = zeros(1,0)
+        %RunningMean_ = zeros(1,0)
+%         IsVisibleWhenDisplayEnabled_  
+%           % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
+%           % "layout" part of the .cfg file.  Long-term, would be cleaner to
+%           % store it here, it seems to me.
     end
     
     events
-        ChannelAdded
-        DataAdded
-        DataCleared
-        DidSetChannelUnits
-        WindowVisibilityNeedsToBeUpdated
-        UpdateXAxisLimits
+        %ChannelAdded
+        %DataAdded
+        %DataCleared
+        DidSetChannelYUnits
+        %WindowVisibilityNeedsToBeUpdated
+        %UpdateXAxisLimits
         UpdateYAxisLimits
         UpdateAreYLimitsLockedTightToData
     end  % events
     
     methods
-        function self = ScopeModel(parent,varargin)
+        function self = PlotModel(parent,varargin)
             % Creates a ScopeModel object.  The 'Tag' property is
             % required.  In almost all cases, the 'WavesurferModel' property
             % should also be specified, although occasionally it is useful
@@ -149,13 +145,13 @@ classdef ScopeModel < ws.Model
             result = self.Title_ ;
         end
 
-        function result = get.Tag(self)
-            result = self.Tag_ ;
-        end
-
-        function result = get.ChannelNames(self)
-            result = self.ChannelNames_ ;
-        end
+%         function result = get.Tag(self)
+%             result = self.Tag_ ;
+%         end
+% 
+%         function result = get.ChannelNames(self)
+%             result = self.ChannelNames_ ;
+%         end
         
         function result = get.ChannelName(self)
             result = self.ChannelNames_{1} ;
@@ -230,56 +226,6 @@ classdef ScopeModel < ws.Model
             self.DoShowButtons = ~(self.DoShowButtons) ;
         end
         
-        function set.IsGridOn(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.IsGridOn_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
-                end
-            end
-            self.broadcast('Update');
-        end
-        
-        function result = get.IsGridOn(self)
-            result = self.IsGridOn_ ;
-        end
-            
-        function set.AreColorsNormal(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.AreColorsNormal_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
-                end
-            end
-            self.broadcast('Update');
-        end
-        
-        function result = get.AreColorsNormal(self)
-            result = self.AreColorsNormal_ ;
-        end
-            
-        function set.DoShowButtons(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.DoShowButtons_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
-                end
-            end
-            self.broadcast('Update');
-        end
-        
-        function result = get.DoShowButtons(self)
-            result = self.DoShowButtons_ ;
-        end
             
         function set.XOffset(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,

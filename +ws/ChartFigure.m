@@ -1,4 +1,4 @@
-classdef ScopeFigure < ws.MCOSFigure
+classdef ChartFigure < ws.MCOSFigure
     
     properties (Dependent=true)
         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
@@ -8,17 +8,18 @@ classdef ScopeFigure < ws.MCOSFigure
         % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
         % model.  Care has to be taken to avoid infinite loops, as you might imagine.
         XLim
-        YLim
+        %YLim
     end
 
     properties (Access = protected)
-        AxesGH_  % HG handle to axes
-        LineGHs_ = zeros(1,0)  % row vector, the line graphics handles for each channel
+        Plots_  % a cell array of ws.Plot objects
+        %AxesGH_  % HG handle to axes
+        %LineGHs_ = zeros(1,0)  % row vector, the line graphics handles for each channel
         %HeldLineGHs;        
 %         HorizontalCenterLineGH;  % HG handle to line
 %         VerticalCenterLineGH;  % HG handle to line
 %         GroundLineGH;  % HG handle to line
-        YForPlotting_  
+        %YForPlotting_  
             % nScans x nChannels
             % Y data downsampled to approximately two points per pixel,
             % with the first point the min for that pixel, second point the
@@ -29,26 +30,26 @@ classdef ScopeFigure < ws.MCOSFigure
             % of a sequence of pairs, with each member of a pair being
             % equal.
         XLim_
-        YLim_
-        SetYLimTightToDataButtonGH_
-        SetYLimTightToDataLockedButtonGH_
+        %YLim_
+        %SetYLimTightToDataButtonGH_
+        %SetYLimTightToDataLockedButtonGH_
         
-        ScopeMenuGH_
-        YZoomInMenuItemGH_
-        YZoomOutMenuItemGH_        
-        SetYLimTightToDataMenuItemGH_
-        SetYLimTightToDataLockedMenuItemGH_        
-        YScrollUpMenuItemGH_
-        YScrollDownMenuItemGH_
-        YLimitsMenuItemGH_
+        ChartMenuGH_
+        %YZoomInMenuItemGH_
+        %YZoomOutMenuItemGH_        
+        %SetYLimTightToDataMenuItemGH_
+        %SetYLimTightToDataLockedMenuItemGH_        
+        %YScrollUpMenuItemGH_
+        %YScrollDownMenuItemGH_
+        %YLimitsMenuItemGH_
         InvertColorsMenuItemGH_
         ShowGridMenuItemGH_
         DoShowButtonsMenuItemGH_
         
-        YZoomInButtonGH_
-        YZoomOutButtonGH_
-        YScrollUpButtonGH_
-        YScrollDownButtonGH_
+        %YZoomInButtonGH_
+        %YZoomOutButtonGH_
+        %YScrollUpButtonGH_
+        %YScrollDownButtonGH_
     end
     
 %     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
@@ -57,11 +58,11 @@ classdef ScopeFigure < ws.MCOSFigure
     
     events
         DidSetXLim
-        DidSetYLim
+        %DidSetYLim
     end
 
     methods
-        function self=ScopeFigure(model,controller)
+        function self=ChartFigure(model,controller)
             % Call the superclass constructor
             self = self@ws.MCOSFigure(model,controller);
             
@@ -76,44 +77,14 @@ classdef ScopeFigure < ws.MCOSFigure
                 'Toolbar','none', ...
                 'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
                 'ResizeFcn',@(sourse,event)(self.layout_()) );
-%                'Renderer','OpenGL', ...            
-%                'Color', model.BackgroundColor,...
             
             % Create the widgets that will persist through the life of the
             % figure
             self.createFixedControls_();
-            
-            % Subscribe to some model events
-            %self.didSetModel_();
-            
-%             % reset the downsampled data
-%             nChannels=length(model.ChannelNames);
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,nChannels);
-%             
-%             % Subscribe to some model events
-%             model.subscribeMe(self,'Update','','update');
-%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
-%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
-%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
-% 
-%             % Subscribe to events in the master model
-%             if ~isempty(model) ,
-%                 display=model.Parent;
-%                 if ~isempty(display) ,
-%                     wavesurferModel=display.Parent;
-%                     if ~isempty(wavesurferModel) ,
-%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
-%                     end
-%                 end
-%             end            
-            
-            % Do stuff to make ws.most.Controller happy
-            self.setHGTagsToPropertyNames_();
-            self.updateGuidata_();
+                        
+%             % Do stuff to make ws.most.Controller happy
+%             self.setHGTagsToPropertyNames_();
+%             self.updateGuidata_();
             
             % sync up self to model
             self.update();
@@ -123,20 +94,20 @@ classdef ScopeFigure < ws.MCOSFigure
             self.positionUpperLeftRelativeToOtherUpperRight(mainFigure, [40 0]) ;
         end  % constructor
         
-        function delete(self)
+        function delete(self)  %#ok<INUSD>
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
             %fprintf('ScopeFigure::delete()\n');
-            ws.deleteIfValidHGHandle(self.LineGHs_);
-            ws.deleteIfValidHGHandle(self.AxesGH_);            
+            %ws.deleteIfValidHGHandle(self.LineGHs_);
+            %ws.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function
         
         function set(self,propName,value)
             % Override MCOSFigure set to catch XLim, YLim
             if strcmpi(propName,'XLim') ,
                 self.XLim=value;
-            elseif strcmpi(propName,'YLim') ,
-                self.YLim=value;
+            %elseif strcmpi(propName,'YLim') ,
+            %    self.YLim=value;
             else
                 set@ws.MCOSFigure(self,propName,value);
             end
@@ -147,7 +118,7 @@ classdef ScopeFigure < ws.MCOSFigure
         function willSetModel_(self)            
             % clear the downsampled data
             self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,0);
+            %self.YForPlotting_=zeros(0,0);
 
             % Call the superclass method
             willSetModel_@ws.MCOSFigure(self);
@@ -448,21 +419,26 @@ classdef ScopeFigure < ws.MCOSFigure
             % Creates the controls that are guaranteed to persist
             % throughout the life of the window.
             
-            %model = self.Model ;
-            self.AxesGH_ = ...
-                axes('Parent', self.FigureGH, ...
-                     'Units','pixels', ...
-                     'HandleVisibility','off', ...
-                     'Box','on' );
-%                      'XGrid', ws.onIff(model.IsGridOn), ...
-%                      'YGrid', ws.onIff(model.IsGridOn) );
-            %         'Position', [0.11 0.11 0.87 0.83], ...
-%                      'XColor', model.ForegroundColor, ...
-%                      'YColor', model.ForegroundColor, ...
-%                      'ZColor', model.ForegroundColor, ...
-%                      'FontSize', model.FontSize, ...
-%                      'FontWeight', model.FontWeight, ...
-%                     'Color', model.BackgroundColor, ...
+            model = self.Model ;
+            nPlots = model.NPlots ;
+            self.Plots_ = cell(1,nPlots) ;
+            for plotIndex=1:model.NPlots ,
+                self.Plots_{plotIndex} = ws.Plot(self) ;
+            end
+%             self.AxesGH_ = ...
+%                 axes('Parent', self.FigureGH, ...
+%                      'Units','pixels', ...
+%                      'HandleVisibility','off', ...
+%                      'Box','on' );
+% %                      'XGrid', ws.onIff(model.IsGridOn), ...
+% %                      'YGrid', ws.onIff(model.IsGridOn) );
+%             %         'Position', [0.11 0.11 0.87 0.83], ...
+% %                      'XColor', model.ForegroundColor, ...
+% %                      'YColor', model.ForegroundColor, ...
+% %                      'ZColor', model.ForegroundColor, ...
+% %                      'FontSize', model.FontSize, ...
+% %                      'FontWeight', model.FontWeight, ...
+% %                     'Color', model.BackgroundColor, ...
             
             colorOrder = get(self.AxesGH_, 'ColorOrder');
             %colorOrder = [1 1 1; 1 0.25 0.25; colorOrder];
@@ -526,50 +502,50 @@ classdef ScopeFigure < ws.MCOSFigure
 %                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
                        
             % Add a menu, and a single menu item
-            self.ScopeMenuGH_ = ...
+            self.ChartMenuGH_ = ...
                 uimenu('Parent',self.FigureGH, ...
                        'Label','Scope');
             self.YScrollUpMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Scroll Up Y-Axis', ...
                        'Callback',@(source,event)self.controlActuated('YScrollUpMenuItemGH',source,event));            
             self.YScrollDownMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Scroll Down Y-Axis', ...
                        'Callback',@(source,event)self.controlActuated('YScrollDownMenuItemGH',source,event));                               
 
             self.SetYLimTightToDataMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Y Limits Tight to Data', ...
                        'Callback',@(source,event)self.controlActuated('SetYLimTightToDataMenuItemGH',source,event));            
             self.SetYLimTightToDataLockedMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Lock Y Limits Tight to Data', ...
                        'Callback',@(source,event)self.controlActuated('SetYLimTightToDataLockedMenuItemGH',source,event));            
                    
             self.YZoomInMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Zoom In Y-Axis', ...
                        'Callback',@(source,event)self.controlActuated('YZoomInMenuItemGH',source,event));            
             self.YZoomOutMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Zoom Out Y-Axis', ...
                        'Callback',@(source,event)self.controlActuated('YZoomOutMenuItemGH',source,event));            
             self.YLimitsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Y Limits...', ...
                        'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
             self.InvertColorsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Separator','on', ...
                        'Label','Green On Black', ...
                        'Callback',@(source,event)self.controlActuated('InvertColorsMenuItemGH',source,event));            
             self.ShowGridMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
             self.DoShowButtonsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ChartMenuGH_, ...
                        'Label','Show Buttons', ...
                        'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
                                       
@@ -597,14 +573,15 @@ classdef ScopeFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'TooltipString', 'Set y-axis limits tight to data', ....
                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataButtonGH',source,event)));
-            % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
-            % we want to do with this button when we change to
-            % green-on-black mode.  Also, there's a checked menu item that
-            % shows when this toggle is engaged or diengaged, so hopefully
-            % it won't be too jarring to the user when this button doesn't
-            % look toggled after she presses it.  I think it should be OK
-            % --- sometimes it's hard to tell even when a togglebutton is
-            % toggled.
+            % This next button used to be a togglebutton, but Matlab
+            % doesn't let you change the foreground/background colors of
+            % togglebuttons, which we want to do with this button when we
+            % change to green-on-black mode.  Also, there's a checked menu
+            % item that shows when this toggle is engaged or diengaged, so
+            % hopefully it won't be too jarring to the user when this
+            % button doesn't look toggled after she presses it.  I think it
+            % should be OK --- sometimes it's hard to tell even when a
+            % togglebutton is toggled.
             self.SetYLimTightToDataLockedButtonGH_ = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
