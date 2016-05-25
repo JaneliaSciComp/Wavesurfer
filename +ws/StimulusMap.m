@@ -286,7 +286,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                     if ~isempty(self.Parent) ,
                         self.Parent.childMayHaveChanged(self);
                     end
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Duration must be numeric, real, scalar, nonnegative, and finite.');                
                 end
             end

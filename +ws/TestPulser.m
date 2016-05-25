@@ -416,7 +416,7 @@ classdef TestPulser < ws.Model
                     self.clearExistingSweepIfPresent_() ;
                 else
                     self.broadcast('Update') ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Amplitude must be a finite scalar');
                 end
             end                

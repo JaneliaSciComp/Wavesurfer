@@ -571,7 +571,7 @@ classdef WavesurferModel < ws.RootModel
                 self.IndexOfSelectedFastProtocol_ = double(newValue) ;
             else
                 %self.broadcast('Update');
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'IndexOfSelectedFastProtocol (scalar) positive integer between 1 and NFastProtocols, inclusive');
             end
             %self.broadcast('Update');              
@@ -601,7 +601,7 @@ classdef WavesurferModel < ws.RootModel
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'NSweepsPerRun must be a (scalar) positive integer, or inf');       
                 end
             end
@@ -625,7 +625,7 @@ classdef WavesurferModel < ws.RootModel
                     %self.stimulusMapDurationPrecursorMayHaveChanged();
                     %self.didSetSweepDurationIfFinite();
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'SweepDurationIfFinite must be a (scalar) positive finite value');
                 end
             end
@@ -654,7 +654,7 @@ classdef WavesurferModel < ws.RootModel
                     end                        
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'SweepDuration must be a (scalar) positive value');
                 end
             end
@@ -2834,12 +2834,12 @@ classdef WavesurferModel < ws.RootModel
                         end                        
                     else
                         self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:Model:invalidPropertyValue', ...
                               'DeviceName must be the name of an NI DAQmx device');       
                     end                        
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'DeviceName must be a nonempty string');       
                 end
             end

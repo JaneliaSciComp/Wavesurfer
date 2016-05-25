@@ -110,7 +110,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
                     self.DeviceName_ = value ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Name must be a string');                  
                 end                    
             end
@@ -123,7 +123,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
                     self.Name_ = value ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
@@ -136,7 +136,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.DeviceName_ = value ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'DeviceName must be a string');                  
 %                 end                    
 %             end
@@ -150,7 +150,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.PFIID_ = value ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'PFIID must be a (scalar) nonnegative integer');                  
 %                 end                    
 %             end
@@ -163,7 +163,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.Edge_ = value;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'Edge must be ''rising'' or ''falling''');                  
 %                 end                                        
 %             end

@@ -258,7 +258,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'Display.IsEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
             settings(end+1,:)={'Display.UpdateRate' 9};
-            settings(end+1,:)={'Display.IsXSpanSlavedToAcquistionDuration' false};
+            settings(end+1,:)={'Display.IsXSpanSlavedToSweepDuration' false};
             settings(end+1,:)={'Display.XSpan' 2.01};
             
             % Set the settings in the wavesurferModel

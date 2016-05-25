@@ -1044,7 +1044,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 %             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
 %             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
-%             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
+%             s.Display.IsXSpanSlavedToSweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
 %             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
@@ -1067,7 +1067,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
-            set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
+            set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToSweepDuration);
             
             % Logging panel
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
@@ -1348,8 +1348,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.DisplayEnabledCheckbox,'Enable',ws.onIff(isIdle));
             set(self.UpdateRateEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
+            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToSweepDuration));
+            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToSweepDurationSettable));            
         end  % function
     end
     

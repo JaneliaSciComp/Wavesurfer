@@ -92,7 +92,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                     self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes, and cannot refer to a counter trigger');
                 end
             end
@@ -106,7 +106,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         function set.StimulationTriggerSchemeIndex(self, newValue)
             if ws.isASettableValue(newValue) ,
                 if self.StimulationUsesAcquisitionTriggerScheme ,
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Can''t set StimulationTriggerSchemeIndex when StimulationUsesAcquisitionTriggerScheme is true');                    
                 else
                     nSchemes = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
@@ -114,7 +114,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                         self.StimulationTriggerSchemeIndex_ = double(newValue) ;
                     else
                         self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:Model:invalidPropertyValue', ...
                               'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
                     end
                 end
@@ -352,7 +352,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                         self.stimulusMapDurationPrecursorMayHaveChanged_();  % why are we calling this, again?
                     else
                         self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:Model:invalidPropertyValue', ...
                               'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
                     end
                 end

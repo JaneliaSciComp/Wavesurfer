@@ -506,7 +506,7 @@ classdef Refiller < ws.RootModel
 %                     end
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'NSweepsPerRun must be a (scalar) positive integer, or inf');       
 %                 end
 %             end
@@ -529,7 +529,7 @@ classdef Refiller < ws.RootModel
                 else
                     self.stimulusMapDurationPrecursorMayHaveChanged();
                     self.didSetSweepDurationIfFinite();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'SweepDurationIfFinite must be a (scalar) positive finite value');
                 end
             end
@@ -557,7 +557,7 @@ classdef Refiller < ws.RootModel
                     end                        
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'SweepDuration must be a (scalar) positive value');
                 end
             end

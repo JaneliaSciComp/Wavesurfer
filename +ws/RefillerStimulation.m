@@ -253,7 +253,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %                     end
 %                 else
 %                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end
@@ -274,7 +274,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
 %                         end
 %                     end
 %                 else
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end

@@ -132,7 +132,7 @@ classdef InputTask < handle
             self.SampleRate_ = sampleRate ;
             
             if ~( isnumeric(durationPerDataAvailableCallback) && isscalar(durationPerDataAvailableCallback) && durationPerDataAvailableCallback>=0 )  ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
             end            
             self.DurationPerDataAvailableCallback_ = durationPerDataAvailableCallback ;  % don't think we use this anymore, but...
@@ -352,7 +352,7 @@ classdef InputTask < handle
         
 %         function set.ActiveChannels(self, value)
 %             if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'ActiveChannels must be empty or a vector of integers.');       
 %             end
 %             
@@ -417,7 +417,7 @@ classdef InputTask < handle
         
 %         function set.SampleRate(self,value)
 %             if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'SampleRate must be a positive integer');       
 %             end            
 %             
@@ -450,7 +450,7 @@ classdef InputTask < handle
         
 %         function set.DurationPerDataAvailableCallback(self, value)
 %             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
 %             end            
 %             self.DurationPerDataAvailableCallback_ = value;
@@ -470,7 +470,7 @@ classdef InputTask < handle
         
         function set.AcquisitionDuration(self, value)
             if ~( isnumeric(value) && isscalar(value) && ~isnan(value) && value>0 )  ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'AcquisitionDuration must be a positive scalar');       
             end            
             self.AcquisitionDuration_ = value;
@@ -487,7 +487,7 @@ classdef InputTask < handle
         
 %         function set.TriggerDelegate(self, value)
 %             if ~( isequal(value,[]) || (isa(value,'ws.HasPFIIDAndEdge') && isscalar(value)) )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'TriggerDelegate must be empty or a scalar ws.HasPFIIDAndEdge');       
 %             end            
 %             self.TriggerDelegate_ = value;
@@ -503,7 +503,7 @@ classdef InputTask < handle
             elseif ws.isString(newValue) ,
                 self.TriggerTerminalName_ = newValue;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'TriggerTerminalName must be empty or a string');
             end
         end  % function
@@ -518,7 +518,7 @@ classdef InputTask < handle
             elseif ws.isAnEdgeType(newValue) ,
                 self.TriggerEdge_ = newValue ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'TriggerEdge must be empty, or ''rising'', or ''falling''');       
             end            
         end  % function
@@ -531,7 +531,7 @@ classdef InputTask < handle
 %             if isequal(value,'DAQmx_Val_FiniteSamps') || isequal(value,'DAQmx_Val_ContSamps') || isequal(value,'DAQmx_Val_HWTimedSinglePoint') ,
 %                 self.ClockTiming_ = value;
 %             else
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'ClockTiming must be ''DAQmx_Val_FiniteSamps'', ''DAQmx_Val_ContSamps'', or ''DAQmx_Val_HWTimedSinglePoint''');       
 %             end            
 %         end  % function           

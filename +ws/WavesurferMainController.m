@@ -312,7 +312,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         function AutoSpanCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            ws.Controller.setWithBenefits(self.Model.Display,'IsXSpanSlavedToAcquistionDuration',newValue);
+            ws.Controller.setWithBenefits(self.Model.Display,'IsXSpanSlavedToSweepDuration',newValue);
         end
         
         function LocationEditActuated(self,source,event) %#ok<INUSD>
@@ -988,22 +988,22 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         end  % function
 %     end  % methods
         
-    methods (Access = public)
-        function scopeVisibleMenuItemTwiddled(self, source)
-            % Called when one of the scope menu items is checked or
-            % unchecked.
-            
-            % Which scope?
-            tag=get(source,'Tag');
-            scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
-            
-            % Make that change
-            self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
-            %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
-            %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
-            % should automatically uopdate now
-        end        
-    end
+%     methods (Access = public)
+%         function scopeVisibleMenuItemTwiddled(self, source)
+%             % Called when one of the scope menu items is checked or
+%             % unchecked.
+%             
+%             % Which scope?
+%             tag=get(source,'Tag');
+%             scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
+%             
+%             % Make that change
+%             self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
+%             %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
+%             %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
+%             % should automatically uopdate now
+%         end        
+%     end
     
 %     methods (Access = public)
 %         function removeScope(self, source)
@@ -1813,7 +1813,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
 %             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
 %             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
-%             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
+%             s.Display.IsXSpanSlavedToSweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
 %             
 %             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
 %             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});

@@ -80,7 +80,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.RepeatCount_ = double(newValue) ;
                 else
                     self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'RepeatCount must be a (scalar) positive integer, or inf');
                 end                
             end
@@ -120,7 +120,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.Interval_ = value ;
                 else
                     self.Parent.update() ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Interval must be a (scalar) positive integer') ;       
                 end
             end
@@ -197,7 +197,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else
                     self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'IsMarkedForDeletion must be a truthy scalar');                  
                 end                    
             end
@@ -210,7 +210,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.Name_ = value ;
                 else
                     self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
@@ -224,7 +224,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.syncPFIIDToCounterID_() ;
                 else
                     self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'DeviceName must be a string');                  
                 end                    
             end
@@ -238,7 +238,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %                     self.PFIID_ = value ;
 %                 else
 %                     self.Parent.update();
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'PFIID must be a (scalar) nonnegative integer');                  
 %                 end                    
 %             end
@@ -251,7 +251,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.Edge_ = value;
                 else
                     self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
@@ -266,7 +266,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                     self.syncPFIIDToCounterID_() ;
                 else
                     self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'CounterID must be a (scalar) nonnegative integer');                  
                 end                    
             end
@@ -401,7 +401,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %                 % all is well---do nothing
 %             else
 %                 self.Parent.update();
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'RepeatCount must be a (scalar) positive integer, or inf');       
 %             end
 %         end
@@ -412,7 +412,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %                 % all is well---do nothing
 %             else
 %                 self.Parent.update();
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'Interval must be a (scalar) positive integer');       
 %             end
 %         end

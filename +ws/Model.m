@@ -54,7 +54,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
 %             try
 %                 self.validatePropArg(propertyName,newValue);
 %             catch exception
-%                 if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+%                 if isequal(exception.identifier,'ws:Model:invalidPropertyValue') ,
 %                     isValid=false;
 %                     return
 %                 else
@@ -149,7 +149,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
 %                 elseif isscalar(newValue) && isa(newValue,'ws.Model') ,
 %                     self.Parent_ = newValue ;
 %                 else
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:Model:invalidPropertyValue', ...
 %                           'Parent must be empty or be a scalar ws.Model') ;
 %                 end
 %             end

@@ -560,7 +560,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end
             self.broadcast('DidSetSampleRate');
             if ~isValueValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'SampleRate must be a positive finite numeric scalar');
             end                
         end  % function
@@ -583,7 +583,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             %self.broadcast('DidSetSampleRate');  % no need to broadcast,
             %since not reflected in UI
             if ~isValueValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'DataCacheDurationWhenContinuous must be a nonnegative finite numeric scalar');
             end                
         end  % function

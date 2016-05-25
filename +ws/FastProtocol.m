@@ -32,7 +32,7 @@ classdef FastProtocol < ws.Model
                     self.ProtocolFileName_ = value;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'ProtocolFileName must be a string');
                 end                    
             end
@@ -50,7 +50,7 @@ classdef FastProtocol < ws.Model
                     self.AutoStartType_ = value;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:Model:invalidPropertyValue', ...
                           'AutoStartType must be ''do_nothing'', ''play'', or ''record''.');
                 end
             end

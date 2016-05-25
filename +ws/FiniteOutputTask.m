@@ -182,7 +182,7 @@ classdef FiniteOutputTask < handle
                 self.IsOutputBufferSyncedToChannelData_ = false ;
                 self.syncOutputBufferToChannelData_();
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'ChannelData must be an NxR matrix, R the number of channels, of the appropriate type.');
             end
         end  % function        
@@ -219,7 +219,7 @@ classdef FiniteOutputTask < handle
         
 %         function set.SampleRate(self, newValue)
 %             if ~( isnumeric(newValue) && isscalar(newValue) && newValue==round(newValue) && newValue>0 )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:Model:invalidPropertyValue', ...
 %                       'SampleRate must be a positive integer');       
 %             end            
 %                         
@@ -236,7 +236,7 @@ classdef FiniteOutputTask < handle
 %                     catch me
 %                         self.DabsDaqTask_.sampClkRate = originalSampleRate;
 %                         self.SampleRate_ = originalSampleRate;
-%                         error('most:Model:invalidPropVal', ...
+%                         error('ws:Model:invalidPropertyValue', ...
 %                               'Unable to set task sample rate to the given value');
 %                     end
 %                 else
@@ -259,7 +259,7 @@ classdef FiniteOutputTask < handle
             elseif ws.isString(self.TriggerTerminalName_) ,
                 self.TriggerTerminalName_ = newValue ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'TriggerTerminalName must be empty or a string');
             end
         end  % function
@@ -274,7 +274,7 @@ classdef FiniteOutputTask < handle
             elseif ws.isAnEdgeType(newValue) ,
                 self.TriggerEdge_ = newValue;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:Model:invalidPropertyValue', ...
                       'TriggerEdge must be empty, or ''rising'', or ''falling''');       
             end            
         end  % function
