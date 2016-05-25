@@ -24,7 +24,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                 isCommandLineOnly);
             
             % Load a user settings file, with 4 fast protocols
-            wsModel.loadUserFileForRealsSrsly('c:/Users/ackermand/Google Drive/Janelia/ScientificComputing/Test Protocols/unnamed.usr');
+            wsModel.loadUserFileForRealsSrsly('./folder_for_fast_protocol_testing/SettingsForFastProtocolTesting.usr');
             storeNumberOfElectrodesInFigure = zeros(1,5);
             storeNumberOfElectrodesInModel = zeros(1,5);
             
