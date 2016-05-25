@@ -22,11 +22,17 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             thisDirName=fileparts(mfilename('fullpath'));
             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
                 isCommandLineOnly);
+            
+            % Load a user settings file, with 4 fast protocols
             wsModel.loadUserFileForRealsSrsly('c:/Users/ackermand/Google Drive/Janelia/ScientificComputing/Test Protocols/unnamed.usr');
             storeNumberOfElectrodesInFigure = zeros(1,5);
             storeNumberOfElectrodesInModel = zeros(1,5);
+            
+            % Check through 4 fast protocol buttons, then return to 3 which contains 6 electrodes
+            % Store number of electrodes in figure and manager for
+            % comparison
             index=1;
-            for currentButton=[(1:4),3] % Check through 4 buttons, then return to 3 which contains 6 electrodes
+            for currentButton=[(1:4),3] 
                 pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButton);
                 wsController.FastProtocolButtonsActuated(pressedButtonHandle);
                 currentController=1;
@@ -39,8 +45,8 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                 storeNumberOfElectrodesInModel(index) = wsModel.Ephys.ElectrodeManager.NElectrodes;
                 index = index + 1;
             end
-%            disp([storeNumberOfElectrodesInFigure; storeNumberOfElectrodesInModel]);
-%            disp(isequal(storeNumberOfElectrodesInFigure, storeNumberOfElectrodesInModel));
+            
+            % Compare number of electrodes in figure and model
             self.verifyEqual( storeNumberOfElectrodesInFigure,storeNumberOfElectrodesInModel);
             ws.clear();
         end  % function
