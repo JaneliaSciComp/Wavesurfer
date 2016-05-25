@@ -11,6 +11,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsXSpanSlavedToAcquistionDurationSettable
           % true iff IsXSpanSlavedToAcquistionDuration is currently
           % settable
+        IsXSpanSlavedToSweepDurationIfFinite
         PlotModels  % a cell array of ws.ScopeModel objects
         NPlots
         IsGridOn
@@ -19,11 +20,14 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
 
     properties (Access = protected)
-        PlotModels_  % a cell array of ws.ScopeModel objects
+        IsAnalogChannelShownWhenActive_
+        IsDigitalChannelShownWhenActive_
+        YLimitsPerAnalogChannel_
+        %PlotModels_  % a cell array of ws.ScopeModel objects
         XSpan_ 
         UpdateRate_
         XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
-        IsXSpanSlavedToAcquistionDuration_
+        IsXSpanSlavedToSweepDurationIfFinite_
           % if true, the x span for all the scopes is set to the acquisiton
           % sweep duration
         IsGridOn_ = true
@@ -39,7 +43,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
     
     events
-        %Update
+        Update
         %DidSetScopeIsVisibleWhenDisplayEnabled
         %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
@@ -50,8 +54,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         DidSetXUnits
         %WindowVisibilityNeedsToBeUpdated
         UpdateXAxisLimits
-        %UpdateYAxisLimits
-        %UpdateAreYLimitsLockedTightToData
+        UpdateYLimits
+        %UpdateAreYLimitsLockedTightToData        
     end  % events
 
     
@@ -63,7 +67,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.XSpan_ = 1;  % s
             self.UpdateRate_ = 10;  % Hz
             self.XAutoScroll_ = false ;
-            self.IsXSpanSlavedToAcquistionDuration_ = true ;
+            self.IsXSpanSlavedToSweepDurationIfFinite_ = true ;
         end
         
         function delete(self)
@@ -152,18 +156,22 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('Update');
         end
         
+        function value = get.IsXSpanSlavedToSweepDurationIfFinite(self)
+            value = self.IsXSpanSlavedToSweepDurationIfFinite_ ;
+        end
+        
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
             if self.Parent.AreSweepsContinuous ,
                 value = false ;
             else
-                value = self.IsXSpanSlavedToAcquistionDuration_;
+                value = self.IsXSpanSlavedToSweepDurationIfFinite_;
             end
         end  % function
         
         function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
             if self.IsXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
-                    self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
+                    self.IsXSpanSlavedToSweepDurationIfFinite_ = logical(newValue) ;
                     for idx = 1:numel(self.PlotModels) ,
                         self.PlotModels_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
                     end
@@ -272,70 +280,81 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function didAddAnalogInputChannel(self)
-            % Add a scope to match the new channel (newly added channels
-            % are always active)
-            channelNames = self.Parent.Acquisition.AnalogChannelNames ;            
-            newChannelName = channelNames{end} ;
-            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
-            scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
-            scopeTitle=sprintf('Channel %s', newChannelName);
-            channelNamesForNewScope={newChannelName};
-            self.addPlot_(scopeTag, scopeTitle, channelNamesForNewScope);
+            self.IsAnalogChannelShownWhenActive_ = [self.IsAnalogChannelShownWhenActive_ true] ;
+            self.YLimsPerAnalogChannel_ = [self.YLimsPerAnalogChannel_ ; ...
+                                           -10 +10] ;
+            self.broadcast('Update');            
+%             channelNames = self.Parent.Acquisition.AnalogChannelNames ;            
+%             newChannelName = channelNames{end} ;
+%             prototypeScopeTag=sprintf('Channel_%s', newChannelName);
+%             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
+%             scopeTitle=sprintf('Channel %s', newChannelName);
+%             channelNamesForNewScope={newChannelName};
+%             self.addPlot_(scopeTag, scopeTitle, channelNamesForNewScope);
         end
         
         function didAddDigitalInputChannel(self)
-            % Add a scope to match the new channel (newly added channels
-            % are always active)
-            channelNames = self.Parent.Acquisition.DigitalChannelNames ;            
-            newChannelName = channelNames{end} ;
-            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
-            scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
-            scopeTitle=sprintf('Channel %s', newChannelName);
-            channelNamesForNewScope={newChannelName};
-            self.addPlot_(scopeTag, scopeTitle, channelNamesForNewScope);
+            self.IsDigitalChannelShownWhenActive_ = [self.IsDigitalChannelShownWhenActive_ true] ;
+            self.broadcast('Update');            
+%             % Add a scope to match the new channel (newly added channels
+%             % are always active)
+%             channelNames = self.Parent.Acquisition.DigitalChannelNames ;            
+%             newChannelName = channelNames{end} ;
+%             prototypeScopeTag=sprintf('Channel_%s', newChannelName);
+%             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
+%             scopeTitle=sprintf('Channel %s', newChannelName);
+%             channelNamesForNewScope={newChannelName};
+%             self.addPlot_(scopeTag, scopeTitle, channelNamesForNewScope);
         end
 
-        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName_(nameOfRemovedChannels) ;
+        function didDeleteAnalogInputChannels(self, isToBeDeleted)            
+            self.IsAnalogChannelShownWhenActive_ = self.IsAnalogChannelShownWhenActive_(isToBeDeleted) ;
+            self.YLimsPerAnalogChannel_ = self.YLimsPerAnalogChannel_(isToBeDeleted,:) ; ...
+            self.broadcast('Update');                        
+            %self.removeScopesByName_(nameOfRemovedChannels) ;
         end
         
-        function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName_(nameOfRemovedChannels) ;
+        function didDeleteDigitalInputChannels(self, isToBeDeleted)            
+            self.IsDigitalChannelShownWhenActive_ = self.IsDigitalChannelShownWhenActive_(isToBeDeleted) ;
+            self.broadcast('Update');                        
+%             self.removeScopesByName_(nameOfRemovedChannels) ;
         end
         
 %         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
 %             self.removeScopeByName(nameOfRemovedChannel) ;
 %         end
         
-        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
             if didSucceed , 
-                self.renameScope_(oldValue, newValue) ;
+                %self.renameScope_(oldValue, newValue) ;
+                self.broadcast('UpdateChannelNames') ;
             end
         end
         
-        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
+        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
             if didSucceed , 
-                self.renameScope_(oldValue, newValue) ;
+                %self.renameScope_(oldValue, newValue) ;
+                self.broadcast('UpdateChannelNames') ;
             end
         end
         
-        function removeScopesByName_(self, namesOfChannelsToRemove)
-            self.disableBroadcasts() ;
-            nChannels = length(namesOfChannelsToRemove) ;
-            for i = 1:nChannels ,
-                channelName = namesOfChannelsToRemove{i} ;
-                self.removeScopeByName_(channelName) ;
-            end
-            self.enableBroadcastsMaybe() ;
-            self.broadcast('Update');
-        end  % function
+%         function removeScopesByName_(self, namesOfChannelsToRemove)
+%             self.disableBroadcasts() ;
+%             nChannels = length(namesOfChannelsToRemove) ;
+%             for i = 1:nChannels ,
+%                 channelName = namesOfChannelsToRemove{i} ;
+%                 self.removeScopeByName_(channelName) ;
+%             end
+%             self.enableBroadcastsMaybe() ;
+%             self.broadcast('Update');
+%         end  % function
         
-        function removeScopeByName_(self, nameOfChannelToRemove)
-            [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;
-            if ~isempty(theScope) ,
-                self.removeScope_(indexOfTheScope) ;
-            end
-        end  % function
+%         function removeScopeByName_(self, nameOfChannelToRemove)
+%             [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;
+%             if ~isempty(theScope) ,
+%                 self.removeScope_(indexOfTheScope) ;
+%             end
+%         end  % function
         
         function set.IsGridOn(self,newValue)
             if ws.isASettableValue(newValue) ,
@@ -386,44 +405,83 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function result = get.DoShowButtons(self)
             result = self.DoShowButtons_ ;
-        end        
+        end
+        
+        function zoomIn(self, indexOfAIChannel)
+            yLimits=self.YLimitsPerAnalogChannel_(indexOfAIChannel,:);
+            yMiddle=mean(yLimits);
+            yRadius=0.5*diff(yLimits);
+            newYLimits=yMiddle+0.5*yRadius*[-1 +1];
+            self.YLimitsPerAnalogChannel_(indexOfAIChannel,:)=newYLimits;
+            broadcast('UpdateYLimits', indexOfAIChannel) ;
+        end  % function
+        
+        function zoomOut(self, indexOfAIChannel)
+            yLimits=self.YLimitsPerAnalogChannel_(indexOfAIChannel,:);
+            yMiddle=mean(yLimits);
+            yRadius=0.5*diff(yLimits);
+            newYLimits=yMiddle+2*yRadius*[-1 +1];
+            self.YLimitsPerAnalogChannel_(indexOfAIChannel,:)=newYLimits;
+            broadcast('UpdateYLimits', indexOfAIChannel) ;
+        end  % function
+        
+        function scrollUp(self, indexOfAIChannel)
+            yLimits=self.YLimitsPerAnalogChannel_(indexOfAIChannel,:);
+            yMiddle=mean(yLimits);
+            ySpan=diff(yLimits);
+            yRadius=0.5*ySpan;
+            newYLimits=(yMiddle+0.1*ySpan)+yRadius*[-1 +1];
+            self.YLimitsPerAnalogChannel_(indexOfAIChannel,:)=newYLimits;
+            broadcast('UpdateYLimits', indexOfAIChannel) ;
+        end  % function
+        
+        function scrollDown(self, indexOfAIChannel)
+            yLimits=self.YLimitsPerAnalogChannel_(indexOfAIChannel,:);
+            yMiddle=mean(yLimits);
+            ySpan=diff(yLimits);
+            yRadius=0.5*ySpan;
+            newYLimits=(yMiddle-0.1*ySpan)+yRadius*[-1 +1];
+            self.YLimitsPerAnalogChannel_(indexOfAIChannel,:)=newYLimits;
+            broadcast('UpdateYLimits', indexOfAIChannel) ;
+        end  % function
+        
     end  % public methods block
     
     methods (Access=protected)
-        function [theScope, indexOfTheScope] = getScopeByName_(self, channelName)
-            nScopes = self.NPlots ;
-            didFindIt = false ;
-            for i = 1:nScopes ,
-                thisScope = self.PlotModels{i} ;
-                thisScopeChannelNames = thisScope.ChannelNames ;
-                if ~isempty(thisScopeChannelNames) ,                    
-                    thisScopeChannelName = thisScopeChannelNames{1} ;
-                    if isequal(thisScopeChannelName,channelName) ,                        
-                        theScope = thisScope ;
-                        indexOfTheScope = i ;
-                        didFindIt = true ;
-                        break
-                    end
-                end
-            end
-            if ~didFindIt ,
-                theScope = [] ;
-                indexOfTheScope = [] ;
-            end
-        end
+%         function [theScope, indexOfTheScope] = getScopeByName_(self, channelName)
+%             nScopes = self.NPlots ;
+%             didFindIt = false ;
+%             for i = 1:nScopes ,
+%                 thisScope = self.PlotModels{i} ;
+%                 thisScopeChannelNames = thisScope.ChannelNames ;
+%                 if ~isempty(thisScopeChannelNames) ,                    
+%                     thisScopeChannelName = thisScopeChannelNames{1} ;
+%                     if isequal(thisScopeChannelName,channelName) ,                        
+%                         theScope = thisScope ;
+%                         indexOfTheScope = i ;
+%                         didFindIt = true ;
+%                         break
+%                     end
+%                 end
+%             end
+%             if ~didFindIt ,
+%                 theScope = [] ;
+%                 indexOfTheScope = [] ;
+%             end
+%         end
         
-        function renameScope_(self, oldChannelName, newChannelName)
-            theScope = self.getScopeByName_(oldChannelName) ;
-            if ~isempty(theScope) ,
-                prototypeNewScopeTag = sprintf('Channel_%s', newChannelName) ;
-                newScopeTag = ws.Display.tagFromString(prototypeNewScopeTag) ;  % this is a static method call
-                newScopeTitle = sprintf('Channel %s', newChannelName) ;
-                %newChannelNames = {newChannelName} ;
-                theScope.ChannelName = newChannelName ;
-                theScope.Title = newScopeTitle ;
-                theScope.Tag = newScopeTag ;
-            end
-        end
+%         function renameScope_(self, oldChannelName, newChannelName)
+%             theScope = self.getScopeByName_(oldChannelName) ;
+%             if ~isempty(theScope) ,
+%                 prototypeNewScopeTag = sprintf('Channel_%s', newChannelName) ;
+%                 newScopeTag = ws.Display.tagFromString(prototypeNewScopeTag) ;  % this is a static method call
+%                 newScopeTitle = sprintf('Channel %s', newChannelName) ;
+%                 %newChannelNames = {newChannelName} ;
+%                 theScope.ChannelName = newChannelName ;
+%                 theScope.Title = newScopeTitle ;
+%                 theScope.Tag = newScopeTag ;
+%             end
+%         end
         
         function completingOrStoppingOrAbortingRun_(self)
             if ~isempty(self.CachedDisplayXSpan_)
@@ -581,9 +639,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.broadcast('Update');
 %         end  % function
         
-        function didSetScopeIsVisibleWhenDisplayEnabled(self)
-            %self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
-        end
+%         function didSetScopeIsVisibleWhenDisplayEnabled(self)
+%             %self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
+%         end
     end  % pulic methods block
     
 %     methods (Access = protected)        
@@ -611,66 +669,59 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
-%             if isequal(name,'PlotModels') ,
-%                 % Make sure they back-reference to the right Display (i.e. self)
-%                 for i=1:length(self.PlotModels)
-%                     setPropertyValue_(self.PlotModels(i),'Parent',self);
-%                 end                
-%             end                
-        end  % function
-        
+        end  % function        
     end  % protected methods
     
-    methods (Static=true)
-        function tag=tagFromString(str)
-            % Transform an arbitrary ASCII string into a tag, which must be
-            % a valid Matlab identifier            
-            if isempty(str) ,
-                tag=str;  % maybe should throw error, but they'll find out soon enough...
-                return
-            end
-            
-            % Replace illegal chars with underscores
-            isAlphanumeric=isstrprop(str,'alphanum');
-            isUnderscore=(str=='_');
-            isIllegal= ~isAlphanumeric & ~isUnderscore;
-            temp=str;
-            temp(isIllegal)='_';
-            
-            % If first char is not alphabetic, replace with 'a'
-            isFirstCharAlphabetic=isstrprop(temp(1),'alpha');
-            if ~isFirstCharAlphabetic, 
-                temp(1)='a';
-            end
-            
-            % Return the tag
-            tag=temp;
-        end  % function
-    end
+%     methods (Static=true)
+%         function tag=tagFromString(str)
+%             % Transform an arbitrary ASCII string into a tag, which must be
+%             % a valid Matlab identifier            
+%             if isempty(str) ,
+%                 tag=str;  % maybe should throw error, but they'll find out soon enough...
+%                 return
+%             end
+%             
+%             % Replace illegal chars with underscores
+%             isAlphanumeric=isstrprop(str,'alphanum');
+%             isUnderscore=(str=='_');
+%             isIllegal= ~isAlphanumeric & ~isUnderscore;
+%             temp=str;
+%             temp(isIllegal)='_';
+%             
+%             % If first char is not alphabetic, replace with 'a'
+%             isFirstCharAlphabetic=isstrprop(temp(1),'alpha');
+%             if ~isFirstCharAlphabetic, 
+%                 temp(1)='a';
+%             end
+%             
+%             % Return the tag
+%             tag=temp;
+%         end  % function
+%     end
     
-    methods
-        function mimic(self, other)
-            % Cause self to resemble other.
-            
-            % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
-            
-            % Set each property to the corresponding one
-            for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'PlotModels_'})) ,
-                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
-                    self.(thisPropertyName) = target ;
-                else
-                    if isprop(other,thisPropertyName) ,
-                        source = other.getPropertyValue_(thisPropertyName) ;
-                        self.setPropertyValue_(thisPropertyName, source) ;
-                    end
-                end
-            end
-        end  % function
-    end  % public methods block
+%     methods
+%         function mimic(self, other)
+%             % Cause self to resemble other.
+%             
+%             % Get the list of property names for this file type
+%             propertyNames = self.listPropertiesForPersistence();
+%             
+%             % Set each property to the corresponding one
+%             for i = 1:length(propertyNames) ,
+%                 thisPropertyName=propertyNames{i};
+%                 if any(strcmp(thisPropertyName,{'PlotModels_'})) ,
+%                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+%                     target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+%                     self.(thisPropertyName) = target ;
+%                 else
+%                     if isprop(other,thisPropertyName) ,
+%                         source = other.getPropertyValue_(thisPropertyName) ;
+%                         self.setPropertyValue_(thisPropertyName, source) ;
+%                     end
+%                 end
+%             end
+%         end  % function
+%     end  % public methods block
     
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct() ;

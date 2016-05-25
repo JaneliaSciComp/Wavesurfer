@@ -1128,7 +1128,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
-            self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
+            self.Parent.didDeleteAnalogInputChannels(isToBeDeleted) ;
         end  % function
         
 %         function removeDigitalChannel(self,channelIndex)
