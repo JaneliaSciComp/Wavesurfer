@@ -23,16 +23,16 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
                 isCommandLineOnly);
             
-            % Load a user settings file, with 4 fast protocols
-            wsModel.loadUserFileForRealsSrsly('./folder_for_fast_protocol_testing/SettingsForFastProtocolTesting.usr');
-            storeNumberOfElectrodesInFigure = zeros(1,5);
-            storeNumberOfElectrodesInModel = zeros(1,5);
+            % Load a user settings file, with 2 fast protocols
+            wsModel.loadUserFileForRealsSrsly(fullfile(thisDirName,'folder_for_fast_protocol_testing/SettingsForFastProtocolNumberOfElectrodesTesting.usr'));
+            storeNumberOfElectrodesInFigure = zeros(1,2);
+            storeNumberOfElectrodesInModel = zeros(1,2);
             
-            % Check through 4 fast protocol buttons, then return to 3 which contains 6 electrodes
+            % Load fast protocol 1 with 2 electrodes, then fast protocol 2 with 6 electrodes
             % Store number of electrodes in figure and manager for
             % comparison
             index=1;
-            for currentButton=[(1:4),3] 
+            for currentButton=[1,2] 
                 pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButton);
                 wsController.FastProtocolButtonsActuated(pressedButtonHandle);
                 currentController=1;
