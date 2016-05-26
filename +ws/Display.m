@@ -376,6 +376,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
+            % Called by the WSM to notify us that new data is available.            
+            % t is the timestamp of the sample just past the latest sample
+            % in rawAnalogData, rawDigitalData.
+            
             % Clear the existing data, if e.g. this is first data of a
             % new sweep
             if self.ClearOnNextData_ ,
@@ -383,16 +387,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end            
             self.ClearOnNextData_ = false;
             
-            % update the x offset
-            if self.XAutoScroll_ ,                
-                scale=min(1,self.XSpan);
-                tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
-                xOffsetNudged=tNudged-self.XSpan;
-                if xOffsetNudged>self.XOffset ,
-                    self.XOffset_=xOffsetNudged;
+            % Update the x offset
+            xSpan = self.XSpan ;
+            xOffset = self.XOffset ;
+            if self.XAutoScroll_ ,
+                spansAhead = floor((t-xOffset)/xSpan) ;
+                if spansAhead>0 ,
+                    self.XOffset_ = xOffset + spansAhead*xSpan ;
                 end
             end
 
+            % 
+            
             % Feed the data to the scopes
             activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             isActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
