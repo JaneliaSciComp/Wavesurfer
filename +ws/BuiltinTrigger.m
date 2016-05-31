@@ -106,12 +106,12 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
         
         function set.DeviceName(self, value)
             if ws.isASettableValue(value) ,
-                if ws.isString(value) && ~isempty(value) ,
+                if ws.isString(value) ,
                     self.DeviceName_ = value ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
-                          'Name must be a nonempty string');                  
+                          'Name must be a string');                  
                 end                    
             end
             self.broadcast('Update');            

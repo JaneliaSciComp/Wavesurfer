@@ -181,8 +181,9 @@ classdef WavesurferModel < ws.RootModel
                 %matlabBinPath = fullfile(matlabroot(),'bin','win64') ;
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
 %                 if isequal(mode,'superdebug') ,
+%                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
 %                 else            
@@ -196,8 +197,9 @@ classdef WavesurferModel < ws.RootModel
 %                 end
                 system(looperLaunchString) ;
 %                 if isequal(mode,'superdebug') ,
+%                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
 %                 else
@@ -2195,7 +2197,7 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function saveStruct = loadProtocolFileForRealsSrsly(self, fileName)
+        function saveStruct = openProtocolFileGivenFileName(self, fileName)
             % Actually loads the named config file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -2764,6 +2766,9 @@ classdef WavesurferModel < ws.RootModel
                     end
                 end
             end
+            
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
             
             % Make sure the transient state is consistent with
             % the non-transient state

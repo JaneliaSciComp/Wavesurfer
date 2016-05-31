@@ -751,36 +751,28 @@ end  % methods block
     end
     
     methods (Access=protected)
-%         function syncIsAnalogChannelTerminalOvercommitted_(self) 
-%             % For each channel, determines if the terminal ID for that
-%             % channel is "overcommited".  I.e. if two channels specify the
-%             % same terminal ID, that terminal ID is overcommitted.  Also,
-%             % if that specified terminal ID is not a legal terminal ID for
-%             % the current device, then we say that that terminal ID is
-%             % overcommitted.
-%             terminalIDs = self.AnalogTerminalIDs ;
-%             nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
-%             %nChannels = length(terminalIDs) ;
-%             %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-%             %terminalIDsInEachCol = terminalIDsInEachRow' ;
-%             %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-%             %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-%             nAOTerminals = self.Parent.NAOTerminals ;
-%             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nAOTerminals) ;
-%         end
-         
-%         function syncIsDigitalChannelTerminalOvercommitted_(self)            
-%             [~,nOccurancesOfTerminal] = self.Parent.computeDIOTerminalCommitments() ;
-%             nDIOTerminals = self.Parent.NDIOTerminals ;
-%             terminalIDs = self.DigitalTerminalIDs ;
-%             self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nDIOTerminals) ;
-%         end
-        
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+            % the length of AnalogChannelNames_ is the "true" number of AI
+            % channels
+            nAOChannels = length(self.AnalogChannelNames_) ;
+            self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAOChannels, {''}) ;
+            self.AnalogTerminalIDs_ = ws.sanitizeRowVectorLength(self.AnalogTerminalIDs_, nAOChannels, 0) ;
+            self.AnalogChannelScales_ = ws.sanitizeRowVectorLength(self.AnalogChannelScales_, nAOChannels, 1) ;
+            self.AnalogChannelUnits_ = ws.sanitizeRowVectorLength(self.AnalogChannelUnits_, nAOChannels, {'V'}) ;
+            %self.IsAnalogChannelActive_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelActive_, nAOChannels, true) ;
+            self.IsAnalogChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelMarkedForDeletion_, nAOChannels, false) ;
+            
+            nDOChannels = length(self.DigitalChannelNames_) ;
+            self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDOChannels, {''}) ;
+            self.DigitalTerminalIDs_ = ws.sanitizeRowVectorLength(self.DigitalTerminalIDs_, nDOChannels, 0) ;
+            self.IsDigitalChannelTimed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelTimed_, nDOChannels, true) ;
+            self.DigitalOutputStateIfUntimed_ = ws.sanitizeRowVectorLength(self.DigitalOutputStateIfUntimed_, nDOChannels, false) ;            
+            self.IsDigitalChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelMarkedForDeletion_, nDOChannels, false) ;
+        end
     end  % protected methods block
     
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct() ;        
-%         mdlHeaderExcludeProps = {};
-%     end
-            
 end  % classdef

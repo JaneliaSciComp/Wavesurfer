@@ -1771,6 +1771,9 @@ classdef Looper < ws.RootModel
                 end
             end
             
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;     

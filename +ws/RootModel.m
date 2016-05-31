@@ -75,7 +75,7 @@ classdef RootModel < ws.Model
         % Not saved to either protocol or .usr file
 %         Logging_
 %         VersionString_
-        DeviceName_ = ''   % represents "no device specified"
+        DeviceName_ = ''   % an empty string represents "no device specified"
     end
 
     properties (Access=protected, Transient=true)

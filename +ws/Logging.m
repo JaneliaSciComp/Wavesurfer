@@ -481,8 +481,13 @@ classdef Logging < ws.Subsystem
                                 % will just add datasets to a pre-existing file.
                                 ws.deleteFileWithoutWarning(newAbsoluteLogFileName);
                             else
+                                [~,stem,ext] = fileparts(originalAbsoluteLogFileName) ;
+                                originalLogFileName = [stem ext] ;
                                 exception = MException('wavesurfer:unableToRenameLogFile', ...
-                                                       'Unable to rename data file after abort, because file %s already exists', newLogFileName);
+                                                       'Unable to rename data file %s to %s after abort, because file %s already exists', ...
+                                                       originalLogFileName, ...
+                                                       newLogFileName, ...
+                                                       newLogFileName);
                             end
                         end
                         % If all is well here, rename the file

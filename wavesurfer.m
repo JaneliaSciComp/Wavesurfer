@@ -67,11 +67,16 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
         elseif isequal(extension,'.cfg')
             % it's a protocol file
             if isempty(controller) ,
-                model.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
+                model.openProtocolFileGivenFileName(protocolOrMDFFileName);
             else
                 % Need to do via controller, to keep the figure updated
                 drawnow('expose') ;
-                controller.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
+                %controller.loadProtocolFileForRealsSrsly(protocolOrMDFFileName);
+                % We do this via controlActuated() to get the usual
+                % try-catch behaviors when a control is actuated in the UI
+                source = [] ;
+                event = struct('fileName',protocolOrMDFFileName) ;
+                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event) ;
             end
         else
             % do nothing
