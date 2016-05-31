@@ -178,44 +178,18 @@ classdef WavesurferModel < ws.RootModel
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
                 % files they need.
-                %matlabBinPath = fullfile(matlabroot(),'bin','win64') ;
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
-%                 if isequal(mode,'superdebug') ,
-%                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
-%                 else            
-%                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
-%                     looperLaunchString = ...
-%                         sprintf('start %s "%s" "looper" "%s" "%s"' , ...
-%                                 pathOfLaunchSatelliteEngineExe,  ...
-%                                 mode, ...
-%                                 pathToWavesurferRoot , ...
-%                                 pathToMatlabZmqLib ) ;
-%                 end
                 system(looperLaunchString) ;
-%                 if isequal(mode,'superdebug') ,
-%                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
-%                 else
-%                     refillerLaunchString = ...
-%                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...
-%                                 pathOfLaunchSatelliteEngineExe,  ...
-%                                 mode, ...
-%                                 pathToWavesurferRoot , ...
-%                                 pathToMatlabZmqLib ) ;                        
-%                 end
                 system(refillerLaunchString) ;
                 
-                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
-
                 % Start broadcasting pings until the satellite processes
                 % respond
                 nPingsMax=20 ;
@@ -2224,7 +2198,7 @@ classdef WavesurferModel < ws.RootModel
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
-            self.changeReadiness(+1);       
+            self.changeReadiness(+1);
             %self.broadcast('Update');
         end  % function
     end
@@ -2645,6 +2619,9 @@ classdef WavesurferModel < ws.RootModel
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -2653,7 +2630,7 @@ classdef WavesurferModel < ws.RootModel
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;                    
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -2661,6 +2638,12 @@ classdef WavesurferModel < ws.RootModel
                     end
                 end
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
     end  % public methods block
 
@@ -2783,7 +2766,7 @@ classdef WavesurferModel < ws.RootModel
                 wavesurferModelSettings = self.encodeForPersistence() ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
                 self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
-            end            
+            end
         end  % function
     end  % protected methods block
     
