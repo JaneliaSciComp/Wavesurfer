@@ -14,11 +14,11 @@ Check stim, display, overwrite without asking boxes
 
 Show acquire
 
-Show channels window, show effects of changing units, scale
+Show Device & Channels window, show effects of changing units, scale
 
-Show that can change # of trials per set 
+Show that can change # of sweeps per run
 
-Show can have amplitude be a function of trial #  (e.g. 2*i, i^2, 5*mod(i,2))
+Show can have amplitude be a function of sweep #  (e.g. 2*i, i^2, 5*mod(i,2))
 
 Show pulse train, sine, chirp, expression (tan() example) stimuli
 
