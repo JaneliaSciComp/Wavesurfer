@@ -34,6 +34,8 @@ Show saving of protocols
 
 Show fast protocols
 
+Show saving/loading of user settings files
+
 
 
 
@@ -42,7 +44,7 @@ Demo 2: Electrodes, test pulsing, amp integration
 
 Quit, launch WS
 
-Bring up channels panel
+Bring up the Device & Channels panel
 
 Show electrodes, test pulse
 
