@@ -9,6 +9,7 @@ classdef TestPulser < ws.Model
         IsAutoY
         IsAutoYRepeating
         YLimits
+        YUnits
         IsRunning
         ElectrodeMode  % mode of the current electrode (VC/CC)
     end
@@ -512,6 +513,10 @@ classdef TestPulser < ws.Model
                 self.IsAutoYRepeating_=newValue;
             end
             self.broadcast('Update');
+        end
+              
+        function result=get.YUnits(self)
+            result = self.MonitorUnits_ ;
         end
         
         function value=get.SamplingRate(self)

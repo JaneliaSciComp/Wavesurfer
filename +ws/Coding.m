@@ -83,6 +83,9 @@ classdef (Abstract) Coding < handle
                 end
             end
             
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+            
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
@@ -136,6 +139,12 @@ classdef (Abstract) Coding < handle
             propertyNames = cellfun(@(x)x.Name, matchingClassProperties, 'UniformOutput', false);
         end        
         
+        function sanitizePersistedState_(self) %#ok<MANU>
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+        end
+        
         function synchronizeTransientStateToPersistedState_(self) %#ok<MANU>
             % This method should set any transient state variables to
             % ensure that the object invariants are met, given the values
@@ -146,7 +155,7 @@ classdef (Abstract) Coding < handle
             % ws.Coding.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
-        end
+        end        
     end  % protected methods block
     
     methods (Static = true)
@@ -265,27 +274,67 @@ classdef (Abstract) Coding < handle
                     end
                 end
                 
+                % More backwards-compatibility code
+                if isequal(className,'ws.TriggerDestination') ,
+                    className = 'ws.ExternalTrigger' ;
+                elseif isequal(className,'ws.TriggerSource') ,
+                    className = 'ws.CounterTrigger' ;
+                end
+                
                 % Instantiate the object
                 result = feval(className,parent) ;
 
                 % Get the property names from the encoding
-                propertyNames = fieldnames(encoding) ;
+                fieldNames = fieldnames(encoding) ;
 
                 % Set each property name in self
-                for i = 1:numel(propertyNames) ,
-                    propertyName = propertyNames{i};
+                for i = 1:numel(fieldNames) ,
+                    fieldName = fieldNames{i};
+                    % Usually, the propertyName is the same as the field
+                    % name, but we do some ad-hoc translations to support
+                    % old files.
+                    if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                        propertyName = 'AnalogTerminalIDs_' ;
+                    elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                        propertyName = 'DigitalTerminalIDs_' ;      
+                    elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                        propertyName = 'AnalogTerminalIDs_' ;
+                    elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                        propertyName = 'DigitalTerminalIDs_' ;      
+                    elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') ,
+                        propertyName = 'CounterTriggers_' ;      
+                    elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') ,
+                        propertyName = 'ExternalTriggers_' ;      
+                    else
+                        % The typical case
+                        propertyName = fieldName ;
+                    end
                     if isprop(result,propertyName) ,  % Only decode if there's a property to receive it
-                        subencoding = encoding.(propertyName) ;  % the encoding is a struct, to no worries about access
+                        subencoding = encoding.(fieldName) ;  % the encoding is a struct, to no worries about access
+                        % Backwards-compatibility hack, convert col
+                        % vectors to row vectors in some cases
+                        if isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') && ...
+                           iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
+                            subencoding.encoding = transpose(subencoding.encoding) ;
+                        elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') && ...
+                           iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
+                            subencoding.encoding = transpose(subencoding.encoding) ;
+                        end
+                        % end backwards-compatibility hack
                         subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
                         result.setPropertyValue_(propertyName,subresult) ;
-                    % else
-                    %     warning('Coding:errSettingProp', ...
-                    %             'Ignoring property ''%s'' from the file, because not present in the %s object.', ...
-                    %             propertyName, ...
-                    %             class(self));
+                    else
+                        warning('Coding:errSettingProp', ...
+                                'Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
+                                fieldName, ...
+                                propertyName, ...
+                                class(result));
                     end
                 end  % for            
                 
+                % Do sanity-checking on persisted state
+                result.sanitizePersistedState_() ;
+            
                 % Make sure the transient state is consistent with
                 % the non-transient state
                 result.synchronizeTransientStateToPersistedState_() ;

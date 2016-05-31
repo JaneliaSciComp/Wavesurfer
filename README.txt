@@ -14,7 +14,7 @@ COMPATIBILITY.
 System Requirements
 -------------------
 
-64-bit Windows 7 computer
+64-bit Windows 7, 8, or 10
 
 National Instruments X Series card (i.e. 63xx)
 
@@ -26,9 +26,9 @@ Matlab R2013b or later (64-bit)
 Installation
 ------------
 
-1.  Download the .zip file for the latest release from GitHub here:
+1.  Download the .zip file for the latest release from here:
 
-        https://github.com/JaneliaSciComp/Wavesurfer/releases
+        http://wavesurfer.janelia.org/releases/index.html
 
 2.  Extract the .zip file contents to a convenient location.
 

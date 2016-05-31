@@ -11,10 +11,17 @@ classdef YLimDialogFigure < ws.MCOSFigure
         CancelButton
     end  % properties
     
+    properties (Access=protected)
+        ModelPropertyName_
+    end
+    
     methods
         function self=YLimDialogFigure(model,controller)
             % Call the super-class consructor
             self = self@ws.MCOSFigure(model,controller);
+            
+            % Get the model property name from the controller
+            self.ModelPropertyName_ = controller.ModelPropertyName ;
             
             % Set the relevant properties of the figure itself
             set(self.FigureGH,'Tag','YLimDialogFigure', ...
@@ -32,8 +39,8 @@ classdef YLimDialogFigure < ws.MCOSFigure
             self.createFixedControls();
             
             % Do stuff to make ws.most.Controller happy
-            self.setHGTagsToPropertyNames_();
-            self.updateGuidata_();
+            %self.setHGTagsToPropertyNames_();
+            %self.updateGuidata_();
             
             % sync up self to model
             self.updateControlProperties();
@@ -230,7 +237,8 @@ classdef YLimDialogFigure < ws.MCOSFigure
             end
             
             % Update the relevant controls
-            yl=self.Model.YLim;
+            propertyName = self.ModelPropertyName_ ;
+            yl=self.Model.(propertyName) ;
             unitsString = self.Model.YUnits ;
             set(self.YMaxEdit     ,'String',sprintf('%0.3g',yl(2)));
             set(self.YMaxUnitsText,'String',unitsString);

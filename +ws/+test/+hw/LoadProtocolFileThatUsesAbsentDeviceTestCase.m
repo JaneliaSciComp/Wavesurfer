@@ -23,7 +23,7 @@ classdef LoadProtocolFileThatUsesAbsentDeviceTestCase < matlab.unittest.TestCase
             
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'SP_basic_0p91_with_more_panels_open.cfg') ;
-            wsModel.loadProtocolFileForRealsSrsly(protocolFileName) ;
+            wsModel.openProtocolFileGivenFileName(protocolFileName) ;
             wsModel = [] ;   %#ok<NASGU>
             pause(5) ;
             
