@@ -79,7 +79,6 @@ classdef TestPulser < ws.Model
         DoSubtractBaseline_
         SamplingRate_  % in Hz
         YLimits_
-        YUnits_ = ''  % pure, which is correct for digital lines
         IsAutoY_  % if true, the y limits are synced to the monitor signal currently in view
         IsAutoYRepeating_
             % If IsAutoY_ is true:
@@ -515,16 +514,9 @@ classdef TestPulser < ws.Model
             end
             self.broadcast('Update');
         end
-        
-        function set.YUnits(self,newValue)
-            if ws.isString(newValue) ,
-                self.YUnits_ = strtrim(newValue) ;
-            end
-            self.broadcast('Update');
-        end
-        
+              
         function result=get.YUnits(self)
-            result = self.YUnits_ ;
+            result = self.MonitorUnits_ ;
         end
         
         function value=get.SamplingRate(self)

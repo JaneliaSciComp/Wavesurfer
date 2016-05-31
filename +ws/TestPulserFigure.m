@@ -94,6 +94,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                     end
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                        wavesurferModel.subscribeMe(self,'Update','','update');                        
                         wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
 %                         acquisition=wavesurferModel.Acquisition;
 %                         if ~isempty(acquisition) && isvalid(acquisition) ,
@@ -243,7 +244,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            
+                        
 %             fprintf('TestPulserFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
 %             fprintf('\n');            
@@ -318,7 +319,6 @@ classdef TestPulserFigure < ws.MCOSFigure
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
             set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
-            self.Model.YUnits=self.Model.MonitorUnits;
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));
