@@ -23,8 +23,12 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
                 isCommandLineOnly);
             
-            % Load a user settings file, with 2 fast protocols
-            wsModel.loadUserFileForRealsSrsly(fullfile(thisDirName,'folder_for_fast_protocol_testing/SettingsForFastProtocolNumberOfElectrodesTesting.usr'));
+            % Load a fast protocol with 2 electrodes and one with 6
+            % electrodes
+            fpOne = wsModel.FastProtocols{1};
+            fpOne.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg');
+            fpTwo = wsModel.FastProtocols{2};
+            fpTwo.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
             storeNumberOfElectrodesInFigure = zeros(1,2);
             storeNumberOfElectrodesInModel = zeros(1,2);
             

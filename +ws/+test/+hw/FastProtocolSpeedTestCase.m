@@ -22,9 +22,9 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             thisDirName=fileparts(mfilename('fullpath'));
             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
                 isCommandLineOnly);
-            % Load a user settings file, with 1 fast protocol with 6
-            % electrodes
-            wsModel.loadUserFileForRealsSrsly(fullfile(thisDirName,'folder_for_fast_protocol_testing/SettingsForFastProtocolSpeedTesting.usr'));
+            % Load 1 cfg file with 6 electrodes into fast protocol
+            fp = wsModel.FastProtocols{1};
+            fp.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
             pressedButtonHandle = wsController.Figure.FastProtocolButtons(1);
             wsController.FastProtocolButtonsActuated(pressedButtonHandle); % First time loading is always relatively fast
             tic; wsController.FastProtocolButtonsActuated(pressedButtonHandle);  % Load it again to check the speed
