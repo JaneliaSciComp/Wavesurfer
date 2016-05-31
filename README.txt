@@ -339,5 +339,6 @@ Version History
                          Fixed issue with sweep timestamps being
                          somewhat off.  Improved speed of loading
                          protocol files.  Improved handling of old
-                         protocol files.
+                         protocol files.  Added ability to duplicate
+                         stimulus maps.
 
