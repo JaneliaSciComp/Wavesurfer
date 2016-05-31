@@ -28,10 +28,10 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             pressedButtonHandle = wsController.Figure.FastProtocolButtons(1);
             wsController.FastProtocolButtonsActuated(pressedButtonHandle); % First time loading is always relatively fast
             tic; wsController.FastProtocolButtonsActuated(pressedButtonHandle);  % Load it again to check the speed
-            timeToComplete = toc;
+            timeToComplete = toc ;
             
-            % Should take less than three seconds if in correct version, and more than 20 seconds if older version
-            self.verifyTrue(timeToComplete<3);
+            % Should take less than four seconds if in correct version, and more than 20 seconds if older version
+            self.verifyTrue(timeToComplete<4);
             
             ws.clear();
         end  % function
