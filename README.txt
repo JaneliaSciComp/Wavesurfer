@@ -340,5 +340,7 @@ Version History
                          somewhat off.  Improved speed of loading
                          protocol files.  Improved handling of old
                          protocol files.  Added ability to duplicate
-                         stimulus maps.
+                         stimulus maps.  Fixed issue with adding
+                         scaling coefficients to data files from WS
+                         v0.8.
 
