@@ -115,7 +115,8 @@ which the code in +ws/+dabs/+ni was taken, and of the MOST library, in
 
 The original developer of WaveSurfer was Patrick Edson.  
 
-WaveSurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
+WaveSurfer is currently developed by Adam L. Taylor, Ben J. Arthur,
+and David Ackerman.
 
 
 Support
@@ -332,3 +333,11 @@ Version History
 0.918    May  8, 2016    Fixed many small bugs, changed
                          TemplateUserClass to ExampleUserClass,
                          cleaned up ws.examples package.
+
+0.919    May 31, 2016    Can now set test pulse y limits manually.
+                         Satellite Matlab windows are now hidden.
+                         Fixed issue with sweep timestamps being
+                         somewhat off.  Improved speed of loading
+                         protocol files.  Improved handling of old
+                         protocol files.
+
