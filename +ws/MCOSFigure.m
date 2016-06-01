@@ -355,20 +355,30 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     
     methods
         function raise(self)
-            figureGHs=allchild(0);  % ws.MCOSFigure defaults to figures having HandleVisibility=='off'
-            % sometimes figureGHs is a col vector, which seems odd...
-            if iscolumn(figureGHs) ,
-                figureGHs = figureGHs' ;
-            end
-            isMe=(figureGHs==self.FigureGH_);
-            i=find(isMe,1);
-            if isempty(i) ,
-                % do nothing
-            else
-                otherRootChildren=figureGHs(~isMe);
-                newRootChildren=[self.FigureGH_ otherRootChildren];
-                set(0,'Children',newRootChildren);
-            end
+            self.hide() ;
+            self.show() ;  
+              % This above turns out to work really well for bringing
+              % figures to the front.  You don't even see the figure hide
+              % and then show b/c of the buffering of graphics commands in
+              % Matlab (I assume that's why...)
+              
+            % This code below is unreliable.  It leads to weird behavior where hidden windows (that are not self.FigureGH_) get shown, 
+            % and then their close button stops working, and madness
+            % ensues.
+%             figureGHs=allchild(0);  % ws.MCOSFigure defaults to figures having HandleVisibility=='off'
+%             % sometimes figureGHs is a col vector, which seems odd...
+%             if iscolumn(figureGHs) ,
+%                 figureGHs = figureGHs' ;
+%             end
+%             isMe=(figureGHs==self.FigureGH_);
+%             i=find(isMe,1);
+%             if isempty(i) ,
+%                 % do nothing
+%             else
+%                 otherRootChildren=figureGHs(~isMe);
+%                 newRootChildren=[self.FigureGH_ otherRootChildren];
+%                 set(0,'Children',newRootChildren);
+%             end
         end  % function       
     end  % methods
     

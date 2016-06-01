@@ -476,11 +476,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             shouldStayPut=~shouldClose;
         end  % function
-    end  % protected methods block        
         
-    methods
-
-        function loadProtocolFileForRealsSrsly(self, fileName)
+        function openProtocolFileGivenFileName_(self, fileName)
             % Actually loads the named config file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -490,7 +487,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end            
-            saveStruct = self.Model.loadProtocolFileForRealsSrsly(absoluteFileName) ;
+            saveStruct = self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
             %wavesurferModelSettingsVariableName=self.Model.encodedVariableName();
             %layoutVariableName='layoutForAllWindows';
             %wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
@@ -509,18 +506,20 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Model.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             %self.Figure.changeReadiness(+1);
         end  % function
+    end  % protected methods block        
         
-        function saveConfig(self, varargin)
-            % This is the action for the File > Save menu item
-            isSaveAs=false;
-            self.saveOrSaveAsConfig(isSaveAs);
-        end  % function
-        
-        function saveConfigAs(self, varargin)
-            % This is the action for the File > Save As... menu item
-            isSaveAs=true;
-            self.saveOrSaveAsConfig(isSaveAs);
-        end  % function
+    methods
+%         function saveConfig(self, varargin)
+%             % This is the action for the File > Save menu item
+%             isSaveAs=false;
+%             self.saveOrSaveAsConfig(isSaveAs);
+%         end  % function
+%         
+%         function saveConfigAs(self, varargin)
+%             % This is the action for the File > Save As... menu item
+%             isSaveAs=true;
+%             self.saveOrSaveAsConfig(isSaveAs);
+%         end  % function
         
         function saveOrSaveAsConfig(self, isSaveAs)
             % Figure out the file name, or leave empty for save as
@@ -557,7 +556,19 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
             % Prompt the user for a file name, if necessary, and save
             % the file
-            self.saveConfigSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
+            %self.saveConfigSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
+            absoluteFileName = ...
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
+                    isFileNameKnown, ...
+                    fileName, ...
+                    'cfg', ...
+                    'save', ...
+                    fileChooserInitialFileName);
+            
+            if ~isempty(absoluteFileName)
+                self.saveProtocolFileForRealsSrsly(absoluteFileName);
+            end
+            
         end  % method
         
 %         function out = loadUser(self, fileName, varargin)
@@ -673,24 +684,24 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
-        function out = loadConfigSettings(self, fullpath, startLoc)
-            if ~exist('startLoc','var') ,
-                startLoc='';
-            end
-            
-            isFileNameKnown=~isempty(fullpath);
-            actualFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
-            
-            if ~isempty(actualFileName)
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualFileName);
-                %feval(replyFcn, actualFileName);
-                self.loadProtocolFileForRealsSrsly(actualFileName)
-                out = true;
-            else
-                out = false;
-            end
-        end  % function
+%         function out = loadConfigSettings(self, fullpath, startLoc)
+%             if ~exist('startLoc','var') ,
+%                 startLoc='';
+%             end
+%             
+%             isFileNameKnown=~isempty(fullpath);
+%             actualFileName = ...
+%                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fullpath, 'cfg', 'load', startLoc);
+%             
+%             if ~isempty(actualFileName)
+%                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualFileName);
+%                 %feval(replyFcn, actualFileName);
+%                 self.openProtocolFileGivenFileName_(actualFileName)
+%                 out = true;
+%             else
+%                 out = false;
+%             end
+%         end  % function
                 
         function saveUserSettings(self, isFileNameKnown, fileName, fileChooserInitialFileName)
             absoluteFileName = ...
@@ -712,19 +723,19 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Figure.changeReadiness(+1);
         end  % function
 
-        function saveConfigSettings(self, isFileNameKnown, fileName, fileChooserInitialFileName)
-            absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
-                    isFileNameKnown, ...
-                    fileName, ...
-                    'cfg', ...
-                    'save', ...
-                    fileChooserInitialFileName);
-            
-            if ~isempty(absoluteFileName)
-                self.saveProtocolFileForRealsSrsly(absoluteFileName);
-            end
-        end  % function
+%         function saveConfigSettings(self, isFileNameKnown, fileName, fileChooserInitialFileName)
+%             absoluteFileName = ...
+%                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
+%                     isFileNameKnown, ...
+%                     fileName, ...
+%                     'cfg', ...
+%                     'save', ...
+%                     fileChooserInitialFileName);
+%             
+%             if ~isempty(absoluteFileName)
+%                 self.saveProtocolFileForRealsSrsly(absoluteFileName);
+%             end
+%         end  % function
         
         function saveProtocolFileForRealsSrsly(self,absoluteFileName)
             %self.Figure.changeReadiness(-1);
@@ -797,7 +808,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 fileName=fastProtocol.ProtocolFileName;
                 if ~isempty(fileName) , ...                        
                     if exist(fileName, 'file') ,
-                        self.loadProtocolFileForRealsSrsly(fileName);
+                        self.openProtocolFileGivenFileName_(fileName);
                     else
                         errorMessage=sprintf('The protocol file %s is missing.', ...
                                              fileName);
@@ -1872,15 +1883,44 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
             startLoc = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
             fileName = '' ;
-            self.loadConfigSettings(fileName,startLoc) ;
+            %self.loadConfigSettings(fileName,startLoc) ;
+            
+            % function out = loadConfigSettings(self, fileName, startLoc)
+            if ~exist('startLoc','var') ,
+                startLoc='';
+            end
+            
+            isFileNameKnown=~isempty(fileName);
+            actualFileName = ...
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, 'cfg', 'load', startLoc);
+            
+            if isempty(actualFileName)
+                % do nothing
+                %out = false;
+            else
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualFileName);
+                %feval(replyFcn, actualFileName);
+                self.openProtocolFileGivenFileName_(actualFileName)
+                %out = true;
+            end
+            %end  % function
+        end
+
+        function OpenProtocolGivenFileNameFauxControlActuated(self,source,event)  %#ok<INUSL>
+            fileName = event.fileName ;
+            self.openProtocolFileGivenFileName_(fileName) ;
         end
 
         function SaveProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.saveConfig();
+            % This is the action for the File > Save menu item
+            isSaveAs=false;
+            self.saveOrSaveAsConfig(isSaveAs);
         end
         
         function SaveProtocolAsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.saveConfigAs();
+            % This is the action for the File > Save As... menu item
+            isSaveAs=true;
+            self.saveOrSaveAsConfig(isSaveAs);
         end
 
         function LoadUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>

@@ -126,6 +126,14 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             map.addBinding('');
         end  % function
 
+        function DuplicateMapMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+
+            % Duplicate a map
+            model.duplicateMap();
+
+        end  % function
+        
         function AddChannelToMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedMap=model.SelectedMap;
@@ -257,7 +265,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             elseif isa(selectedItem, 'ws.StimulusMap') ,
                 ax = [] ;  % means to make own axes
                 self.plotStimulusMap_(ax, selectedItem, samplingRate, channelNames) ;
-            elseif isa(selectedItem, 'ws.StimulusMap') ,
+            elseif isa(selectedItem, 'ws.Stimulus') ,
                 ax = [] ;  % means to make own axes
                 self.plotStimulus_(ax, selectedItem, samplingRate) ;
             else

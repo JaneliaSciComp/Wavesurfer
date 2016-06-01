@@ -36,7 +36,7 @@ classdef ExampleUserClass < ws.UserClass
         function startingRun(self,wsModel,eventName)
             % Called just before each set of sweeps (a.k.a. each
             % "run")
-            self.TimeAtStartOfLastRunAsString_ = datestr( datetime() ) ;
+            self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
             fprintf('%s  About to start a run.  Current time: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end

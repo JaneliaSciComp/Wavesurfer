@@ -178,42 +178,18 @@ classdef WavesurferModel < ws.RootModel
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
                 % files they need.
-                %matlabBinPath = fullfile(matlabroot(),'bin','win64') ;
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
-%                 if isequal(mode,'superdebug') ,
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
-%                 else            
-%                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
-%                     looperLaunchString = ...
-%                         sprintf('start %s "%s" "looper" "%s" "%s"' , ...
-%                                 pathOfLaunchSatelliteEngineExe,  ...
-%                                 mode, ...
-%                                 pathToWavesurferRoot , ...
-%                                 pathToMatlabZmqLib ) ;
-%                 end
                 system(looperLaunchString) ;
-%                 if isequal(mode,'superdebug') ,
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib ) ;
-%                 else
-%                     refillerLaunchString = ...
-%                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...
-%                                 pathOfLaunchSatelliteEngineExe,  ...
-%                                 mode, ...
-%                                 pathToWavesurferRoot , ...
-%                                 pathToMatlabZmqLib ) ;                        
-%                 end
                 system(refillerLaunchString) ;
                 
-                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
-
                 % Start broadcasting pings until the satellite processes
                 % respond
                 nPingsMax=20 ;
@@ -1176,9 +1152,13 @@ classdef WavesurferModel < ws.RootModel
             % Call the user method, if any
             self.callUserMethod_('startingRun');  
                         
-            % Note the time, b/c the logging subsystem needs it, and we
-            % want to note it *just* before the start of the run
-            self.ClockAtRunStart_ = clock() ;
+            % We now do this clock() call in the looper, so that it can be
+            % as close as possible in time to the tic() call that the sweep timestamps are
+            % based on.
+            % % Note the time, b/c the logging subsystem needs it, and we
+            % % want to note it *just* before the start of the run
+            % clockAtRunStart = clock() ;
+            % self.ClockAtRunStart_ = clockAtRunStart ;
             
             % Tell all the subsystems except the logging subsystem to prepare for the run
             % The logging subsystem has to wait until we obtain the analog
@@ -1223,9 +1203,11 @@ classdef WavesurferModel < ws.RootModel
                 if isa(looperResponse,'MException') ,
                     compositeLooperError = looperResponse ;
                     analogScalingCoefficients = [] ;
+                    clockAtRunStartTic = [] ;
                 else
                     compositeLooperError = [] ;
-                    analogScalingCoefficients = looperResponse ;
+                    analogScalingCoefficients = looperResponse.ScalingCoefficients ;
+                    clockAtRunStartTic = looperResponse.ClockAtRunStartTic ;
                 end
             else
                 % If there was an error in the
@@ -1234,6 +1216,7 @@ classdef WavesurferModel < ws.RootModel
                 % bigger fish to fry, in a sense.
                 compositeLooperError = err ;
                 analogScalingCoefficients = [] ;
+                clockAtRunStartTic = [] ;
             end            
             if isempty(compositeLooperError) ,
                 summaryLooperError = [] ;
@@ -1305,7 +1288,8 @@ classdef WavesurferModel < ws.RootModel
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
             self.Acquisition.cacheAnalogScalingCoefficents_(analogScalingCoefficients) ;
-
+            self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
+            
             % Now tell the logging subsystem that a run is about to start,
             % since the analog scaling coeffs have been set
             try
@@ -2187,7 +2171,7 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function saveStruct = loadProtocolFileForRealsSrsly(self, fileName)
+        function saveStruct = openProtocolFileGivenFileName(self, fileName)
             % Actually loads the named config file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -2214,7 +2198,7 @@ classdef WavesurferModel < ws.RootModel
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
-            self.changeReadiness(+1);       
+            self.changeReadiness(+1);
             %self.broadcast('Update');
         end  % function
     end
@@ -2635,6 +2619,9 @@ classdef WavesurferModel < ws.RootModel
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -2643,7 +2630,7 @@ classdef WavesurferModel < ws.RootModel
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;                    
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -2651,6 +2638,12 @@ classdef WavesurferModel < ws.RootModel
                     end
                 end
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
     end  % public methods block
 
@@ -2748,6 +2741,9 @@ classdef WavesurferModel < ws.RootModel
                 end
             end
             
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+            
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
@@ -2770,7 +2766,7 @@ classdef WavesurferModel < ws.RootModel
                 wavesurferModelSettings = self.encodeForPersistence() ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
                 self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
-            end            
+            end
         end  % function
     end  % protected methods block
     

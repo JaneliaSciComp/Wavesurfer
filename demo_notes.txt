@@ -1,0 +1,123 @@
+Users: This file is mainly intended for use by the WaveSurfer
+developers.  You can safely ignore it.
+
+
+
+Demo 1: Basics
+--------------
+
+On breakout box, connect AO0 to AI0, AO1 to AI1
+
+Start wavesurfer
+
+Check stim, display, overwrite without asking boxes
+
+Show acquire
+
+Show Device & Channels window, show effects of changing units, scale
+
+Show that can change # of sweeps per run
+
+Show can have amplitude be a function of sweep #  (e.g. 2*i, i^2, 5*mod(i,2))
+
+Show pulse train, sine, chirp, expression (tan() example) stimuli
+
+Show can add channels by adding another AI, another AO
+
+Show maps by making train out 1, chirp out 2
+
+Show sequences by making a reversed map, alternating between them
+
+Show continuous acquisition
+
+Show saving of protocols
+
+Show fast protocols
+
+Show saving/loading of user settings files
+
+
+
+
+Demo 2: Electrodes, test pulsing, amp integration
+-------------------------------------------------
+
+Quit, launch WS
+
+Bring up the Device & Channels panel
+
+Show electrodes, test pulse
+
+Show HEKA interface
+
+Show user functions: ws.examples.ExampleUserClass
+
+
+
+
+
+Demo 3: Online analysis and real-time feedback loop
+---------------------------------------------------
+
+Run Ben's demo:
+    Connect AO0 to AI0, AO1 to AI1.
+    Jumper P0.0 to P0.2, P0.1 to P0.3.
+    Run ws.testTreadmillWithoutProtocolFile()
+    Arrange plots as needed.
+
+
+
+
+Demo 4: Soft Real-Time feedback loops
+-------------------------------------
+
+Show user function latency:
+    On breakout box, wire P0.0 to USER1
+    Connect fungen output to scope channel 1, AI0
+    Set up fungen to do 10 Hz TTL output, 50% DC
+    Connect USER1 to scope channel 2
+    Set up scope to trigger on CH1, mode AUTO, set level at +2.5 V on
+        channel 1
+    Start wavesurfer
+    Delete the AO channel
+    Add a DO channel, *** Set DO channel to untimed! ***
+    Set to continuous acq
+    ws.examples.MimicAnalogInputWithDigitalOutput
+    Should get less than 5 ms latency on CH2 for rising edges
+
+
+
+
+    
+
+
+
+
+
+
+    
+
+
+
+
+
+
+Axon demo
+---------
+
+Show mode change
+
+Show VC gain changes, monitor then command
+
+Show that CC gain changes don't register while in VC mode
+
+Switch to CC mode, show that change is reflected
+
+Show CC mode gain changes
+
+Show that if you change the primary output, trode goes red
+
+Add second amplifier, start another MCC instance
+
+Reconnect
+

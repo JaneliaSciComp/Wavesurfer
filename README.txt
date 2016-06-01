@@ -14,7 +14,7 @@ COMPATIBILITY.
 System Requirements
 -------------------
 
-64-bit Windows 7 computer
+64-bit Windows 7, 8, or 10
 
 National Instruments X Series card (i.e. 63xx)
 
@@ -26,9 +26,9 @@ Matlab R2013b or later (64-bit)
 Installation
 ------------
 
-1.  Download the .zip file for the latest release from GitHub here:
+1.  Download the .zip file for the latest release from here:
 
-        https://github.com/JaneliaSciComp/Wavesurfer/releases
+        http://wavesurfer.janelia.org/releases/index.html
 
 2.  Extract the .zip file contents to a convenient location.
 
@@ -115,7 +115,8 @@ which the code in +ws/+dabs/+ni was taken, and of the MOST library, in
 
 The original developer of WaveSurfer was Patrick Edson.  
 
-WaveSurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
+WaveSurfer is currently developed by Adam L. Taylor, Ben J. Arthur,
+and David Ackerman.
 
 
 Support
@@ -332,3 +333,14 @@ Version History
 0.918    May  8, 2016    Fixed many small bugs, changed
                          TemplateUserClass to ExampleUserClass,
                          cleaned up ws.examples package.
+
+0.919    Jun  1, 2016    Can now set test pulse y limits manually.
+                         Satellite Matlab windows are now hidden.
+                         Fixed issue with sweep timestamps being
+                         somewhat off.  Improved speed of loading
+                         protocol files.  Improved handling of old
+                         protocol files.  Added ability to duplicate
+                         stimulus maps.  Fixed issue with adding
+                         scaling coefficients to data files from WS
+                         v0.8.
+

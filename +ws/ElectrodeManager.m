@@ -1054,22 +1054,32 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function mimic(self, other)
             % Note that this uses the high-level setters, so it will cause
             % any subscribers to get (several) MayHaveChanged events.
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+
             nOldElectrodes=self.NElectrodes;
             self.IsElectrodeMarkedForRemoval=true(1,nOldElectrodes);
-            self.removeMarkedElectrodes();            
+            self.removeMarkedElectrodes();
             nNewElectrodes=length(other.Electrodes);
             for i=1:nNewElectrodes ,
                 self.addNewElectrode();
                 self.Electrodes{i}.mimic(other.Electrodes{i});
             end
             self.IsElectrodeMarkedForTestPulse=other.IsElectrodeMarkedForTestPulse;
-            self.IsElectrodeMarkedForRemoval=other.IsElectrodeMarkedForRemoval;            
+            self.IsElectrodeMarkedForRemoval=other.IsElectrodeMarkedForRemoval;
             self.AreSoftpanelsEnabled = other.AreSoftpanelsEnabled;
             self.DidLastElectrodeUpdateWork_ = other.DidLastElectrodeUpdateWork ;
-
+            
             % mimic the softpanel sockets
             self.EPCMasterSocket_.mimic(other.EPCMasterSocket_);
             self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_);
+
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
         
 %         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable

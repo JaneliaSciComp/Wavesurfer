@@ -444,6 +444,9 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -471,6 +474,12 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                 % Current value is illegal, so fix it.
                 self.AcquisitionTriggerSchemeIndex_ = 1 ;  % Just set it to the built-in trigger, which always exists
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
             
         end  % function
     end  % public methods block

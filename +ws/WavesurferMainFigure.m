@@ -1087,7 +1087,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
-            statusString = ws.titleStringFromApplicationState(model.State) ;
+            if isequal(model.State,'running') ,
+                if model.Logging.IsEnabled ,
+                    statusString = 'Recording' ;
+                else
+                    statusString = 'Playing' ;
+                end                    
+            else
+                statusString = ws.titleStringFromApplicationState(model.State) ;
+            end
             set(self.StatusText,'String',statusString);
             
             % Progress bar

@@ -1,22 +1,33 @@
 classdef YLimDialogController < ws.Controller
+    properties (Dependent=true)
+        ModelPropertyName
+    end
+    
+    properties (Access=protected)
+        ModelPropertyName_
+    end
+    
     methods
-        function self=YLimDialogController(scopeController,scopeModel,scopeFigurePosition)
-%             self = self@ws.Controller(scopeController, scopeModel, {}, {'yLimDialogFigureWrapper'});  % want the figure to start out invisible
+        function self=YLimDialogController(parentController,parentModel,parentFigurePosition,modelPropertyName)
+%             self = self@ws.Controller(parentController, parentModel, {}, {'yLimDialogFigureWrapper'});  % want the figure to start out invisible
 %             %self.IsSuiGeneris_ = false;  % Multiple instances of this controller can coexist in the same Wavesurfer session            
 %             self.HideFigureOnClose_ = false;                        
-%             self.Figure.centerOnParentPosition(scopeFigurePosition);
+%             self.Figure.centerOnParentPosition(parentFigurePosition);
 %             self.showFigure();
             
             % Call the superclass constructor
-            self = self@ws.Controller(scopeController,scopeModel);
+            self = self@ws.Controller(parentController,parentModel);
 
+            % Store the model property name
+            self.ModelPropertyName_ = modelPropertyName ;
+            
             % Create the figure, store a pointer to it
-            fig = ws.YLimDialogFigure(scopeModel,self) ;
+            fig = ws.YLimDialogFigure(parentModel,self) ;
             self.Figure_ = fig ;                                    
             
             % Do stuff specific to dialog boxes
             self.HideFigureOnClose_ = false;
-            self.Figure.centerOnParentPosition(scopeFigurePosition);
+            self.Figure.centerOnParentPosition(parentFigurePosition);
             self.showFigure();
         end
         
@@ -54,7 +65,8 @@ classdef YLimDialogController < ws.Controller
                     yMin=temp;
                 end
                 if yMin~=yMax ,
-                    self.Model.YLim=[yMin yMax];
+                    propertyName = self.ModelPropertyName_ ;
+                    self.Model.(propertyName) = [yMin yMax] ;
                 end
             end
             self.windowCloseRequested(self.Figure.FigureGH,event);
@@ -62,6 +74,10 @@ classdef YLimDialogController < ws.Controller
         
         function cancelButtonPressed(self,source,event) %#ok<INUSL>
             self.windowCloseRequested(self.Figure.FigureGH,event);
+        end
+        
+        function result = get.ModelPropertyName(self) 
+            result = self.ModelPropertyName_ ;
         end
     end  % methods
     

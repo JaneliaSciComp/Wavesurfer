@@ -28,11 +28,12 @@ classdef TestPulserFigure < ws.MCOSFigure
         ZoomOutButton
         ScrollUpButton
         ScrollDownButton
+        YLimitsButton
     end  % properties
     
     properties (Access=protected)
         %IsMinimumSizeSet_ = false
-        YLimits_ = [-10 +10]   % the current y limits        
+        YLimits_ = [-10 +10]   % the current y limits
     end
 
 %     properties (Dependent=true, Hidden=true)
@@ -93,6 +94,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                     end
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                        wavesurferModel.subscribeMe(self,'Update','','update');                        
                         wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
 %                         acquisition=wavesurferModel.Acquisition;
 %                         if ~isempty(acquisition) && isvalid(acquisition) ,
@@ -242,7 +244,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            
+                        
 %             fprintf('TestPulserFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
 %             fprintf('\n');            
@@ -285,12 +287,24 @@ classdef TestPulserFigure < ws.MCOSFigure
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing));
             set(self.AutoYRepeatingCheckbox,'Value',self.Model.IsAutoYRepeating, ...
                                             'Enable',onIff(isWavesurferIdleOrTestPulsing&&self.Model.IsAutoY));
-                                    
-            set(self.VCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
+                   
+            % Have to disable these togglebuttons during test pulsing,
+            % because switching an electrode's mode during test pulsing can
+            % fail: in the target mode, the electrode may not be
+            % test-pulsable (e.g. the monitor and command channels haven't
+            % been set for the target mode), or the monitor and command
+            % channels for the set of active electrode may not be mutually
+            % exclusive.  That makes computing whether the target mode is
+            % valid complicated.  We punt by just disabling the
+            % mode-switching toggle buttons during test pulsing.  The user
+            % can always stop test pulsing, switch the mode, then start
+            % again (if that's a valid action in the target mode).
+            % Hopefully this limitation is not too annoying for users.
+            set(self.VCToggle,'Enable',onIff(isWavesurferIdle && ...
                                              ~isempty(electrode) && ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
                               'Value',~isempty(electrode)&&isequal(electrode.Mode,'vc'));
-            set(self.CCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
+            set(self.CCToggle,'Enable',onIff(isWavesurferIdle && ...
                                              ~isempty(electrode)&& ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
                               'Value',~isempty(electrode)&& ...
@@ -323,13 +337,15 @@ classdef TestPulserFigure < ws.MCOSFigure
             set(self.ZoomOutButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ScrollUpButton,'Enable',onIff(~self.Model.IsAutoY));
             set(self.ScrollDownButton,'Enable',onIff(~self.Model.IsAutoY));
+            set(self.YLimitsButton,'Enable',onIff(~self.Model.IsAutoY));
             self.updateTrace();
         end  % method        
                 
     end  % protected methods block
     
     methods (Access=protected)
-        function createFixedControls(self)            
+        function createFixedControls(self)
+            
             % Start/stop button
             self.StartStopButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -481,6 +497,15 @@ classdef TestPulserFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+            
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
+            cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            self.YLimitsButton= ...
+                ws.uicontrol('Parent',self.FigureGH, ...
+                          'Style','pushbutton', ...
+                          'CData',cdata, ...
+                          'Callback',@(src,evt)(self.controlActuated('',src,evt)));
+
 %                           'String','v', ...
                     
 %             % Gain text
@@ -829,6 +854,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
             set(self.ZoomInButton, ...
                 'Position',[zoomInButtonX zoomInButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            
+            % the y limits button
+            yLimitsButtonX=yRangeButtonsX;
+            yLimitsButtonY=zoomInButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want above other zoom buttons
+            set(self.YLimitsButton, ...
+                'Position',[yLimitsButtonX yLimitsButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
             % the scroll buttons
