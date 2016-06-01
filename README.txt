@@ -334,7 +334,7 @@ Version History
                          TemplateUserClass to ExampleUserClass,
                          cleaned up ws.examples package.
 
-0.919    May 31, 2016    Can now set test pulse y limits manually.
+0.919    Jun  1, 2016    Can now set test pulse y limits manually.
                          Satellite Matlab windows are now hidden.
                          Fixed issue with sweep timestamps being
                          somewhat off.  Improved speed of loading
