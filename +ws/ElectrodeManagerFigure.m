@@ -107,26 +107,10 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 model.subscribeMe(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
                 model.subscribeMe(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
                 model.subscribeMe(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
-%                 ephys=model.Parent;
-%                 wavesurferModel=[];
-%                 if ~isempty(ephys) ,
-%                     ephys.subscribeMe(self,'Update','','update');
-%                     wavesurferModel=ephys.Parent;
-%                 end
-%                 if ~isempty(wavesurferModel) ,
-%                     wavesurferModel.subscribeMe(self,'DidSetState','','update');
-%                     acquisition=wavesurferModel.Acquisition;
-%                     if ~isempty(acquisition) ,
-%                         %acquisition.subscribeMe(self,'DidChangeNumberOfChannels','','updateControlProperties');
-%                         %acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
-%                     end
-%                     stimulation=wavesurferModel.Stimulation ;
-%                     if ~isempty(stimulation) ,
-%                         %stimulation.subscribeMe(self,'DidChangeNumberOfChannels','','updateControlProperties');
-%                         %stimulation.subscribeMe(self,'DidSetIsDigitalChannelTimed','','updateControlProperties');
-%                         %stimulation.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
-%                     end
-%                 end                
+                ephys=model.Parent;
+                %ephys.subscribeMe(self,'Update','','update');
+                wavesurferModel=ephys.Parent;
+                wavesurferModel.subscribeMe(self,'DidSetState','','update');
             end
             
             % make the figure visible
