@@ -190,8 +190,7 @@ classdef RootModel < ws.Model
         
         function result = get.NAITerminals(self)
             % The number of AI channels available, if you used them all in
-            % single-ended mode.  If you want them to be differential, you
-            % only get half as many.
+            % differential mode, which is what we do.
             result = self.NAITerminals_ ;
         end
         
@@ -278,8 +277,7 @@ classdef RootModel < ws.Model
         
         function result = getNumberOfAITerminalsFromDevice(deviceName)
             % The number of AI channels available, if you used them all in
-            % single-ended mode.  If you want them to be differential, you
-            % only get half as many.
+            % *differential* mode, which we do.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
                 result = 0 ;
@@ -321,7 +319,7 @@ classdef RootModel < ws.Model
                 end
                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
                     % cellstring, each element of the form '<device name>/ao<channel ID>'
-                result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
+                result = length(channelNames) ;  % the number of channels available
             end
         end
         

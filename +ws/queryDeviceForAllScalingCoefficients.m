@@ -1,5 +1,5 @@
 function scalingCoefficients = queryDeviceForAllScalingCoefficients(deviceName) 
-    nAITerminals = ws.RootModel.getNumberOfAITerminalsFromDevice(deviceName) ;  % this is the number of channels if they're all single-ended
+    nAITerminals = ws.RootModel.getNumberOfAITerminalsFromDevice(deviceName) ;  % this is the number of channels if they're all differential
     parent = [] ;
     taskType = 'analog' ;
     taskName = 'mortimer' ;
