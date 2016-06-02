@@ -928,6 +928,32 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function
+        
+        function duplicateMap(self)
+            self.disableBroadcasts();
+            
+            newMap = self.SelectedMap.copyGivenParent(self);
+            baseName = regexprep(newMap.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
+            largestCopyNumber = 0;
+            % Make sure name is changed to the appropriate copy number
+            for i = 1:length(self.Maps_)
+                otherNameSplit  = strsplit(self.Maps_{i}.Name,{baseName, ' (Copy ',')'});
+                if isempty(otherNameSplit{1}) % then the base name matches
+                    otherNameSplit=str2double(otherNameSplit); % get current copy number
+                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
+                    if copyNumber > largestCopyNumber
+                        largestCopyNumber = copyNumber;
+                    end
+                end
+            end
+            currentCopyNumber = largestCopyNumber + 1;
+            newMap.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
+            self.Maps_{end + 1} = newMap;
+            self.SelectedMapIndex_ = length(self.Maps_);
+            
+            self.enableBroadcastsMaybe();
+            self.broadcast('Update');
+        end  % function
                 
         function stimulus=addNewStimulus(self,typeString)
             if ischar(typeString) && isrow(typeString) && ismember(typeString,ws.Stimulus.AllowedTypeStrings) ,

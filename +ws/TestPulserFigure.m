@@ -94,6 +94,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                     end
                     wavesurferModel=ephys.Parent;
                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                        wavesurferModel.subscribeMe(self,'Update','','update');                        
                         wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
 %                         acquisition=wavesurferModel.Acquisition;
 %                         if ~isempty(acquisition) && isvalid(acquisition) ,
@@ -243,7 +244,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            
+                        
 %             fprintf('TestPulserFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
 %             fprintf('\n');            
@@ -286,12 +287,24 @@ classdef TestPulserFigure < ws.MCOSFigure
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing));
             set(self.AutoYRepeatingCheckbox,'Value',self.Model.IsAutoYRepeating, ...
                                             'Enable',onIff(isWavesurferIdleOrTestPulsing&&self.Model.IsAutoY));
-                                    
-            set(self.VCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
+                   
+            % Have to disable these togglebuttons during test pulsing,
+            % because switching an electrode's mode during test pulsing can
+            % fail: in the target mode, the electrode may not be
+            % test-pulsable (e.g. the monitor and command channels haven't
+            % been set for the target mode), or the monitor and command
+            % channels for the set of active electrode may not be mutually
+            % exclusive.  That makes computing whether the target mode is
+            % valid complicated.  We punt by just disabling the
+            % mode-switching toggle buttons during test pulsing.  The user
+            % can always stop test pulsing, switch the mode, then start
+            % again (if that's a valid action in the target mode).
+            % Hopefully this limitation is not too annoying for users.
+            set(self.VCToggle,'Enable',onIff(isWavesurferIdle && ...
                                              ~isempty(electrode) && ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
                               'Value',~isempty(electrode)&&isequal(electrode.Mode,'vc'));
-            set(self.CCToggle,'Enable',onIff(isWavesurferIdleOrTestPulsing && ...
+            set(self.CCToggle,'Enable',onIff(isWavesurferIdle && ...
                                              ~isempty(electrode)&& ...
                                              (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
                               'Value',~isempty(electrode)&& ...
@@ -318,7 +331,6 @@ classdef TestPulserFigure < ws.MCOSFigure
             self.YLimits_ = self.Model.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
             set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
-            self.Model.YUnits=self.Model.MonitorUnits;
             t=self.Model.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));

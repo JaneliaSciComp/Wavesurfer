@@ -274,6 +274,10 @@ classdef Ephys < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            self.ElectrodeManager.disableBroadcasts();
+            self.TestPulser.disableBroadcasts();
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -293,6 +297,17 @@ classdef Ephys < ws.Subsystem
                     end                    
                 end
             end
+            
+            % Re-enable broadcasts
+            self.TestPulser.enableBroadcastsMaybe();
+            self.ElectrodeManager.enableBroadcastsMaybe();
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast updates for sub-models and self, now that
+            % everything is in sync, and should be self-consistent
+            self.TestPulser.broadcast('Update');
+            self.ElectrodeManager.broadcast('Update');
+            self.broadcast('Update');  % is this necessary?
         end  % function
     end  % public methods block
 
