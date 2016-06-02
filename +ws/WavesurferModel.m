@@ -162,24 +162,32 @@ classdef WavesurferModel < ws.RootModel
             if isITheOneTrueWavesurferModel ,
 
                 % Determine which three free ports to use:
-                freePorts = zeros(1,3);
+                % First bind to three free ports to get their addresses
+                freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
                 for i=1:3
-                    context = zmq.core.ctx_new();
-                    socket  = zmq.core.socket(context, 'ZMQ_PUSH');
+                    freePorts(i).context = zmq.core.ctx_new();
+                    freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
                     address = 'tcp://127.0.0.1:*';
-                    zmq.core.bind(socket, address);
-                    endpoint = zmq.core.getsockopt(socket, 'ZMQ_LAST_ENDPOINT');
-                    splitString = strsplit(endpoint,'tcp://127.0.0.1:');
-                    freePorts(i) = str2double(splitString{2});
-                    completeAddress = ['tcp://127.0.0.1:' num2str(freePorts(i))];
-                    zmq.core.disconnect(socket, completeAddress);
-                    zmq.core.close(socket);
-                    zmq.core.ctx_shutdown(context);
-                    zmq.core.ctx_term(context);
+                    zmq.core.bind(freePorts(i).socket, address);
+                    freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
+                    splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
+                    freePorts(i).portNumber = str2double(splitString{2});
                 end
-                FrontendIPCPublisherPortNumber = freePorts(1);
-                LooperIPCPublisherPortNumber = freePorts(2);
-                RefillerIPCPublisherPortNumber = freePorts(3);
+
+                % Unbind the ports to free them up for the actual
+                % processes. Doing it in this way (rather than
+                % binding/unbinding each port sequentially) will minimize amount of
+                % time between a port being unbound and bound by a process.
+                for i=1:3
+                    zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
+                    zmq.core.close(freePorts(i).socket);
+                    zmq.core.ctx_shutdown(freePorts(i).context);
+                    zmq.core.ctx_term(freePorts(i).context);
+                end
+                
+                FrontendIPCPublisherPortNumber = freePorts(1).portNumber;
+                LooperIPCPublisherPortNumber = freePorts(2).portNumber;
+                RefillerIPCPublisherPortNumber = freePorts(3).portNumber;
                 
                 % Set up the object to broadcast messages to the satellite
                 % processes
