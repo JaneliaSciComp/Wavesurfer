@@ -8,6 +8,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
         EditMenu
         AddSequenceMenuItem
+        DuplicateSequenceMenuItem
         AddMapToSequenceMenuItem
         DeleteMapsFromSequenceMenuItem
         DeleteSequenceMenuItem
@@ -17,6 +18,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
         DeleteChannelsFromMapMenuItem
         DeleteMapMenuItem
         AddStimulusMenuItem
+        DuplicateStimulusMenuItem
         DeleteStimulusMenuItem
         %DeleteItemMenuItem
         
@@ -136,6 +138,9 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             self.AddSequenceMenuItem = ...
                 uimenu('Parent',self.EditMenu, ...
                        'Label','Add Sequence');
+            self.DuplicateStimulusMenuItem = ...
+                uimenu('Parent',self.EditMenu, ...
+                       'Label','Duplicate Selected Sequence');
             self.AddMapToSequenceMenuItem = ...
                 uimenu('Parent',self.EditMenu, ...
                        'Label','Add Map to Sequence');
@@ -165,6 +170,9 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 uimenu('Parent',self.EditMenu, ...
                        'Separator','on', ...
                        'Label','Add Stimulus');
+            self.DuplicateStimulusMenuItem = ...
+                uimenu('Parent',self.EditMenu, ...
+                       'Label','Duplicate Selected Stimulus');
             self.DeleteStimulusMenuItem = ...
                 uimenu('Parent',self.EditMenu, ...
                        'Label','Delete Selected Stimulus');
@@ -944,6 +952,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             set(self.DeleteChannelsFromMapMenuItem, ...
                 'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
             set(self.AddStimulusMenuItem,'Enable',onIff(isIdle));
+            set(self.DuplicateMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
             set(self.DeleteStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
             %set(self.DeleteItemMenuItem,'Enable',onIff(isIdle&&isSelection));
             
