@@ -180,7 +180,6 @@ classdef WavesurferModel < ws.RootModel
                 FrontendIPCPublisherPortNumber = freePorts(1);
                 LooperIPCPublisherPortNumber = freePorts(2);
                 RefillerIPCPublisherPortNumber = freePorts(3);
-                disp(freePorts);
                 
                 % Set up the object to broadcast messages to the satellite
                 % processes
