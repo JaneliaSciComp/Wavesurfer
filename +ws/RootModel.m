@@ -217,8 +217,10 @@ classdef RootModel < ws.Model
         end  % function        
         
         function result = getAllAITerminalNames(self)             
-            nAIsInHardware = self.NAITerminals ;
-            result = arrayfun(@(id)(sprintf('AI%d',id)), 0:(nAIsInHardware-1), 'UniformOutput', false ) ;
+            nAIsInHardware = self.NAITerminals ;  % this is the number of terminals if all are differential, which they are
+            allAITerminalIDs  = 0:(nAIsInHardware-1) ;  % wrong!
+            
+            result = arrayfun(@(id)(sprintf('AI%d',id)), allAITerminalIDs, 'UniformOutput', false ) ;
         end        
         
         function result = getAllAOTerminalNames(self)             
