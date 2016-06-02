@@ -43,6 +43,7 @@ classdef RootModel < ws.Model
         NPFITerminals
         NCounters
         NAITerminals
+        AITerminalIDsOnDevice
         NAOTerminals
         NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
         AllChannelNames
@@ -130,6 +131,7 @@ classdef RootModel < ws.Model
         NPFITerminals_ = 0 
         NCounters_ = 0
         NAITerminals_ = 0
+        AITerminalIDsOnDevice_ = zeros(1,0)
         NAOTerminals_ = 0
 
         IsAIChannelTerminalOvercommitted_ = false(1,0)        
@@ -194,6 +196,13 @@ classdef RootModel < ws.Model
             result = self.NAITerminals_ ;
         end
         
+        function result = get.AITerminalIDsOnDevice(self)
+            % A list of the available AI terminal IDs on the current
+            % device, if you used all AIs in differential mode, which is
+            % what we do.
+            result = self.AITerminalIDsOnDevice_ ;
+        end
+        
         function result = get.NAOTerminals(self)
             % The number of AO channels available.
             result = self.NAOTerminals_ ;
@@ -218,8 +227,8 @@ classdef RootModel < ws.Model
         
         function result = getAllAITerminalNames(self)             
             nAIsInHardware = self.NAITerminals ;  % this is the number of terminals if all are differential, which they are
-            allAITerminalIDs  = 0:(nAIsInHardware-1) ;  % wrong!
-            
+            %allAITerminalIDs  = 0:(nAIsInHardware-1) ;  % wrong!
+            allAITerminalIDs = ws.differentialAITerminalIDsGivenCount(nAIsInHardware) ;
             result = arrayfun(@(id)(sprintf('AI%d',id)), allAITerminalIDs, 'UniformOutput', false ) ;
         end        
         
@@ -434,6 +443,7 @@ classdef RootModel < ws.Model
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
+            self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;
         end
 
@@ -452,13 +462,16 @@ classdef RootModel < ws.Model
             % same terminal ID, that terminal ID is overcommitted.  Also,
             % if that specified terminal ID is not a legal terminal ID for
             % the current device, then we say that that terminal ID is
-            % overcommitted.
+            % overcommitted.  (Because there's one in use, and zero
+            % available.)
             
             % For AI terminals
-            aiTerminalIDs = self.Acquisition.AnalogTerminalIDs ;
-            nOccurancesOfAITerminal = ws.nOccurancesOfID(aiTerminalIDs) ;
-            nAITerminalsOnDevice = self.NAITerminals ;
-            self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | (aiTerminalIDs>=nAITerminalsOnDevice) ;            
+            aiTerminalIDForEachChannel = self.Acquisition.AnalogTerminalIDs ;
+            nOccurancesOfAITerminal = ws.nOccurancesOfID(aiTerminalIDForEachChannel) ;
+            aiTerminalIDsOnDevice = self.AITerminalIDsOnDevice ;
+            %nAITerminalsOnDevice = self.NAITerminals ;            
+            %self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | (aiTerminalIDForEachChannel>=nAITerminalsOnDevice) ;            
+            self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | ~ismember(aiTerminalIDForEachChannel,aiTerminalIDsOnDevice) ;
         end
         
         function syncIsAOChannelTerminalOvercommitted_(self)            

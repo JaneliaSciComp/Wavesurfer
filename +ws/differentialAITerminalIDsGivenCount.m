@@ -14,5 +14,13 @@ function aiTerminalIDs = differentialAITerminalIDsGivenCount(nAITerminals)
    % Nevertheless, this is written to generalize these cases to larger
    % numbers of terminals.
    
-     
+   nTerminalsPerBlock = 8 ;
+   nFractionalBlocks = nAITerminals/nTerminalsPerBlock ;
+   nBlocks = ceil(nFractionalBlocks) ;
+   blockOffsetPerBlock = (2*nTerminalsPerBlock) * (0:(nBlocks-1)) ;
+   blockOffsetMatrix = repmat(blockOffsetPerBlock, [nTerminalsPerBlock 1]) ;   
+   blockOffsetPerTerminal = blockOffsetMatrix(:)' ;  % row vector
+   indexWithinBlockPerTeriminal = repmat(0:(nTerminalsPerBlock-1),[1 nBlocks]) ;
+   aiTerminalIDsWithExtras = blockOffsetPerTerminal + indexWithinBlockPerTeriminal ;
+   aiTerminalIDs = aiTerminalIDsWithExtras(1:nAITerminals) ;     
 end
