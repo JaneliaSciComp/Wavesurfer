@@ -160,20 +160,42 @@ classdef WavesurferModel < ws.RootModel
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
             if isITheOneTrueWavesurferModel ,
+
+                % Determine which three free ports to use:
+                freePorts = zeros(1,3);
+                for i=1:3
+                    context = zmq.core.ctx_new();
+                    socket  = zmq.core.socket(context, 'ZMQ_PUSH');
+                    address = 'tcp://127.0.0.1:*';
+                    zmq.core.bind(socket, address);
+                    endpoint = zmq.core.getsockopt(socket, 'ZMQ_LAST_ENDPOINT');
+                    splitString = strsplit(endpoint,'tcp://127.0.0.1:');
+                    freePorts(i) = str2double(splitString{2});
+                    completeAddress = ['tcp://127.0.0.1:' num2str(freePorts(i))];
+                    zmq.core.disconnect(socket, completeAddress);
+                    zmq.core.close(socket);
+                    zmq.core.ctx_shutdown(context);
+                    zmq.core.ctx_term(context);
+                end
+                FrontendIPCPublisherPortNumber = freePorts(1);
+                LooperIPCPublisherPortNumber = freePorts(2);
+                RefillerIPCPublisherPortNumber = freePorts(3);
+                disp(freePorts);
+                
                 % Set up the object to broadcast messages to the satellite
                 % processes
-                self.IPCPublisher_ = ws.IPCPublisher(self.FrontendIPCPublisherPortNumber) ;
-                self.IPCPublisher_.bind() ;
+                self.IPCPublisher_ = ws.IPCPublisher(FrontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_.bind(); 
 
                 % Subscribe the the looper boradcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(self.LooperIPCPublisherPortNumber) ;
-
+                self.LooperIPCSubscriber_.connect(LooperIPCPublisherPortNumber) ;
+                
                 % Subscribe the the refiller broadcaster
                 self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(self.RefillerIPCPublisherPortNumber) ;
+                self.RefillerIPCSubscriber_.connect(RefillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
@@ -183,9 +205,11 @@ classdef WavesurferModel < ws.RootModel
 %                 if isequal(mode,'superdebug') ,
 %                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(%d, %d); looper.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            LooperIPCPublisherPortNumber, ...
+                            FrontendIPCPublisherPortNumber) ;
 %                 else            
 %                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
 %                     looperLaunchString = ...
@@ -199,9 +223,11 @@ classdef WavesurferModel < ws.RootModel
 %                 if isequal(mode,'superdebug') ,
 %                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(%d, %d); refiller.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            RefillerIPCPublisherPortNumber, ...
+                            FrontendIPCPublisherPortNumber) ;
 %                 else
 %                     refillerLaunchString = ...
 %                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...

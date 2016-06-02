@@ -103,7 +103,7 @@ classdef Refiller < ws.RootModel
     end
     
     methods
-        function self = Refiller()
+        function self = Refiller(RefillerIPCPublisherPortNumber, FrontendIPCPublisherPortNumber)
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
@@ -119,14 +119,14 @@ classdef Refiller < ws.RootModel
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Refiller
-            self.IPCPublisher_ = ws.IPCPublisher(self.RefillerIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(RefillerIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(FrontendIPCPublisherPortNumber) ;
             
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;
