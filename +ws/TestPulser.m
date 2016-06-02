@@ -516,7 +516,7 @@ classdef TestPulser < ws.Model
         end
               
         function result=get.YUnits(self)
-            result = self.MonitorUnits_ ;
+            result = self.MonitorUnits ;
         end
         
         function value=get.SamplingRate(self)

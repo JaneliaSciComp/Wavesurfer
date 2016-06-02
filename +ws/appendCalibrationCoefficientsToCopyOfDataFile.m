@@ -2,11 +2,27 @@ function appendCalibrationCoefficientsToCopyOfDataFile(inputFileName, scalingCoe
     % scalingCoefficients should be an 4 x n array of scaling coefficients
     % the first row should correspond to AI0, the second to AI1, etc.
     
-    % Figure out which AI lines are used in this data file, in what order    
+    % Figure out which AI lines are used in this data file, in what order
     try
         analogChannelIDs = h5read(inputFileName, '/header/Acquisition/AnalogTerminalIDs') ;
-    catch me
-        error('Problem while reading /header/Acquisition/AnalogTerminalIDs in file %s: %s', inputFileName, me.message) ;        
+        didThatWork = true ;
+    catch me1
+        didThatWork = false ;
+    end
+    if ~didThatWork ,
+        try
+            analogChannelIDs = h5read(inputFileName, '/header/Acquisition/AnalogChannelIDs') ;
+            didThatWork = true ;
+        catch me2
+            didThatWork = false ;
+        end
+    end
+    if ~didThatWork ,
+        error(['Unable to read analog terminal IDs in file %s.\n' ...
+               '  Got error message %s when trying to read /header/Acquisition/AnalogTerminalIDs\n' ...
+               '  Then got error message %s when trying to read /header/Acquisition/AnalogChannelIDs'] , ...
+               me1.message, ...
+               me2.message) ;               
     end
     indexIntoScalingCoefficients  = analogChannelIDs + 1 ;  % convert zero-based to one-based
     
@@ -25,18 +41,18 @@ function appendCalibrationCoefficientsToCopyOfDataFile(inputFileName, scalingCoe
     % Copy the input file to the output file
     [didSucceed, message, messageID] = copyfile(inputFileName, outputFileName) ;
     if ~didSucceed ,
-        me = MException('ws:unableToCopyFile', ...
-                        sprintf('Unable to copy %s to %s', inputFileName, outputFileName) ) ;
+        me1 = MException('ws:unableToCopyFile', ...
+                         sprintf('Unable to copy %s to %s', inputFileName, outputFileName) ) ;
         causeException = MException(messageID, message) ;
-        me.addCause(causeException) ;
-        throw(me) ;
+        me1.addCause(causeException) ;
+        throw(me1) ;
     end
     
     % See if header/Acquisition/AnalogScalingCoefficients already exists
     try
         h5read(inputFileName, '/header/Acquisition/AnalogScalingCoefficients') ;
         areAnalogScalingCoefficientsAlreadyPresent = true ;        
-    catch me  %#ok<NASGU>
+    catch me1  %#ok<NASGU>
         areAnalogScalingCoefficientsAlreadyPresent = false ;
     end
 

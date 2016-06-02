@@ -41,5 +41,5 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
         isDryRun = false ;
     end
     deviceScalingCoefficients = ws.queryDeviceForAllScalingCoefficients(deviceName) ;
-    ws.addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, deviceScalingCoefficients, targetFolderPath, isDryRun)
+    ws.addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, deviceScalingCoefficients, targetFolderPath, isDryRun) ;
 end

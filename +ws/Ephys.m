@@ -303,10 +303,11 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager.enableBroadcastsMaybe();
             self.enableBroadcastsMaybe();
             
-            % Broadcast updates
+            % Broadcast updates for sub-models and self, now that
+            % everything is in sync, and should be self-consistent
             self.TestPulser.broadcast('Update');
             self.ElectrodeManager.broadcast('Update');
-            self.broadcast('Update');
+            self.broadcast('Update');  % is this necessary?
         end  % function
     end  % public methods block
 
