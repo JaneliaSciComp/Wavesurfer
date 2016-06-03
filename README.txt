@@ -348,3 +348,7 @@ Version History
                          device has more than 16 (single-ended) AI
                          terminals.
 
+0.9192   Jun 3, 2016     Fixed bug with adding calibration
+                         coefficients to old files taken with devices
+                         with more than 16 (single-ended) AI
+                         terminals.

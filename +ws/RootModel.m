@@ -286,9 +286,16 @@ classdef RootModel < ws.Model
             end
         end
         
-        function result = getNumberOfAITerminalsFromDevice(deviceName)
+        function result = getNumberOfDifferentialAITerminalsFromDevice(deviceName)
             % The number of AI channels available, if you used them all in
             % *differential* mode, which we do.
+            nSingleEnded = ws.RootModel.getNumberOfSingleEndedAITerminalsFromDevice(deviceName) ;  % the number of channels available if you used them all in single-ended mode
+            result = round(nSingleEnded/2) ;  % the number of channels available if you use them all in differential mode, which we do
+        end
+        
+        function result = getNumberOfSingleEndedAITerminalsFromDevice(deviceName)
+            % The number of AI channels available, if you used them all in
+            % single-ended mode, which WaveSurfer does *not* do.
             %deviceName = self.DeviceName ;
             if isempty(deviceName) ,
                 result = 0 ;
@@ -306,8 +313,7 @@ classdef RootModel < ws.Model
                 end
                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
                     % cellstring, each element of the form '<device name>/ai<channel ID>'
-                nSingleEnded = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode                
-                result = round(nSingleEnded/2) ;  % the number of channels available if you use them all in differential mode, which we do
+                result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode                
             end
         end
         
@@ -437,7 +443,7 @@ classdef RootModel < ws.Model
             deviceName = self.DeviceName ;
             [nDIOTerminals, nPFITerminals] = ws.RootModel.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
             nCounters = ws.RootModel.getNumberOfCountersFromDevice(deviceName) ;
-            nAITerminals = ws.RootModel.getNumberOfAITerminalsFromDevice(deviceName) ;
+            nAITerminals = ws.RootModel.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
             nAOTerminals = ws.RootModel.getNumberOfAOTerminalsFromDevice(deviceName) ;
             self.NDIOTerminals_ = nDIOTerminals ;
             self.NPFITerminals_ = nPFITerminals ;
