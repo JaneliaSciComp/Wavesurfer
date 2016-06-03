@@ -33,7 +33,7 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             % Should take less than four seconds if in correct version, and more than 20 seconds if older version
             self.verifyTrue(timeToComplete<4);
             
-            %ws.clear();
+            wsController.windowCloseRequested() ;
         end  % function
         
     end  % test methods

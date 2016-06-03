@@ -52,7 +52,8 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             
             % Compare number of electrodes in figure and model
             self.verifyEqual( storeNumberOfElectrodesInFigure,storeNumberOfElectrodesInModel);
-            %ws.clear();
+            
+            wsController.windowCloseRequested() ;
         end  % function
         
     end  % test methods

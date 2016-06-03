@@ -173,7 +173,9 @@ classdef WavesurferModel < ws.RootModel
                     %zmq.core.bind(freePorts(i).socket, address);
                     freePorts(i).socket.bind(address);
                     %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
-                    freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+                    %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+                    %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
+                    freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
                     splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
                     freePorts(i).portNumber = str2double(splitString{2});
                 end

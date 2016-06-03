@@ -56,17 +56,17 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
             
             self.verifyTrue(ableToBindWavesurfer);
             
-            % Unbind the ports that we just bound.
-            for i=1:3
-%                 if defaultPorts(i).didJustBind == true
-%                     zmq.core.disconnect(defaultPorts(i).socket, defaultPorts(i).portAddress);
-%                 end
-%                 zmq.core.close(defaultPorts(i).socket);
-%                 zmq.core.ctx_shutdown(defaultPorts(i).context);
-%                 zmq.core.ctx_term(defaultPorts(i).context);
-                defaultPorts(i).socket = [] ;
-                defaultPorts(i).context = [] ;
-            end
+%             % Unbind the ports that we just bound.
+%             for i=1:3
+% %                 if defaultPorts(i).didJustBind == true
+% %                     zmq.core.disconnect(defaultPorts(i).socket, defaultPorts(i).portAddress);
+% %                 end
+% %                 zmq.core.close(defaultPorts(i).socket);
+% %                 zmq.core.ctx_shutdown(defaultPorts(i).context);
+% %                 zmq.core.ctx_term(defaultPorts(i).context);
+%                 defaultPorts(i).socket = [] ;
+%                 defaultPorts(i).context = [] ;
+%             end
             
             %ws.clear();
         end  % function
