@@ -27,12 +27,14 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
             defaultPorts(3).portAddress = 'tcp://127.0.0.1:8083';
             
             for i=1:3
-                defaultPorts(i).context = zmq.core.ctx_new();
-                defaultPorts(i).socket  = zmq.core.socket(defaultPorts(i).context, 'ZMQ_PUSH');
+                %defaultPorts(i).context = zmq.core.ctx_new();
+                defaultPorts(i).context = zmq.Context();
+                %defaultPorts(i).socket  = zmq.core.socket(defaultPorts(i).context, 'ZMQ_PUSH');
+                defaultPorts(i).socket  = defaultPorts(i).context.socket('ZMQ_PUSH');
                 try
                     % Bind if possible. If not, then it is already bound
                     % by, eg., Informacast.
-                    zmq.core.bind(defaultPorts(i).socket, defaultPorts(i).portAddress);
+                    defaultPorts(i).socket.bind(defaultPorts(i).portAddress);
                     defaultPorts(i).didJustBind=true;
                 catch
                     defaultPorts(i).didJustBind=false;
@@ -45,10 +47,10 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
             % Try to start WaveSurfer. It will fail if it uses the default
             % ports and does not check for open ports.
             try
-                [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                    isCommandLineOnly);
+                wsModel = wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
+                    isCommandLineOnly);  %#ok<NASGU>
                 ableToBindWavesurfer=true;
-            catch
+            catch                
                 ableToBindWavesurfer=false;
             end
             
@@ -56,14 +58,17 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
             
             % Unbind the ports that we just bound.
             for i=1:3
-                if defaultPorts(i).didJustBind == true
-                    zmq.core.disconnect(defaultPorts(i).socket, defaultPorts(i).portAddress);
-                end
-                zmq.core.close(defaultPorts(i).socket);
-                zmq.core.ctx_shutdown(defaultPorts(i).context);
-                zmq.core.ctx_term(defaultPorts(i).context);
+%                 if defaultPorts(i).didJustBind == true
+%                     zmq.core.disconnect(defaultPorts(i).socket, defaultPorts(i).portAddress);
+%                 end
+%                 zmq.core.close(defaultPorts(i).socket);
+%                 zmq.core.ctx_shutdown(defaultPorts(i).context);
+%                 zmq.core.ctx_term(defaultPorts(i).context);
+                defaultPorts(i).socket = [] ;
+                defaultPorts(i).context = [] ;
             end
-            ws.clear();
+            
+            %ws.clear();
         end  % function
         
     end  % test methods
