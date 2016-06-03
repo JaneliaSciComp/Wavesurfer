@@ -338,25 +338,33 @@ classdef EPCMasterSocket < handle
 %             try
             for i=1:nArgumentElectrodes ,
                 modes{i}=ws.EPCMasterSocket.parseModeResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+1});
-                currentMonitorGains(i)=ws.EPCMasterSocket.parseCurrentMonitorRealizedGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+2});
-                voltageMonitorGains(i)=ws.EPCMasterSocket.parseVoltageMonitorGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+3});
-                currentCommandGains(i)=ws.EPCMasterSocket.parseCurrentCommandGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+4});
-                voltageCommandGains(i)=ws.EPCMasterSocket.parseVoltageCommandGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+5});
+                [currentMonitorGains(i),err1]=ws.EPCMasterSocket.parseCurrentMonitorRealizedGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+2});
+                [voltageMonitorGains(i),err2]=ws.EPCMasterSocket.parseVoltageMonitorGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+3});
+                [currentCommandGains(i),err3]=ws.EPCMasterSocket.parseCurrentCommandGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+4});
+                [voltageCommandGains(i),err4]=ws.EPCMasterSocket.parseVoltageCommandGainResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+5});
                 if hasCommandOnOffSwitch ,
-                    isCommandEnabled{i}=ws.EPCMasterSocket.parseIsCommandEnabledResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+6});
+                    [isCommandEnabled{i},err5]=ws.EPCMasterSocket.parseIsCommandEnabledResponse(responseStrings{nParametersToGetPerElectrode*(i-1)+6});
                 else
                     isCommandEnabled{i}=true;
+                    err5=[];
                 end
+                % Get the first err, if any occurred, and return that as
+                % the per-electrode error
+                if ~isempty(err1) ,
+                    err=err1 ;
+                elseif ~isempty(err2) ,
+                    err=err2 ;
+                elseif ~isempty(err3) ,
+                    err=err3 ;
+                elseif ~isempty(err4) ,
+                    err=err4 ;
+                elseif ~isempty(err5) ,
+                    err=err5 ;
+                else
+                    err=[];
+                end
+                perElectrodeErrors{i} = err ;
             end
-%             catch me
-%                 if ~isempty(strfind(me.identifier,'EPCMasterSocket')) ,
-%                     errorId='EPCMasterSocket:UnableToGetModeAndOrGains';
-%                     errorMessage='Unable to get the mode and/or gain and/or command enablement for at least one Heka electrode';
-%                     error(errorId,errorMessage);
-%                 else
-%                     rethrow(me);
-%                 end
-%             end
             
             %toc
             %fprintf('About to exit getModeAndGains.\n');
@@ -1113,8 +1121,8 @@ classdef EPCMasterSocket < handle
                                'Unable to open connection to EPCMaster because the command file was missing after blanking it');
                 return
             end                
-            commandFileModificationTime=fileModificationTime(self.CommandFileName_);
-            if isempty(commandFileModificationTime) ,
+            commandFileModificationTimeAfterBlanking=fileModificationTime(self.CommandFileName_);
+            if isempty(commandFileModificationTimeAfterBlanking) ,
                 err=MException('EPCMasterSocket:UnableToGetModificationTimeOfBlankedCommandFile', ...
                                'Unable to open connection to EPCMaster because unable to get modification time of the command file after blanking it');
                 return
@@ -1123,22 +1131,22 @@ classdef EPCMasterSocket < handle
             % Look at the response file
             if exist(self.ResponseFileName_,'file') ,
                 responseFileExistedAfter=true;
-                responseFileModificationTimeAfter=fileModificationTime(self.ResponseFileName_);
-                if isempty(responseFileModificationTimeAfter) ,
+                responseFileModificationTimeAfterBlanking=fileModificationTime(self.ResponseFileName_);
+                if isempty(responseFileModificationTimeAfterBlanking) ,
                     err=MException('EPCMasterSocket:UnableToGetResponseModificationTime', ...
                                    'Unable to open connection to EPCMaster because unable to get modification time on response file after issuing blank command');
                     return
                 end
             else
                 responseFileExistedAfter=false;
-                responseFileModificationTimeAfter=-inf;
+                responseFileModificationTimeAfterBlanking=-inf;
             end
             
             % Determine whether the EPCMaster app responded
             epcMasterRespondedToBlankingCommandFile = ...
                 (~responseFileExistedBefore && responseFileExistedAfter) ...
                 || ...
-                (responseFileExistedBefore && responseFileExistedAfter && (commandFileModificationTime<=responseFileModificationTimeAfter) ) ; %#ok<NASGU>
+                (responseFileExistedBefore && responseFileExistedAfter && (commandFileModificationTimeAfterBlanking<=responseFileModificationTimeAfterBlanking) ) ; %#ok<NASGU>
             
             % We don't actually care whether EPCMaster responded to the
             % command file, because in either case we just proceed to see
