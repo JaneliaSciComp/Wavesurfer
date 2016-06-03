@@ -274,6 +274,7 @@ classdef Looper < ws.RootModel
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
+            self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;            
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
