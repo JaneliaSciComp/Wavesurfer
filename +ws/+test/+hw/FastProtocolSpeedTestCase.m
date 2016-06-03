@@ -21,7 +21,7 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             isCommandLineOnly=false;
             thisDirName=fileparts(mfilename('fullpath'));
             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                isCommandLineOnly);
+                                              isCommandLineOnly);
             % Load 1 cfg file with 6 electrodes into fast protocol
             fp = wsModel.FastProtocols{1};
             fp.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
@@ -33,7 +33,7 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             % Should take less than four seconds if in correct version, and more than 20 seconds if older version
             self.verifyTrue(timeToComplete<4);
             
-            ws.clear();
+            wsController.windowCloseRequested() ;
         end  % function
         
     end  % test methods

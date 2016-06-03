@@ -160,34 +160,92 @@ classdef WavesurferModel < ws.RootModel
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
             if isITheOneTrueWavesurferModel ,
+
+                % Determine which three free ports to use:
+                % First bind to three free ports to get their addresses
+                freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
+                for i=1:3
+                    %freePorts(i).context = zmq.core.ctx_new();
+                    freePorts(i).context = zmq.Context();
+                    %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
+                    freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
+                    address = 'tcp://127.0.0.1:*';
+                    %zmq.core.bind(freePorts(i).socket, address);
+                    freePorts(i).socket.bind(address);
+                    %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
+                    %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+                    %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
+                    freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
+                    splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
+                    freePorts(i).portNumber = str2double(splitString{2});
+                end
+
+                % Unbind the ports to free them up for the actual
+                % processes. Doing it in this way (rather than
+                % binding/unbinding each port sequentially) will minimize amount of
+                % time between a port being unbound and bound by a process.
+                for i=1:3
+                    %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
+                    %zmq.core.close(freePorts(i).socket);
+                    %zmq.core.ctx_shutdown(freePorts(i).context);
+                    %zmq.core.ctx_term(freePorts(i).context);
+                    freePorts(i).socket = [] ;
+                    freePorts(i).context = [] ;
+                end
+                
+                frontendIPCPublisherPortNumber = freePorts(1).portNumber;
+                looperIPCPublisherPortNumber = freePorts(2).portNumber;
+                refillerIPCPublisherPortNumber = freePorts(3).portNumber;
+                
                 % Set up the object to broadcast messages to the satellite
                 % processes
-                self.IPCPublisher_ = ws.IPCPublisher(self.FrontendIPCPublisherPortNumber) ;
-                self.IPCPublisher_.bind() ;
+                self.IPCPublisher_ = ws.IPCPublisher(frontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_.bind(); 
 
                 % Subscribe the the looper boradcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(self.LooperIPCPublisherPortNumber) ;
-
+                self.LooperIPCSubscriber_.connect(looperIPCPublisherPortNumber) ;
+                
                 % Subscribe the the refiller broadcaster
                 self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(self.RefillerIPCPublisherPortNumber) ;
+                self.RefillerIPCSubscriber_.connect(refillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
                 % files they need.
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); ws.hideMatlabWindow(); addpath(''%s''); looper=ws.Looper(%d, %d); looper.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            looperIPCPublisherPortNumber, ...
+                            frontendIPCPublisherPortNumber) ;
+%                 else            
+%                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
+%                     looperLaunchString = ...
+%                         sprintf('start %s "%s" "looper" "%s" "%s"' , ...
+%                                 pathOfLaunchSatelliteEngineExe,  ...
+%                                 mode, ...
+%                                 pathToWavesurferRoot , ...
+%                                 pathToMatlabZmqLib ) ;
+%                 end
                 system(looperLaunchString) ;
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d); refiller.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            refillerIPCPublisherPortNumber, ...
+                            frontendIPCPublisherPortNumber) ;
+%                 else
+%                     refillerLaunchString = ...
+%                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...
+%                                 pathOfLaunchSatelliteEngineExe,  ...
+%                                 mode, ...
+%                                 pathToWavesurferRoot , ...
+%                                 pathToMatlabZmqLib ) ;                        
+%                 end
                 system(refillerLaunchString) ;
                 
                 % Start broadcasting pings until the satellite processes

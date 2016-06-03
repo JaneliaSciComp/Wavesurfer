@@ -98,7 +98,7 @@ classdef Looper < ws.RootModel
     end
     
     methods
-        function self = Looper()
+        function self = Looper(looperIPCPublisherPortNumber, frontendIPCPublisherPortNumber)
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
@@ -114,14 +114,14 @@ classdef Looper < ws.RootModel
 
             % Set up IPC publisher socket to let others know about what's
             % going on with the Looper
-            self.IPCPublisher_ = ws.IPCPublisher(self.LooperIPCPublisherPortNumber) ;
+            self.IPCPublisher_ = ws.IPCPublisher(looperIPCPublisherPortNumber) ;
             self.IPCPublisher_.bind() ;
 
             % Set up IPC subscriber socket to get messages when stuff
             % happens in the other processes
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(self.FrontendIPCPublisherPortNumber) ;
+            self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
 
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Looper::Looper(): About to send looperIsAlive\n') ;
