@@ -344,7 +344,7 @@ Version History
                          scaling coefficients to data files from WS
                          v0.8.
 
-0.920    Jun 2, 2016     Fixed bug with listing device AI terminals when
+0.9191   Jun 3, 2016     Fixed bug with listing device AI terminals when
                          device has more than 16 (single-ended) AI
                          terminals.
 
