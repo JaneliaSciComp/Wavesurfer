@@ -97,7 +97,16 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         
         %%
         function mimic(self,other)
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             self.ElectrodeIDs_ = other.ElectrodeIDs_ ;
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end
         
         %%

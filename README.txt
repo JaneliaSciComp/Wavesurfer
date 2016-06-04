@@ -115,7 +115,8 @@ which the code in +ws/+dabs/+ni was taken, and of the MOST library, in
 
 The original developer of WaveSurfer was Patrick Edson.  
 
-WaveSurfer is currently developed by Adam L. Taylor and Ben J. Arthur.
+WaveSurfer is currently developed by Adam L. Taylor, Ben J. Arthur,
+and David Ackerman.
 
 
 Support
@@ -332,3 +333,22 @@ Version History
 0.918    May  8, 2016    Fixed many small bugs, changed
                          TemplateUserClass to ExampleUserClass,
                          cleaned up ws.examples package.
+
+0.919    Jun  1, 2016    Can now set test pulse y limits manually.
+                         Satellite Matlab windows are now hidden.
+                         Fixed issue with sweep timestamps being
+                         somewhat off.  Improved speed of loading
+                         protocol files.  Improved handling of old
+                         protocol files.  Added ability to duplicate
+                         stimulus maps.  Fixed issue with adding
+                         scaling coefficients to data files from WS
+                         v0.8.
+
+0.9191   Jun 3, 2016     Fixed bug with listing device AI terminals when
+                         device has more than 16 (single-ended) AI
+                         terminals.
+
+0.9192   Jun 3, 2016     Fixed bug with adding calibration
+                         coefficients to old files taken with devices
+                         with more than 16 (single-ended) AI
+                         terminals.

@@ -13,6 +13,7 @@ classdef InputTask < handle
         % These are not directly settable
         ExpectedScanCount
         NScansPerDataAvailableCallback
+        IsUsingDefaultTermination
     end
     
     properties (Dependent = true)
@@ -51,6 +52,7 @@ classdef InputTask < handle
         TriggerEdge_
         IsArmed_ = false
         ScalingCoefficients_
+        IsUsingDefaultTermination_ = false
     end
     
 %     events
@@ -59,8 +61,12 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, deviceNames, terminalIDs, sampleRate, durationPerDataAvailableCallback)
-            nChannels=length(terminalIDs);
+        function self = InputTask(parent, taskType, taskName, deviceNames, terminalIDs, sampleRate, durationPerDataAvailableCallback, doUseDefaultTermination)
+            % Deal with optional erg
+            if ~exist('doUseDefaultTermination','var') || isempty(doUseDefaultTermination) ,
+                doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
+            end
+            self.IsUsingDefaultTermination_ = doUseDefaultTermination ;
             
             % Store the parent
             self.Parent_ = parent ;
@@ -69,6 +75,7 @@ classdef InputTask < handle
             self.IsAnalog_ = ~isequal(taskType,'digital') ;
             
             % Create the task, channels
+            nChannels=length(terminalIDs);            
             if nChannels==0 ,
                 self.DabsDaqTask_ = [];
             else
@@ -96,9 +103,11 @@ classdef InputTask < handle
                     if self.IsAnalog ,
                         %deviceName = ws.deviceNameFromTerminalName(terminalName);
                         %terminalID = ws.terminalIDFromTerminalName(terminalName);
-                        self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', [], 'DAQmx_Val_Diff');
-                          % we now explicitly configure the voltage range,
-                          % and specify differential acquisition.  
+                        if doUseDefaultTermination ,
+                            self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', []);
+                        else                            
+                            self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', [], 'DAQmx_Val_Diff');
+                        end
                     else
                         %deviceName = ws.deviceNameFromTerminalName(terminalName);
                         %restOfName = ws.chopDeviceNameFromTerminalName(terminalName);
@@ -201,6 +210,11 @@ classdef InputTask < handle
         
         function value = get.ScalingCoefficients(self)
             value = self.ScalingCoefficients_ ;
+        end  % function
+        
+        function value = get.IsUsingDefaultTermination(self)
+            % If false, means using all-differential termination
+            value = self.IsUsingDefaultTermination_ ;
         end  % function
         
         function [rawData,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>

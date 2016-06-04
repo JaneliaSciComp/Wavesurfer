@@ -160,32 +160,68 @@ classdef WavesurferModel < ws.RootModel
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
             if isITheOneTrueWavesurferModel ,
+
+                % Determine which three free ports to use:
+                % First bind to three free ports to get their addresses
+                freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
+                for i=1:3
+                    %freePorts(i).context = zmq.core.ctx_new();
+                    freePorts(i).context = zmq.Context();
+                    %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
+                    freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
+                    address = 'tcp://127.0.0.1:*';
+                    %zmq.core.bind(freePorts(i).socket, address);
+                    freePorts(i).socket.bind(address);
+                    %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
+                    %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+                    %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
+                    freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
+                    splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
+                    freePorts(i).portNumber = str2double(splitString{2});
+                end
+
+                % Unbind the ports to free them up for the actual
+                % processes. Doing it in this way (rather than
+                % binding/unbinding each port sequentially) will minimize amount of
+                % time between a port being unbound and bound by a process.
+                for i=1:3
+                    %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
+                    %zmq.core.close(freePorts(i).socket);
+                    %zmq.core.ctx_shutdown(freePorts(i).context);
+                    %zmq.core.ctx_term(freePorts(i).context);
+                    freePorts(i).socket = [] ;
+                    freePorts(i).context = [] ;
+                end
+                
+                frontendIPCPublisherPortNumber = freePorts(1).portNumber;
+                looperIPCPublisherPortNumber = freePorts(2).portNumber;
+                refillerIPCPublisherPortNumber = freePorts(3).portNumber;
+                
                 % Set up the object to broadcast messages to the satellite
                 % processes
-                self.IPCPublisher_ = ws.IPCPublisher(self.FrontendIPCPublisherPortNumber) ;
-                self.IPCPublisher_.bind() ;
+                self.IPCPublisher_ = ws.IPCPublisher(frontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_.bind(); 
 
                 % Subscribe the the looper boradcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(self.LooperIPCPublisherPortNumber) ;
-
+                self.LooperIPCSubscriber_.connect(looperIPCPublisherPortNumber) ;
+                
                 % Subscribe the the refiller broadcaster
                 self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(self.RefillerIPCPublisherPortNumber) ;
+                self.RefillerIPCSubscriber_.connect(refillerIPCPublisherPortNumber) ;
 
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
                 % files they need.
-                %matlabBinPath = fullfile(matlabroot(),'bin','win64') ;
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
-%                 if isequal(mode,'superdebug') ,
-%                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); ws.hideMatlabWindow(); addpath(''%s''); looper=ws.Looper(%d, %d); looper.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            looperIPCPublisherPortNumber, ...
+                            frontendIPCPublisherPortNumber) ;
 %                 else            
 %                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
 %                     looperLaunchString = ...
@@ -196,12 +232,12 @@ classdef WavesurferModel < ws.RootModel
 %                                 pathToMatlabZmqLib ) ;
 %                 end
                 system(looperLaunchString) ;
-%                 if isequal(mode,'superdebug') ,
-%                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d); refiller.runMainLoop(); clear; quit()"' , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            refillerIPCPublisherPortNumber, ...
+                            frontendIPCPublisherPortNumber) ;
 %                 else
 %                     refillerLaunchString = ...
 %                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...
@@ -212,10 +248,6 @@ classdef WavesurferModel < ws.RootModel
 %                 end
                 system(refillerLaunchString) ;
                 
-                %system('start matlab -nojvm -minimize -r "looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                %system('start matlab -r "dbstop if error; looper=ws.Looper(); looper.runMainLoop(); quit()"');
-                %system('start matlab -nojvm -minimize -r "refiller=Refiller(); refiller.runMainLoop();"');
-
                 % Start broadcasting pings until the satellite processes
                 % respond
                 nPingsMax=20 ;
@@ -987,93 +1019,7 @@ classdef WavesurferModel < ws.RootModel
 
         function testPulserIsAboutToStartTestPulsing(self)
             self.releaseTimedHardwareResourcesOfAllProcesses_();
-        end
-        
-%         function result = getNumberOfAIChannels(self)
-%             % The number of AI channels available, if you used them all in
-%             % single-ended mode.  If you want them to be differential, you
-%             % only get half as many.
-%             deviceName = self.DeviceName ;
-%             if isempty(deviceName) ,
-%                 result = nan ;
-%             else
-%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
-%                 commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
-%                 aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
-%                     % cellstring, each element of the form '<device name>/ai<channel ID>'
-%                 result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode
-%             end
-%         end
-%         
-%         function result = getNumberOfAOChannels(self)
-%             % The number of AO channels available.
-%             deviceName = self.DeviceName ;
-%             if isempty(deviceName) ,
-%                 result = nan ;
-%             else
-%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
-%                 commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
-%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-%                     % cellstring, each element of the form '<device name>/ao<channel ID>'
-%                 result = length(channelNames) ;  % the number of channels available if you used them all in single-ended mode
-%             end
-%         end
-%         
-%         function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOChannelsAndPFILines(self)
-%             % The number of DIO channels available.  We only count the DIO
-%             % channels capable of timed operation, i.e. the P0.x channels.
-%             % This is a conscious design choice.  We treat the PFIn/Pm.x
-%             % channels as being only PFIn channels.
-%             deviceName = self.DeviceName ;
-%             if isempty(deviceName) ,
-%                 numberOfDIOChannels = nan ;
-%                 numberOfPFILines = nan ;
-%             else
-%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
-%                 commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
-%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-%                     % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
-%                 % We only want to count the port0 lines, since those are
-%                 % the only ones that can be used for timed operations.
-%                 splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
-%                 lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
-%                 if any(lengthOfEachSplit<2) ,
-%                     numberOfDIOChannels = nan ;  % should we throw an error here instead?
-%                     numberOfPFILines = nan ;
-%                 else
-%                     portNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
-%                     isAPort0Channel = strcmp(portNames,'port0') ;
-%                     numberOfDIOChannels = sum(isAPort0Channel) ;
-%                     numberOfPFILines = sum(~isAPort0Channel) ;
-%                 end
-%             end
-%         end  % function
-%         
-%         function result = getNumberOfCounters(self)
-%             % The number of counters (CTRs) on the board.
-%             deviceName = self.DeviceName ;
-%             if isempty(deviceName) ,
-%                 result = nan ;
-%             else
-%                 device = ws.dabs.ni.daqmx.Device(deviceName) ;
-%                 commaSeparatedListOfChannelNames = device.get('COPhysicalChans') ;  % this is a string
-%                 channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-%                     % cellstring, each element of the form '<device
-%                     % name>/<counter name>', where a <counter name> is of
-%                     % the form 'ctr<n>' or 'freqout'.
-%                 % We only want to count the ctr<n> lines, since those are
-%                 % the general-purpose CTRs.
-%                 splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
-%                 lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
-%                 if any(lengthOfEachSplit<2) ,
-%                     result = nan ;  % should we throw an error here instead?
-%                 else
-%                     counterOutputNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
-%                     isAGeneralPurposeCounterOutput = strncmp(counterOutputNames,'ctr',3) ;
-%                     result = sum(isAGeneralPurposeCounterOutput) ;
-%                 end
-%             end
-%         end  % function
+        end        
     end  % public methods block
     
     methods (Access=protected)
@@ -2224,7 +2170,7 @@ classdef WavesurferModel < ws.RootModel
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             self.broadcast('DidLoadProtocolFile');
-            self.changeReadiness(+1);       
+            self.changeReadiness(+1);
             %self.broadcast('Update');
         end  % function
     end
@@ -2645,6 +2591,9 @@ classdef WavesurferModel < ws.RootModel
         function mimic(self, other)
             % Cause self to resemble other.
             
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -2653,7 +2602,7 @@ classdef WavesurferModel < ws.RootModel
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;                    
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -2661,6 +2610,12 @@ classdef WavesurferModel < ws.RootModel
                     end
                 end
             end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
         end  % function
     end  % public methods block
 
@@ -2783,7 +2738,7 @@ classdef WavesurferModel < ws.RootModel
                 wavesurferModelSettings = self.encodeForPersistence() ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
                 self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
-            end            
+            end
         end  % function
     end  % protected methods block
     

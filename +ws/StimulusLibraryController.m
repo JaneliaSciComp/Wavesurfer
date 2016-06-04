@@ -126,6 +126,14 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             map.addBinding('');
         end  % function
 
+        function DuplicateMapMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+
+            % Duplicate a map
+            model.duplicateMap();
+
+        end  % function
+        
         function AddChannelToMapMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedMap=model.SelectedMap;
