@@ -770,8 +770,8 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                     end
                 else
                     %obj.apiDLLPaths must NOT be version-indexed
-                    apiDLLPaths = obj.apiDLLPaths.values();
-                    apiDLLPath = apiDLLPaths{1}; %All values should be the same
+                    apiDLLPaths = obj.apiDLLPaths.values(); %#ok<PROP>
+                    apiDLLPath = apiDLLPaths{1}; %#ok<PROP> %All values should be the same
                 end
                 loadlibrary(fullfile(apiDLLPath,obj.apiDLLNames),apiVDFcn);
 
