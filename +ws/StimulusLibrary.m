@@ -918,6 +918,32 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function
 
+        function duplicateSequence(self)
+            self.disableBroadcasts();
+            
+            newSequence = self.SelectedSequence.copyGivenParent(self);
+            baseName = regexprep(newSequence.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
+            largestCopyNumber = 0;
+            % Make sure name is changed to the appropriate copy number
+            for i = 1:length(self.Sequences_)
+                otherNameSplit  = strsplit(self.Sequences_{i}.Name,{baseName, ' (Copy ',')'});
+                if isempty(otherNameSplit{1}) % then the base name matches
+                    otherNameSplit=str2double(otherNameSplit); % get current copy number
+                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
+                    if copyNumber > largestCopyNumber
+                        largestCopyNumber = copyNumber;
+                    end
+                end
+            end
+            currentCopyNumber = largestCopyNumber + 1;
+            newSequence.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
+            self.Sequences_{end + 1} = newSequence;
+            self.SelectedSequenceIndex_ = length(self.Sequences_);
+            
+            self.enableBroadcastsMaybe();
+            self.broadcast('Update');
+        end  % function
+        
         function map=addNewMap(self)
             self.disableBroadcasts();
             map=ws.StimulusMap(self);
@@ -965,6 +991,33 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
                 self.enableBroadcastsMaybe();
             end
+            self.broadcast('Update');
+        end  % function
+        
+        function duplicateStimulus(self,typeString)
+         %   if ischar(typeString) && isrow(typeString) && ismember(typeString,ws.Stimulus.AllowedTypeStrings) ,
+                self.disableBroadcasts();
+                newStimulus=self.SelectedStimulus.copyGivenParent(self);
+                baseName = regexprep(newStimulus.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
+                largestCopyNumber = 0;
+                % Make sure name is changed to the appropriate copy number
+                for i = 1:length(self.Stimuli_)
+                    otherNameSplit  = strsplit(self.Stimuli_{i}.Name,{baseName, ' (Copy ',')'});
+                    if isempty(otherNameSplit{1}) % then the base name matches
+                        otherNameSplit=str2double(otherNameSplit); % get current copy number
+                        copyNumber = otherNameSplit(~isnan(otherNameSplit));
+                        if copyNumber > largestCopyNumber
+                            largestCopyNumber = copyNumber;
+                        end
+                    end
+                end
+                currentCopyNumber = largestCopyNumber + 1;
+                newStimulus.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
+                self.Stimuli_{end + 1} = newStimulus;
+                %        self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
+                self.enableBroadcastsMaybe();
+          %  end
             self.broadcast('Update');
         end  % function
         

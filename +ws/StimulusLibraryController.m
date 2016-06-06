@@ -92,6 +92,14 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             end            
         end  % function
         
+        function DuplicateSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            
+            % Duplicate a sequence
+            model.duplicateSequence();
+            
+        end  % function
+        
         function AddMapToSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedSequence=model.SelectedSequence;
@@ -163,6 +171,14 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             model.addNewStimulus('SquarePulse');
         end  % function
 
+        function DuplicateStimulusMenuItemActuated(self,source,event) %#ok<INUSD>
+            model=self.Model;
+            
+            % Duplicate a stimulus
+            model.duplicateStimulus();
+            
+        end  % function
+        
         function DeleteSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;
             selectedItem=model.SelectedItem;
