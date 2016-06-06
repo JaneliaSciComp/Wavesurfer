@@ -222,14 +222,23 @@ classdef (Abstract) Coding < handle
         end
     
         function result = decodeEncodingContainerGivenParent(encodingContainer,parent)
-            if ~ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
-                error('Coding:errSettingProp', ...
-                      'decodeAnything() requires an encoding container.');
+            if ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
+                % Unpack the fields of the encodingContainer
+                className = encodingContainer.className ;
+                encoding = encodingContainer.encoding ;
+            else
+                % We would be within our rights to simply throw an error
+                % here, but we persist in an effort to help out users of
+                % old versions of WS.
+                %error('Coding:errSettingProp', ...
+                %      'decodeAnything() requires an encoding container.');
+                className = class(encodingContainer) ;
+                if length(className)>=3 && isequal(className(1:3),'ws.') ,
+                    encoding = struct(encodingContainer) ;
+                else
+                    encoding = encodingContainer ;
+                end
             end
-            
-            % Unpack the fields of the encodingContainer
-            className = encodingContainer.className ;
-            encoding = encodingContainer.encoding ;
             
             % Create the object to be returned
             if ws.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
@@ -255,13 +264,6 @@ classdef (Abstract) Coding < handle
             elseif length(className)>=3 && isequal(className(1:3),'ws.') ,  % would be better to determine if className is a subclass of ws.Coding...
                 % One of our custom classes
                 
-                % Make sure the encoded object is a scalar
-                if ~isscalar(encoding) ,
-                    error('Coding:cantDecodeNonscalarWSObject', ...
-                          'Can''t decode nonscalar objects of class %s', ...
-                          className) ;
-                end                    
-                
                 % For backwards-compatibility with older files
                 prefixesToFix = {'ws.system.' 'ws.stimulus.' 'ws.mixin.'} ;
                 for i = 1:length(prefixesToFix) ,
@@ -273,7 +275,7 @@ classdef (Abstract) Coding < handle
                         break
                     end
                 end
-                
+
                 % More backwards-compatibility code
                 if isequal(className,'ws.TriggerDestination') ,
                     className = 'ws.ExternalTrigger' ;
@@ -281,63 +283,104 @@ classdef (Abstract) Coding < handle
                     className = 'ws.CounterTrigger' ;
                 end
                 
-                % Instantiate the object
-                result = feval(className,parent) ;
+                % Make sure the encoded object is a scalar
+                if isscalar(encoding) ,
+                    % The in-my-head spec states that the encoding of a ws.
+                    % object must be a scalar, so this will be try except
+                    % for protocol files from older versions of WS.
+                    
+                    % Instantiate the object
+                    result = feval(className,parent) ;
 
-                % Get the property names from the encoding
-                fieldNames = fieldnames(encoding) ;
+                    % Get the property names from the encoding
+                    fieldNames = fieldnames(encoding) ;
 
-                % Set each property name in self
-                for i = 1:numel(fieldNames) ,
-                    fieldName = fieldNames{i};
-                    % Usually, the propertyName is the same as the field
-                    % name, but we do some ad-hoc translations to support
-                    % old files.
-                    if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
-                        propertyName = 'AnalogTerminalIDs_' ;
-                    elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
-                        propertyName = 'DigitalTerminalIDs_' ;      
-                    elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
-                        propertyName = 'AnalogTerminalIDs_' ;
-                    elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
-                        propertyName = 'DigitalTerminalIDs_' ;      
-                    elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') ,
-                        propertyName = 'CounterTriggers_' ;      
-                    elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') ,
-                        propertyName = 'ExternalTriggers_' ;      
-                    else
-                        % The typical case
-                        propertyName = fieldName ;
-                    end
-                    if isprop(result,propertyName) ,  % Only decode if there's a property to receive it
-                        subencoding = encoding.(fieldName) ;  % the encoding is a struct, to no worries about access
-                        % Backwards-compatibility hack, convert col
-                        % vectors to row vectors in some cases
-                        if isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') && ...
-                           iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
-                            subencoding.encoding = transpose(subencoding.encoding) ;
-                        elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') && ...
-                           iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
-                            subencoding.encoding = transpose(subencoding.encoding) ;
+                    % Set each property name in self
+                    for i = 1:numel(fieldNames) ,
+                        fieldName = fieldNames{i};
+                        % Usually, the propertyName is the same as the field
+                        % name, but we do some ad-hoc translations to support
+                        % old files.
+                        if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                            propertyName = 'AnalogTerminalIDs_' ;
+                        elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                            propertyName = 'DigitalTerminalIDs_' ;      
+                        elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                            propertyName = 'AnalogTerminalIDs_' ;
+                        elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                            propertyName = 'DigitalTerminalIDs_' ;      
+                        elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') ,
+                            propertyName = 'CounterTriggers_' ;      
+                        elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') ,
+                            propertyName = 'ExternalTriggers_' ;      
+                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Acquisition') ,
+                            propertyName = 'Acquisition_' ;      
+                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Stimulation') ,
+                            propertyName = 'Stimulation_' ;      
+                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Triggering') ,
+                            propertyName = 'Triggering_' ;      
+                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Display') ,
+                            propertyName = 'Display_' ;      
+                        elseif isa(result,'ws.Display') && isequal(fieldName, 'Scopes') ,
+                            propertyName = 'Scopes_' ;      
+                        elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'StimulusLibrary') ,
+                            propertyName = 'StimulusLibrary_' ;      
+                        else
+                            % The typical case
+                            propertyName = fieldName ;
                         end
-                        % end backwards-compatibility hack
-                        subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
-                        result.setPropertyValue_(propertyName,subresult) ;
-                    else
-                        warning('Coding:errSettingProp', ...
-                                'Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
-                                fieldName, ...
-                                propertyName, ...
-                                class(result));
+                        if isprop(result,propertyName) && propertyName(end)=='_' ,  % Only decode if there's a property to receive it that ends in an underscore
+                            subencoding = encoding.(fieldName) ;  % the encoding is a struct, so no worries about access
+                            % Backwards-compatibility hack, convert col
+                            % vectors to row vectors in some cases
+                            if isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') && ...
+                               iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
+                                subencoding.encoding = transpose(subencoding.encoding) ;
+                            elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') && ...
+                               iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
+                                subencoding.encoding = transpose(subencoding.encoding) ;
+                            end
+                            % end backwards-compatibility hack
+                            subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                            try
+                                result.setPropertyValue_(propertyName,subresult) ;
+                            catch me
+                                warning('Ignoring error when attempting to set property %s a thing of class %s: %s', ...
+                                        propertyName, ...
+                                        className, ...
+                                        me.message) ;
+                            end
+                        else
+                            warning('Coding:errSettingProp', ...
+                                    'Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
+                                    fieldName, ...
+                                    propertyName, ...
+                                    class(result));
+                        end
+                    end  % for            
+
+                    % Do sanity-checking on persisted state
+                    result.sanitizePersistedState_() ;
+
+                    % Make sure the transient state is consistent with
+                    % the non-transient state
+                    result.synchronizeTransientStateToPersistedState_() ;                    
+                else
+                    % The encoding is not a scalar, which it should be.                    
+                    % Again, we'd be within our rights to throw an error
+                    % here, but we try to be helpful...
+                    n = numel(encoding) ;
+                    result = cell(1,n) ;
+                    for i=1:n ,
+                        hackedContainer = struct('className', className, 'encoding', encoding(i)) ;
+                        result{i} = ws.Coding.decodeEncodingContainerGivenParent(hackedContainer,parent) ;
+                        % A cell array can't be a parent, so we just use
+                        % parent
                     end
-                end  % for            
-                
-                % Do sanity-checking on persisted state
-                result.sanitizePersistedState_() ;
-            
-                % Make sure the transient state is consistent with
-                % the non-transient state
-                result.synchronizeTransientStateToPersistedState_() ;
+                    % error('Coding:cantDecodeNonscalarWSObject', ...
+                    %       'Can''t decode nonscalar objects of class %s', ...
+                    %       className) ;
+                end
             else
                 % Unable to decode 
                 error('Coding:dontKnowHowToDecodeThat', ...
