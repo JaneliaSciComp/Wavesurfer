@@ -340,35 +340,39 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.Maps_=cell(1,0);  % clear the maps
             self.Stimuli_=cell(1,0);  % clear the stimuli
             
-            % Make a deep copy of the stimuli
-            self.Stimuli_ = cellfun(@(element)(element.copyGivenParent(self)),other.Stimuli,'UniformOutput',false);
-%             for i=1:length(self.Stimuli) ,
-%                 self.Stimuli_{i}.Parent=self;  % make the Parent correct
-%             end
-            
-            % Make a deep copy of the maps, which needs both the old & new
-            % stimuli to work properly
-            self.Maps_ = cellfun(@(element)(element.copyGivenParent(self)),other.Maps,'UniformOutput',false);            
-            %for i=1:length(self.Maps) ,
-            %    self.Maps{i}.Parent=self;  % make the Parent correct
-            %end
-            
-            % Make a deep copy of the sequences, which needs both the old & new
-            % maps to work properly            
-            %self.Sequences=other.Sequences.copyGivenMaps(self.Maps,other.Maps);
-            self.Sequences_= cellfun(@(element)(element.copyGivenParent(self)),other.Sequences,'UniformOutput',false);                        
-            %for i=1:length(self.Sequences) ,
-            %    self.Sequences{i}.Parent=self;  % make the Parent correct
-            %end
+            if isempty(other)
+                % Want to handle this case, but there's not much to do here
+            else
+                % Make a deep copy of the stimuli
+                self.Stimuli_ = cellfun(@(element)(element.copyGivenParent(self)),other.Stimuli,'UniformOutput',false);
+                % for i=1:length(self.Stimuli) ,
+                %     self.Stimuli_{i}.Parent=self;  % make the Parent correct
+                % end
 
-            % Copy over the indices of the selected outputable
-            self.SelectedOutputableIndex_ = other.SelectedOutputableIndex_ ;
-            self.SelectedOutputableClassName_ = other.SelectedOutputableClassName_ ;
-            % Copy over the selected item indices
-            self.SelectedStimulusIndex_ = other.SelectedStimulusIndex_ ;
-            self.SelectedMapIndex_ = other.SelectedMapIndex_ ;
-            self.SelectedSequenceIndex_ = other.SelectedSequenceIndex_ ;
-            self.SelectedItemClassName_ = other.SelectedItemClassName_ ;
+                % Make a deep copy of the maps, which needs both the old & new
+                % stimuli to work properly
+                self.Maps_ = cellfun(@(element)(element.copyGivenParent(self)),other.Maps,'UniformOutput',false);            
+                %for i=1:length(self.Maps) ,
+                %    self.Maps{i}.Parent=self;  % make the Parent correct
+                %end
+
+                % Make a deep copy of the sequences, which needs both the old & new
+                % maps to work properly            
+                %self.Sequences=other.Sequences.copyGivenMaps(self.Maps,other.Maps);
+                self.Sequences_= cellfun(@(element)(element.copyGivenParent(self)),other.Sequences,'UniformOutput',false);                        
+                %for i=1:length(self.Sequences) ,
+                %    self.Sequences{i}.Parent=self;  % make the Parent correct
+                %end
+
+                % Copy over the indices of the selected outputable
+                self.SelectedOutputableIndex_ = other.SelectedOutputableIndex_ ;
+                self.SelectedOutputableClassName_ = other.SelectedOutputableClassName_ ;
+                % Copy over the selected item indices
+                self.SelectedStimulusIndex_ = other.SelectedStimulusIndex_ ;
+                self.SelectedMapIndex_ = other.SelectedMapIndex_ ;
+                self.SelectedSequenceIndex_ = other.SelectedSequenceIndex_ ;
+                self.SelectedItemClassName_ = other.SelectedItemClassName_ ;
+            end
             
             self.enableBroadcastsMaybe();
             self.broadcast('Update');

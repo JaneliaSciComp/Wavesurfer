@@ -234,12 +234,19 @@ classdef (Abstract) Coding < handle
                 %      'decodeAnything() requires an encoding container.');
                 className = class(encodingContainer) ;
                 if length(className)>=3 && isequal(className(1:3),'ws.') ,
+                    originalState=ws.warningState('MATLAB:structOnObject');
+                    warning('off','MATLAB:structOnObject')
                     encoding = struct(encodingContainer) ;
+                    warning(originalState,'MATLAB:structOnObject');
                 else
                     encoding = encodingContainer ;
                 end
             end
             
+            if isequal(className,'ws.system.Stimulation') ,
+                keyboard
+            end
+
             % Create the object to be returned
             if ws.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
                 result = encoding ;
@@ -260,7 +267,7 @@ classdef (Abstract) Coding < handle
                             % A struct array can't be a parent, so we just use
                             % parent
                     end
-                end                
+                end
             elseif length(className)>=3 && isequal(className(1:3),'ws.') ,  % would be better to determine if className is a subclass of ws.Coding...
                 % One of our custom classes
                 
@@ -288,83 +295,133 @@ classdef (Abstract) Coding < handle
                     % The in-my-head spec states that the encoding of a ws.
                     % object must be a scalar, so this will be try except
                     % for protocol files from older versions of WS.
-                    
-                    % Instantiate the object
-                    result = feval(className,parent) ;
+ 
+                    if isequal(className,'ws.utility.SIUnit') ,
+                        % this is for backwards compatibility with old files
+                        result = encoding.String_ ;  % get just the string
+                    else
+                        % this is the normal case
+                        
+                        % Instantiate the object
+                        result = feval(className,parent) ;
 
-                    % Get the property names from the encoding
-                    fieldNames = fieldnames(encoding) ;
+                        % Get the property names from the encoding
+                        fieldNames = fieldnames(encoding) ;
 
-                    % Set each property name in self
-                    for i = 1:numel(fieldNames) ,
-                        fieldName = fieldNames{i};
-                        % Usually, the propertyName is the same as the field
-                        % name, but we do some ad-hoc translations to support
-                        % old files.
-                        if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
-                            propertyName = 'AnalogTerminalIDs_' ;
-                        elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
-                            propertyName = 'DigitalTerminalIDs_' ;      
-                        elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
-                            propertyName = 'AnalogTerminalIDs_' ;
-                        elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
-                            propertyName = 'DigitalTerminalIDs_' ;      
-                        elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') ,
-                            propertyName = 'CounterTriggers_' ;      
-                        elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') ,
-                            propertyName = 'ExternalTriggers_' ;      
-                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Acquisition') ,
-                            propertyName = 'Acquisition_' ;      
-                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Stimulation') ,
-                            propertyName = 'Stimulation_' ;      
-                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Triggering') ,
-                            propertyName = 'Triggering_' ;      
-                        elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Display') ,
-                            propertyName = 'Display_' ;      
-                        elseif isa(result,'ws.Display') && isequal(fieldName, 'Scopes') ,
-                            propertyName = 'Scopes_' ;      
-                        elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'StimulusLibrary') ,
-                            propertyName = 'StimulusLibrary_' ;      
-                        else
-                            % The typical case
-                            propertyName = fieldName ;
-                        end
-                        if isprop(result,propertyName) && propertyName(end)=='_' ,  % Only decode if there's a property to receive it that ends in an underscore
-                            subencoding = encoding.(fieldName) ;  % the encoding is a struct, so no worries about access
-                            % Backwards-compatibility hack, convert col
-                            % vectors to row vectors in some cases
-                            if isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') && ...
-                               iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
-                                subencoding.encoding = transpose(subencoding.encoding) ;
-                            elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') && ...
-                               iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
-                                subencoding.encoding = transpose(subencoding.encoding) ;
+                        % Set each property name in self
+                        for i = 1:numel(fieldNames) ,
+                            fieldName = fieldNames{i};
+                            % Usually, the propertyName is the same as the field
+                            % name, but we do some ad-hoc translations to support
+                            % old files.
+                            if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                                propertyName = 'AnalogTerminalIDs_' ;
+                            elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                                propertyName = 'DigitalTerminalIDs_' ;      
+                            elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                                propertyName = 'AnalogTerminalIDs_' ;
+                            elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                                propertyName = 'DigitalTerminalIDs_' ;      
+                            elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') ,
+                                propertyName = 'CounterTriggers_' ;      
+                            elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') ,
+                                propertyName = 'ExternalTriggers_' ;      
+                            elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Acquisition') ,
+                                propertyName = 'Acquisition_' ;      
+                            elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Stimulation') ,
+                                propertyName = 'Stimulation_' ;      
+                            elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Triggering') ,
+                                propertyName = 'Triggering_' ;      
+                            elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Display') ,
+                                propertyName = 'Display_' ;      
+                            elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Ephys') ,
+                                propertyName = 'Ephys_' ;      
+                            elseif isa(result,'ws.Display') && isequal(fieldName, 'Scopes') ,
+                                propertyName = 'Scopes_' ;      
+                            elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'StimulusLibrary') ,
+                                propertyName = 'StimulusLibrary_' ;      
+                            elseif isequal(fieldName, 'Enabled_') ,
+                                propertyName = 'IsEnabled_' ;
+                            elseif isa(result,'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') ,
+                                propertyName = 'AcquisitionTriggerSchemeIndex_' ;
+                            elseif isa(result,'ws.Triggering') && isequal(fieldName, 'prvAcquisitionTriggerSchemeSourceIndex') ,
+                                propertyName = 'AcquisitionTriggerSchemeIndex_' ;
+                            else
+                                % The typical case
+                                propertyName = fieldName ;
                             end
-                            % end backwards-compatibility hack
-                            subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
-                            try
-                                result.setPropertyValue_(propertyName,subresult) ;
-                            catch me
-                                warning('Ignoring error when attempting to set property %s a thing of class %s: %s', ...
+                            if isprop(result,propertyName) && propertyName(end)=='_' ,  % Only decode if there's a property to receive it that ends in an underscore
+                                subencoding = encoding.(fieldName) ;  % the encoding is a struct, so no worries about access
+                                % Backwards-compatibility hack, convert col
+                                % vectors to row vectors in some cases
+                                if isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') && ...
+                                   iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
+                                    subencoding.encoding = transpose(subencoding.encoding) ;
+                                elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') && ...
+                                   iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
+                                    subencoding.encoding = transpose(subencoding.encoding) ;
+                                end
+                                % end backwards-compatibility hack
+                                if isa(result, 'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') && ...
+                                   isequal(propertyName, 'AcquisitionTriggerSchemeIndex_') ,
+                                    % This BC hack handles the case where the
+                                    % class is ws.Triggering, and the field is
+                                    % AcquisitionUsesASAPTriggering_.  In this
+                                    % case, the protpertyName is set to
+                                    % AcquisitionTriggerSchemeIndex_ above.
+                                    % If the subencoding is true, want to set
+                                    % this property to 1, to point at the
+                                    % built-in trigger.  Otherwise, don't want
+                                    % to set the property at all.
+                                    if subencoding ,
+                                        doSetPropertyValue = true ;
+                                        subresult = 1 ;
+                                    else
+                                        % Don't want to set the property
+                                        % value at all in this case
+                                        doSetPropertyValue = false ;
+                                        subresult = [] ;  % not used
+                                    end
+                                elseif isa(result, 'ws.Triggering') && isequal(fieldName, 'prvAcquisitionTriggerSchemeSourceIndex') && ...
+                                       isequal(propertyName, 'AcquisitionTriggerSchemeIndex_') ,
+                                    % This BC hack ...
+                                    % In the current version of WS, the acq
+                                    % scheme cannot be set to a counter
+                                    % trigger, so we ignore this
+                                    doSetPropertyValue = false ;
+                                    subresult = [] ;  % not used
+                                else                                    
+                                    % the usual case
+                                    doSetPropertyValue = true ;
+                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                end
+                                if doSetPropertyValue ,
+                                    try
+                                        result.setPropertyValue_(propertyName,subresult) ;
+                                    catch me
+                                        warning('Ignoring error when attempting to set property %s a thing of class %s: %s', ...
+                                                propertyName, ...
+                                                className, ...
+                                                me.message) ;
+                                    end
+                                end
+                            else
+                                warning('Coding:errSettingProp', ...
+                                        'Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
+                                        fieldName, ...
                                         propertyName, ...
-                                        className, ...
-                                        me.message) ;
+                                        class(result));
+                                1+1 ;
                             end
-                        else
-                            warning('Coding:errSettingProp', ...
-                                    'Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
-                                    fieldName, ...
-                                    propertyName, ...
-                                    class(result));
-                        end
-                    end  % for            
+                        end  % for            
 
-                    % Do sanity-checking on persisted state
-                    result.sanitizePersistedState_() ;
+                        % Do sanity-checking on persisted state
+                        result.sanitizePersistedState_() ;
 
-                    % Make sure the transient state is consistent with
-                    % the non-transient state
-                    result.synchronizeTransientStateToPersistedState_() ;                    
+                        % Make sure the transient state is consistent with
+                        % the non-transient state
+                        result.synchronizeTransientStateToPersistedState_() ;                    
+                    end
                 else
                     % The encoding is not a scalar, which it should be.                    
                     % Again, we'd be within our rights to throw an error
