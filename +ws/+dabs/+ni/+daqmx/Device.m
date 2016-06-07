@@ -1,4 +1,4 @@
-classdef Device < ws.dabs.ni.daqmx.private.DAQmxClass
+classdef Device < ws.dabs.ni.daqmx.private.DAQmxEntity
     %DEVICE Class encapsulating a DAQmx device
     %
     
@@ -9,7 +9,7 @@ classdef Device < ws.dabs.ni.daqmx.private.DAQmxClass
     
     
 
-    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxClass)
+    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxEntity)
     properties (SetAccess=private, Hidden)
         gsPropRegExp = '.*DAQmxGetDev(?<varName>.*)\(\s*cstring,\s*(?<varType>\S*)[\),].*'; 
         gsPropPrefix = 'Dev'; 
