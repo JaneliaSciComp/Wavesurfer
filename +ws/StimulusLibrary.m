@@ -40,9 +40,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % Invariant: If SelectedStimulusIndex is nonempty, it must be an
             %            integer >=1 and <=length(self.Stimuli)
             % Invariant: If SelectedStimulusIndex is empty, then
-            %            self.SelectedSequence is empty.          
+            %            self.SelectedStimulus is empty.          
             % Invariant: If SelectedStimulusIndex is nonempty, then
-            %            self.SelectedSequence == self.Stimuli{self.SelectedStimulusIndex}
+            %            self.SelectedStimulus == self.Stimuli{self.SelectedStimulusIndex}
         SelectedMapIndex
           % (Similar invariants to SelectedStimulusIndex)
         SelectedSequenceIndex
@@ -1424,6 +1424,49 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                                'IsEmpty'}) ;
         end  % function 
     end  % public methods block    
+    
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+            nStimuli = length(self.Stimuli_) ;
+            nMaps = length(self.Maps_) ;
+            nSequences = length(self.Sequences_) ;
+            nItems = nStimuli + nMaps + nSequences ;
+            
+            if ~isempty(self.Stimuli_) && isempty(self.SelectedStimulusIndex_) ,
+                self.SelectedStimulusIndex_ = 1 ;
+            end
+            if ~isempty(self.Maps_) && isempty(self.SelectedMapIndex_) ,
+                self.SelectedMapIndex_ = 1 ;
+            end
+            if ~isempty(self.Sequences_) && isempty(self.SelectedSequenceIndex_) ,
+                self.SelectedSequenceIndex_ = 1 ;
+            end
+            
+            if isempty(self.SelectedItemClassName_) && nItems>0 ,
+                if nStimuli>0 ,
+                    self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                elseif nMaps>0 ,
+                    self.SelectedItemClassName_ = 'ws.StimulusMap' ;
+                else
+                    self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                end
+            end
+                    
+            if isempty(self.SelectedOutputable) && nMaps+nSequences>0 ,
+                if nMaps>0 ,
+                    self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
+                    self.SelectedOutputableIndex_ = 1 ;
+                else
+                    self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
+                    self.SelectedOutputableIndex_ = 1 ;
+                end                
+            end            
+        end
+    end  % protected methods block
     
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)

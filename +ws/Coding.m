@@ -243,9 +243,9 @@ classdef (Abstract) Coding < handle
                 end
             end
             
-            if isequal(className,'ws.system.Stimulation') ,
-                keyboard
-            end
+            %if isequal(className,'ws.system.Stimulation') ,
+            %    keyboard
+            %end
 
             % Create the object to be returned
             if ws.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
@@ -290,6 +290,11 @@ classdef (Abstract) Coding < handle
                     className = 'ws.CounterTrigger' ;
                 end
                 
+%                 if isequal(className, 'ws.StimulusLibrary') ,
+%                     dbstack
+%                     keyboard
+%                 end                    
+                
                 % Make sure the encoded object is a scalar
                 if isscalar(encoding) ,
                     % The in-my-head spec states that the encoding of a ws.
@@ -307,10 +312,14 @@ classdef (Abstract) Coding < handle
 
                         % Get the property names from the encoding
                         fieldNames = fieldnames(encoding) ;
-
+                        
                         % Set each property name in self
                         for i = 1:numel(fieldNames) ,
                             fieldName = fieldNames{i};
+                            %if isequal(fieldName,'Mode') || isequal(fieldName,'Mode_') ,
+                            %    dbstack
+                            %    keyboard
+                            %end
                             % Usually, the propertyName is the same as the field
                             % name, but we do some ad-hoc translations to support
                             % old files.
@@ -340,6 +349,12 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'Scopes_' ;      
                             elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'StimulusLibrary') ,
                                 propertyName = 'StimulusLibrary_' ;      
+                            elseif isa(result,'ws.StimulusLibrary') && isequal(fieldName, 'Stimuli') ,
+                                propertyName = 'Stimuli_' ;      
+                            elseif isa(result,'ws.StimulusLibrary') && isequal(fieldName, 'Maps') ,
+                                propertyName = 'Maps_' ;      
+                            elseif isa(result,'ws.StimulusLibrary') && isequal(fieldName, 'Sequences') ,
+                                propertyName = 'Sequences_' ;      
                             elseif isequal(fieldName, 'Enabled_') ,
                                 propertyName = 'IsEnabled_' ;
                             elseif isa(result,'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') ,
@@ -390,6 +405,49 @@ classdef (Abstract) Coding < handle
                                     % trigger, so we ignore this
                                     doSetPropertyValue = false ;
                                     subresult = [] ;  % not used
+                                elseif isa(result, 'ws.ElectrodeManager') && isequal(fieldName, 'EPCMasterSocket_') && ...
+                                       isequal(propertyName, 'EPCMasterSocket_') ,
+                                    % BC hack 
+                                    doSetPropertyValue = false ;
+                                    subresult = [] ;  % not used
+                                elseif isa(result, 'ws.ScopeModel') && ...
+                                        ( ( isequal(fieldName, 'YUnits_') && isequal(propertyName, 'YUnits_')) || ...
+                                          ( isequal(fieldName, 'XUnits_') && isequal(propertyName, 'XUnits_')) ) ,
+                                    % BC hack 
+                                    doSetPropertyValue = true ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    % sometimes rawSubresult is a
+                                    % one-element cellstring.  If so, just
+                                    % want the string.
+                                    if isempty(rawSubresult) ,
+                                        subresult = '' ;
+                                    elseif iscell(rawSubresult) ,
+                                        subresult = rawSubresult{1} ;
+                                    else
+                                        subresult = rawSubresult ;
+                                    end
+                                elseif isa(result,'ws.Electrode') && isequal(fieldName,'Mode_') && isequal(propertyName,'Mode_') ,
+                                    % BC hack 
+                                    doSetPropertyValue = true ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    % sometimes rawSubresult is a
+                                    % one-element cellstring.  If so, just
+                                    % want the string.
+                                    if isempty(rawSubresult) ,
+                                        subresult = '' ;
+                                    elseif iscell(rawSubresult) ,
+                                        subresult = rawSubresult{1} ;
+                                    else
+                                        subresult = rawSubresult ;
+                                    end
+                                elseif ( isa(result,'ws.BuiltinTrigger') || isa(result,'ws.CounterTrigger') || isa(result,'ws.ExternalTrigger') ) ...
+                                       && ...
+                                       isequal(fieldName,'Edge_') && isequal(propertyName,'Edge_') ,
+                                    % BC hack 
+                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    % sometimes subresult is empty.  If
+                                    % so, don't set it.
+                                    doSetPropertyValue = ~isempty(subresult) ;
                                 else                                    
                                     % the usual case
                                     doSetPropertyValue = true ;
