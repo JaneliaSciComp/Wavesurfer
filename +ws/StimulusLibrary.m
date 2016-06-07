@@ -917,32 +917,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function
-
-        function duplicateSequence(self)
-            self.disableBroadcasts();
-            
-            newSequence = self.SelectedSequence.copyGivenParent(self);
-            baseName = regexprep(newSequence.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
-            largestCopyNumber = 0;
-            % Make sure name is changed to the appropriate copy number
-            for i = 1:length(self.Sequences_)
-                otherNameSplit  = strsplit(self.Sequences_{i}.Name,{baseName, ' (Copy ',')'});
-                if isempty(otherNameSplit{1}) % then the base name matches
-                    otherNameSplit=str2double(otherNameSplit); % get current copy number
-                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
-                    if copyNumber > largestCopyNumber
-                        largestCopyNumber = copyNumber;
-                    end
-                end
-            end
-            currentCopyNumber = largestCopyNumber + 1;
-            newSequence.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
-            self.Sequences_{end + 1} = newSequence;
-            self.SelectedSequenceIndex_ = length(self.Sequences_);
-            
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
-        end  % function
         
         function map=addNewMap(self)
             self.disableBroadcasts();
@@ -954,33 +928,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function
-        
-        function duplicateMap(self)
-            self.disableBroadcasts();
-            
-            newMap = self.SelectedMap.copyGivenParent(self);
-            baseName = regexprep(newMap.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
-            largestCopyNumber = 0;
-            % Make sure name is changed to the appropriate copy number
-            for i = 1:length(self.Maps_)
-                otherNameSplit  = strsplit(self.Maps_{i}.Name,{baseName, ' (Copy ',')'});
-                if isempty(otherNameSplit{1}) % then the base name matches
-                    otherNameSplit=str2double(otherNameSplit); % get current copy number
-                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
-                    if copyNumber > largestCopyNumber
-                        largestCopyNumber = copyNumber;
-                    end
-                end
-            end
-            currentCopyNumber = largestCopyNumber + 1;
-            newMap.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
-            self.Maps_{end + 1} = newMap;
-            self.SelectedMapIndex_ = length(self.Maps_);
-            
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
-        end  % function
-                
+                 
         function stimulus=addNewStimulus(self,typeString)
             if ischar(typeString) && isrow(typeString) && ismember(typeString,ws.Stimulus.AllowedTypeStrings) ,
                 self.disableBroadcasts();
@@ -993,40 +941,52 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
             self.broadcast('Update');
         end  % function
-        
-        function duplicateStimulus(self,typeString)
-         %   if ischar(typeString) && isrow(typeString) && ismember(typeString,ws.Stimulus.AllowedTypeStrings) ,
-                self.disableBroadcasts();
-                newStimulus=self.SelectedStimulus.copyGivenParent(self);
-                baseName = regexprep(newStimulus.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
-                largestCopyNumber = 0;
-                % Make sure name is changed to the appropriate copy number
-                for i = 1:length(self.Stimuli_)
-                    otherNameSplit  = strsplit(self.Stimuli_{i}.Name,{baseName, ' (Copy ',')'});
-                    if isempty(otherNameSplit{1}) % then the base name matches
-                        otherNameSplit=str2double(otherNameSplit); % get current copy number
-                        copyNumber = otherNameSplit(~isnan(otherNameSplit));
-                        if copyNumber > largestCopyNumber
-                            largestCopyNumber = copyNumber;
-                        end
-                    end
-                end
-                currentCopyNumber = largestCopyNumber + 1;
-                newStimulus.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
-                self.Stimuli_{end + 1} = newStimulus;
-                %        self.SelectedItemClassName_ = 'ws.Stimulus' ;
-                self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
-                self.enableBroadcastsMaybe();
-          %  end
-            self.broadcast('Update');
-        end  % function
-        
+               
 %         function addMapToSequence(self,sequence,map)
 %             if ws.ismemberOfCellArray({sequence},self.Sequences) && ws.ismemberOfCellArray({map},self.Maps) ,
 %                 sequence.addMap(map);
 %             end
 %             self.broadcast('Update');
 %         end  % function
+
+        function duplicateStimulusLibraryObject(self)
+            self.disableBroadcasts();
+            
+            % Determine which stimulus library object will be duplicated,
+            % and set variable names appropriately
+            if isa(self.SelectedItem,'ws.StimulusSequence')
+                selectedItem = 'SelectedSequence';
+                cellArrayName = 'Sequences_';
+            elseif isa(self.SelectedItem,'ws.StimulusMap')
+                selectedItem = 'SelectedMap';
+                cellArrayName = 'Maps_';
+            else 
+                selectedItem = 'SelectedStimulus';
+                cellArrayName = 'Stimuli_';
+            end
+            
+            duplicatedStimulusLibraryObject = self.(selectedItem).copyGivenParent(self);
+            baseName = regexprep(duplicatedStimulusLibraryObject.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
+            largestCopyNumber = 0;
+            % Make sure name is changed to the appropriate copy number
+            for i = 1:length(self.(cellArrayName))
+                otherNameSplit  = strsplit(self.(cellArrayName){i}.Name,{baseName, ' (Copy ',')'});
+                if isempty(otherNameSplit{1}) % then the base name matches
+                    otherNameSplit=str2double(otherNameSplit); % get current copy number
+                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
+                    if copyNumber > largestCopyNumber
+                        largestCopyNumber = copyNumber;
+                    end
+                end
+            end
+            currentCopyNumber = largestCopyNumber + 1;
+            duplicatedStimulusLibraryObject.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
+            self.(cellArrayName){end + 1} = duplicatedStimulusLibraryObject;
+            self.([selectedItem 'Index_']) = length(self.(cellArrayName));
+            
+            self.enableBroadcastsMaybe();
+            self.broadcast('Update');
+        end % function
 
         function didChangeNumberOfOutputChannels(self)
             self.broadcast('Update') ;
