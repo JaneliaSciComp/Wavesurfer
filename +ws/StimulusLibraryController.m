@@ -96,7 +96,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             model=self.Model;
             
             % Duplicate a sequence
-            model.duplicateStimulusLibraryObject();
+            model.duplicateSelectedItem();
             
         end  % function
         
@@ -138,7 +138,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             model=self.Model;
 
             % Duplicate a map
-            model.duplicateStimulusLibraryObject();
+            model.duplicateSelectedItem();
 
         end  % function
         
@@ -175,7 +175,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             model=self.Model;
             
             % Duplicate a stimulus
-            model.duplicateStimulusLibraryObject();
+            model.duplicateSelectedItem();
             
         end  % function
         

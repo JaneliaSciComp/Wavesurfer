@@ -72,19 +72,16 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         
         function set.Name(self,newValue)
             if ischar(newValue) && isrow(newValue) && ~isempty(newValue) ,
-                allItems=self.Parent.Sequences;
-                isNotMe=cellfun(@(item)(item~=self),allItems);
-                allItemsButMe=allItems(isNotMe);
-                allOtherItemNames=cellfun(@(item)(item.Name),allItemsButMe,'UniformOutput',false);
-                if ismember(newValue,allOtherItemNames) ,
-                    % do nothing
+                if self.Parent.isAnItemName(newValue) ,
+                    % do nothing---the newValue is already an item name, so
+                    % we can't have it be our name.  (And if the new value
+                    % is already *our* item name, then we don't need to set
+                    % our name to the not-really-new value.
                 else
                     self.Name_=newValue;
-                end
+                end                    
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+            self.Parent.childMayHaveChanged(self);
         end
 
         function out = get.Name(self)

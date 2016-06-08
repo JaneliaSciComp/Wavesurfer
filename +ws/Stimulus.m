@@ -66,22 +66,16 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         
         function set.Name(self,newValue)
             if ischar(newValue) && isrow(newValue) && ~isempty(newValue) ,
-                parent=self.Parent;
-                if isempty(parent) ,
-                    self.Name_=newValue;
+                if self.Parent.isAnItemName(newValue) ,
+                    % do nothing---the newValue is already an item name, so
+                    % we can't have it be our name.  (And if the new value
+                    % is already *our* item name, then we don't need to set
+                    % our name to the not-really-new value.
                 else
-                    allStimuli=parent.Stimuli;
-                    isNotMe=cellfun(@(stimulus)(stimulus~=self),allStimuli);
-                    allStimuliButMe=allStimuli(isNotMe);
-                    allOtherStimulusNames=cellfun(@(stimulus)(stimulus.Name),allStimuliButMe,'UniformOutput',false);
-                    if ~ismember(newValue,allOtherStimulusNames) ,
-                        self.Name_=newValue;
-                    end
-                end
+                    self.Name_=newValue;
+                end                    
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+            self.Parent.childMayHaveChanged(self);
         end
 
         function set.Delay(self, value)

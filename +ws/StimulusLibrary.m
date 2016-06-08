@@ -893,6 +893,40 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');            
         end
         
+        function result = areItemNamesDistinct(self) 
+            % Returns true iff all item names are distinct.  This is an
+            % object invariant.  I.e. it should always return true.
+            itemNames = self.itemNames() ;
+            uniqueItemNames = unique(itemNames) ;
+            result = (length(itemNames)==length(uniqueItemNames)) ;            
+        end
+        
+        function result = itemNames(self)
+            sequenceNames=cellfun(@(item)(item.Name),self.Sequences,'UniformOutput',false);
+            mapNames=cellfun(@(item)(item.Name),self.Maps,'UniformOutput',false);
+            stimulusNames=cellfun(@(item)(item.Name),self.Stimuli,'UniformOutput',false);
+            result = horzcat(sequenceNames, mapNames, stimulusNames) ;
+        end  % function
+        
+        function result = isAnItemName(self, name)
+            itemNames = self.itemNames() ;
+            result = ismember(name,itemNames) ;
+        end  % function
+        
+        function result = itemWithName(self, name)
+            sequence = self.sequenceWithName(name) ;
+            if isempty(sequence) ,
+                map = self.mapWithName(name) ;
+                if isempty(map) ,
+                    result = self.stimulusWithName(name) ;  % will be empty if no such stimulus
+                else
+                    result = map ;
+                end                
+            else
+                result = sequence ;
+            end
+        end  % function
+
         function debug(self) %#ok<MANU>
             keyboard
         end
@@ -949,40 +983,45 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             self.broadcast('Update');
 %         end  % function
 
-        function duplicateStimulusLibraryObject(self)
+        function duplicateSelectedItem(self)
             self.disableBroadcasts();
+
+            % Get a handle to the item to be duplicated
+            originalItem = self.SelectedItem ;  % handle
             
-            % Determine which stimulus library object will be duplicated,
-            % and set variable names appropriately
-            if isa(self.SelectedItem,'ws.StimulusSequence')
-                selectedItem = 'SelectedSequence';
-                cellArrayName = 'Sequences_';
-            elseif isa(self.SelectedItem,'ws.StimulusMap')
-                selectedItem = 'SelectedMap';
-                cellArrayName = 'Maps_';
+            % Make a new item (which will start out with a name like
+            % 'Untitled stimulus 3'
+            if isa(originalItem,'ws.StimulusSequence') ,
+                newItem = self.addNewSequence() ;
+            elseif isa(originalItem,'ws.StimulusMap')
+                newItem = self.addNewMap() ;
             else 
-                selectedItem = 'SelectedStimulus';
-                cellArrayName = 'Stimuli_';
+                newItem = self.addNewStimulus(originalItem.TypeString) ;
             end
             
-            duplicatedStimulusLibraryObject = self.(selectedItem).copyGivenParent(self);
-            baseName = regexprep(duplicatedStimulusLibraryObject.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
-            largestCopyNumber = 0;
-            % Make sure name is changed to the appropriate copy number
-            for i = 1:length(self.(cellArrayName))
-                otherNameSplit  = strsplit(self.(cellArrayName){i}.Name,{baseName, ' (Copy ',')'});
-                if isempty(otherNameSplit{1}) % then the base name matches
-                    otherNameSplit=str2double(otherNameSplit); % get current copy number
-                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
-                    if copyNumber > largestCopyNumber
-                        largestCopyNumber = copyNumber;
-                    end
+            % Copy the settings from the original item
+            newItem.mimic(originalItem) ;
+            
+            % At the moment, the name of newItem is the same as that of
+            % selectedItem.  This violates one of StimulusLibrary
+            % invariants, that all names must be distinct.
+            % So we generate new names until we find a distinct one.
+            itemNames = self.itemNames() ;
+            originalItemName = originalItem.Name ;
+            for copyIndex = 1:length(self.getItems()) ,  % we will never have to try more than this number of putative names
+                if copyIndex==1 ,
+                    putativeNewItemName = sprintf('%s (copy)', originalItemName) ;
+                else
+                    putativeNewItemName = sprintf('%s (copy %d)', originalItemName, copyIndex) ;
+                end
+                isNameCollision = ismember(putativeNewItemName, itemNames) ;
+                if ~isNameCollision ,
+                    newItem.Name = putativeNewItemName ;
+                    break
                 end
             end
-            currentCopyNumber = largestCopyNumber + 1;
-            duplicatedStimulusLibraryObject.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
-            self.(cellArrayName){end + 1} = duplicatedStimulusLibraryObject;
-            self.([selectedItem 'Index_']) = length(self.(cellArrayName));
+            
+            self.SelectedItem = newItem ;
             
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
