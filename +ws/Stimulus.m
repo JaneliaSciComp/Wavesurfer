@@ -279,26 +279,78 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     end
     
     methods 
-        function other = copyGivenParent(self,parent)
-            other=ws.Stimulus(parent);
+        function mimic(self, other)
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
             
-            other.Name_ = self.Name_ ;
-            other.Delay_ = self.Delay_ ;
-            other.Duration_ = self.Duration_ ;
-            other.Amplitude_ = self.Amplitude_ ;
-            other.DCOffset_ = self.DCOffset_ ;
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();           
             
-            % Make a new delegate of the right kind
-            delegateClassName=sprintf('ws.%sStimulusDelegate',self.TypeString);
-            delegate=feval(delegateClassName,other);
-            other.Delegate_ = delegate;
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if isprop(other,thisPropertyName) ,
+                    if isequal(thisPropertyName, 'Delegate_') ,
+                        % We have to handle the delegate special, firstly
+                        % becuase it's a handle, and secondly because we
+                        % can't just do
+                        % self.Delegate_.mimic(other.Delegate_), because
+                        % there are many sub-classes of delegate, and you
+                        % can't change the class of an object within a
+                        % method of that object.  (At least, I don't think
+                        % you can do that...)
+                        
+                        % Make a new delegate of the right kind
+                        delegateClassName=sprintf('ws.%sStimulusDelegate',other.TypeString);
+                        delegate=feval(delegateClassName,self);
+                        self.Delegate_ = delegate;
+                        self.Delegate_.mimic(other.Delegate_) ;
+%                         % Now we set all the params to match self
+%                         for j = 1:length(self.Delegate.AdditionalParameterNames) ,
+%                             parameterName = self.Delegate_.AdditionalParameterNames{j} ;                
+%                             self.Delegate_.(parameterName) = other.Delegate_.(parameterName) ;
+%                         end                                    
+                    else
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
             
-            % Now we set all the params to match self
-            for i=1:length(self.Delegate.AdditionalParameterNames) ,
-                parameterName=self.Delegate_.AdditionalParameterNames{i};                
-                other.Delegate_.(parameterName)=self.Delegate_.(parameterName);
-            end            
-        end
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');            
+        end  % function
+    
+%         function other = copyGivenParent(self,parent)
+%             other=ws.Stimulus(parent);
+%             
+%             other.Name_ = self.Name_ ;
+%             other.Delay_ = self.Delay_ ;
+%             other.Duration_ = self.Duration_ ;
+%             other.Amplitude_ = self.Amplitude_ ;
+%             other.DCOffset_ = self.DCOffset_ ;
+%             
+%             % Make a new delegate of the right kind
+%             delegateClassName=sprintf('ws.%sStimulusDelegate',self.TypeString);
+%             delegate=feval(delegateClassName,other);
+%             other.Delegate_ = delegate;
+%             
+%             % Now we set all the params to match self
+%             for i=1:length(self.Delegate.AdditionalParameterNames) ,
+%                 parameterName=self.Delegate_.AdditionalParameterNames{i};                
+%                 other.Delegate_.(parameterName)=self.Delegate_.(parameterName);
+%             end            
+%         end
     end
     
 %     properties (Hidden, SetAccess=protected)

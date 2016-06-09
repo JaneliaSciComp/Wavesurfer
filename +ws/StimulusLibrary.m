@@ -1003,12 +1003,15 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             newItem.mimic(originalItem) ;
             
             % At the moment, the name of newItem is the same as that of
-            % selectedItem.  This violates one of StimulusLibrary
-            % invariants, that all names must be distinct.
+            % selectedItem.  This violates one of the StimulusLibrary
+            % invariants, that all item names within the library must be distinct.
             % So we generate new names until we find a distinct one.
             itemNames = self.itemNames() ;
             originalItemName = originalItem.Name ;
-            for copyIndex = 1:length(self.getItems()) ,  % we will never have to try more than this number of putative names
+            for copyIndex = 1:length(self.getItems()) ,  
+                % We will never have to try more than this number of
+                % putative names, because each item has only one name, and
+                % there are only so many items.
                 if copyIndex==1 ,
                     putativeNewItemName = sprintf('%s (copy)', originalItemName) ;
                 else
