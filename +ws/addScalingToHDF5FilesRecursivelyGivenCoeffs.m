@@ -55,12 +55,15 @@ function addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, scalingCo
             % File name does not end in .h5, so skip it
         end
     end
-
+    
     % Recurse into the child folders
     for i=1:length(sourceChildFolderNames) ,
         sourceChildFolderName = sourceChildFolderNames{i} ;
-        if isequal(sourceChildFolderName,'.') || isequal(sourceChildFolderName,'..') ,
-            % Don't want to recurse into self or our parent, so do nothing
+        if isequal(sourceChildFolderName,'.') || isequal(sourceChildFolderName,'..') || isequal(ws.absolutizePath(fullfile(sourceFolderPath,sourceChildFolderName)), ws.absolutizePath(targetFolderPath)),
+            % Don't want to recurse into self or our parent, so do nothing.
+            % Also don't want to recurse into target folder if target
+            % folder is in source folder. Here, cd(cd(directoryName))
+            % returns the full path to the directory.
         else
             sourceChildFolderPath = fullfile(sourceFolderPath,sourceChildFolderName) ;
             targetChildFolderPath = fullfile(targetFolderPath,sourceChildFolderName) ;
