@@ -262,11 +262,11 @@ classdef Acquisition < ws.AcquisitionSubsystem
             self.broadcast('Update');
         end
         
-        function cacheAnalogScalingCoefficents_(self, analogScalingCoefficients) 
+        function cacheAnalogScalingCoefficients_(self, analogScalingCoefficients) 
             self.AnalogScalingCoefficientsCache_ = analogScalingCoefficients ;
         end
         
-        function clearAnalogScalingCoefficentsCache_(self) 
+        function clearAnalogScalingCoefficientsCache_(self) 
             self.AnalogScalingCoefficientsCache_ = [] ;
         end
         
