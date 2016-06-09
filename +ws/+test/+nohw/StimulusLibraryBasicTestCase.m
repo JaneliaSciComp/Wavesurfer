@@ -43,6 +43,19 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             self.verifyEqual(numel(library.Stimuli), 3);
         end
         
+        function testRemoveMap(self)
+            library = self.createPopulatedStimulusLibrary();
+            self.verifyTrue(library.isSelfConsistent()) ;
+            self.verifyEqual(numel(library.Stimuli), 5);
+            
+            % Force remove, item that is in use.  Should work.
+            map = library.Maps{1} ;
+            isInUse=library.isInUse(map);
+            self.verifyTrue(isInUse);
+            library.deleteItems({map});  % Remove it anyway
+            self.verifyTrue(library.isSelfConsistent()) ;
+        end
+        
         function testRemoveSequence(self)
             library = self.createPopulatedStimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;
