@@ -1945,7 +1945,7 @@ classdef WavesurferModel < ws.RootModel
             responseFileName='si_response.txt';
             responseAbsoluteFileName=fullfile(dirName,responseFileName);
             
-            maximumWaitTime=10;  % sec
+            maximumWaitTime=30;  % sec
             dtBetweenChecks=0.1;  % sec
             nChecks=round(maximumWaitTime/dtBetweenChecks);
             
