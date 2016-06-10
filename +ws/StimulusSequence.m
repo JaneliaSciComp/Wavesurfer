@@ -542,6 +542,19 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end  % function
     end
     
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+            nMaps = length(self.IndexOfEachMapInLibrary_) ;
+            
+            % length of things should equal nBindings
+            self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nMaps, false) ;
+        end
+    end  % protected methods block
+    
 %     methods (Static)
 %         function self = loadobj(self)
 %             self.IsMarkedForDeletion_ = false(size(self.Maps_));
