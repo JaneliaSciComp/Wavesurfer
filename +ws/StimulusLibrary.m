@@ -658,13 +658,29 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 isMatch = cellfun(@(element)(element==item),self.Maps) ;
                 iMatch = find(isMatch,1) ;
                 if ~isempty(iMatch) ,
-                    if self.SelectedMapIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
+                    indexOfMapToBeDeleted = iMatch ;
+                    % When we delete the indicated map, we have to adjust
+                    % all the places where we store a map index if that map
+                    % index is greater than indexOfMapToBeDeleted, since
+                    % those are the ones whose indices will be less by one
+                    % .Maps_ after the deletion.
+                    
+                    % If the selected index map to be deleted has a higher
+                    % index than indexOfMapToBeDeleted, decrement it
+                    if self.SelectedMapIndex_ > indexOfMapToBeDeleted ,  % they can't be equal, b/c we know the item is not selected
                         self.SelectedMapIndex_ = self.SelectedMapIndex_ - 1 ;
                     end
-                    if isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') && self.SelectedOutputableIndex_ > iMatch ,
+                    % If the selected outputable is a map, and has a higher
+                    % index than indexOfMapToBeDeleted, decrement it
+                    if isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') && self.SelectedOutputableIndex_ > indexOfMapToBeDeleted ,
                         self.SelectedOutputableIndex_ = self.SelectedOutputableIndex_ - 1 ;
                     end
-                    self.Maps_(iMatch) = [] ;
+                    % Each sequence contains a list of map indices, so
+                    % decrement those as needed.
+                    self.adjustMapIndicesInSequencesWhenDeletingAMap_(indexOfMapToBeDeleted) ;
+                    % Finally, actually delete the indicated map from the
+                    % master list of maps.
+                    self.Maps_(indexOfMapToBeDeleted) = [] ;
                 end
             elseif isa(item, 'ws.Stimulus')
                 isMatch = ws.ismemberOfCellArray(self.Stimuli,{item}) ;
@@ -893,6 +909,40 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');            
         end
         
+        function result = areItemNamesDistinct(self) 
+            % Returns true iff all item names are distinct.  This is an
+            % object invariant.  I.e. it should always return true.
+            itemNames = self.itemNames() ;
+            uniqueItemNames = unique(itemNames) ;
+            result = (length(itemNames)==length(uniqueItemNames)) ;            
+        end
+        
+        function result = itemNames(self)
+            sequenceNames=cellfun(@(item)(item.Name),self.Sequences,'UniformOutput',false);
+            mapNames=cellfun(@(item)(item.Name),self.Maps,'UniformOutput',false);
+            stimulusNames=cellfun(@(item)(item.Name),self.Stimuli,'UniformOutput',false);
+            result = horzcat(sequenceNames, mapNames, stimulusNames) ;
+        end  % function
+        
+        function result = isAnItemName(self, name)
+            itemNames = self.itemNames() ;
+            result = ismember(name,itemNames) ;
+        end  % function
+        
+        function result = itemWithName(self, name)
+            sequence = self.sequenceWithName(name) ;
+            if isempty(sequence) ,
+                map = self.mapWithName(name) ;
+                if isempty(map) ,
+                    result = self.stimulusWithName(name) ;  % will be empty if no such stimulus
+                else
+                    result = map ;
+                end                
+            else
+                result = sequence ;
+            end
+        end  % function
+
         function debug(self) %#ok<MANU>
             keyboard
         end
@@ -917,7 +967,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function
-
+        
         function map=addNewMap(self)
             self.disableBroadcasts();
             map=ws.StimulusMap(self);
@@ -928,33 +978,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end  % function
-        
-        function duplicateMap(self)
-            self.disableBroadcasts();
-            
-            newMap = self.SelectedMap.copyGivenParent(self);
-            baseName = regexprep(newMap.Name, ' \(Copy (\w+)\)',''); % removes copy number if exists
-            largestCopyNumber = 0;
-            % Make sure name is changed to the appropriate copy number
-            for i = 1:length(self.Maps_)
-                otherNameSplit  = strsplit(self.Maps_{i}.Name,{baseName, ' (Copy ',')'});
-                if isempty(otherNameSplit{1}) % then the base name matches
-                    otherNameSplit=str2double(otherNameSplit); % get current copy number
-                    copyNumber = otherNameSplit(~isnan(otherNameSplit));
-                    if copyNumber > largestCopyNumber
-                        largestCopyNumber = copyNumber;
-                    end
-                end
-            end
-            currentCopyNumber = largestCopyNumber + 1;
-            newMap.Name = sprintf('%s (Copy %d)',baseName, currentCopyNumber);
-            self.Maps_{end + 1} = newMap;
-            self.SelectedMapIndex_ = length(self.Maps_);
-            
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
-        end  % function
-                
+                 
         function stimulus=addNewStimulus(self,typeString)
             if ischar(typeString) && isrow(typeString) && ismember(typeString,ws.Stimulus.AllowedTypeStrings) ,
                 self.disableBroadcasts();
@@ -967,13 +991,60 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
             self.broadcast('Update');
         end  % function
-        
+               
 %         function addMapToSequence(self,sequence,map)
 %             if ws.ismemberOfCellArray({sequence},self.Sequences) && ws.ismemberOfCellArray({map},self.Maps) ,
 %                 sequence.addMap(map);
 %             end
 %             self.broadcast('Update');
 %         end  % function
+
+        function duplicateSelectedItem(self)
+            self.disableBroadcasts();
+
+            % Get a handle to the item to be duplicated
+            originalItem = self.SelectedItem ;  % handle
+            
+            % Make a new item (which will start out with a name like
+            % 'Untitled stimulus 3'
+            if isa(originalItem,'ws.StimulusSequence') ,
+                newItem = self.addNewSequence() ;
+            elseif isa(originalItem,'ws.StimulusMap')
+                newItem = self.addNewMap() ;
+            else 
+                newItem = self.addNewStimulus(originalItem.TypeString) ;
+            end
+            
+            % Copy the settings from the original item
+            newItem.mimic(originalItem) ;
+            
+            % At the moment, the name of newItem is the same as that of
+            % selectedItem.  This violates one of the StimulusLibrary
+            % invariants, that all item names within the library must be distinct.
+            % So we generate new names until we find a distinct one.
+            itemNames = self.itemNames() ;
+            originalItemName = originalItem.Name ;
+            for copyIndex = 1:length(self.getItems()) ,  
+                % We will never have to try more than this number of
+                % putative names, because each item has only one name, and
+                % there are only so many items.
+                if copyIndex==1 ,
+                    putativeNewItemName = sprintf('%s (copy)', originalItemName) ;
+                else
+                    putativeNewItemName = sprintf('%s (copy %d)', originalItemName, copyIndex) ;
+                end
+                isNameCollision = ismember(putativeNewItemName, itemNames) ;
+                if ~isNameCollision ,
+                    newItem.Name = putativeNewItemName ;
+                    break
+                end
+            end
+            
+            self.SelectedItem = newItem ;
+            
+            self.enableBroadcastsMaybe();
+            self.broadcast('Update');
+        end % function
 
         function didChangeNumberOfOutputChannels(self)
             self.broadcast('Update') ;
@@ -1059,6 +1130,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.ifNoSelectedItemTryToSelectItemNearThisItemButNotThisItem_(item) ;
             end
         end  % function
+        
+        function adjustMapIndicesInSequencesWhenDeletingAMap_(self, indexOfMapBeingDeleted)
+            % The mapIndex is the index of the map in library, not in any
+            % sequence
+            for i = 1:length(self.Sequences_) ,
+                self.Sequences_{i}.adjustMapIndicesWhenDeletingAMap_(indexOfMapBeingDeleted) ;
+            end
+        end
         
         function changeSelectedOutputableToSomethingElse_(self, outputable)
             % Make sure item is not the selected outputable, hopefully by
