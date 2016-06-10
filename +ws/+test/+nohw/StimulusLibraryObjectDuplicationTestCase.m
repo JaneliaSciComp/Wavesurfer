@@ -34,7 +34,7 @@ classdef StimulusLibraryObjectDuplicationTestCase < ws.test.StimulusLibraryTestC
             end
             self.verifyTrue(self.checkCorrectOnesWereDuplicated(stimulusLibrary.Maps,[2,3; 2,4; 3,4]));
             
-            % Duplicate a sequence twice and verify it worked properly
+            % Duplicate a sequence and verify it worked properly
             stimulusLibrary.SelectedItem = stimulusLibrary.Sequences{1};
             stimulusLibrary.duplicateSelectedItem();
             self.verifyTrue(self.checkCorrectOnesWereDuplicated(stimulusLibrary.Sequences,[1,3]));
@@ -54,9 +54,7 @@ classdef StimulusLibraryObjectDuplicationTestCase < ws.test.StimulusLibraryTestC
             self.verifyEqual(stimulusLibrary.Maps{4}.Duration, 2*stimulusLibrary.Maps{2}.Duration);
             self.verifyTrue(isequal(stimulusLibrary.Maps{4}, stimulusLibrary.Sequences{3}.Maps{2}));
             self.verifyTrue(isequal(stimulusLibrary.Maps{2}, stimulusLibrary.Sequences{1}.Maps{2}));
-            
-            % Duplicate a stimulus, verify that works
-            
+                       
         end        
     end
     
