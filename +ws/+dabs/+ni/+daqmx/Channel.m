@@ -1,9 +1,9 @@
-classdef Channel < ws.dabs.ni.daqmx.private.DAQmxClass
+classdef Channel < ws.dabs.ni.daqmx.private.DAQmxEntity
     %CHANNEL An Abstract object type encapsulating an NI DAQmx 'virtual channel'
     %A 'virtual channel' represents a single physical channel (Analog I/O and Counter I/O) or one or more physical lines (Digital I/O)
     %Concrete Channel objects will be of one of the valid channel types: Analog I/O, Counter I/O, or Digital I/O
     
-    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxClass)
+    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxEntity)
     properties (SetAccess=private, Hidden)
         gsPropRegExp; %Obtained via property access method
         gsPropPrefix; %Obtained via property access method
