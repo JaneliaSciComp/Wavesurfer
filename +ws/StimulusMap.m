@@ -646,7 +646,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             for i=1:nStimuli ,
                 thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i} ;
                 if isempty(thisStimulusIndex) || ...
-                   ( thisStimulusIndex==round(thisStimulusIndex) && 1<=thisStimulusIndex || thisStimulusIndex<=nStimuliInLibrary ) ,
+                   ( thisStimulusIndex==round(thisStimulusIndex) && 1<=thisStimulusIndex && thisStimulusIndex<=nStimuliInLibrary ) ,
                     % this is all to the good
                 else
                     result=false;
