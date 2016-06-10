@@ -1426,45 +1426,48 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end  % public methods block    
     
     methods (Access=protected)
-        function sanitizePersistedState_(self)
+        function sanitizePersistedState_(self)  %#ok<MANU>
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
             
-            nStimuli = length(self.Stimuli_) ;
-            nMaps = length(self.Maps_) ;
-            nSequences = length(self.Sequences_) ;
-            nItems = nStimuli + nMaps + nSequences ;
+%             nStimuli = length(self.Stimuli_) ;
+%             nMaps = length(self.Maps_) ;
+%             nSequences = length(self.Sequences_) ;
+%             nItems = nStimuli + nMaps + nSequences ;
             
-            if ~isempty(self.Stimuli_) && isempty(self.SelectedStimulusIndex_) ,
-                self.SelectedStimulusIndex_ = 1 ;
-            end
-            if ~isempty(self.Maps_) && isempty(self.SelectedMapIndex_) ,
-                self.SelectedMapIndex_ = 1 ;
-            end
-            if ~isempty(self.Sequences_) && isempty(self.SelectedSequenceIndex_) ,
-                self.SelectedSequenceIndex_ = 1 ;
-            end
-            
-            if isempty(self.SelectedItemClassName_) && nItems>0 ,
-                if nStimuli>0 ,
-                    self.SelectedItemClassName_ = 'ws.Stimulus' ;
-                elseif nMaps>0 ,
-                    self.SelectedItemClassName_ = 'ws.StimulusMap' ;
-                else
-                    self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
-                end
-            end
+            % On second thought, don't think we want to change these if we
+            % can avoid it.
+%             if ~isempty(self.Stimuli_) && isempty(self.SelectedStimulusIndex_) ,
+%                 self.SelectedStimulusIndex_ = 1 ;
+%             end
+%             if ~isempty(self.Maps_) && isempty(self.SelectedMapIndex_) ,
+%                 self.SelectedMapIndex_ = 1 ;
+%             end
+%             if ~isempty(self.Sequences_) && isempty(self.SelectedSequenceIndex_) ,
+%                 self.SelectedSequenceIndex_ = 1 ;
+%             end
+%             
+%             if isempty(self.SelectedItemClassName_) && nItems>0 ,
+%                 if nStimuli>0 ,
+%                     self.SelectedItemClassName_ = 'ws.Stimulus' ;
+%                 elseif nMaps>0 ,
+%                     self.SelectedItemClassName_ = 'ws.StimulusMap' ;
+%                 else
+%                     self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+%                 end
+%             end
                     
-            if isempty(self.SelectedOutputable) && nMaps+nSequences>0 ,
-                if nMaps>0 ,
-                    self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
-                    self.SelectedOutputableIndex_ = 1 ;
-                else
-                    self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
-                    self.SelectedOutputableIndex_ = 1 ;
-                end                
-            end            
+            % The code below causes some of the tests to break.
+%             if isempty(self.SelectedOutputable) && nMaps+nSequences>0 ,
+%                 if nMaps>0 ,
+%                     self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
+%                     self.SelectedOutputableIndex_ = 1 ;
+%                 else
+%                     self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
+%                     self.SelectedOutputableIndex_ = 1 ;
+%                 end                
+%             end            
         end
     end  % protected methods block
     
