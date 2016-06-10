@@ -658,13 +658,29 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 isMatch = cellfun(@(element)(element==item),self.Maps) ;
                 iMatch = find(isMatch,1) ;
                 if ~isempty(iMatch) ,
-                    if self.SelectedMapIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
+                    indexOfMapToBeDeleted = iMatch ;
+                    % When we delete the indicated map, we have to adjust
+                    % all the places where we store a map index if that map
+                    % index is greater than indexOfMapToBeDeleted, since
+                    % those are the ones whose indices will be less by one
+                    % .Maps_ after the deletion.
+                    
+                    % If the selected index map to be deleted has a higher
+                    % index than indexOfMapToBeDeleted, decrement it
+                    if self.SelectedMapIndex_ > indexOfMapToBeDeleted ,  % they can't be equal, b/c we know the item is not selected
                         self.SelectedMapIndex_ = self.SelectedMapIndex_ - 1 ;
                     end
-                    if isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') && self.SelectedOutputableIndex_ > iMatch ,
+                    % If the selected outputable is a map, and has a higher
+                    % index than indexOfMapToBeDeleted, decrement it
+                    if isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') && self.SelectedOutputableIndex_ > indexOfMapToBeDeleted ,
                         self.SelectedOutputableIndex_ = self.SelectedOutputableIndex_ - 1 ;
                     end
-                    self.Maps_(iMatch) = [] ;
+                    % Each sequence contains a list of map indices, so
+                    % decrement those as needed.
+                    self.adjustMapIndicesInSequencesWhenDeletingAMap_(indexOfMapToBeDeleted) ;
+                    % Finally, actually delete the indicated map from the
+                    % master list of maps.
+                    self.Maps_(indexOfMapToBeDeleted) = [] ;
                 end
             elseif isa(item, 'ws.Stimulus')
                 isMatch = ws.ismemberOfCellArray(self.Stimuli,{item}) ;
@@ -1114,6 +1130,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.ifNoSelectedItemTryToSelectItemNearThisItemButNotThisItem_(item) ;
             end
         end  % function
+        
+        function adjustMapIndicesInSequencesWhenDeletingAMap_(self, indexOfMapBeingDeleted)
+            % The mapIndex is the index of the map in library, not in any
+            % sequence
+            for i = 1:length(self.Sequences_) ,
+                self.Sequences_{i}.adjustMapIndicesWhenDeletingAMap_(indexOfMapBeingDeleted) ;
+            end
+        end
         
         function changeSelectedOutputableToSomethingElse_(self, outputable)
             % Make sure item is not the selected outputable, hopefully by

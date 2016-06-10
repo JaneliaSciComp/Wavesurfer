@@ -227,7 +227,18 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %             else
 %                 self.Maps(index) = map;
 %             end
-%         end   % function
+%         end   % function        
+
+        function nullMap(self, indexOfMapInSequence)
+            nMaps = numel(self.IndexOfEachMapInLibrary_) ;
+            if 1<=indexOfMapInSequence && indexOfMapInSequence<=nMaps && indexOfMapInSequence==round(indexOfMapInSequence) ,
+                self.IndexOfEachMapInLibrary_{indexOfMapInSequence} = [];
+                %self.IsMarkedForDeletion_(indexOfMapInSequence) = [];
+            end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end   % function
         
         function deleteMap(self, indexOfMapInSequence)
             nMaps = numel(self.IndexOfEachMapInLibrary_) ;
@@ -258,6 +269,19 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %                 self.Maps(index) = map;
 %             end
 %         end   % function
+        
+        function nullMapByValue(self, queryMap)
+            if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
+                for index = numel(self.Maps):-1:1 ,
+                    if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
+                        self.nullMap(index);
+                    end
+                end
+            end
+            if ~isempty(self.Parent) ,
+                self.Parent.childMayHaveChanged(self);
+            end
+        end   % function
         
         function deleteMapByValue(self, queryMap)
             if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
@@ -479,12 +503,31 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             nMapsInSequence=length(self.IndexOfEachMapInLibrary) ;
             for i=1:nMapsInSequence ,
                 thisMapIndex = self.IndexOfEachMapInLibrary{i} ;
-                if thisMapIndex~=round(thisMapIndex) || thisMapIndex<1 || thisMapIndex>nMapsInLibrary ,
+                if ~isempty(thisMapIndex) && (thisMapIndex~=round(thisMapIndex) || thisMapIndex<1 || thisMapIndex>nMapsInLibrary) ,
                     result=false;
                     return
                 end
             end
             result=true;
+        end
+        
+        function adjustMapIndicesWhenDeletingAMap_(self, indexOfMapBeingDeleted)
+            % The indexOfMapBeingDeleted is the index of the map in the library, not it's index in the
+            % sequence.
+            for i=1:length(self.IndexOfEachMapInLibrary_) ,
+                indexOfThisMap = self.IndexOfEachMapInLibrary_{i} ;
+                if isempty(indexOfThisMap) ,
+                    % nothing to do here, but want to catch before we start
+                    % doing comparisons, etc.
+                elseif indexOfMapBeingDeleted==indexOfThisMap ,
+                    self.IndexOfEachMapInLibrary_{i} = [] ;
+                elseif indexOfMapBeingDeleted<indexOfThisMap ,
+                    self.IndexOfEachMapInLibrary_{i} = indexOfThisMap - 1 ;
+                end
+            end
+            %if ~isempty(self.Parent) ,
+            %    self.Parent.childMayHaveChanged(self);
+            %end
         end
     end  
     
