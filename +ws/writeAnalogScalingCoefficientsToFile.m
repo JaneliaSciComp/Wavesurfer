@@ -1,4 +1,4 @@
-function writeAnalogScalingCoefficientsToFile(deviceName,outputFileName)
+function writeAnalogScalingCoefficientsToFile(deviceName, outputFileName)
     % Writes scaling coefficients from device deviceName to file located at
     % filePath.
     
@@ -14,13 +14,13 @@ function writeAnalogScalingCoefficientsToFile(deviceName,outputFileName)
             % Then the directory exists
             if ~exist(outputFileName,'dir') && exist(outputFileName,'file') 
                 error('ws:outputFileAlreadyExists', ...
-                    'Output file %s exists already', outputFileName) ;            
+                      'Output file %s exists already', outputFileName) ;            
             elseif ~strcmp(extension,'.mat')
                 % Then it is not a .mat file, and need to change extension
                 % if possible.
                 if exist(fullfile(pathString,[fileName,'.mat']),'file')
                     error('ws:incorrectFileType',...
-                        'Incorrect file type: Needs to be saved as %s.mat, not %s%s, but %s/%s.mat already exists',...
+                          'Incorrect file type: Needs to be saved as %s.mat, not %s%s, but %s/%s.mat already exists',...
                         fileName, fileName, extension, pathString, fileName);
                 else
                     warning('ws:fileExtensionChanged',...
@@ -34,7 +34,7 @@ function writeAnalogScalingCoefficientsToFile(deviceName,outputFileName)
             save(fullfile(pathString,[fileName,extension]),'scalingCoefficients');
         else
             error('ws:directoryDoesNotExist',...
-                'Directory %s does not exist', pathString);
+                  'Directory %s does not exist', pathString);
         end
     end
     

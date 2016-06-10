@@ -14,7 +14,7 @@ function scalingCoefficients = readAnalogScalingCoefficientsFromFile(scalingCoef
             % Then directory exists
             if ~strcmp(extension,'.mat')
                 error('ws:incorrectFileType',...
-                    'Incorrect file type: needs to be .mat, not %s', extension);
+                      'Incorrect file type: needs to be .mat, not %s', extension);
             else
                 if ~exist(scalingCoefficientsFilePath,'dir') && exist(scalingCoefficientsFilePath,'file')
                     % The file exists, load it into fileData
@@ -33,12 +33,12 @@ function scalingCoefficients = readAnalogScalingCoefficientsFromFile(scalingCoef
                     end
                 else
                     error('ws:fileDoesNotExist',...
-                        'File %s does not exist', scalingCoefficientsFilePath);
+                          'File %s does not exist', scalingCoefficientsFilePath);
                 end
             end
         else
             error('ws:direcotryDoesNotExist',...
-                'Directory %s does not exist', pathString);
+                  'Directory %s does not exist', pathString);
         end
     end
 end

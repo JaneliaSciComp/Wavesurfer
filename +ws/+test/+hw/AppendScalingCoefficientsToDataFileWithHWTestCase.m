@@ -68,16 +68,30 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
         function testAppendingToManyOlderFiles(self)
             thisDirName=fileparts(mfilename('fullpath'));
             sourceFolderName = fullfile(thisDirName, 'folder_without_scaling_coeffs') ;
+            
+            % Test with a device name
             deviceName = 'Dev1' ;
             targetFolderName = tempname() ;
             isDryRun = true ;
             ws.addScalingToHDF5FilesRecursively(sourceFolderName, deviceName, targetFolderName, isDryRun) ;
             isDryRun = false ;
-            deviceScalingCoefficients = ws.addScalingToHDF5FilesRecursively(sourceFolderName, deviceName, targetFolderName, isDryRun) ;        
-            
+            deviceScalingCoefficientsFromDevice = ws.addScalingToHDF5FilesRecursively(sourceFolderName, deviceName, targetFolderName, isDryRun) ; 
             % Verify
-            isAllWell = ws.verifyScalingOfHDF5FilesRecursivelyGivenCoeffs(sourceFolderName, deviceScalingCoefficients, targetFolderName) ;
+            isAllWell = ws.verifyScalingOfHDF5FilesRecursivelyGivenCoeffs(sourceFolderName, deviceScalingCoefficientsFromDevice, targetFolderName) ;
             self.verifyTrue(isAllWell) ;
+            
+            % Test with a file name by first writing the necessary file
+            scalingCoefficientsFileName = [tempname() '.mat'] ;
+            targetFolderName = tempname() ;
+            ws.writeAnalogScalingCoefficientsToFile(deviceName, scalingCoefficientsFileName);
+            deviceScalingCoefficientsFromFile = ws.addScalingToHDF5FilesRecursively(sourceFolderName, scalingCoefficientsFileName, targetFolderName, isDryRun) ;
+            % Verify
+            isAllWell = ws.verifyScalingOfHDF5FilesRecursivelyGivenCoeffs(sourceFolderName, deviceScalingCoefficientsFromFile, targetFolderName) ;
+            self.verifyTrue(isAllWell) ;
+            
+            % Verify that coefficients written to file are correct
+            self.verifyEqual(deviceScalingCoefficientsFromDevice, deviceScalingCoefficientsFromFile);
+            
         end
         
         function testAppendingToManyOlderFilesRelativePath(self)
