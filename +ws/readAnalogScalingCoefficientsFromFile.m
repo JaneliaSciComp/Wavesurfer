@@ -2,43 +2,30 @@ function scalingCoefficients = readAnalogScalingCoefficientsFromFile(scalingCoef
     % Reads the scaling coefficients from a file with name
     % scalingCoefficientsFilePath, and returns them in scalingCoefficients.
     
-    [pathString, fileName, extension] = fileparts(scalingCoefficientsFilePath);
-    if isempty(fileName)
+    [~, ~, extension] = fileparts(scalingCoefficientsFilePath);
+    if exist(scalingCoefficientsFilePath,'dir')
         error('ws:noFileNameGiven',...
-            'No file name given');
+              'Path ''%s'' is a directory, not a file',...
+               scalingCoefficientsFilePath);
+    elseif ~exist(scalingCoefficientsFilePath,'file')
+        error('ws:noSuchFileOrDirectory',...
+              'Unable to read ''%s'': no such file or directory',...
+              scalingCoefficientsFilePath);
+    elseif ~strcmp(extension,'.mat')
+        error('ws:incorrectFileType',...
+              'Incorrect file type: needs to be .mat, not %s', extension);
     else
-        if isempty(pathString)
-            pathString = '.';
-        end
-        if exist(pathString,'dir')
-            % Then directory exists
-            if ~strcmp(extension,'.mat')
-                error('ws:incorrectFileType',...
-                      'Incorrect file type: needs to be .mat, not %s', extension);
-            else
-                if ~exist(scalingCoefficientsFilePath,'dir') && exist(scalingCoefficientsFilePath,'file')
-                    % The file exists, load it into fileData
-                    fileData = load(scalingCoefficientsFilePath);
-                    if isfield(fileData,'scalingCoefficients') && length(fieldnames(fileData))==1
-                        % If the file was generated from
-                        % ws.writeAnalogScalingCoefficientsToFile, then the only
-                        % field should be scalingCoefficients
-                        scalingCoefficients = fileData.scalingCoefficients;
-                    else
-                        if isfield(fileData,'scalingCoefficients')==0
-                            error('ws:incorrectFileChosen', 'File does not contain scalingCoefficients')
-                        else
-                            error('ws:incorrectFileChosen', 'File has has too many workspace variables');
-                        end
-                    end
-                else
-                    error('ws:fileDoesNotExist',...
-                          'File %s does not exist', scalingCoefficientsFilePath);
-                end
-            end
+        % The file exists, load it into fileData
+        fileData = load(scalingCoefficientsFilePath);
+        % If the file was generated from
+        % ws.writeAnalogScalingCoefficientsToFile, then the only field
+        % should be scalingCoefficients
+        if isfield(fileData,'scalingCoefficients') == 0
+            error('ws:noScalingCoefficientsInFile', 'File does not contain scalingCoefficients variable')
+        elseif length( fieldnames(fileData) ) > 1
+            error('ws:tooManyVariablesInFile', 'File has has too many workspace variables');
         else
-            error('ws:direcotryDoesNotExist',...
-                  'Directory %s does not exist', pathString);
+            scalingCoefficients = fileData.scalingCoefficients;
         end
     end
 end
