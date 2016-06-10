@@ -1423,10 +1423,10 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                                'SelectedOutputableClassName', 'SelectedOutputableIndex', ...
                                'IsEmpty'}) ;
         end  % function 
-    end  % public methods block    
+    end  % public methods block
     
     methods (Access=protected)
-        function sanitizePersistedState_(self)  %#ok<MANU>
+        function sanitizePersistedState_(self) 
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
@@ -1447,7 +1447,51 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             if ~isempty(self.Sequences_) && isempty(self.SelectedSequenceIndex_) ,
 %                 self.SelectedSequenceIndex_ = 1 ;
 %             end
-%             
+             
+            % Make sure the SelectedItemClassName_ is a legal value,
+            % doing our best to get the right modern class for things
+            % like 'ws.stimulus.Stimulus'.
+            if ~ischar(self.SelectedItemClassName_) ,
+                self.SelectedItemClassName_ = '' ;
+            else
+                % Get rid of any prefixes that are out-of-date
+                parts = strsplit(self.SelectedItemClassName_) ;
+                if isempty(parts) ,
+                    self.SelectedItemClassName_ = '' ;
+                else
+                    leafClassName = parts{end} ;
+                    if ~isempty(strfind(lower(leafClassName),'sequence')) ,
+                        self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                    elseif ~isempty(strfind(lower(leafClassName),'map')) ,
+                        self.SelectedItemClassName_ = 'ws.StimulusMap' ;
+                    elseif ~isempty(strfind(lower(leafClassName),'stimulus')) ,
+                        self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                    else
+                        self.SelectedItemClassName_ = '' ;
+                    end
+                end
+            end
+            
+            % Do something similar for the selected outputable
+            if ~ischar(self.SelectedOutputableClassName_) ,
+                self.SelectedOutputableClassName_ = '' ;
+            else
+                % Get rid of any prefixes that are out-of-date
+                parts = strsplit(self.SelectedOutputableClassName_) ;
+                if isempty(parts) ,
+                    self.SelectedOutputableClassName_ = '' ;
+                else
+                    leafClassName = parts{end} ;
+                    if ~isempty(strfind(lower(leafClassName),'sequence')) ,
+                        self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
+                    elseif ~isempty(strfind(lower(leafClassName),'map')) ,
+                        self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
+                    else
+                        self.SelectedOutputableClassName_ = '' ;
+                    end
+                end
+            end
+
 %             if isempty(self.SelectedItemClassName_) && nItems>0 ,
 %                 if nStimuli>0 ,
 %                     self.SelectedItemClassName_ = 'ws.Stimulus' ;
