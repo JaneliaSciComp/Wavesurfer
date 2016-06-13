@@ -65,19 +65,16 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         
         function set.Name(self,newValue)
             if ischar(newValue) && isrow(newValue) && ~isempty(newValue) ,
-                allItems=self.Parent.Maps;
-                isNotMe=cellfun(@(item)(item~=self),allItems);
-                allItemsButMe=allItems(isNotMe);
-                allOtherItemNames=cellfun(@(item)(item.Name),allItemsButMe,'UniformOutput',false);
-                if ismember(newValue,allOtherItemNames) ,
-                    % do nothing
+                if self.Parent.isAnItemName(newValue) ,
+                    % do nothing---the newValue is already an item name, so
+                    % we can't have it be our name.  (And if the new value
+                    % is already *our* item name, then we don't need to set
+                    % our name to the not-really-new value.
                 else
                     self.Name_=newValue;
-                end
+                end                    
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+            self.Parent.childMayHaveChanged(self);
         end
 
         function out = get.NBindings(self) 
@@ -790,6 +787,21 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             self.(name) = value;
         end  % function
     end
+    
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+            nBindings = length(self.ChannelNames_) ;
+            
+            % length of things should equal nBindings
+            self.IndexOfEachStimulusInLibrary_ = ws.sanitizeRowVectorLength(self.IndexOfEachStimulusInLibrary_, nBindings, {[]}) ;
+            self.Multipliers_ = ws.sanitizeRowVectorLength(self.Multipliers_, nBindings, 1) ;
+            self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
+        end
+    end  % protected methods block
     
 %     methods (Static)
 %         function s = propertyAttributes()
