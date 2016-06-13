@@ -1,10 +1,10 @@
 function writeAnalogScalingCoefficientsToFile(deviceName, outputFileName)
     % Writes scaling coefficients from device deviceName to file outputFileName.
-    
+    outputFileName = fullfile(outputFileName);
     [pathString, fileName, extension] = fileparts(outputFileName);
     if exist(outputFileName,'file')
         error('ws:fileNameExists',...
-              'File or folder ''%s'' already exists',...
+              '''%s'' already exists',...
               outputFileName);
     else % outputFileName is available
         fullFilePathAsMatFile=fullfile(pathString,[fileName,'.mat']); % Ensure it will be .mat file
@@ -13,17 +13,17 @@ function writeAnalogScalingCoefficientsToFile(deviceName, outputFileName)
             % change extension if possible.
             if exist(fullFilePathAsMatFile,'file')
                 error('ws:incorrectFileType',...
-                      'Incorrect file type: Needs to be saved as ''%s.mat'', not ''%s%s'', but ''%s'' already exists',...
-                      fileName, fileName, extension, fullFilePathAsMatFile);
+                      'Needs to be saved with ''.mat'' extension, but ''%s'' already exists',...
+                      fullFilePathAsMatFile);
             else
                 warning('ws:fileExtensionChanged',...
-                        'Will be saved as %s.mat, not %s%s',...
-                        fileName, fileName, extension);
+                        'Will attempt to save as ''%s'', not ''%s''',...
+                        fullFilePathAsMatFile, outputFileName);
             end
         end
         % Read and save the scaling coefficients to a .mat file
-        scalingCoefficients = ws.queryDeviceForAllScalingCoefficients(deviceName);
-        fprintf('Writing analog scaling coefficients to %s', fullFilePathAsMatFile);
+        scalingCoefficients = ws.queryDeviceForAllScalingCoefficients(deviceName); %#ok<NASGU>
         save(fullFilePathAsMatFile,'scalingCoefficients');
+        fprintf('Wrote analog scaling coefficients to ''%s''\n', fullFilePathAsMatFile);
     end
 end

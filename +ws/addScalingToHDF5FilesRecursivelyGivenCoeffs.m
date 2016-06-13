@@ -1,29 +1,34 @@
 function addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, scalingCoefficients, targetFolderPath, isDryRun)
+   
     % Create the target folder, if it doesn't exist
-    if exist(targetFolderPath,'dir') ,
-        % nothing to do
-    elseif exist(targetFolderPath,'file') ,
-        fprintf('Target folder %s exists already, but is a regular file, not a folder --- skipping\n', targetFolderPath) ;
-        return
+    if ~isempty(strfind(lower(ws.absolutizePath(targetFolderPath)),lower(ws.absolutizePath(sourceFolderPath))))
+        fprintf('Cannot have target folder in source folder --- skipping\n');
+        return;
     else
-        % targetFolderPath does not yet exist
-        if isDryRun ,
-            fprintf('Would have created folder %s\n', targetFolderPath) ;
-            didSucceed = true ;
-        else                    
-            [parentPath,targetFolderStem,targetFolderExt] = fileparts(targetFolderPath) ;
-            targetFolderName = [targetFolderStem targetFolderExt] ;
-            if isempty(parentPath) ,
-                parentPath = '.' ;
-            end
-            [didSucceed, message] = mkdir(parentPath, targetFolderName) ;
-        end
-        if ~didSucceed, 
-            fprintf('Unable to create target folder %s --- skipping: %s\n', targetFolderPath, message) ;
+        if exist(targetFolderPath,'dir') ,
+            % nothing to do
+        elseif exist(targetFolderPath,'file') ,
+            fprintf('Target folder %s exists already, but is a regular file, not a folder --- skipping\n', targetFolderPath) ;
             return
+        else
+            % targetFolderPath does not yet exist
+            if isDryRun ,
+                fprintf('Would have created folder %s\n', targetFolderPath) ;
+                didSucceed = true ;
+            else
+                [parentPath,targetFolderStem,targetFolderExt] = fileparts(targetFolderPath) ;
+                targetFolderName = [targetFolderStem targetFolderExt] ;
+                if isempty(parentPath) ,
+                    parentPath = '.' ;
+                end
+                [didSucceed, message] = mkdir(parentPath, targetFolderName) ;
+            end
+            if ~didSucceed,
+                fprintf('Unable to create target folder %s --- skipping: %s\n', targetFolderPath, message) ;
+                return
+            end
         end
     end
-    
     % Get names of files, folders in the current folder
     d = dir(sourceFolderPath) ;
     sourceChildNames = {d.name} ;
@@ -59,11 +64,10 @@ function addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, scalingCo
     % Recurse into the child folders
     for i=1:length(sourceChildFolderNames) ,
         sourceChildFolderName = sourceChildFolderNames{i} ;
-        if isequal(sourceChildFolderName,'.') || isequal(sourceChildFolderName,'..') || isequal(ws.absolutizePath(fullfile(sourceFolderPath,sourceChildFolderName)), ws.absolutizePath(targetFolderPath)),
+        if isequal(sourceChildFolderName,'.') || isequal(sourceChildFolderName,'..') %|| strcmpi(ws.absolutizePath(fullfile(sourceFolderPath,sourceChildFolderName)), ws.absolutizePath(targetFolderPath)),
             % Don't want to recurse into self or our parent, so do nothing.
             % Also don't want to recurse into target folder if target
-            % folder is in source folder. Here, cd(cd(directoryName))
-            % returns the full path to the directory.
+            % folder is in source folder.
         else
             sourceChildFolderPath = fullfile(sourceFolderPath,sourceChildFolderName) ;
             targetChildFolderPath = fullfile(targetFolderPath,sourceChildFolderName) ;

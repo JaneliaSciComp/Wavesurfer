@@ -81,10 +81,10 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             self.verifyTrue(isAllWell) ;
             
             % Test with a file name by first writing the necessary file
-            scalingCoefficientsFileName = [tempname() '.mat'] ;
+            scalingCoefficientsOutputFileName = [tempname() '.mat'] ;
             targetFolderName = tempname() ;
-            ws.writeAnalogScalingCoefficientsToFile(deviceName, scalingCoefficientsFileName);
-            deviceScalingCoefficientsFromFile = ws.addScalingToHDF5FilesRecursively(sourceFolderName, scalingCoefficientsFileName, targetFolderName, isDryRun) ;
+            ws.writeAnalogScalingCoefficientsToFile(deviceName, scalingCoefficientsOutputFileName);
+            deviceScalingCoefficientsFromFile = ws.addScalingToHDF5FilesRecursively(sourceFolderName, scalingCoefficientsOutputFileName, targetFolderName, isDryRun) ;
             % Verify
             isAllWell = ws.verifyScalingOfHDF5FilesRecursivelyGivenCoeffs(sourceFolderName, deviceScalingCoefficientsFromFile, targetFolderName) ;
             self.verifyTrue(isAllWell) ;

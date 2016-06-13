@@ -1,7 +1,7 @@
 function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFolderPath, deviceNameOrFileName, targetFolderPath, isDryRun)
     %ws.addScalingToHDF5FilesRecursively    Adds analog scaling coefficients
-    %                                       read from a device to WaveSurfer
-    %                                       data files.
+    %                                       read from a device or file to 
+    %                                       WaveSurfer data files.
     %
     %   deviceScalingCoefficients = ...
     %     ws.addScalingToHDF5FilesRecursively(sourceFolderPath, ...
@@ -11,7 +11,7 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
     %   searches the folder sourceFolderPath for files ending in extension
     %   .h5.  It copies each of these to the corresponding folder in
     %   targetFolderPath.  If the file is missing the scaling coefficients
-    %   for the analog channels, it reads them from  deviceNameOrFileName,
+    %   for the analog channels, it reads them from deviceNameOrFileName,
     %   which is either the name of a NI DAQmx device or file, and appends
     %   them to the target file.  If targetFolderPath does not exist, it is
     %   created.  Returns the scaling coefficients as read from the device
@@ -39,6 +39,11 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
     
     if ~exist('isDryRun','var') || isempty(isDryRun) ,
         isDryRun = false ;
+    end
+    
+    if exist(sourceFolder,'dir')
+        fprintf('Source folder %s does not exist --- skipping\n', sourceFolder);
+        return;
     end
     
     [~, ~, extension]=fileparts(deviceNameOrFileName);
