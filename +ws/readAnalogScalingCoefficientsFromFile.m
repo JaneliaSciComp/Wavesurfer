@@ -1,7 +1,7 @@
 function scalingCoefficients = readAnalogScalingCoefficientsFromFile(scalingCoefficientsFilePath)
     % Reads the scaling coefficients from a file with name
     % scalingCoefficientsFilePath, and returns them in scalingCoefficients.
-    scalingCoefficientsFilePath = fullfile(scalingCoefficientsFilePath);
+    scalingCoefficientsFilePath = fullfile( scalingCoefficientsFilePath );
     [~, ~, extension] = fileparts(scalingCoefficientsFilePath);
     if exist(scalingCoefficientsFilePath,'file')~=2 % Then it is not a file
         error('ws:noSuchFileOrDirectory',...
@@ -9,7 +9,7 @@ function scalingCoefficients = readAnalogScalingCoefficientsFromFile(scalingCoef
               scalingCoefficientsFilePath);
     elseif ~strcmp(extension,'.mat')
         error('ws:incorrectFileType',...
-              'Incorrect file type: needs to be ''.mat'' extension, not ''%s''', extension);
+              'Incorrect file type: needs to have ''.mat'' extension, not ''%s''', extension);
     else
         % The file exists, load it into fileData
         fprintf('Reading data from file ''%s''\n', scalingCoefficientsFilePath);
@@ -20,6 +20,10 @@ function scalingCoefficients = readAnalogScalingCoefficientsFromFile(scalingCoef
         if isfield(fileData,'scalingCoefficients') == 0
             error('ws:noScalingCoefficientsInFile',...
                   'File ''%s'' does not contain scalingCoefficients variable',...
+                  scalingCoefficientsFilePath);
+        elseif isempty(fileData.scalingCoefficients)
+            error('ws:scalingCoefficientsEmpty',...
+                  'File ''%s'' contains an empty scalingCoefficients variable',...
                   scalingCoefficientsFilePath);
         elseif length( fieldnames(fileData) ) > 1
             error('ws:tooManyVariablesInFile',...

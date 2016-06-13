@@ -1,5 +1,4 @@
 function absolutePath = absolutizePath( inputPath )
-
     % Returns absolute path of inputPath
     inputPath = fullfile(inputPath);
     javaFileObj = java.io.File(inputPath);

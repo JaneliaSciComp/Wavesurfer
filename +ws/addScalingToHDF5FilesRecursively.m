@@ -37,12 +37,20 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
     %   'with-scaling'.  The folder structure under without-scaling would
     %   be recreated in with-scaling in the process.
     
+    % To keep formatting the same in terms of forward and backslashes:
+    sourceFolderPath = fullfile(sourceFolderPath);
+    targetFolderPath = fullfile(targetFolderPath);
+    
     if ~exist('isDryRun','var') || isempty(isDryRun) ,
         isDryRun = false ;
     end
     
-    if exist(sourceFolder,'dir')
-        fprintf('Source folder %s does not exist --- skipping\n', sourceFolder);
+    if ~exist(sourceFolderPath,'dir')
+        fprintf('Source folder ''%s'' does not exist --- skipping\n', sourceFolderPath);
+        return;
+    elseif ~isempty(strfind(lower(ws.absolutizePath(targetFolderPath)),lower(ws.absolutizePath(sourceFolderPath))))
+        % Check if targetFolderPath is within sourceFolderPath
+        fprintf('Cannot have target folder ''%s'' in source folder ''%s'' --- skipping\n', targetFolderPath, sourceFolderPath);
         return;
     end
     
