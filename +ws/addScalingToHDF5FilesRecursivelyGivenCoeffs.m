@@ -10,7 +10,7 @@ function addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, scalingCo
         if isDryRun ,
             fprintf('Would have created folder %s\n', targetFolderPath) ;
             didSucceed = true ;
-        else                    
+        else
             [parentPath,targetFolderStem,targetFolderExt] = fileparts(targetFolderPath) ;
             targetFolderName = [targetFolderStem targetFolderExt] ;
             if isempty(parentPath) ,
@@ -18,7 +18,7 @@ function addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, scalingCo
             end
             [didSucceed, message] = mkdir(parentPath, targetFolderName) ;
         end
-        if ~didSucceed, 
+        if ~didSucceed,
             fprintf('Unable to create target folder %s --- skipping: %s\n', targetFolderPath, message) ;
             return
         end
@@ -55,12 +55,12 @@ function addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, scalingCo
             % File name does not end in .h5, so skip it
         end
     end
-
+    
     % Recurse into the child folders
     for i=1:length(sourceChildFolderNames) ,
         sourceChildFolderName = sourceChildFolderNames{i} ;
         if isequal(sourceChildFolderName,'.') || isequal(sourceChildFolderName,'..') ,
-            % Don't want to recurse into self or our parent, so do nothing
+            % Don't want to recurse into self or our parent, so do nothing.
         else
             sourceChildFolderPath = fullfile(sourceFolderPath,sourceChildFolderName) ;
             targetChildFolderPath = fullfile(targetFolderPath,sourceChildFolderName) ;

@@ -1259,7 +1259,7 @@ classdef WavesurferModel < ws.RootModel
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
-            self.Acquisition.cacheAnalogScalingCoefficents_(analogScalingCoefficients) ;
+            self.Acquisition.cacheAnalogScalingCoefficients_(analogScalingCoefficients) ;
             self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
             
             % Now tell the logging subsystem that a run is about to start,
