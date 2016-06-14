@@ -40,19 +40,19 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
     %   be recreated in with-scaling in the process.
     
     % To keep formatting the same in terms of forward and backslashes:
-    sourceFolderPath = fullfile(sourceFolderPath);
-    targetFolderPath = fullfile(targetFolderPath);
+    canonicalSourceFolderPath = ws.canonicalizePath(sourceFolderPath);
+    canonicalTargetFolderPath = ws.canonicalizePath(targetFolderPath);
     
     if ~exist('isDryRun','var') || isempty(isDryRun) ,
         isDryRun = false ;
     end
     
-    if ~exist(sourceFolderPath,'dir')
-        fprintf('Source folder ''%s'' does not exist --- skipping\n', sourceFolderPath);
+    if ~exist(canonicalSourceFolderPath,'dir')
+        fprintf('Source folder ''%s'' does not exist --- skipping\n', canonicalSourceFolderPath);
         return;
-    elseif ~isempty(strfind(lower(ws.absolutizePath(targetFolderPath)),lower(ws.absolutizePath(sourceFolderPath))))
-        % Check if targetFolderPath is within sourceFolderPath
-        fprintf('Cannot have target folder ''%s'' in source folder ''%s'' --- skipping\n', targetFolderPath, sourceFolderPath);
+    elseif ~isempty(strfind(canonicalTargetFolderPath,canonicalSourceFolderPath)) ,
+        % Check if sanitizedTargetFolderPath is within sanitizedSourceFolderPath
+        fprintf('Cannot have target folder ''%s'' in source folder ''%s'' --- skipping\n', canonicalTargetFolderPath, canonicalSourceFolderPath);
         return;
     end
     
@@ -64,5 +64,5 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
         % Then it is a device name
         deviceScalingCoefficients = ws.queryDeviceForAllScalingCoefficients(deviceNameOrFileName) ;
     end
-    ws.addScalingToHDF5FilesRecursivelyGivenCoeffs(sourceFolderPath, deviceScalingCoefficients, targetFolderPath, isDryRun) ;
+    ws.addScalingToHDF5FilesRecursivelyGivenCoeffs(canonicalSourceFolderPath, deviceScalingCoefficients, canonicalTargetFolderPath, isDryRun) ;
 end
