@@ -48,12 +48,10 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
     end
     
     if ~exist(canonicalSourceFolderPath,'dir')
-        fprintf('Source folder ''%s'' does not exist --- skipping\n', canonicalSourceFolderPath);
-        return;
+        error('Source folder ''%s'' does not exist', canonicalSourceFolderPath);
     elseif ~isempty(strfind(canonicalTargetFolderPath,canonicalSourceFolderPath)) ,
         % Check if sanitizedTargetFolderPath is within sanitizedSourceFolderPath
-        fprintf('Cannot have target folder ''%s'' in source folder ''%s'' --- skipping\n', canonicalTargetFolderPath, canonicalSourceFolderPath);
-        return;
+        error('Cannot have target folder ''%s'' in source folder ''%s''', canonicalTargetFolderPath, canonicalSourceFolderPath);
     end
     
     [~, ~, extension]=fileparts(deviceNameOrFileName);
