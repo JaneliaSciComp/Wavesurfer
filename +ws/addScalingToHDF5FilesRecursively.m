@@ -12,10 +12,12 @@ function deviceScalingCoefficients = addScalingToHDF5FilesRecursively(sourceFold
     %   .h5.  It copies each of these to the corresponding folder in
     %   targetFolderPath.  If the file is missing the scaling coefficients
     %   for the analog channels, it reads them from deviceNameOrFileName,
-    %   which is either the name of a NI DAQmx device or file, and appends
-    %   them to the target file.  If targetFolderPath does not exist, it is
-    %   created.  Returns the scaling coefficients as read from the device
-    %   or file in deviceScalingCoefficients.
+    %   which is either the name of a NI DAQmx device or a file, and
+    %   appends them to the target file.  (A file containing scaling
+    %   coefficients can be generated using the function
+    %   ws.writeAnalogScalingCoefficientsToFile().)  If targetFolderPath
+    %   does not exist, it is created.  Returns the scaling coefficients as
+    %   read from the device or file in deviceScalingCoefficients.
     %   
     %   deviceScalingCoefficients = ...
     %     ws.addScalingToHDF5FilesRecursively(sourceFolderPath, ...
