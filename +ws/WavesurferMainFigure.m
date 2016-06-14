@@ -294,7 +294,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 self.FastProtocolButtons(i) = ...
                     ws.uicontrol('Parent',self.FigureGH, ...
                               'Style','pushbutton', ...
-                              'TooltipString',sprintf('Fast Protcol %d',i), ...                          
+                              'TooltipString',sprintf('Fast Protocol %d',i), ...                          
                               'String',sprintf('%d',i));                
             end
             
@@ -1068,6 +1068,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
+            
+            % Fast config buttons
+            nFastProtocolButtons=length(self.FastProtocolButtons);
+            for i=1:nFastProtocolButtons ,
+                fastProtocol = model.FastProtocols{i};
+                [~, protocolFileName, extension] = fileparts(fastProtocol.ProtocolFileName);
+                set(self.FastProtocolButtons(i),...
+                    'TooltipString', sprintf('%s',[protocolFileName extension]))
+            end
             
             % Logging panel
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
