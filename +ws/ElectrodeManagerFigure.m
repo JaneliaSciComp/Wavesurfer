@@ -68,6 +68,10 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
         UpdateButton
         SoftpanelButton
         ReconnectButton
+        
+        % Checkbox that persist for the lifetime of the window
+        UpdateBeforeRunCheckbox
+
     end
     
     methods
@@ -748,6 +752,13 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'String','Reconnect', ...
                           'Callback',@(src,evt)(self.controlActuated('ReconnectButton',src,evt)));
+                      
+            self.UpdateBeforeRunCheckbox= ...
+                ws.uicontrol('Parent',self.FigureGH, ...
+                          'Style','checkbox', ...
+                          'Value',1, ...
+                          'String','Update Before Run', ...
+                          'Callback',@(src,evt)(self.controlActuated('UpdateBeforeRunCheckbox',src,evt)));
         end  % function
         
         function updateControlsInExistance_(self)
@@ -1167,7 +1178,16 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
             reconnectButtonXOffset=updateButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
             set(self.ReconnectButton,'Position',[reconnectButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);
-
+            
+            updateBeforeRunCheckboxPosition=get(self.UpdateBeforeRunCheckbox,'Position');
+            updateBeforeRunCheckboxWidth=updateBeforeRunCheckboxPosition(3);
+            updateBeforeRunCheckboxHeight=updateBeforeRunCheckboxPosition(4);
+            updateBeforeRunCheckboxXOffset=reconnectButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
+            updateBeforeRunCheckboxYOffset=buttonYOffset;            
+            set(self.UpdateBeforeRunCheckbox, ...
+                'Position',[updateBeforeRunCheckboxXOffset updateBeforeRunCheckboxYOffset ...
+                            updateBeforeRunCheckboxWidth updateBeforeRunCheckboxHeight]);
+          
             addButtonXOffset=rightButtonRowXOffset;
             set(self.AddButton,'Position',[addButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);
             
