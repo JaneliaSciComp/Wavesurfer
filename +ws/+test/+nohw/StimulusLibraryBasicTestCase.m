@@ -43,6 +43,46 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             self.verifyEqual(numel(library.Stimuli), 3);
         end
         
+        function testRemoveStimulus2(self)
+            library=ws.StimulusLibrary([]);  % no parent
+            
+            stimulus1=library.addNewStimulus('Chirp');
+            %stimulus1=ws.ChirpStimulus('InitialFrequency',1.4545, ...
+            %                                       'FinalFrequency',45.3);  
+            stimulus1.Delay=0.11;
+            stimulus1.Amplitude='6.28';
+            stimulus1.Name='Melvin';
+            stimulus1.Delegate.InitialFrequency = 1.4545 ;
+            stimulus1.Delegate.FinalFrequency = 45.3 ;
+            
+            stimulus2=library.addNewStimulus('SquarePulse');
+            % stimulus2=ws.SquarePulseStimulus();
+            stimulus2.Delay=0.12;
+            stimulus2.Amplitude='6.29';
+            stimulus2.Name='Bill';
+            
+            %stimulusMap1=ws.StimulusMap('Name','Lucy the Map', 'Duration', 1.01);
+            stimulusMap1=library.addNewMap();
+            stimulusMap1.Name = 'Lucy the Map' ;
+            stimulusMap1.Duration = 1.01 ;
+            stimulusMap1.addBinding('ao0',stimulus1,1.01);
+            stimulusMap1.addBinding('ao1',stimulus2,1.02);
+            
+            self.verifyTrue(library.isSelfConsistent()) ;
+            self.verifyEqual(numel(library.Stimuli), 2) ;
+            
+            % Delete the first stimulus
+            library.deleteItem(stimulus1) ;
+            [isSelfConsistent,err] = library.isSelfConsistent() ;
+            if isSelfConsistent ,
+                message = '' ;
+            else
+                message = err.message ;
+            end
+            self.verifyTrue(isSelfConsistent,message) ;
+            self.verifyEqual(numel(library.Stimuli), 1) ;
+        end
+        
         function testRemoveMap(self)
             library = self.createPopulatedStimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;

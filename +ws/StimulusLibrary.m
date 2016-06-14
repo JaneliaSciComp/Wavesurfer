@@ -152,7 +152,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             value = self.IsLive && self.isSelfConsistent();
 %         end
         
-        function value=isSelfConsistent(self)                        
+        function [value,err]=isSelfConsistent(self)                        
             % Make sure the Parent of all Sequences is self
             nSequences=length(self.Sequences);
             for i=1:nSequences ,
@@ -160,6 +160,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 parent=sequence.Parent;
                 if ~(isscalar(parent) && parent==self) ,
                     value=false;
+                    err = MException('ws:StimulusLibrary:sequenceWithBadParent', ...
+                                     'At least one sequence has a bad parent') ;
                     return
                 end
             end
@@ -171,6 +173,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 parent=map.Parent;
                 if ~(isscalar(parent) && parent==self) ,
                     value=false;
+                    err = MException('ws:StimulusLibrary:mapWithBadParent', ...
+                                     'At least one map has a bad parent') ;
                     return
                 end
             end
@@ -182,6 +186,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 parent=thing.Parent;
                 if ~(isscalar(parent) && parent==self) ,
                     value=false;
+                    err = MException('ws:StimulusLibrary:stimulusWithBadParent', ...
+                                     'At least one stimulus has a bad parent') ;
                     return
                 end
             end
@@ -198,6 +204,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                         % excellent.  excellent.
                     else
                         value=false;
+                        err = MException('ws:StimulusLibrary:mapWithOutOfRangeStimulus', ...
+                                         'At least one map contains an out-of-range stimulus index') ;
                         return
                     end
                 end
@@ -215,6 +223,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                         % excellent.  excellent.
                     else
                         value=false;
+                        err = MException('ws:StimulusLibrary:mapWithOutOfRangeStimulus', ...
+                                         'At least one sequence contain an out-of-range map index') ;
                         return
                     end
                 end
@@ -233,6 +243,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % all is well
             else
                 value = false ;
+                err = MException('ws:StimulusLibrary:badSelectedItemClass', ...
+                                 'The class of the selected item is not valid') ;
                 return
             end
             
@@ -245,6 +257,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % all is well
             else
                 value = false ;
+                err = MException('ws:StimulusLibrary:badSelectedSequence', ...
+                                 'The index of the selected sequence is out of range') ;
                 return
             end
             
@@ -257,6 +271,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % all is well
             else
                 value = false ;
+                err = MException('ws:StimulusLibrary:badSelectedMap', ...
+                                 'The index of the selected map is out of range') ;
                 return
             end
             
@@ -269,10 +285,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % all is well
             else
                 value = false ;
+                err = MException('ws:StimulusLibrary:badSelectedStimulus', ...
+                                 'The index of the selected stimulus is out of range') ;
                 return
             end
             
             value=true;
+            err = [] ;
         end  % function
         
         function setToSimpleLibraryWithUnitPulse(self, outputChannelNames)
@@ -646,7 +665,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % to the item, etc.
             self.makeItemDeletable_(item);
             % Actually delete the item
-            if isa(item, 'ws.StimulusSequence')
+            if isa(item, 'ws.StimulusSequence') ,
                 isMatch = cellfun(@(element)(element==item),self.Sequences) ;
                 iMatch = find(isMatch,1) ;
                 if ~isempty(iMatch) ,
@@ -658,7 +677,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     end
                     self.Sequences_(iMatch) = [] ;
                 end                    
-            elseif isa(item, 'ws.StimulusMap')
+            elseif isa(item, 'ws.StimulusMap') ,
                 isMatch = cellfun(@(element)(element==item),self.Maps) ;
                 iMatch = find(isMatch,1) ;
                 if ~isempty(iMatch) ,
@@ -667,7 +686,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     % all the places where we store a map index if that map
                     % index is greater than indexOfMapToBeDeleted, since
                     % those are the ones whose indices will be less by one
-                    % .Maps_ after the deletion.
+                    % in .Maps_ after the deletion.
                     
                     % If the selected index map to be deleted has a higher
                     % index than indexOfMapToBeDeleted, decrement it
@@ -686,14 +705,29 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     % master list of maps.
                     self.Maps_(indexOfMapToBeDeleted) = [] ;
                 end
-            elseif isa(item, 'ws.Stimulus')
+            elseif isa(item, 'ws.Stimulus') ,
                 isMatch = ws.ismemberOfCellArray(self.Stimuli,{item}) ;
                 iMatch = find(isMatch,1) ;
                 if ~isempty(iMatch) ,
-                    if self.SelectedStimulusIndex_ > iMatch ,  % they can't be equal, b/c we know the item is not selected
+                    indexOfStimulusToBeDeleted = iMatch ;
+                    % When we delete the indicated stimulus, we have to
+                    % adjust all the places where we store a stimulus index
+                    % if that stim index is greater than
+                    % indexOfStimulusToBeDeleted, since those are the ones
+                    % whose indices will be less by one in .Stimuli_ after
+                    % the deletion.
+
+                    % If the selected stimulus has a higher index than
+                    % indexOfStimulusToBeDeleted, decrement it
+                    if self.SelectedStimulusIndex_ > indexOfStimulusToBeDeleted ,  % they can't be equal, b/c we know the item is not selected
                         self.SelectedStimulusIndex_ = self.SelectedStimulusIndex_ - 1 ;
                     end
-                    self.Stimuli_(iMatch) = [] ;
+                    % Each map contains a list of stimulus indices, so
+                    % decrement those as needed.
+                    self.adjustStimulusIndicesInMapsWhenDeletingAStimulus_(indexOfStimulusToBeDeleted) ;
+                    % Finally, actually delete the indicated stimulus from
+                    % the master list of stimuli.
+                    self.Stimuli_(indexOfStimulusToBeDeleted) = [] ;
                 end
             end
 %             % Check for self-consistency
@@ -1140,6 +1174,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % sequence
             for i = 1:length(self.Sequences_) ,
                 self.Sequences_{i}.adjustMapIndicesWhenDeletingAMap_(indexOfMapBeingDeleted) ;
+            end
+        end
+        
+        function adjustStimulusIndicesInMapsWhenDeletingAStimulus_(self, indexOfStimulusBeingDeleted)
+            % The indexOfStimulusBeingDeleted is the index of the stimulus in library, not in any
+            % map
+            for i = 1:length(self.Maps_) ,
+                self.Maps_{i}.adjustStimulusIndicesWhenDeletingAStimulus_(indexOfStimulusBeingDeleted) ;
             end
         end
         
