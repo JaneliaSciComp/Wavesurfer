@@ -667,6 +667,25 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end
         
+        function adjustStimulusIndicesWhenDeletingAStimulus_(self, indexOfStimulusBeingDeleted)
+            % The indexOfStimuluspBeingDeleted is the index of the stimulus
+            % in the library, not its index in the map.
+            for i=1:length(self.IndexOfEachStimulusInLibrary_) ,
+                indexOfThisStimulus = self.IndexOfEachStimulusInLibrary_{i} ;
+                if isempty(indexOfThisStimulus) ,
+                    % nothing to do here, but want to catch before we start
+                    % doing comparisons, etc.
+                elseif indexOfStimulusBeingDeleted==indexOfThisStimulus ,
+                    self.IndexOfEachStimulusInLibrary_{i} = [] ;
+                elseif indexOfStimulusBeingDeleted<indexOfThisStimulus ,
+                    self.IndexOfEachStimulusInLibrary_{i} = indexOfThisStimulus - 1 ;
+                end
+            end
+            %if ~isempty(self.Parent) ,
+            %    self.Parent.childMayHaveChanged(self);
+            %end
+        end
+        
     end  % public methods block
     
     methods (Access = protected)

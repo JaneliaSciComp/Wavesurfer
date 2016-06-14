@@ -69,12 +69,18 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             stimulusMap1.addBinding('ao1',stimulus2,1.02);
             
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 2);
+            self.verifyEqual(numel(library.Stimuli), 2) ;
             
             % Delete the first stimulus
-            library.deleteItem(stimulus1);
-            self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 1);
+            library.deleteItem(stimulus1) ;
+            [isSelfConsistent,err] = library.isSelfConsistent() ;
+            if isSelfConsistent ,
+                message = '' ;
+            else
+                message = err.message ;
+            end
+            self.verifyTrue(isSelfConsistent,message) ;
+            self.verifyEqual(numel(library.Stimuli), 1) ;
         end
         
         function testRemoveMap(self)
