@@ -1005,6 +1005,13 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
                       % electrodes.  The Refiller doesn't have an Ephys
                       % subsystem, so it can't just mimic the whole
                       % WavesurferModel directly.
+                elseif isequal(thisPropertyName,'AnalogChannelUnits_') ,
+                    self.AnalogChannelUnits_ = other.AnalogChannelUnits ;
+                      % Need to get the public property of other, since
+                      % that will incorporate any overrides from the
+                      % electrodes.  The Refiller doesn't have an Ephys
+                      % subsystem, so it can't just mimic the whole
+                      % WavesurferModel directly.
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;

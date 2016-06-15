@@ -1779,7 +1779,7 @@ classdef Looper < ws.RootModel
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;     
             
-            % Notify subsystems, because they need to pick up the new
+            % Notify subsystems, because they need to pick up the possibly-new
             % device name
             self.Acquisition.mimickingWavesurferModel_() ;
             self.Stimulation.mimickingWavesurferModel_() ;            
