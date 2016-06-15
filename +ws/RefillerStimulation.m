@@ -976,6 +976,52 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
     end  % protected methods
     
     methods
+        function mimicWavesurferModel_(self, other)
+            % This is only ever called when other is the stimulation
+            % subsystem of a ws.WavesurferModel.
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'StimulusLibrary_'})) ,                    
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
+                    target = self.(thisPropertyName) ;
+                    if isempty(target) ,
+                        self.setPropertyValue_(thisPropertyName, source.copyGivenParent(self)) ;
+                    else
+                        target.mimic(source);
+                    end
+                elseif isequal(thisPropertyname,'AnalogChannelScales_') ,
+                    analogChannelScales = other.AnalogChannelScales
+                    self.AnalogChannelScales_ = analogChannelScales ;
+                      % Need to get the public property of other, since
+                      % that will incorporate any overrides from the
+                      % electrodes.  The Refiller doesn't have an Ephys
+                      % subsystem, so it can't just mimic the whole
+                      % WavesurferModel directly.
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
+        end  % function
+    end  % public methods block
+
+    methods
         function result = areTasksDone(self)
             % Check if the tasks are done.  This doesn't change the object
             % state at all.

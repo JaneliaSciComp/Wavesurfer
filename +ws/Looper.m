@@ -1761,7 +1761,7 @@ classdef Looper < ws.RootModel
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(wsModel.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimicWavesurferModel_(wsModel.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
                     % do nothing                   
                 else
