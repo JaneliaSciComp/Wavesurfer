@@ -1781,9 +1781,9 @@ classdef Looper < ws.RootModel
             
             % Notify subsystems, because they need to pick up the possibly-new
             % device name
-            self.Acquisition.mimickingWavesurferModel_() ;
-            self.Stimulation.mimickingWavesurferModel_() ;            
-            self.Triggering.mimickingWavesurferModel_() ;                                    
+            %self.Acquisition.mimickingWavesurferModel_() ;
+            %self.Stimulation.mimickingWavesurferModel_() ;            
+            %self.Triggering.mimickingWavesurferModel_() ;                                    
         end  % function
     end  % public methods block
     

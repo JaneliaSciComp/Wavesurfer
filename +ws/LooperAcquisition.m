@@ -364,9 +364,9 @@ classdef LooperAcquisition < ws.AcquisitionSubsystem
         end        
         
         function didSetDeviceNameInFrontend(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %deviceName = self.Parent.DeviceName ;
+            %self.AnalogDeviceNames_(:) = {deviceName} ;
+            %self.DigitalDeviceNames_(:) = {deviceName} ;            
             %self.broadcast('Update');
         end        
         
@@ -413,12 +413,12 @@ classdef LooperAcquisition < ws.AcquisitionSubsystem
             self.broadcast('Update');
         end  % function
     
-        function mimickingWavesurferModel_(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
-            %self.broadcast('Update');
-        end        
+%         function mimickingWavesurferModel_(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             %self.broadcast('Update');
+%         end        
     end  % public methods block
     
 end  % classdef

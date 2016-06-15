@@ -144,7 +144,7 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentPropertie
                                                      isTimedForEachDOChannel, ...
                                                      onDemandOutputForEachDOChannel)
             self.DigitalChannelNames_ = channelNameForEachDOChannel ;
-            self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
+            %self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
             self.DigitalTerminalIDs_ = terminalIDForEachDOChannel ;
             self.IsDigitalChannelTimed_ = isTimedForEachDOChannel ;
             self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
@@ -297,9 +297,9 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentPropertie
         end
         
         function didSetDeviceNameInFrontend(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;            
-            self.DigitalDeviceNames_(:) = {deviceName} ;
+            %deviceName = self.Parent.DeviceName ;
+            %self.AnalogDeviceNames_(:) = {deviceName} ;            
+            %self.DigitalDeviceNames_(:) = {deviceName} ;
         end
         
         function mimicWavesurferModel_(self, other)
@@ -353,10 +353,10 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentPropertie
             self.broadcast('Update');
         end  % function
         
-        function mimickingWavesurferModel_(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;            
-            self.DigitalDeviceNames_(:) = {deviceName} ;
-        end        
+%         function mimickingWavesurferModel_(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;
+%         end        
     end
 end  % classdef
