@@ -27,7 +27,7 @@ classdef ElectrodeManagerController < ws.Controller
                 elseif source==figureObject.ReconnectButton ,
                     self.reconnectButtonPressed();
                 elseif source==figureObject.UpdateBeforeRunOrTPCheckbox ,
-                    self.updateBeforeRunOrTPClicked;
+                    self.updateBeforeRunOrTPClicked(source);
                 elseif source==figureObject.SoftpanelButton ,
                     self.softpanelButtonPressed();
                 elseif any(source==figureObject.IsCommandEnabledCheckboxes) , 
@@ -103,7 +103,7 @@ classdef ElectrodeManagerController < ws.Controller
             %self.Figure.changeReadiness(+1);
         end
         
-        function updateBeforeRunOrTPClicked(self,source)
+        function updateBeforeRunOrTPClicked(self, source)
             self.Model.UpdateBeforeRunOrTP=get(source,'Value');
         end
         
