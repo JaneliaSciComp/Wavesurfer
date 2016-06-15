@@ -70,7 +70,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
         ReconnectButton
         
         % Checkbox that persist for the lifetime of the window
-        UpdateBeforeRunCheckbox
+        UpdateBeforeRunOrTPCheckbox
 
     end
     
@@ -428,7 +428,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             set(self.UpdateButton,'Enable',onIff(isUpdateButtonEnabled));
             isReconnectButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
             set(self.ReconnectButton,'Enable',onIff(isReconnectButtonEnabled));
-            
+            set(self.UpdateBeforeRunOrTPCheckbox,'Enable',onIff(isUpdateButtonEnabled));
 %             % Update toggle state of Softpanel button
 %             set(self.SoftpanelButton,'Value',areAnyElectrodesSmart&&isInControlOfSoftpanelModeAndGains);
             
@@ -753,12 +753,12 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'String','Reconnect', ...
                           'Callback',@(src,evt)(self.controlActuated('ReconnectButton',src,evt)));
                       
-            self.UpdateBeforeRunCheckbox= ...
+            self.UpdateBeforeRunOrTPCheckbox= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','checkbox', ...
                           'Value',1, ...
                           'String','Update Before Run', ...
-                          'Callback',@(src,evt)(self.controlActuated('UpdateBeforeRunCheckbox',src,evt)));
+                          'Callback',@(src,evt)(self.controlActuated('UpdateBeforeRunOrTPCheckbox',src,evt)));
         end  % function
         
         function updateControlsInExistance_(self)
@@ -1179,14 +1179,14 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             reconnectButtonXOffset=updateButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
             set(self.ReconnectButton,'Position',[reconnectButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);
             
-            updateBeforeRunCheckboxPosition=get(self.UpdateBeforeRunCheckbox,'Position');
-            updateBeforeRunCheckboxWidth=updateBeforeRunCheckboxPosition(3);
-            updateBeforeRunCheckboxHeight=updateBeforeRunCheckboxPosition(4);
-            updateBeforeRunCheckboxXOffset=reconnectButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
-            updateBeforeRunCheckboxYOffset=buttonYOffset;            
-            set(self.UpdateBeforeRunCheckbox, ...
-                'Position',[updateBeforeRunCheckboxXOffset updateBeforeRunCheckboxYOffset ...
-                            updateBeforeRunCheckboxWidth updateBeforeRunCheckboxHeight]);
+            UpdateBeforeRunOrTPCheckboxPosition=get(self.UpdateBeforeRunOrTPCheckbox,'Position');
+            UpdateBeforeRunOrTPCheckboxWidth=111; %through trial and error UpdateBeforeRunOrTPCheckboxPosition(3);
+            UpdateBeforeRunOrTPCheckboxHeight=UpdateBeforeRunOrTPCheckboxPosition(4);
+            UpdateBeforeRunOrTPCheckboxXOffset=reconnectButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
+            UpdateBeforeRunOrTPCheckboxYOffset=buttonYOffset;            
+            set(self.UpdateBeforeRunOrTPCheckbox, ...
+                'Position',[UpdateBeforeRunOrTPCheckboxXOffset UpdateBeforeRunOrTPCheckboxYOffset ...
+                            UpdateBeforeRunOrTPCheckboxWidth UpdateBeforeRunOrTPCheckboxHeight]);
           
             addButtonXOffset=rightButtonRowXOffset;
             set(self.AddButton,'Position',[addButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);

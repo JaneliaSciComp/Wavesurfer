@@ -6,6 +6,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
         AreSoftpanelsEnabled
         IsInControlOfSoftpanelModeAndGains
+        UpdateBeforeRunOrTP
     end
 
     properties (Dependent=true, SetAccess=immutable)
@@ -33,6 +34,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
         MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
+        UpdateBeforeRunOrTP_ = 1
     end
 
     properties (Access = protected, Transient = true)
@@ -122,7 +124,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function out=get.IsElectrodeMarkedForTestPulse(self)
             out=self.IsElectrodeMarkedForTestPulse_;
         end
-
+        
         function set.IsElectrodeMarkedForTestPulse(self,newValue)
             % newValue must be same shape as old
             if all(size(newValue)==size(self.IsElectrodeMarkedForTestPulse_)) ,
@@ -133,6 +135,15 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
             self.broadcast('Update');
         end
+        
+        function out=get.UpdateBeforeRunOrTP(self)
+            out=self.UpdateBeforeRunOrTP_;
+        end 
+        
+        function set.UpdateBeforeRunOrTP(self,newValue)
+            self.UpdateBeforeRunOrTP_=newValue;
+            self.broadcast('Update');
+        end        
         
 %         function out=get.Parent(self)
 %             out=self.Parent_;
