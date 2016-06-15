@@ -998,7 +998,7 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
                         target.mimic(source);
                     end
                 elseif isequal(thisPropertyName,'AnalogChannelScales_') ,
-                    analogChannelScales = other.AnalogChannelScales
+                    analogChannelScales = other.AnalogChannelScales ;
                     self.AnalogChannelScales_ = analogChannelScales ;
                       % Need to get the public property of other, since
                       % that will incorporate any overrides from the
