@@ -141,12 +141,16 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function self = WavesurferModel(isITheOneTrueWavesurferModel)
+        function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
             self@ws.RootModel();  % we have no parent
             
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
+            if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
+                doRunInDebugMode = false ;
+            end
+            
 %             if ~exist('mode','var') || isempty(mode),
 %                 mode = 'release' ;
 %             end
@@ -216,12 +220,15 @@ classdef WavesurferModel < ws.RootModel
                 % path information to make sure they can find all the .m
                 % files they need.
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
-                looperLaunchStringTemplate = ...
-                    ['start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); ws.hideMatlabWindow(); addpath(''%s''); looper=ws.Looper(%d, %d); ' ...
-                     'looper.runMainLoop(); clear; quit()"'] ;
-%                 looperLaunchStringTemplate = ...
-%                     ['start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(%d, %d); ' ...
-%                      'looper.runMainLoop(); clear; quit()"'] ;
+                if doRunInDebugMode ,
+                    looperLaunchStringTemplate = ...
+                        ['start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(%d, %d); ' ...
+                         'looper.runMainLoop(); clear; quit()"'] ;
+                else
+                    looperLaunchStringTemplate = ...
+                        ['start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); ws.hideMatlabWindow(); addpath(''%s''); looper=ws.Looper(%d, %d); ' ...
+                         'looper.runMainLoop(); clear; quit()"'] ;
+                end
                 looperLaunchString = ...
                     sprintf(looperLaunchStringTemplate , ...
                             pathToWavesurferRoot , ...
@@ -229,12 +236,15 @@ classdef WavesurferModel < ws.RootModel
                             looperIPCPublisherPortNumber, ...
                             frontendIPCPublisherPortNumber) ;
                 system(looperLaunchString) ;
-                refillerLaunchStringTemplate = ...
-                    [ 'start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d); ' ...
-                      'refiller.runMainLoop(); clear; quit()"' ] ;
-%                 refillerLaunchStringTemplate = ...
-%                     [ 'start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); refiller=ws.Refiller(%d, %d); ' ...
-%                       'refiller.runMainLoop(); clear; quit()"' ] ;
+                if doRunInDebugMode ,
+                    refillerLaunchStringTemplate = ...
+                        [ 'start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); refiller=ws.Refiller(%d, %d); ' ...
+                          'refiller.runMainLoop(); clear; quit()"' ] ;
+                else
+                    refillerLaunchStringTemplate = ...
+                        [ 'start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d); ' ...
+                          'refiller.runMainLoop(); clear; quit()"' ] ;
+                end
                 refillerLaunchString = ...
                     sprintf(refillerLaunchStringTemplate , ...
                             pathToWavesurferRoot , ...
@@ -324,8 +334,8 @@ classdef WavesurferModel < ws.RootModel
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
 
-            % The object is now initialized, but not very useful until an
-            % MDF is specified.
+            % The object is now initialized, but not very useful until a
+            % device is specified.
             self.setState_('no_device') ;
             
             % Finally, set the device name to the first device name, if
@@ -1384,7 +1394,7 @@ classdef WavesurferModel < ws.RootModel
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     throw(err);
-                end               
+                end
                 
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
