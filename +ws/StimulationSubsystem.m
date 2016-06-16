@@ -243,10 +243,10 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
         end  % function
         
-        function out = get.DigitalDeviceNames(self)
+        function digitalDeviceNames = get.DigitalDeviceNames(self)
             %out = self.DigitalDeviceNames_ ;
             deviceName = self.Parent.DeviceName ;
-            out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
+            digitalDeviceNames = repmat({deviceName}, size(self.DigitalChannelNames)) ;
         end  % function
 
         function result = get.AnalogTerminalIDs(self)

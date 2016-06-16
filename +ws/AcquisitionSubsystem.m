@@ -544,7 +544,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         function out = get.DigitalDeviceNames(self)
             %out = self.DigitalDeviceNames_ ;
             deviceName = self.Parent.DeviceName ;
-            out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
+            out = repmat({deviceName}, size(self.DigitalChannelNames)) ;             
         end  % function
         
 %         function out = get.DeviceNames(self)
