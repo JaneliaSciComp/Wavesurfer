@@ -296,11 +296,11 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentPropertie
             self.TheUntimedDigitalOutputTask_.setChannelDataQuicklyAndDirtily(newValue) ;
         end
         
-        function didSetDeviceNameInFrontend(self)
-            %deviceName = self.Parent.DeviceName ;
-            %self.AnalogDeviceNames_(:) = {deviceName} ;            
-            %self.DigitalDeviceNames_(:) = {deviceName} ;
-        end
+%         function didSetDeviceNameInFrontend(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;
+%         end
         
         function mimicWavesurferModel_(self, other)
             % This is only ever called when other is the stimulation

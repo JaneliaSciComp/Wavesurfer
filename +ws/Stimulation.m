@@ -1045,9 +1045,9 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
         
         function addDigitalChannel_(self)
             %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
             if isempty(freeTerminalIDs) ,
                 return  % can't add a new one, because no free IDs

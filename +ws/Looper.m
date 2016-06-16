@@ -278,10 +278,10 @@ classdef Looper < ws.RootModel
             self.NAOTerminals_ = nAOTerminals ;            
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
-            % Notify subsystems
-            self.Acquisition.didSetDeviceNameInFrontend() ;
-            self.Stimulation.didSetDeviceNameInFrontend() ;            
-            self.Triggering.didSetDeviceNameInFrontend() ;            
+            % % Notify subsystems
+            % self.Acquisition.didSetDeviceNameInFrontend() ;
+            % self.Stimulation.didSetDeviceNameInFrontend() ;            
+            % self.Triggering.didSetDeviceNameInFrontend() ;            
             
             % Set the state
             %self.setState_('idle');  % do we need to do this?

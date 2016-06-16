@@ -513,9 +513,9 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function       
         
         function newChannelName = addAnalogChannel(self)
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;

@@ -363,12 +363,12 @@ classdef LooperAcquisition < ws.AcquisitionSubsystem
             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
         end        
         
-        function didSetDeviceNameInFrontend(self)
-            %deviceName = self.Parent.DeviceName ;
-            %self.AnalogDeviceNames_(:) = {deviceName} ;
-            %self.DigitalDeviceNames_(:) = {deviceName} ;            
-            %self.broadcast('Update');
-        end        
+%         function didSetDeviceNameInFrontend(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             %self.broadcast('Update');
+%         end        
         
         function mimicWavesurferModel_(self, other)
             % This is only ever called when other is the acquisition
