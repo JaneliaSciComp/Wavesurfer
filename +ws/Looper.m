@@ -278,10 +278,10 @@ classdef Looper < ws.RootModel
             self.NAOTerminals_ = nAOTerminals ;            
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
-            % Notify subsystems
-            self.Acquisition.didSetDeviceNameInFrontend() ;
-            self.Stimulation.didSetDeviceNameInFrontend() ;            
-            self.Triggering.didSetDeviceNameInFrontend() ;            
+            % % Notify subsystems
+            % self.Acquisition.didSetDeviceNameInFrontend() ;
+            % self.Stimulation.didSetDeviceNameInFrontend() ;            
+            % self.Triggering.didSetDeviceNameInFrontend() ;            
             
             % Set the state
             %self.setState_('idle');  % do we need to do this?
@@ -1761,7 +1761,7 @@ classdef Looper < ws.RootModel
                 thisPropertyName=propertyNames{i};
                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(wsModel.getPropertyValue_(thisPropertyName)) ;
+                    self.(thisPropertyName).mimicWavesurferModel_(wsModel.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
                     % do nothing                   
                 else
@@ -1779,11 +1779,11 @@ classdef Looper < ws.RootModel
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;     
             
-            % Notify subsystems, because they need to pick up the new
+            % Notify subsystems, because they need to pick up the possibly-new
             % device name
-            self.Acquisition.mimickingWavesurferModel_() ;
-            self.Stimulation.mimickingWavesurferModel_() ;            
-            self.Triggering.mimickingWavesurferModel_() ;                                    
+            %self.Acquisition.mimickingWavesurferModel_() ;
+            %self.Stimulation.mimickingWavesurferModel_() ;            
+            %self.Triggering.mimickingWavesurferModel_() ;                                    
         end  % function
     end  % public methods block
     

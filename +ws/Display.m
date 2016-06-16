@@ -171,9 +171,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end       
         
-        function didSetDeviceName(self)
-            %self.initializeScopes_() ;
-        end
+%         function didSetDeviceName(self)
+%             %self.initializeScopes_() ;
+%         end
         
         function addScope(self, scopeTag, scopeTitle, channelNames)
             if isempty(scopeTag)
