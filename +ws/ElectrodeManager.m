@@ -34,7 +34,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
         MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
-        UpdateBeforeRunOrTP_ = 1
+        UpdateBeforeRunOrTP_
     end
 
     properties (Access = protected, Transient = true)
@@ -72,6 +72,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
             propNames=propNamesRaw(1:nPVs);
             propVals=propValsRaw(1:nPVs);            
+            
+            self.UpdateBeforeRunOrTP_ = 1;
             
             % Set the properties
             for idx = 1:nPVs

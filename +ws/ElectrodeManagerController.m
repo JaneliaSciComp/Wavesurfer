@@ -104,7 +104,8 @@ classdef ElectrodeManagerController < ws.Controller
         end
         
         function updateBeforeRunOrTPClicked(self, source)
-            self.Model.UpdateBeforeRunOrTP=get(source,'Value');
+           self.Model.UpdateBeforeRunOrTP=get(source,'Value');
+           disp(self.Model.UpdateBeforeRunOrTP);
         end
         
         function softpanelButtonPressed(self)
