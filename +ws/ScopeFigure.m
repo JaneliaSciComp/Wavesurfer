@@ -343,7 +343,7 @@ classdef ScopeFigure < ws.MCOSFigure
             end
             
             % Downsample the new data
-            [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsample(xNew,yNew,r);            
+            [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
             
             % Concatenate old and new downsampled data, commit to self
             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
