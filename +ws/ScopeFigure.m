@@ -305,13 +305,9 @@ classdef ScopeFigure < ws.MCOSFigure
             % Need to pack up all the y data into a single array for
             % downsampling (should change things more globally to make this
             % unnecessary)
-            nScans=length(self.Model.XData);
-            nChannels=length(self.Model.YData);
-            y=zeros(nScans,nChannels);
-            for i=1:nChannels ,
-                y(:,i)=self.Model.YData{i};
-            end
-            x=self.Model.XData;
+            x = self.Model.XData ;
+            y = self.Model.YData ;
+            %nScans = length(x) ;
             
             % This shouldn't ever happen, but just in case...
             if isempty(x) ,
@@ -326,8 +322,8 @@ classdef ScopeFigure < ws.MCOSFigure
             xForPlottingOriginal=self.XForPlotting_;
             yForPlottingOriginal=self.YForPlotting_;
             
-            % Trim off any that is beyond the left edge of the data
-            x0=x(1);
+            % Trim off any that is beyond the left edge of the plotted data
+            x0=x(1);  % this is the time of the first sample in the model's XData
             keep=(x0<=xForPlottingOriginal);
             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);

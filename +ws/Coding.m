@@ -347,6 +347,8 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'Ephys_' ;      
                             elseif isa(result,'ws.Display') && isequal(fieldName, 'Scopes') ,
                                 propertyName = 'Scopes_' ;      
+                            elseif isa(result,'ws.ScopeModel') && isequal(fieldName, 'ChannelNames_') ,
+                                propertyName = 'ChannelName_' ;      
                             elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'StimulusLibrary') ,
                                 propertyName = 'StimulusLibrary_' ;      
                             elseif isa(result,'ws.StimulusLibrary') && isequal(fieldName, 'Stimuli') ,
@@ -425,6 +427,20 @@ classdef (Abstract) Coding < handle
                                         subresult = rawSubresult{1} ;
                                     else
                                         subresult = rawSubresult ;
+                                    end
+                                elseif isa(result, 'ws.ScopeModel') && ...
+                                       isequal(fieldName, 'ChannelNames_') && isequal(propertyName, 'ChannelName_') ,
+                                    % BC hack 
+                                    doSetPropertyValue = true ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    % rawSubresult is always a one-element cellstring.  Just
+                                    % want the string.
+                                    if isempty(rawSubresult) ,
+                                        subresult = '' ;
+                                    elseif iscell(rawSubresult) ,
+                                        subresult = rawSubresult{1} ;
+                                    else
+                                        subresult = rawSubresult ;  % probably never happens, I think...
                                     end
                                 elseif isa(result,'ws.Electrode') && isequal(fieldName,'Mode_') && isequal(propertyName,'Mode_') ,
                                     % BC hack 
