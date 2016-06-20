@@ -1,0 +1,2 @@
+LIBRARY minMaxDownsampleMex
+EXPORTS mexFunction

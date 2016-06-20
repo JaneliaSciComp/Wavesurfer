@@ -1,8 +1,8 @@
+#include <math.h>
 #include "mex.h"
 
-//Gateway routine
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
-    // This function is called like: [tSubsampledAndDoubled, ySubsampledAndDoubled]=minMaxDownsample(t,y,r)
+    // This function is called like: [tSubsampledAndDoubledUp, ySubsampledAndDoubledUp]=minMaxDownsampleMex(t,y,r)
     //   t a double column vector of length nScans
     //   y a nScans x nChannels matrix of doubles
     //   r a double scalar holding a positive integer value, or empty
@@ -20,7 +20,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
         mexErrMsgIdAndTxt("ws:minMaxDownSample:tNotRight", 
                           "Argument t must be a non-complex double column vector.");
     }
-    mwSize nScans = mxGetM(prhs[0]);
+    mwSize nScans = mxGetM(prhs[0]) ;
     double *t = mxGetPr(prhs[0]);  // "Convert" to a C++ array
     
     // prhs[1]: y
@@ -32,16 +32,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     double *y = mxGetPr(prhs[1]);  // "Convert" to a C++ array (sort of: it's still in col-major order)
     
     // prhs[1]: r
-    bool rIsEmpty = mxIsEmpty(prhs[2]) ;
-    if !rIsEmpty || !mxIsDouble(prhs[2]) || mxIsComplex(prhs[2]) || !mxIsScalar(prhs[2]) )  {
-        mexErrMsgIdAndTxt("ws:minMaxDownSample:rNotRight", 
-                          "Argument r must be empty or be a non-complex double scalar.");
+    bool rIsEmpty ;
+    if ( mxIsEmpty(prhs[2]) )  {
+        // this is always OK
+        rIsEmpty = true ;
+    } else {
+        rIsEmpty = false ;
+        // non-empty
+        if ( mxIsDouble(prhs[2]) && !mxIsComplex(prhs[2]) && mxIsScalar(prhs[2]) )  {
+            // this is ok
+        }  else  {
+            mexErrMsgIdAndTxt("ws:minMaxDownSample:rNotRight", 
+                              "Argument r must be empty or be a non-complex double scalar.");
         }
-    double r = -1.0 ;
-    mwSize r = 0 ;
+    }
+
+    double rAsDouble = -1.0 ;  // should not be used if rIsEmpty
+    mwSize r = 0 ;  // should not be used if rIsEmpty
     if (!rIsEmpty)  {
         rAsDouble = mxGetScalar(prhs[2]) ;
-        if ( round(rAsDouble)!=rAsDouble || r<=0 )  {
+        if ( floor(rAsDouble)!=ceil(rAsDouble) || rAsDouble<=0 )  {
             mexErrMsgIdAndTxt("ws:minMaxDownSample:rNotRight", 
                               "Argument r, if a scalar, must be a positive integer.");
         }
@@ -50,9 +60,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 
     // At this point, all args have been read and validated
 
-    int effectiveNLHS = max(nlhs,1) ;  // even if nlhs==0, still safe to assign to plhs[0], and should do this, so ans gets assigned
-    double *tSubsampledAndDoubled ;
-    double *ySubsampledAndDoubled ;
+    int effectiveNLHS = (nlhs>1)?nlhs:1 ;  // even if nlhs==0, still safe to assign to plhs[0], and should do this, so ans gets assigned
+    double* tSubsampledAndDoubled ;
+    double* ySubsampledAndDoubled ;
 
     double* target ;
     double* source ;
@@ -62,19 +72,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
         if ( effectiveNLHS>=1 )  {
             plhs[0] = mxCreateDoubleMatrix(nScans, (mwSize)1, mxREAL) ;
             tSubsampledAndDoubled = mxGetPr(plhs[0]);
-            for (i=0 ; i<nScans; ++i)  {
+            for (mwSize i=0 ; i<nScans; ++i)  {
                 tSubsampledAndDoubled[i] = t[i] ;
             }
         }
         if ( effectiveNLHS>=2 )  {
             plhs[1] = mxCreateDoubleMatrix(nScans, nChannels, mxREAL) ;
             ySubsampledAndDoubled = mxGetPr(plhs[1]);
-            *target = ySubsampledAndDoubled ;
-            *source = y ;
+            target = ySubsampledAndDoubled ;
+            source = y ;
             mwSize nElements = nChannels * nScans ;
-            for (unsigned long long i=0 ; i<nElements; ++i, ++source, ++target)  {
+            for (mwSize i=0 ; i<nElements; ++i, ++source, ++target)  {
                 *target = *source ;
-                }
             }
         }
         return ;
@@ -82,7 +91,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 
     // If get here, r is a scalar, which is the interesting case
 
-    mwSize nScansSubsampled = (mwSize) ceil((double)nScans/rAsDouble) ;
+    mwSize nScansSubsampled = (mwSize) (ceil(((double)nScans)/rAsDouble)) ;
 
     // Create the subsampled timeline, decimating t by the factor r
     mxArray* tSubsampledMxArray = mxCreateDoubleMatrix(nScansSubsampled, (mwSize)1, mxREAL) ;
@@ -115,13 +124,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     }
 
     // Subsample y at each subsampled scan, getting the max and the min of the r samples for that point in the original y
-    mxArray* ySubsampledMaxMxArray = mxCreateDoubleMatrix(nScansSubsampled, nScans, mxREAL) ;
+    mxArray* ySubsampledMaxMxArray = mxCreateDoubleMatrix(nScansSubsampled, nChannels, mxREAL) ;
     double* ySubsampledMax = mxGetPr(ySubsampledMaxMxArray) ;
-    mxArray* ySubsampledMinMxArray = mxCreateDoubleMatrix(nScansSubsampled, nScans, mxREAL) ;
-    double* ySubsampledMin = mxGetPr(ySubsampledMaxMxArray) ;
+    mxArray* ySubsampledMinMxArray = mxCreateDoubleMatrix(nScansSubsampled, nChannels, mxREAL) ;
+    double* ySubsampledMin = mxGetPr(ySubsampledMinMxArray) ;
     double maxSoFar ;
     double minSoFar ;
     mwSize iWithinTheR ;
+    mwSize iScanSubsampled ;
     for (mwSize iChannel=0 ; iChannel<nChannels; ++iChannel)  {
         iScanSubsampled = 0 ;
         iWithinTheR = 0 ;
@@ -134,43 +144,45 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
                 if (yThis>maxSoFar)  {
                     maxSoFar = yThis ;
                 } else {
-                    if (yThis<yMin)  {
+                    if (yThis<minSoFar)  {
                         minSoFar = yThis ;
                     }
                 }
             }
             if (iWithinTheR+1 == r)  {
                 // Write to the elements of the subsampled arrays
-                *(ySubsampledMaxMxArray+iChannel*nScansSubsampled+iScanSubsampled) = maxSoFar ;
-                *(ySubsampledMinMxArray+iChannel*nScansSubsampled+iScanSubsampled) = minSoFar ;
+                *(ySubsampledMax+iChannel*nScansSubsampled+iScanSubsampled) = maxSoFar ;
+                *(ySubsampledMin+iChannel*nScansSubsampled+iScanSubsampled) = minSoFar ;
                 ++iScanSubsampled ;
                 iWithinTheR = 0 ;
             } else {
                 ++iWithinTheR ;
             }
         }
-        if (iWithinTheR!=0)  {
+        // Note: Don't change the test just below to iWithinTheR!=0 or some such: that doesn't properly
+        // handle the case where nScans==0 and therefore nScansSubsampled==0
+        if ( iScanSubsampled < nScansSubsampled )  {  
             // This means r does not evenly divide nScans, so need to fill in the last element of the subsampled arrays
-            *(ySubsampledMaxMxArray+iChannel*nScansSubsampled+iScanSubsampled) = maxSoFar ;
-            *(ySubsampledMinMxArray+iChannel*nScansSubsampled+iScanSubsampled) = minSoFar ;
+            *(ySubsampledMax+iChannel*nScansSubsampled+iScanSubsampled) = maxSoFar ;
+            *(ySubsampledMin+iChannel*nScansSubsampled+iScanSubsampled) = minSoFar ;
         }
     }
 
     // Now for the y's, max, min, max, min, etc.
     mxArray* ySubsampledAndDoubledUpMxArray = mxCreateDoubleMatrix(2*nScansSubsampled, (mwSize)nChannels, mxREAL) ;
     double* ySubsampledAndDoubledUp = mxGetPr(ySubsampledAndDoubledUpMxArray) ;
-    target = tSubsampledAndDoubledUp ;
+    target = ySubsampledAndDoubledUp ;
     double* minSource = ySubsampledMin ;
     double* maxSource = ySubsampledMax ;
     for (mwSize iChannel=0 ; iChannel<nChannels; ++iChannel)  {
         for (mwSize iScanSubsampled=0; iScanSubsampled<nScansSubsampled; ++iScanSubsampled)  {
             //*(ySubsampledAndDoubledUp+iChannel*nScansSubsampled+2*iScanSubsampled)   = *(ySubsampledMax+iChannel*nScansSubsampled+iScanSubsampled) ;
             *target = *maxSource ;
-            ++minSource ;
+            ++maxSource ;
             ++target ;
             //*(ySubsampledAndDoubledUp+iChannel*nScansSubsampled+2*iScanSubsampled+1) = *(ySubsampledMin+iChannel*nScansSubsampled+iScanSubsampled) ;
             *target = *minSource ;
-            ++maxSource ;
+            ++minSource ;
             ++target ;
         }
     }
@@ -178,4 +190,3 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Now set up for return
     plhs[1] = ySubsampledAndDoubledUpMxArray ;
 }
-
