@@ -69,8 +69,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
         SoftpanelButton
         ReconnectButton
         
-        % Checkbox that persist for the lifetime of the window
-        UpdateBeforeRunOrTPCheckbox
+        % Checkbox that persists for the lifetime of the window
+        DoTrodeUpdateBeforeRunCheckbox
 
     end
     
@@ -195,6 +195,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % Update toggle state of Softpanel button
             set(self.SoftpanelButton,'Value',areAnyElectrodesCommandable&&isInControlOfSoftpanelModeAndGains);
             
+            % Update state of Update Before Run checkbox
+            doTrodeUpdateBeforeRun = model.DoTrodeUpdateBeforeRun;
+            set(self.DoTrodeUpdateBeforeRunCheckbox,'Value',doTrodeUpdateBeforeRun);
+                
+            
             % Specify common parameters for channel popups
             alwaysShowUnspecifiedAsMenuItem=true;
             normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
@@ -250,8 +255,6 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
                 set(self.ModePopups(i),'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
-                 set(self.UpdateBeforeRunOrTPCheckbox, ...
-                    'Value',self.Model.UpdateBeforeRunOrTP);
                 
                 % Get whether the current electrode is in a CC mode or a VC
                 % mode
@@ -377,7 +380,6 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 % Update the Remove? checkbox
                 set(self.RemoveQCheckboxes(i), ...
                     'Value',self.Model.IsElectrodeMarkedForRemoval(i));
-
             end  % for loop
         end  % function
         
@@ -431,7 +433,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             set(self.UpdateButton,'Enable',onIff(isUpdateButtonEnabled));
             isReconnectButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
             set(self.ReconnectButton,'Enable',onIff(isReconnectButtonEnabled));
-            set(self.UpdateBeforeRunOrTPCheckbox,'Enable',onIff(isUpdateButtonEnabled));
+            isUpdateBeforeRunCheckboxEnabled = model.IsDoTrodeUpdateBeforeRunSensible;
+            set(self.DoTrodeUpdateBeforeRunCheckbox,'Enable',isUpdateBeforeRunCheckboxEnabled);
 %             % Update toggle state of Softpanel button
 %             set(self.SoftpanelButton,'Value',areAnyElectrodesSmart&&isInControlOfSoftpanelModeAndGains);
             
@@ -755,13 +758,13 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'String','Reconnect', ...
                           'Callback',@(src,evt)(self.controlActuated('ReconnectButton',src,evt)));
-                      
-            self.UpdateBeforeRunOrTPCheckbox= ...
+
+            self.DoTrodeUpdateBeforeRunCheckbox= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','checkbox', ...
-                          'Value',self.Model.UpdateBeforeRunOrTP, ...
+                          'Value',self.Model.DoTrodeUpdateBeforeRun, ...
                           'String','Update Before Run', ...
-                          'Callback',@(src,evt)(self.controlActuated('UpdateBeforeRunOrTPCheckbox',src,evt)));
+                          'Callback',@(src,evt)(self.controlActuated('DoTrodeUpdateBeforeRunCheckbox',src,evt)));
         end  % function
         
         function updateControlsInExistance_(self)
@@ -1182,14 +1185,14 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             reconnectButtonXOffset=updateButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
             set(self.ReconnectButton,'Position',[reconnectButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);
             
-            UpdateBeforeRunOrTPCheckboxPosition=get(self.UpdateBeforeRunOrTPCheckbox,'Position');
-            UpdateBeforeRunOrTPCheckboxWidth=111; %through trial and error UpdateBeforeRunOrTPCheckboxPosition(3);
-            UpdateBeforeRunOrTPCheckboxHeight=UpdateBeforeRunOrTPCheckboxPosition(4);
-            UpdateBeforeRunOrTPCheckboxXOffset=reconnectButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
-            UpdateBeforeRunOrTPCheckboxYOffset=buttonYOffset;            
-            set(self.UpdateBeforeRunOrTPCheckbox, ...
-                'Position',[UpdateBeforeRunOrTPCheckboxXOffset UpdateBeforeRunOrTPCheckboxYOffset ...
-                            UpdateBeforeRunOrTPCheckboxWidth UpdateBeforeRunOrTPCheckboxHeight]);
+            doTrodeUpdateBeforeRunCheckboxPosition=get(self.DoTrodeUpdateBeforeRunCheckbox,'Position');
+            doTrodeUpdateBeforeRunCheckboxWidth=111; %111 is just right to fit "Update Before Run"
+            doTrodeUpdateBeforeRunCheckboxHeight=doTrodeUpdateBeforeRunCheckboxPosition(4);
+            doTrodeUpdateBeforeRunCheckboxXOffset=reconnectButtonXOffset+bottomButtonWidth+interBottomButtonSpaceWidth;
+            doTrodeUpdateBeforeRunCheckboxYOffset=buttonYOffset;            
+            set(self.DoTrodeUpdateBeforeRunCheckbox, ...
+                'Position',[doTrodeUpdateBeforeRunCheckboxXOffset doTrodeUpdateBeforeRunCheckboxYOffset ...
+                            doTrodeUpdateBeforeRunCheckboxWidth doTrodeUpdateBeforeRunCheckboxHeight]);
           
             addButtonXOffset=rightButtonRowXOffset;
             set(self.AddButton,'Position',[addButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);

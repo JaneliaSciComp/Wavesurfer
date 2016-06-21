@@ -1077,7 +1077,7 @@ classdef TestPulser < ws.Model
                 % Update the smart electrode channel scales, if possible and
                 % needed
                 if ~isempty(electrodeManager) ,
-                    if electrodeManager.UpdateBeforeRunOrTP
+                    if electrodeManager.DoTrodeUpdateBeforeRun
                         electrodeManager.updateSmartElectrodeGainsAndModes();
                     end
                 end
