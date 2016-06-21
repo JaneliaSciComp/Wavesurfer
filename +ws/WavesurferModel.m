@@ -79,7 +79,7 @@ classdef WavesurferModel < ws.RootModel
         IndexOfSelectedFastProtocol_ = []
         State_ = 'uninitialized'
         Subsystems_
-        t_
+        t_  % During a sweep, the time stamp of the scan *just after* the most recent scan
         NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_
         FromSweepStartTicId_

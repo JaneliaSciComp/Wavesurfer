@@ -383,7 +383,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.ClearOnNextData_ = true;
         end
         
-        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)  %#ok<INUSL,INUSD>
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+            
             %fprintf('Display::dataAvailable()\n');
             %dbstack
             %T=zeros(4,1);
@@ -444,11 +448,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 % Add the data for the appropriate channels to this scope
                 if ~isempty(jInAnalogData) ,
                     dataForThisScope=scaledAnalogData(:, jInAnalogData);
-                    thisScope.addData(dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 if ~isempty(jInDigitalData) ,
                     dataForThisScope=bitget(rawDigitalData, jInDigitalData);
-                    thisScope.addData(dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);
             %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);

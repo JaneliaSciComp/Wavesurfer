@@ -64,7 +64,7 @@ classdef ScopeModel < ws.Model
         %Parent_
         XData_  % a double array, holding x data for each channel
         YData_  % a double array, holding y data for each channel 
-        BufferFactor_ = 1
+        %BufferFactor_ = 1
         %RunningMin_ = zeros(1,0)  % length == self.NChannels
         %RunningMax_ = zeros(1,0)
         %RunningMean_ = zeros(1,0)
@@ -508,68 +508,55 @@ classdef ScopeModel < ws.Model
     end
     
     methods
-        function addData(self, newData, sampleRate, newXOffset)
-            %T=zeros(1,5);
-            %ticId=tic();
-            %T(1)=toc(ticId);
-            %assert(isnumeric(newData), 'Invalid data format supplied.');
+        function addData(self, t, yRecent, sampleRate, xOffsetInParent)
+            % t is a scalar, the timestamp of the scan *just after* the
+            %   most recent scan
+            % yNew a column vector of doubles
+            % sampleRate a scalar
+            % newXOffset a scalar, the new XOffset of the scope window i.e.
+            %   xlim(1)            
             
-            nNewScans = size(newData, 1);
-            %nChannels=size(data,2);
+            % Compute a timeline for the new data
+            nNewScans = size(yRecent, 1);
             dt=1/sampleRate;  % s
-            newXData = linspace(0, dt*(nNewScans-1), nNewScans)';
-            %T(2)=toc(ticId);
-            %channelsWithLines = {self.chanLines.ChannelName};
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xNew = t0 + dt*(0:(nNewScans-1))' ;
+            
+            % Figure out the downsampling ratio
+            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+            r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
+            
+            % Downsample the new data
+            [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yRecent,r);            
             
             % deal with XData
-            currXData = self.XData;
-            if isempty(currXData) ,
-                newXDataOffsetProperly  = newXData ;
-                xData = newXDataOffsetProperly ;
-            else
-                newXDataOffsetProperly  = currXData(end) + dt + newXData ;
-                xData = [currXData; newXDataOffsetProperly];
-            end
-            % If number of samples is too large to display, trim off
-            % the old ones 
-            nDisplayableSamples = ceil(self.XSpan * sampleRate * self.BufferFactor_);
-            if length(xData) > nDisplayableSamples
-                xData=xData(end-nDisplayableSamples+1:end);
-            end
-            % Commit the data
-            self.XData_=xData;
-            %T(3)=toc(ticId);
+            xAllOriginal = self.XData ;  % these are already downsampled
+            yAllOriginal = self.YData ;            
             
-            % Add the new data onto the existing data in a local
-            % variable
-            currYData = self.YData ;
-            yData = [currYData; newData];
-
-            % If number of samples is too large to display, trim off
-            % the old ones 
-            if length(yData) > nDisplayableSamples
-                yData=yData(end-nDisplayableSamples+1:end);
-            end
-
-            % Commit the data
-            self.YData_ = yData ;
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
             
-            if newXOffset~=self.XOffset , 
-                self.XOffset=newXOffset;
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (xOffsetInParent<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the x offset in the scope to match that in the Display
+            % subsystem
+            if xOffsetInParent~=self.XOffset , 
+                self.XOffset=xOffsetInParent;
             end
-            %T(4)=toc(ticId);
+            
+            % Change the y limits to match the data, if appropriate
             self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
-            %T(5)=toc(ticId);
             
-            % Update the plot limits to accomodate the new data, if
-            % needed
-            %self.updateScaling();
-            %fprintf('ScopeModel.addData(): About to broadcast(''DataAdded'')...\n');
+            % Broadcast the change
             self.broadcast('DataAdded');            
-            %fprintf('ScopeModel.addData(): Just after broadcast(''DataAdded'')...\n');
-            %T(6)=toc(ticId);
-            %dT=diff(T);
-            %fprintf('ScopeModel.addData(): %7.3f %7.3f %7.3f %7.3f %7.3f\n',dT);
         end
         
         function clearData(self)

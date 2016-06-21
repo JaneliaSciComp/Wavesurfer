@@ -1,15 +1,15 @@
 classdef ScopeFigure < ws.MCOSFigure
     
-    properties (Dependent=true)
-        % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
-        % to enable us to keep the ScopeModel state in sync with the HG figure XLim and YLim if the 
-        % user changes them using the default Matlab HG figure tools.  Basically, the ScopeFigure defines 
-        % events DidSetXLim and DidSetYLim, which it fires if the HG figure XLim or YLim are changes.  The
-        % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
-        % model.  Care has to be taken to avoid infinite loops, as you might imagine.
-        XLim
-        YLim
-    end
+%     properties (Dependent=true)
+%         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
+%         % to enable us to keep the ScopeModel state in sync with the HG figure XLim and YLim if the 
+%         % user changes them using the default Matlab HG figure tools.  Basically, the ScopeFigure defines 
+%         % events DidSetXLim and DidSetYLim, which it fires if the HG figure XLim or YLim are changes.  The
+%         % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
+%         % model.  Care has to be taken to avoid infinite loops, as you might imagine.
+%         XLim
+%         YLim
+%     end
 
     properties (Access = protected)
         AxesGH_  % HG handle to axes
@@ -18,18 +18,18 @@ classdef ScopeFigure < ws.MCOSFigure
 %         HorizontalCenterLineGH;  % HG handle to line
 %         VerticalCenterLineGH;  % HG handle to line
 %         GroundLineGH;  % HG handle to line
-        YForPlotting_  
-            % nScans x nChannels
-            % Y data downsampled to approximately two points per pixel,
-            % with the first point the min for that pixel, second point the
-            % max for that pixel.
-        XForPlotting_  
-            % nScans x 1
-            % X data for the points in YForPlotting_.  As such, this consist
-            % of a sequence of pairs, with each member of a pair being
-            % equal.
-        XLim_
-        YLim_
+%         YForPlotting_  
+%             % nScans x nChannels
+%             % Y data downsampled to approximately two points per pixel,
+%             % with the first point the min for that pixel, second point the
+%             % max for that pixel.
+%         XForPlotting_  
+%             % nScans x 1
+%             % X data for the points in YForPlotting_.  As such, this consist
+%             % of a sequence of pairs, with each member of a pair being
+%             % equal.
+%         XLim_
+%         YLim_
         SetYLimTightToDataButtonGH_
         SetYLimTightToDataLockedButtonGH_
         
@@ -55,10 +55,10 @@ classdef ScopeFigure < ws.MCOSFigure
 %         IsVisibleWhenDisplayEnabled
 %     end
     
-    events
-        DidSetXLim
-        DidSetYLim
-    end
+%     events
+%         DidSetXLim
+%         DidSetYLim
+%     end
 
     methods
         function self=ScopeFigure(model,controller)
@@ -145,9 +145,9 @@ classdef ScopeFigure < ws.MCOSFigure
     
     methods (Access=protected)        
         function willSetModel_(self)            
-            % clear the downsampled data
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,0);
+            % % clear the downsampled data
+            % self.XForPlotting_=zeros(0,1);
+            % self.YForPlotting_=zeros(0,0);
 
             % Call the superclass method
             willSetModel_@ws.MCOSFigure(self);
@@ -174,12 +174,12 @@ classdef ScopeFigure < ws.MCOSFigure
         function didSetModel_(self)
             model = self.Model ;
 
-            % reset the downsampled data
-            if ~isempty(model) ,
-                nChannels=length(model.ChannelNames);
-                self.XForPlotting_=zeros(0,1);
-                self.YForPlotting_=zeros(0,nChannels);
-            end
+            % % reset the downsampled data
+            % if ~isempty(model) ,
+            %     nChannels=length(model.ChannelNames);
+            %     self.XForPlotting_=zeros(0,1);
+            %     self.YForPlotting_=zeros(0,nChannels);
+            % end
 
             % Call the superclass method
             didSetModel_@ws.MCOSFigure(self);
@@ -222,41 +222,41 @@ classdef ScopeFigure < ws.MCOSFigure
 %             end
 %         end
         
-        function set.XLim(self,newValue)
-            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
-                self.XLim_=newValue;
-                set(self.AxesGH_,'XLim',newValue);
-            end
-            %self.broadcast('DidSetXLim');
-        end  % function
-        
-        function value=get.XLim(self)
-            value=self.XLim_;
-        end  % function
-        
-        function set.YLim(self,newValue)
-            %fprintf('ScopeFigure::set.YLim()\n');
-            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
-                self.YLim_=newValue;
-                set(self.AxesGH_,'YLim',newValue);
-            end
-            %self.broadcast('DidSetYLim');
-        end  % function
-            
-        function value=get.YLim(self)
-            value=self.YLim_;
-        end  % function
+%         function set.XLim(self,newValue)
+%             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
+%                 self.XLim_=newValue;
+%                 set(self.AxesGH_,'XLim',newValue);
+%             end
+%             %self.broadcast('DidSetXLim');
+%         end  % function
+%         
+%         function value=get.XLim(self)
+%             value=self.XLim_;
+%         end  % function
+%         
+%         function set.YLim(self,newValue)
+%             %fprintf('ScopeFigure::set.YLim()\n');
+%             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
+%                 self.YLim_=newValue;
+%                 set(self.AxesGH_,'YLim',newValue);
+%             end
+%             %self.broadcast('DidSetYLim');
+%         end  % function
+%             
+%         function value=get.YLim(self)
+%             value=self.YLim_;
+%         end  % function
                 
-        function didSetXLimInAxesGH(self,varargin)
-            self.XLim=get(self.AxesGH_,'XLim');
-        end  % function
+%         function didSetXLimInAxesGH(self,varargin)
+%             self.XLim=get(self.AxesGH_,'XLim');
+%         end  % function
         
-        function didSetYLimInAxesGH(self,varargin)
-            %fprintf('ScopeFigure::didSetYLimInAxesGH()\n');
-            %ylOld=self.YLim
-            ylNew=get(self.AxesGH_,'YLim');
-            self.YLim=ylNew;
-        end  % function
+%         function didSetYLimInAxesGH(self,varargin)
+%             %fprintf('ScopeFigure::didSetYLimInAxesGH()\n');
+%             %ylOld=self.YLim
+%             ylNew=get(self.AxesGH_,'YLim');
+%             self.YLim=ylNew;
+%         end  % function
         
 %         function modelPropertyWasSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD,INUSL>
 %             if isequal(propertyName,'YLim') ,
@@ -290,11 +290,11 @@ classdef ScopeFigure < ws.MCOSFigure
         end  % function
         
         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            % Redimension downsampled data, clearing the existing data in
-            % the process
-            nChannels=self.Model.NChannels;
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);
+%             % Redimension downsampled data, clearing the existing data in
+%             % the process
+%             nChannels=self.Model.NChannels;
+%             self.XForPlotting_=zeros(0,1);
+%             self.YForPlotting_=zeros(0,nChannels);
             
             % Do other stuff
             self.addChannelLineToAxes_();
@@ -302,50 +302,50 @@ classdef ScopeFigure < ws.MCOSFigure
         end  % function
         
         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            % Need to pack up all the y data into a single array for
-            % downsampling (should change things more globally to make this
-            % unnecessary)
-            x = self.Model.XData ;
-            y = self.Model.YData ;
-            %nScans = length(x) ;
-            
-            % This shouldn't ever happen, but just in case...
-            if isempty(x) ,
-                return
-            end
-            
-            % Figure out the downsampling ratio
-            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-            r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
-            
-            % get the current downsampled data
-            xForPlottingOriginal=self.XForPlotting_;
-            yForPlottingOriginal=self.YForPlotting_;
-            
-            % Trim off any that is beyond the left edge of the plotted data
-            x0=x(1);  % this is the time of the first sample in the model's XData
-            keep=(x0<=xForPlottingOriginal);
-            xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
-            yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
-            
-            % Get just the new data
-            if isempty(xForPlottingOriginal)
-                xNew=x;
-                yNew=y;
-            else                
-                isNew=(xForPlottingOriginal(end)<x);
-                xNew=x(isNew);
-                yNew=y(isNew);
-            end
-            
-            % Downsample the new data
-            [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
-            
-            % Concatenate old and new downsampled data, commit to self
-            self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
-                               xForPlottingNew];
-            self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
-                               yForPlottingNew];
+%             % Need to pack up all the y data into a single array for
+%             % downsampling (should change things more globally to make this
+%             % unnecessary)
+%             x = self.Model.XData ;
+%             y = self.Model.YData ;
+%             %nScans = length(x) ;
+%             
+%             % This shouldn't ever happen, but just in case...
+%             if isempty(x) ,
+%                 return
+%             end
+%             
+%             % Figure out the downsampling ratio
+%             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+%             r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
+%             
+%             % get the current downsampled data
+%             xForPlottingOriginal=self.XForPlotting_;
+%             yForPlottingOriginal=self.YForPlotting_;
+%             
+%             % Trim off any that is beyond the left edge of the plotted data
+%             x0=x(1);  % this is the time of the first sample in the model's XData
+%             keep=(x0<=xForPlottingOriginal);
+%             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
+%             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
+%             
+%             % Get just the new data
+%             if isempty(xForPlottingOriginal)
+%                 xNew=x;
+%                 yNew=y;
+%             else                
+%                 isNew=(xForPlottingOriginal(end)<x);
+%                 xNew=x(isNew);
+%                 yNew=y(isNew);
+%             end
+%             
+%             % Downsample the new data
+%             [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
+%             
+%             % Concatenate old and new downsampled data, commit to self
+%             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
+%                                xForPlottingNew];
+%             self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
+%                                yForPlottingNew];
 
             % Update the lines
             self.updateLineXDataAndYData_();
@@ -353,9 +353,9 @@ classdef ScopeFigure < ws.MCOSFigure
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             %fprintf('ScopeFigure::modelDataCleared()\n');
-            nChannels=self.Model.NChannels;
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);                        
+            %nChannels=self.Model.NChannels;
+            %self.XForPlotting_=zeros(0,1);
+            %self.YForPlotting_=zeros(0,nChannels);                        
             self.updateLineXDataAndYData_();                      
         end  % function
         
@@ -476,8 +476,8 @@ classdef ScopeFigure < ws.MCOSFigure
             % Can't do this using EventBroadcaster/EventSubscriber
             % mechanism b/c can't make the axes HG object an
             % EventBroadcaster.
-            addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
-            addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
+            %addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
+            %addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
             
 %             % Add a line for each channel in the model
 %             for i=1:self.Model.NChannels
@@ -976,10 +976,9 @@ classdef ScopeFigure < ws.MCOSFigure
         end  % function 
         
         function updateLineXDataAndYData_(self)
-            for iChannel = 1:self.Model.NChannels ,                
-                thisLineGH = self.LineGHs_(iChannel);
-                ws.setifhg(thisLineGH, 'XData', self.XForPlotting_, 'YData', self.YForPlotting_(:,iChannel));
-            end                     
+            model = self.Model ;            
+            thisLineGH = self.LineGHs_ ;
+            ws.setifhg(thisLineGH, 'XData', model.XData, 'YData', model.YData) ;
         end  % function
         
         function updateYAxisLabel_(self,color)
@@ -1007,16 +1006,8 @@ classdef ScopeFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            xlimInModel=self.Model.XLim;
-            %ws.setifhg(self.AxesGH_, 'XLim', xl);
-            if ~isequal(xlimInModel,self.XLim) ,                
-                % Set this directly, instead of calling the XLim setter
-                % This means that we don't fire the DidSetXLim method.
-                % This should be OK, since updateXAxisLimits_ is only called in 
-                % response to the model firing an event
-                self.XLim_=xlimInModel;
-                set(self.AxesGH_,'XLim',xlimInModel);
-            end
+            xlimInModel=self.Model.XLim ;
+            set(self.AxesGH_,'XLim',xlimInModel) ;
         end  % function        
 
         function updateYAxisLimits_(self)
@@ -1025,15 +1016,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 return
             end
             ylimInModel=self.Model.YLim;
-            %ws.setifhg(self.AxesGH_, 'YLim', yl);
-            if ~isequal(ylimInModel,self.YLim) ,   
-                % Set this directly, instead of calling the YLim setter
-                % This means that we don't fire the DidSetYLim method.
-                % This should be OK, since updateYAxisLimits_ is only called in 
-                % response to the model firing an event
-                self.YLim_=ylimInModel;
-                set(self.AxesGH_,'YLim',ylimInModel);
-            end
+            set(self.AxesGH_,'YLim',ylimInModel);
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)
