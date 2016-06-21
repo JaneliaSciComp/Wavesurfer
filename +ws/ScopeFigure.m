@@ -131,16 +131,16 @@ classdef ScopeFigure < ws.MCOSFigure
             ws.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function
         
-        function set(self,propName,value)
-            % Override MCOSFigure set to catch XLim, YLim
-            if strcmpi(propName,'XLim') ,
-                self.XLim=value;
-            elseif strcmpi(propName,'YLim') ,
-                self.YLim=value;
-            else
-                set@ws.MCOSFigure(self,propName,value);
-            end
-        end  % function
+%         function set(self,propName,value)
+%             % Override MCOSFigure set to catch XLim, YLim
+%             if strcmpi(propName,'XLim') ,
+%                 self.XLim=value;XLim
+%             elseif strcmpi(propName,'YLim') ,
+%                 self.YLim=value;
+%             else
+%                 set@ws.MCOSFigure(self,propName,value);
+%             end
+%         end  % function
     end  % public methods block
     
     methods (Access=protected)        
@@ -194,6 +194,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 model.subscribeMe(self,'DataAdded','','modelDataAdded');
                 model.subscribeMe(self,'DataCleared','','modelDataCleared');
                 model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
+                model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
             end
 
             % Subscribe to events in the master model
@@ -300,6 +301,11 @@ classdef ScopeFigure < ws.MCOSFigure
             self.addChannelLineToAxes_();
             self.update();
         end  % function
+        
+        function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
+            self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
+        end
         
         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
 %             % Need to pack up all the y data into a single array for
@@ -1007,7 +1013,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 return
             end
             xlimInModel=self.Model.XLim ;
-            set(self.AxesGH_,'XLim',xlimInModel) ;
+            set(self.AxesGH_, 'XLim', xlimInModel) ;
         end  % function        
 
         function updateYAxisLimits_(self)
@@ -1016,7 +1022,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 return
             end
             ylimInModel=self.Model.YLim;
-            set(self.AxesGH_,'YLim',ylimInModel);
+            set(self.AxesGH_, 'YLim', ylimInModel);
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)
@@ -1114,31 +1120,31 @@ classdef ScopeFigure < ws.MCOSFigure
             set(ax,'Units',savedUnits);            
         end  % function
         
-        function r=ratioSubsampling(t,T_view,n_pels_view)
-            % Computes r, a good ratio to use for subsampling data on time base t
-            % for plotting in Spoke_main_plot plot, given that the x axis of
-            % Spoke_main_plot spans T_view seconds.  Returns the empty matrix if no
-            % subsampling is called for.
-            n_t=length(t);
-            if n_t==0
-                r=[];
-            else
-                dt=(t(end)-t(1))/(n_t-1);
-                n_t_view=T_view/dt;
-                samples_per_pel=n_t_view/n_pels_view;
-                %if samples_per_pel>10  % original value
-                if samples_per_pel>2
-                    %if samples_per_pel>1.2
-                    % figure out how much we're going to subsample
-                    samples_per_pel_want=2;  % original value
-                    %samples_per_pel_want=1;
-                    n_t_view_want=n_pels_view*samples_per_pel_want;
-                    r=floor(n_t_view/n_t_view_want);
-                else
-                    r=[];  % no need for resampling
-                end
-            end
-        end  % function
+%         function r=ratioSubsampling(t,T_view,n_pels_view)
+%             % Computes r, a good ratio to use for subsampling data on time base t
+%             % for plotting in Spoke_main_plot plot, given that the x axis of
+%             % Spoke_main_plot spans T_view seconds.  Returns the empty matrix if no
+%             % subsampling is called for.
+%             n_t=length(t);
+%             if n_t==0
+%                 r=[];
+%             else
+%                 dt=(t(end)-t(1))/(n_t-1);
+%                 n_t_view=T_view/dt;
+%                 samples_per_pel=n_t_view/n_pels_view;
+%                 %if samples_per_pel>10  % original value
+%                 if samples_per_pel>2
+%                     %if samples_per_pel>1.2
+%                     % figure out how much we're going to subsample
+%                     samples_per_pel_want=2;  % original value
+%                     %samples_per_pel_want=1;
+%                     n_t_view_want=n_pels_view*samples_per_pel_want;
+%                     r=floor(n_t_view/n_t_view_want);
+%                 else
+%                     r=[];  % no need for resampling
+%                 end
+%             end
+%         end  % function
         
     end  % static methods block
     

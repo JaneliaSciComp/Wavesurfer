@@ -62,6 +62,7 @@ classdef ScopeModel < ws.Model
 
     properties (Access = protected, Transient=true)
         %Parent_
+        XSpanInPixels_ = 400  % if running without a UI, this a reasonable fallback value
         XData_  % a double array, holding x data for each channel
         YData_  % a double array, holding y data for each channel 
         %BufferFactor_ = 1
@@ -83,6 +84,7 @@ classdef ScopeModel < ws.Model
         UpdateXAxisLimits
         UpdateYAxisLimits
         UpdateAreYLimitsLockedTightToData
+        ItWouldBeNiceToKnowXSpanInPixels
     end  % events
     
     methods
@@ -517,17 +519,21 @@ classdef ScopeModel < ws.Model
             %   xlim(1)            
             
             % Compute a timeline for the new data
-            nNewScans = size(yRecent, 1);
-            dt=1/sampleRate;  % s
+            nNewScans = size(yRecent, 1) ;
+            dt = 1/sampleRate ;  % s
             t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
-            xNew = t0 + dt*(0:(nNewScans-1))' ;
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
             
             % Figure out the downsampling ratio
-            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-            r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
+            self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
+              % At this point, self.XSpanPixels_ should be set to the
+              % correct value, or the fallback value if there's no view
+            %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+            xSpanInPixels = self.XSpanInPixels_ ;
+            r = ws.ratioSubsampling(dt, self.XSpan, xSpanInPixels) ;
             
             % Downsample the new data
-            [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yRecent,r);            
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
             
             % deal with XData
             xAllOriginal = self.XData ;  % these are already downsampled
@@ -548,8 +554,8 @@ classdef ScopeModel < ws.Model
             
             % Update the x offset in the scope to match that in the Display
             % subsystem
-            if xOffsetInParent~=self.XOffset , 
-                self.XOffset=xOffsetInParent;
+            if xOffsetInParent ~= self.XOffset , 
+                self.XOffset = xOffsetInParent ;
             end
             
             % Change the y limits to match the data, if appropriate
@@ -645,7 +651,7 @@ classdef ScopeModel < ws.Model
             if yRadius==0 ,
                 yRadius=0.001;
             end
-            self.YLim=yCenter+1.05*yRadius*[-1 +1];
+            self.YLim = yCenter + 1.05*yRadius*[-1 +1] ;
         end  % function
     end  % methods
     
@@ -687,6 +693,10 @@ classdef ScopeModel < ws.Model
         function toggleAreYLimitsLockedTightToData(self)
             self.AreYLimitsLockedTightToData = ~self.AreYLimitsLockedTightToData;
         end
+        
+        function hereIsXSpanInPixels_(self, xSpanInPixels)
+            self.XSpanInPixels_ = xSpanInPixels ;
+        end        
     end
 
     methods (Access=protected)        
