@@ -6,6 +6,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
         AreSoftpanelsEnabled
         IsInControlOfSoftpanelModeAndGains
+        DoTrodeUpdateBeforeRun
     end
 
     properties (Dependent=true, SetAccess=immutable)
@@ -14,6 +15,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
         Electrodes
         DidLastElectrodeUpdateWork
+        IsDoTrodeUpdateBeforeRunSensible
     end
 
     % TODO: Consider getting rid of public Electrodes, TestPulseElectrodes
@@ -33,6 +35,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
         MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
+        DoTrodeUpdateBeforeRunWhenSensible_
     end
 
     properties (Access = protected, Transient = true)
@@ -70,6 +73,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
             propNames=propNamesRaw(1:nPVs);
             propVals=propValsRaw(1:nPVs);            
+            
+            self.DoTrodeUpdateBeforeRunWhenSensible_ = true;
             
             % Set the properties
             for idx = 1:nPVs
@@ -122,7 +127,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function out=get.IsElectrodeMarkedForTestPulse(self)
             out=self.IsElectrodeMarkedForTestPulse_;
         end
-
+        
         function set.IsElectrodeMarkedForTestPulse(self,newValue)
             % newValue must be same shape as old
             if all(size(newValue)==size(self.IsElectrodeMarkedForTestPulse_)) ,
@@ -132,6 +137,28 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 self.Parent_.isElectrodeMarkedForTestPulseMayHaveChanged();  % notify the parent, so can update ElectrodeManager
             end
             self.broadcast('Update');
+        end
+        
+        function out = get.DoTrodeUpdateBeforeRun(self)
+            if self.IsDoTrodeUpdateBeforeRunSensible
+                out = self.DoTrodeUpdateBeforeRunWhenSensible_;
+            else
+                out = false;
+            end
+        end 
+        
+        function set.DoTrodeUpdateBeforeRun(self,newValue)
+            if self.IsDoTrodeUpdateBeforeRunSensible
+               self.DoTrodeUpdateBeforeRunWhenSensible_ = newValue; 
+            else
+                % Do nothing
+            end
+            self.broadcast('Update');
+        end        
+        
+        function out = get.IsDoTrodeUpdateBeforeRunSensible(self)
+           out = self.areAnyElectrodesAxon || ...
+                 (self.areAnyElectrodesCommandable && ~self.IsInControlOfSoftpanelModeAndGains);
         end
         
 %         function out=get.Parent(self)
@@ -744,6 +771,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             isElectrodeCommandable=self.isElectrodeOfType('Heka EPC');
             result=any(isElectrodeCommandable);
         end  % function
+        
+        function result=areAnyElectrodesAxon(self)
+            isElectrodeAxon=self.isElectrodeOfType('Axon Multiclamp');
+            result=any(isElectrodeAxon);
+        end
         
         function result=isElectrodeOfType(self,queryType)
             typePerElectrode=cellfun(@(electrode)(electrode.Type), ...

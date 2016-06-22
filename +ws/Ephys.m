@@ -160,8 +160,10 @@ classdef Ephys < ws.Subsystem
         %%
         function startingRun(self)
             % Update all the gains and modes that are associated with smart
-            % electrodes
-            self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();
+            % electrodes if checkbox is checked
+            if self.ElectrodeManager_.DoTrodeUpdateBeforeRun
+                self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();
+            end
         end
         
         %%
