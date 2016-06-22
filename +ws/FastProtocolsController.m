@@ -30,31 +30,35 @@ classdef FastProtocolsController < ws.Controller
                 return
             end
             
-            % By default start in the location of the current file.  If it is empty it will
-            % just start in the current directory.
-            startLocationLoadedFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
+            % By default start in the location of the current file.  If it
+            % is empty it will attempt to start in LastProtocolFilePath,
+            % loaded from the shared preferences. If that does not exist,
+            % then it will start in the current directory.
+            
+            startLocationFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
             
             actualStartLocation = self.Model.FastProtocols{selectedIndex}.ProtocolFileName;
             if isempty(actualStartLocation)
-                if ~exist('startLocationLoadedFromPreferences','var') ,
+                if ~exist('startLocationFromPreferences','var') ,
                     actualStartLocation='';
                 else
-                    actualStartLocation =  startLocationLoadedFromPreferences;
+                    actualStartLocation =  startLocationFromPreferences;
                 end
             end
-            fprintf('originalFileName: %s \n',actualStartLocation);
             [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', actualStartLocation);
             
             % If the user cancels, just exit.
             if filename == 0 ,
                 return
             end
-            
             newFileName=fullfile(dirName, filename);
             theFastProtocol=self.Model.FastProtocols{selectedIndex};
             ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newFileName);
-            if canonicalizePath(startLocationLoadedFromPreferences) ~= canonicalizePath(actualStartLocation)
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualStartLocation);
+
+            % If newFileName and startLocationFromPreferences differ, then
+            % save the former as the new LastProtocolFilePath.
+            if ~isequal( ws.canonicalizePath(startLocationFromPreferences) , ws.canonicalizePath(newFileName) )
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newFileName);
             end
         end  % function
         
