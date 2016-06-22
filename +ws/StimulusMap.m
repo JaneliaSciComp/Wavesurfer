@@ -646,7 +646,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             for i=1:nStimuli ,
                 thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i} ;
                 if isempty(thisStimulusIndex) || ...
-                   ( thisStimulusIndex==round(thisStimulusIndex) && 1<=thisStimulusIndex || thisStimulusIndex<=nStimuliInLibrary ) ,
+                   ( thisStimulusIndex==round(thisStimulusIndex) && 1<=thisStimulusIndex && thisStimulusIndex<=nStimuliInLibrary ) ,
                     % this is all to the good
                 else
                     result=false;
@@ -665,6 +665,25 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                     self.ChannelNames_{i} = newValue ;
                 end
             end
+        end
+        
+        function adjustStimulusIndicesWhenDeletingAStimulus_(self, indexOfStimulusBeingDeleted)
+            % The indexOfStimuluspBeingDeleted is the index of the stimulus
+            % in the library, not its index in the map.
+            for i=1:length(self.IndexOfEachStimulusInLibrary_) ,
+                indexOfThisStimulus = self.IndexOfEachStimulusInLibrary_{i} ;
+                if isempty(indexOfThisStimulus) ,
+                    % nothing to do here, but want to catch before we start
+                    % doing comparisons, etc.
+                elseif indexOfStimulusBeingDeleted==indexOfThisStimulus ,
+                    self.IndexOfEachStimulusInLibrary_{i} = [] ;
+                elseif indexOfStimulusBeingDeleted<indexOfThisStimulus ,
+                    self.IndexOfEachStimulusInLibrary_{i} = indexOfThisStimulus - 1 ;
+                end
+            end
+            %if ~isempty(self.Parent) ,
+            %    self.Parent.childMayHaveChanged(self);
+            %end
         end
         
     end  % public methods block

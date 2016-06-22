@@ -1,4 +1,4 @@
-function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
+function varargout = wavesurfer(protocolOrMDFFileName, isCommandLineOnly, doRunInDebugMode)
     %wavesurfer  Launch Wavesurfer
     %
     %   wavesurfer(isCommandLineOnly,mdfFileName) launches
@@ -31,13 +31,17 @@ function varargout = wavesurfer(protocolOrMDFFileName,isCommandLineOnly)
     else
         wasProtocolOrMDFFileNameGivenAtCommandLine=true;
     end
+    if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
+        doRunInDebugMode = false ;
+    end
+    
 %     if ~exist('mode','var') || isempty(mode) ,
 %         mode = 'release' ;
 %     end
 
     % Create the application (model) object.
     isITheOneTrueWavesurferModel = true ;
-    model = ws.WavesurferModel(isITheOneTrueWavesurferModel);
+    model = ws.WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode);
 
     % Start the controller, if desired
     if isCommandLineOnly ,

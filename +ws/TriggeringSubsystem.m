@@ -170,7 +170,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             % Set the trigger parameters
             self.disableBroadcasts() ;
             trigger.Name = sprintf('Counter %d',counterID) ;
-            trigger.DeviceName = self.Parent.DeviceName ; 
+            %trigger.DeviceName = self.Parent.DeviceName ; 
             trigger.CounterID = counterID ;
             trigger.RepeatCount = 1 ;
             trigger.Interval = 1 ;  % s
@@ -229,7 +229,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
 
             % Set the trigger parameters
             trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
-            trigger.DeviceName = self.Parent.DeviceName ; 
+            %trigger.DeviceName = self.Parent.DeviceName ; 
             trigger.PFIID = pfiID ;
             trigger.Edge = 'rising' ;
             
