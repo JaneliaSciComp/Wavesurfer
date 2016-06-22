@@ -416,6 +416,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             areSoftpanelsEnabled=model.AreSoftpanelsEnabled;
             isInControlOfSoftpanelModeAndGains=model.IsInControlOfSoftpanelModeAndGains;
             doesElectrodeHaveCommandOnOffSwitch=model.doesElectrodeHaveCommandOnOffSwitch();
+            isDoTrodeUpdateBeforeRunSensible = model.IsDoTrodeUpdateBeforeRunSensible;
 
             % Update bottom row button enablement
             isAddButtonEnabled= isWavesurferIdle;
@@ -433,8 +434,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             set(self.UpdateButton,'Enable',onIff(isUpdateButtonEnabled));
             isReconnectButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
             set(self.ReconnectButton,'Enable',onIff(isReconnectButtonEnabled));
-            isUpdateBeforeRunCheckboxEnabled = model.IsDoTrodeUpdateBeforeRunSensible;
-            set(self.DoTrodeUpdateBeforeRunCheckbox,'Enable',isUpdateBeforeRunCheckboxEnabled);
+            isUpdateBeforeRunCheckboxEnabled = isWavesurferIdle&&isDoTrodeUpdateBeforeRunSensible;
+            set(self.DoTrodeUpdateBeforeRunCheckbox,'Enable',onIff(isUpdateBeforeRunCheckboxEnabled));
 %             % Update toggle state of Softpanel button
 %             set(self.SoftpanelButton,'Value',areAnyElectrodesSmart&&isInControlOfSoftpanelModeAndGains);
             
@@ -1168,7 +1169,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 centerCheckboxBang(self.RemoveQCheckboxes(i),[removeQColLeftX+removeQColWidth/2 rowBottomY+trodeRowHeight/2]);
             end  % for
             
-            % Lay out the bottom botton row
+            % Lay out the bottom button/checkbox row
             bottomButtonRowCenterY=bottomButtonRowHeight/2;
             buttonYOffset=bottomButtonRowCenterY-bottomButtonHeight/2;
             %leftButtonRowWidth=buttonWidth+interButtonSpaceWidth+buttonWidth;
