@@ -144,7 +144,7 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentPropertie
                                                      isTimedForEachDOChannel, ...
                                                      onDemandOutputForEachDOChannel)
             self.DigitalChannelNames_ = channelNameForEachDOChannel ;
-            self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
+            %self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
             self.DigitalTerminalIDs_ = terminalIDForEachDOChannel ;
             self.IsDigitalChannelTimed_ = isTimedForEachDOChannel ;
             self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
@@ -296,16 +296,67 @@ classdef LooperStimulation < ws.StimulationSubsystem   % & ws.DependentPropertie
             self.TheUntimedDigitalOutputTask_.setChannelDataQuicklyAndDirtily(newValue) ;
         end
         
-        function didSetDeviceNameInFrontend(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;            
-            self.DigitalDeviceNames_(:) = {deviceName} ;
-        end
+%         function didSetDeviceNameInFrontend(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;
+%         end
         
-        function mimickingWavesurferModel_(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;            
-            self.DigitalDeviceNames_(:) = {deviceName} ;
-        end        
+        function mimicWavesurferModel_(self, other)
+            % This is only ever called when other is the stimulation
+            % subsystem of a ws.WavesurferModel.
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'StimulusLibrary_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
+                    target = self.(thisPropertyName) ;
+                    if isempty(target) ,
+                        self.setPropertyValue_(thisPropertyName, source.copyGivenParent(self)) ;
+                    else
+                        target.mimic(source);
+                    end
+                elseif isequal(thisPropertyName,'AnalogChannelScales_') ,
+                    analogChannelScales = other.AnalogChannelScales ;
+                    self.AnalogChannelScales_ = analogChannelScales ;
+                      % Need to get the public property of other, since
+                      % that will incorporate any overrides from the
+                      % electrodes.  The Refiller doesn't have an Ephys
+                      % subsystem, so it can't just mimic the whole
+                      % WavesurferModel directly.
+                elseif isequal(thisPropertyName,'AnalogChannelUnits_') ,
+                    self.AnalogChannelUnits_ = other.AnalogChannelUnits ;
+                      % Need to get the public property of other, since
+                      % that will incorporate any overrides from the
+                      % electrodes.  The Refiller doesn't have an Ephys
+                      % subsystem, so it can't just mimic the whole
+                      % WavesurferModel directly.
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
+        end  % function
+        
+%         function mimickingWavesurferModel_(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;
+%         end        
     end
 end  % classdef

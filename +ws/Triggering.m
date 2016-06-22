@@ -170,14 +170,14 @@ classdef Triggering < ws.TriggeringSubsystem
 %         end  % function 
 
         function didSetDeviceName(self)
-            deviceName = self.Parent.DeviceName ;
-            
-            schemes = self.Schemes ;
-            nTriggers = length(schemes) ;            
-            for i = 1:nTriggers ,
-                trigger = schemes{i} ;
-                trigger.DeviceName = deviceName ;
-            end
+%             deviceName = self.Parent.DeviceName ;
+%             
+%             schemes = self.Schemes ;
+%             nTriggers = length(schemes) ;            
+%             for i = 1:nTriggers ,
+%                 trigger = schemes{i} ;
+%                 trigger.DeviceName = deviceName ;
+%             end
             
             self.broadcast('Update');
         end

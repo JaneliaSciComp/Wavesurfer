@@ -141,12 +141,16 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function self = WavesurferModel(isITheOneTrueWavesurferModel)
+        function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
             self@ws.RootModel();  % we have no parent
             
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
+            if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
+                doRunInDebugMode = false ;
+            end
+            
 %             if ~exist('mode','var') || isempty(mode),
 %                 mode = 'release' ;
 %             end
@@ -216,36 +220,37 @@ classdef WavesurferModel < ws.RootModel
                 % path information to make sure they can find all the .m
                 % files they need.
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+                if doRunInDebugMode ,
+                    looperLaunchStringTemplate = ...
+                        ['start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(%d, %d); ' ...
+                         'looper.runMainLoop(); clear; quit()"'] ;
+                else
+                    looperLaunchStringTemplate = ...
+                        ['start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); ws.hideMatlabWindow(); addpath(''%s''); looper=ws.Looper(%d, %d); ' ...
+                         'looper.runMainLoop(); clear; quit()"'] ;
+                end
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); ws.hideMatlabWindow(); addpath(''%s''); looper=ws.Looper(%d, %d); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf(looperLaunchStringTemplate , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib , ...
                             looperIPCPublisherPortNumber, ...
                             frontendIPCPublisherPortNumber) ;
-%                 else            
-%                     pathOfLaunchSatelliteEngineExe = fullfile(pathToWavesurferRoot, 'launch_satellite_engine', 'bin', 'launch_satellite_engine.exe') ; 
-%                     looperLaunchString = ...
-%                         sprintf('start %s "%s" "looper" "%s" "%s"' , ...
-%                                 pathOfLaunchSatelliteEngineExe,  ...
-%                                 mode, ...
-%                                 pathToWavesurferRoot , ...
-%                                 pathToMatlabZmqLib ) ;
-%                 end
                 system(looperLaunchString) ;
+                if doRunInDebugMode ,
+                    refillerLaunchStringTemplate = ...
+                        [ 'start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); refiller=ws.Refiller(%d, %d); ' ...
+                          'refiller.runMainLoop(); clear; quit()"' ] ;
+                else
+                    refillerLaunchStringTemplate = ...
+                        [ 'start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d); ' ...
+                          'refiller.runMainLoop(); clear; quit()"' ] ;
+                end
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf(refillerLaunchStringTemplate , ...
                             pathToWavesurferRoot , ...
                             pathToMatlabZmqLib , ...
                             refillerIPCPublisherPortNumber, ...
                             frontendIPCPublisherPortNumber) ;
-%                 else
-%                     refillerLaunchString = ...
-%                         sprintf('start %s "%s" "refiller" "%s" "%s"' , ...
-%                                 pathOfLaunchSatelliteEngineExe,  ...
-%                                 mode, ...
-%                                 pathToWavesurferRoot , ...
-%                                 pathToMatlabZmqLib ) ;                        
-%                 end
                 system(refillerLaunchString) ;
                 
                 % Start broadcasting pings until the satellite processes
@@ -329,8 +334,8 @@ classdef WavesurferModel < ws.RootModel
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
 
-            % The object is now initialized, but not very useful until an
-            % MDF is specified.
+            % The object is now initialized, but not very useful until a
+            % device is specified.
             self.setState_('no_device') ;
             
             % Finally, set the device name to the first device name, if
@@ -1259,7 +1264,7 @@ classdef WavesurferModel < ws.RootModel
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
-            self.Acquisition.cacheAnalogScalingCoefficents_(analogScalingCoefficients) ;
+            self.Acquisition.cacheAnalogScalingCoefficients_(analogScalingCoefficients) ;
             self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
             
             % Now tell the logging subsystem that a run is about to start,
@@ -1389,7 +1394,7 @@ classdef WavesurferModel < ws.RootModel
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     throw(err);
-                end               
+                end
                 
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
@@ -2720,12 +2725,12 @@ classdef WavesurferModel < ws.RootModel
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
             
-            % Tell the subsystems that we've changed the device
-            % name, which we have, among other things
-            self.Acquisition.didSetDeviceName() ;
-            self.Stimulation.didSetDeviceName() ;
-            self.Triggering.didSetDeviceName() ;
-            self.Display.didSetDeviceName() ;
+%             % Tell the subsystems that we've changed the device
+%             % name, which we have, among other things
+%             self.Acquisition.didSetDeviceName() ;
+%             self.Stimulation.didSetDeviceName() ;
+%             self.Triggering.didSetDeviceName() ;
+%             %self.Display.didSetDeviceName() ;
 
             % Safe to do broadcasts again
             self.enableBroadcastsMaybe() ;
@@ -2774,7 +2779,7 @@ classdef WavesurferModel < ws.RootModel
                         self.Acquisition.didSetDeviceName() ;
                         self.Stimulation.didSetDeviceName() ;
                         self.Triggering.didSetDeviceName() ;
-                        self.Display.didSetDeviceName() ;
+                        %self.Display.didSetDeviceName() ;
                         
                         % Change our state to reflect the presence of the
                         % device

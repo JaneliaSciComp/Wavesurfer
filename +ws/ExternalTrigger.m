@@ -25,7 +25,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
     
     properties (Access=protected)
         Name_
-        DeviceName_
+        %DeviceName_
         PFIID_
         Edge_
         IsMarkedForDeletion_
@@ -35,7 +35,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         function self=ExternalTrigger(parent)
             self@ws.Model(parent) ;
             self.Name_ = 'Destination';
-            self.DeviceName_ = 'Dev1';
+            %self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
             self.Edge_ = 'rising';  
             self.IsMarkedForDeletion_ = false ;
@@ -46,7 +46,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         end
         
         function value=get.DeviceName(self)
-            value=self.DeviceName_;
+            value=self.Parent.Parent.DeviceName ;
         end
                 
         function value=get.PFIID(self)
@@ -70,18 +70,18 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
             self.Parent.update();            
         end
         
-        function set.DeviceName(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isString(value) ,
-                    self.DeviceName_ = value ;
-                else
-                    self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
-                          'DeviceName must be a string');                  
-                end                    
-            end
-            self.Parent.update();            
-        end
+%         function set.DeviceName(self, value)
+%             if ws.isASettableValue(value) ,
+%                 if ws.isString(value) ,
+%                     self.DeviceName_ = value ;
+%                 else
+%                     self.Parent.update();
+%                     error('most:Model:invalidPropVal', ...
+%                           'DeviceName must be a string');                  
+%                 end                    
+%             end
+%             self.Parent.update();            
+%         end
         
         function set.PFIID(self, value)
             if ws.isASettableValue(value) ,
