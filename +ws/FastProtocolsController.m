@@ -32,8 +32,18 @@ classdef FastProtocolsController < ws.Controller
             
             % By default start in the location of the current file.  If it is empty it will
             % just start in the current directory.
-            originalFileName = self.Model.FastProtocols{selectedIndex}.ProtocolFileName;
-            [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', originalFileName);
+            startLocationLoadedFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
+            
+            actualStartLocation = self.Model.FastProtocols{selectedIndex}.ProtocolFileName;
+            if isempty(actualStartLocation)
+                if ~exist('startLocationLoadedFromPreferences','var') ,
+                    actualStartLocation='';
+                else
+                    actualStartLocation =  startLocationLoadedFromPreferences;
+                end
+            end
+            fprintf('originalFileName: %s \n',actualStartLocation);
+            [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', actualStartLocation);
             
             % If the user cancels, just exit.
             if filename == 0 ,
@@ -43,6 +53,9 @@ classdef FastProtocolsController < ws.Controller
             newFileName=fullfile(dirName, filename);
             theFastProtocol=self.Model.FastProtocols{selectedIndex};
             ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newFileName);
+            if canonicalizePath(startLocationLoadedFromPreferences) ~= canonicalizePath(actualStartLocation)
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualStartLocation);
+            end
         end  % function
         
         function TableCellSelected(self,source,event) %#ok<INUSL>
