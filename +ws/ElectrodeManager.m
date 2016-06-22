@@ -773,8 +773,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function
         
         function result=areAnyElectrodesAxon(self)
-            isElectrodeCommandable=self.isElectrodeOfType('Axon Multiclamp');
-            result=any(isElectrodeCommandable);
+            isElectrodeAxon=self.isElectrodeOfType('Axon Multiclamp');
+            result=any(isElectrodeAxon);
         end
         
         function result=isElectrodeOfType(self,queryType)
