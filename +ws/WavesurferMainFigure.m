@@ -1071,10 +1071,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                fastProtocol = model.FastProtocols{i};
-                [~, protocolFileName, ~] = fileparts(fastProtocol.ProtocolFileName);
+                thisFastProtocol = model.FastProtocols{i};
+                [~, thisProtocolFileName, ~] = fileparts(thisFastProtocol.ProtocolFileName);
                 set(self.FastProtocolButtons(i),...
-                    'TooltipString', protocolFileName)
+                    'TooltipString', thisProtocolFileName)
             end
             
             % Logging panel
