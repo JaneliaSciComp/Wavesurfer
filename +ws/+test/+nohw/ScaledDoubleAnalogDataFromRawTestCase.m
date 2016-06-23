@@ -53,8 +53,8 @@ classdef ScaledDoubleAnalogDataFromRawTestCase < matlab.unittest.TestCase
             nChannels = 6 ;
             iChannel = (0:(nChannels-1)) ;
             t = dt*(0:(nScans-1))' ;
-            x = int16(0.9*2^14*sin(bsxfun(@plus,2*pi*10*t,2*pi*iChannel))) ;
-            channelScale = [1 2 3 4 5 6] ;  % V/whatevers, scale for converting from V to whatever or vice-versa
+            x = int16( 0.9*2^14*sin(bsxfun(@plus, 2*pi*10*t, 2*pi*iChannel)) ) ;
+            channelScale = 1./[1 2 3 4 5 6] ;  % V/whatevers, scale for converting from V to whatever or vice-versa
             adcCoefficients = repmat([1 2 3 4]',[1 nChannels]) ;
             y = ws.scaledDoubleAnalogDataFromRaw(x, channelScale, adcCoefficients) ;
             yMex = ws.scaledDoubleAnalogDataFromRawMex(x, channelScale, adcCoefficients) ;
@@ -70,14 +70,14 @@ classdef ScaledDoubleAnalogDataFromRawTestCase < matlab.unittest.TestCase
             iChannel = (0:(nChannels-1)) ;
             t = dt*(0:(nScans-1))' ;
             x = int16(0.9*2^14*sin(bsxfun(@plus,2*pi*10*t,2*pi*iChannel))) ;
-            channelScale = [1 2 3 4 5 6] ;  % V/whatevers, scale for converting from V to whatever or vice-versa
+            channelScale = zeros(1,0) ;  % V/whatevers, scale for converting from V to whatever or vice-versa
             adcCoefficients = repmat([1 2 3 4]',[1 nChannels]) ;
-            tic() ;
+            %tic() ;
             y = ws.scaledDoubleAnalogDataFromRaw(x, channelScale, adcCoefficients) ;
-            timeForMFile = toc() 
-            tic() ;
+            %timeForMFile = toc() 
+            %tic() ;
             yMex = ws.scaledDoubleAnalogDataFromRawMex(x, channelScale, adcCoefficients) ;
-            timeForMexFile = toc() 
+            %timeForMexFile = toc() 
             fprintf('mex file version of scaledDoubleAnalogDataFromRaw is %gx faster\n',timeForMFile/timeForMexFile) ;
             self.verifyEqual(y, yMex) ;
         end

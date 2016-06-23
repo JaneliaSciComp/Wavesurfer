@@ -21,7 +21,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     //   channelScales:  1 x nChannels double array, each element having
     //                   (implicit) units of V/(native unit), where each
     //                   channel has its own native unit.
-    //   scalingCoefficients: nCoefficients x nChannels  double array,
+    //   scalingCoefficients: nCoefficients x nChannels double array,
     //                        contains scaling coefficients for converting
     //                        ADC counts to volts at the ADC input.  Row 1 
     //                        is the constant terms, row 2 the linear, 
@@ -48,7 +48,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
         // all is well
     } else {
         mexErrMsgIdAndTxt("ws:scaledDoubleAnalogDataFromRawMex:channelScalesNotRight", 
-                          "Argument channelScales must be a non-complex double row matrix with the same number of columns as dataAsADCCounts.");
+                          "Argument channelScales must be a non-complex double row vector with the same number of columns as dataAsADCCounts.");
     }
     double *channelScales = mxGetPr(prhs[1]);  // "Convert" to a C++ array
     
