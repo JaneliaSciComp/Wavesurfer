@@ -1211,7 +1211,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
             set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            set(self.ChannelsMenuItem,'Enable',onIff(true));
+            set(self.ChannelsMenuItem,'Enable',onIff(true));  
+              % Device & Channels menu is always available so that
+              % user can get at radiobutton for untimed DO channels,
+              % if desired.
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
             set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
