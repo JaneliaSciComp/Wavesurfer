@@ -1694,7 +1694,7 @@ classdef WavesurferModel < ws.RootModel
                 % Scale the analog data
                 channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;                
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;                
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
 %                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
 %                 if isempty(rawAnalogData) ,
