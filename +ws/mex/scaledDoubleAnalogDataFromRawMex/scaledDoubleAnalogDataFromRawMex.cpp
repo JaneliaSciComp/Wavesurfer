@@ -60,6 +60,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
                           "Argument scalingCoefficients must be a non-complex double matrix with the same number of columns as dataAsADCCounts.");
     }
     mwSize nCoefficients = mxGetM(prhs[2]) ;
+    if (nCoefficients>4)  {
+        mexErrMsgIdAndTxt("ws:scaledDoubleAnalogDataFromRawMex:scalingCoefficientsTooBig", 
+                          "Argument scalingCoefficients must have no more than four rows.");
+    }
     double *scalingCoefficients = mxGetPr(prhs[2]) ;   // "Convert" to a C++ array, although still in col-major order
 
     // At this point, all args have been read and validated
@@ -71,33 +75,81 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // For each element of dataAsADCCounts, pass it through the polynominal function defined by the scaling coefficients for that channel, 
     // and set the corresponding element of scaledData
     int16_t* source = dataAsADCCounts ;  // source points to the current element of the "source" array, dataAsADCCounts
-    for (mwIndex j=0; j<nChannels; ++j)  {
-        double thisChannelScale = channelScales[j] ;  
-          // Get the scaling factor for this channel, which is actually completely separate from the scaling coefficients
-          // This is the scaling factor to convert from volts at the BNC to whatever the units of the actual measurment are.
-          // The "scaling coefficients" define how to convert from "counts" at the ADC to volts at the BNC.
-        double* scalingCoefficientsForThisChannel = scalingCoefficients + j*nCoefficients ;
-        double* pointerToHighestOrderCoefficient = scalingCoefficientsForThisChannel + (nCoefficients-1) ;
-        double highestOrderCoefficient = *(pointerToHighestOrderCoefficient) ;
-        double *targetStart = scaledData + j*nScans ;  // pointer for first target element for this channel
-        double *targetEnd = targetStart + nScans ;  // pointer just pasty for last target element for this channel
-        for (double *target = targetStart; target<targetEnd; target++)  {
-            double datumAsADCCounts = double(*source) ;
-            // Do the whole business to efficiently evaluate a polynomial
-            double temp = highestOrderCoefficient ;
-            for ( double* pointerToCurrentCoefficient = pointerToHighestOrderCoefficient-1 ; 
-                  pointerToCurrentCoefficient>=scalingCoefficientsForThisChannel ;
-                  --pointerToCurrentCoefficient )  {
-                double thisCoefficient = *pointerToCurrentCoefficient ;
-                temp = thisCoefficient + datumAsADCCounts * temp ;
+    switch ( nCoefficients )   {
+        case 0 :
+            // If no coeffs, the "polynominal" always evals to zero
+            for (mwIndex j=0; j<nChannels; ++j)  {
+                double thisChannelScale = channelScales[j] ;  
+                const double datumAsADCVoltage = 0 ;
+                double scaledDatum = datumAsADCVoltage/thisChannelScale ;
+                double *targetStart = scaledData + j*nScans ;  // pointer for first target element for this channel
+                double *targetEnd = targetStart + nScans ;  // pointer just pasty for last target element for this channel
+                for (double *target = targetStart; target<targetEnd; target++)  {
+                    *target = scaledDatum ;
+                }
             }
-            double datumAsADCVoltage = temp ;   // compiler should eliminate this...
-            double scaledDatum = datumAsADCVoltage/thisChannelScale ;
-            *target = scaledDatum ;
-            // Advance the source pointer once, since the source and target elements are one-to-one
-            ++source ;
-        }
+        case 1 :
+            // If one coeff, the polynominal always evals to a constant
+            break ;
+        case 2 :
+            break ;
+        case 3 :
+            break ;
+        case 4 :
+            for (mwIndex j=0; j<nChannels; ++j)  {
+                const double thisChannelScale = channelScales[j] ;  
+                  // Get the scaling factor for this channel, which is actually completely separate from the scaling coefficients
+                  // This is the scaling factor to convert from volts at the BNC to whatever the units of the actual measurment are.
+                  // The "scaling coefficients" define how to convert from "counts" at the ADC to volts at the BNC.
+                const double* scalingCoefficientsForThisChannel = scalingCoefficients + j*nCoefficients ;
+                const double c0 = scalingCoefficientsForThisChannel[0] ;
+                const double c1 = scalingCoefficientsForThisChannel[1] ;
+                const double c2 = scalingCoefficientsForThisChannel[2] ;
+                const double c3 = scalingCoefficientsForThisChannel[3] ;
+                double *targetStart = scaledData + j*nScans ;  // pointer for first target element for this channel
+                const double *targetEnd = targetStart + nScans ;  // pointer just pasty for last target element for this channel
+                for (double *target = targetStart; target<targetEnd; target++)  {
+                    const double x = double(*source) ; 
+                    // Do the whole business to efficiently evaluate a polynomial
+                    const double y = c0 + x*(c1 + x*(c2 + x*c3) ) ;
+                    const double scaledDatum = y/thisChannelScale ;
+                    *target = scaledDatum ;
+                    // Advance the source pointer once, since the source and target elements are one-to-one
+                    ++source ;
+                }
+            }
+            break ;
     }
+
+    /*
+            for (mwIndex j=0; j<nChannels; ++j)  {
+                double thisChannelScale = channelScales[j] ;  
+                  // Get the scaling factor for this channel, which is actually completely separate from the scaling coefficients
+                  // This is the scaling factor to convert from volts at the BNC to whatever the units of the actual measurment are.
+                  // The "scaling coefficients" define how to convert from "counts" at the ADC to volts at the BNC.
+                double* scalingCoefficientsForThisChannel = scalingCoefficients + j*nCoefficients ;
+                double* pointerToHighestOrderCoefficient = scalingCoefficientsForThisChannel + (nCoefficients-1) ;
+                double highestOrderCoefficient = *(pointerToHighestOrderCoefficient) ;
+                double *targetStart = scaledData + j*nScans ;  // pointer for first target element for this channel
+                double *targetEnd = targetStart + nScans ;  // pointer just pasty for last target element for this channel
+                for (double *target = targetStart; target<targetEnd; target++)  {
+                    double datumAsADCCounts = double(*source) ;
+                    // Do the whole business to efficiently evaluate a polynomial
+                    double temp = highestOrderCoefficient ;
+                    for ( double* pointerToCurrentCoefficient = pointerToHighestOrderCoefficient-1 ; 
+                          pointerToCurrentCoefficient>=scalingCoefficientsForThisChannel ;
+                          --pointerToCurrentCoefficient )  {
+                        double thisCoefficient = *pointerToCurrentCoefficient ;
+                        temp = thisCoefficient + datumAsADCCounts * temp ;
+                    }
+                    double datumAsADCVoltage = temp ;   // compiler should eliminate this...
+                    double scaledDatum = datumAsADCVoltage/thisChannelScale ;
+                    *target = scaledDatum ;
+                    // Advance the source pointer once, since the source and target elements are one-to-one
+                    ++source ;
+                }
+            }
+    */
 
     // plhs[0] should have all its elements filled with rich, savory, properly-scaled data at this point, so exit
 }

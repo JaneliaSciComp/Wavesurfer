@@ -78,7 +78,7 @@ classdef ScaledDoubleAnalogDataFromRawTestCase < matlab.unittest.TestCase
             %tic() ;
             yMex = ws.scaledDoubleAnalogDataFromRawMex(x, channelScale, adcCoefficients) ;
             %timeForMexFile = toc() 
-            fprintf('mex file version of scaledDoubleAnalogDataFromRaw is %gx faster\n',timeForMFile/timeForMexFile) ;
+            %fprintf('mex file version of scaledDoubleAnalogDataFromRaw is %gx faster\n',timeForMFile/timeForMexFile) ;
             self.verifyEqual(y, yMex) ;
         end
         
