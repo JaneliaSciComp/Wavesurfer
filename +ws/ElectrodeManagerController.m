@@ -26,6 +26,8 @@ classdef ElectrodeManagerController < ws.Controller
                     self.updateButtonPressed();
                 elseif source==figureObject.ReconnectButton ,
                     self.reconnectButtonPressed();
+                elseif source==figureObject.DoTrodeUpdateBeforeRunCheckbox ,
+                    self.doTrodeUpdateBeforeRunClicked(source);
                 elseif source==figureObject.SoftpanelButton ,
                     self.softpanelButtonPressed();
                 elseif any(source==figureObject.IsCommandEnabledCheckboxes) , 
@@ -99,6 +101,10 @@ classdef ElectrodeManagerController < ws.Controller
             self.Model.reconnectWithSmartElectrodes();
             self.Model.updateSmartElectrodeGainsAndModes();
             %self.Figure.changeReadiness(+1);
+        end
+        
+        function doTrodeUpdateBeforeRunClicked(self, source)
+           self.Model.DoTrodeUpdateBeforeRun=get(source,'Value');
         end
         
         function softpanelButtonPressed(self)

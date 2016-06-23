@@ -103,6 +103,99 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=false;
         end
         
-    end
+        function testUpdateBeforeRunCheckbox(self)
+            % Create a WavesurferModel
+            model=ws.WavesurferModel(true);
+            
+            % Load configuration file with one Heka EPC electrode
+            thisDirName=fileparts(mfilename('fullpath'));
+            model.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
+            electrodeManager = model.Ephys.ElectrodeManager;
+            testPulser = model.Ephys.TestPulser;
+            electrodeIndex = 1;
+            
+            % Create another EPCMasterSocket object so we can modify
+            % EPCMaster without affecting Electrodes, unless we update
+            newEPCMasterSocket = ws.EPCMasterSocket;
+            
+            % Enable the soft panel, make sure the electrode is in VC mode and sync to it
+            electrodeManager.IsInControlOfSoftpanelModeAndGains=false;
+            newEPCMasterSocket.setElectrodeParameter(electrodeIndex,'Mode', 'vc');
+            electrodeManager.updateSmartElectrodeGainsAndModes();
 
+            % Now we make EPCMaster and wavesurfer out of sync by changing
+            % EPCMaster and not updating wavesurfer
+            self.changeEPCMasterElectrodeGains(electrodeIndex, newEPCMasterSocket);
+            
+            % Next we check that toggling the update checkbox before a Test
+            % Pulse or Run works correctly, and that a Test Pulse or run
+            % with updates enabled is slower than when updates are off.
+            testPulserShouldAllBeTrue = self.checkTimingAndUpdating(@testPulser.start, @testPulser.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.verifyTrue(all(testPulserShouldAllBeTrue));
+            
+            self.changeEPCMasterElectrodeGains(electrodeIndex, newEPCMasterSocket);
+            runShouldAllBeTrue = self.checkTimingAndUpdating(@model.play, @model.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.verifyTrue(all(runShouldAllBeTrue));        
+        end
+    end
+    
+    methods (Static)
+        function verificationArrayShouldAllBeTrue = checkTimingAndUpdating(runOrTPstart, runOrTPstop, electrodeManager, electrodeIndex, newEPCMasterSocket)
+            % Output array, should be all ones if everything worked
+            % properly. Initialize to zero.
+            verificationArrayShouldAllBeTrue = zeros(5,1);
+            
+            % Make sure updating is off
+            electrodeManager.DoTrodeUpdateBeforeRun = 0;
+            electrode = electrodeManager.Electrodes{electrodeIndex};
+
+            % First time starting a Run or Test Pulse is always slow, so do
+            % it once before timing
+            runOrTPstart();
+            runOrTPstop();
+            
+            % Time without updating
+            tic();
+            runOrTPstart();
+            timeWithoutUpdating = toc();
+            runOrTPstop();
+            
+            % Confirm that nothing updated (wavesurfer and EPCMaster should
+            % be out of sync)
+            EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain');
+            verificationArrayShouldAllBeTrue(1) = ~isequal(EPCMonitorGain, electrode.MonitorScaling);
+            EPCCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain');
+            verificationArrayShouldAllBeTrue(2) = ~isequal(EPCCommandGain, electrode.CommandScaling);
+            % Turn updating on, and time how long it takes with updating
+            electrodeManager.DoTrodeUpdateBeforeRun = 1;
+            tic();
+            runOrTPstart();
+            timeWithUpdating = toc();
+            runOrTPstop();
+            
+            % Confirm that updating worked
+            EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain');
+            verificationArrayShouldAllBeTrue(3) = isequal(EPCMonitorGain, electrode.MonitorScaling);
+            EPCCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain');
+            verificationArrayShouldAllBeTrue(4) = isequal(EPCCommandGain, electrode.CommandScaling);
+
+            % Ensure that updating is slower than not-updating
+            verificationArrayShouldAllBeTrue(5) = (timeWithoutUpdating<timeWithUpdating);
+            
+            % Turn updating back off
+            electrodeManager.DoTrodeUpdateBeforeRun = 0;
+        end
+        
+        function changeEPCMasterElectrodeGains(electrodeIndex, newEPCMasterSocket)
+            % This function ensures that EPC monitor and command gains are
+            % switched to new values
+            oldEPCElectrodeMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain');
+            newEPCElectrodeMonitorGain = 1-0.5*isequal(1,oldEPCElectrodeMonitorGain); % set to 0.5 if oldEPCElectrodeMonitorGain = 1, 1 otherwise
+            newEPCMasterSocket.setElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain',newEPCElectrodeMonitorGain);
+
+            oldEPCElectrodeCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain');
+            newEPCElectrodeCommandGain = 100-50*isequal(100,oldEPCElectrodeCommandGain); % set to 50 if oldEPCElectrodeCommandGain = 100, 100 otherwise
+            newEPCMasterSocket.setElectrodeParameter(electrodeIndex,'VoltageCommandGain',newEPCElectrodeCommandGain);
+        end
+    end
  end  % classdef
