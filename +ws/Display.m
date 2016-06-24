@@ -447,11 +447,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 
                 % Add the data for the appropriate channels to this scope
                 if ~isempty(jInAnalogData) ,
-                    dataForThisScope=scaledAnalogData(:, jInAnalogData);
+                    dataForThisScope = scaledAnalogData(:, jInAnalogData) ;
                     thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 if ~isempty(jInDigitalData) ,
-                    dataForThisScope=bitget(rawDigitalData, jInDigitalData);
+                    dataForThisScope = double(bitget(rawDigitalData, jInDigitalData)) ;  % has to be double for ws.minMaxResampleMex()
                     thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);

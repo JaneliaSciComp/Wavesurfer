@@ -12,11 +12,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Load in the arguments, checking them thoroughly
 
     // prhs[0]: t
-    //bool tIsDouble = mxIsDouble(prhs[0] ;
-    //bool tIsReal = !mxIsComplex(prhs[0]) ;
-    //mwSize arity = mxGetNumberOfDimensions(prhs[0]) ;
-    //mwSize nCols = mxGetN(prhs[0]);
-    if (!mxIsDouble(prhs[0]) || mxIsComplex(prhs[0]) || mxGetNumberOfDimensions(prhs[0])!=2 || mxGetN(prhs[0])!=1)  {
+    if ( mxIsDouble(prhs[0]) && !mxIsComplex(prhs[0]) && mxGetNumberOfDimensions(prhs[0])==2 && mxGetN(prhs[0])==1 )  {
+        // all is well
+    }
+    else  {
         mexErrMsgIdAndTxt("ws:minMaxDownSample:tNotRight", 
                           "Argument t must be a non-complex double column vector.");
     }
@@ -24,7 +23,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     double *t = mxGetPr(prhs[0]);  // "Convert" to a C++ array
     
     // prhs[1]: y
-    if (!mxIsDouble(prhs[1]) || mxIsComplex(prhs[1]) || mxGetNumberOfDimensions(prhs[1])!=2 || mxGetM(prhs[1])!=nScans)  {
+    //bool isDouble = mxIsDouble(prhs[1]) ;
+    //bool isReal = mxIsComplex(prhs[1]) ;
+    //mwSize nDims = mxGetNumberOfDimensions(prhs[1]) ;
+    //mwSize nRows = mxGetM(prhs[1]) ;
+    if ( mxIsDouble(prhs[1]) && !mxIsComplex(prhs[1]) && mxGetNumberOfDimensions(prhs[1])==2 && mxGetM(prhs[1])==nScans )  {
+        // all is well
+    }
+    else  {
         mexErrMsgIdAndTxt("ws:minMaxDownSample:yNotRight", 
                           "Argument y must be a non-complex double matrix with the same number of rows as t.");
     }
@@ -41,7 +47,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
         // non-empty
         if ( mxIsDouble(prhs[2]) && !mxIsComplex(prhs[2]) && mxIsScalar(prhs[2]) )  {
             // this is ok
-        }  else  {
+        }  
+        else  {
             mexErrMsgIdAndTxt("ws:minMaxDownSample:rNotRight", 
                               "Argument r must be empty or be a non-complex double scalar.");
         }

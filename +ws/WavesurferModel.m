@@ -2551,7 +2551,7 @@ classdef WavesurferModel < ws.RootModel
             self.WasRunStopped_ = false ;
             drawnowTicId = tic() ;
             timeOfLastDrawnow = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
-            profile resume ;
+            %profile resume ;
             while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
                 %fprintf('At top of within-sweep loop...\n') ;
                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
@@ -2563,7 +2563,7 @@ classdef WavesurferModel < ws.RootModel
                     timeOfLastDrawnow = toc(drawnowTicId) ;
                 end
             end    
-            profile off ;
+            %profile off ;
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
             self.IsSweepComplete_ = [] ;
