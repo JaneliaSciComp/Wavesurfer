@@ -364,35 +364,6 @@ classdef Logging < ws.Subsystem
         
         function startingSweep(self)
             %profile resume
-            thisSweepIndex = self.NextSweepIndex ;
-            timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
-            h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
-            nActiveAnalogChannels = self.Parent.Acquisition.NActiveAnalogChannels ;
-            if nActiveAnalogChannels>0 ,
-                analogScansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
-                h5create(self.CurrentRunAbsoluteFileName_, ...
-                         analogScansDatasetName, ...
-                         self.ExpectedSweepSize_, ...
-                         'ChunkSize', self.ChunkSize_, ...
-                         'DataType','int16');
-            end
-            nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
-            if nActiveDigitalChannels>0 ,
-                if nActiveDigitalChannels<=8
-                    dataType = 'uint8';
-                elseif nActiveDigitalChannels<=16
-                    dataType = 'uint16';
-                else %NActiveDigitalChannels<=32
-                    dataType = 'uint32';
-                end
-                digitalScansDatasetName = sprintf('/sweep_%04d/digitalScans',thisSweepIndex) ;
-                h5create(self.CurrentRunAbsoluteFileName_, ...
-                         digitalScansDatasetName, ...
-                         [self.ExpectedSweepSize_(1) 1], ...
-                         'ChunkSize', [self.ChunkSize_(1) 1], ...
-                         'DataType',dataType);
-            end
-            self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;                     
             self.DidWriteSomeDataForThisSweep_ = false ;
             %profile off
         end
@@ -540,6 +511,38 @@ classdef Logging < ws.Subsystem
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~self.DidWriteSomeDataForThisSweep_ ,
+                
+                thisSweepIndex = self.NextSweepIndex ;
+                timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
+                h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
+                nActiveAnalogChannels = self.Parent.Acquisition.NActiveAnalogChannels ;
+                if nActiveAnalogChannels>0 ,
+                    analogScansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
+                    h5create(self.CurrentRunAbsoluteFileName_, ...
+                        analogScansDatasetName, ...
+                        self.ExpectedSweepSize_, ...
+                        'ChunkSize', self.ChunkSize_, ...
+                        'DataType','int16');
+                end
+                nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
+                if nActiveDigitalChannels>0 ,
+                    if nActiveDigitalChannels<=8
+                        dataType = 'uint8';
+                    elseif nActiveDigitalChannels<=16
+                        dataType = 'uint16';
+                    else %NActiveDigitalChannels<=32
+                        dataType = 'uint32';
+                    end
+                    digitalScansDatasetName = sprintf('/sweep_%04d/digitalScans',thisSweepIndex) ;
+                    h5create(self.CurrentRunAbsoluteFileName_, ...
+                        digitalScansDatasetName, ...
+                        [self.ExpectedSweepSize_(1) 1], ...
+                        'ChunkSize', [self.ChunkSize_(1) 1], ...
+                        'DataType',dataType);
+                end
+                self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;
+                
+                
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',self.WriteToSweepId_) ;
                 h5write(self.CurrentRunAbsoluteFileName_, timestampDatasetName, timeSinceRunStartAtStartOfData);
                 self.DidWriteSomeDataForThisSweep_ = true ;  % will be true momentarily...
