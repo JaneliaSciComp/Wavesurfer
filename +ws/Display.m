@@ -175,7 +175,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             %self.initializeScopes_() ;
 %         end
         
-        function addScope(self, scopeTag, scopeTitle, channelNames)
+        function addScope(self, scopeTag, scopeTitle, channelName)
             if isempty(scopeTag)
                 scopeTag = sprintf('Scope_%d', self.NScopes + 1);
             end
@@ -184,16 +184,14 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             
             % Create the scope model
-            scopeModel = ws.ScopeModel(self, ...
-                                       'Tag', scopeTag, ...
-                                       'Title', scopeTitle);
+            scopeModel = ws.ScopeModel(self, scopeTag, scopeTitle, channelName);
             
             % add the channels to the scope model                          
-            nChannels=length(channelNames);
-            for i = 1:nChannels
-                channelName = channelNames{i};
-                scopeModel.addChannel(channelName);
-            end
+            %nChannels=length(channelNames);
+            %for i = 1:nChannels
+                %channelName = channelNames{i};
+            %scopeModel.addChannel(channelName);
+            %end
             
             % Add the new scope to Scopes
             self.Scopes_{end + 1} = scopeModel;
@@ -263,8 +261,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             prototypeScopeTag=sprintf('Channel_%s', newChannelName);
             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
-            channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+            %channelNamesForNewScope={newChannelName};
+            self.addScope(scopeTag, scopeTitle, newChannelName);
         end
         
         function didAddDigitalInputChannel(self)
@@ -275,8 +273,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             prototypeScopeTag=sprintf('Channel_%s', newChannelName);
             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
-            channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, channelNamesForNewScope);
+            %channelNamesForNewScope={newChannelName};
+            self.addScope(scopeTag, scopeTitle, newChannelName);
         end
 
         function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
@@ -385,7 +383,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.ClearOnNextData_ = true;
         end
         
-        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL,INUSD>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)  %#ok<INUSL,INUSD>
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+            
             %fprintf('Display::dataAvailable()\n');
             %dbstack
             %T=zeros(4,1);
@@ -422,15 +424,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 % ScopeModel.addChannel() below.
                 %TInner=zeros(1,2);
                 %ticId2=tic();
-                channelNamesForThisScope = cell(1,0);
+                thisScope = self.Scopes{sdx} ;
+                %didFindChannelOnThisScope = false ;
+                %channelNamesForThisScope = cell(1,0);
                 jInAnalogData = [];                
                 jInDigitalData = [];                
                 NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
                 for cdx = 1:length(activeInputChannelNames)
                     %channelName = sprintf('Acq_%d', inputTerminalIDs(cdx));
                     channelName=activeInputChannelNames{cdx};
-                    if any(strcmp(channelName, self.Scopes{sdx}.ChannelNames)) ,
-                        channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
+                    if isequal(channelName, thisScope.ChannelName) ,
+                        %didFindChannelOnThisScope = true ;
+                        %channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
                         if isActiveChannelAnalog(cdx)
                             jInAnalogData(end + 1) = cdx; %#ok<AGROW>
                         else
@@ -442,12 +447,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 
                 % Add the data for the appropriate channels to this scope
                 if ~isempty(jInAnalogData) ,
-                    dataForThisScope=scaledAnalogData(:, jInAnalogData);
-                    self.Scopes{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    dataForThisScope = scaledAnalogData(:, jInAnalogData) ;
+                    thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 if ~isempty(jInDigitalData) ,
-                    dataForThisScope=bitget(rawDigitalData, jInDigitalData);
-                    self.Scopes{sdx}.addData(channelNamesForThisScope, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
+                    dataForThisScope = double(bitget(rawDigitalData, jInDigitalData)) ;  % has to be double for ws.minMaxResampleMex()
+                    thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
                 end
                 %TInner(2)=toc(ticId2);
             %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);
