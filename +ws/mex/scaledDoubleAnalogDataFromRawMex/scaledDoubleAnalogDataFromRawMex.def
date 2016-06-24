@@ -1,2 +1,2 @@
-LIBRARY scaledDoubleAnalogDataFromRawMex
+LIBRARY scaledDoubleAnalogDataFromRawMex.mexw64
 EXPORTS mexFunction
