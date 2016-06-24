@@ -66,12 +66,11 @@ classdef WavesurferModel < ws.RootModel
     end
 
     properties (Access=protected, Transient=true)
-        %RPCServer_
         IPCPublisher_
-        %RefillerRPCClient_
         LooperIPCSubscriber_
         RefillerIPCSubscriber_
-        %ExpectedNextScanIndex_
+        LooperIPCRequester_
+        RefillerIPCRequester_
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
         HasUserSpecifiedUserSettingsFileName_ = false
@@ -1032,18 +1031,18 @@ classdef WavesurferModel < ws.RootModel
             % Release our own hardware resources, and also tell the
             % satellites to do so.
             self.releaseTimedHardwareResources_() ;
-            self.IPCPublisher_.send('satellitesReleaseTimedHardwareResources') ;
+            %self.IPCPublisher_.send('satellitesReleaseTimedHardwareResources') ;
             
             % Wait for the looper to respond
             timeout = 10 ;  % s
-            err = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
+            err = self.LooperIPCRequester_.request(timeout, 'looperReleaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end
             
             % Wait for the refiller to respond
-            err = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
+            err = self.RefillerIPCRequester_.request(timeout, 'refillerReleaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
@@ -1160,13 +1159,13 @@ classdef WavesurferModel < ws.RootModel
             % Tell the Looper & Refiller to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
-            self.IPCPublisher_.send('startingRun', ...
-                                    wavesurferModelSettings, ...
-                                    acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                    self.IsAIChannelTerminalOvercommitted, ...
-                                    self.IsDIChannelTerminalOvercommitted, ...
-                                    self.IsAOChannelTerminalOvercommitted, ...
-                                    self.IsDOChannelTerminalOvercommitted) ;
+%             self.IPCPublisher_.send('startingRun', ...
+%                                     wavesurferModelSettings, ...
+%                                     acquisitionKeystoneTask, stimulationKeystoneTask, ...
+%                                     self.IsAIChannelTerminalOvercommitted, ...
+%                                     self.IsDIChannelTerminalOvercommitted, ...
+%                                     self.IsAOChannelTerminalOvercommitted, ...
+%                                     self.IsDOChannelTerminalOvercommitted) ;
             
             % Isn't the code below a race condition?  What if the refiller
             % responds first?  No, it's not a race, because one is waiting
@@ -1175,7 +1174,14 @@ classdef WavesurferModel < ws.RootModel
             
             % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            [err,looperResponse] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
+            [err,looperResponse] = self.LooperIPCRequester_.request(timeout, ...
+                                                                    'looperStartingRun', ...
+                                                                    wavesurferModelSettings, ...
+                                                                    acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                                                    self.IsAIChannelTerminalOvercommitted, ...
+                                                                    self.IsDIChannelTerminalOvercommitted, ...
+                                                                    self.IsAOChannelTerminalOvercommitted, ...
+                                                                    self.IsDOChannelTerminalOvercommitted) ;
             if isempty(err) ,
                 if isa(looperResponse,'MException') ,
                     compositeLooperError = looperResponse ;
@@ -1216,7 +1222,14 @@ classdef WavesurferModel < ws.RootModel
             % be.
             
             % Wait for the refiller to respond that it is ready
-            [err, refillerError] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRunOrPerhapsNot', timeout) ;
+            [err, refillerError] = self.RefillerIPCRequester_.request(timeout, ...
+                                                                      'looperStartingRun', ...
+                                                                      wavesurferModelSettings, ...
+                                                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                                                      self.IsAIChannelTerminalOvercommitted, ...
+                                                                      self.IsDIChannelTerminalOvercommitted, ...
+                                                                      self.IsAOChannelTerminalOvercommitted, ...
+                                                                      self.IsDOChannelTerminalOvercommitted ) ;
             if isempty(err) ,
                 compositeRefillerError = refillerError ;
             else
