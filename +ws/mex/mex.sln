@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "minMaxDownsampleMex", "minMaxDownsampleMex\minMaxDownsampleMex.vcproj", "{B6AAB853-0DB7-4E50-8188-A720F9C45A2F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scaledDoubleAnalogDataFromRawMex", "scaledDoubleAnalogDataFromRawMex\scaledDoubleAnalogDataFromRawMex.vcproj", "{48A8E120-4A03-4777-819A-2319CE70060C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B6AAB853-0DB7-4E50-8188-A720F9C45A2F}.Debug|x64.ActiveCfg = Debug|x64
+		{B6AAB853-0DB7-4E50-8188-A720F9C45A2F}.Debug|x64.Build.0 = Debug|x64
+		{B6AAB853-0DB7-4E50-8188-A720F9C45A2F}.Release|x64.ActiveCfg = Release|x64
+		{B6AAB853-0DB7-4E50-8188-A720F9C45A2F}.Release|x64.Build.0 = Release|x64
+		{48A8E120-4A03-4777-819A-2319CE70060C}.Debug|x64.ActiveCfg = Debug|x64
+		{48A8E120-4A03-4777-819A-2319CE70060C}.Debug|x64.Build.0 = Debug|x64
+		{48A8E120-4A03-4777-819A-2319CE70060C}.Release|x64.ActiveCfg = Release|x64
+		{48A8E120-4A03-4777-819A-2319CE70060C}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

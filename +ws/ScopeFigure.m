@@ -1,15 +1,15 @@
 classdef ScopeFigure < ws.MCOSFigure
     
-    properties (Dependent=true)
-        % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
-        % to enable us to keep the ScopeModel state in sync with the HG figure XLim and YLim if the 
-        % user changes them using the default Matlab HG figure tools.  Basically, the ScopeFigure defines 
-        % events DidSetXLim and DidSetYLim, which it fires if the HG figure XLim or YLim are changes.  The
-        % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
-        % model.  Care has to be taken to avoid infinite loops, as you might imagine.
-        XLim
-        YLim
-    end
+%     properties (Dependent=true)
+%         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
+%         % to enable us to keep the ScopeModel state in sync with the HG figure XLim and YLim if the 
+%         % user changes them using the default Matlab HG figure tools.  Basically, the ScopeFigure defines 
+%         % events DidSetXLim and DidSetYLim, which it fires if the HG figure XLim or YLim are changes.  The
+%         % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
+%         % model.  Care has to be taken to avoid infinite loops, as you might imagine.
+%         XLim
+%         YLim
+%     end
 
     properties (Access = protected)
         AxesGH_  % HG handle to axes
@@ -18,18 +18,18 @@ classdef ScopeFigure < ws.MCOSFigure
 %         HorizontalCenterLineGH;  % HG handle to line
 %         VerticalCenterLineGH;  % HG handle to line
 %         GroundLineGH;  % HG handle to line
-        YForPlotting_  
-            % nScans x nChannels
-            % Y data downsampled to approximately two points per pixel,
-            % with the first point the min for that pixel, second point the
-            % max for that pixel.
-        XForPlotting_  
-            % nScans x 1
-            % X data for the points in YForPlotting_.  As such, this consist
-            % of a sequence of pairs, with each member of a pair being
-            % equal.
-        XLim_
-        YLim_
+%         YForPlotting_  
+%             % nScans x nChannels
+%             % Y data downsampled to approximately two points per pixel,
+%             % with the first point the min for that pixel, second point the
+%             % max for that pixel.
+%         XForPlotting_  
+%             % nScans x 1
+%             % X data for the points in YForPlotting_.  As such, this consist
+%             % of a sequence of pairs, with each member of a pair being
+%             % equal.
+%         XLim_
+%         YLim_
         SetYLimTightToDataButtonGH_
         SetYLimTightToDataLockedButtonGH_
         
@@ -55,10 +55,10 @@ classdef ScopeFigure < ws.MCOSFigure
 %         IsVisibleWhenDisplayEnabled
 %     end
     
-    events
-        DidSetXLim
-        DidSetYLim
-    end
+%     events
+%         DidSetXLim
+%         DidSetYLim
+%     end
 
     methods
         function self=ScopeFigure(model,controller)
@@ -131,23 +131,23 @@ classdef ScopeFigure < ws.MCOSFigure
             ws.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function
         
-        function set(self,propName,value)
-            % Override MCOSFigure set to catch XLim, YLim
-            if strcmpi(propName,'XLim') ,
-                self.XLim=value;
-            elseif strcmpi(propName,'YLim') ,
-                self.YLim=value;
-            else
-                set@ws.MCOSFigure(self,propName,value);
-            end
-        end  % function
+%         function set(self,propName,value)
+%             % Override MCOSFigure set to catch XLim, YLim
+%             if strcmpi(propName,'XLim') ,
+%                 self.XLim=value;XLim
+%             elseif strcmpi(propName,'YLim') ,
+%                 self.YLim=value;
+%             else
+%                 set@ws.MCOSFigure(self,propName,value);
+%             end
+%         end  % function
     end  % public methods block
     
     methods (Access=protected)        
         function willSetModel_(self)            
-            % clear the downsampled data
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,0);
+            % % clear the downsampled data
+            % self.XForPlotting_=zeros(0,1);
+            % self.YForPlotting_=zeros(0,0);
 
             % Call the superclass method
             willSetModel_@ws.MCOSFigure(self);
@@ -174,12 +174,12 @@ classdef ScopeFigure < ws.MCOSFigure
         function didSetModel_(self)
             model = self.Model ;
 
-            % reset the downsampled data
-            if ~isempty(model) ,
-                nChannels=length(model.ChannelNames);
-                self.XForPlotting_=zeros(0,1);
-                self.YForPlotting_=zeros(0,nChannels);
-            end
+            % % reset the downsampled data
+            % if ~isempty(model) ,
+            %     nChannels=length(model.ChannelNames);
+            %     self.XForPlotting_=zeros(0,1);
+            %     self.YForPlotting_=zeros(0,nChannels);
+            % end
 
             % Call the superclass method
             didSetModel_@ws.MCOSFigure(self);
@@ -194,6 +194,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 model.subscribeMe(self,'DataAdded','','modelDataAdded');
                 model.subscribeMe(self,'DataCleared','','modelDataCleared');
                 model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
+                model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
             end
 
             % Subscribe to events in the master model
@@ -222,41 +223,41 @@ classdef ScopeFigure < ws.MCOSFigure
 %             end
 %         end
         
-        function set.XLim(self,newValue)
-            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
-                self.XLim_=newValue;
-                set(self.AxesGH_,'XLim',newValue);
-            end
-            %self.broadcast('DidSetXLim');
-        end  % function
-        
-        function value=get.XLim(self)
-            value=self.XLim_;
-        end  % function
-        
-        function set.YLim(self,newValue)
-            %fprintf('ScopeFigure::set.YLim()\n');
-            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
-                self.YLim_=newValue;
-                set(self.AxesGH_,'YLim',newValue);
-            end
-            %self.broadcast('DidSetYLim');
-        end  % function
-            
-        function value=get.YLim(self)
-            value=self.YLim_;
-        end  % function
+%         function set.XLim(self,newValue)
+%             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
+%                 self.XLim_=newValue;
+%                 set(self.AxesGH_,'XLim',newValue);
+%             end
+%             %self.broadcast('DidSetXLim');
+%         end  % function
+%         
+%         function value=get.XLim(self)
+%             value=self.XLim_;
+%         end  % function
+%         
+%         function set.YLim(self,newValue)
+%             %fprintf('ScopeFigure::set.YLim()\n');
+%             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2) ,
+%                 self.YLim_=newValue;
+%                 set(self.AxesGH_,'YLim',newValue);
+%             end
+%             %self.broadcast('DidSetYLim');
+%         end  % function
+%             
+%         function value=get.YLim(self)
+%             value=self.YLim_;
+%         end  % function
                 
-        function didSetXLimInAxesGH(self,varargin)
-            self.XLim=get(self.AxesGH_,'XLim');
-        end  % function
+%         function didSetXLimInAxesGH(self,varargin)
+%             self.XLim=get(self.AxesGH_,'XLim');
+%         end  % function
         
-        function didSetYLimInAxesGH(self,varargin)
-            %fprintf('ScopeFigure::didSetYLimInAxesGH()\n');
-            %ylOld=self.YLim
-            ylNew=get(self.AxesGH_,'YLim');
-            self.YLim=ylNew;
-        end  % function
+%         function didSetYLimInAxesGH(self,varargin)
+%             %fprintf('ScopeFigure::didSetYLimInAxesGH()\n');
+%             %ylOld=self.YLim
+%             ylNew=get(self.AxesGH_,'YLim');
+%             self.YLim=ylNew;
+%         end  % function
         
 %         function modelPropertyWasSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD,INUSL>
 %             if isequal(propertyName,'YLim') ,
@@ -290,66 +291,67 @@ classdef ScopeFigure < ws.MCOSFigure
         end  % function
         
         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            % Redimension downsampled data, clearing the existing data in
-            % the process
-            nChannels=self.Model.NChannels;
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);
+%             % Redimension downsampled data, clearing the existing data in
+%             % the process
+%             nChannels=self.Model.NChannels;
+%             self.XForPlotting_=zeros(0,1);
+%             self.YForPlotting_=zeros(0,nChannels);
             
             % Do other stuff
             self.addChannelLineToAxes_();
             self.update();
         end  % function
         
+        function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
+            self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
+        end
+        
         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            % Need to pack up all the y data into a single array for
-            % downsampling (should change things more globally to make this
-            % unnecessary)
-            nScans=length(self.Model.XData);
-            nChannels=length(self.Model.YData);
-            y=zeros(nScans,nChannels);
-            for i=1:nChannels ,
-                y(:,i)=self.Model.YData{i};
-            end
-            x=self.Model.XData;
-            
-            % This shouldn't ever happen, but just in case...
-            if isempty(x) ,
-                return
-            end
-            
-            % Figure out the downsampling ratio
-            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-            r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
-            
-            % get the current downsampled data
-            xForPlottingOriginal=self.XForPlotting_;
-            yForPlottingOriginal=self.YForPlotting_;
-            
-            % Trim off any that is beyond the left edge of the data
-            x0=x(1);
-            keep=(x0<=xForPlottingOriginal);
-            xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
-            yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
-            
-            % Get just the new data
-            if isempty(xForPlottingOriginal)
-                xNew=x;
-                yNew=y;
-            else                
-                isNew=(xForPlottingOriginal(end)<x);
-                xNew=x(isNew);
-                yNew=y(isNew);
-            end
-            
-            % Downsample the new data
-            [xForPlottingNew,yForPlottingNew]=ws.ScopeFigure.minMaxDownsample(xNew,yNew,r);            
-            
-            % Concatenate old and new downsampled data, commit to self
-            self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
-                               xForPlottingNew];
-            self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
-                               yForPlottingNew];
+%             % Need to pack up all the y data into a single array for
+%             % downsampling (should change things more globally to make this
+%             % unnecessary)
+%             x = self.Model.XData ;
+%             y = self.Model.YData ;
+%             %nScans = length(x) ;
+%             
+%             % This shouldn't ever happen, but just in case...
+%             if isempty(x) ,
+%                 return
+%             end
+%             
+%             % Figure out the downsampling ratio
+%             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+%             r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
+%             
+%             % get the current downsampled data
+%             xForPlottingOriginal=self.XForPlotting_;
+%             yForPlottingOriginal=self.YForPlotting_;
+%             
+%             % Trim off any that is beyond the left edge of the plotted data
+%             x0=x(1);  % this is the time of the first sample in the model's XData
+%             keep=(x0<=xForPlottingOriginal);
+%             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
+%             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
+%             
+%             % Get just the new data
+%             if isempty(xForPlottingOriginal)
+%                 xNew=x;
+%                 yNew=y;
+%             else                
+%                 isNew=(xForPlottingOriginal(end)<x);
+%                 xNew=x(isNew);
+%                 yNew=y(isNew);
+%             end
+%             
+%             % Downsample the new data
+%             [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
+%             
+%             % Concatenate old and new downsampled data, commit to self
+%             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
+%                                xForPlottingNew];
+%             self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
+%                                yForPlottingNew];
 
             % Update the lines
             self.updateLineXDataAndYData_();
@@ -357,9 +359,9 @@ classdef ScopeFigure < ws.MCOSFigure
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             %fprintf('ScopeFigure::modelDataCleared()\n');
-            nChannels=self.Model.NChannels;
-            self.XForPlotting_=zeros(0,1);
-            self.YForPlotting_=zeros(0,nChannels);                        
+            %nChannels=self.Model.NChannels;
+            %self.XForPlotting_=zeros(0,1);
+            %self.YForPlotting_=zeros(0,nChannels);                        
             self.updateLineXDataAndYData_();                      
         end  % function
         
@@ -480,8 +482,8 @@ classdef ScopeFigure < ws.MCOSFigure
             % Can't do this using EventBroadcaster/EventSubscriber
             % mechanism b/c can't make the axes HG object an
             % EventBroadcaster.
-            addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
-            addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
+            %addlistener(self.AxesGH_,'XLim','PostSet',@self.didSetXLimInAxesGH);
+            %addlistener(self.AxesGH_,'YLim','PostSet',@self.didSetYLimInAxesGH);
             
 %             % Add a line for each channel in the model
 %             for i=1:self.Model.NChannels
@@ -980,10 +982,9 @@ classdef ScopeFigure < ws.MCOSFigure
         end  % function 
         
         function updateLineXDataAndYData_(self)
-            for iChannel = 1:self.Model.NChannels ,                
-                thisLineGH = self.LineGHs_(iChannel);
-                ws.setifhg(thisLineGH, 'XData', self.XForPlotting_, 'YData', self.YForPlotting_(:,iChannel));
-            end                     
+            model = self.Model ;            
+            thisLineGH = self.LineGHs_ ;
+            ws.setifhg(thisLineGH, 'XData', model.XData, 'YData', model.YData) ;
         end  % function
         
         function updateYAxisLabel_(self,color)
@@ -1011,16 +1012,8 @@ classdef ScopeFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            xlimInModel=self.Model.XLim;
-            %ws.setifhg(self.AxesGH_, 'XLim', xl);
-            if ~isequal(xlimInModel,self.XLim) ,                
-                % Set this directly, instead of calling the XLim setter
-                % This means that we don't fire the DidSetXLim method.
-                % This should be OK, since updateXAxisLimits_ is only called in 
-                % response to the model firing an event
-                self.XLim_=xlimInModel;
-                set(self.AxesGH_,'XLim',xlimInModel);
-            end
+            xlimInModel=self.Model.XLim ;
+            set(self.AxesGH_, 'XLim', xlimInModel) ;
         end  % function        
 
         function updateYAxisLimits_(self)
@@ -1029,15 +1022,7 @@ classdef ScopeFigure < ws.MCOSFigure
                 return
             end
             ylimInModel=self.Model.YLim;
-            %ws.setifhg(self.AxesGH_, 'YLim', yl);
-            if ~isequal(ylimInModel,self.YLim) ,   
-                % Set this directly, instead of calling the YLim setter
-                % This means that we don't fire the DidSetYLim method.
-                % This should be OK, since updateYAxisLimits_ is only called in 
-                % response to the model firing an event
-                self.YLim_=ylimInModel;
-                set(self.AxesGH_,'YLim',ylimInModel);
-            end
+            set(self.AxesGH_, 'YLim', ylimInModel);
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)
@@ -1135,104 +1120,32 @@ classdef ScopeFigure < ws.MCOSFigure
             set(ax,'Units',savedUnits);            
         end  % function
         
-        function r=ratioSubsampling(t,T_view,n_pels_view)
-            % Computes r, a good ratio to use for subsampling data on time base t
-            % for plotting in Spoke_main_plot plot, given that the x axis of
-            % Spoke_main_plot spans T_view seconds.  Returns the empty matrix if no
-            % subsampling is called for.
-            n_t=length(t);
-            if n_t==0
-                r=[];
-            else
-                dt=(t(end)-t(1))/(n_t-1);
-                n_t_view=T_view/dt;
-                samples_per_pel=n_t_view/n_pels_view;
-                %if samples_per_pel>10  % original value
-                if samples_per_pel>2
-                    %if samples_per_pel>1.2
-                    % figure out how much we're going to subsample
-                    samples_per_pel_want=2;  % original value
-                    %samples_per_pel_want=1;
-                    n_t_view_want=n_pels_view*samples_per_pel_want;
-                    r=floor(n_t_view/n_t_view_want);
-                else
-                    r=[];  % no need for resampling
-                end
-            end
-        end  % function
+%         function r=ratioSubsampling(t,T_view,n_pels_view)
+%             % Computes r, a good ratio to use for subsampling data on time base t
+%             % for plotting in Spoke_main_plot plot, given that the x axis of
+%             % Spoke_main_plot spans T_view seconds.  Returns the empty matrix if no
+%             % subsampling is called for.
+%             n_t=length(t);
+%             if n_t==0
+%                 r=[];
+%             else
+%                 dt=(t(end)-t(1))/(n_t-1);
+%                 n_t_view=T_view/dt;
+%                 samples_per_pel=n_t_view/n_pels_view;
+%                 %if samples_per_pel>10  % original value
+%                 if samples_per_pel>2
+%                     %if samples_per_pel>1.2
+%                     % figure out how much we're going to subsample
+%                     samples_per_pel_want=2;  % original value
+%                     %samples_per_pel_want=1;
+%                     n_t_view_want=n_pels_view*samples_per_pel_want;
+%                     r=floor(n_t_view/n_t_view_want);
+%                 else
+%                     r=[];  % no need for resampling
+%                 end
+%             end
+%         end  % function
         
-        function [t_sub_dub,data_sub_dub]=minMaxDownsample(t,data,r)
-            % Static method to downsample data, but in a way that is well-suited
-            % to on-screen display.  For every r data points, we calculate the min
-            % and the max of them, and these are returned in data_sub_min and
-            % data_sub_max.
-            
-            % if r is empty, means no downsampling called for
-            if isempty(r)
-                % don't subsample
-                t_sub_dub=t;
-                data_sub_dub=data;
-            else
-                % get data dims
-                [n_t,n_signals,n_sweeps]=size(data);
-                
-                % downsample the timeline
-                t_sub=t(1:r:end);
-                n_t_sub=length(t_sub);
-                
-                % turns out that it's best to write this as a loop that can be
-                % JIT-compiled my Matlab.  This is faster than blkproc(), it turns
-                % out.
-                data_sub_max=zeros(n_t_sub,n_signals,n_sweeps);
-                data_sub_min=zeros(n_t_sub,n_signals,n_sweeps);
-                for k=1:n_sweeps
-                    for j=1:n_signals
-                        i=1;
-                        for i_sub=1:(n_t_sub-1)
-                            mx=-inf;
-                            mn=+inf;
-                            for i_offset=1:r
-                                d=data(i,j,k);
-                                if d>mx
-                                    mx=d;
-                                end
-                                if d<mn
-                                    mn=d;
-                                end
-                                i=i+1;
-                            end
-                            data_sub_max(i_sub,j,k)=mx;
-                            data_sub_min(i_sub,j,k)=mn;
-                        end
-                        % the last block may have less than r elements
-                        mx=-inf;
-                        mn=+inf;
-                        n_t_left=n_t-r*(n_t_sub-1);
-                        for i_offset=1:n_t_left
-                            d=data(i,j,k);
-                            if d>mx
-                                mx=d;
-                            end
-                            if d<mn
-                                mn=d;
-                            end
-                            i=i+1;
-                        end
-                        data_sub_max(n_t_sub,j,k)=mx;
-                        data_sub_min(n_t_sub,j,k)=mn;
-                    end  % for j=1:n_signals
-                end  % for k=1:n_sweeps
-                
-                % now "double-up" time, and put max's in the odd times, and min's in
-                % the even times
-                t_sub_dub=nan(2*n_t_sub,1);
-                t_sub_dub(1:2:end)=t_sub;
-                t_sub_dub(2:2:end)=t_sub;
-                data_sub_dub=nan(2*n_t_sub,n_signals,n_sweeps);
-                data_sub_dub(1:2:end,:,:)=data_sub_max;
-                data_sub_dub(2:2:end,:,:)=data_sub_min;
-            end
-        end  % function
     end  % static methods block
     
     methods (Access = protected)
