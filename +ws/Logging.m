@@ -364,6 +364,7 @@ classdef Logging < ws.Subsystem
         
         function startingSweep(self)
             %profile resume
+            % No data written at the start of the sweep
             self.DidWriteSomeDataForThisSweep_ = false ;
             %profile off
         end
@@ -511,7 +512,9 @@ classdef Logging < ws.Subsystem
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~self.DidWriteSomeDataForThisSweep_ ,
-                
+                % Moved creation of h5 Group "sweep_%04d" from
+                % startingSweep() to here, preventing a sweep Group from
+                % being created until it hass data.
                 thisSweepIndex = self.NextSweepIndex ;
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
                 h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
@@ -540,8 +543,7 @@ classdef Logging < ws.Subsystem
                         'ChunkSize', [self.ChunkSize_(1) 1], ...
                         'DataType',dataType);
                 end
-                self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;
-                
+                self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;           
                 
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',self.WriteToSweepId_) ;
                 h5write(self.CurrentRunAbsoluteFileName_, timestampDatasetName, timeSinceRunStartAtStartOfData);
