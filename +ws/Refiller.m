@@ -46,6 +46,7 @@ classdef Refiller < ws.RootModel
         %RPCClient_
         IPCPublisher_
         IPCSubscriber_  % subscriber for the frontend
+        IPCReplier_  % to reply to frontend rep-req requests
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedSoFarThisRun_ = 0
@@ -103,7 +104,7 @@ classdef Refiller < ws.RootModel
     end
     
     methods
-        function self = Refiller(refillerIPCPublisherPortNumber, frontendIPCPublisherPortNumber)
+        function self = Refiller(refillerIPCPublisherPortNumber, frontendIPCPublisherPortNumber, refillerIPCReplierPortNumber)
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
@@ -127,6 +128,11 @@ classdef Refiller < ws.RootModel
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
             self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
+            
+            % Create the replier socket so the frontend can boss us around
+            self.IPCReplier_ = ws.IPCReplier(refillerIPCReplierPortNumber, self) ;
+            %self.IPCReplier_.setDelegate(self) ;
+            self.IPCReplier_.bind() ;            
             
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;
@@ -170,6 +176,7 @@ classdef Refiller < ws.RootModel
         function delete(self)
             self.IPCPublisher_ = [] ;
             self.IPCSubscriber_ = [] ;
+            self.IPCReplier_ = [] ;
         end
         
 %         function unstring(self)
@@ -223,6 +230,8 @@ classdef Refiller < ws.RootModel
                             %fprintf('Refiller: ~self.DoesFrontendWantToStopRun_\n');
                             % Check for messages, but don't wait for them
                             self.IPCSubscriber_.processMessagesIfAvailable() ;
+                              % Don't need to process self.IPCReplier_ messages, b/c no req-rep
+                              % messages should be arriving during a sweep.                            
 
                             % Check the finite outputs, refill them if
                             % needed.
@@ -257,6 +266,7 @@ classdef Refiller < ws.RootModel
                         else
                             % Check for messages, but don't block
                             self.IPCSubscriber_.processMessagesIfAvailable() ;                            
+                            self.IPCReplier_.processMessagesIfAvailable() ;
                             % no pause here, b/c want to start sweep as
                             % soon as frontend tells us to
                         end                        
@@ -266,6 +276,7 @@ classdef Refiller < ws.RootModel
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    self.IPCReplier_.processMessagesIfAvailable() ;
                     if self.DoesFrontendWantToStopRun_ ,
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
                         self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
@@ -297,17 +308,15 @@ classdef Refiller < ws.RootModel
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
-            % This is called via RPC, so must return exactly one return
-            % value, and must not throw.
+            % This is called via (req-req) RPC, so must return exactly one value.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, ...
-                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                isTerminalOvercommitedForEachAIChannel, ...
-                                isTerminalOvercommitedForEachDIChannel, ...
-                                isTerminalOvercommitedForEachAOChannel, ...
-                                isTerminalOvercommitedForEachDOChannel) ;
-            result = [] ;
+            result = self.prepareForRun_(wavesurferModelSettings, ...
+                                         acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                         isTerminalOvercommitedForEachAIChannel, ...
+                                         isTerminalOvercommitedForEachDIChannel, ...
+                                         isTerminalOvercommitedForEachAOChannel, ...
+                                         isTerminalOvercommitedForEachDOChannel) ;
         end  % function
 
         function result = completingRun(self)
@@ -345,20 +354,20 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = startingSweepLooper(self,indexOfSweepWithinRun)  %#ok<INUSD>
-            % Sent by the wavesurferModel to prompt the Looper to prepare
-            % to run a sweep.  But the sweep doesn't start until the
-            % WavesurferModel calls startSweep().
-            %
-            % This is called via RPC, so must return exactly one return
-            % value.  If a runtime error occurs, it will cause the frontend
-            % process to hang.
+%         function result = startingSweepLooper(self,indexOfSweepWithinRun)  %#ok<INUSD>
+%             % Sent by the wavesurferModel to prompt the Looper to prepare
+%             % to run a sweep.  But the sweep doesn't start until the
+%             % WavesurferModel calls startSweep().
+%             %
+%             % This is called via RPC, so must return exactly one return
+%             % value.  If a runtime error occurs, it will cause the frontend
+%             % process to hang.
+% 
+%             % Do nothing, since we're not the looper
+%             result = [] ;
+%         end  % function
 
-            % Do nothing, since we're not the looper
-            result = [] ;
-        end  % function
-
-        function result = startingSweepRefiller(self,indexOfSweepWithinRun)
+        function result = startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Refiller to prepare
             % to run a sweep.  But the sweep doesn't start until the
             % WavesurferModel calls startSweep().
@@ -368,9 +377,7 @@ classdef Refiller < ws.RootModel
             % process to hang.
 
             % Prepare for the run
-            self.prepareForSweep_(indexOfSweepWithinRun) ;
-
-            result = [] ;
+            result = self.prepareForSweep_(indexOfSweepWithinRun) ;
         end  % function
 
         function result = frontendIsBeingDeleted(self) 
@@ -392,9 +399,10 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = satellitesReleaseTimedHardwareResources(self)
+        function result = releaseTimedHardwareResources(self)
+            % This is a req-rep method
             self.releaseTimedHardwareResources_();
-            self.IPCPublisher_.send('refillerDidReleaseTimedHardwareResources');            
+            %self.IPCPublisher_.send('refillerDidReleaseTimedHardwareResources');            
             result = [] ;
         end
         
@@ -806,13 +814,13 @@ classdef Refiller < ws.RootModel
             %self.Ephys.releaseHardwareResources();
         end
         
-        function prepareForRun_(self, ...
-                                wavesurferModelSettings, ...
-                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                isTerminalOvercommitedForEachAIChannel, ...
-                                isTerminalOvercommitedForEachDIChannel, ...
-                                isTerminalOvercommitedForEachAOChannel, ...
-                                isTerminalOvercommitedForEachDOChannel )
+        function result = prepareForRun_(self, ...
+                                         wavesurferModelSettings, ...
+                                         acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                         isTerminalOvercommitedForEachAIChannel, ...
+                                         isTerminalOvercommitedForEachDIChannel, ...
+                                         isTerminalOvercommitedForEachAOChannel, ...
+                                         isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -871,7 +879,7 @@ classdef Refiller < ws.RootModel
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
-                self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',me) ;
+                %self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',me) ;
                 %self.changeReadiness(+1) ;
                 me.rethrow() ;
             end
@@ -880,12 +888,14 @@ classdef Refiller < ws.RootModel
             self.FromRunStartTicId_ = tic() ;
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
+            % Return empty
+            result = [] ;
             % Notify the fronted that we're ready
-            self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',[]) ;  % empty matrix signals no error
+            %self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',[]) ;  % empty matrix signals no error
             %keyboard            
         end  % function
         
-        function prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+        function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
             % Get everything set up for the Refiller to run a sweep, but
             % don't pulse the master trigger yet.
             
@@ -920,8 +930,9 @@ classdef Refiller < ws.RootModel
             % Start an episode
             self.startEpisode_() ;
             
-            % Notify the fronted that we're ready
-            self.IPCPublisher_.send('refillerReadyForSweep') ;
+            % Nothing to return
+            result = [] ;
+            %self.IPCPublisher_.send('refillerReadyForSweep') ;
         end  % function
 
         function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
