@@ -851,20 +851,24 @@ classdef Refiller < ws.RootModel
             self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per sweep
-            if self.AreSweepsFiniteDuration ,
-                % This means one episode per sweep, always
-                self.NEpisodesPerSweep_ = 1 ;
-            else
-                % Means continuous acq, so need to consult stim trigger
-                if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
-                    self.NEpisodesPerSweep_ = 1 ;                    
-                elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
-                    % stim trigger scheme is a counter trigger
-                    self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
+            if self.Stimulation.IsEnabled ,
+                if self.AreSweepsFiniteDuration ,
+                    % This means one episode per sweep, always
+                    self.NEpisodesPerSweep_ = 1 ;
                 else
-                    % stim trigger scheme is an external trigger
-                    self.NEpisodesPerSweep_ = inf ;  % by convention
+                    % Means continuous acq, so need to consult stim trigger
+                    if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
+                        self.NEpisodesPerSweep_ = 1 ;                    
+                    elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
+                        % stim trigger scheme is a counter trigger
+                        self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                    else
+                        % stim trigger scheme is an external trigger
+                        self.NEpisodesPerSweep_ = inf ;  % by convention
+                    end
                 end
+            else
+                self.NEpisodesPerSweep_ = 0 ;
             end
 
             % Change our own acquisition state if get this far
@@ -1130,10 +1134,10 @@ classdef Refiller < ws.RootModel
                       'The refiller was asked to start an episode while already in an epsiode') ;
             end
             
-            self.IsPerformingEpisode_ = true ;
-            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-            self.callUserMethod_('startingEpisode') ;
             if self.Stimulation.IsEnabled ,
+                self.IsPerformingEpisode_ = true ;
+                fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+                self.callUserMethod_('startingEpisode') ;
                 self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisRun_+1) ;
             end
         end
