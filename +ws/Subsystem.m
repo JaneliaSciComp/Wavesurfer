@@ -66,6 +66,15 @@ classdef (Abstract) Subsystem < ws.Model
         
 %         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
 %         end
+
+        function mimicWavesurferModel_(self, other)
+            % This is only every called when self is a subsystem of a
+            % Looper or Refiller object, and other is the corresponding
+            % subsystem of a WavesurferModel object.  It is used to sync
+            % the satellite settings to the WavesurferModel settings.
+            self.mimic(other) ;
+        end
+
     end  % methods block
     
     methods (Access = protected)

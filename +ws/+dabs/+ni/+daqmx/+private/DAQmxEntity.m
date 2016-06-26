@@ -1,5 +1,5 @@
-classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
-    %DAQMXCLASS Abstract class representing a generic DAQmx 'class', i.e. a
+classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
+    %DAQMXENTITY Abstract class representing a generic DAQmx 'entity', i.e. a
     %level of DAQmx entity that has Get/Set and other methods, e.g. 'Task',
     %'Channel', 'Device', etc.
     %
@@ -34,7 +34,8 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
         apiPrettyName = 'NI DAQmx';  %A unique descriptive string of the API being wrapped
         apiCompactName = 'NIDAQmx'; %A unique, compact string of the API being wrapped (must not contain spaces)
         
-        apiSupportedVersionNames = {'8.8' '9.3.x' '9.6.x' '9.8.x' '14.5.x' '15.1.x'}; %A list of shorthand names for API versions supported by this wrapper class
+        %apiSupportedVersionNames = {'8.8' '9.3.x' '9.6.x' '9.8.x' '14.5'x' '15.1.x'}; %A list of shorthand names for API versions supported by this wrapper class
+        apiSupportedVersionNames = {'9.8.x' '14.5.x' '15.1.x'}; %A list of shorthand names for API versions supported by this wrapper class
         
         %Properties which can be indexed by version
         apiDLLNames = 'nicaiu'; %Either a single name of the DLL filename (sans the '.dll' extension), or a Map of such names keyed by values in 'apiSupportedVersionNames'
@@ -116,17 +117,17 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
     
     %% ABSTRACT METHOD IMPLEMENTATIONS (ws.most.PDEPPropDynamic)
     methods (Access=protected)
-        function [tf didyoumean] = pdepIsPropAddable(obj,propname)
+        function [tf,didyoumean] = pdepIsPropAddable(obj,propname)
             assert(ischar(propname) && ~isempty(propname));
             
             userPropNameMap = obj.userPropMap;
-            lowerPropMap = obj.lowerPropMap;
+            lowerPropMap = obj.lowerPropMap;  %#ok<PROPLC>
             if userPropNameMap.isKey(propname)
                 tf = true;
                 didyoumean = [];
-            elseif lowerPropMap.isKey(lower(propname))
+            elseif lowerPropMap.isKey(lower(propname))  %#ok<PROPLC>
                 tf = false;
-                didyoumean = lowerPropMap(lower(propname));
+                didyoumean = lowerPropMap(lower(propname));  %#ok<PROPLC>
             else
                 tf = false;
                 didyoumean = [];
@@ -148,9 +149,22 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
     %% HOOK METHOD IMPLEMENTATIONS (ws.most.APIWrapper)
     methods (Hidden)
         function apiCurrentVersion = apiVersionDetectHookFcn(obj)
+            % Define some local utility functions
+            function errorUnsupportedVersion()
+                formattedVersion = sprintf('%d.%d.%d', double(majorVer), double(minorVer), double(updateVer) );
+                throwAsCaller(obj.DException('', 'UnsupportedVersion', 'Version %s of the ''%s'' API is not supported', formattedVersion, obj.apiPrettyName));
+            end
             
-            try
-                
+            function val = apiCallLocal(funcName)
+                %TODO: Update APIWrapper apiCallXXX mechanisms so they can be used in this 'pre-constructed' case
+                [status,val] = calllib(obj.apiDLLNames, funcName, 0); %Assumes apiDLLNames is a 'scalar'-string
+                if status ~= obj.apiResponseCodeSuccess
+                    error(' Failed to auto-detect version of ''%s''. Error status %d was encountered during call to ''%s''.', obj.apiPrettyName, status, funcName);
+                end
+            end
+            
+            % Now actually do stuff
+            try                
                 majorVer = apiCallLocal('DAQmxGetSysNIDAQMajorVersion');
                 minorVer = apiCallLocal('DAQmxGetSysNIDAQMinorVersion');
                 
@@ -162,59 +176,66 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
                 
                 primaryVersion = double(majorVer) + 0.1 * double(minorVer);
                 
-                %versionNum2NameMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
-                versionNum2NameMap = containers.Map({1},{struct()}); versionNum2NameMap.remove(1);
-                
-                versionNum2NameMap(8.8) = '8.8';
-                versionNum2NameMap(8.9) = containers.Map({0,5},{'8.9' '8.9.5'}); %Map of update versions to names
-                versionNum2NameMap(9.0) = '9.0.x';
-                versionNum2NameMap(9.1) = '9.1.x';
-                versionNum2NameMap(9.2) = '9.2.x';
-				versionNum2NameMap(9.3) = '9.3.x';
-                versionNum2NameMap(9.4) = '9.4.x';
-                versionNum2NameMap(9.5) = '9.5.x';
-                versionNum2NameMap(9.6) = '9.6.x';
-                versionNum2NameMap(9.8) = '9.8.x';
-                versionNum2NameMap(14.5) = '14.5.x';
-                versionNum2NameMap(15.1) = '15.1.x';
+%                 %versionNum2NameMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
+%                 versionNum2NameMap = containers.Map({1},{struct()}); versionNum2NameMap.remove(1);
+%                 
+%                 versionNum2NameMap(8.8) = '8.8';
+%                 versionNum2NameMap(8.9) = containers.Map({0,5},{'8.9' '8.9.5'}); %Map of update versions to names
+%                 versionNum2NameMap(9.0) = '9.0.x';
+%                 versionNum2NameMap(9.1) = '9.1.x';
+%                 versionNum2NameMap(9.2) = '9.2.x';
+% 				versionNum2NameMap(9.3) = '9.3.x';
+%                 versionNum2NameMap(9.4) = '9.4.x';
+%                 versionNum2NameMap(9.5) = '9.5.x';
+%                 versionNum2NameMap(9.6) = '9.6.x';
+%                 versionNum2NameMap(9.8) = '9.8.x';
+%                 %versionNum2NameMap(14.5) = '14.5.x';
+%                 versionNum2NameMap(15.1) = '15.1.x';
 
+                primaryVersionsWithPrototypes = zeros(1,0) ;
+                primaryVersionsWithPrototypes(1,end+1) =  9.8 ;
+                primaryVersionsWithPrototypes(1,end+1) = 14.5 ;
+                primaryVersionsWithPrototypes(1,end+1) = 15.1 ;
                 
-                if ~versionNum2NameMap.isKey(primaryVersion)
+                prototypeVersionStrings = cell(1,0) ;
+                prototypeVersionStrings{1,end+1} =  '9.8.x' ;
+                prototypeVersionStrings{1,end+1} = '14.5.x' ;
+                prototypeVersionStrings{1,end+1} = '15.1.x' ;
+                
+                indexOfBestVersionWithPrototype = find((primaryVersionsWithPrototypes-0.001)<=primaryVersion,1,'last') ;
+                if isempty(indexOfBestVersionWithPrototype) ,
                     errorUnsupportedVersion();
                 end
                 
-                apiCurrentVersion = versionNum2NameMap(primaryVersion);
+                apiCurrentVersion = prototypeVersionStrings{indexOfBestVersionWithPrototype} ;
+                  % this isn't really the current version, necessarily.
+                  % It's the latest version before or the same as the
+                  % current that has a prototype file.  This could lead to
+                  % tears, but I think it will almost certainly be fine: NI
+                  % probably isn't going to change the API for any of the
+                  % parts of DAQmx that WaveSurfer actually uses, so likely
+                  % almost any of the prototype files will work fine.
                 
-                if ischar(apiCurrentVersion)
-                    return;
-                elseif isa(apiCurrentVersion,'containers.Map')
-                    apiCurrentVersion = apiCurrentVersion(updateVer); %Use secondary map of updateVer to apiCurrentVersion string
-                else
-                    error('Logical programming error');
-                end
+%                 if ~versionNum2NameMap.isKey(primaryVersion)
+%                     errorUnsupportedVersion();
+%                 end
+%                 
+%                 apiCurrentVersion = versionNum2NameMap(primaryVersion);
                 
-                return;
+%                 if ischar(apiCurrentVersion)
+%                     return;
+%                 elseif isa(apiCurrentVersion,'containers.Map')
+%                     apiCurrentVersion = apiCurrentVersion(updateVer); %Use secondary map of updateVer to apiCurrentVersion string
+%                 else
+%                     error('Logical programming error');
+%                 end
+                
+%                 return;
             catch ME
                 unloadlibrary(obj.apiDLLNames);
                 ME.rethrow();
-            end
-            
-            
-            function errorUnsupportedVersion()
-                formattedVersion = sprintf('%d.%d.%d', double(majorVer), double(minorVer), double(updateVer) );
-                throwAsCaller(obj.DException('', 'UnsupportedVersion', 'Version %s of the ''%s'' API is not supported', formattedVersion, obj.apiPrettyName));
-            end
-            
-            
-            %TODO: Update APIWrapper apiCallXXX mechanisms so they can be used in this 'pre-constructed' case
-            function val = apiCallLocal(funcName)
-                [status,val] = calllib(obj.apiDLLNames, funcName, 0); %Assumes apiDLLNames is a 'scalar'-string
-                if status ~= obj.apiResponseCodeSuccess
-                    error(' Failed to auto-detect version of ''%s''. Error status %d was encountered during call to ''%s''.', obj.apiPrettyName, status, funcName);
-                end
-            end
-            
-        end
+            end  % try-catch            
+        end  % function
         
         function responseCodeInfo = apiResponseCodeHookFcn(obj, responseCode)
             
@@ -366,10 +387,10 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
     
     %Help methods to property access methods
     methods (Access=protected)
-        function [apiPropTypeMap userPropNameMap lowerPropMap] = getPropertyMaps(obj)
+        function [apiPropTypeMap,userPropNameMap,lowerPropMap] = getPropertyMaps(obj)
             
-            [apiPropTypeMap userPropNameMap lowerPropMap] = ...
-                ws.dabs.ni.daqmx.private.DAQmxClass.accessPropertyMaps(class(obj));
+            [apiPropTypeMap,userPropNameMap,lowerPropMap] = ...
+                ws.dabs.ni.daqmx.private.DAQmxEntity.accessPropertyMaps(class(obj));
             assert(isempty(apiPropTypeMap) == isempty(userPropNameMap));
             assert(isempty(apiPropTypeMap) == isempty(lowerPropMap));
             
@@ -393,7 +414,7 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
                 apiPropTypeMap  = containers.Map(apiPropNames, apiPropTypes);
                 userPropNameMap = containers.Map(userPropNames, apiPropNames);
                 lowerPropMap    = containers.Map(lowerNames, userPropNames);
-                ws.dabs.ni.daqmx.private.DAQmxClass.accessPropertyMaps(class(obj), apiPropTypeMap, userPropNameMap, lowerPropMap);
+                ws.dabs.ni.daqmx.private.DAQmxEntity.accessPropertyMaps(class(obj), apiPropTypeMap, userPropNameMap, lowerPropMap);
             end
             
         end
@@ -484,7 +505,7 @@ classdef DAQmxClass < ws.most.APIWrapper & ws.most.PDEPPropDynamic
 
     %% STATIC METHODS
     methods (Static, Hidden)
-        function [apiPropTypeMap userPropNameMap lowerPropMap] = ...
+        function [apiPropTypeMap,userPropNameMap,lowerPropMap] = ...
                 accessPropertyMaps(className, apiPropTypeMapInput, userPropNameMapInput, lowerPropMapInput)
             %Function to store and retrieve property maps for each class
             
@@ -529,11 +550,11 @@ function hMap = zlclInitAPIHeaderFilenames()
 
 hMap = containers.Map();
 
-hMap('8.8') = 'NIDAQmx.h';
-hMap('9.3.x') = 'NIDAQmx_proto.m';
-hMap('9.4.x') = 'NIDAQmx_proto.m';
-hMap('9.5.x') = 'NIDAQmx_proto.m';
-hMap('9.6.x') = 'NIDAQmx_proto.m';
+%hMap('8.8') = 'NIDAQmx.h';
+%hMap('9.3.x') = 'NIDAQmx_proto.m';
+%hMap('9.4.x') = 'NIDAQmx_proto.m';
+%hMap('9.5.x') = 'NIDAQmx_proto.m';
+%hMap('9.6.x') = 'NIDAQmx_proto.m';
 hMap('9.8.x') = 'NIDAQmx_proto.m';
 hMap('14.5.x') = 'NIDAQmx_proto.m';
 hMap('15.1.x') = 'NIDAQmx_proto.m';

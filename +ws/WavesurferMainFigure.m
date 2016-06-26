@@ -294,7 +294,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 self.FastProtocolButtons(i) = ...
                     ws.uicontrol('Parent',self.FigureGH, ...
                               'Style','pushbutton', ...
-                              'TooltipString',sprintf('Fast Protcol %d',i), ...                          
                               'String',sprintf('%d',i));                
             end
             
@@ -1069,6 +1068,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
             
+            % Fast config buttons
+            nFastProtocolButtons=length(self.FastProtocolButtons);
+            for i=1:nFastProtocolButtons ,
+                thisFastProtocol = model.FastProtocols{i};
+                thisProtocolFileName = ws.baseFileNameFromPath(thisFastProtocol.ProtocolFileName);
+                set(self.FastProtocolButtons(i),...
+                    'TooltipString', thisProtocolFileName)
+            end
+            
             % Logging panel
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
             set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
@@ -1203,7 +1211,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
             set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            set(self.ChannelsMenuItem,'Enable',onIff(true));
+            set(self.ChannelsMenuItem,'Enable',onIff(true));  
+              % Device & Channels menu is always available so that
+              % user can get at radiobutton for untimed DO channels,
+              % if desired.
             set(self.TriggersMenuItem,'Enable',onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
             set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            

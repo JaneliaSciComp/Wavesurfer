@@ -41,8 +41,8 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
     
     properties (Access = protected)
         SampleRate_ = 20000  % Hz
-        AnalogDeviceNames_ = cell(1,0)
-        DigitalDeviceNames_ = cell(1,0)        
+        %AnalogDeviceNames_ = cell(1,0)
+        %DigitalDeviceNames_ = cell(1,0)        
         %AnalogTerminalNames_ = cell(1,0)  % the physical channel name for each analog channel
         %DigitalTerminalNames_ = cell(1,0)  % the physical channel name for each digital channel
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
@@ -238,13 +238,16 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
 %         end
         
         function out = get.AnalogDeviceNames(self)
-            out = self.AnalogDeviceNames_ ;
+            %out = self.AnalogDeviceNames_ ;
+            deviceName = self.Parent.DeviceName ;
+            out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
         end  % function
         
-        function out = get.DigitalDeviceNames(self)
-            out = self.DigitalDeviceNames_ ;
+        function digitalDeviceNames = get.DigitalDeviceNames(self)
+            %out = self.DigitalDeviceNames_ ;
+            deviceName = self.Parent.DeviceName ;
+            digitalDeviceNames = repmat({deviceName}, size(self.DigitalChannelNames)) ;
         end  % function
-        
 
         function result = get.AnalogTerminalIDs(self)
             result = self.AnalogTerminalIDs_;
@@ -510,16 +513,16 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function       
         
         function newChannelName = addAnalogChannel(self)
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;
             newChannelPhysicalName = sprintf('AO%d',newTerminalID) ;
             newChannelName = newChannelPhysicalName ;
             
-            self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
+            %self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             %self.AnalogTerminalNames_ =  [self.AnalogTerminalNames_ {newChannelPhysicalName}] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
@@ -540,7 +543,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;
             if all(isToBeDeleted)
                 % Want everything to still be a row vector
-                self.AnalogDeviceNames_ = cell(1,0) ;
+                %self.AnalogDeviceNames_ = cell(1,0) ;
                 self.AnalogTerminalIDs_ = zeros(1,0) ;
                 self.AnalogChannelNames_ = cell(1,0) ;
                 self.AnalogChannelScales_ = zeros(1,0) ;
@@ -548,7 +551,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
                 self.IsAnalogChannelMarkedForDeletion_ = false(1,0) ;
             else
                 isKeeper = ~isToBeDeleted ;
-                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+                %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
@@ -562,9 +565,9 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
         
         function didSetDeviceName(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;            
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %deviceName = self.Parent.DeviceName ;
+            %self.AnalogDeviceNames_(:) = {deviceName} ;            
+            %self.DigitalDeviceNames_(:) = {deviceName} ;            
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('Update');
@@ -759,7 +762,7 @@ end  % methods block
             % the length of AnalogChannelNames_ is the "true" number of AI
             % channels
             nAOChannels = length(self.AnalogChannelNames_) ;
-            self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAOChannels, {''}) ;
+            %self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAOChannels, {''}) ;
             self.AnalogTerminalIDs_ = ws.sanitizeRowVectorLength(self.AnalogTerminalIDs_, nAOChannels, 0) ;
             self.AnalogChannelScales_ = ws.sanitizeRowVectorLength(self.AnalogChannelScales_, nAOChannels, 1) ;
             self.AnalogChannelUnits_ = ws.sanitizeRowVectorLength(self.AnalogChannelUnits_, nAOChannels, {'V'}) ;
@@ -767,7 +770,7 @@ end  % methods block
             self.IsAnalogChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelMarkedForDeletion_, nAOChannels, false) ;
             
             nDOChannels = length(self.DigitalChannelNames_) ;
-            self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDOChannels, {''}) ;
+            %self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDOChannels, {''}) ;
             self.DigitalTerminalIDs_ = ws.sanitizeRowVectorLength(self.DigitalTerminalIDs_, nDOChannels, 0) ;
             self.IsDigitalChannelTimed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelTimed_, nDOChannels, true) ;
             self.DigitalOutputStateIfUntimed_ = ws.sanitizeRowVectorLength(self.DigitalOutputStateIfUntimed_, nDOChannels, false) ;            

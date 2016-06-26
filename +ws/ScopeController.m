@@ -155,33 +155,33 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
             end
         end  % method
         
-        function didSetXLimInView(self,varargin)
-            %fprintf('ScopeController::didSetXLimInView()\n');
-            xlimInFigure=self.Figure.XLim;
-            xLowInFigure=xlimInFigure(1);
-            xHighInFigure=xlimInFigure(2);
-            xlimInModel=self.Model.XLim;
-            xLowInModel=xlimInModel(1);
-            xHighInModel=xlimInModel(2);
-            % Check if this is a real change to avoid infinite loops
-            if xLowInFigure~=xLowInModel || xHighInFigure~=xHighInModel ,
-                self.Model.XLim=xlimInFigure;
-            end
-        end  % method
+%         function didSetXLimInView(self,varargin)
+%             %fprintf('ScopeController::didSetXLimInView()\n');
+%             xlimInFigure=self.Figure.XLim;
+%             xLowInFigure=xlimInFigure(1);
+%             xHighInFigure=xlimInFigure(2);
+%             xlimInModel=self.Model.XLim;
+%             xLowInModel=xlimInModel(1);
+%             xHighInModel=xlimInModel(2);
+%             % Check if this is a real change to avoid infinite loops
+%             if xLowInFigure~=xLowInModel || xHighInFigure~=xHighInModel ,
+%                 self.Model.XLim=xlimInFigure;
+%             end
+%         end  % method
         
-        function didSetYLimInView(self,varargin)
-            %fprintf('ScopeController::didSetYLimInView()\n');
-            ylimInFigure=self.Figure.YLim;
-            yLowInFigure=ylimInFigure(1);
-            yHighInFigure=ylimInFigure(2);
-            ylimInModel=self.Model.YLim;
-            yLowInModel=ylimInModel(1);
-            yHighInModel=ylimInModel(2);
-            % Check if this is a real change to avoid infinite loops
-            if yLowInFigure~=yLowInModel || yHighInFigure~=yHighInModel ,
-                self.Model.YLim=ylimInFigure;
-            end
-        end  % method
+%         function didSetYLimInView(self,varargin)
+%             %fprintf('ScopeController::didSetYLimInView()\n');
+%             ylimInFigure=self.Figure.YLim;
+%             yLowInFigure=ylimInFigure(1);
+%             yHighInFigure=ylimInFigure(2);
+%             ylimInModel=self.Model.YLim;
+%             yLowInModel=ylimInModel(1);
+%             yHighInModel=ylimInModel(2);
+%             % Check if this is a real change to avoid infinite loops
+%             if yLowInFigure~=yLowInModel || yHighInFigure~=yHighInModel ,
+%                 self.Model.YLim=ylimInFigure;
+%             end
+%         end  % method
         
         function controlActuated(self,controlName,source,event)  %#ok<INUSD>
             %figureObject=self.Figure;

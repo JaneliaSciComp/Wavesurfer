@@ -1,8 +1,8 @@
-classdef System < ws.dabs.ni.daqmx.private.DAQmxClass
+classdef System < ws.dabs.ni.daqmx.private.DAQmxEntity
     %System A singleton class encapsulating the DAQmx 'System' -- i.e.
     %global DAQmx properties/methods
             
-    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxClass) 
+    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxEntity) 
     properties (SetAccess=private, Hidden)
         gsPropRegExp = '.*DAQmxGetSys(?<varName>.*)\(\s*(?<varType>\S*)[\),].*';
         gsPropPrefix = 'Sys';

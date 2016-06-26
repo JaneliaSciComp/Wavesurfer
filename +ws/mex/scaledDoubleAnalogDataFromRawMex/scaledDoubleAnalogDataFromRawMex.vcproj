@@ -2,10 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="launch_satellite_engine"
-	ProjectGUID="{591A8733-3962-4704-818C-CA9B141571F5}"
-	RootNamespace="launch_satellite_engine"
-	Keyword="Win32Proj"
+	Name="scaledDoubleAnalogDataFromRawMex"
+	ProjectGUID="{48A8E120-4A03-4777-819A-2319CE70060C}"
+	RootNamespace="scaledDoubleAnalogDataFromRawMex"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -24,7 +23,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -44,12 +43,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Program Files\MATLAB\R2015a\extern\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -64,12 +60,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmx.lib libmat.lib libeng.lib"
-				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\Program Files\MATLAB\R2015a\extern\lib\win64\microsoft"
+				ModuleDefinitionFile="scaledDoubleAnalogDataFromRawMex.def"
 				GenerateDebugInformation="true"
-				SubSystem="2"
-				TargetMachine="17"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -95,10 +88,10 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)bin"
-			IntermediateDirectory="obj"
-			ConfigurationType="1"
-			CharacterSet="1"
+			OutputDirectory="$(SolutionDir)\.."
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -120,11 +113,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="C:\Program Files\MATLAB\R2015a\extern\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				PreprocessorDefinitions="MATLAB_MEX_FILE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -139,11 +131,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmx.lib libmat.lib libeng.lib"
-				LinkIncremental="2"
+				AdditionalDependencies="libmx.lib libmex.lib libmat.lib"
+				OutputFile="$(OutDir)\$(ProjectName).mexw64"
 				AdditionalLibraryDirectories="C:\Program Files\MATLAB\R2015a\extern\lib\win64\microsoft"
+				ModuleDefinitionFile="scaledDoubleAnalogDataFromRawMex.def"
 				GenerateDebugInformation="true"
-				SubSystem="2"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -173,7 +165,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -195,11 +187,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="C:\Program Files\MATLAB\R2015a\extern\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -214,14 +203,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmx.lib libmat.lib libeng.lib"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Program Files\MATLAB\R2015a\extern\lib\win64\microsoft"
+				ModuleDefinitionFile="scaledDoubleAnalogDataFromRawMex.def"
 				GenerateDebugInformation="true"
-				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				TargetMachine="17"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -247,10 +233,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="$(SolutionDir)bin"
-			IntermediateDirectory="obj"
-			ConfigurationType="1"
-			CharacterSet="1"
+			OutputDirectory="$(SolutionDir)\.."
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -274,10 +260,9 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="C:\Program Files\MATLAB\R2015a\extern\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				PreprocessorDefinitions="MATLAB_MEX_FILE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -292,11 +277,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmx.lib libmat.lib libeng.lib"
-				LinkIncremental="1"
+				AdditionalDependencies="libmx.lib libmex.lib libmat.lib"
+				OutputFile="$(OutDir)\$(ProjectName).mexw64"
 				AdditionalLibraryDirectories="C:\Program Files\MATLAB\R2015a\extern\lib\win64\microsoft"
-				GenerateDebugInformation="true"
-				SubSystem="2"
+				ModuleDefinitionFile="scaledDoubleAnalogDataFromRawMex.def"
+				GenerateDebugInformation="false"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="17"
@@ -333,15 +318,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\launch_satellite_engine.cpp"
+				RelativePath=".\scaledDoubleAnalogDataFromRawMex.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\utility.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\utility.hpp"
+				RelativePath=".\scaledDoubleAnalogDataFromRawMex.def"
 				>
 			</File>
 		</Filter>

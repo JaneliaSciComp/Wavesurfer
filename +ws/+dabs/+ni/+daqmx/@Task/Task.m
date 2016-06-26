@@ -1,4 +1,4 @@
-classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
+classdef Task < ws.dabs.ni.daqmx.private.DAQmxEntity
     %TASK An object encapsulating an NI DAQmx 'task'
     %A 'task' is a collection of one or more channels of the same type (e.g. 'AnalogInput', 'DigitalOutput', etc) plus associated timing properties
     %
@@ -8,7 +8,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
     %   VI052611A: Revert VI120110A; NI fixed issue as of DAQmx 9.3 (CAR 277095) -- Vijay Iyer 5/26/11
     %% *****************************************
     
-    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxClass)
+    %% ABSTRACT PROPERTY REALIZATION (ws.dabs.ni.daqmx.private.DAQmxEntity)
     properties (SetAccess=private, Hidden)
         gsPropRegExp =  '.*DAQmxGet(?!(AI|AO|CO|CI|DO|DI|Scale|Sys|Persisted|Cal|Dev|Physical|Switch))(?<varName>.*)\((ulong|uint64),\s*(?<varType>\S*)[\),].*';
         gsPropPrefix = '';
@@ -1396,7 +1396,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxClass
         
         function pdepPropHandleGet(obj,src,evnt)
             
-            %Extend DAQmxClass pdepPropHandleGet -- apply subclass-specific apiFilteredResponseCodes
+            %Extend DAQmxEntity pdepPropHandleGet -- apply subclass-specific apiFilteredResponseCodes
             
             %Handled errors:
             %-200478: Specified operation cannot be performed when there are no channels in the task. [Attempt to get property before channels are added]
