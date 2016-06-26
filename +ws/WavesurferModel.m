@@ -1025,7 +1025,7 @@ classdef WavesurferModel < ws.RootModel
             end
             
             % Wait for the refiller to respond
-            self.RefillerIPCRequester_.request(timeout, 'releaseTimedHardwareResources') ;
+            self.RefillerIPCRequester_.send('releaseTimedHardwareResources') ;
             err = self.RefillerIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
