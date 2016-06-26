@@ -179,6 +179,10 @@ classdef Refiller < ws.RootModel
             self.IPCReplier_ = [] ;
         end
         
+        function debug(self) %#ok<MANU>
+            keyboard
+        end  % function        
+        
 %         function unstring(self)
 %             % Called to eliminate all the child-to-parent references, so
 %             % that all the descendents will be properly deleted once the
@@ -868,7 +872,8 @@ classdef Refiller < ws.RootModel
             self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
-            
+            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+
             % Tell all the subsystems to prepare for the run
             try
                 for idx = 1:numel(self.Subsystems_) ,
@@ -899,6 +904,15 @@ classdef Refiller < ws.RootModel
             % Get everything set up for the Refiller to run a sweep, but
             % don't pulse the master trigger yet.
             
+            if ~self.IsPerformingRun_ ,
+                error('ws:Refiller:askedToPrepareForSweepWhileNotInRun', ...
+                      'The refiller was asked to prepare for a sweep while not in a run') ;
+            end
+            if self.IsPerformingSweep_ ,
+                error('ws:Refiller:askedToPrepareForSweepWhileInSweep', ...
+                      'The refiller was asked to prepare for a sweep while already in a sweep') ;
+            end
+            
             % Reset the sample count for the sweep
             %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
             self.NScansAcquiredSoFarThisSweep_ = 0;
@@ -926,6 +940,7 @@ classdef Refiller < ws.RootModel
             % Almost-Final preparations...
             self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             self.IsPerformingSweep_ = true ;
+            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
 
             % Start an episode
             self.startEpisode_() ;
@@ -956,6 +971,7 @@ classdef Refiller < ws.RootModel
             
             % Note that we are no longer performing a sweep
             self.IsPerformingSweep_ = false ;            
+            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
 
             % Bump the number of completed sweeps
             self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
@@ -974,6 +990,7 @@ classdef Refiller < ws.RootModel
             end
             
             self.IsPerformingSweep_ = false ;
+            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             %self.callUserCodeManager_('didStopSweep');
         end  % function
@@ -986,6 +1003,7 @@ classdef Refiller < ws.RootModel
             end
             
             self.IsPerformingSweep_ = false ;          
+            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
         end            
         
         function completeTheOngoingRun_(self)
@@ -998,6 +1016,7 @@ classdef Refiller < ws.RootModel
             end
 
             self.IsPerformingRun_ = false ;
+            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
             
             %self.callUserCodeManager_('didCompleteRun');
         end  % function
@@ -1009,6 +1028,7 @@ classdef Refiller < ws.RootModel
                 end
             end            
             self.IsPerformingRun_ = false ;
+            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingRun_(self)            
@@ -1018,6 +1038,7 @@ classdef Refiller < ws.RootModel
                 end
             end
             self.IsPerformingRun_ = false ;
+            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
 %         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -1096,7 +1117,21 @@ classdef Refiller < ws.RootModel
         end  % function                
         
         function startEpisode_(self)
+            if ~self.IsPerformingRun_ ,
+                error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
+                      'The refiller was asked to start an episode while not in a run') ;
+            end
+            if ~self.IsPerformingSweep_ ,
+                error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
+                      'The refiller was asked to start an episode while not in a sweep') ;
+            end
+            if self.IsPerformingEpisode_ ,
+                error('ws:Refiller:askedToStartEpisodeWhileInEpisode', ...
+                      'The refiller was asked to start an episode while already in an epsiode') ;
+            end
+            
             self.IsPerformingEpisode_ = true ;
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
             self.callUserMethod_('startingEpisode') ;
             if self.Stimulation.IsEnabled ,
                 self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisRun_+1) ;
@@ -1120,6 +1155,7 @@ classdef Refiller < ws.RootModel
 
             % Update state
             self.IsPerformingEpisode_ = false;
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
             self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
@@ -1137,6 +1173,7 @@ classdef Refiller < ws.RootModel
             end
             self.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingEpisode_(self)
@@ -1145,6 +1182,7 @@ classdef Refiller < ws.RootModel
             end
             self.callUserMethod_('abortingEpisode');            
             self.IsPerformingEpisode_ = false ;            
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
                 
     end % protected methods block
