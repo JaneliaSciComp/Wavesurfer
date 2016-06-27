@@ -339,7 +339,10 @@ classdef WavesurferModel < ws.RootModel
 
                 % Close the sockets
                 self.LooperIPCSubscriber_ = [] ;
-                self.IPCPublisher_ = [] ;                
+                self.RefillerIPCSubscriber_ = [] ;
+                self.LooperIPCRequester_ = [] ;
+                self.RefillerIPCRequester_ = [] ;
+                self.IPCPublisher_ = [] ;
             end
             
             %if ~isempty(self) ,
@@ -2676,6 +2679,10 @@ classdef WavesurferModel < ws.RootModel
             %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
             %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
             %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
+        end
+        
+        function debug(self) %#ok<MANU>
+            keyboard
         end
     end  % public methods block
     
