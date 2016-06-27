@@ -34,7 +34,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             predictedAmplitude = amplitudeAsDouble/voltageMonitorScaleInTrode
 
-            measuredAmplitudeIsCorrect = (log(measuredAmplitude/predictedAmplitude)<0.01) ;
+            measuredAmplitudeIsCorrect = (log(measuredAmplitude/predictedAmplitude)<0.05) ;
 
             if measuredAmplitudeIsCorrect ,
                 fprintf('Measured amplitude is correct.\n') ;
