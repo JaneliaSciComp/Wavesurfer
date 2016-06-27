@@ -29,9 +29,9 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
         Interval_  % our internal Interval value, which can be overridden
         %IsIntervalOverridden_ = false  % boolean, true iff Interval is overridden
         %IntervalOverride_  % the value of Interval if IsIntervalOverridden_
-        DeviceName_
+        %DeviceName_
         CounterID_
-        PFIID_
+        %PFIID_
         Edge_
         IsMarkedForDeletion_
     end
@@ -48,12 +48,12 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
     methods
         function self = CounterTrigger(parent)
             self = self@ws.Model(parent) ;
-            self.DeviceName_ = 'Dev1' ;
+            %self.DeviceName_ = 'Dev1' ;
             self.Name_ = 'CounterTrigger' ;
             self.RepeatCount_ = 1 ;
             self.CounterID_ = 0 ;
             self.Interval_ = 1 ; % s
-            self.syncPFIIDToCounterID_() ;
+            %self.syncPFIIDToCounterID_() ;
             %self.PFIID_ = 12 ;
             self.Edge_ = 'rising' ;
             %self.CounterTask_=[];  % set in setup() method
@@ -168,7 +168,8 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %         end
         
         function value=get.DeviceName(self)
-            value=self.DeviceName_;
+            value = self.Parent.Parent.DeviceName ;            
+            %value=self.DeviceName_;
         end
         
         function value=get.CounterID(self)
@@ -180,7 +181,14 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %         end
         
         function value=get.PFIID(self)
-            value=self.PFIID_;
+            value = self.CounterID_ + 12 ;  
+              % This rule works for X series boards, and doesn't rely on
+              % w.g. self.Parent.Parent.NPFITerminals being correct, which
+              % it generally isn't for the refiller
+            %rootModel = self.Parent.Parent ;
+            %numberOfPFILines = rootModel.NPFITerminals ;
+            %nCounters = rootModel.NCounters ;
+            %value = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
         end
         
         function value=get.Edge(self)
@@ -217,19 +225,19 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
             self.Parent.update();            
         end
         
-        function set.DeviceName(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isString(value) ,
-                    self.DeviceName_ = value ;
-                    self.syncPFIIDToCounterID_() ;
-                else
-                    self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
-                          'DeviceName must be a string');                  
-                end                    
-            end
-            self.Parent.update();            
-        end
+%         function set.DeviceName(self, value)
+%             if ws.isASettableValue(value) ,
+%                 if ws.isString(value) ,
+%                     self.DeviceName_ = value ;
+%                     self.syncPFIIDToCounterID_() ;
+%                 else
+%                     self.Parent.update();
+%                     error('most:Model:invalidPropVal', ...
+%                           'DeviceName must be a string');                  
+%                 end                    
+%             end
+%             self.Parent.update();            
+%         end
         
 %         function set.PFIID(self, value)
 %             if ws.isASettableValue(value) ,
@@ -263,7 +271,7 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 && self.Parent.isCounterIDFree(value),
                     value = double(value) ;
                     self.CounterID_ = value ;
-                    self.syncPFIIDToCounterID_() ;
+                    %self.syncPFIIDToCounterID_() ;
                 else
                     self.Parent.update();
                     error('most:Model:invalidPropVal', ...
@@ -417,13 +425,13 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %             end
 %         end
         
-        function syncPFIIDToCounterID_(self)
-            rootModel = self.Parent.Parent ;
-            numberOfPFILines = rootModel.NPFITerminals ;
-            nCounters = rootModel.NCounters ;
-            pfiID = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
-            self.PFIID_ = pfiID ;
-        end
+%         function syncPFIIDToCounterID_(self)
+%             rootModel = self.Parent.Parent ;
+%             numberOfPFILines = rootModel.NPFITerminals ;
+%             nCounters = rootModel.NCounters ;
+%             pfiID = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
+%             self.PFIID_ = pfiID ;
+%         end
         
     end  % static methods
 end

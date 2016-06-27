@@ -34,20 +34,9 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.ValueComparable
             % that don't need to go into the header file
             propNames=setdiff(propNamesRaw, ...
                               {'AdditionalParameterNames', 'AdditionalParameterDisplayNames', 'AdditionalParameterDisplayUnitses'}) ;
-        end  % function 
-    end  % public methods block    
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();    
-%         mdlHeaderExcludeProps = {};
-%     end
-    
-%     methods (Access=protected)
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.Model(self);
-%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-%         end
-%     end
+        end  % function        
+        
+    end  % public methods block        
 
     %
     % Implementations of methods needed to be a ws.ValueComparable

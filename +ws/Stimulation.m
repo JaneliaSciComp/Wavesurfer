@@ -1045,9 +1045,9 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
         
         function addDigitalChannel_(self)
             %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
             if isempty(freeTerminalIDs) ,
                 return  % can't add a new one, because no free IDs
@@ -1057,7 +1057,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
             newChannelName = sprintf('P0.%d',newTerminalID) ;
             %newChannelName = newChannelPhysicalName ;
             
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            %self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
@@ -1085,14 +1085,14 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
             % Now do the real deleting
             if all(isToBeDeleted)
                 % Keep everything a row vector
-                self.DigitalDeviceNames_ = cell(1,0) ;
+                %self.DigitalDeviceNames_ = cell(1,0) ;
                 self.DigitalTerminalIDs_ = zeros(1,0) ;
                 self.DigitalChannelNames_ = cell(1,0) ;
                 self.IsDigitalChannelTimed_ = true(1,0) ;
                 self.DigitalOutputStateIfUntimed_ = false(1,0) ;
                 self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
             else
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                %self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                 self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
@@ -1106,12 +1106,12 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
        
-        function didSetDeviceName(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;            
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.broadcast('Update');
-        end
+%         function didSetDeviceName(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             self.broadcast('Update');
+%         end
         
     end
         

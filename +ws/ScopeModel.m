@@ -52,8 +52,9 @@ classdef ScopeModel < ws.Model
         XOffset_ = 0
         XSpan_ = 1
         YLim_ = [-10 +10]
-        ChannelNames_ = cell(1,0)  % row vector
-        ChannelColorIndex_ = zeros(1,0)
+        %ChannelNames_ = cell(1,0)  % row vector
+        ChannelName_ = '' ;
+        ChannelColorIndex_ = 1
         IsGridOn_ = true
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
         DoShowButtons_ = true % if false, don't show buttons in the figure
@@ -61,13 +62,13 @@ classdef ScopeModel < ws.Model
 
     properties (Access = protected, Transient=true)
         %Parent_
+        XSpanInPixels_ = 400  % if running without a UI, this a reasonable fallback value
         XData_  % a double array, holding x data for each channel
-        YData_ = cell(1,0)  % a 1 x self.NChannels cell array, holding y data for each channel
-          % Invariant: For all i,j length(YData{i})==length(YData{j})        
-        BufferFactor_ = 1
-        RunningMin_ = zeros(1,0)  % length == self.NChannels
-        RunningMax_ = zeros(1,0)
-        RunningMean_ = zeros(1,0)
+        YData_  % a double array, holding y data for each channel 
+        %BufferFactor_ = 1
+        %RunningMin_ = zeros(1,0)  % length == self.NChannels
+        %RunningMax_ = zeros(1,0)
+        %RunningMean_ = zeros(1,0)
         IsVisibleWhenDisplayEnabled_  
           % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
           % "layout" part of the .cfg file.  Long-term, would be cleaner to
@@ -83,44 +84,60 @@ classdef ScopeModel < ws.Model
         UpdateXAxisLimits
         UpdateYAxisLimits
         UpdateAreYLimitsLockedTightToData
+        ItWouldBeNiceToKnowXSpanInPixels
     end  % events
     
     methods
-        function self = ScopeModel(parent,varargin)
+        function self = ScopeModel(parent,tag,title,channelName)
             % Creates a ScopeModel object.  The 'Tag' property is
             % required.  In almost all cases, the 'WavesurferModel' property
             % should also be specified, although occasionally it is useful
             % to leave it out while debugging or testing.
+            if ~exist('tag','var') || isempty(tag) ,
+                tag = '' ;
+            end
+            if ~exist('title','var') || isempty(title) ,
+                title = '' ;
+            end
+            if ~exist('channelName','var') || isempty(channelName) ,
+                channelName = '' ;
+            end
+            
             self@ws.Model(parent);
             
             self.IsVisibleWhenDisplayEnabled_=true;
-            %
-            % Parse and set PV args
-            %
             
-            % Filter out not-publically-settable props
-            validPropNames=[ws.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
-            %mandatoryPropNames={'Tag'};
-            mandatoryPropNames=cell(1,0);
-            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
-
-            % Make sure there's the same number of props as vals
-            propNamesRaw = pvArgs(1:2:end);
-            propValsRaw = pvArgs(2:2:end);
-            nRawPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
-            propNames=propNamesRaw(1:nRawPVs);
-            propVals=propValsRaw(1:nRawPVs);            
+            self.Tag_ = tag ;
+            self.Title_ = title ;
+            self.addChannel_(channelName) ;
             
-            % We need to have a unique tag, so make one, even though it
-            % will possibly get overwritten by a PV pair
-            randomTag=sprintf('scopeModel%015d',randi(10^15)-1);  % very unlikely to be a duplicate
-            %randomTag='scopeModel';
-            self.Tag=randomTag;
-            
-            % Set the properties
-            for idx = 1:length(propVals)
-                self.(propNames{idx}) = propVals{idx};
-            end
+%             %
+%             % Parse and set PV args
+%             %
+%             
+%             % Filter out not-publically-settable props
+%             validPropNames=[ws.findPropertiesSuchThat(self,'SetAccess','public') {'Tag' 'Title' 'Parent'}];
+%             %mandatoryPropNames={'Tag'};
+%             mandatoryPropNames=cell(1,0);
+%             pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+% 
+%             % Make sure there's the same number of props as vals
+%             propNamesRaw = pvArgs(1:2:end);
+%             propValsRaw = pvArgs(2:2:end);
+%             nRawPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
+%             propNames=propNamesRaw(1:nRawPVs);
+%             propVals=propValsRaw(1:nRawPVs);            
+%             
+%             % We need to have a unique tag, so make one, even though it
+%             % will possibly get overwritten by a PV pair
+%             randomTag=sprintf('scopeModel%015d',randi(10^15)-1);  % very unlikely to be a duplicate
+%             %randomTag='scopeModel';
+%             self.Tag=randomTag;
+%             
+%             % Set the properties
+%             for idx = 1:length(propVals)
+%                 self.(propNames{idx}) = propVals{idx};
+%             end
         end  % constructor
         
         function delete(self) %#ok<INUSD>
@@ -154,16 +171,16 @@ classdef ScopeModel < ws.Model
         end
 
         function result = get.ChannelNames(self)
-            result = self.ChannelNames_ ;
+            result = {self.ChannelName_} ;
         end
         
         function result = get.ChannelName(self)
-            result = self.ChannelNames_{1} ;
+            result = self.ChannelName_ ;
         end
         
         function set.ChannelName(self, newValue)
             if ws.isString(newValue) && ~isempty(newValue) ,
-                self.ChannelNames_ = {newValue} ;
+                self.ChannelName_ = newValue ;
             end
             self.broadcast('Update');            
         end
@@ -361,8 +378,8 @@ classdef ScopeModel < ws.Model
             self.YLim=newYLimits;
         end  % function
         
-        function value=get.NChannels(self)
-            value=length(self.ChannelNames);
+        function value=get.NChannels(self) %#ok<MANU>
+            value=1;
         end
         
         function result=get.IsVisibleWhenDisplayEnabled(self)
@@ -437,8 +454,8 @@ classdef ScopeModel < ws.Model
 
     end  % methods
     
-    methods
-        function addChannel(self, newChannelName)
+    methods (Access=protected)
+        function addChannel_(self, newChannelName)
             % If newChannelName is not a string, or is empty, just return
             if ~ws.isString(newChannelName) || isempty(newChannelName) ,
                 return
@@ -449,9 +466,9 @@ classdef ScopeModel < ws.Model
                 return
             end
                
-            nChannelsOriginally=self.NChannels;
+            nChannelsOriginally=0;
             iNewChannel=nChannelsOriginally+1;   
-            self.ChannelNames_{iNewChannel} = newChannelName;
+            self.ChannelName_ = newChannelName;
             %self.yUnits(end+1) = units;
             
             colorOrderIndex = iNewChannel;
@@ -463,7 +480,7 @@ classdef ScopeModel < ws.Model
             %self.ChannelNames(end + 1).ChannelName = newTerminalID;
             %self.XDataLims(:,iNewChannel) = [0 0]';
             %self.XData{iNewChannel}=zeros(0,1);  % col vector
-            self.YData_{iNewChannel}=zeros(0,1);  % col vector            
+            self.YData_ = zeros(0,1) ;  % col vector            
 %             self.Lines(iNewChannel) = ...
 %                 line('Parent', self.Axes,...
 %                      'XData', [],...
@@ -475,9 +492,9 @@ classdef ScopeModel < ws.Model
 %                      'LineWidth', 2,...
 %                      'Tag', sprintf('%s::%s', self.Name, newChannelName));
             
-            self.RunningMin_(iNewChannel) = 0;
-            self.RunningMax_(iNewChannel) = 0;
-            self.RunningMean_(iNewChannel) = 0;
+            %self.RunningMin_(iNewChannel) = 0;
+            %self.RunningMax_(iNewChannel) = 0;
+            %self.RunningMean_(iNewChannel) = 0;
             
             % If this is the first channel added, pretend the channel units
             % were just set from 1 V/V to something else, to trigger an
@@ -490,95 +507,74 @@ classdef ScopeModel < ws.Model
             %self.updateYAxisLabel()
             self.broadcast('ChannelAdded');
         end
-        
-        function addData(self, dataChannelNames, newData, sampleRate, newXOffset)
-            %T=zeros(1,5);
-            %ticId=tic();
-            %T(1)=toc(ticId);
-            assert(isnumeric(newData), 'Invalid data format supplied.');
+    end
+    
+    methods
+        function addData(self, t, yRecent, sampleRate, xOffsetInParent)
+            % t is a scalar, the timestamp of the scan *just after* the
+            %   most recent scan
+            % yNew a column vector of doubles
+            % sampleRate a scalar
+            % newXOffset a scalar, the new XOffset of the scope window i.e.
+            %   xlim(1)            
             
-            if ~iscell(dataChannelNames) ,
-                dataChannelNames = {dataChannelNames};
-            end
+            % Compute a timeline for the new data
+            nNewScans = size(yRecent, 1) ;
+            dt = 1/sampleRate ;  % s
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
             
-            nNewScans = size(newData, 1);
-            %nChannels=size(data,2);
-            dt=1/sampleRate;  % s
-            newXData = linspace(0, dt*(nNewScans-1), nNewScans)';
-            %T(2)=toc(ticId);
-            %channelsWithLines = {self.chanLines.ChannelName};
+            % Figure out the downsampling ratio
+            self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
+              % At this point, self.XSpanPixels_ should be set to the
+              % correct value, or the fallback value if there's no view
+            %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+            xSpanInPixels = self.XSpanInPixels_ ;
+            r = ws.ratioSubsampling(dt, self.XSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
             
             % deal with XData
-            currXData = self.XData;
-            if isempty(currXData) ,
-                xData = newXData;
-            else
-                xData = [currXData; currXData(end) + dt + newXData];
-            end
-            % If number of samples is too large to display, trim off
-            % the old ones 
-            nDisplayableSamples = ceil(self.XSpan * sampleRate * self.BufferFactor_);
-            if length(xData) > nDisplayableSamples
-                xData=xData(end-nDisplayableSamples+1:end);
-            end
-            % Commit the data
-            self.XData_=xData;
-            %T(3)=toc(ticId);
+            xAllOriginal = self.XData ;  % these are already downsampled
+            yAllOriginal = self.YData ;            
             
-            % Deal with YData
-            for jInData = 1:numel(dataChannelNames)
-                % Figure out the channel index for this channel
-                dataChannelName=dataChannelNames{jInData};
-                iChannel = find(strcmp(dataChannelName,self.ChannelNames), 1);                
-                if isempty(iChannel)
-                    continue
-                end
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (xOffsetInParent<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan) ;
 
-                % Add the new data onto the existing data in a local
-                % variable
-                currYData = self.YData{iChannel};
-                yData = [currYData; newData(:, jInData)];
-                
-                % If number of samples is too large to display, trim off
-                % the old ones 
-                if length(yData) > nDisplayableSamples
-                    yData=yData(end-nDisplayableSamples+1:end);
-                end
-                
-                % Commit the data
-                self.YData_{iChannel}=yData;
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the x offset in the scope to match that in the Display
+            % subsystem
+            if xOffsetInParent ~= self.XOffset , 
+                self.XOffset = xOffsetInParent ;
             end
             
-            if newXOffset~=self.XOffset , 
-                self.XOffset=newXOffset;
-            end
-            %T(4)=toc(ticId);
+            % Change the y limits to match the data, if appropriate
             self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
-            %T(5)=toc(ticId);
             
-            % Update the plot limits to accomodate the new data, if
-            % needed
-            %self.updateScaling();
-            %fprintf('ScopeModel.addData(): About to broadcast(''DataAdded'')...\n');
+            % Broadcast the change
             self.broadcast('DataAdded');            
-            %fprintf('ScopeModel.addData(): Just after broadcast(''DataAdded'')...\n');
-            %T(6)=toc(ticId);
-            %dT=diff(T);
-            %fprintf('ScopeModel.addData(): %7.3f %7.3f %7.3f %7.3f %7.3f\n',dT);
         end
         
         function clearData(self)
-            for idx = 1:numel(self.ChannelNames)
-                self.XData_=zeros(0,1);
-                self.YData_{idx}=zeros(0,1);
-                
-                %set(self.Lines(idx), {'XData' 'YData'}, {[] []});
-                %self.XDataLims(:,idx) = [0; 0];
-                
-                self.RunningMin_(idx) = 0;
-                self.RunningMax_(idx) = 0;
-                self.RunningMean_(idx) = 0;
-            end
+            self.XData_=zeros(0,1);
+            self.YData_=zeros(0,1);
+
+            %set(self.Lines(idx), {'XData' 'YData'}, {[] []});
+            %self.XDataLims(:,idx) = [0; 0];
+
+            %self.RunningMin_(idx) = 0;
+            %self.RunningMax_(idx) = 0;
+            %self.RunningMean_(idx) = 0;
             
             %delete(self.HeldLines);
             %self.HeldLines = [];
@@ -627,15 +623,10 @@ classdef ScopeModel < ws.Model
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            import ws.*
-            yMin=+inf;
-            yMax=-inf;
-            for iChannel = 1:self.NChannels
-                thisMin=min(self.YData{iChannel});
-                yMin=fif(isempty(thisMin),yMin,min(yMin,thisMin));
-                thisMax=max(self.YData{iChannel});
-                yMax=fif(isempty(thisMax),yMax,max(yMax,thisMax));
-            end
+            yMinRaw=min(self.YData);
+            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
+            yMaxRaw=max(self.YData);
+            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
             yMinAndMax=double([yMin yMax]);
         end
 
@@ -660,7 +651,7 @@ classdef ScopeModel < ws.Model
             if yRadius==0 ,
                 yRadius=0.001;
             end
-            self.YLim=yCenter+1.05*yRadius*[-1 +1];
+            self.YLim = yCenter + 1.05*yRadius*[-1 +1] ;
         end  % function
     end  % methods
     
@@ -702,6 +693,10 @@ classdef ScopeModel < ws.Model
         function toggleAreYLimitsLockedTightToData(self)
             self.AreYLimitsLockedTightToData = ~self.AreYLimitsLockedTightToData;
         end
+        
+        function hereIsXSpanInPixels_(self, xSpanInPixels)
+            self.XSpanInPixels_ = xSpanInPixels ;
+        end        
     end
 
     methods (Access=protected)        
@@ -730,12 +725,7 @@ classdef ScopeModel < ws.Model
             %fprintf('ScopeModel::synchronizeTransientStateToPersistedState_()\n');
             %dbstack
             %self
-            nChannels = length(self.ChannelNames_) ;  % self.ChannelNames_ is persisted
-            yData = cell(1,nChannels) ;
-            for i = 1:nChannels ,
-                yData{i} = zeros(0,1) ;
-            end
-            self.YData_ = yData ;
+            self.YData_ = zeros(0,1) ;
             %keyboard
         end
         

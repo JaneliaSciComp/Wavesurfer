@@ -1,3 +1,3 @@
 function result=versionString()
-    result='0.9192';
+    result='0.92';
 end

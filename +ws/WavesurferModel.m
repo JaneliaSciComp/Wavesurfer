@@ -66,12 +66,11 @@ classdef WavesurferModel < ws.RootModel
     end
 
     properties (Access=protected, Transient=true)
-        %RPCServer_
         IPCPublisher_
-        %RefillerRPCClient_
         LooperIPCSubscriber_
         RefillerIPCSubscriber_
-        %ExpectedNextScanIndex_
+        LooperIPCRequester_
+        RefillerIPCRequester_
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
         HasUserSpecifiedUserSettingsFileName_ = false
@@ -79,7 +78,7 @@ classdef WavesurferModel < ws.RootModel
         IndexOfSelectedFastProtocol_ = []
         State_ = 'uninitialized'
         Subsystems_
-        t_
+        t_  % During a sweep, the time stamp of the scan *just after* the most recent scan
         NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_
         FromSweepStartTicId_
@@ -141,12 +140,16 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function self = WavesurferModel(isITheOneTrueWavesurferModel)
+        function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
             self@ws.RootModel();  % we have no parent
             
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
+            if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
+                doRunInDebugMode = false ;
+            end
+            
 %             if ~exist('mode','var') || isempty(mode),
 %                 mode = 'release' ;
 %             end
@@ -160,34 +163,75 @@ classdef WavesurferModel < ws.RootModel
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
             if isITheOneTrueWavesurferModel ,
+                % Determine which three free ports to use:
+                nPorts = 5 ;
+                portNumbers = ws.WavesurferModel.getFreeEphemeralPortNumbers(nPorts) ;                
+                frontendIPCPublisherPortNumber = portNumbers(1) ;
+                looperIPCPublisherPortNumber = portNumbers(2) ;
+                refillerIPCPublisherPortNumber = portNumbers(3) ;
+                looperIPCReplierPortNumber = portNumbers(4) ;
+                refillerIPCReplierPortNumber = portNumbers(5) ;                
+                
                 % Set up the object to broadcast messages to the satellite
                 % processes
-                self.IPCPublisher_ = ws.IPCPublisher(self.FrontendIPCPublisherPortNumber) ;
-                self.IPCPublisher_.bind() ;
+                self.IPCPublisher_ = ws.IPCPublisher(frontendIPCPublisherPortNumber) ;
+                self.IPCPublisher_.bind(); 
 
-                % Subscribe the the looper boradcaster
+                % Subscribe to the looper broadcaster
                 self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(self.LooperIPCPublisherPortNumber) ;
-
-                % Subscribe the the refiller broadcaster
+                self.LooperIPCSubscriber_.connect(looperIPCPublisherPortNumber) ;
+                
+                % Subscribe to the refiller broadcaster
                 self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
                 self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(self.RefillerIPCPublisherPortNumber) ;
+                self.RefillerIPCSubscriber_.connect(refillerIPCPublisherPortNumber) ;
 
+                % Connect to the looper replier
+                self.LooperIPCRequester_ = ws.IPCRequester() ;
+                self.LooperIPCRequester_.connect(looperIPCReplierPortNumber) ;                
+                
+                % Connect to the refiller replier
+                self.RefillerIPCRequester_ = ws.IPCRequester() ;
+                self.RefillerIPCRequester_.connect(refillerIPCReplierPortNumber) ;                
+                
                 % Start the other Matlab processes, passing the relevant
                 % path information to make sure they can find all the .m
                 % files they need.
                 [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+                if doRunInDebugMode ,
+                    looperLaunchStringTemplate = ...
+                        ['start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(%d, %d, %d); ' ...
+                         'looper.runMainLoop(); clear; quit()"'] ;
+                else
+                    looperLaunchStringTemplate = ...
+                        ['start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(%d, %d, %d); ' ...
+                         'looper.runMainLoop(); clear; quit()"'] ;
+                end
                 looperLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(); looper.runMainLoop(); clear; quit()"' , ...
+                    sprintf(looperLaunchStringTemplate , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            looperIPCPublisherPortNumber, ...
+                            frontendIPCPublisherPortNumber, ...
+                            looperIPCReplierPortNumber) ;
                 system(looperLaunchString) ;
+                if doRunInDebugMode ,
+                    refillerLaunchStringTemplate = ...
+                        [ 'start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); refiller=ws.Refiller(%d, %d, %d); ' ...
+                          'refiller.runMainLoop(); clear; quit()"' ] ;
+                else
+                    refillerLaunchStringTemplate = ...
+                        [ 'start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d, %d); ' ...
+                          'refiller.runMainLoop(); clear; quit()"' ] ;
+                end
                 refillerLaunchString = ...
-                    sprintf('start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(); refiller.runMainLoop(); clear; quit()"' , ...
+                    sprintf(refillerLaunchStringTemplate , ...
                             pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib ) ;
+                            pathToMatlabZmqLib , ...
+                            refillerIPCPublisherPortNumber, ...
+                            frontendIPCPublisherPortNumber, ...
+                            refillerIPCReplierPortNumber) ;
                 system(refillerLaunchString) ;
                 
                 % Start broadcasting pings until the satellite processes
@@ -271,8 +315,8 @@ classdef WavesurferModel < ws.RootModel
 %             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
             
 
-            % The object is now initialized, but not very useful until an
-            % MDF is specified.
+            % The object is now initialized, but not very useful until a
+            % device is specified.
             self.setState_('no_device') ;
             
             % Finally, set the device name to the first device name, if
@@ -295,7 +339,10 @@ classdef WavesurferModel < ws.RootModel
 
                 % Close the sockets
                 self.LooperIPCSubscriber_ = [] ;
-                self.IPCPublisher_ = [] ;                
+                self.RefillerIPCSubscriber_ = [] ;
+                self.LooperIPCRequester_ = [] ;
+                self.RefillerIPCRequester_ = [] ;
+                self.IPCPublisher_ = [] ;
             end
             
             %if ~isempty(self) ,
@@ -407,19 +454,19 @@ classdef WavesurferModel < ws.RootModel
             result = [] ;
         end
         
-        function result = looperReadyForRunOrPerhapsNot(self, err)  %#ok<INUSL>
-            % Call by the Looper, via ZMQ pub-sub, when it has finished its
-            % preparations for a run.  Currrently does nothing, we just
-            % need a message to tell us it's OK to proceed.
-            result = err ;
-        end
-        
-        function result = looperReadyForSweep(self) %#ok<MANU>
-            % Call by the Looper, via ZMQ pub-sub, when it has finished its
-            % preparations for a sweep.  Currrently does nothing, we just
-            % need a message to tell us it's OK to proceed.
-            result = [] ;
-        end        
+%         function result = looperReadyForRunOrPerhapsNot(self, err)  %#ok<INUSL>
+%             % Call by the Looper, via ZMQ pub-sub, when it has finished its
+%             % preparations for a run.  Currrently does nothing, we just
+%             % need a message to tell us it's OK to proceed.
+%             result = err ;
+%         end
+%         
+%         function result = looperReadyForSweep(self) %#ok<MANU>
+%             % Call by the Looper, via ZMQ pub-sub, when it has finished its
+%             % preparations for a sweep.  Currrently does nothing, we just
+%             % need a message to tell us it's OK to proceed.
+%             result = [] ;
+%         end        
         
         function result = looperIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
@@ -427,19 +474,19 @@ classdef WavesurferModel < ws.RootModel
             result = [] ;
         end
         
-        function result = refillerReadyForRunOrPerhapsNot(self, err) %#ok<INUSL>
-            % Call by the Refiller, via ZMQ pub-sub, when it has finished its
-            % preparations for a run.  Currrently does nothing, we just
-            % need a message to tell us it's OK to proceed.
-            result = err ;
-        end
-        
-        function result = refillerReadyForSweep(self) %#ok<MANU>
-            % Call by the Refiller, via ZMQ pub-sub, when it has finished its
-            % preparations for a sweep.  Currrently does nothing, we just
-            % need a message to tell us it's OK to proceed.
-            result = [] ;
-        end        
+%         function result = refillerReadyForRunOrPerhapsNot(self, err) %#ok<INUSL>
+%             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
+%             % preparations for a run.  Currrently does nothing, we just
+%             % need a message to tell us it's OK to proceed.
+%             result = err ;
+%         end
+%         
+%         function result = refillerReadyForSweep(self) %#ok<MANU>
+%             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
+%             % preparations for a sweep.  Currrently does nothing, we just
+%             % need a message to tell us it's OK to proceed.
+%             result = [] ;
+%         end        
         
         function result = refillerStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
@@ -456,13 +503,13 @@ classdef WavesurferModel < ws.RootModel
             result = [] ;
         end
         
-        function result = looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
-            result = [] ;
-        end
-        
-        function result = refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
-            result = [] ;
-        end       
+%         function result = looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
+%             result = [] ;
+%         end
+%         
+%         function result = refillerDidReleaseTimedHardwareResources(self) %#ok<MANU>
+%             result = [] ;
+%         end       
         
         function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
             result = [] ;
@@ -969,18 +1016,20 @@ classdef WavesurferModel < ws.RootModel
             % Release our own hardware resources, and also tell the
             % satellites to do so.
             self.releaseTimedHardwareResources_() ;
-            self.IPCPublisher_.send('satellitesReleaseTimedHardwareResources') ;
+            %self.IPCPublisher_.send('satellitesReleaseTimedHardwareResources') ;
             
             % Wait for the looper to respond
             timeout = 10 ;  % s
-            err = self.LooperIPCSubscriber_.waitForMessage('looperDidReleaseTimedHardwareResources',timeout) ;
+            self.LooperIPCRequester_.send('releaseTimedHardwareResources') ;
+            err = self.LooperIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end
             
             % Wait for the refiller to respond
-            err = self.RefillerIPCSubscriber_.waitForMessage('refillerDidReleaseTimedHardwareResources',timeout) ;
+            self.RefillerIPCRequester_.send('releaseTimedHardwareResources') ;
+            err = self.RefillerIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
@@ -1097,22 +1146,29 @@ classdef WavesurferModel < ws.RootModel
             % Tell the Looper & Refiller to prepare for the run
             wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
-            self.IPCPublisher_.send('startingRun', ...
-                                    wavesurferModelSettings, ...
-                                    acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                    self.IsAIChannelTerminalOvercommitted, ...
-                                    self.IsDIChannelTerminalOvercommitted, ...
-                                    self.IsAOChannelTerminalOvercommitted, ...
-                                    self.IsDOChannelTerminalOvercommitted) ;
+            self.LooperIPCRequester_.send('startingRun', ...
+                                          wavesurferModelSettings, ...
+                                          acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                          self.IsAIChannelTerminalOvercommitted, ...
+                                          self.IsDIChannelTerminalOvercommitted, ...
+                                          self.IsAOChannelTerminalOvercommitted, ...
+                                          self.IsDOChannelTerminalOvercommitted) ;
+            self.RefillerIPCRequester_.send('startingRun', ...
+                                            wavesurferModelSettings, ...
+                                            acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                            self.IsAIChannelTerminalOvercommitted, ...
+                                            self.IsDIChannelTerminalOvercommitted, ...
+                                            self.IsAOChannelTerminalOvercommitted, ...
+                                            self.IsDOChannelTerminalOvercommitted ) ;
             
             % Isn't the code below a race condition?  What if the refiller
             % responds first?  No, it's not a race, because one is waiting
-            % on the LooperIPCSubscriber_, the other on the
-            % RefillerIPCSubscriber_.
+            % on the LooperIPCRequester_, the other on the
+            % RefillerIPCRequester_.
             
             % Wait for the looper to respond that it is ready
             timeout = 10 ;  % s
-            [err,looperResponse] = self.LooperIPCSubscriber_.waitForMessage('looperReadyForRunOrPerhapsNot', timeout) ;
+            [err,looperResponse] = self.LooperIPCRequester_.waitForResponse(timeout, 'startingRun') ;
             if isempty(err) ,
                 if isa(looperResponse,'MException') ,
                     compositeLooperError = looperResponse ;
@@ -1146,14 +1202,11 @@ classdef WavesurferModel < ws.RootModel
             end
             
             % Even if the looper had a problem, we still need to get the
-            % message from the refiller, if any.  Otherwise, the next
-            % message we read from the refiller, perhaps when the user
-            % fixes whatever is bothering the looper, will be
-            % refillerReadyForRunOrPerhapsNot, regardless of what it should
-            % be.
+            % message from the refiller, if any, because we're using
+            % req-rep for these messages.
             
             % Wait for the refiller to respond that it is ready
-            [err, refillerError] = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForRunOrPerhapsNot', timeout) ;
+            [err, refillerError] = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingRun') ;
             if isempty(err) ,
                 compositeRefillerError = refillerError ;
             else
@@ -1201,7 +1254,7 @@ classdef WavesurferModel < ws.RootModel
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
-            self.Acquisition.cacheAnalogScalingCoefficents_(analogScalingCoefficients) ;
+            self.Acquisition.cacheAnalogScalingCoefficients_(analogScalingCoefficients) ;
             self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
             
             % Now tell the logging subsystem that a run is about to start,
@@ -1309,11 +1362,12 @@ classdef WavesurferModel < ws.RootModel
                 % Tell the refiller to ready itself (we do this first b/c
                 % this starts the DAQmx tasks, and we want the output
                 % task(s) to start before the input task(s)
-                self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
+                % self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
                 
                 % Wait for the refiller to respond
-                timeout = 10 ;  % s
-                err = self.RefillerIPCSubscriber_.waitForMessage('refillerReadyForSweep', timeout) ;
+                timeout = 11 ;  % s
+                self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+                err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
                 if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
@@ -1321,17 +1375,19 @@ classdef WavesurferModel < ws.RootModel
                     throw(err);
                 end
                 
-                % Tell the looper to ready itself
-                self.IPCPublisher_.send('startingSweepLooper',self.NSweepsCompletedInThisRun_+1) ;
+                % % Tell the looper to ready itself
+                % self.IPCPublisher_.send('startingSweepLooper',self.NSweepsCompletedInThisRun_+1) ;
                 
                 % Wait for the looper to respond
-                err = self.LooperIPCSubscriber_.waitForMessage('looperReadyForSweep', timeout) ;
+                self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+                timeout = 12 ;  % s
+                err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
                 if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     throw(err);
-                end               
+                end
                 
                 % Set the sweep timer
                 self.FromSweepStartTicId_=tic();
@@ -1631,7 +1687,7 @@ classdef WavesurferModel < ws.RootModel
                 % Scale the analog data
                 channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
                 scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;                
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;                
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
 %                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
 %                 if isempty(rawAnalogData) ,
@@ -1887,7 +1943,7 @@ classdef WavesurferModel < ws.RootModel
             responseFileName='si_response.txt';
             responseAbsoluteFileName=fullfile(dirName,responseFileName);
             
-            maximumWaitTime=10;  % sec
+            maximumWaitTime=30;  % sec
             dtBetweenChecks=0.1;  % sec
             nChecks=round(maximumWaitTime/dtBetweenChecks);
             
@@ -2488,6 +2544,7 @@ classdef WavesurferModel < ws.RootModel
             self.WasRunStopped_ = false ;
             drawnowTicId = tic() ;
             timeOfLastDrawnow = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
+            %profile resume ;
             while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
                 %fprintf('At top of within-sweep loop...\n') ;
                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
@@ -2499,6 +2556,7 @@ classdef WavesurferModel < ws.RootModel
                     timeOfLastDrawnow = toc(drawnowTicId) ;
                 end
             end    
+            %profile off ;
             isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
             wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
             self.IsSweepComplete_ = [] ;
@@ -2574,7 +2632,7 @@ classdef WavesurferModel < ws.RootModel
             % If you're not careful about this stuff, the acquisition tasks
             % can end up getting triggered (e.g. by an external trigger)
             % before the stimulation tasks have been started, even though
-            % the user has configure both acq and stim subsystems to use
+            % the user has configured both acq and stim subsystems to use
             % the same trigger.  This business with the keystone tasks is
             % designed to eliminate this in the common case of acq and stim
             % subsystems using the same trigger, and ameliorate it in cases
@@ -2622,6 +2680,10 @@ classdef WavesurferModel < ws.RootModel
             %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
             %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
         end
+        
+        function debug(self) %#ok<MANU>
+            keyboard
+        end
     end  % public methods block
     
     methods (Access=protected) 
@@ -2662,12 +2724,12 @@ classdef WavesurferModel < ws.RootModel
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
             
-            % Tell the subsystems that we've changed the device
-            % name, which we have, among other things
-            self.Acquisition.didSetDeviceName() ;
-            self.Stimulation.didSetDeviceName() ;
-            self.Triggering.didSetDeviceName() ;
-            self.Display.didSetDeviceName() ;
+%             % Tell the subsystems that we've changed the device
+%             % name, which we have, among other things
+%             self.Acquisition.didSetDeviceName() ;
+%             self.Stimulation.didSetDeviceName() ;
+%             self.Triggering.didSetDeviceName() ;
+%             %self.Display.didSetDeviceName() ;
 
             % Safe to do broadcasts again
             self.enableBroadcastsMaybe() ;
@@ -2716,7 +2778,7 @@ classdef WavesurferModel < ws.RootModel
                         self.Acquisition.didSetDeviceName() ;
                         self.Stimulation.didSetDeviceName() ;
                         self.Triggering.didSetDeviceName() ;
-                        self.Display.didSetDeviceName() ;
+                        %self.Display.didSetDeviceName() ;
                         
                         % Change our state to reflect the presence of the
                         % device
@@ -2756,6 +2818,42 @@ classdef WavesurferModel < ws.RootModel
             pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
             
             %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
+        end
+        
+        function portNumbers = getFreeEphemeralPortNumbers(nPorts)
+            % Determine which three free ports to use:
+            % First bind to three free ports to get their addresses
+            freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
+            for i=1:nPorts ,
+                %freePorts(i).context = zmq.core.ctx_new();
+                freePorts(i).context = zmq.Context();
+                %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
+                freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
+                address = 'tcp://127.0.0.1:*';
+                %zmq.core.bind(freePorts(i).socket, address);
+                freePorts(i).socket.bind(address);
+                %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
+                %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+                %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
+                freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
+                splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
+                freePorts(i).portNumber = str2double(splitString{2});
+            end
+
+            % Unbind the ports to free them up for the actual
+            % processes. Doing it in this way (rather than
+            % binding/unbinding each port sequentially) will minimize amount of
+            % time between a port being unbound and bound by a process.
+            for i=1:nPorts ,
+                %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
+                %zmq.core.close(freePorts(i).socket);
+                %zmq.core.ctx_shutdown(freePorts(i).context);
+                %zmq.core.ctx_term(freePorts(i).context);
+                freePorts(i).socket = [] ;
+                freePorts(i).context = [] ;
+            end
+
+            portNumbers = [ freePorts(:).portNumber ] ;            
         end
     end  % static methods block
     

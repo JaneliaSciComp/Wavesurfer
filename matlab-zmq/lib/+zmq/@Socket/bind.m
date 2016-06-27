@@ -3,6 +3,7 @@ function bind(obj, endpoint)
     if (status == 0)
         % Add endpoint to the tracked bindings
         % this is important to the cleanup process
-        obj.bindings{end+1} = endpoint;
+        realized_endpoint = zmq.core.getsockopt(obj.socketPointer, 'ZMQ_LAST_ENDPOINT');
+        obj.bindings{end+1} = realized_endpoint;
     end
 end

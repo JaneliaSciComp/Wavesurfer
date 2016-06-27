@@ -363,19 +363,62 @@ classdef LooperAcquisition < ws.AcquisitionSubsystem
             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
         end        
         
-        function didSetDeviceNameInFrontend(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
-            %self.broadcast('Update');
-        end        
+%         function didSetDeviceNameInFrontend(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             %self.broadcast('Update');
+%         end        
         
-        function mimickingWavesurferModel_(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
-            %self.broadcast('Update');
-        end        
+        function mimicWavesurferModel_(self, other)
+            % This is only ever called when other is the acquisition
+            % subsystem of a ws.WavesurferModel.
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if isequal(thisPropertyName,'AnalogChannelScales_') ,
+                    analogChannelScales = other.AnalogChannelScales ;
+                    self.AnalogChannelScales_ = analogChannelScales ;
+                      % Need to get the public property of other, since
+                      % that will incorporate any overrides from the
+                      % electrodes.  The Looper doesn't have an Ephys
+                      % subsystem, so it can't just mimic the whole
+                      % WavesurferModel directly.
+                elseif isequal(thisPropertyName,'AnalogChannelUnits_') ,
+                    self.AnalogChannelUnits_ = other.AnalogChannelUnits ;
+                      % Need to get the public property of other, since
+                      % that will incorporate any overrides from the
+                      % electrodes.  The Looper doesn't have an Ephys
+                      % subsystem, so it can't just mimic the whole
+                      % WavesurferModel directly.
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
+        end  % function
+    
+%         function mimickingWavesurferModel_(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             %self.broadcast('Update');
+%         end        
     end  % public methods block
     
 end  % classdef

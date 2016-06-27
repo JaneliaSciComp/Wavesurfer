@@ -2,12 +2,9 @@ classdef RootModel < ws.Model
     % The superclass for WavesurferModel, Refiller, and Looper
 
     properties (Constant = true, Transient=true)
-        NFastProtocols = 6        
-        FrontendIPCPublisherPortNumber = 8081
-        LooperIPCPublisherPortNumber = 8082
-        RefillerIPCPublisherPortNumber = 8083        
+        NFastProtocols = 6
     end
-    
+
     properties (Dependent = true)
 %         HasUserSpecifiedProtocolFileName
 %         AbsoluteProtocolFileName

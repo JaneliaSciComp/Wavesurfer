@@ -1,0 +1,20 @@
+The project settings for all of these are similar to what you would
+get if you did, e.g.:
+
+mex -largeArrayDims minMaxDownsampleMex.cpp
+
+within Matlab.
+
+If you instead do 
+
+mex -v -compatibleArrayDims minMaxDownsampleMex.cpp
+
+then Matlab adds the command-line switch /DMX_COMPAT_32 when
+compiling, which #defines MX_COMPAT_32, and leads to mwSize/mwIndex
+being 32-bit quantities.
+
+We don't #define MX_COMPAT_32 when we compile from within VS, so we
+should be getting 64-bit mwSize/mwIndex variables.
+
+ALT
+2016-06-22

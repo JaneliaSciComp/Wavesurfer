@@ -53,3 +53,5 @@ BuildLog.htm
 +ws/+dabs/+ni/+daqmx/@Task/MEX Projects/WriteDigitalData/writeDigitalData.mexw64
 zeromq-4.1.3/lib/libzmq.dll
 launch_satellite_engine/bin/launch_satellite_engine.exe
+*.lib
+*.cache

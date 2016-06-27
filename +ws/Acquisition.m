@@ -208,9 +208,9 @@ classdef Acquisition < ws.AcquisitionSubsystem
     
     methods
         function addDigitalChannel_(self)
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
             if isempty(freeTerminalIDs) ,
                 return  % can't add a new one, because no free IDs
@@ -220,7 +220,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
             newChannelName = sprintf('P0.%d',newTerminalID) ;
             %newChannelName = newChannelPhysicalName ;
             
-            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            %self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
@@ -237,14 +237,14 @@ classdef Acquisition < ws.AcquisitionSubsystem
             channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case so things stay row vectors
-                self.DigitalDeviceNames_ = cell(1,0) ;
+                %self.DigitalDeviceNames_ = cell(1,0) ;
                 self.DigitalTerminalIDs_ = zeros(1,0) ;
                 self.DigitalChannelNames_ = cell(1,0) ;
                 self.IsDigitalChannelActive_ = true(1,0) ;
                 self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
             else
                 isKeeper = ~isToBeDeleted ;
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                %self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
@@ -256,17 +256,17 @@ classdef Acquisition < ws.AcquisitionSubsystem
         end  % function
         
         function didSetDeviceName(self)
-            deviceName = self.Parent.DeviceName ;
-            self.AnalogDeviceNames_(:) = {deviceName} ;
-            self.DigitalDeviceNames_(:) = {deviceName} ;            
+            %deviceName = self.Parent.DeviceName ;
+            %self.AnalogDeviceNames_(:) = {deviceName} ;
+            %self.DigitalDeviceNames_(:) = {deviceName} ;            
             self.broadcast('Update');
         end
         
-        function cacheAnalogScalingCoefficents_(self, analogScalingCoefficients) 
+        function cacheAnalogScalingCoefficients_(self, analogScalingCoefficients) 
             self.AnalogScalingCoefficientsCache_ = analogScalingCoefficients ;
         end
         
-        function clearAnalogScalingCoefficentsCache_(self) 
+        function clearAnalogScalingCoefficientsCache_(self) 
             self.AnalogScalingCoefficientsCache_ = [] ;
         end
         

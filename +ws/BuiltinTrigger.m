@@ -18,7 +18,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
     
     properties (Access=protected)
         Name_
-        DeviceName_
+        %DeviceName_
         PFIID_
         Edge_
     end
@@ -27,7 +27,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
         function self=BuiltinTrigger(parent)
             self@ws.Model(parent) ;
             self.Name_ = 'Built-in Trigger (PFI8)' ;
-            self.DeviceName_ = '' ;
+            %self.DeviceName_ = '' ;
             self.PFIID_ = 8 ;
             self.Edge_ = 'rising' ;
         end
@@ -37,7 +37,8 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
         end
         
         function value=get.DeviceName(self)
-            value = self.DeviceName_ ;
+            value = self.Parent.Parent.DeviceName ;
+            %value = self.DeviceName_ ;
             
 %             % Look high and low throughout the system for a device name
 %             triggeringSubsystem = self.Parent ;
@@ -104,18 +105,18 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
             value=self.Edge_;
         end
         
-        function set.DeviceName(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isString(value) ,
-                    self.DeviceName_ = value ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'Name must be a string');                  
-                end                    
-            end
-            self.broadcast('Update');            
-        end
+%         function set.DeviceName(self, value)
+%             if ws.isASettableValue(value) ,
+%                 if ws.isString(value) ,
+%                     self.DeviceName_ = value ;
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'Name must be a string');                  
+%                 end                    
+%             end
+%             self.broadcast('Update');            
+%         end
         
         function set.Name(self, value)
             if ws.isASettableValue(value) ,
