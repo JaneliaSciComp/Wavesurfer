@@ -1270,7 +1270,9 @@ classdef Refiller < ws.RootModel
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;  
+            % We override this for the refiller b/c the default method
+            % accessed the Acquisition subsystem, which we don't have.  And
+            % this all seems to work out OK.
         end
     end
 
