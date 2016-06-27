@@ -41,10 +41,6 @@ classdef Logging < ws.Subsystem
             % during acquisition, the index of the next "scan" to be written (one-based)
             % "scan" is an NI-ism meaning all the samples acquired for a
             % single time stamp
-        ExpectedSweepSizeActual_  
-            % if all the acquired data for one sweep were put into an array, this
-            % would be the size of that array.  
-            % I.e. [nScans nActiveChannels]
         ExpectedSweepSizeForWritingHDF5_
             % For h5create() it is useful to set the size to
             % ExpectedSweepSizeForWrtingHDF5_ = [Inf nActiveChannels] since
@@ -274,17 +270,20 @@ classdef Logging < ws.Subsystem
             nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
             self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
             if wavesurferModel.AreSweepsFiniteDuration ,
-                self.ExpectedSweepSizeActual_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
-                if any(isinf(self.ExpectedSweepSizeActual_))
-                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-                else
+       %         self.ExpectedSweepSizeActual_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+       %         if any(isinf(self.ExpectedSweepSizeActual_))
+       %             self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
+       %         else
                     self.ChunkSize_ = self.ExpectedSweepSizeActual_;
-                end
+                    self.ChunkSize = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+      %          end
             else
-                self.ExpectedSweepSizeActual_ = [Inf nActiveAnalogChannels];
+         %       self.ExpectedSweepSizeActual_ = [Inf nActiveAnalogChannels];
                 self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
             end
+          %      disp(wavesurferModel.Acquisition.ExpectedScanCount)
 
+                
             % Determine the absolute file names
             %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
             self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
@@ -497,7 +496,7 @@ classdef Logging < ws.Subsystem
             self.CurrentRunAbsoluteFileName_ = [];
             self.FirstSweepIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
-            self.ExpectedSweepSizeActual_ = [];
+  %          self.ExpectedSweepSizeActual_ = [];
             self.ExpectedSweepSizeForWritingHDF5_ = [];
             self.WriteToSweepId_ = [];
             self.ChunkSize_ = [];
@@ -579,7 +578,8 @@ classdef Logging < ws.Subsystem
             
             self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
-            if self.CurrentDatasetOffset_ > self.ExpectedSweepSizeActual_(1) ,
+            wavesurferModel = self.Parent ;
+            if self.CurrentDatasetOffset_ > wavesurferModel.Acquisition.ExpectedScanCount ,
                 self.CurrentDatasetOffset_ = 1;
                 self.WriteToSweepId_ = self.WriteToSweepId_ + 1;
             end
