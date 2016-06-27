@@ -62,7 +62,7 @@ classdef IPCReplier < ws.ZMQBinder
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
-            fprintf('IPCReplier::processMessageIfAvailable(): Got message %s\n',methodName);
+            %fprintf('IPCReplier::processMessageIfAvailable(): Got message %s\n',methodName);
             if isempty(self.Delegate) ,
                 error('IPCReplier:noDelegate', ...
                       'Couldn''t call the method because Delegate is empty or invalid');
