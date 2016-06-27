@@ -166,8 +166,11 @@ classdef RefillerTriggering < ws.TriggeringSubsystem
             repeatCount=triggerSource.RepeatCount;
             task.RepeatCount = repeatCount;
             
-            % Don't set the PFIID --- we now always use the default
-%             pfiID = triggerSource.PFIID ;
+            % Set the PFIID, whether or not we should need to. It seems
+            % that we really do need to do this, even though we now
+            % (6/27/2016) always use the default PFI for output.  Weird.
+            pfiID = triggerSource.PFIID ;
+            task.exportSignal(sprintf('PFI%d', pfiID)) ;
 %             if pfiID ~= counterID + 12 ,
 %                 fprintf('About to export counter task %d out PFI%d\n', counterID, pfiID) ;
 %                 task.exportSignal(sprintf('PFI%d', pfiID));
