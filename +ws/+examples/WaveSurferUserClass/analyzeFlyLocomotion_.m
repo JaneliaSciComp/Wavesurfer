@@ -50,7 +50,7 @@ rotation=d_rot*degrpermmball;
 %calculate cumulative rotation
 cumulative_rotation=cumsum(rotation)/panorama*2*pi; % cumulative rotation in panorama normalized radians
 
-barpos=circ_mean(reshape(data(1:n*5,3),5,[])/arena_range(2)*2*pi)'; %downsampled to match with LocomotionData at 4kHz, converted to a signal ranging from -pi to pi
+barpos=circ_mean_(reshape(data(1:n*5,3),5,[])/arena_range(2)*2*pi)'; %downsampled to match with LocomotionData at 4kHz, converted to a signal ranging from -pi to pi
 
 
 %% plot arena vs ball rotation, calculate gain
