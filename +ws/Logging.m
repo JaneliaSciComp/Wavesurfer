@@ -274,15 +274,12 @@ classdef Logging < ws.Subsystem
        %         if any(isinf(self.ExpectedSweepSizeActual_))
        %             self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
        %         else
-                    self.ChunkSize_ = self.ExpectedSweepSizeActual_;
-                    self.ChunkSize = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+                    self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
       %          end
             else
          %       self.ExpectedSweepSizeActual_ = [Inf nActiveAnalogChannels];
                 self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
             end
-          %      disp(wavesurferModel.Acquisition.ExpectedScanCount)
-
                 
             % Determine the absolute file names
             %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
