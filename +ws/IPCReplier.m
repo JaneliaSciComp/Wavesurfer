@@ -95,7 +95,7 @@ classdef IPCReplier < ws.ZMQBinder
             serializedMessage = getByteStreamFromArray(message) ;  % uint8 array
             %messageAsInt8 = typecast(serializedThing, 'int8') ;
             %fprintf('IPCPublisher::send(): About to call zmq.core.send with %s message\n', methodName);
-            fprintf('IPCReplier::send(): About to call .send() with a result message\n');
+          %  fprintf('IPCReplier::send(): About to call .send() with a result message\n');
             socket = self.Socket ;
             %zmq.core.send(socket, serializedMessage);
             socket.send(serializedMessage) ;

@@ -93,7 +93,7 @@ classdef IPCRequester < ws.ZMQConnecter
             message=struct('methodName',{methodName},'arguments',{varargin});  % scalar struct
             serializedMessage = getByteStreamFromArray(message) ;  % uint8 array
             %messageAsInt8 = typecast(serializedThing, 'int8') ;
-            fprintf('IPCRequester::send(): About to call .send() with %s message\n', methodName);
+          %  fprintf('IPCRequester::send(): About to call .send() with %s message\n', methodName);
             socket = self.Socket ;
             %zmq.core.send(socket, serializedMessage);
             socket.send(serializedMessage) ;
