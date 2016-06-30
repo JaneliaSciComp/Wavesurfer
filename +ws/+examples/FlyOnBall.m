@@ -16,13 +16,23 @@ classdef FlyOnBall < ws.UserClass
     % protected.)
     properties (Access=protected)
         TimeAtStartOfLastRunAsString_ = ''
+         FirstTenPercent_
+         Dt_
         ArenaAndBallRotationFigure_ = [];
         ArenaAndBallRotationAxis_
         tForSweep_
         XSpanInPixels_ % if running without a UI, this a reasonable fallback value
-        CumulativeRotation_
+        CumulativeRotationRecent_
         CumulativeRotationSum_
         CumulativeRotationMeanToSubtract_
+        XData_
+        CumulativeRotationYData_
+        BarPositionRecent_
+        BarPositionSum_
+        BarPositionMeanToSubtract_
+        BarPositionYData_
+        Gain_
+        XRecent_
     end
     
     methods        
@@ -32,7 +42,7 @@ classdef FlyOnBall < ws.UserClass
                 % creates the "user object"
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
-                self.syncArenaAndBallRotationFigureAndAxis();
+                self.syncArenaAndBallRotationFigureAndAxis(rootModel);
             end
            % end
 
@@ -56,7 +66,10 @@ classdef FlyOnBall < ws.UserClass
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
-                self.syncArenaAndBallRotationFigureAndAxis();
+            self.syncArenaAndBallRotationFigureAndAxis(wsModel);
+            self.FirstTenPercent_ = wsModel.Acquisition.Duration/10;
+            self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
+
         end
         
         function completingRun(self,wsModel,eventName)
@@ -70,9 +83,12 @@ classdef FlyOnBall < ws.UserClass
         end
         
         function startingSweep(self,wsModel,eventName)
-            self.CumulativeRotation_ = 0;
+            self.CumulativeRotationRecent_ = 0;
             self.CumulativeRotationSum_ = 0;
+            self.BarPositionSum_ = 0;
             self.tForSweep_ = 0;
+            self.XData_ = [];
+            self.CumulativeRotationYData_ = [];
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -91,11 +107,11 @@ classdef FlyOnBall < ws.UserClass
             % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
       %      get(self.ArenaAndBallRotationAxis_,'Position');
-      tic;
-            dt = 1/wsModel.Acquisition.SampleRate ;  % s
+
             analogData = wsModel.Acquisition.getLatestAnalogData();
+
             [~, ~, ~, ~] = self.analyzeFlyLocomotion_ (analogData);
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData();
+         %   digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             nScans = size(analogData,1);
             % t_ is a protected property of WavesurferModel, and is the
             % time *just after* scan completes. so since we don't have
@@ -103,28 +119,45 @@ classdef FlyOnBall < ws.UserClass
             % and no delay between scans
             t0 = self.tForSweep_; % timestamp of first scan in newData
 % %         
-            firstTenPercent = wsModel.Acquisition.Duration/10;
-            xRecent = t0 + dt*(0:(nScans-1))';
-            self.tForSweep_ = xRecent(end);
+
+           self.XRecent_ = t0 + self.Dt_*(0:(nScans-1))';
+            self.tForSweep_ = self.XRecent_(end);
             previousCumulativeRotationMeanToSubtract = self.CumulativeRotationMeanToSubtract_;
-            if xRecent(1) <= firstTenPercent
-                indicesWithinFirstTenPercent = find(xRecent<=firstTenPercent);
-                self.CumulativeRotationSum_ = self.CumulativeRotationSum_+sum(self.CumulativeRotation_(indicesWithinFirstTenPercent));
-                totalScansIncludedInMean = xRecent(indicesWithinFirstTenPercent(end))/dt;
-         %       fprintf('%d %d %d %f\n',self.CumulativeRotationSum_,totalScansIncludedInMean,indicesWithinFirstTenPercent(end),xRecent(indicesWithinFirstTenPercent(end)));
+            if self.XRecent_(1) <= self.FirstTenPercent_
+                indicesWithinFirstTenPercent = find(self.XRecent_<=self.FirstTenPercent_);
+                self.CumulativeRotationSum_ = self.CumulativeRotationSum_ + sum(self.CumulativeRotationRecent_(indicesWithinFirstTenPercent));
+                self.BarPositionSum_ = self.BarPositionSum_ + sum(self.BarPositionRecent_(indicesWithinFirstTenPercent));
+                totalScansIncludedInMean = self.XRecent_(indicesWithinFirstTenPercent(end))/self.Dt_;
                 self.CumulativeRotationMeanToSubtract_ = self.CumulativeRotationSum_/totalScansIncludedInMean;
+                self.BarPositionMeanToSubtract_ = self.BarPositionSum_/totalScansIncludedInMean;
             end
-          
-            if xRecent(1)>0 && xRecent(1)<=firstTenPercent
-                dataPlotted = get(self.ArenaAndBallRotationAxis_,'children');
-                correctionToYData = previousCumulativeRotationMeanToSubtract-self.CumulativeRotationMeanToSubtract_;
-                for currentLine=1:length(dataPlotted)
-                    currentLineHandle = dataPlotted(currentLine);
-                    set(currentLineHandle,'YData', get(currentLineHandle,'YData')+correctionToYData)
-                end
-            end
-            plot(self.ArenaAndBallRotationAxis_,xRecent,self.CumulativeRotation_-self.CumulativeRotationMeanToSubtract_);
-            toc;
+            self.downsampleData(wsModel, 'CumulativeRotation');
+            % Figure out the downsampling ratio
+%            xSpanInPixels = ws.ScopeFigure.getWidthInPixels(self.ArenaAndBallRotationAxis_);
+%               % At this point, xSpanInPixels should be set to the
+%               % correct value, or the fallback value if there's no view
+%               xSpan = wsModel.Acquisition.Duration; %xLimits(2)-xLimits(1);
+%               r = ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
+%  
+%               % Downsample the new data
+%               [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, self.CumulativeRotation_, r) ;
+%                
+%               % Deal with XData_
+%               xAllOriginal = self.XData_; % these are already downsampled
+%               yAllOriginal = self.CumulativeRotationYData_;
+%               
+%               % Concatenate the old data that we're keeping with the new data
+%               xNew = vertcat(xAllOriginal, xForPlottingNew) ;
+%               yNew = vertcat(yAllOriginal, yForPlottingNew) ;
+%               
+%               self.XData_ = xNew;
+%               self.CumulativeRotationYData_ = yNew;
+                              tic;
+
+            plot(self.ArenaAndBallRotationAxis_,self.XData_,self.CumulativeRotationYData_-self.CumulativeRotationMeanToSubtract_,self.XData_,self.CumulativeRotationYData_);
+                        toc;
+
+ %           fprintf('%f %f %f \n',length(self.XData_),xRecent(end),length(xRecent));
 % %             % Figure out the downsampling ratio
         end
         
@@ -159,13 +192,15 @@ classdef FlyOnBall < ws.UserClass
     end  % methods
     
     methods
-        function syncArenaAndBallRotationFigureAndAxis(self)
+        function syncArenaAndBallRotationFigureAndAxis(self,wsModel)
             if isempty(self.ArenaAndBallRotationFigure_) || ~ishghandle(self.ArenaAndBallRotationFigure_)
                 self.ArenaAndBallRotationFigure_ = figure('Name', 'Arena and Ball Rotation',...
                                                           'NumberTitle','off',...
                                                           'Units','pixels');
-                self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigure_,'box','on');
-                hold(self.ArenaAndBallRotationAxis_,'on');
+                                                         
+                self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigure_,...
+                                                      'box','on');
+                %hold(self.ArenaAndBallRotationAxis_,'on');
             end
 %            % clf(self.ArenaAndBallRotationFigure_);
             cla(self.ArenaAndBallRotationAxis_);
@@ -218,18 +253,18 @@ classdef FlyOnBall < ws.UserClass
             rotation=d_rot*degrpermmball;
             
             %calculate cumulative rotation
-            self.CumulativeRotation_=self.CumulativeRotation_(end)+cumsum(rotation)/panorama*2*pi; % cumulative rotation in panorama normalized radians
+            previousCumulativeRotation = self.CumulativeRotationRecent_;
+            self.CumulativeRotationRecent_=previousCumulativeRotation(end)+cumsum(rotation)/panorama*2*pi; % cumulative rotation in panorama normalized radians
            % barpos=circ_mean_(reshape(data(1:n*5,3),5,[])/arena_range(2)*2*pi)'; %downsampled to match with LocomotionData at 4kHz, converted to a signal ranging from -pi to pi
-% %             barpos = circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
-% %             
-% %             %% plot arena vs ball rotation, calculate gain
-% %             % This figure can be overwritten for every new sweep.
-% %                         
-% %             arena_cond={'arena is on', 'arena is off'};
-% %             
-% %             arena_on=data(1,4)>7.5; %arena on will report output of ~9V, arena off ~4V
-% %             size(barpos)
-% %             gain=mean(unwrap(barpos(1:12000)-mean(barpos(1:12000)))./(cumulative_rotation(1:12000)-mean(cumulative_rotation(1:12000))));
+            self.BarPositionRecent_ = circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
+            
+            %% plot arena vs ball rotation, calculate gain
+            % This figure can be overwritten for every new sweep.
+                        
+            arena_cond={'arena is on', 'arena is off'};
+            
+            arena_on=data(1,4)>7.5; %arena on will report output of ~9V, arena off ~4V
+%%            gain=mean(unwrap(barpos(1:12000)-mean(barpos(1:12000)))./(cumulative_rotation(1:12000)-mean(cumulative_rotation(1:12000))));
 % %             
 
 %             t=dt:dt:dt*length(cumulative_rotation);
@@ -244,6 +279,28 @@ classdef FlyOnBall < ws.UserClass
             
 %%            barpos(barpos<0)=barpos(barpos<0)+2*pi;
 barpos =[]; arena_on =[];
+        end
+        
+        function [xForPlottingNew, yForPlottingNew] = downsampleData(self,wsModel, whichYData)
+             xSpanInPixels = ws.ScopeFigure.getWidthInPixels(self.ArenaAndBallRotationAxis_);
+              % At this point, xSpanInPixels should be set to the
+              % correct value, or the fallback value if there's no view
+              xSpan = wsModel.Acquisition.Duration; %xLimits(2)-xLimits(1);
+              r = ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
+ 
+              % Downsample the new data
+              yRecent = self.([whichYData 'Recent_']);
+              [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(self.XRecent_, yRecent, r) ;
+               
+              % Deal with XData_
+              xAllOriginal = self.XData_; % these are already downsampled
+              yAllOriginal = self.([whichYData 'YData_']);
+              
+              % Concatenate the old data that we're keeping with the new data
+              xNew = vertcat(xAllOriginal, xForPlottingNew) ;
+              yNew = vertcat(yAllOriginal, yForPlottingNew) ;
+              self.XData_ = xNew;
+              self.([whichYData 'YData_']) = yNew;
         end
     end
 end  % classdef
