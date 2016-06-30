@@ -25,12 +25,13 @@ classdef FlyOnBall < ws.UserClass
         CumulativeRotationRecent_
         CumulativeRotationSum_
         CumulativeRotationMeanToSubtract_
-        XData_
-        CumulativeRotationYData_
+        CumulativeRotationForPlottingXData_
+        CumulativeRotationForPlottingYData_
         BarPositionRecent_
         BarPositionSum_
         BarPositionMeanToSubtract_
-        BarPositionYData_
+        BarPositionForPlottingXData_
+        BarPositionForPlottingYData_
         Gain_
         XRecent_
     end
@@ -87,8 +88,10 @@ classdef FlyOnBall < ws.UserClass
             self.CumulativeRotationSum_ = 0;
             self.BarPositionSum_ = 0;
             self.tForSweep_ = 0;
-            self.XData_ = [];
-            self.CumulativeRotationYData_ = [];
+            self.CumulativeRotationForPlottingXData_ = [];
+            self.CumulativeRotationForPlottingYData_ = [];
+            self.BarPositionForPlottingXData_ = [];
+            self.BarPositionForPlottingYData_ = [];
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -107,6 +110,7 @@ classdef FlyOnBall < ws.UserClass
             % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
       %      get(self.ArenaAndBallRotationAxis_,'Position');
+                              tic;
 
             analogData = wsModel.Acquisition.getLatestAnalogData();
 
@@ -132,33 +136,13 @@ classdef FlyOnBall < ws.UserClass
                 self.BarPositionMeanToSubtract_ = self.BarPositionSum_/totalScansIncludedInMean;
             end
             self.downsampleData(wsModel, 'CumulativeRotation');
-            % Figure out the downsampling ratio
-%            xSpanInPixels = ws.ScopeFigure.getWidthInPixels(self.ArenaAndBallRotationAxis_);
-%               % At this point, xSpanInPixels should be set to the
-%               % correct value, or the fallback value if there's no view
-%               xSpan = wsModel.Acquisition.Duration; %xLimits(2)-xLimits(1);
-%               r = ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
-%  
-%               % Downsample the new data
-%               [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, self.CumulativeRotation_, r) ;
-%                
-%               % Deal with XData_
-%               xAllOriginal = self.XData_; % these are already downsampled
-%               yAllOriginal = self.CumulativeRotationYData_;
-%               
-%               % Concatenate the old data that we're keeping with the new data
-%               xNew = vertcat(xAllOriginal, xForPlottingNew) ;
-%               yNew = vertcat(yAllOriginal, yForPlottingNew) ;
-%               
-%               self.XData_ = xNew;
-%               self.CumulativeRotationYData_ = yNew;
-                              tic;
+            self.downsampleData(wsModel, 'BarPosition');
 
-            plot(self.ArenaAndBallRotationAxis_,self.XData_,self.CumulativeRotationYData_-self.CumulativeRotationMeanToSubtract_,self.XData_,self.CumulativeRotationYData_);
+            plot(self.ArenaAndBallRotationAxis_,self.CumulativeRotationForPlottingXData_,self.CumulativeRotationForPlottingYData_-self.CumulativeRotationMeanToSubtract_)%,...
+                 %self.BarPositionForPlottingXData_,self.BarPositionForPlottingYData_);
                         toc;
 
- %           fprintf('%f %f %f \n',length(self.XData_),xRecent(end),length(xRecent));
-% %             % Figure out the downsampling ratio
+            %fprintf('%f\n',length(self.XData_));
         end
         
         % These methods are called in the looper process
@@ -281,7 +265,7 @@ classdef FlyOnBall < ws.UserClass
 barpos =[]; arena_on =[];
         end
         
-        function [xForPlottingNew, yForPlottingNew] = downsampleData(self,wsModel, whichYData)
+        function [xForPlottingNew, yForPlottingNew] = downsampleData(self,wsModel, whichData)
              xSpanInPixels = ws.ScopeFigure.getWidthInPixels(self.ArenaAndBallRotationAxis_);
               % At this point, xSpanInPixels should be set to the
               % correct value, or the fallback value if there's no view
@@ -289,18 +273,18 @@ barpos =[]; arena_on =[];
               r = ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
  
               % Downsample the new data
-              yRecent = self.([whichYData 'Recent_']);
+              yRecent = self.([whichData 'Recent_']);
               [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(self.XRecent_, yRecent, r) ;
                
               % Deal with XData_
-              xAllOriginal = self.XData_; % these are already downsampled
-              yAllOriginal = self.([whichYData 'YData_']);
+              xAllOriginal = self.([whichData 'ForPlottingXData_']); % these are already downsampled
+              yAllOriginal = self.([whichData 'ForPlottingYData_']);
               
               % Concatenate the old data that we're keeping with the new data
               xNew = vertcat(xAllOriginal, xForPlottingNew) ;
               yNew = vertcat(yAllOriginal, yForPlottingNew) ;
-              self.XData_ = xNew;
-              self.([whichYData 'YData_']) = yNew;
+              self.([whichData 'ForPlottingXData_']) = xNew;
+              self.([whichData 'ForPlottingYData_']) = yNew;
         end
     end
 end  % classdef
