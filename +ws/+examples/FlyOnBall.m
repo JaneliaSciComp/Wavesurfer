@@ -16,8 +16,8 @@ classdef FlyOnBall < ws.UserClass
     % protected.)
     properties (Access=protected)
         TimeAtStartOfLastRunAsString_ = ''
-         FirstTenPercent_
-         Dt_
+        FirstOnePercent_
+        Dt_
         ArenaAndBallRotationFigure_ = [];
         ArenaAndBallRotationAxis_
         tForSweep_
@@ -27,13 +27,23 @@ classdef FlyOnBall < ws.UserClass
         CumulativeRotationMeanToSubtract_
         CumulativeRotationForPlottingXData_
         CumulativeRotationForPlottingYData_
-        BarPositionRecent_
-        BarPositionSum_
-        BarPositionMeanToSubtract_
-        BarPositionForPlottingXData_
-        BarPositionForPlottingYData_
+        BarPositionWrappedRecent_
+        BarPositionUnwrappedRecent_
+        BarPositionWrappedSum_
+        BarPositionWrappedMeanToSubtract_
+        BarPositionUnwrappedForPlottingXData_
+        BarPositionUnwrappedForPlottingYData_
         Gain_
         XRecent_
+        CurrentNumberOfScansWithinFirstOnePercent_
+        StoreAllCumulativeRotationInFirstOnePercent_
+        StoreAllBarPositionWrappedInFirstOnePercent_
+        StoreAllBarPositionUnwrappedInFirstOnePercent_
+        DataFromFile_
+        ArenaCondition_={'Arena is on', 'Arena is off'};
+        ArenaOn_
+        TotalScans_
+        ArenaAndBallRotationAxisChildren_ 
     end
     
     methods        
@@ -44,6 +54,20 @@ classdef FlyOnBall < ws.UserClass
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
                 self.syncArenaAndBallRotationFigureAndAxis(rootModel);
+                filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
+%                 self.DataFromFile_ = [ audioread([filepath 'testChannel0_scaleFactor0.0188.wav'])/0.0188, ...
+%                                        audioread([filepath 'testChannel1_scaleFactor0.0275.wav'])/0.0275, ...
+%                                        audioread([filepath 'testChannel2_scaleFactor0.1202.wav'])/0.1202, ...
+%                                        audioread([filepath 'testChannel3_scaleFactor0.1059.wav'])/0.1059, ...
+%                                        audioread([filepath 'testChannel4_scaleFactor0.3576.wav'])/0.3576, ...
+%                                        audioread([filepath 'testChannel5_scaleFactor0.3754.wav'])/0.3754, ...
+%                                        audioread([filepath 'testChannel6_scaleFactor0.2985.wav'])/0.2985, ...
+%                                        audioread([filepath 'testChannel7_scaleFactor0.3427.wav'])/0.3427
+%                                        ];
+                    
+              
+                self.DataFromFile_ = load([filepath 'testData.mat']);
+               
             end
            % end
 
@@ -68,7 +92,7 @@ classdef FlyOnBall < ws.UserClass
             % "run")
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
             self.syncArenaAndBallRotationFigureAndAxis(wsModel);
-            self.FirstTenPercent_ = wsModel.Acquisition.Duration/10;
+            self.FirstOnePercent_ = wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
 
         end
@@ -86,12 +110,20 @@ classdef FlyOnBall < ws.UserClass
         function startingSweep(self,wsModel,eventName)
             self.CumulativeRotationRecent_ = 0;
             self.CumulativeRotationSum_ = 0;
-            self.BarPositionSum_ = 0;
+            self.BarPositionWrappedSum_ = 0;
             self.tForSweep_ = 0;
+            self.CurrentNumberOfScansWithinFirstOnePercent_ = 0;
+            self.StoreAllCumulativeRotationInFirstOnePercent_ = zeros(self.FirstOnePercent_/self.Dt_,1);
+            self.StoreAllBarPositionWrappedInFirstOnePercent_ = zeros(self.FirstOnePercent_/self.Dt_,1);
+            self.StoreAllBarPositionUnwrappedInFirstOnePercent_ = zeros(self.FirstOnePercent_/self.Dt_,1);
             self.CumulativeRotationForPlottingXData_ = [];
             self.CumulativeRotationForPlottingYData_ = [];
-            self.BarPositionForPlottingXData_ = [];
-            self.BarPositionForPlottingYData_ = [];
+            self.BarPositionUnwrappedForPlottingXData_ = [];
+            self.BarPositionUnwrappedForPlottingYData_ = [];
+            self.BarPositionWrappedRecent_ = [];
+            self.BarPositionUnwrappedRecent_ = [];
+            self.TotalScans_ = 0;
+                    self.ArenaAndBallRotationAxisChildren_ = [];
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -111,38 +143,77 @@ classdef FlyOnBall < ws.UserClass
             % has been accumulated from the looper.
       %      get(self.ArenaAndBallRotationAxis_,'Position');
                               tic;
-
             analogData = wsModel.Acquisition.getLatestAnalogData();
-
-            [~, ~, ~, ~] = self.analyzeFlyLocomotion_ (analogData);
-         %   digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             nScans = size(analogData,1);
+           % analogData = self.DataFromFile_(self.TotalScans_+1:self.TotalScans_+nScans,:);
+            analogData = self.DataFromFile_.data{1}(self.TotalScans_+1:self.TotalScans_+nScans,:);
+           [~, ~, ~, ~] = self.analyzeFlyLocomotion_ (analogData);
+         %   digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             % t_ is a protected property of WavesurferModel, and is the
             % time *just after* scan completes. so since we don't have
             % access to it, will approximate time assuming starting from 0
             % and no delay between scans
             t0 = self.tForSweep_; % timestamp of first scan in newData
 % %         
-
            self.XRecent_ = t0 + self.Dt_*(0:(nScans-1))';
-            self.tForSweep_ = self.XRecent_(end);
-            previousCumulativeRotationMeanToSubtract = self.CumulativeRotationMeanToSubtract_;
-            if self.XRecent_(1) <= self.FirstTenPercent_
-                indicesWithinFirstTenPercent = find(self.XRecent_<=self.FirstTenPercent_);
-                self.CumulativeRotationSum_ = self.CumulativeRotationSum_ + sum(self.CumulativeRotationRecent_(indicesWithinFirstTenPercent));
-                self.BarPositionSum_ = self.BarPositionSum_ + sum(self.BarPositionRecent_(indicesWithinFirstTenPercent));
-                totalScansIncludedInMean = self.XRecent_(indicesWithinFirstTenPercent(end))/self.Dt_;
-                self.CumulativeRotationMeanToSubtract_ = self.CumulativeRotationSum_/totalScansIncludedInMean;
-                self.BarPositionMeanToSubtract_ = self.BarPositionSum_/totalScansIncludedInMean;
+            self.tForSweep_ = self.XRecent_(end)+self.Dt_;
+            if self.XRecent_(1) < self.FirstOnePercent_
+                indicesWithinFirstOnePercentRecent = find(self.XRecent_<self.FirstOnePercent_);
+                numberOfNewDataPoints = length(indicesWithinFirstOnePercentRecent);
+                newIndicesForAddingDataStart = self.CurrentNumberOfScansWithinFirstOnePercent_+1;
+                newIndicesForAddingDataEnd = self.CurrentNumberOfScansWithinFirstOnePercent_+numberOfNewDataPoints;
+                newIndicesForAddingData = (newIndicesForAddingDataStart:newIndicesForAddingDataEnd);
+                self.CurrentNumberOfScansWithinFirstOnePercent_ = self.CurrentNumberOfScansWithinFirstOnePercent_+numberOfNewDataPoints;
+                
+                self.StoreAllCumulativeRotationInFirstOnePercent_(newIndicesForAddingData) = self.CumulativeRotationRecent_(1:numberOfNewDataPoints);
+                self.CumulativeRotationSum_ = self.CumulativeRotationSum_ + sum(self.CumulativeRotationRecent_(indicesWithinFirstOnePercentRecent));
+                self.CumulativeRotationMeanToSubtract_ = self.CumulativeRotationSum_/self.CurrentNumberOfScansWithinFirstOnePercent_;
+                
+                self.StoreAllBarPositionWrappedInFirstOnePercent_(newIndicesForAddingData) = self.BarPositionWrappedRecent_(1:numberOfNewDataPoints);
+                self.StoreAllBarPositionUnwrappedInFirstOnePercent_(newIndicesForAddingData) = self.BarPositionUnwrappedRecent_(1:numberOfNewDataPoints);
+
+                self.BarPositionWrappedSum_ = self.BarPositionWrappedSum_ + sum(self.BarPositionWrappedRecent_(indicesWithinFirstOnePercentRecent));
+                self.BarPositionWrappedMeanToSubtract_ = self.BarPositionWrappedSum_/self.CurrentNumberOfScansWithinFirstOnePercent_;
+                
+                self.Gain_=mean( (self.StoreAllBarPositionUnwrappedInFirstOnePercent_(1:self.CurrentNumberOfScansWithinFirstOnePercent_) - self.BarPositionWrappedMeanToSubtract_)./...
+                           (self.StoreAllCumulativeRotationInFirstOnePercent_(1:self.CurrentNumberOfScansWithinFirstOnePercent_) - self.CumulativeRotationMeanToSubtract_));
+                if self.XRecent_(end) + self.Dt_ >= self.FirstOnePercent_ ;
+                           %Then this is the last time gain will be
+                           %calculated
+                           ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
+                end
             end
             self.downsampleData(wsModel, 'CumulativeRotation');
-            self.downsampleData(wsModel, 'BarPosition');
+            self.downsampleData(wsModel, 'BarPositionUnwrapped');
 
-            plot(self.ArenaAndBallRotationAxis_,self.CumulativeRotationForPlottingXData_,self.CumulativeRotationForPlottingYData_-self.CumulativeRotationMeanToSubtract_)%,...
-                 %self.BarPositionForPlottingXData_,self.BarPositionForPlottingYData_);
+          
+            if t0 == 0 %first time in sweep
+                plot(self.ArenaAndBallRotationAxis_,self.CumulativeRotationForPlottingXData_,self.CumulativeRotationForPlottingYData_ - self.CumulativeRotationMeanToSubtract_,'b',...
+                    self.BarPositionUnwrappedForPlottingXData_,self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_,'g');
+                title(self.ArenaAndBallRotationAxis_,self.ArenaCondition_(self.ArenaOn_+1));
+                legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
+                xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
+                ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
+                self.ArenaAndBallRotationAxisChildren_ = get(self.ArenaAndBallRotationAxis_,'Children');
+            else
+               set(self.ArenaAndBallRotationAxisChildren_(1),'XData',self.CumulativeRotationForPlottingXData_, 'YData', self.CumulativeRotationForPlottingYData_ - self.CumulativeRotationMeanToSubtract_);
+               set(self.ArenaAndBallRotationAxisChildren_(2),'XData',self.BarPositionUnwrappedForPlottingXData_, 'YData', self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_);
+            end
+%               ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
+%               xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
+%               legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
+          %   plot( self.ArenaAndBallRotationAxis_,self.XRecent_,analogData(:,3));
                         toc;
-
-            %fprintf('%f\n',length(self.XData_));
+                        self.TotalScans_ = self.TotalScans_+nScans;
+                       numerator = mean(self.StoreAllBarPositionUnwrappedInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_) - mean(self.StoreAllBarPositionWrappedInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_)));
+                           denominator = mean(self.StoreAllCumulativeRotationInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_) - mean(self.StoreAllCumulativeRotationInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_)));
+            fprintf('%d %d %f %f %f %f\n', self.TotalScans_, self.CurrentNumberOfScansWithinFirstOnePercent_,self.Gain_, numerator, denominator, self.BarPositionWrappedMeanToSubtract_);    
+%             fprintf('%f %f \n',min(self.BarPositionUnwrappedRecent_),max(self.BarPositionUnwrappedRecent_));
+%             fprintf('%f %f \n',min(analogData(:,3)),max(analogData(:,3)));
+%             fprintf('%f %f \n',min(self.DataFromFile_(newIndicesForAddingData)),max(self.DataFromFile_(newIndicesForAddingData)));
+%             if max(self.BarPositionUnwrappedRecent_)>2.5
+%                why=1; 
+%             end
         end
         
         % These methods are called in the looper process
@@ -181,13 +252,16 @@ classdef FlyOnBall < ws.UserClass
                 self.ArenaAndBallRotationFigure_ = figure('Name', 'Arena and Ball Rotation',...
                                                           'NumberTitle','off',...
                                                           'Units','pixels');
-                                                         
                 self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigure_,...
                                                       'box','on');
+                                                                                                            
                 %hold(self.ArenaAndBallRotationAxis_,'on');
             end
 %            % clf(self.ArenaAndBallRotationFigure_);
             cla(self.ArenaAndBallRotationAxis_);
+            title(self.ArenaAndBallRotationAxis_,'Arena is ...');
+            xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
+            ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
         end
         
         function [rotation, d_forward, barpos, arena_on] = analyzeFlyLocomotion_ (self, data)
@@ -239,15 +313,23 @@ classdef FlyOnBall < ws.UserClass
             %calculate cumulative rotation
             previousCumulativeRotation = self.CumulativeRotationRecent_;
             self.CumulativeRotationRecent_=previousCumulativeRotation(end)+cumsum(rotation)/panorama*2*pi; % cumulative rotation in panorama normalized radians
-           % barpos=circ_mean_(reshape(data(1:n*5,3),5,[])/arena_range(2)*2*pi)'; %downsampled to match with LocomotionData at 4kHz, converted to a signal ranging from -pi to pi
-            self.BarPositionRecent_ = circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
+            % barpos=circ_mean_(reshape(data(1:n*5,3),5,[])/arena_range(2)*2*pi)'; %downsampled to match with LocomotionData at 4kHz, converted to a signal ranging from -pi to pi
             
-            %% plot arena vs ball rotation, calculate gain
+% %             self.BarPositionUnwrappedRecent_ = circ_mean_(data(:,3)'/arena_range(2)*2*pi)';
+             self.BarPositionWrappedRecent_ = self.circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
+             previousBarPositionUnwrapped = self.BarPositionUnwrappedRecent_;
+             if isempty(previousBarPositionUnwrapped)
+                 % Then this is the first time bar position is calculate
+                 self.BarPositionUnwrappedRecent_ = unwrap(self.BarPositionWrappedRecent_);
+             else
+                 newBarPositionUnwrapped = unwrap([previousBarPositionUnwrapped(end); self.BarPositionWrappedRecent_]); % prepend previousBarPosition to ensure that unwrapping follows from the previous results
+                 self.BarPositionUnwrappedRecent_ = newBarPositionUnwrapped(2:end);
+             end
+           %% plot arena vs ball rotation, calculate gain
             % This figure can be overwritten for every new sweep.
                         
-            arena_cond={'arena is on', 'arena is off'};
             
-            arena_on=data(1,4)>7.5; %arena on will report output of ~9V, arena off ~4V
+            self.ArenaOn_=data(1,4)>7.5; %arena on will report output of ~9V, arena off ~4V
 %%            gain=mean(unwrap(barpos(1:12000)-mean(barpos(1:12000)))./(cumulative_rotation(1:12000)-mean(cumulative_rotation(1:12000))));
 % %             
 
@@ -285,6 +367,68 @@ barpos =[]; arena_on =[];
               yNew = vertcat(yAllOriginal, yForPlottingNew) ;
               self.([whichData 'ForPlottingXData_']) = xNew;
               self.([whichData 'ForPlottingYData_']) = yNew;
+        end
+    end
+    
+    methods (Static = true)
+        function [mu ul ll] = circ_mean_(alpha, w, dim)
+            %
+            % mu = circ_mean(alpha, w)
+            %   Computes the mean direction for circular data.
+            %
+            %   Input:
+            %     alpha	sample of angles in radians
+            %     [w		weightings in case of binned angle data]
+            %     [dim  compute along this dimension, default is 1]
+            %
+            %     If dim argument is specified, all other optional arguments can be
+            %     left empty: circ_mean(alpha, [], dim)
+            %
+            %   Output:
+            %     mu		mean direction
+            %     ul    upper 95% confidence limit
+            %     ll    lower 95% confidence limit
+            %
+            % PHB 7/6/2008
+            %
+            % References:
+            %   Statistical analysis of circular data, N. I. Fisher
+            %   Topics in circular statistics, S. R. Jammalamadaka et al.
+            %   Biostatistical Analysis, J. H. Zar
+            %
+            % Circular Statistics Toolbox for Matlab
+            
+            % By Philipp Berens, 2009
+            % berens@tuebingen.mpg.de - www.kyb.mpg.de/~berens/circStat.html
+            
+            % needed to add 1 to nargin operation comparisons since now
+            % need to include self as well
+            if nargin < 3
+                dim = 1;
+            end
+            
+            if nargin < 2 || isempty(w)
+                % if no specific weighting has been specified
+                % assume no binning has taken place
+                w = ones(size(alpha));
+            else
+                if size(w,2) ~= size(alpha,2) || size(w,1) ~= size(alpha,1)
+                    error('Input dimensions do not match');
+                end
+            end
+            
+            % compute weighted sum of cos and sin of angles
+            r = sum(w.*exp(1i*alpha),dim);
+            
+            % obtain mean by
+            mu = angle(r);
+            
+            % confidence limits if desired
+            if nargout > 1
+                t = circ_confmean(alpha,0.05,w,[],dim);
+                ul = mu + t;
+                ll = mu - t;
+            end
         end
     end
 end  % classdef

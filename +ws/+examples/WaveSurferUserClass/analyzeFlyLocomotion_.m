@@ -38,7 +38,7 @@ inp_4kHz=zeros(n,4);
 for i=1:4
     inp_4kHz(:,i)=sum(reshape(inp_dig(:,i),5,[]))/80; %divide by 80 to correct for pulse frequency and duration
 end
-
+%inp_4kHz = inp_dig/80;
 %displacement of the fly as computed from ball tracker readout in mm
 d_forward = (inp_4kHz(:,2)*mmperpix_c(1) + inp_4kHz(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
 d_side = (inp_4kHz(:,2)*mmperpix_c(1) - inp_4kHz(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
@@ -51,7 +51,7 @@ rotation=d_rot*degrpermmball;
 cumulative_rotation=cumsum(rotation)/panorama*2*pi; % cumulative rotation in panorama normalized radians
 
 barpos=circ_mean_(reshape(data(1:n*5,3),5,[])/arena_range(2)*2*pi)'; %downsampled to match with LocomotionData at 4kHz, converted to a signal ranging from -pi to pi
-
+newbarpos = circ_mean_(data(:,3)'/arena_range(2)*2*pi)';
 
 %% plot arena vs ball rotation, calculate gain
 % This figure can be overwritten for every new sweep.
