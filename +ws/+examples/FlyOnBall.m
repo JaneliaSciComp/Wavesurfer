@@ -20,6 +20,8 @@ classdef FlyOnBall < ws.UserClass
         Dt_
         ArenaAndBallRotationFigure_ = [];
         ArenaAndBallRotationAxis_
+        BarPositionHistogramFigure_ = [];
+        BarPositionHistogramAxis_
         tForSweep_
         XSpanInPixels_ % if running without a UI, this a reasonable fallback value
         CumulativeRotationRecent_
@@ -44,6 +46,9 @@ classdef FlyOnBall < ws.UserClass
         ArenaOn_
         TotalScans_
         ArenaAndBallRotationAxisChildren_ 
+        BarPositionHistogramAxisChild_
+        BarPositionHistogramBinCenters_
+        BarPositionHistogramCountsTotalForSweep_
     end
     
     methods        
@@ -53,7 +58,8 @@ classdef FlyOnBall < ws.UserClass
                 % creates the "user object"
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
-                self.syncArenaAndBallRotationFigureAndAxis(rootModel);
+                self.syncArenaAndBallRotationFigureAndAxis();
+                self.syncBarPositionHistogramFigureAndAxis();
                 filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
 %                 self.DataFromFile_ = [ audioread([filepath 'testChannel0_scaleFactor0.0188.wav'])/0.0188, ...
 %                                        audioread([filepath 'testChannel1_scaleFactor0.0275.wav'])/0.0275, ...
@@ -66,7 +72,8 @@ classdef FlyOnBall < ws.UserClass
 %                                        ];
                     
               
-                self.DataFromFile_ = load([filepath 'testData.mat']);
+                self.DataFromFile_ = load([filepath 'firstSweep.mat']);
+                self.BarPositionHistogramBinCenters_  = (2*pi/50: 2*pi/25 : 2*pi);
                
             end
            % end
@@ -91,7 +98,8 @@ classdef FlyOnBall < ws.UserClass
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
-            self.syncArenaAndBallRotationFigureAndAxis(wsModel);
+            self.syncArenaAndBallRotationFigureAndAxis();
+            self.syncBarPositionHistogramFigureAndAxis();
             self.FirstOnePercent_ = wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
 
@@ -123,7 +131,8 @@ classdef FlyOnBall < ws.UserClass
             self.BarPositionWrappedRecent_ = [];
             self.BarPositionUnwrappedRecent_ = [];
             self.TotalScans_ = 0;
-                    self.ArenaAndBallRotationAxisChildren_ = [];
+            self.ArenaAndBallRotationAxisChildren_ = [];
+            self.BarPositionHistogramCountsTotalForSweep_=zeros(1,25);
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -146,7 +155,7 @@ classdef FlyOnBall < ws.UserClass
             analogData = wsModel.Acquisition.getLatestAnalogData();
             nScans = size(analogData,1);
            % analogData = self.DataFromFile_(self.TotalScans_+1:self.TotalScans_+nScans,:);
-            analogData = self.DataFromFile_.data{1}(self.TotalScans_+1:self.TotalScans_+nScans,:);
+            analogData = self.DataFromFile_.data(self.TotalScans_+1:self.TotalScans_+nScans,:);
            [~, ~, ~, ~] = self.analyzeFlyLocomotion_ (analogData);
          %   digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             % t_ is a protected property of WavesurferModel, and is the
@@ -185,8 +194,11 @@ classdef FlyOnBall < ws.UserClass
             end
             self.downsampleData(wsModel, 'CumulativeRotation');
             self.downsampleData(wsModel, 'BarPositionUnwrapped');
-
-          
+            
+                        barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
+                        self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
+            barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
+            self.BarPositionHistogramCountsTotalForSweep_ = self.BarPositionHistogramCountsTotalForSweep_ + barPositionHistogramCountsRecent;
             if t0 == 0 %first time in sweep
                 plot(self.ArenaAndBallRotationAxis_,self.CumulativeRotationForPlottingXData_,self.CumulativeRotationForPlottingYData_ - self.CumulativeRotationMeanToSubtract_,'b',...
                     self.BarPositionUnwrappedForPlottingXData_,self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_,'g');
@@ -195,9 +207,15 @@ classdef FlyOnBall < ws.UserClass
                 xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
                 ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
                 self.ArenaAndBallRotationAxisChildren_ = get(self.ArenaAndBallRotationAxis_,'Children');
+                
+                plot(self.BarPositionHistogramAxis_, self.BarPositionHistogramBinCenters_, self.BarPositionHistogramCountsTotalForSweep_/wsModel.Acquisition.SampleRate);
+                self.BarPositionHistogramAxisChild_ = get(self.BarPositionHistogramAxis_,'Children');
+                xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]');
+                ylabel(self.BarPositionHistogramAxis_,'Time [s]');
             else
                set(self.ArenaAndBallRotationAxisChildren_(1),'XData',self.CumulativeRotationForPlottingXData_, 'YData', self.CumulativeRotationForPlottingYData_ - self.CumulativeRotationMeanToSubtract_);
                set(self.ArenaAndBallRotationAxisChildren_(2),'XData',self.BarPositionUnwrappedForPlottingXData_, 'YData', self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_);
+               set(self.BarPositionHistogramAxisChild_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramCountsTotalForSweep_/wsModel.Acquisition.SampleRate);
             end
 %               ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
 %               xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
@@ -205,9 +223,8 @@ classdef FlyOnBall < ws.UserClass
           %   plot( self.ArenaAndBallRotationAxis_,self.XRecent_,analogData(:,3));
                         toc;
                         self.TotalScans_ = self.TotalScans_+nScans;
-                       numerator = mean(self.StoreAllBarPositionUnwrappedInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_) - mean(self.StoreAllBarPositionWrappedInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_)));
-                           denominator = mean(self.StoreAllCumulativeRotationInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_) - mean(self.StoreAllCumulativeRotationInFirstOnePercent_(1:5:self.CurrentNumberOfScansWithinFirstOnePercent_)));
-            fprintf('%d %d %f %f %f %f\n', self.TotalScans_, self.CurrentNumberOfScansWithinFirstOnePercent_,self.Gain_, numerator, denominator, self.BarPositionWrappedMeanToSubtract_);    
+                        fprintf('%f %f \n',min(self.BarPositionWrappedRecent_),max(self.BarPositionWrappedRecent_));
+                                                   %            fprintf('%d %d %f %f %f %f\n', self.TotalScans_, self.CurrentNumberOfScansWithinFirstOnePercent_,self.Gain_, numerator, denominator, self.BarPositionWrappedMeanToSubtract_);    
 %             fprintf('%f %f \n',min(self.BarPositionUnwrappedRecent_),max(self.BarPositionUnwrappedRecent_));
 %             fprintf('%f %f \n',min(analogData(:,3)),max(analogData(:,3)));
 %             fprintf('%f %f \n',min(self.DataFromFile_(newIndicesForAddingData)),max(self.DataFromFile_(newIndicesForAddingData)));
@@ -247,7 +264,7 @@ classdef FlyOnBall < ws.UserClass
     end  % methods
     
     methods
-        function syncArenaAndBallRotationFigureAndAxis(self,wsModel)
+        function syncArenaAndBallRotationFigureAndAxis(self)
             if isempty(self.ArenaAndBallRotationFigure_) || ~ishghandle(self.ArenaAndBallRotationFigure_)
                 self.ArenaAndBallRotationFigure_ = figure('Name', 'Arena and Ball Rotation',...
                                                           'NumberTitle','off',...
@@ -260,10 +277,24 @@ classdef FlyOnBall < ws.UserClass
 %            % clf(self.ArenaAndBallRotationFigure_);
             cla(self.ArenaAndBallRotationAxis_);
             title(self.ArenaAndBallRotationAxis_,'Arena is ...');
-            xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
+            xlabel(self.ArenaAndBallRotationAxis_,'Time [s]');
             ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
         end
         
+          function syncBarPositionHistogramFigureAndAxis(self)
+            if isempty(self.BarPositionHistogramFigure_) || ~ishghandle(self.BarPositionHistogramFigure_)
+                self.BarPositionHistogramFigure_ = figure('Name', 'Bar Position Histogram',...
+                                                          'NumberTitle','off',...
+                                                          'Units','pixels');
+                self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigure_,...
+                                                      'box','on');
+                                                                                                            
+            end
+            cla(self.BarPositionHistogramAxis_);
+            xlabel('Bar Position [rad]')
+            ylabel('Time [s]')
+          end
+          
         function [rotation, d_forward, barpos, arena_on] = analyzeFlyLocomotion_ (self, data)
             % This function quantifies the locomotor activity of the fly and exports
             % the key parameters used by the subsequent functions.

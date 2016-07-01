@@ -4,7 +4,7 @@
 % It also creates a figure that allows the on-line control of the
 % closed-loop feedback. This figure can be overwritten for every new sweep.
 k=1;
-[rotation, cumulative_rotation, d_forward, BarPosition, arena_on] = analyzeFlyLocomotion_ (data{k}); 
+[rotation, cumulative_rotation, d_forward, BarPosition, arena_on] = analyzeFlyLocomotion_ (data); 
 %rotation is in [°], cumulative_rotation in [rad] (with 240° being 2pi)
 
 %% visualize coverage of azimuthal headings by the fly
@@ -19,7 +19,7 @@ xlim([0 2*pi])
 
 %% give Vm and spike rate in 50 ms bins
 
-Vm=quantifyCellularResponse_(data{k}); %so far only exports Vm, might want to export spike rate too
+Vm=quantifyCellularResponse_(data); %so far only exports Vm, might want to export spike rate too
 
 %% make Heat Map of fly's rotational velocity tuning
 %this figure should contain the accumulated data of ALL previous sweeps from a given setpoint up until now
