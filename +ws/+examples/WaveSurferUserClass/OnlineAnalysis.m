@@ -24,7 +24,7 @@ Vm=quantifyCellularResponse_(data); %so far only exports Vm, might want to expor
 %% make Heat Map of fly's rotational velocity tuning
 %this figure should contain the accumulated data of ALL previous sweeps from a given setpoint up until now
 
-HeatMap_(Vm,rotation,d_forward,BarPosition,arena_on)
+tic; HeatMap_(Vm,rotation,d_forward,BarPosition,arena_on); toc;
 
 
 %% trigger open loop bar movement whenever fly is in a certain virtual position

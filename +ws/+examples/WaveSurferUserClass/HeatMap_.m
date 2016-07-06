@@ -63,7 +63,7 @@ ylabel(c,'Vm [mV]')
 
 %% make heat map for rotational velocity vs heading if arena is on
 
-if arena_on==1
+if arena_on==1 % arena_on == 1 means arena is off
     BarPosition=circ_mean_(reshape(BarPosition(1:Length_m),binsize_m,NrOfBins)); %rad azimuth
     BarPosition=BarPosition(turnlag+1:end); %no time shift, just like for fw vel
     BarPosition(BarPosition<0)=BarPosition(BarPosition<0)+2*pi;
