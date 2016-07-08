@@ -22,8 +22,8 @@ classdef FlyOnBall < ws.UserClass
         ArenaAndBallRotationAxis_
         BarPositionHistogramFigure_ = [];
         BarPositionHistogramAxis_
-        RotationalVsForwardVelocityHeatmapFigure_ = [];
-        RotationalVsForwardVelocityHeatmapAxis_
+        ForwardVsRotationalVelocityHeatmapFigure_ = [];
+        ForwardVsRotationalVelocityHeatmapAxis_
         tForSweep_
         XSpanInPixels_ % if running without a UI, this a reasonable fallback value
         CumulativeRotationRecent_
@@ -46,7 +46,7 @@ classdef FlyOnBall < ws.UserClass
         DataFromFile_
         ArenaCondition_={'Arena is On', 'Arena is Off'};
         ArenaOn_
-        TotalScans_
+        TotalScansInSweep_
         ArenaAndBallRotationAxisChildren_ 
         BarPositionHistogramAxisChild_
         BarPositionHistogramBinCenters_
@@ -57,8 +57,11 @@ classdef FlyOnBall < ws.UserClass
         RotationalDisplacementRecent_
         RotationalVelocityBinEdges_
         ForwardVelocityBinEdges_
-        DataForRotationalVsForwardVelocityHeatmapSum_
-        DataForRotationalVsForwardVelocityHeatmapCounts_
+        HeadingBinEdges_
+        DataForForwardVsRotationalVelocityHeatmapSum_
+        DataForForwardVsRotationalVelocityHeatmapCounts_
+        TotalScans_
+        ModifiedJetColormap_
     end
     
     methods        
@@ -71,22 +74,14 @@ classdef FlyOnBall < ws.UserClass
                 filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
                 self.DataFromFile_ = load([filepath 'firstSweep.mat']);
                 self.BarPositionHistogramBinCenters_  = (2*pi/50: 2*pi/25 : 2*pi);
-               self.RotationalVelocityBinEdges_ = (-600:20:600); 
-               self.ForwardVelocityBinEdges_= (-20:40);
+               self.RotationalVelocityBinEdges_ = (-600:60:600); 
+               self.ForwardVelocityBinEdges_= (-20:5:40);
+               self.HeadingBinEdges_ = (-600:75:600);
                 self.syncArenaAndBallRotationFigureAndAxis();
                 self.syncBarPositionHistogramFigureAndAxis();
-                self.syncRotationalVsForwardVelocityHeatmapFigureAndAxis();
-%                 self.DataFromFile_ = [ audioread([filepath 'testChannel0_scaleFactor0.0188.wav'])/0.0188, ...
-%                                        audioread([filepath 'testChannel1_scaleFactor0.0275.wav'])/0.0275, ...
-%                                        audioread([filepath 'testChannel2_scaleFactor0.1202.wav'])/0.1202, ...
-%                                        audioread([filepath 'testChannel3_scaleFactor0.1059.wav'])/0.1059, ...
-%                                        audioread([filepath 'testChannel4_scaleFactor0.3576.wav'])/0.3576, ...
-%                                        audioread([filepath 'testChannel5_scaleFactor0.3754.wav'])/0.3754, ...
-%                                        audioread([filepath 'testChannel6_scaleFactor0.2985.wav'])/0.2985, ...
-%                                        audioread([filepath 'testChannel7_scaleFactor0.3427.wav'])/0.3427
-%                                        ];
-                    
-
+                self.syncForwardVsRotationalVelocityHeatmapFigureAndAxis();
+                originalJetColormap = jet;
+                self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
             end
            % end
 
@@ -111,11 +106,11 @@ classdef FlyOnBall < ws.UserClass
                     self.BarPositionHistogramFigure_ = [] ;
                 end  
                 
-                if ~isempty(self.RotationalVsForwardVelocityHeatmapFigure_) ,
-                    if ishghandle(self.RotationalVsForwardVelocityHeatmapFigure_) ,
-                        close(self.RotationalVsForwardVelocityHeatmapFigure_) ;
+                if ~isempty(self.ForwardVsRotationalVelocityHeatmapFigure_) ,
+                    if ishghandle(self.ForwardVsRotationalVelocityHeatmapFigure_) ,
+                        close(self.ForwardVsRotationalVelocityHeatmapFigure_) ;
                     end
-                    self.RotationalVsForwardVelocityHeatmapFigure_ = [] ;
+                    self.ForwardVsRotationalVelocityHeatmapFigure_ = [] ;
                 end
         end
         
@@ -126,13 +121,15 @@ classdef FlyOnBall < ws.UserClass
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
             self.syncArenaAndBallRotationFigureAndAxis();
             self.syncBarPositionHistogramFigureAndAxis();
-            self.syncRotationalVsForwardVelocityHeatmapFigureAndAxis();
+            self.syncForwardVsRotationalVelocityHeatmapFigureAndAxis();
             self.FirstOnePercent_ = wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
             
-            
-            self.DataForRotationalVsForwardVelocityHeatmapSum_ = nan(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
-            self.DataForRotationalVsForwardVelocityHeatmapCounts_ = nan(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+           
+            self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+            self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+            self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.HeadingBinEdges_)-1);
+            self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
 
         end
         
@@ -161,6 +158,7 @@ classdef FlyOnBall < ws.UserClass
             self.BarPositionUnwrappedForPlottingYData_ = [];
             self.BarPositionWrappedRecent_ = [];
             self.BarPositionUnwrappedRecent_ = [];
+            self.TotalScansInSweep_ = 0;
             self.TotalScans_ = 0;
             self.ArenaAndBallRotationAxisChildren_ = [];
             self.BarPositionHistogramCountsTotalForSweep_=zeros(1,25);
@@ -173,20 +171,16 @@ classdef FlyOnBall < ws.UserClass
         end        
         
         function abortingSweep(self,wsModel,eventName)
-            % Called if a sweep goes wrong
-            fprintf('%s  Oh noes!  A sweep aborted.  Time at start of run: %s\n', ...
-                    self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
         function dataAvailable(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
       %      get(self.ArenaAndBallRotationAxis_,'Position');
-                              tic;
             analogData = wsModel.Acquisition.getLatestAnalogData();
             nScans = size(analogData,1);
-           % analogData = self.DataFromFile_(self.TotalScans_+1:self.TotalScans_+nScans,:);
-            analogData = self.DataFromFile_.data(self.TotalScans_+1:self.TotalScans_+nScans,:);
+           % analogData = self.DataFromFile_(self.TotalScansInSweep_+1:self.TotalScansInSweep_+nScans,:);
+           analogData = self.DataFromFile_.data(self.TotalScansInSweep_+1:self.TotalScansInSweep_+nScans,:);
            self.analyzeFlyLocomotion_ (analogData);
          %   digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             % t_ is a protected property of WavesurferModel, and is the
@@ -252,50 +246,44 @@ classdef FlyOnBall < ws.UserClass
 %               xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
 %               legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
           %   plot( self.ArenaAndBallRotationAxis_,self.XRecent_,analogData(:,3));
-                        toc;
                         
-                        self.TotalScans_ = self.TotalScans_+nScans;
-                        fprintf('%f %f \n',min(self.BarPositionWrappedRecent_),max(self.BarPositionWrappedRecent_));
+                        self.TotalScansInSweep_ = self.TotalScansInSweep_+nScans;
+                       % fprintf('%f %f \n',min(self.BarPositionWrappedRecent_),max(self.BarPositionWrappedRecent_));
                         
                         quantifyCellularResponse (self, analogData)
-                        addDataForRotationalVsForwardVelocityHeatmap(self, wsModel);
-                        imagesc(self.DataForRotationalVsForwardVelocityHeatmapSum_./self.DataForRotationalVsForwardVelocityHeatmapCounts_,'Parent',self.RotationalVsForwardVelocityHeatmapAxis_);
-                                                   %            fprintf('%d %d %f %f %f %f\n', self.TotalScans_, self.CurrentNumberOfScansWithinFirstOnePercent_,self.Gain_, numerator, denominator, self.BarPositionWrappedMeanToSubtract_);    
-%             fprintf('%f %f \n',min(self.BarPositionUnwrappedRecent_),max(self.BarPositionUnwrappedRecent_));
-%             fprintf('%f %f \n',min(analogData(:,3)),max(analogData(:,3)));
-%             fprintf('%f %f \n',min(self.DataFromFile_(newIndicesForAddingData)),max(self.DataFromFile_(newIndicesForAddingData)));
-%             if max(self.BarPositionUnwrappedRecent_)>2.5
-%                why=1; 
-%             end
+                     %   addDataForHeatmaps(self, wsModel);
+                        dataForForwardVsRotationalVelocityHeatmap = self.DataForForwardVsRotationalVelocityHeatmapSum_./self.DataForForwardVsRotationalVelocityHeatmapCounts_;
+                        maxDataForForwardVsRotationalVelocityHeatmap = max(dataForForwardVsRotationalVelocityHeatmap(:));
+                        minDataForForwardVsRotationalVelocityHeatmap = min(dataForForwardVsRotationalVelocityHeatmap(:));
+                        nanIndices = isnan(dataForForwardVsRotationalVelocityHeatmap);
+                        [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
+                        dataForForwardVsRotationalVelocityHeatmap(nanIndices) = maxDataForForwardVsRotationalVelocityHeatmap+0.1*abs(maxDataForForwardVsRotationalVelocityHeatmap);
+                        imagesc(dataForForwardVsRotationalVelocityHeatmap,[minDataForForwardVsRotationalVelocityHeatmap maxDataForForwardVsRotationalVelocityHeatmap]);
+                        colormap(self.ModifiedJetColormap_);
+                        xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
+                        ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
+                        self.TotalScans_ = self.TotalScans_ + nScans;
+                        fprintf('%d\n', self.TotalScans_);
+                                               
+                        
+                        
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData) 
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            nScans = size(analogData,1);
-            fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
+        function samplesAcquired(self,looper,eventName,analogData,digitalData)                               
         end
         
         % These methods are called in the refiller process
         function startingEpisode(self,refiller,eventName)
-            % Called just before each episode
-            fprintf('%s  About to start an episode.\n',self.Greeting);
         end
         
         function completingEpisode(self,refiller,eventName)
-            % Called after each episode completes
-            fprintf('%s  Completed an episode.\n',self.Greeting);
         end
         
         function stoppingEpisode(self,refiller,eventName)
-            % Called if a episode goes wrong
-            fprintf('%s  User stopped an episode.\n',self.Greeting);
         end        
         
         function abortingEpisode(self,refiller,eventName)
-            % Called if a episode goes wrong
-            fprintf('%s  Oh noes!  An episode aborted.\n',self.Greeting);
         end
     end  % methods
     
@@ -332,29 +320,29 @@ classdef FlyOnBall < ws.UserClass
         end
           
         
-        function syncRotationalVsForwardVelocityHeatmapFigureAndAxis(self)
-            if isempty(self.RotationalVsForwardVelocityHeatmapFigure_) || ~ishghandle(self.RotationalVsForwardVelocityHeatmapFigure_)
-                self.RotationalVsForwardVelocityHeatmapFigure_ = figure('Name', 'Rotational Vs Forward Velocity',...
+        function syncForwardVsRotationalVelocityHeatmapFigureAndAxis(self)
+            if isempty(self.ForwardVsRotationalVelocityHeatmapFigure_) || ~ishghandle(self.ForwardVsRotationalVelocityHeatmapFigure_)
+                self.ForwardVsRotationalVelocityHeatmapFigure_ = figure('Name', 'Rotational Vs Forward Velocity',...
                                                                         'NumberTitle','off',...
                                                                         'Units','pixels',...
                                                                         'colormap',jet);
-                self.RotationalVsForwardVelocityHeatmapAxis_ = axes('Parent',self.RotationalVsForwardVelocityHeatmapFigure_);
-                imagesc([1,1],'Parent',self.RotationalVsForwardVelocityHeatmapAxis_); %just to set it up first
-                set(self.RotationalVsForwardVelocityHeatmapAxis_, 'xTick',(0.5:5:length(self.RotationalVelocityBinEdges_)),...
-                                                                  'xTickLabel',(self.RotationalVelocityBinEdges_(1):5*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),...
-                                                                  'yTick',(0.5:5:length(self.ForwardVelocityBinEdges_)),...
-                                                                  'yTickLabel', (self.ForwardVelocityBinEdges_(end):-5*diff(self.ForwardVelocityBinEdges_([1,2])):self.ForwardVelocityBinEdges_(1)),...
+                self.ForwardVsRotationalVelocityHeatmapAxis_ = axes('Parent',self.ForwardVsRotationalVelocityHeatmapFigure_);
+                imagesc([1,1],'Parent',self.ForwardVsRotationalVelocityHeatmapAxis_); %just to set it up first
+                set(self.ForwardVsRotationalVelocityHeatmapAxis_, 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
+                                                                  'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),...
+                                                                  'yTick',(0.5:3:length(self.ForwardVelocityBinEdges_)),...
+                                                                  'yTickLabel', (self.ForwardVelocityBinEdges_(end):-3*diff(self.ForwardVelocityBinEdges_([1,2])):self.ForwardVelocityBinEdges_(1)),...
                                                                   'box','on');
                 
             end
-            cla(self.RotationalVsForwardVelocityHeatmapAxis_);
-            hold(self.RotationalVsForwardVelocityHeatmapAxis_,'on');
-            xlabel(self.RotationalVsForwardVelocityHeatmapAxis_,'v_r_o_t [°/s]');
-            ylabel(self.RotationalVsForwardVelocityHeatmapAxis_,'v_f_w [mm/s]');
-            xlim(self.RotationalVsForwardVelocityHeatmapAxis_,[0 60]);
-            ylim(self.RotationalVsForwardVelocityHeatmapAxis_,[0 60]);
+          cla(self.ForwardVsRotationalVelocityHeatmapAxis_);
+            hold(self.ForwardVsRotationalVelocityHeatmapAxis_,'on');
+            xlabel(self.ForwardVsRotationalVelocityHeatmapAxis_,'v_r_o_t [°/s]');
+            ylabel(self.ForwardVsRotationalVelocityHeatmapAxis_,'v_f_w [mm/s]');
+            xlim(self.ForwardVsRotationalVelocityHeatmapAxis_,[0 length(self.RotationalVelocityBinEdges_)-1]);
+            ylim(self.ForwardVsRotationalVelocityHeatmapAxis_,[0 length(self.ForwardVelocityBinEdges_)-1]);
 
-            HeatmapColorBar = colorbar('peer',self.RotationalVsForwardVelocityHeatmapAxis_);
+            HeatmapColorBar = colorbar('peer',self.ForwardVsRotationalVelocityHeatmapAxis_);
             ylabel(HeatmapColorBar,'Vm [mV]');
         end
         
@@ -490,31 +478,36 @@ classdef FlyOnBall < ws.UserClass
             
         end
         
-        function addDataForRotationalVsForwardVelocityHeatmap(self, wsModel)
+        function addDataForHeatmaps(self, wsModel)
             rotationalVelocityRecent =  self.RotationalDisplacementRecent_*wsModel.Acquisition.SampleRate;
             forwardVelocityRecent =  self.ForwardDisplacementRecent_*wsModel.Acquisition.SampleRate;
+            headingRecent = self.BarPositionWrappedRecent_;
             [~, rotationalVelocityBinIndices] = histc(rotationalVelocityRecent, self.RotationalVelocityBinEdges_);
             [~, forwardVelocityBinIndicesIncreasing] = histc(forwardVelocityRecent, self.ForwardVelocityBinEdges_);
             forwardVelocityBinIndicesDecreasing = length(self.ForwardVelocityBinEdges_)-1-forwardVelocityBinIndicesIncreasing;
+            [~, headingBinIndices] = histc(headingRecent, self.HeadingBinEdges_);
+            
             
             ii_x=unique(rotationalVelocityBinIndices);
             k_x=unique(forwardVelocityBinIndicesDecreasing);
-            
+            h_x=unique(headingBinIndices);
             for ii=1:length(ii_x)
+                % forward vs rotational velocity heatmap data
+                rotationalVelocityBin = ii_x(ii);
                 for k=1:length(k_x)
                     forwardVelocityBin = k_x(k);
-                    rotationalVelocityBin = ii_x(ii);
                     indicesWithinTwoDimensionalBin = (forwardVelocityBinIndicesDecreasing==forwardVelocityBin & rotationalVelocityBinIndices==rotationalVelocityBin);
-                    numberWithinTwoDimensionalBin = length(find(indicesWithinTwoDimensionalBin));
-                    if numberWithinTwoDimensionalBin~=0
-                        if isnan(self.DataForRotationalVsForwardVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin)) %then this is the first time the bin has data
-                            self.DataForRotationalVsForwardVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin) = sum(self.Vm_(indicesWithinTwoDimensionalBin));
-                            self.DataForRotationalVsForwardVelocityHeatmapCounts_(forwardVelocityBin,rotationalVelocityBin) = length(find(indicesWithinTwoDimensionalBin));
-                        else
-                            self.DataForRotationalVsForwardVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin) = self.DataForRotationalVsForwardVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin) + sum(self.Vm_(indicesWithinTwoDimensionalBin));
-                            self.DataForRotationalVsForwardVelocityHeatmapCounts_(forwardVelocityBin,rotationalVelocityBin) =  self.DataForRotationalVsForwardVelocityHeatmapCounts_(forwardVelocityBin,rotationalVelocityBin) + numberWithinTwoDimensionalBin;
-                        end
-                    end
+                    numberWithinTwoDimensionalBin = sum(indicesWithinTwoDimensionalBin);
+                    self.DataForForwardVsRotationalVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin) = self.DataForForwardVsRotationalVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin) + sum(self.Vm_(indicesWithinTwoDimensionalBin));
+                    self.DataForForwardVsRotationalVelocityHeatmapCounts_(forwardVelocityBin,rotationalVelocityBin) =  self.DataForForwardVsRotationalVelocityHeatmapCounts_(forwardVelocityBin,rotationalVelocityBin) + numberWithinTwoDimensionalBin;
+                end
+                
+                for h = 1:length(h_x)
+                    headingBin = h_x(h);
+                    indicesWithinTwoDimensionalBin = (headingBinIndices==headingBin & rotationalVelocityBinIndices==rotationalVelocityBin);
+                    numberWithinTwoDimensionalBin = sum(indicesWithinTwoDimensionalBin);
+                    self.DataForHeadingVsRotationalVelocityHeatmapSum_(forwardVelocityBin,rotationalVelocityBin) = self.DataForHeadingVsRotationalVelocityHeatmapSum_(headingVelocityBin,rotationalVelocityBin) + sum(self.Vm_(indicesWithinTwoDimensionalBin));
+                    self.DataForHeadingVsRotationalVelocityHeatmapCounts_(forwardVelocityBin,rotationalVelocityBin) =  self.DataForHeadingVsRotationalVelocityHeatmapCounts_(headingVelocityBin,rotationalVelocityBin) + numberWithinTwoDimensionalBin;
                 end
             end
         end
