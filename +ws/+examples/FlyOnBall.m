@@ -258,14 +258,17 @@ classdef FlyOnBall < ws.UserClass
                 nanIndices = isnan(dataForHeatmap);
                 [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
                 dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
-                set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
+                %set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
+                axes(self.([whichHeatmap{:} 'Axis_']));
                 imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
                 colormap(self.ModifiedJetColormap_);
+                heatmapColorBar = colorbar('peer',self.([whichHeatmap{:} 'Axis_']));
+                ylabel(heatmapColorBar,'Vm [mV]');
                 xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
                 ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
             end
-            self.TotalScans_ = self.TotalScans_ + nScans;
-            fprintf('%d\n', self.TotalScans_);
+%             self.TotalScans_ = self.TotalScans_ + nScans;
+%             fprintf('%d\n', self.TotalScans_);
             
         end
         
