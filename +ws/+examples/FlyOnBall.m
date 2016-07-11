@@ -84,6 +84,11 @@ classdef FlyOnBall < ws.UserClass
                 originalJetColormap = jet;
                 self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
                 self.generateClearedFigures();
+                            
+                self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+                self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+                self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+                self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
             end
             % end
             
@@ -124,11 +129,6 @@ classdef FlyOnBall < ws.UserClass
             self.generateClearedFigures();
             self.FirstOnePercent_ = wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
-            
-            self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
-            self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
-            self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
-            self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
             
         end
         
@@ -190,6 +190,8 @@ classdef FlyOnBall < ws.UserClass
             % %
             self.XRecent_ = t0 + self.Dt_*(0:(nScans-1))';
             self.tForSweep_ = self.XRecent_(end)+self.Dt_;
+            previousCumulativeRotationMeanToSubtract = self.CumulativeRotationMeanToSubtract_;
+            previousBarPositionWrappedMeanToSubtract = self.BarPositionWrappedMeanToSubtract_;
             if self.XRecent_(1) < self.FirstOnePercent_
                 indicesWithinFirstOnePercentRecent = find(self.XRecent_<self.FirstOnePercent_);
                 numberOfNewDataPoints = length(indicesWithinFirstOnePercentRecent);
@@ -216,16 +218,16 @@ classdef FlyOnBall < ws.UserClass
                     ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
                 end
             end
-            self.downsampleDataForPlotting(wsModel, 'CumulativeRotation');
-            self.downsampleDataForPlotting(wsModel, 'BarPositionUnwrapped');
+            %self.downsampleDataForPlotting(wsModel, 'CumulativeRotation');
+            %self.downsampleDataForPlotting(wsModel, 'BarPositionUnwrapped');
             
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
             self.BarPositionHistogramCountsTotalForSweep_ = self.BarPositionHistogramCountsTotalForSweep_ + barPositionHistogramCountsRecent;
             if t0 == 0 %first time in sweep
-                plot(self.ArenaAndBallRotationAxis_,self.CumulativeRotationForPlottingXData_,self.CumulativeRotationForPlottingYData_ - self.CumulativeRotationMeanToSubtract_,'b',...
-                    self.BarPositionUnwrappedForPlottingXData_,self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_,'g');
+                plot(self.ArenaAndBallRotationAxis_,self.XRecent_,self.CumulativeRotationRecent_ - self.CumulativeRotationMeanToSubtract_,'b',...
+                    self.XRecent_,self.BarPositionUnwrappedRecent_-self.BarPositionWrappedMeanToSubtract_,'g');
                 title(self.ArenaAndBallRotationAxis_,self.ArenaCondition_(self.ArenaOn_+1));
                 legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
                 xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
@@ -237,8 +239,16 @@ classdef FlyOnBall < ws.UserClass
                 xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]');
                 ylabel(self.BarPositionHistogramAxis_,'Time [s]');
             else
-                set(self.ArenaAndBallRotationAxisChildren_(1),'XData',self.CumulativeRotationForPlottingXData_, 'YData', self.CumulativeRotationForPlottingYData_ - self.CumulativeRotationMeanToSubtract_);
-                set(self.ArenaAndBallRotationAxisChildren_(2),'XData',self.BarPositionUnwrappedForPlottingXData_, 'YData', self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_);
+                previousXDataForPlotting = get(self.ArenaAndBallRotationAxisChildren_(1),'XData');
+                xDataForPlotting = [previousXDataForPlotting, self.XRecent_'];
+                
+                previousUnadjustedCumulativeRotationYDataForPlotting = get(self.ArenaAndBallRotationAxisChildren_(1),'YData')+previousCumulativeRotationMeanToSubtract;
+                cumulativeRotationYDataForPlotting = [previousUnadjustedCumulativeRotationYDataForPlotting, self.CumulativeRotationRecent_'] - self.CumulativeRotationMeanToSubtract_;
+                set(self.ArenaAndBallRotationAxisChildren_(1),'XData',xDataForPlotting, 'YData', cumulativeRotationYDataForPlotting);
+                
+                previousUnadjustedBarPositionUnwrappedYDataForPlotting = get(self.ArenaAndBallRotationAxisChildren_(2),'YData')+previousBarPositionWrappedMeanToSubtract;
+                barPositionUnwrappedYDataForPlotting = [previousUnadjustedBarPositionUnwrappedYDataForPlotting, self.BarPositionUnwrappedRecent_'] - self.BarPositionWrappedMeanToSubtract_;
+                set(self.ArenaAndBallRotationAxisChildren_(2),'XData',xDataForPlotting, 'YData', barPositionUnwrappedYDataForPlotting);
                 set(self.BarPositionHistogramAxisChild_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramCountsTotalForSweep_/wsModel.Acquisition.SampleRate);
             end
             %               ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
@@ -251,6 +261,10 @@ classdef FlyOnBall < ws.UserClass
             
             self.quantifyCellularResponse(analogData)
             self.addDataForHeatmaps(wsModel);
+            if mean(self.ForwardDisplacementRecent_) > 0
+                fprintf('%f \n',mean(self.ForwardDisplacementRecent_));
+                wsModel.Stimulation.DigitalOutputStateIfUntimed = ~ wsModel.Stimulation.DigitalOutputStateIfUntimed;
+            end
             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
                 dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
                 maxDataHeatmap = max(dataForHeatmap(:));
@@ -269,7 +283,6 @@ classdef FlyOnBall < ws.UserClass
             end
 %             self.TotalScans_ = self.TotalScans_ + nScans;
 %             fprintf('%d\n', self.TotalScans_);
-            
         end
         
         % These methods are called in the looper process
@@ -302,6 +315,7 @@ classdef FlyOnBall < ws.UserClass
                     'box','on');
             end
             cla(self.ArenaAndBallRotationAxis_);
+            hold(self.ArenaAndBallRotationAxis_,'on');
             title(self.ArenaAndBallRotationAxis_,'Arena is ...');
             xlabel(self.ArenaAndBallRotationAxis_,'Time [s]');
             ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
