@@ -66,6 +66,7 @@ classdef FlyOnBall < ws.UserClass
         DataForHeadingVsRotationalVelocityHeatmapCounts_
         TotalScans_
         ModifiedJetColormap_
+        NumberOfBarPositionBins_
     end
     
     methods
@@ -76,8 +77,9 @@ classdef FlyOnBall < ws.UserClass
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
                 filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
+                self.NumberOfBarPositionBins_ = 16;
                 self.DataFromFile_ = load([filepath 'firstSweep.mat']);
-                self.BarPositionHistogramBinCenters_  = (2*pi/50: 2*pi/25 : 2*pi);
+                self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionBins_): 2*pi/self.NumberOfBarPositionBins_ : 2*pi);
                 self.RotationalVelocityBinEdges_ = (-600:60:600);
                 self.ForwardVelocityBinEdges_= (-20:5:40);
                 self.HeadingBinEdges_ = linspace(-0.001, 2*pi+0.001+0.001,9);
@@ -127,7 +129,7 @@ classdef FlyOnBall < ws.UserClass
             % "run")
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
             self.generateClearedFigures();
-            self.FirstOnePercent_ = wsModel.Acquisition.Duration/100;
+            self.FirstOnePercent_ = 300/100; %wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
             
         end
@@ -160,7 +162,7 @@ classdef FlyOnBall < ws.UserClass
             self.TotalScansInSweep_ = 0;
             self.TotalScans_ = 0;
             self.ArenaAndBallRotationAxisChildren_ = [];
-            self.BarPositionHistogramCountsTotalForSweep_=zeros(1,25);
+            self.BarPositionHistogramCountsTotalForSweep_=zeros(1,self.NumberOfBarPositionBins_);
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -265,22 +267,22 @@ classdef FlyOnBall < ws.UserClass
                 fprintf('%f \n',mean(self.ForwardDisplacementRecent_));
                 wsModel.Stimulation.DigitalOutputStateIfUntimed = ~ wsModel.Stimulation.DigitalOutputStateIfUntimed;
             end
-            for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
-                dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
-                maxDataHeatmap = max(dataForHeatmap(:));
-                minDataHeatmap = min(dataForHeatmap(:));
-                nanIndices = isnan(dataForHeatmap);
-                [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
-                dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
-                %set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
-                axes(self.([whichHeatmap{:} 'Axis_']));
-                imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
-                colormap(self.ModifiedJetColormap_);
-                heatmapColorBar = colorbar('peer',self.([whichHeatmap{:} 'Axis_']));
-                ylabel(heatmapColorBar,'Vm [mV]');
-                xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
-                ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
-            end
+% %             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
+% %                 dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
+% %                 maxDataHeatmap = max(dataForHeatmap(:));
+% %                 minDataHeatmap = min(dataForHeatmap(:));
+% %                 nanIndices = isnan(dataForHeatmap);
+% %                 [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
+% %                 dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
+% %                 %set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
+% %                 axes(self.([whichHeatmap{:} 'Axis_']));
+% %                 imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
+% %                 colormap(self.ModifiedJetColormap_);
+% %                 heatmapColorBar = colorbar('peer',self.([whichHeatmap{:} 'Axis_']));
+% %                 ylabel(heatmapColorBar,'Vm [mV]');
+% %                 xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
+% %                 ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
+% %             end
 %             self.TotalScans_ = self.TotalScans_ + nScans;
 %             fprintf('%d\n', self.TotalScans_);
         end
@@ -326,7 +328,11 @@ classdef FlyOnBall < ws.UserClass
                     'NumberTitle','off',...
                     'Units','pixels');
                 self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigure_,...
-                    'box','on');   
+                    'box','on');
+                uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
+                    'String', cellstr(num2str((1:self.NumberOfBarPositionBins_)')),...
+                    'Position', [20 365 100 50],...
+                    'Callback', @self.undersampledBarPositionBinPopupMenuActuated);
             end
             cla(self.BarPositionHistogramAxis_);
             xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]')
@@ -365,6 +371,10 @@ classdef FlyOnBall < ws.UserClass
                 ylabel(heatmapColorBar,'Vm [mV]');
             end
                         
+        end
+        
+        function undersampledBarPositionBinPopupMenuActuated(self, src, event)
+           fprintf(str2num());
         end
         
         function analyzeFlyLocomotion_ (self, data)
