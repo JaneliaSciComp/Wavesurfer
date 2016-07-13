@@ -52,7 +52,7 @@ classdef FlyOnBall < ws.UserClass
         ArenaAndBallRotationAxisChildren_
         BarPositionHistogramAxisChild_
         BarPositionHistogramBinCenters_
-        BarPositionHistogramCountsTotalForSweep_
+        BarPositionHistogramCountsTotal_
         Vm_
         ForwardDisplacementRecent_
         SideDisplacementRecent_
@@ -66,7 +66,7 @@ classdef FlyOnBall < ws.UserClass
         DataForHeadingVsRotationalVelocityHeatmapCounts_
         TotalScans_
         ModifiedJetColormap_
-        NumberOfBarPositionBins_
+        NumberOfBarPositionHistogramBins_
     end
     
     methods
@@ -77,9 +77,9 @@ classdef FlyOnBall < ws.UserClass
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
                 filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
-                self.NumberOfBarPositionBins_ = 16;
+                self.NumberOfBarPositionHistogramBins_ = 16;
                 self.DataFromFile_ = load([filepath 'firstSweep.mat']);
-                self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionBins_): 2*pi/self.NumberOfBarPositionBins_ : 2*pi);
+                self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);
                 self.RotationalVelocityBinEdges_ = (-600:60:600);
                 self.ForwardVelocityBinEdges_= (-20:5:40);
                 self.HeadingBinEdges_ = linspace(-0.001, 2*pi+0.001+0.001,9);
@@ -91,6 +91,8 @@ classdef FlyOnBall < ws.UserClass
                 self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
+                
+                self.BarPositionHistogramCountsTotal_=zeros(1,self.NumberOfBarPositionHistogramBins_);
             end
             % end
             
@@ -161,8 +163,9 @@ classdef FlyOnBall < ws.UserClass
             self.BarPositionUnwrappedRecent_ = [];
             self.TotalScansInSweep_ = 0;
             self.TotalScans_ = 0;
-            self.ArenaAndBallRotationAxisChildren_ = [];
-            self.BarPositionHistogramCountsTotalForSweep_=zeros(1,self.NumberOfBarPositionBins_);
+            if isgraphics(self.ArenaAndBallRotationAxisChildren_)
+                delete(self.ArenaAndBallRotationAxisChildren_);
+            end
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -226,7 +229,7 @@ classdef FlyOnBall < ws.UserClass
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
-            self.BarPositionHistogramCountsTotalForSweep_ = self.BarPositionHistogramCountsTotalForSweep_ + barPositionHistogramCountsRecent;
+            self.BarPositionHistogramCountsTotal_ = self.BarPositionHistogramCountsTotal_ + barPositionHistogramCountsRecent;
             if t0 == 0 %first time in sweep
                 plot(self.ArenaAndBallRotationAxis_,self.XRecent_,self.CumulativeRotationRecent_ - self.CumulativeRotationMeanToSubtract_,'b',...
                     self.XRecent_,self.BarPositionUnwrappedRecent_-self.BarPositionWrappedMeanToSubtract_,'g');
@@ -236,7 +239,7 @@ classdef FlyOnBall < ws.UserClass
                 ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
                 self.ArenaAndBallRotationAxisChildren_ = get(self.ArenaAndBallRotationAxis_,'Children');
                 
-                plot(self.BarPositionHistogramAxis_, self.BarPositionHistogramBinCenters_, self.BarPositionHistogramCountsTotalForSweep_/wsModel.Acquisition.SampleRate);
+                plot(self.BarPositionHistogramAxis_, self.BarPositionHistogramBinCenters_, self.BarPositionHistogramCountsTotal_/wsModel.Acquisition.SampleRate);
                 self.BarPositionHistogramAxisChild_ = get(self.BarPositionHistogramAxis_,'Children');
                 xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]');
                 ylabel(self.BarPositionHistogramAxis_,'Time [s]');
@@ -251,7 +254,7 @@ classdef FlyOnBall < ws.UserClass
                 previousUnadjustedBarPositionUnwrappedYDataForPlotting = get(self.ArenaAndBallRotationAxisChildren_(2),'YData')+previousBarPositionWrappedMeanToSubtract;
                 barPositionUnwrappedYDataForPlotting = [previousUnadjustedBarPositionUnwrappedYDataForPlotting, self.BarPositionUnwrappedRecent_'] - self.BarPositionWrappedMeanToSubtract_;
                 set(self.ArenaAndBallRotationAxisChildren_(2),'XData',xDataForPlotting, 'YData', barPositionUnwrappedYDataForPlotting);
-                set(self.BarPositionHistogramAxisChild_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramCountsTotalForSweep_/wsModel.Acquisition.SampleRate);
+                set(self.BarPositionHistogramAxisChild_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramCountsTotal_/wsModel.Acquisition.SampleRate);
             end
             %               ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
             %               xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
@@ -329,10 +332,10 @@ classdef FlyOnBall < ws.UserClass
                     'Units','pixels');
                 self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigure_,...
                     'box','on');
-                uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
-                    'String', cellstr(num2str((1:self.NumberOfBarPositionBins_)')),...
-                    'Position', [20 365 100 50],...
-                    'Callback', @self.undersampledBarPositionBinPopupMenuActuated);
+%                 uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
+%                     'String', cellstr(num2str((1:self.NumberOfBarPositionHistogramBins_)')),...
+%                     'Position', [20 365 100 50],...
+%                     'Callback', @self.undersampledBarPositionBinPopupMenuActuated);
             end
             cla(self.BarPositionHistogramAxis_);
             xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]')
