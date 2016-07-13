@@ -15,6 +15,7 @@ classdef FlyOnBall < ws.UserClass
     % (The underscore in the name is to help remind you that it's
     % protected.)
     properties (Access=protected)
+        ScreenSize_
         TimeAtStartOfLastRunAsString_ = ''
         FirstOnePercent_
         Dt_
@@ -76,6 +77,9 @@ classdef FlyOnBall < ws.UserClass
                 % creates the "user object"
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
+                set(0,'units','pixels');
+                self.ScreenSize_ = get(0,'screensize');
+                
                 filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
                 self.NumberOfBarPositionHistogramBins_ = 16;
                 self.DataFromFile_ = load([filepath 'firstSweep.mat']);
@@ -83,8 +87,14 @@ classdef FlyOnBall < ws.UserClass
                 self.RotationalVelocityBinEdges_ = (-600:60:600);
                 self.ForwardVelocityBinEdges_= (-20:5:40);
                 self.HeadingBinEdges_ = linspace(-0.001, 2*pi+0.001+0.001,9);
-                originalJetColormap = jet;
+                
+                temporaryFigureForGettingColormap = figure('visible','off');
+                set(temporaryFigureForGettingColormap,'colormap',jet);
+                originalJetColormap = get(temporaryFigureForGettingColormap,'colormap');
                 self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
+                close(temporaryFigureForGettingColormap);
+                temporaryFigureForGettingColormap = [];
+                
                 self.generateClearedFigures();
                             
                 self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
@@ -270,23 +280,26 @@ classdef FlyOnBall < ws.UserClass
                 fprintf('%f \n',mean(self.ForwardDisplacementRecent_));
                 wsModel.Stimulation.DigitalOutputStateIfUntimed = ~ wsModel.Stimulation.DigitalOutputStateIfUntimed;
             end
-% %             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
-% %                 dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
-% %                 maxDataHeatmap = max(dataForHeatmap(:));
-% %                 minDataHeatmap = min(dataForHeatmap(:));
-% %                 nanIndices = isnan(dataForHeatmap);
-% %                 [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
-% %                 dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
-% %                 %set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
-% %                 axes(self.([whichHeatmap{:} 'Axis_']));
-% %                 imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
-% %                 colormap(self.ModifiedJetColormap_);
-% %                 heatmapColorBar = colorbar('peer',self.([whichHeatmap{:} 'Axis_']));
-% %                 ylabel(heatmapColorBar,'Vm [mV]');
-% %                 xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
-% %                 ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
-% %             end
-%             self.TotalScans_ = self.TotalScans_ + nScans;
+            for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
+                whichAxis = [whichHeatmap{:} 'Axis_'];
+                dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
+                maxDataHeatmap = max(dataForHeatmap(:));
+                minDataHeatmap = min(dataForHeatmap(:));
+                nanIndices = isnan(dataForHeatmap);
+                [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
+                dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
+                %set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
+                axes(self.(whichAxis));
+                imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
+                colormap(self.ModifiedJetColormap_);
+                heatmapColorBar = colorbar('peer',self.([whichHeatmap{:} 'Axis_']));
+                ylabel(heatmapColorBar,'Vm [mV]');
+                xlabel(self.(whichAxis),'v_r_o_t [°/s]');
+                ylabel(self.(whichAxis),'v_f_w [mm/s]');
+                xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
+                ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
+            end
+            self.TotalScans_ = self.TotalScans_ + nScans;
 %             fprintf('%d\n', self.TotalScans_);
         end
         
@@ -310,12 +323,22 @@ classdef FlyOnBall < ws.UserClass
     
     methods
         function generateClearedFigures(self)
+            % Creates and clears the figures
+            
+            height = self.ScreenSize_(4)*0.3;
+            width = (4/3) * height;
+            bottomRowBottomCorner = 55;
+            topRowBottomCorner = bottomRowBottomCorner + height + 115;
+            leftColumnLeftCorner = self.ScreenSize_(3)-(width*2+100);
+            rightColumnLeftCorner = leftColumnLeftCorner + width + 50;
+            
             
             % Arena and Ball Rotation Figure
             if isempty(self.ArenaAndBallRotationFigure_) || ~ishghandle(self.ArenaAndBallRotationFigure_)
                 self.ArenaAndBallRotationFigure_ = figure('Name', 'Arena and Ball Rotation',...
                     'NumberTitle','off',...
-                    'Units','pixels');
+                    'Units','pixels',...
+                    'Position', [leftColumnLeftCorner topRowBottomCorner width height]);
                 self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigure_,...
                     'box','on');
             end
@@ -329,7 +352,8 @@ classdef FlyOnBall < ws.UserClass
             if isempty(self.BarPositionHistogramFigure_) || ~ishghandle(self.BarPositionHistogramFigure_)
                 self.BarPositionHistogramFigure_ = figure('Name', 'Bar Position Histogram',...
                     'NumberTitle','off',...
-                    'Units','pixels');
+                    'Units','pixels',...
+                    'Position', [rightColumnLeftCorner topRowBottomCorner width height]);
                 self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigure_,...
                     'box','on');
 %                 uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
@@ -347,14 +371,17 @@ classdef FlyOnBall < ws.UserClass
                 whichAxis = [whichHeatmap{:} 'VsRotationalVelocityHeatmapAxis_'];
                 if strcmp(whichHeatmap{:},'Forward')
                     whichBinEdges = 'ForwardVelocityBinEdges_';
+                    leftCorner = leftColumnLeftCorner;
                 else
                     whichBinEdges = 'HeadingBinEdges_';
+                    leftCorner = rightColumnLeftCorner;
                 end
                 if isempty(self.(whichFigure)) || ~ishghandle(self.(whichFigure))
                     self.(whichFigure) = figure('Name', [whichHeatmap{:} ' vs Rotational Velocity'],...
                         'NumberTitle','off',...
                         'Units','pixels',...
-                        'colormap',self.ModifiedJetColormap_);
+                        'colormap',self.ModifiedJetColormap_,...
+                        'Position', [leftCorner bottomRowBottomCorner width height]);
                     self.(whichAxis) = axes('Parent',self.(whichFigure));
                     imagesc([1,1],'Parent',self.(whichAxis)); %just to set it up first
                     set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
