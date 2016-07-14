@@ -68,6 +68,9 @@ classdef FlyOnBall < ws.UserClass
         TotalScans_
         ModifiedJetColormap_
         NumberOfBarPositionHistogramBins_
+        UndersampledBarPositionBinPopupMenu_
+        UndersampledBarPosition_
+        UndersampledBarPositionEnableFeedbackCheckbox_
     end
     
     methods
@@ -93,10 +96,9 @@ classdef FlyOnBall < ws.UserClass
                 originalJetColormap = get(temporaryFigureForGettingColormap,'colormap');
                 self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
                 close(temporaryFigureForGettingColormap);
-                temporaryFigureForGettingColormap = [];
-                
+                               
                 self.generateClearedFigures();
-                            
+                self.UndersampledBarPosition_ = get(self.UndersampledBarPositionBinPopupMenu_,'value');
                 self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
@@ -132,6 +134,13 @@ classdef FlyOnBall < ws.UserClass
                     close(self.ForwardVsRotationalVelocityHeatmapFigure_) ;
                 end
                 self.ForwardVsRotationalVelocityHeatmapFigure_ = [] ;
+            end
+            
+            if ~isempty(self.HeadingVsRotationalVelocityHeatmapFigure_) ,
+                if ishghandle(self.HeadingVsRotationalVelocityHeatmapFigure_) ,
+                    close(self.HeadingVsRotationalVelocityHeatmapFigure_) ;
+                end
+                self.HeadingVsRotationalVelocityHeatmapFigure_ = [] ;
             end
         end
         
@@ -188,6 +197,7 @@ classdef FlyOnBall < ws.UserClass
         end
         
         function dataAvailable(self,wsModel,eventName)
+            self.UndersampledBarPosition_ = get(self.UndersampledBarPositionBinPopupMenu_,'value');
             % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
             %      get(self.ArenaAndBallRotationAxis_,'Position');
@@ -277,8 +287,11 @@ classdef FlyOnBall < ws.UserClass
             self.quantifyCellularResponse(analogData)
             self.addDataForHeatmaps(wsModel);
             if mean(self.ForwardDisplacementRecent_) > 0
-                fprintf('%f \n',mean(self.ForwardDisplacementRecent_));
-                wsModel.Stimulation.DigitalOutputStateIfUntimed = ~ wsModel.Stimulation.DigitalOutputStateIfUntimed;
+         %       fprintf('%f \n',mean(self.ForwardDisplacementRecent_));
+         if any(wsModel.Stimulation.DigitalOutputStateIfUntimed)
+       %     wsModel.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(7); 
+         end
+         %       wsModel.Stimulation.DigitalOutputStateIfUntimed = ~ wsModel.Stimulation.DigitalOutputStateIfUntimed;
             end
             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
                 whichAxis = [whichHeatmap{:} 'Axis_'];
@@ -325,12 +338,12 @@ classdef FlyOnBall < ws.UserClass
         function generateClearedFigures(self)
             % Creates and clears the figures
             
-            height = self.ScreenSize_(4)*0.3;
-            width = (4/3) * height;
+            figureHeight = self.ScreenSize_(4)*0.3;
+            figureWidth = (4/3) * figureHeight;
             bottomRowBottomCorner = 55;
-            topRowBottomCorner = bottomRowBottomCorner + height + 115;
-            leftColumnLeftCorner = self.ScreenSize_(3)-(width*2+100);
-            rightColumnLeftCorner = leftColumnLeftCorner + width + 50;
+            topRowBottomCorner = bottomRowBottomCorner + figureHeight + 115;
+            leftColumnLeftCorner = self.ScreenSize_(3)-(figureWidth*2+100);
+            rightColumnLeftCorner = leftColumnLeftCorner + figureWidth + 50;
             
             
             % Arena and Ball Rotation Figure
@@ -338,7 +351,7 @@ classdef FlyOnBall < ws.UserClass
                 self.ArenaAndBallRotationFigure_ = figure('Name', 'Arena and Ball Rotation',...
                     'NumberTitle','off',...
                     'Units','pixels',...
-                    'Position', [leftColumnLeftCorner topRowBottomCorner width height]);
+                    'Position', [leftColumnLeftCorner topRowBottomCorner figureWidth figureHeight]);
                 self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigure_,...
                     'box','on');
             end
@@ -349,17 +362,43 @@ classdef FlyOnBall < ws.UserClass
             ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
             
             % Bar Position Histogram Figure
+                       
             if isempty(self.BarPositionHistogramFigure_) || ~ishghandle(self.BarPositionHistogramFigure_)
                 self.BarPositionHistogramFigure_ = figure('Name', 'Bar Position Histogram',...
                     'NumberTitle','off',...
                     'Units','pixels',...
-                    'Position', [rightColumnLeftCorner topRowBottomCorner width height]);
+                    'Position', [rightColumnLeftCorner topRowBottomCorner figureWidth figureHeight],'Visible','off');
                 self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigure_,...
                     'box','on');
-%                 uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
-%                     'String', cellstr(num2str((1:self.NumberOfBarPositionHistogramBins_)')),...
-%                     'Position', [20 365 100 50],...
-%                     'Callback', @self.undersampledBarPositionBinPopupMenuActuated);
+                
+
+                undersampledBarPositionBinTextWidth = 90;
+                undersampledBarPositionBinPopupMenuWidth = 48;
+                undersampledBarPositionEnableFeedbackCheckboxWidth = 15;
+                undersampledBarPositionEnableFeedbackTextWidth = 83;
+                
+                gapBetweenTextAndBox = 3;
+                gapBetweenBoxes = 10;
+                undersampledBarPositionBinTextXOffset = 0.5*(figureWidth - (undersampledBarPositionBinTextWidth + undersampledBarPositionBinPopupMenuWidth +...
+                                             undersampledBarPositionEnableFeedbackCheckboxWidth + undersampledBarPositionEnableFeedbackTextWidth +...
+                                             2*gapBetweenTextAndBox + gapBetweenBoxes));                                                       
+                undersampledBarPositionBinPopupMenuXOffset = undersampledBarPositionBinTextXOffset + gapBetweenTextAndBox;
+                undersampledBarPositionEnableFeedbackCheckboxXOffset = undersampledBarPositionBinPopupMenuXOffset + gapBetweenBoxes;
+                undersampledBarPositionEnableFeedbackTextXOffset = undersampledBarPositionEnableFeedbackCheckboxXOffset + gapBetweenTextAndBox;
+                
+                
+                uicontrolsYOffset = figureHeight-50;
+                uicontrolsHeight = 15;
+                self.UndersampledBarPositionBinPopupMenu_ = uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
+                          'String', [{'None'};cellstr(num2str((1:self.NumberOfBarPositionHistogramBins_)'))],...
+                          'Position', [undersampledBarPositionBinPopupMenuXOffset uicontrolsYOffset undersampledBarPositionBinPopupMenuWidth uicontrolsHeight]);
+                uicontrol(self.BarPositionHistogramFigure_, 'Style','Text','String','Undersampled Bin: ',...
+                          'Position', [undersampledBarPositionBinTextXOffset uicontrolsYOffset undersampledBarPositionBinTextWidth uicontrolsHeight]);
+                self.UndersampledBarPositionEnableFeedbackCheckbox_ = uicontrol(self.BarPositionHistogramFigure_, 'Style', 'checkbox',...
+                    'Position', [undersampledBarPositionEnableFeedbackTextXOffset uicontrolsYOffset undersampledBarPositionBinTextWidth uicontrolsHeight]);
+                undersampledBarPositionEnableFeedbackText = uicontrol(self.BarPositionHistogramFigure_, 'Style','Text','String','Enable Feedback',...
+                                                                      'Position', [undersampledBarPositionEnableFeedbackTextXOffset uicontrolsYOffset undersampledBarPositionEnableFeedbackTextWidth uicontrolsHeight]);       
+                set(self.BarPositionHistogramFigure_,'toolbar','figure','Visible','on')
             end
             cla(self.BarPositionHistogramAxis_);
             xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]')
@@ -381,7 +420,7 @@ classdef FlyOnBall < ws.UserClass
                         'NumberTitle','off',...
                         'Units','pixels',...
                         'colormap',self.ModifiedJetColormap_,...
-                        'Position', [leftCorner bottomRowBottomCorner width height]);
+                        'Position', [leftCorner bottomRowBottomCorner figureWidth figureHeight]);
                     self.(whichAxis) = axes('Parent',self.(whichFigure));
                     imagesc([1,1],'Parent',self.(whichAxis)); %just to set it up first
                     set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
@@ -402,11 +441,11 @@ classdef FlyOnBall < ws.UserClass
             end
                         
         end
-        
-        function undersampledBarPositionBinPopupMenuActuated(self, src, event)
-           fprintf(str2num());
-        end
-        
+%         
+%         function undersampledBarPositionBinPopupMenuActuated(self, src, event)
+%            self.UndersampledBarPosition_ = get(self.UndersampledBarPositionBinPopupMenu_,'value');
+%         end
+%         
         function analyzeFlyLocomotion_ (self, data)
             % This function quantifies the locomotor activity of the fly and exports
             % the key parameters used by the subsequent functions.
