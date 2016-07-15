@@ -19,13 +19,13 @@ classdef FlyOnBall < ws.UserClass
         TimeAtStartOfLastRunAsString_ = ''
         FirstOnePercent_
         Dt_
-        ArenaAndBallRotationFigure_ = [];
+        ArenaAndBallRotationFigureHandle_ = [];
         ArenaAndBallRotationAxis_
-        BarPositionHistogramFigure_ = [];
+        BarPositionHistogramFigureHandle_ = [];
         BarPositionHistogramAxis_
-        ForwardVsRotationalVelocityHeatmapFigure_ = [];
+        ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];
         ForwardVsRotationalVelocityHeatmapAxis_
-        HeadingVsRotationalVelocityHeatmapFigure_ = [];
+        HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
         HeadingVsRotationalVelocityHeatmapAxis_
         tForSweep_
         XSpanInPixels_ % if running without a UI, this a reasonable fallback value
@@ -72,9 +72,10 @@ classdef FlyOnBall < ws.UserClass
         UndersampledBarPositionBinPopupMenuContent_
         UndersampledBarPositionBin_
         UndersampledBarPositionEnableFeedbackCheckbox_
-        
         BarPositionHistogramPlotHandle_
         BarPositionHistogramUndersampledBinPlotHandle_
+        
+        StartedSweepIndices_
     end
     
     methods
@@ -96,7 +97,7 @@ classdef FlyOnBall < ws.UserClass
                 self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);
                 self.RotationalVelocityBinEdges_ = (-600:60:600);
                 self.ForwardVelocityBinEdges_= (-20:5:40);
-                self.HeadingBinEdges_ = linspace(-0.001, 2*pi+0.001+0.001,9);
+                self.HeadingBinEdges_ = linspace(0, 2*pi,9);
                 
                 self.UndersampledBarPositionBin_ = [];
                 
@@ -113,6 +114,8 @@ classdef FlyOnBall < ws.UserClass
                 self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 
                 self.BarPositionHistogramCountsTotal_=zeros(1,self.NumberOfBarPositionHistogramBins_);
+                
+                self.StartedSweepIndices_ = [];
             end
             % end
             
@@ -125,32 +128,32 @@ classdef FlyOnBall < ws.UserClass
                 self.Greeting);
             set(self.UndersampledBarPositionBinPopupMenu_,'Callback','');
 
-            if ~isempty(self.ArenaAndBallRotationFigure_) ,
-                if ishghandle(self.ArenaAndBallRotationFigure_) ,
-                    close(self.ArenaAndBallRotationFigure_) ;
+            if ~isempty(self.ArenaAndBallRotationFigureHandle_) ,
+                if ishghandle(self.ArenaAndBallRotationFigureHandle_) ,
+                    close(self.ArenaAndBallRotationFigureHandle_) ;
                 end
-                self.ArenaAndBallRotationFigure_ = [] ;
+                self.ArenaAndBallRotationFigureHandle_ = [] ;
             end
             
-            if ~isempty(self.BarPositionHistogramFigure_) ,
-                if ishghandle(self.BarPositionHistogramFigure_) ,
-                    close(self.BarPositionHistogramFigure_) ;                  
+            if ~isempty(self.BarPositionHistogramFigureHandle_) ,
+                if ishghandle(self.BarPositionHistogramFigureHandle_) ,
+                    close(self.BarPositionHistogramFigureHandle_) ;                  
                 end
-                self.BarPositionHistogramFigure_ = [] ;
+                self.BarPositionHistogramFigureHandle_ = [] ;
             end
             
-            if ~isempty(self.ForwardVsRotationalVelocityHeatmapFigure_) ,
-                if ishghandle(self.ForwardVsRotationalVelocityHeatmapFigure_) ,
-                    close(self.ForwardVsRotationalVelocityHeatmapFigure_) ;
+            if ~isempty(self.ForwardVsRotationalVelocityHeatmapFigureHandle_) ,
+                if ishghandle(self.ForwardVsRotationalVelocityHeatmapFigureHandle_) ,
+                    close(self.ForwardVsRotationalVelocityHeatmapFigureHandle_) ;
                 end
-                self.ForwardVsRotationalVelocityHeatmapFigure_ = [] ;
+                self.ForwardVsRotationalVelocityHeatmapFigureHandle_ = [] ;
             end
             
-            if ~isempty(self.HeadingVsRotationalVelocityHeatmapFigure_) ,
-                if ishghandle(self.HeadingVsRotationalVelocityHeatmapFigure_) ,
-                    close(self.HeadingVsRotationalVelocityHeatmapFigure_) ;
+            if ~isempty(self.HeadingVsRotationalVelocityHeatmapFigureHandle_) ,
+                if ishghandle(self.HeadingVsRotationalVelocityHeatmapFigureHandle_) ,
+                    close(self.HeadingVsRotationalVelocityHeatmapFigureHandle_) ;
                 end
-                self.HeadingVsRotationalVelocityHeatmapFigure_ = [] ;
+                self.HeadingVsRotationalVelocityHeatmapFigureHandle_ = [] ;
             end
         end
         
@@ -158,8 +161,16 @@ classdef FlyOnBall < ws.UserClass
         function startingRun(self,wsModel,eventName)
             % Called just before each set of sweeps (a.k.a. each
             % "run")
+            
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
-            self.generateClearedFigures();
+%             if isempty(self.StartedSweepIndices_)
+%                 set(self.ArenaAndBallRotationFigureHandle_,'Name',sprintf('Arena and Ball Rotation: Collecting Sweep %d Data...', wsModel.Logging.NextSweepIndex));
+%                 set(self.BarPositionHistogramFigureHandle_,'Name',sprintf('Bar Position Histogram: Collecting Sweep %d Data...', wsModel.Logging.NextSweepIndex));
+%                 set(self.ForwardVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Forward Vs Rotational Velocity: Collecting Sweep %d Data...', wsModel.Logging.NextSweepIndex));
+%                 set(self.HeadingVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Heading Vs Rotational Velocity: Collecting Sweep %d Data...', wsModel.Logging.NextSweepIndex));
+%             end
+                        
+            
             self.FirstOnePercent_ = 300/100; %wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
             
@@ -176,6 +187,24 @@ classdef FlyOnBall < ws.UserClass
         end
         
         function startingSweep(self,wsModel,eventName)
+            % Store only the completed sweep indices
+            if wsModel.Logging.IsEnabled
+                self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex-1];
+            else
+                self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex];
+            end
+            set(self.ArenaAndBallRotationFigureHandle_,'Name',sprintf('Arena and Ball Rotation: Sweep %d', self.StartedSweepIndices_(end)));
+            if length(self.StartedSweepIndices_) == 1
+                set(self.ForwardVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Forward Vs Rotational Velocity: Sweep %d', self.StartedSweepIndices_(1)));
+                set(self.HeadingVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Heading Vs Rotational Velocity: Sweep %d', self.StartedSweepIndices_(1)));
+                set(self.BarPositionHistogramFigureHandle_,'Name',sprintf('Bar Position Histogram: Sweep %d', self.StartedSweepIndices_(1)));
+            else
+                stringOfStartedSweepIndices = self.generateFormattedStringFromListOfNumbers(self.StartedSweepIndices_);
+                set(self.ForwardVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Forward Vs Rotational Velocity: Sweeps %s', stringOfStartedSweepIndices));
+                set(self.HeadingVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Heading Vs Rotational Velocity: Sweeps %s', stringOfStartedSweepIndices));
+                set(self.BarPositionHistogramFigureHandle_,'Name',sprintf('Bar Position Histogram: Sweeps %s', stringOfStartedSweepIndices));
+            end 
+
             self.CumulativeRotationRecent_ = 0;
             self.CumulativeRotationSum_ = 0;
             self.BarPositionWrappedSum_ = 0;
@@ -285,7 +314,11 @@ classdef FlyOnBall < ws.UserClass
                 set(self.ArenaAndBallRotationAxisChildren_(2),'XData',xDataForPlotting, 'YData', barPositionUnwrappedYDataForPlotting);
                 
             end
-            
+            if self.tForSweep_>=7 && get(self.UndersampledBarPositionBinPopupMenu_,'value') == 1
+                set(self.UndersampledBarPositionBinPopupMenu_,'value',10);
+                self.undersampledBarPositionBinPopupMenuActuated();
+            end
+
             % bar histogram stuff
             set(self.BarPositionHistogramPlotHandle_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramCountsTotal_/wsModel.Acquisition.SampleRate);
             currentBarHistogramPlotYlim = get(self.BarPositionHistogramAxis_,'ylim');       
@@ -317,14 +350,8 @@ classdef FlyOnBall < ws.UserClass
                 nanIndices = isnan(dataForHeatmap);
                 [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
                 dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
-                %set(self.([whichHeatmap{:} 'Figure_']), 'CurrentAxes',self.([whichHeatmap{:} 'Axis_']));
                 axes(self.(whichAxis));
                 imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
-                colormap(self.ModifiedJetColormap_);
-                heatmapColorBar = colorbar('peer',self.([whichHeatmap{:} 'Axis_']));
-                ylabel(heatmapColorBar,'Vm [mV]');
-                xlabel(self.(whichAxis),'v_r_o_t [°/s]');
-                ylabel(self.(whichAxis),'v_f_w [mm/s]');
                 xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
                 ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
             end
@@ -363,12 +390,12 @@ classdef FlyOnBall < ws.UserClass
             
             
             % Arena and Ball Rotation Figure
-            if isempty(self.ArenaAndBallRotationFigure_) || ~ishghandle(self.ArenaAndBallRotationFigure_)
-                self.ArenaAndBallRotationFigure_ = figure('Name', 'Arena and Ball Rotation',...
+            if isempty(self.ArenaAndBallRotationFigureHandle_) || ~ishghandle(self.ArenaAndBallRotationFigureHandle_)
+                self.ArenaAndBallRotationFigureHandle_ = figure('Name', 'Arena and Ball Rotation: Waiting to start...',...
                     'NumberTitle','off',...
                     'Units','pixels',...
                     'Position', [leftColumnLeftCorner topRowBottomCorner figureWidth figureHeight]);
-                self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigure_,...
+                self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigureHandle_,...
                     'box','on');
             end
             cla(self.ArenaAndBallRotationAxis_);
@@ -379,8 +406,8 @@ classdef FlyOnBall < ws.UserClass
             
             % Bar Position Histogram Figure
                        
-            if isempty(self.BarPositionHistogramFigure_) || ~ishghandle(self.BarPositionHistogramFigure_)
-                self.BarPositionHistogramFigure_ = figure('Name', 'Bar Position Histogram',...
+            if isempty(self.BarPositionHistogramFigureHandle_) || ~ishghandle(self.BarPositionHistogramFigureHandle_)
+                self.BarPositionHistogramFigureHandle_ = figure('Name', 'Bar Position Histogram: Waiting to start...',...
                     'NumberTitle','off',...
                     'Units','pixels',...
                     'Position', [rightColumnLeftCorner topRowBottomCorner figureWidth figureHeight],'Visible','off');
@@ -398,27 +425,27 @@ classdef FlyOnBall < ws.UserClass
                 
                 uicontrolsYOffset = figureHeight-25;
                 uicontrolsHeight = 15;
-                uicontrol(self.BarPositionHistogramFigure_, 'Style','Text','String','Undersampled Bin: ',...
+                uicontrol(self.BarPositionHistogramFigureHandle_, 'Style','Text','String','Undersampled Bin: ',...
                     'Position', [undersampledBarPositionBinTextXOffset uicontrolsYOffset undersampledBarPositionBinTextWidth uicontrolsHeight],...
                      'BackgroundColor','White');
-                self.UndersampledBarPositionBinPopupMenu_ = uicontrol(self.BarPositionHistogramFigure_, 'Style', 'popup',...
+                self.UndersampledBarPositionBinPopupMenu_ = uicontrol(self.BarPositionHistogramFigureHandle_, 'Style', 'popup',...
                     'String', self.UndersampledBarPositionBinPopupMenuContent_,...
                     'Position', [undersampledBarPositionBinPopupMenuXOffset uicontrolsYOffset+5 undersampledBarPositionBinPopupMenuWidth uicontrolsHeight],...
                     'BackgroundColor','White',...
                     'Callback',@self.undersampledBarPositionBinPopupMenuActuated);
-                self.UndersampledBarPositionEnableFeedbackCheckbox_ = uicontrol(self.BarPositionHistogramFigure_, 'Style', 'checkbox','String', 'Enable Feedback',...
+                self.UndersampledBarPositionEnableFeedbackCheckbox_ = uicontrol(self.BarPositionHistogramFigureHandle_, 'Style', 'checkbox','String', 'Enable Feedback',...
                     'Position', [undersampledBarPositionEnableFeedbackCheckboxXOffset uicontrolsYOffset undersampledBarPositionEnableFeedbackCheckboxWidth uicontrolsHeight],...
                      'BackgroundColor','White','Enable',ws.onIff(~strcmp('None',get(self.UndersampledBarPositionBinPopupMenu_,'String'))),...
                      'Callback', @self.undersampledBarPositionEnableFeedbackCheckboxActivated);
                 
                 
-                self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigure_,...
+                self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigureHandle_,...
                     'box','on', 'xlim', [-.1 2*pi+0.1]);
                 hold(self.BarPositionHistogramAxis_,'on');
-                self.BarPositionHistogramUndersampledBinPlotHandle_ = rectangle('Position',[-10 -10 0.5 0.5],'linestyle',':'); % just to initialize it
+                self.BarPositionHistogramUndersampledBinPlotHandle_ = rectangle('Position',[-10 0 0.5 0.5],'linestyle',':'); % just to initialize it
                 self.BarPositionHistogramPlotHandle_ = plot(self.BarPositionHistogramAxis_, [-10,-10], [0.5,0.5]); % just to initialize it
    
-                set(self.BarPositionHistogramFigure_,'toolbar','figure','Visible','on')
+                set(self.BarPositionHistogramFigureHandle_,'toolbar','figure','Visible','on')
             end
 %            cla(self.BarPositionHistogramAxis_);
             xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]')
@@ -426,7 +453,7 @@ classdef FlyOnBall < ws.UserClass
             
             % Forward vs Rotational Velocity Heatmap Figure
             for whichHeatmap = [{'Forward'},{'Heading'}]
-                whichFigure = [whichHeatmap{:} 'VsRotationalVelocityHeatmapFigure_'];
+                whichFigure = [whichHeatmap{:} 'VsRotationalVelocityHeatmapFigureHandle_'];
                 whichAxis = [whichHeatmap{:} 'VsRotationalVelocityHeatmapAxis_'];
                 if strcmp(whichHeatmap{:},'Forward')
                     whichBinEdges = 'ForwardVelocityBinEdges_';
@@ -436,7 +463,7 @@ classdef FlyOnBall < ws.UserClass
                     leftCorner = rightColumnLeftCorner;
                 end
                 if isempty(self.(whichFigure)) || ~ishghandle(self.(whichFigure))
-                    self.(whichFigure) = figure('Name', [whichHeatmap{:} ' vs Rotational Velocity'],...
+                    self.(whichFigure) = figure('Name', [whichHeatmap{:} ' vs Rotational Velocity: Waiting to start...'],...
                         'NumberTitle','off',...
                         'Units','pixels',...
                         'colormap',self.ModifiedJetColormap_,...
@@ -444,23 +471,48 @@ classdef FlyOnBall < ws.UserClass
                     self.(whichAxis) = axes('Parent',self.(whichFigure));
                     imagesc([1,1],'Parent',self.(whichAxis)); %just to set it up first
                     set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
-                        'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),...
-                        'yTick',(0.5:3:length(self.(whichBinEdges))),...
-                        'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)),...
-                        'box','on');
+                        'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),'box','on');
+                    hold(self.(whichAxis),'on');
                 end
-                cla(self.(whichAxis));
                % hold(self.(whichAxis),'on');
-                xlabel(self.(whichAxis),'v_r_o_t [°/s]');
-                ylabel(self.(whichAxis),'v_f_w [mm/s]');
-                xlim(self.(whichAxis),[0 length(self.RotationalVelocityBinEdges_)-1]);
-                ylim(self.(whichAxis),[0 length(self.(whichBinEdges))-1]);
+               
+               % xlabel(self.(whichAxis),'v_r_o_t [°/s]');
+               xlabel(self.(whichAxis),'v_r_o_t [°/s]');
+               if strcmp(whichHeatmap{:},'Forward')
+                   ylabel(self.(whichAxis),'v_f_w [mm/s]');
+                   set(self.(whichAxis),'yTick',(0.5:3:length(self.(whichBinEdges))),'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)))
+               else
+                   ylabel(self.(whichAxis),'Heading [rad]');
+                   set(self.(whichAxis),'yTick',(0.5:length(self.(whichBinEdges))/4:length(self.(whichBinEdges))+0.5),'yTickLabel', {'0','pi/2','pi','3pi/2','2pi'})
+             %      'xTick',(11.5:6:length(rot_axis)-12),'xTickLabel',(rot_axis(13):6*diff(rot_axis([1,2])):rot_axis(end-12)),'yTick',[0.5 length(heading_axis)/2 length(heading_axis)-0.5],'yTickLabel',{'0' 'pi' '2pi'}
+               end
+                xlim(self.(whichAxis),[0.5 length(self.RotationalVelocityBinEdges_)+0.5]);
+                ylim(self.(whichAxis),[0.5 length(self.(whichBinEdges))+0.5]);
                 
-                heatmapColorBar = colorbar('peer',self.(whichAxis));
-                ylabel(heatmapColorBar,'Vm [mV]');
+                HeatmapColorBar = colorbar('peer',self.(whichAxis));
+                ylabel(HeatmapColorBar,'Vm [mV]');
+                cla(self.(whichAxis));
             end
                         
         end
+        
+         function outputString = generateFormattedStringFromListOfNumbers(self, arrayOfNumbers) %#ok<INUSL>
+            % This function is used to create a string of completed scans
+            % that is used to label figures. Eg., if scans 1,2,3,5,6,7,10
+            % complete (the others are aborted or stopped), then the string
+            % would be '1-3,5-7,10'
+            isConsecutive = diff(arrayOfNumbers)==1;
+            outputString = ' ';
+            for consecutiveIndex=1:length(isConsecutive)
+                if ~isConsecutive(consecutiveIndex)
+                    outputString = strcat(outputString, num2str(arrayOfNumbers(consecutiveIndex)), ', ');
+                elseif ~strcmp(outputString(end), '-')
+                    outputString = strcat(outputString, num2str(arrayOfNumbers(consecutiveIndex)), '-');
+                end
+            end
+            outputString = strcat(outputString, num2str(arrayOfNumbers(end))); 
+        end
+        
         
         function undersampledBarPositionBinPopupMenuActuated(self, src, event)
                 currentSelection = self.UndersampledBarPositionBinPopupMenuContent_{ get(self.UndersampledBarPositionBinPopupMenu_,'value') };
@@ -641,7 +693,7 @@ classdef FlyOnBall < ws.UserClass
             k_x=unique(forwardVelocityBinIndicesDecreasing);
             h_x=unique(headingBinIndices);
             for ii=1:length(ii_x)
-                % forward vs rotational velocity heatmap data
+                % forward vs rotational velocity Heatmap data
                 rotationalVelocityBin = ii_x(ii);
                 for k=1:length(k_x)
                     forwardVelocityBin = k_x(k);
