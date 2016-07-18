@@ -42,11 +42,6 @@ classdef Logging < ws.Subsystem
             % "scan" is an NI-ism meaning all the samples acquired for a
             % single time stamp
         ExpectedSweepSizeForWritingHDF5_
-            % For h5create() it is useful to set the size to
-            % ExpectedSweepSizeForWrtingHDF5_ = [Inf nActiveChannels] since
-            % that enables proper writing of data from an
-            % aborted sweep (otherwise, all values are set to 0 after sweep
-            % is aborted)
         WriteToSweepId_  % During the acquisition of a run, the current sweep index being written to
         ChunkSize_
         FirstSweepIndex_  % index of the first sweep in the ongoing run
@@ -268,16 +263,16 @@ classdef Logging < ws.Subsystem
             
             % Set the chunk size for writing data to disk
             nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
+            
+            % For h5create() it is useful to set the size to
+            % ExpectedSweepSizeForWrtingHDF5_ = [Inf nActiveChannels] since
+            % that enables proper writing of data from an
+            % aborted sweep (otherwise, all values are set to 0 after sweep
+            % is aborted)
             self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
             if wavesurferModel.AreSweepsFiniteDuration ,
-       %         self.ExpectedSweepSizeActual_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
-       %         if any(isinf(self.ExpectedSweepSizeActual_))
-       %             self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-       %         else
-                    self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
-      %          end
+                self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
             else
-         %       self.ExpectedSweepSizeActual_ = [Inf nActiveAnalogChannels];
                 self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
             end
                 
@@ -518,7 +513,7 @@ classdef Logging < ws.Subsystem
             if ~self.DidWriteSomeDataForThisSweep_ ,
                 % Moved creation of h5 Group "sweep_%04d" from
                 % startingSweep() to here, preventing a sweep Group from
-                % being created until it hass data.
+                % being created until it has data.
                 thisSweepIndex = self.NextSweepIndex ;
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
                 h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
