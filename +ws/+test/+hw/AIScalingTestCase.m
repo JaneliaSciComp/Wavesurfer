@@ -15,14 +15,14 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
             electrode.VoltageMonitorScaling = 10 ;  % V/"mV", the stim will be 3.1415 V, so the acquired data should have an amplitude of 0.31415 "mV"
             electrode.CurrentCommandScaling = 1 ;  % "pA"/V, the stimulus amplitude in V will be equal to the nominal amplitude in the stim
 
-            voltageMonitorScaleInTrode = electrode.VoltageMonitorScaling
-            monitorScaleInAcquisitionSubsystem = wsModel.Acquisition.AnalogChannelScales
+            voltageMonitorScaleInTrode = electrode.VoltageMonitorScaling ;
+            monitorScaleInAcquisitionSubsystem = wsModel.Acquisition.AnalogChannelScales ;
 
             self.verifyEqual(voltageMonitorScaleInTrode, monitorScaleInAcquisitionSubsystem) ;
 
             pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
             pulse.Amplitude = '3.1415' ;
-            amplitudeAsDouble = str2double(pulse.Amplitude)
+            amplitudeAsDouble = str2double(pulse.Amplitude) ;
 
             wsModel.Stimulation.IsEnabled = true ;
 
@@ -30,11 +30,11 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             x = wsModel.Acquisition.getAnalogDataFromCache() ;
 
-            measuredAmplitude = max(x) - min(x) 
+            measuredAmplitude = max(x) - min(x) ;
 
-            predictedAmplitude = amplitudeAsDouble/voltageMonitorScaleInTrode
+            predictedAmplitude = amplitudeAsDouble/voltageMonitorScaleInTrode ; 
 
-            measuredAmplitudeIsCorrect = (log(measuredAmplitude/predictedAmplitude)<0.01) ;
+            measuredAmplitudeIsCorrect = (log(measuredAmplitude/predictedAmplitude)<0.05) ;
 
             if measuredAmplitudeIsCorrect ,
                 fprintf('Measured amplitude is correct.\n') ;

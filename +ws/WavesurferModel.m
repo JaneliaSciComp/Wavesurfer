@@ -339,7 +339,10 @@ classdef WavesurferModel < ws.RootModel
 
                 % Close the sockets
                 self.LooperIPCSubscriber_ = [] ;
-                self.IPCPublisher_ = [] ;                
+                self.RefillerIPCSubscriber_ = [] ;
+                self.LooperIPCRequester_ = [] ;
+                self.RefillerIPCRequester_ = [] ;
+                self.IPCPublisher_ = [] ;
             end
             
             %if ~isempty(self) ,
@@ -2629,7 +2632,7 @@ classdef WavesurferModel < ws.RootModel
             % If you're not careful about this stuff, the acquisition tasks
             % can end up getting triggered (e.g. by an external trigger)
             % before the stimulation tasks have been started, even though
-            % the user has configure both acq and stim subsystems to use
+            % the user has configured both acq and stim subsystems to use
             % the same trigger.  This business with the keystone tasks is
             % designed to eliminate this in the common case of acq and stim
             % subsystems using the same trigger, and ameliorate it in cases
@@ -2676,6 +2679,10 @@ classdef WavesurferModel < ws.RootModel
             %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
             %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
             %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
+        end
+        
+        function debug(self) %#ok<MANU>
+            keyboard
         end
     end  % public methods block
     

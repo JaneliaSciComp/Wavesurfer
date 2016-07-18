@@ -166,11 +166,17 @@ classdef RefillerTriggering < ws.TriggeringSubsystem
             repeatCount=triggerSource.RepeatCount;
             task.RepeatCount = repeatCount;
             
-            % If using a non-default PFI, set that
+            % Set the PFIID, whether or not we should need to. It seems
+            % that we really do need to do this, even though we now
+            % (6/27/2016) always use the default PFI for output.  Weird.
             pfiID = triggerSource.PFIID ;
-            if pfiID ~= counterID + 12 ,
-                task.exportSignal(sprintf('PFI%d', pfiID));
-            end
+            task.exportSignal(sprintf('PFI%d', pfiID)) ;
+%             if pfiID ~= counterID + 12 ,
+%                 fprintf('About to export counter task %d out PFI%d\n', counterID, pfiID) ;
+%                 task.exportSignal(sprintf('PFI%d', pfiID));
+%             else
+%                 fprintf('Leaving export counter task %d on the default PFI, which we think is is PFI%d\n', counterID, pfiID) ;                
+%             end
             
             % TODO: Need to set the edge polarity!!!
             
