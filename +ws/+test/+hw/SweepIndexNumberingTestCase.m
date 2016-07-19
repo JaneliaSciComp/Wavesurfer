@@ -28,11 +28,6 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.IsEnabled=false;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
-
-            % Add DI channels
-            for i=1:4
-               wsModel.addDIChannel; 
-            end
             
             % set to external triggering
             wsModel.Triggering.AcquisitionTriggerSchemeIndex=2;
@@ -50,32 +45,36 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
-            arrayOfWhatShouldBeTrue = zeros(4,1);
+            arrayOfWhatShouldBeTrue = zeros(4,1); %this will store the actual results
+           
             pause(1);
-            
             % Create timer so Wavesurfer will be stopped 5 seconds after
-            % timer starts
-            timerToStopWavesurfer = timer('TimerFcn',@(x,y)wsModel.stop(),'StartDelay',5);
+            % timer starts, which will prevent it from collecting any data
+            % since no trigger will be created.
+            timerToStopWavesurfer = timer('TimerFcn',@(~,~)wsModel.stop(),'StartDelay',5);
             start(timerToStopWavesurfer);
             wsModel.record();
             
-            % No data should have been written since no data was collected
-            % as no external trigger was sent. Also, the sweep index should
-            % not have been incrememented.
+            % No external trigger was created, so no data should have been
+            % collected and no file or data should have been written. Also,
+            % the sweep index should not have been incrememented.
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = ~isempty(filesCreated);
             arrayOfWhatShouldBeTrue(1) = ~wasAnOutputFileCreated;
             arrayOfWhatShouldBeTrue(2) = (wsModel.Logging.NextSweepIndex == 1);
             
-            % Now to check if a sweep is stopped, the data file only
-            % contains the collected data rather than setting everything to
-            % 0 after the run stopped
+            % Now start and stop a sweep before it is finished; the data
+            % file should only contain the collected data rather than
+            % padding with zeros up to wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate
             
             % Set the trigger back to the Built-in Trigger
             wsModel.Triggering.AcquisitionTriggerSchemeIndex=1;
+            
+            % Delete the data file if it was created
             delete(dataFilePatternAbsolute);            
 
             pause(1);
+            % Start timer so Wavesurfer is stopped after 5 seconds
             start(timerToStopWavesurfer);
             wsModel.record();
             filesCreated = dir(dataFilePatternAbsolute);
@@ -84,23 +83,24 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             if wasAnOutputFileCreated
                 outputData = ws.loadDataFile( fullfile(dataDirNameAbsolute, filesCreated(1).name) );
                 if isfield(outputData,'sweep_0001')
-                    numberOfScansCollected = length(outputData.sweep_0001.analogScans);
+                    numberOfScansCollected = size(outputData.sweep_0001.analogScans,1);
                    if  numberOfScansCollected>0 && numberOfScansCollected < wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate
                       dataWrittenCorrectly = 1; 
                    end
                 end
             end
             arrayOfWhatShouldBeTrue(3) = dataWrittenCorrectly;
+            
+            % Since data was collected, sweep index should be incremented.
             arrayOfWhatShouldBeTrue(4) = (wsModel.Logging.NextSweepIndex == 2);
                         
 
             % Delete the data file
             delete(dataFilePatternAbsolute);
             delete(timerToStopWavesurfer);
-            self.verifyEqual(arrayOfWhatShouldBeTrue,ones(4,1));
             
-            %wsController.quit();
-            %drawnow();  % close all the windows promptly, before running more tests
+            % Verify that everything worked
+            self.verifyEqual(arrayOfWhatShouldBeTrue,ones(4,1));
         end  % function
     end  % test methods
 
