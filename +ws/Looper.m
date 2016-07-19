@@ -12,7 +12,8 @@ classdef Looper < ws.RootModel
         SweepDuration  % the sweep duration, in s
         SweepDurationIfFinite
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
-        AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
+        AreSweepsContinuous  
+          % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
         NSweepsPerRun  
             % Number of sweeps to perform during run.  If in
             % sweep-based mode, this is a pass through to the repeat count
@@ -45,6 +46,7 @@ classdef Looper < ws.RootModel
         %RPCClient_
         IPCPublisher_
         IPCSubscriber_  % subscriber for the frontend
+        IPCReplier_  % to reply to frontend rep-req requests
         %State_ = ws.ApplicationState.Uninitialized
         Subsystems_
         NSweepsCompletedInThisRun_ = 0
@@ -98,7 +100,7 @@ classdef Looper < ws.RootModel
     end
     
     methods
-        function self = Looper(looperIPCPublisherPortNumber, frontendIPCPublisherPortNumber)
+        function self = Looper(looperIPCPublisherPortNumber, frontendIPCPublisherPortNumber, looperIPCReplierPortNumber)
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
@@ -122,6 +124,11 @@ classdef Looper < ws.RootModel
             self.IPCSubscriber_ = ws.IPCSubscriber() ;
             self.IPCSubscriber_.setDelegate(self) ;
             self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
+            
+            % Create the replier socket so the frontend can boss us around
+            self.IPCReplier_ = ws.IPCReplier(looperIPCReplierPortNumber, self) ;
+            %self.IPCReplier_.setDelegate(self) ;
+            self.IPCReplier_.bind() ;            
 
 %             % Send a message to let the frontend know we're alive
 %             fprintf('Looper::Looper(): About to send looperIsAlive\n') ;
@@ -165,6 +172,7 @@ classdef Looper < ws.RootModel
         function delete(self)
             self.IPCPublisher_ = [] ;
             self.IPCSubscriber_ = [] ;
+            self.IPCReplier_ = [] ;
         end
         
 %         function unstring(self)
@@ -243,6 +251,7 @@ classdef Looper < ws.RootModel
                         else
                             % Check for messages, but don't block
                             self.IPCSubscriber_.processMessagesIfAvailable() ;                            
+                            self.IPCReplier_.processMessagesIfAvailable() ;
                             % no pause here, b/c want to start sweep as
                             % soon as frontend tells us to
                         end                        
@@ -252,6 +261,7 @@ classdef Looper < ws.RootModel
                     % We're not currently running a sweep
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;
+                    self.IPCReplier_.processMessagesIfAvailable() ;
                     if self.DoesFrontendWantToStopRun_ ,
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
                         self.IPCPublisher_.send('looperStoppedRun') ;  % just do this to keep front-end happy
@@ -302,18 +312,16 @@ classdef Looper < ws.RootModel
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
-            % This is called via RPC, so must return exactly one return
-            % value, and must not throw.
+            % This is called via (rep-req) RPC, so must return exactly one value.
 
             % Prepare for the run
-            self.prepareForRun_(wavesurferModelSettings, ...
-                                acquisitionKeystoneTask, ...
-                                stimulationKeystoneTask, ...
-                                isTerminalOvercommitedForEachAIChannel, ...
-                                isTerminalOvercommitedForEachDIChannel, ...
-                                isTerminalOvercommitedForEachAOChannel, ...
-                                isTerminalOvercommitedForEachDOChannel) ;
-            result = [] ;
+            result = self.prepareForRun_(wavesurferModelSettings, ...
+                                         acquisitionKeystoneTask, ...
+                                         stimulationKeystoneTask, ...
+                                         isTerminalOvercommitedForEachAIChannel, ...
+                                         isTerminalOvercommitedForEachDIChannel, ...
+                                         isTerminalOvercommitedForEachAOChannel, ...
+                                         isTerminalOvercommitedForEachDOChannel) ;
         end  % function
 
         function result = completingRun(self)
@@ -343,7 +351,7 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = startingSweepLooper(self,indexOfSweepWithinRun)
+        function result = startingSweep(self,indexOfSweepWithinRun)
             % Sent by the wavesurferModel to prompt the Looper to prepare
             % for a sweep.
             %
@@ -353,21 +361,20 @@ classdef Looper < ws.RootModel
 
             % Prepare for the sweep
             %fprintf('Looper::startingSweep()\n');            
-            self.prepareForSweep_(indexOfSweepWithinRun) ;
-            result = [] ;
+            result = self.prepareForSweep_(indexOfSweepWithinRun) ;
         end  % function
 
-        function result = startingSweepRefiller(self,indexOfSweepWithinRun)  %#ok<INUSD>
-            % Sent by the wavesurferModel to prompt the Refiller to prepare
-            % for a sweep.
-            %
-            % This is called via RPC, so must return exactly one return
-            % value.  If a runtime error occurs, it will cause the frontend
-            % process to hang.
-
-            % Do nothing, since we're not the refiller
-            result = [] ;
-        end  % function
+%         function result = startingSweepRefiller(self,indexOfSweepWithinRun)  %#ok<INUSD>
+%             % Sent by the wavesurferModel to prompt the Refiller to prepare
+%             % for a sweep.
+%             %
+%             % This is called via RPC, so must return exactly one return
+%             % value.  If a runtime error occurs, it will cause the frontend
+%             % process to hang.
+% 
+%             % Do nothing, since we're not the refiller
+%             result = [] ;
+%         end  % function
 
         function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
@@ -387,9 +394,10 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = satellitesReleaseTimedHardwareResources(self)
+        function result = releaseTimedHardwareResources(self)
+            % This is a req-rep method
             self.releaseTimedHardwareResources_();
-            self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+            %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
             result = [] ;
         end  % function
 
@@ -860,6 +868,8 @@ classdef Looper < ws.RootModel
             %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
             self.IPCSubscriber_.processMessagesIfAvailable() ;
+            % Don't need to process self.IPCReplier_ messages, b/c no req-rep
+            % messages should be arriving during a sweep.
 
             % Acquire data, update soft real-time outputs
             [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
@@ -934,27 +944,29 @@ classdef Looper < ws.RootModel
 %             end
 %         end
         
-        function prepareForRun_(self, ...
-                                wavesurferModelSettings, ...
-                                acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                isTerminalOvercommitedForEachAIChannel, ...
-                                isTerminalOvercommitedForEachDIChannel, ...
-                                isTerminalOvercommitedForEachAOChannel, ...
-                                isTerminalOvercommitedForEachDOChannel )  %#ok<INUSL>
+        function coeffsAndClock = prepareForRun_(self, ...
+                                                 wavesurferModelSettings, ...
+                                                 acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                                 isTerminalOvercommitedForEachAIChannel, ...
+                                                 isTerminalOvercommitedForEachDIChannel, ...
+                                                 isTerminalOvercommitedForEachAOChannel, ...
+                                                 isTerminalOvercommitedForEachDOChannel )  %#ok<INUSL>
             % Get ready to run, but don't start anything.
 
             %keyboard
             
-            % If we're already acquiring, just ignore the message
+            % If we're already acquiring, error
             if self.IsPerformingRun_ ,
-                return
+                error('ws:Looper:alreadyPerformingRun', ...
+                      'Looper got message to start run while already performing a run!');
             end
             
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.IsUserCodeManagerEnabled_ = self.UserCodeManager.IsEnabled ;  % cache for speed                             
-            self.IsPerformingRun_ = true ;                        
+            self.IsPerformingRun_ = true ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
             
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
@@ -981,7 +993,7 @@ classdef Looper < ws.RootModel
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
-                self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',me) ;
+                %self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',me) ;
                 %self.changeReadiness(+1);
                 me.rethrow() ;
             end
@@ -995,9 +1007,9 @@ classdef Looper < ws.RootModel
             self.FromRunStartTicId_ = fromRunStartTicId ;            
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
-            % Notify the fronted that we're ready
+            % Return the coeffs and clock
             coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;
-            self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',coeffsAndClock) ;
+            %self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',coeffsAndClock) ;
             %keyboard
             
             %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
@@ -1028,14 +1040,23 @@ classdef Looper < ws.RootModel
 %             end
         end  % function
         
-        function err = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+        function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
             % Get everything set up for the Looper to run a sweep, but
             % don't pulse the master trigger yet.
             
             %fprintf('Looper::prepareForSweep_()\n') ;
             % Set the fallback err value, which gets returned if nothing
             % goes wrong
-            err = [] ;
+            %err = [] ;
+            
+            if ~self.IsPerformingRun_ ,
+                error('ws:Looper:askedToPrepareForSweepWhileNotInRun', ...
+                      'The looper was asked to prepare for a sweep while not in a run') ;
+            end
+            if self.IsPerformingSweep_ ,
+                error('ws:Looper:askedToPrepareForSweepWhileInSweep', ...
+                      'The looper was asked to prepare for a sweep while already in a sweep') ;
+            end
             
             % Reset the sample count for the sweep
             %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
@@ -1062,10 +1083,12 @@ classdef Looper < ws.RootModel
                 
             % Final preparations...
             self.IsPerformingSweep_ = true ;
+            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             %profile on
             
-            % Notify the fronted that we're ready
-            self.IPCPublisher_.send('looperReadyForSweep') ;
+            % Nothing to return
+            result = [] ;
+            %self.IPCPublisher_.send('looperReadyForSweep') ;
         end  % function
 
 %         function err = startSweep_(self)
@@ -1108,6 +1131,7 @@ classdef Looper < ws.RootModel
 
             %profile off
             self.IsPerformingSweep_ = false ;
+            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             % Notify the front end
             %self.RPCClient_.call('looperCompletedSweep') ;            
@@ -1126,6 +1150,7 @@ classdef Looper < ws.RootModel
 
             %profile off
             self.IsPerformingSweep_ = false ;
+            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             %self.callUserCodeManager_('didAbortSweep');
             
@@ -1143,7 +1168,8 @@ classdef Looper < ws.RootModel
 
             %self.callUserCodeManager_('completingRun');
 
-            self.IsPerformingRun_ = false ;            
+            self.IsPerformingRun_ = false ;       
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function stopTheOngoingRun_(self)
@@ -1156,7 +1182,8 @@ classdef Looper < ws.RootModel
             
             %self.callUserCodeManager_('stoppingRun');
 
-            self.IsPerformingRun_ = false ;            
+            self.IsPerformingRun_ = false ;   
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingRun_(self)
@@ -1168,7 +1195,8 @@ classdef Looper < ws.RootModel
 
             %self.callUserCodeManager_('abortingRun');
 
-            self.IsPerformingRun_ = false ;                        
+            self.IsPerformingRun_ = false ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)

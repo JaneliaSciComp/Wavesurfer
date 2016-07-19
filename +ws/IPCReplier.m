@@ -1,21 +1,23 @@
-classdef IPCSubscriber < ws.ZMQConnecter
+classdef IPCReplier < ws.ZMQBinder
     
     properties
         Delegate
     end
     
     methods
-        function self = IPCSubscriber()
-            self@ws.ZMQConnecter('ZMQ_SUB');
+        function self = IPCReplier(portNumber, delegate)
+            %self@ws.ZMQConnecter('ZMQ_SUB');
+            self@ws.ZMQBinder(portNumber,'ZMQ_REP');
+            self.Delegate = delegate ;
         end  % function
 
         function delete(self)            
             self.Delegate = [] ;
         end  % function
         
-        function setDelegate(self, newValue)
-            self.Delegate = newValue ;
-        end
+%         function setDelegate(self, newValue)
+%             self.Delegate = newValue ;
+%         end
         
         function processMessagesIfAvailable(self)
             wasMessageAvailable=true;
@@ -60,9 +62,9 @@ classdef IPCSubscriber < ws.ZMQConnecter
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;
             arguments = message.arguments ;
-            %fprintf('IPCSubscriber::processMessageIfAvailable(): Got message %s\n',methodName);
+            %fprintf('IPCReplier::processMessageIfAvailable(): Got message %s\n',methodName);
             if isempty(self.Delegate) ,
-                error('IPCSubscriber:noDelegate', ...
+                error('IPCReplier:noDelegate', ...
                       'Couldn''t call the method because Delegate is empty or invalid');
             else
                 % This function is typically called in a message-processing
@@ -81,6 +83,23 @@ classdef IPCSubscriber < ws.ZMQConnecter
                     methodResult = [] ;
                 end
             end
+            % Send the result back as the response
+            self.send_(methodResult, methodError) ;
+        end  % function
+    end
+    
+    methods (Access=protected)
+        function send_(self, result, err)
+            % Send the message
+            message=struct('result',{result},'error',{err});  % scalar struct
+            serializedMessage = getByteStreamFromArray(message) ;  % uint8 array
+            %messageAsInt8 = typecast(serializedThing, 'int8') ;
+            %fprintf('IPCPublisher::send(): About to call zmq.core.send with %s message\n', methodName);
+            %fprintf('IPCReplier::send(): About to call .send() with a result message\n');
+            socket = self.Socket ;
+            %zmq.core.send(socket, serializedMessage);
+            socket.send(serializedMessage) ;
+            %fprintf('IPCPublisher::send(): About to exit\n', methodName);            
         end  % function
         
 %         function [err, methodResult] = waitForMessage(self, expectedMessageName, timeout)
@@ -114,12 +133,12 @@ classdef IPCSubscriber < ws.ZMQConnecter
 %             end
 %         end
         
-        function connect(self,portNumber)
-            self.connect@ws.ZMQConnecter(portNumber);
-            %fprintf('IPCSubscriber::connect(): About to call zmq.core.setsockopt()\n') ;
-            %zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
-            self.Socket.set('ZMQ_SUBSCRIBE', '');  % accept all messages
-        end  % function
+%         function connect(self,portNumber)
+%             self.connect@ws.ZMQConnecter(portNumber);
+%             %fprintf('IPCSubscriber::connect(): About to call zmq.core.setsockopt()\n') ;
+%             %zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
+%             self.Socket.set('ZMQ_SUBSCRIBE', '');  % accept all messages
+%         end  % function
 
     end  % methods
     

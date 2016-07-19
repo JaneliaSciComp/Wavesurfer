@@ -15,14 +15,14 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
             electrode.VoltageMonitorScaling = 1 ;
             electrode.CurrentCommandScaling = 10 ;
 
-            currentCommandScaleInTrode = electrode.CurrentCommandScaling
-            commandScaleInStimulationSubsystem = wsModel.Stimulation.AnalogChannelScales
+            currentCommandScaleInTrode = electrode.CurrentCommandScaling ;
+            commandScaleInStimulationSubsystem = wsModel.Stimulation.AnalogChannelScales ;
 
             self.verifyEqual(currentCommandScaleInTrode, commandScaleInStimulationSubsystem) ;
 
             pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
             pulse.Amplitude = '3.1415' ;
-            amplitudeAsDouble = str2double(pulse.Amplitude)
+            amplitudeAsDouble = str2double(pulse.Amplitude) ;
 
             wsModel.Stimulation.IsEnabled = true ;
 
@@ -30,11 +30,11 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
 
             x = wsModel.Acquisition.getAnalogDataFromCache() ;
 
-            measuredAmplitude = max(x) - min(x) 
+            measuredAmplitude = max(x) - min(x) ;
 
-            predictedAmplitude = amplitudeAsDouble/currentCommandScaleInTrode
+            predictedAmplitude = amplitudeAsDouble/currentCommandScaleInTrode ;
 
-            measuredAmplitudeIsCorrect = (log(measuredAmplitude/predictedAmplitude)<0.01) ;
+            measuredAmplitudeIsCorrect = (log(measuredAmplitude/predictedAmplitude)<0.05) ;
 
             if measuredAmplitudeIsCorrect ,
                 fprintf('Measured amplitude is correct.\n') ;

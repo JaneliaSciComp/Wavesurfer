@@ -181,11 +181,14 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
 %         end
         
         function value=get.PFIID(self)
-            rootModel = self.Parent.Parent ;
-            numberOfPFILines = rootModel.NPFITerminals ;
-            nCounters = rootModel.NCounters ;
-            value = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
-            %value=self.PFIID_;
+            value = self.CounterID_ + 12 ;  
+              % This rule works for X series boards, and doesn't rely on
+              % w.g. self.Parent.Parent.NPFITerminals being correct, which
+              % it generally isn't for the refiller
+            %rootModel = self.Parent.Parent ;
+            %numberOfPFILines = rootModel.NPFITerminals ;
+            %nCounters = rootModel.NCounters ;
+            %value = numberOfPFILines - nCounters + self.CounterID_ ;  % the default counter outputs are at the end of the PFI lines
         end
         
         function value=get.Edge(self)
