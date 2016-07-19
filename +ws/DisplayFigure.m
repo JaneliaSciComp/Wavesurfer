@@ -11,8 +11,15 @@ classdef DisplayFigure < ws.MCOSFigure
 %         YLim
 %     end
 
+    properties (Dependent=true)
+        YScrollUpIcon
+        YScrollDownIcon 
+        YTightToDataIcon 
+        YTightToDataLockedIcon 
+    end
+
     properties (Access = protected)
-        ScopePlots_   % an array of type ws.ScopePlot
+        ScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
         %AxesGH_  % HG handle to axes
         %LineGHs_ = zeros(1,0)  % row vector, the line graphics handles for each channel
         %HeldLineGHs;        
@@ -33,6 +40,11 @@ classdef DisplayFigure < ws.MCOSFigure
 %         YLim_
         %SetYLimTightToDataButtonGH_
         %SetYLimTightToDataLockedButtonGH_
+        
+        YScrollUpIcon_ 
+        YScrollDownIcon_ 
+        YTightToDataIcon_ 
+        YTightToDataLockedIcon_ 
         
         ScopeMenuGH_
         %YZoomInMenuItemGH_
@@ -68,18 +80,27 @@ classdef DisplayFigure < ws.MCOSFigure
             
             % Set properties of the figure
             set(self.FigureGH, ...
-                'Tag',model.Tag,...
-                'Name', model.Title, ...
-                'NumberTitle', 'off',...
-                'Units', 'pixels',...
-                'HandleVisibility', 'off',...
+                'Name', 'Display', ...
+                'Tag', 'DisplayFigure', ...
+                'NumberTitle', 'off', ...
+                'Units', 'pixels', ...
+                'HandleVisibility', 'off', ...
                 'Menubar','none', ...
                 'Toolbar','none', ...
                 'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
-                'ResizeFcn',@(source,event)(self.layout_()) );
-%                'Renderer','OpenGL', ...            
-%                'Color', model.BackgroundColor,...
+                'ResizeFcn', @(source,event)(self.layout_()) );
             
+            % Load in the needed icons from disk
+            wavesurferDirName=fileparts(which('wavesurfer'));
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            self.YScrollUpIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            self.YScrollDownIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+            self.YTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+            self.YTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+
             % Create the widgets that will persist through the life of the
             % figure
             self.createFixedControls_();
@@ -128,7 +149,7 @@ classdef DisplayFigure < ws.MCOSFigure
         end  % constructor
         
         function delete(self)
-            self.ScopePlots_ = [] ;  % not really necessary
+            self.ScopePlot_ = [] ;  % not really necessary
         end  % function
         
 %         function set(self,propName,value)
@@ -141,6 +162,23 @@ classdef DisplayFigure < ws.MCOSFigure
 %                 set@ws.MCOSFigure(self,propName,value);
 %             end
 %         end  % function
+
+        function result = get.YScrollUpIcon(self)
+            result = self.YScrollUpIcon_ ;
+        end
+        
+        function result = get.YScrollDownIcon(self)
+            result = self.YScrollDownIcon_ ;
+        end
+        
+        function result = get.YTightToDataIcon(self)
+            result = self.YTightToDataIcon_ ;
+        end
+        
+        function result = get.YTightToDataLockedIcon(self)
+            result = self.YTightToDataLockedIcon_ ;
+        end
+
     end  % public methods block
     
     methods (Access=protected)        
@@ -211,14 +249,15 @@ classdef DisplayFigure < ws.MCOSFigure
             % Subscribe to some model events
             if ~isempty(model) ,
                 model.subscribeMe(self,'Update','','update');
-                model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
-                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-                model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-                model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
+                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
+                %model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+                %model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+                %model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
                 model.subscribeMe(self,'DataAdded','','modelDataAdded');
                 model.subscribeMe(self,'DataCleared','','modelDataCleared');
-                model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
-                model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
+                %model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
+                %model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
             end
 
             % Subscribe to events in the master model
@@ -326,10 +365,10 @@ classdef DisplayFigure < ws.MCOSFigure
             self.update();
         end  % function
         
-        function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
-            self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
-        end
+%         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+%             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
+%             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
+%         end
         
         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
 %             % Need to pack up all the y data into a single array for
@@ -639,19 +678,21 @@ classdef DisplayFigure < ws.MCOSFigure
                       
         end  % function            
 
-        function updateControlsInExistance_(self)            
+        function updateControlsInExistance_(self)
             % Make it so we have the same number of lines as channels,
             % adding/deleting them as needed
-            nChannels = self.Model.NChannels ;            
-            currentLineGHs = self.LineGHs_ ;            
-            nLines= length(currentLineGHs);
-            if nLines>nChannels ,
-                delete(self.LineGHs_(nChannels+1:nLines));
-                self.LineGHs_(nChannels+1:nLines)=[];
-            elseif nLines<nChannels
-                for i=nLines+1:nChannels ,
-                    self.addChannelLineToAxes_();
-                end                
+            nScopePlots = length(self.ScopePlots_) ;
+            %isScopeVisible = self.Model.IsScopeVisibleWhenDisplayEnabled ;            
+            nScopeModels = self.Model.NScopes ;
+            if nScopeModels>nScopePlots ,
+                for i = nScopePlots+1:nScopeModels ,
+                    self.ScopePlots_(1,i) = ws.ScopePlot(self, i) ;  % Have to create each ws.ScopePlot scalar separately b/c Matlab is dumb
+                end
+            elseif nScopeModels<nScopePlots ,
+                self.ScopePlots_ = self.ScopePlots_(1:nScopeModels) ;
+            else
+                % do nothing --- we already have the right number of
+                % ScopePlots
             end
         end  % function
         
@@ -1037,7 +1078,10 @@ classdef DisplayFigure < ws.MCOSFigure
                 return
             end
             xlimInModel=self.Model.XLim ;
-            set(self.AxesGH_, 'XLim', xlimInModel) ;
+            for i = 1:self.NScopes ,
+                self.ScopePlots_(i).updateXaxisLimits_(xlimInModel) ;
+            end
+            %set(self.AxesGH_, 'XLim', xlimInModel) ;
         end  % function        
 
         function updateYAxisLimits_(self)
@@ -1135,14 +1179,14 @@ classdef DisplayFigure < ws.MCOSFigure
     end
 
     methods (Static=true)
-        function result=getWidthInPixels(ax)
-            % Gets the x span of the given axes, in pixels.
-            savedUnits=get(ax,'Units');
-            set(ax,'Units','pixels');
-            pos=get(ax,'Position');
-            result=pos(3);
-            set(ax,'Units',savedUnits);            
-        end  % function
+%         function result=getWidthInPixels(ax)
+%             % Gets the x span of the given axes, in pixels.
+%             savedUnits=get(ax,'Units');
+%             set(ax,'Units','pixels');
+%             pos=get(ax,'Position');
+%             result=pos(3);
+%             set(ax,'Units',savedUnits);            
+%         end  % function
         
 %         function r=ratioSubsampling(t,T_view,n_pels_view)
 %             % Computes r, a good ratio to use for subsampling data on time base t

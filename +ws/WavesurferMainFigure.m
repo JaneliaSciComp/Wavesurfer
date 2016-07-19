@@ -25,6 +25,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         UserCodeManagerMenuItem
         ElectrodesMenuItem
         TestPulseMenuItem
+        DisplayMenuItem
         YokeToScanimageMenuItem
         
         HelpMenu
@@ -228,6 +229,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.FastProtocolsMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','Fast Protocols...');
+            self.DisplayMenuItem = ...
+                uimenu('Parent',self.ToolsMenu, ...
+                       'Label','Display...');
             self.ScopesMenuItem = ...
                 uimenu('Parent',self.ToolsMenu, ...
                        'Label','Scopes');
@@ -1210,6 +1214,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
+            set(self.DisplayMenuItem,'Enable',onIff(isIdle));
             set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             set(self.ChannelsMenuItem,'Enable',onIff(true));  
               % Device & Channels menu is always available so that

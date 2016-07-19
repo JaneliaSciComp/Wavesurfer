@@ -11,8 +11,15 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsXSpanSlavedToAcquistionDurationSettable
           % true iff IsXSpanSlavedToAcquistionDuration is currently
           % settable
-        Scopes  % a cell array of ws.ScopeModel objects
+        Scopes  
+          % a cell array of ws.ScopeModel objects --- the length of this is
+          % equal to the number of AI channels plus the number of DI
+          % channels.  Doesn't matter if they are active/inactive or if
+          % their scopes are visible/invisible.  This is an invariant of
+          % the WavesurferModel that both the Acquisition and Display
+          % subsystems are a part of.
         NScopes
+        IsScopeVisibleWhenDisplayEnabled
     end
 
     properties (Access = protected)
@@ -37,6 +44,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
+        UpdateXOffset
+        DataAdded
+        DataCleared
     end
 
     methods
@@ -61,6 +71,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function value = get.Scopes(self)
             value = self.Scopes_ ;
+        end
+        
+        function value = get.IsScopeVisibleWhenDisplayEnabled(self)
+            value = cellfun(@(scopeModel)(scopeModel.IsVisibleWhenDisplayEnabled), ...
+                            self.Scopes) ;
         end
         
         function set.UpdateRate(self, newValue)
@@ -128,12 +143,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                         self.Scopes_{idx}.XOffset = newValue;
                     end
                 else
-                    self.broadcast('Update');
+                    self.broadcast('UpdateXOffset');
                     error('most:Model:invalidPropVal', ...
                           'XOffset must be a scalar finite number') ;
                 end
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateXOffset');
         end
         
         function value = get.IsXSpanSlavedToAcquistionDuration(self)

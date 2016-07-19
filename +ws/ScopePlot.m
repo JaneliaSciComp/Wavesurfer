@@ -1,4 +1,4 @@
-classdef ScopeAxes < ws.EventSubscriber
+classdef ScopePlot < ws.EventSubscriber
     
     properties (Access = protected)
         Parent_  % a ws.DisplayFigure
@@ -15,7 +15,7 @@ classdef ScopeAxes < ws.EventSubscriber
     end
     
     methods
-        function self=ScopeAxes(parent, scopeIndex)
+        function self=ScopePlot(parent, scopeIndex)
             self.Parent_ = parent ;
             self.ScopeIndex_ = scopeIndex ;
             
@@ -37,11 +37,32 @@ classdef ScopeAxes < ws.EventSubscriber
             %fprintf('ScopeFigure::delete()\n');
             ws.deleteIfValidHGHandle(self.LineGHs_);
             ws.deleteIfValidHGHandle(self.AxesGH_);            
-        end  % function
+        end  % function        
         
+        function update(self,varargin)
+            % Called when the caller wants the figure to fully re-sync with the
+            % model, from scratch.  This may cause the figure to be
+            % resized, but this is always done in such a way that the
+            % upper-righthand corner stays in the same place.
+            self.updateImplementation_();
+        end        
     end  % public methods block
     
     methods (Access=protected)        
+        function updateImplementation_(self)
+            % This method should make sure the figure is fully synched with the
+            % model state after it is called.  This includes existance,
+            % placement, sizing, enablement, and properties of each control, and
+            % of the figure itself.
+
+            % This implementation should work in most cases, but can be overridden by
+            % subclasses if needed.
+            self.updateControlsInExistance_();
+            self.updateControlPropertiesImplementation_();
+            self.updateControlEnablementImplementation_();
+            self.layout_();
+        end
+                
         function willSetModel_(self)            
             % % clear the downsampled data
             % self.XForPlotting_=zeros(0,1);
@@ -85,7 +106,7 @@ classdef ScopeAxes < ws.EventSubscriber
             % Subscribe to some model events
             if ~isempty(model) ,
                 model.subscribeMe(self,'Update','','update');
-                model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
+                %model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
                 model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
                 model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
                 model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
@@ -174,8 +195,8 @@ classdef ScopeAxes < ws.EventSubscriber
 %             end
 %         end
         
-        function updateXAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.updateXAxisLimits_();
+        function updateXAxisLimits(self,xl)
+            self.updateXAxisLimits_(xl);
         end  % function
         
         function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
@@ -201,7 +222,7 @@ classdef ScopeAxes < ws.EventSubscriber
         end  % function
         
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
+            xSpanInPixels=ws.ScopeAxes.getWidthInPixels(self.AxesGH_) ;
             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
         end
         
@@ -426,59 +447,22 @@ classdef ScopeAxes < ws.EventSubscriber
             if isempty(model) || ~isvalid(model) ,
                 return
             end
-
-            persistent persistentYScrollUpIcon
-            if isempty(persistentYScrollUpIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-                persistentYScrollUpIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-
-            persistent persistentYScrollDownIcon
-            if isempty(persistentYScrollDownIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-                persistentYScrollDownIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-
-            persistent persistentYTightToDataIcon
-            if isempty(persistentYTightToDataIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-                persistentYTightToDataIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-            
-            persistent persistentYTightToDataLockedIcon
-            if isempty(persistentYTightToDataLockedIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-                persistentYTightToDataLockedIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-            
-            % Update the title, tag
-            set(self.FigureGH, ...
-                'Tag',self.Model.Tag,...
-                'Name',self.Model.Title);
             
             % Update the togglebutton
-            %dbstack
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-            %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
-            
-            %set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;            
             set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
 
-            % Update the Show Grid togglemenu
-            isGridOn = self.Model.IsGridOn ;
-            set(self.ShowGridMenuItemGH_,'Checked',ws.onIff(isGridOn));
-
-            % Update the Invert Colors togglemenu
-            areColorsNormal = self.Model.AreColorsNormal ;
-            set(self.InvertColorsMenuItemGH_,'Checked',ws.onIff(~areColorsNormal));
-
-            % Update the Do Show Buttons togglemenu
-            doShowButtons = self.Model.DoShowButtons ;
-            set(self.DoShowButtonsMenuItemGH_,'Checked',ws.onIff(doShowButtons));
+%             % Update the Show Grid togglemenu
+            isGridOn = self.Parent_.Model.IsGridOn ;
+%             set(self.ShowGridMenuItemGH_,'Checked',ws.onIff(isGridOn));
+% 
+%             % Update the Invert Colors togglemenu
+%             areColorsNormal = self.Model.AreColorsNormal ;
+%             set(self.InvertColorsMenuItemGH_,'Checked',ws.onIff(~areColorsNormal));
+% 
+%             % Update the Do Show Buttons togglemenu
+%             doShowButtons = self.Model.DoShowButtons ;
+%             set(self.DoShowButtonsMenuItemGH_,'Checked',ws.onIff(doShowButtons));
 
             % Update the colors
             areColorsNormal = self.Model.AreColorsNormal ;
@@ -534,15 +518,15 @@ classdef ScopeAxes < ws.EventSubscriber
             
             % Set the button scroll up/down button images
             if areColorsNormal ,
-                yScrollUpIcon   = persistentYScrollUpIcon   ;
-                yScrollDownIcon = persistentYScrollDownIcon ;
-                yTightToDataIcon = persistentYTightToDataIcon ;
-                yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;
+                yScrollUpIcon   = self.Parent_.YScrollUpIcon   ;
+                yScrollDownIcon = self.Parent_.YScrollDownIcon ;
+                yTightToDataIcon = self.Parent_.YTightToDataIcon ;
+                yTightToDataLockedIcon = self.Parent_.YTightToDataLockedIcon ;
             else
-                yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
-                yScrollDownIcon = 1-persistentYScrollDownIcon ;                
-                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
-                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
+                yScrollUpIcon   = 1-self.Parent_.YScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
+                yScrollDownIcon = 1-self.Parent_.YScrollDownIcon ;                
+                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(self.Parent_.YTightToDataIcon) ;  
+                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(self.Parent_.YTightToDataLockedIcon) ;
             end                
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
@@ -572,38 +556,26 @@ classdef ScopeAxes < ws.EventSubscriber
             end
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
             
-            %import ws.onIff
             onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
-            set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
+            %set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
             set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            %set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            %set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            %set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            %set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
         end  % function
-        
-        function layout_(self)
+    end
+    
+    methods
+        function layout(self, nScopesVisible, indexOfThisScopeAmongVisibleScopes)
             % This method should make sure all the controls are sized and placed
-            % appropraitely given the current model state.  
+            % appropriately given the current model state.  
 
-            % We can use a simplified version of this, since all the
-            % controls are fixed (i.e. they exist for the lifetime of the
-            % figure)
-            self.layoutFixedControls_() ;
-            
-            % This implementation should work in most cases, but can be overridden by
-            % subclasses if needed.
-            %figureSize=self.layoutFixedControls_();
-            %figureSizeModified=self.layoutNonfixedControls_(figureSize);
-            %ws.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
-        end  % function
-        
-        function layoutFixedControls_(self)
             % Layout parameters
             minLeftMargin = 46 ;
             maxLeftMargin = 62 ;
@@ -643,18 +615,27 @@ classdef ScopeAxes < ws.EventSubscriber
             end
             
             % Get the current figure width, height
-            figurePosition = get(self.FigureGH, 'Position') ;
+            figurePosition = get(self.Parent_.FigureGH, 'Position') ;
             figureSize = figurePosition(3:4);
             figureWidth = figureSize(1) ;
             figureHeight = figureSize(2) ;
             
+            % There's a rectangle within the figure where this scope axes
+            % will go.  We'll call this the "panel".  Calculate the
+            % position of the panel within the figure rectangle.
+            panelWidth = figureWidth ;
+            %nScopesVisible = self.Model.Parent.IsScopeVisibleWhenDisplayEnabled ;
+            panelHeight = figureHeight/nScopesVisible ;
+            panelXOffset = 0 ;
+            panelYOffset = figureHeight - panelHeight*indexOfThisScopeAmongVisibleScopes ;            
+            
             % Calculate the first-pass dimensions
-            leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
-            rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
-            bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
-            topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
-            axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
-            axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
+            leftMargin = max(minLeftMargin,min(0.13*panelWidth,maxLeftMargin)) ;
+            rightMargin = max(minRightMargin,min(0.095*panelWidth,maxRightMargin)) ;
+            bottomMargin = max(minBottomMargin,min(0.11*panelHeight,maxBottomMargin)) ;
+            topMargin = max(minTopMargin,min(0.075*panelHeight,maxTopMargin)) ;            
+            axesAndButtonsAreaWidth = panelWidth - leftMargin - rightMargin ;
+            axesAndButtonsAreaHeight = panelHeight - bottomMargin - topMargin ;
 
             % If not enough vertical space for the buttons, hide them
             if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
@@ -662,8 +643,8 @@ classdef ScopeAxes < ws.EventSubscriber
                 % Recalculate some things that are affected by this change
                 minRightMargin = minRightMarginIfNoButtons ;
                 maxRightMargin = maxRightMarginIfNoButtons ;
-                rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
-                axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;                
+                rightMargin = max(minRightMargin,min(0.095*panelWidth,maxRightMargin)) ;
+                axesAndButtonsAreaWidth = panelWidth - leftMargin - rightMargin ;                
             else
                 isEnoughHeightForButtons = true ;
             end
@@ -677,7 +658,7 @@ classdef ScopeAxes < ws.EventSubscriber
             end
             if axesAndButtonsAreaHeight<minAxesAndButtonsAreaHeight ,                
                 axesAndButtonsAreaHeight = minAxesAndButtonsAreaHeight ;
-                bottomMargin = figureHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
+                bottomMargin = panelHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
             end
 
             % Set the axes width, depends on whether we're showing the
@@ -692,7 +673,7 @@ classdef ScopeAxes < ws.EventSubscriber
             % Update the axes position
             axesXOffset = leftMargin ;
             axesYOffset = bottomMargin ;
-            set(self.AxesGH_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
+            set(self.AxesGH_,'Position',[panelXOffset+axesXOffset axesYOffset axesWidth axesHeight]);            
             
             % the zoom buttons
             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
@@ -700,13 +681,13 @@ classdef ScopeAxes < ws.EventSubscriber
             zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
             set(self.YZoomOutButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[zoomOutButtonX zoomOutButtonY ...
+                'Position',[panelXOffset+zoomOutButtonX panelYOffset+zoomOutButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             zoomInButtonX=yRangeButtonsX;
             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
             set(self.YZoomInButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[zoomInButtonX zoomInButtonY ...
+                'Position',[panelXOffset+zoomInButtonX panelYOffset+zoomInButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
             % the scroll buttons
@@ -714,13 +695,13 @@ classdef ScopeAxes < ws.EventSubscriber
             scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
             set(self.YScrollUpButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[scrollUpButtonX scrollUpButtonY ...
+                'Position',[panelXOffset+scrollUpButtonX panelYOffset+scrollUpButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             scrollDownButtonX=yRangeButtonsX;
             scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
             set(self.YScrollDownButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[scrollDownButtonX scrollDownButtonY ...
+                'Position',[panelXOffset+scrollDownButtonX panelYOffset+scrollDownButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
                         
             % the zoom-to-data buttons
@@ -729,17 +710,16 @@ classdef ScopeAxes < ws.EventSubscriber
             setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
             set(self.SetYLimTightToDataButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
+                'Position',[panelXOffset+yRangeButtonsX panelYOffset+setYLimTightToDataButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
             set(self.SetYLimTightToDataLockedButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
+                'Position',[panelXOffset+yRangeButtonsX panelYOffset+setYLimTightToDataLockedButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
-        end  % function
-        
-    end
+        end  % function        
+    end  % public methods block
     
     methods (Access = protected)
         function addChannelLineToAxes_(self)
@@ -796,12 +776,8 @@ classdef ScopeAxes < ws.EventSubscriber
             end
         end  % function
         
-        function updateXAxisLimits_(self)
+        function updateXAxisLimits_(self, xlimInModel)
             % Update the axes limits to match those in the model
-            if isempty(self.Model) || ~isvalid(self.Model) ,
-                return
-            end
-            xlimInModel=self.Model.XLim ;
             set(self.AxesGH_, 'XLim', xlimInModel) ;
         end  % function        
 
@@ -895,7 +871,7 @@ classdef ScopeAxes < ws.EventSubscriber
     methods
         function castOffAllAttachments(self)
             self.unsubscribeFromAll() ;
-            self.deleteFigureGH() ;
+            %self.deleteFigureGH() ;
         end
     end
 

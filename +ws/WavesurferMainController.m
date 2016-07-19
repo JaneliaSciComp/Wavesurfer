@@ -1,10 +1,9 @@
 classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
-    % WavesurferController -- A singleton class that is the controller for the
-    % main wavesurfer window.  You get a handle to the singleton by calling the
-    % class method sharedController().
+    % The controller from the main wavesurfer window.
     
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
+        DisplayController = [];
         TriggersController = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
@@ -94,14 +93,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.syncVariousThingsFromModel_();
             self.updateSubscriptionsToModel_()
             
-            % Bring the scopes into sync
-            %self.nukeAndRepaveScopeControllers();
-            self.syncScopeControllersWithScopeModels() ;
+%             % Bring the scopes into sync
+%             self.syncScopeControllersWithScopeModels() ;
             
             % Update all the controls
             %self.Figure.updateControlsInExistance();
             %self.Figure.updateControlEnablement();            
-            self.Figure.update();
+            self.Figure.update();            
+            
+            % Show the display figure by default
+            self.showAndRaiseChildFigure_('DisplayController');
         end
     end
     
@@ -773,25 +774,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             if isempty(self.Model)                
                 % If there's no model, not much to configure
             else
-                % Additional bindings for (dis/en)abled control states not supported in
-                % controller.
-%                 self.Model.subscribeMe(self,'PostSet','FastProtocols','didSetFastProtocols');                
-%                 for i = 1:numel(self.Model.FastProtocols) ,
-%                     thisFastProtocol=self.Model.FastProtocols(i);
-%                     thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','didSetFastProtocols');
-%                     thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','didSetFastProtocols');
-%                 end                                
-                %self.Model.subscribeMe(self,'PreSet','State','willSetModelState');
-                %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
-                self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
-                %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-                %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
-                %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
-                %self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
-                %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
-                %self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
-                %self.Model.Logging.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfLoggingControls');
-                self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
+                %self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
+                %self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
             end            
         end  % function
     end  % protected methods
@@ -1099,34 +1083,34 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %         end
         
-        function syncScopeControllersWithScopeModels(self,varargin)
-            % Creates a controller and a window for each ScopeModel
-            % in the WavesurferModel Display subsystem.
-            
-            % Figure out which scope controllers go with which models
-            scopeModels = self.Model.Display.Scopes ;
-            scopeControllers = self.ScopeControllers ;            
-            isMatch = ws.WavesurferMainController.doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers) ;
-            
-            % Delete controllers with no model
-            nModelsForController = sum(isMatch,1) ;
-            nControllers = length(scopeControllers) ;
-            for indexOfScopeController = nControllers:-1:1 ,  % delete from last to first so low-index ones don't change index
-                if nModelsForController(indexOfScopeController)==0 ,
-                    self.deleteScopeController_(indexOfScopeController) ;
-                end
-            end
-            
-            % If a model has no controller, create one
-            nControllersForModel = sum(isMatch,2)' ;
-            nModels = length(scopeModels) ;
-            for indexOfScopeModel = 1:nModels ,
-                if nControllersForModel(indexOfScopeModel)==0 ,
-                    scopeModel=self.Model.Display.Scopes{indexOfScopeModel};
-                    self.createChildControllerIfNonexistant('ScopeController',scopeModel);
-                end
-            end
-        end  % function
+%         function syncScopeControllersWithScopeModels(self,varargin)
+%             % Creates a controller and a window for each ScopeModel
+%             % in the WavesurferModel Display subsystem.
+%             
+%             % Figure out which scope controllers go with which models
+%             scopeModels = self.Model.Display.Scopes ;
+%             scopeControllers = self.ScopeControllers ;            
+%             isMatch = ws.WavesurferMainController.doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers) ;
+%             
+%             % Delete controllers with no model
+%             nModelsForController = sum(isMatch,1) ;
+%             nControllers = length(scopeControllers) ;
+%             for indexOfScopeController = nControllers:-1:1 ,  % delete from last to first so low-index ones don't change index
+%                 if nModelsForController(indexOfScopeController)==0 ,
+%                     self.deleteScopeController_(indexOfScopeController) ;
+%                 end
+%             end
+%             
+%             % If a model has no controller, create one
+%             nControllersForModel = sum(isMatch,2)' ;
+%             nModels = length(scopeModels) ;
+%             for indexOfScopeModel = 1:nModels ,
+%                 if nControllersForModel(indexOfScopeModel)==0 ,
+%                     scopeModel=self.Model.Display.Scopes{indexOfScopeModel};
+%                     self.createChildControllerIfNonexistant('ScopeController',scopeModel);
+%                 end
+%             end
+%         end  % function
         
     end
 
@@ -1670,7 +1654,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             specs.TestPulserController.className = 'ws.TestPulserController';
             %specs.TestPulserController.controlName = 'TestPulserFigure';
             
-            specs.ScopeController.className = 'ws.ScopeController';
+            specs.DisplayController.className = 'ws.DisplayController';
             %specs.ScopeController.controlName = 'ScopeFigure';
             
             specs.ElectrodeManagerController.className = 'ws.ElectrodeManagerController';
@@ -1678,27 +1662,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
 
         function [controller,didCreate] = createChildControllerIfNonexistant(self, controllerName, varargin)
-            switch controllerName ,                                        
-                case 'ScopeController' ,
-                    scopeModel=varargin{1};
-                    fullControllerClassName=['ws.' controllerName];
-                    controller = feval(fullControllerClassName, ...
-                                       self, ...
-                                       scopeModel);
-                    self.ChildControllers{end+1}=controller;
-                    self.ScopeControllers{end+1}=controller;                    
-                    didCreate = true ;
-                otherwise ,
-                    if isempty(self.(controllerName)) ,
-                        fullControllerClassName=['ws.' controllerName];
-                        controller = feval(fullControllerClassName,self,self.Model);
-                        self.ChildControllers{end+1}=controller;
-                        self.(controllerName)=controller;
-                        didCreate = true ;
-                    else
-                        controller = self.(controllerName);
-                        didCreate = false ;
-                    end
+            if isempty(self.(controllerName)) ,
+                fullControllerClassName=['ws.' controllerName];
+                controller = feval(fullControllerClassName,self,self.Model);
+                self.ChildControllers{end+1}=controller;
+                self.(controllerName)=controller;
+                didCreate = true ;
+            else
+                controller = self.(controllerName);
+                didCreate = false ;
             end
         end  % function
 
@@ -1975,6 +1947,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
             self.showAndRaiseChildFigure_('TestPulserController');
+        end
+        
+        function DisplayMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.showAndRaiseChildFigure_('DisplayController');
         end
         
         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>

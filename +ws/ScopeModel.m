@@ -58,6 +58,7 @@ classdef ScopeModel < ws.Model
         IsGridOn_ = true
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
         DoShowButtons_ = true % if false, don't show buttons in the figure
+        IsVisibleWhenDisplayEnabled_  = true
     end
 
     properties (Access = protected, Transient=true)
@@ -69,10 +70,6 @@ classdef ScopeModel < ws.Model
         %RunningMin_ = zeros(1,0)  % length == self.NChannels
         %RunningMax_ = zeros(1,0)
         %RunningMean_ = zeros(1,0)
-        IsVisibleWhenDisplayEnabled_  
-          % You'd think IsVisibleWhenDisplayEnabled_ would be non-transient, but it isn't because this information gets persisted in the 
-          % "layout" part of the .cfg file.  Long-term, would be cleaner to
-          % store it here, it seems to me.
     end
     
     events
@@ -81,7 +78,7 @@ classdef ScopeModel < ws.Model
         DataCleared
         DidSetChannelUnits
         WindowVisibilityNeedsToBeUpdated
-        UpdateXAxisLimits
+        %UpdateXAxisLimits
         UpdateYAxisLimits
         UpdateAreYLimitsLockedTightToData
         ItWouldBeNiceToKnowXSpanInPixels
@@ -302,7 +299,7 @@ classdef ScopeModel < ws.Model
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.XOffset_ = newValue;
             end
-            self.broadcast('UpdateXAxisLimits');
+            %self.broadcast('UpdateXAxisLimits');
         end
 
         function value=get.XOffset(self)
