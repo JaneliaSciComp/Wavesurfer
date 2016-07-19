@@ -264,11 +264,11 @@ classdef Logging < ws.Subsystem
             % Set the chunk size for writing data to disk
             nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
             
-            % For h5create() it is useful to set the size to
-            % ExpectedSweepSizeForWrtingHDF5_ = [Inf nActiveChannels] since
-            % that enables proper writing of data from an
-            % aborted sweep (otherwise, all values are set to 0 after sweep
-            % is aborted)
+            % For h5create() it is useful to set
+            % ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels] since
+            % that enables proper writing of data from an aborted sweep
+            % (otherwise, all values are set to 0 from when the sweep is aborted up to
+            % wavesurferModel.Acquisition.SampleRate * wavesurferModel.Acquisiton.Duration)
             self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
             if wavesurferModel.AreSweepsFiniteDuration ,
                 self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
