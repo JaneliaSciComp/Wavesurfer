@@ -766,7 +766,10 @@ classdef DisplayFigure < ws.MCOSFigure
 
             % update the individual plots
             nScopePlots = length(self.ScopePlots_) ;
-
+            for i=1:nScopePlots ,
+                
+            end
+            
             % Set the button colors
             set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
             set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
