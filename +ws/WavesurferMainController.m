@@ -1040,32 +1040,32 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end        
     end
     
-    methods (Access = public)
-        function removeScope(self, source)
-            % Called when one the menu items to remove a scope is called.
-            
-            % Get the scope index
-            tag = get(source,'Tag');
-            indexAsString=tag(end-2:end-1);
-            scopeIndex=str2double(indexAsString);
-            
-            % Delete the controller and thereby the window, and update our
-            % records appropriately
-            thisScopeController=self.ScopeControllers{scopeIndex};
-            isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
-            
-            % thisScopeController.delete();
-            thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-            self.ScopeControllers(scopeIndex)=[];
-            self.ChildControllers(isMatchAsChild)=[];
-            
-            % Delete the ScopeModel     
-            self.Model.Display.removeScope(scopeIndex);
-            
-            % % Update the scope menu (this is handled via event)
-            % self.updateScopeMenu();
-        end
-    end  % public methods block
+%     methods (Access = public)
+%         function removeScope(self, source)
+%             % Called when one the menu items to remove a scope is called.
+%             
+%             % Get the scope index
+%             tag = get(source,'Tag');
+%             indexAsString=tag(end-2:end-1);
+%             scopeIndex=str2double(indexAsString);
+%             
+%             % Delete the controller and thereby the window, and update our
+%             % records appropriately
+%             thisScopeController=self.ScopeControllers{scopeIndex};
+%             isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
+%             
+%             % thisScopeController.delete();
+%             thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%             self.ScopeControllers(scopeIndex)=[];
+%             self.ChildControllers(isMatchAsChild)=[];
+%             
+%             % Delete the ScopeModel     
+%             self.Model.Display.removeScope(scopeIndex);
+%             
+%             % % Update the scope menu (this is handled via event)
+%             % self.updateScopeMenu();
+%         end
+%     end  % public methods block
     
     methods
 %         function nukeAndRepaveScopeControllers(self,varargin)
@@ -1975,10 +1975,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.scopeVisibleMenuItemTwiddled(source);
         end
         
-        % Tools > Scopes > Remove subsubmenu
-        function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>
-            self.removeScope(source);
-        end
+%         % Tools > Scopes > Remove subsubmenu
+%         function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>
+%             self.removeScope(source);
+%         end
         
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>

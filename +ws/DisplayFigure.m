@@ -16,6 +16,9 @@ classdef DisplayFigure < ws.MCOSFigure
         YScrollDownIcon 
         YTightToDataIcon 
         YTightToDataLockedIcon 
+        ColorOrder
+        ControlForegroundColor
+        ControlBackgroundColor
     end
 
     properties (Access = protected)
@@ -40,13 +43,8 @@ classdef DisplayFigure < ws.MCOSFigure
 %         YLim_
         %SetYLimTightToDataButtonGH_
         %SetYLimTightToDataLockedButtonGH_
-        
-        YScrollUpIcon_ 
-        YScrollDownIcon_ 
-        YTightToDataIcon_ 
-        YTightToDataLockedIcon_ 
-        
-        ScopeMenuGH_
+                
+        ViewMenuGH_
         %YZoomInMenuItemGH_
         %YZoomOutMenuItemGH_        
         %SetYLimTightToDataMenuItemGH_
@@ -62,7 +60,15 @@ classdef DisplayFigure < ws.MCOSFigure
         %YZoomOutButtonGH_
         %YScrollUpButtonGH_
         %YScrollDownButtonGH_
-    end
+        
+        YScrollUpIcon_ 
+        YScrollDownIcon_ 
+        YTightToDataIcon_ 
+        YTightToDataLockedIcon_ 
+        ColorOrder_
+        ControlForegroundColor_
+        ControlBackgroundColor_
+    end    
     
 %     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
 %         IsVisibleWhenDisplayEnabled
@@ -74,9 +80,9 @@ classdef DisplayFigure < ws.MCOSFigure
 %     end
 
     methods
-        function self=DisplayFigure(model,controller)
+        function self=DisplayFigure(model, controller)
             % Call the superclass constructor
-            self = self@ws.MCOSFigure(model,controller);
+            self = self@ws.MCOSFigure(model,controller) ;
             
             % Set properties of the figure
             set(self.FigureGH, ...
@@ -146,10 +152,29 @@ classdef DisplayFigure < ws.MCOSFigure
             % position next to main window
             mainFigure = controller.Parent.Figure ;
             self.positionUpperLeftRelativeToOtherUpperRight(mainFigure, [40 0]) ;
+
+            % Subscribe to events
+            if ~isempty(model) ,
+               model.subscribeMe(self,'Update','','update');
+               model.subscribeMe(self,'NScopesMayHaveChanged','','update');
+               model.subscribeMe(self,'DidSetIsEnabled','','update');
+               model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
+               model.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
+               %model.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
+               model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
+               model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
+               model.subscribeMe(self,'DataAdded','','modelDataAdded');
+               model.subscribeMe(self,'DataCleared','','modelDataCleared');
+               wavesurferModel=model.Parent;
+               if ~isempty(wavesurferModel) ,
+                   wavesurferModel.subscribeMe(self,'DidSetState','','update');
+               end
+            end
+            
         end  % constructor
         
         function delete(self)
-            self.ScopePlot_ = [] ;  % not really necessary
+            self.ScopePlots_ = [] ;  % not really necessary
         end  % function
         
 %         function set(self,propName,value)
@@ -179,7 +204,18 @@ classdef DisplayFigure < ws.MCOSFigure
             result = self.YTightToDataLockedIcon_ ;
         end
 
-    end  % public methods block
+        function result = get.ColorOrder(self)
+            result = self.ColorOrder_ ;
+        end
+        
+        function result = get.ControlForegroundColor(self)
+            result = self.ControlForegroundColor_ ;
+        end
+        
+        function result = get.ControlBackgroundColor(self)
+            result = self.ControlBackgroundColor_ ;
+        end
+end  % public methods block
     
     methods (Access=protected)        
         function setInitialFigureSize_(self)
@@ -206,71 +242,71 @@ classdef DisplayFigure < ws.MCOSFigure
             set(self.FigureGH,'Position',figurePosition);
         end  % function
         
-        function willSetModel_(self)            
-            % % clear the downsampled data
-            % self.XForPlotting_=zeros(0,1);
-            % self.YForPlotting_=zeros(0,0);
-
-            % Call the superclass method
-            willSetModel_@ws.MCOSFigure(self);
-
-            % Get the Model
-            model = self.Model ;            
-
-            % If model is nonempty, do some unsubscribing
-            if ~isempty(model) ,
-                % Unsubscribe from events in the model
-                %model.unsubscribeMeFromAll(self) ;
-
-                % Unsubsribe from events in the master model
-                display=model.Parent;
-                if ~isempty(display) && isvalid(display) ,
-                    wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) && isvalid(display) ,
-                        wavesurferModel.unsubscribeMeFromAll(self);
-                    end
-                end
-            end
-        end  % function
+%         function willSetModel_(self)            
+%             % % clear the downsampled data
+%             % self.XForPlotting_=zeros(0,1);
+%             % self.YForPlotting_=zeros(0,0);
+% 
+%             % Call the superclass method
+%             willSetModel_@ws.MCOSFigure(self);
+% 
+%             % Get the Model
+%             model = self.Model ;            
+% 
+%             % If model is nonempty, do some unsubscribing
+%             if ~isempty(model) ,
+%                 % Unsubscribe from events in the model
+%                 %model.unsubscribeMeFromAll(self) ;
+% 
+%                 % Unsubsribe from events in the master model
+%                 display=model.Parent;
+%                 if ~isempty(display) && isvalid(display) ,
+%                     wavesurferModel=display.Parent;
+%                     if ~isempty(wavesurferModel) && isvalid(display) ,
+%                         wavesurferModel.unsubscribeMeFromAll(self);
+%                     end
+%                 end
+%             end
+%         end  % function
         
-        function didSetModel_(self)
-            model = self.Model ;
-
-            % % reset the downsampled data
-            % if ~isempty(model) ,
-            %     nChannels=length(model.ChannelNames);
-            %     self.XForPlotting_=zeros(0,1);
-            %     self.YForPlotting_=zeros(0,nChannels);
-            % end
-
-            % Call the superclass method
-            didSetModel_@ws.MCOSFigure(self);
-
-            % Subscribe to some model events
-            if ~isempty(model) ,
-                model.subscribeMe(self,'Update','','update');
-                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
-                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
-                %model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-                %model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-                %model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-                model.subscribeMe(self,'DataAdded','','modelDataAdded');
-                model.subscribeMe(self,'DataCleared','','modelDataCleared');
-                %model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
-                %model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
-            end
-
-            % Subscribe to events in the master model
-            if ~isempty(model) ,
-                display=model.Parent;
-                if ~isempty(display) ,
-                    wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) ,
-                        wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                    end
-                end
-            end
-        end  % function
+%         function didSetModel_(self)
+%             model = self.Model ;
+% 
+%             % % reset the downsampled data
+%             % if ~isempty(model) ,
+%             %     nChannels=length(model.ChannelNames);
+%             %     self.XForPlotting_=zeros(0,1);
+%             %     self.YForPlotting_=zeros(0,nChannels);
+%             % end
+% 
+%             % Call the superclass method
+%             didSetModel_@ws.MCOSFigure(self);
+% 
+%             % Subscribe to some model events
+%             if ~isempty(model) ,
+%                 model.subscribeMe(self,'Update','','update');
+%                 model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
+%                 model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
+%                 %model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
+%                 %model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
+%                 %model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
+%                 model.subscribeMe(self,'DataAdded','','modelDataAdded');
+%                 model.subscribeMe(self,'DataCleared','','modelDataCleared');
+%                 %model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
+%                 %model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
+%             end
+% 
+%             % Subscribe to events in the master model
+%             if ~isempty(model) ,
+%                 display=model.Parent;
+%                 if ~isempty(display) ,
+%                     wavesurferModel=display.Parent;
+%                     if ~isempty(wavesurferModel) ,
+%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
+%                     end
+%                 end
+%             end
+%         end  % function
     end  % protected methods block    
     
     methods
@@ -591,50 +627,49 @@ classdef DisplayFigure < ws.MCOSFigure
 %                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
                        
             % Add a menu, and a single menu item
-            self.ScopeMenuGH_ = ...
+            self.ViewMenuGH_ = ...
                 uimenu('Parent',self.FigureGH, ...
-                       'Label','Scope');
+                       'Label','View');
 %             self.YScrollUpMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Scroll Up Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YScrollUpMenuItemGH',source,event));            
 %             self.YScrollDownMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Scroll Down Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YScrollDownMenuItemGH',source,event));                               
 % 
 %             self.SetYLimTightToDataMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Y Limits Tight to Data', ...
 %                        'Callback',@(source,event)self.controlActuated('SetYLimTightToDataMenuItemGH',source,event));            
 %             self.SetYLimTightToDataLockedMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Lock Y Limits Tight to Data', ...
 %                        'Callback',@(source,event)self.controlActuated('SetYLimTightToDataLockedMenuItemGH',source,event));            
 %                    
 %             self.YZoomInMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Zoom In Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YZoomInMenuItemGH',source,event));            
 %             self.YZoomOutMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Zoom Out Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YZoomOutMenuItemGH',source,event));            
 %             self.YLimitsMenuItemGH_ = ...
-%                 uimenu('Parent',self.ScopeMenuGH_, ...
+%                 uimenu('Parent',self.ViewMenuGH_, ...
 %                        'Label','Y Limits...', ...
 %                        'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
             self.InvertColorsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
-                       'Separator','on', ...
+                uimenu('Parent',self.ViewMenuGH_, ...
                        'Label','Green On Black', ...
                        'Callback',@(source,event)self.controlActuated('InvertColorsMenuItemGH',source,event));            
             self.ShowGridMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ViewMenuGH_, ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
             self.DoShowButtonsMenuItemGH_ = ...
-                uimenu('Parent',self.ScopeMenuGH_, ...
+                uimenu('Parent',self.ViewMenuGH_, ...
                        'Label','Show Buttons', ...
                        'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
                                       
@@ -754,7 +789,13 @@ classdef DisplayFigure < ws.MCOSFigure
                         0.75                      0.75                      0.75  ] ;
                 
             end
-            self.ColorOrder = colorOrder ;  % this will be used by the ScopePlots
+            
+            % Set the properties that are made public for the ScopePlots to
+            % use
+            self.ControlForegroundColor_ = controlForeground ;
+            self.ControlBackgroundColor_ = controlBackground ;
+            
+            self.ColorOrder_ = colorOrder ;  % this will be used by the ScopePlots, via the ColorOrder public property
             %set(self.AxesGH_,'ColorOrder',colorOrder);
 
 %             % Set the line colors
@@ -767,70 +808,57 @@ classdef DisplayFigure < ws.MCOSFigure
             % update the individual plots
             nScopePlots = length(self.ScopePlots_) ;
             for i=1:nScopePlots ,
-                
+                self.ScopePlots_(i).updateControlProperties() ;
             end
             
-            % Set the button colors
-            set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+%             % Set the button colors
+%             set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+%             set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+%             set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
+%             set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+%             set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+%             set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
             
-            % Set the button scroll up/down button images
-            if areColorsNormal ,
-                yScrollUpIcon   = persistentYScrollUpIcon   ;
-                yScrollDownIcon = persistentYScrollDownIcon ;
-                yTightToDataIcon = persistentYTightToDataIcon ;
-                yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;
-            else
-                yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
-                yScrollDownIcon = 1-persistentYScrollDownIcon ;                
-                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
-                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
-            end                
-            set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
-            set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
-            set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
-            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
+%             % Set the button scroll up/down button images
+%             if areColorsNormal ,
+%                 yScrollUpIcon   = persistentYScrollUpIcon   ;
+%                 yScrollDownIcon = persistentYScrollDownIcon ;
+%                 yTightToDataIcon = persistentYTightToDataIcon ;
+%                 yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;
+%             else
+%                 yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
+%                 yScrollDownIcon = 1-persistentYScrollDownIcon ;                
+%                 yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
+%                 yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
+%             end                
+%             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
+%             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
+%             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
+%             set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
             
-            % Update the axes grid on/off
-            set(self.AxesGH_, ...
-                'XGrid', ws.onIff(isGridOn), ...
-                'YGrid', ws.onIff(isGridOn) ...
-                );
+%             % Update the axes grid on/off
+%             set(self.AxesGH_, ...
+%                 'XGrid', ws.onIff(isGridOn), ...
+%                 'YGrid', ws.onIff(isGridOn) ...
+%                 );
             
             % Update the axis limits
             self.updateXAxisLimits_();
             self.updateYAxisLimits_();
             
+            self.updateAxisLabels_()
             % Update the graphics objects to match the model
-            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
-            self.updateYAxisLabel_(axesForeground);
+            %xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
+            %self.updateYAxisLabel_(axesForeground);
             self.updateLineXDataAndYData_();
         end  % function
         
         function updateControlEnablementImplementation_(self)
             % Update the enablement of controls
-            if isempty(self.Model) || ~isvalid(self.Model) ,
-                return
+            nScopePlots = length(self.ScopePlots_) ;
+            for i=1:nScopePlots ,
+                self.ScopePlots_(i).updateControlEnablement() ;
             end
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-            
-            %import ws.onIff
-            onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
-            set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
-            set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
         end  % function
         
 %         function layout_(self)
@@ -849,140 +877,145 @@ classdef DisplayFigure < ws.MCOSFigure
 %             %ws.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
 %         end  % function
         
-        function layoutFixedControls_(self)
-            % Layout parameters
-            minLeftMargin = 46 ;
-            maxLeftMargin = 62 ;
-            
-            minRightMarginIfButtons = 8 ;            
-            maxRightMarginIfButtons = 8 ;            
-
-            minRightMarginIfNoButtons = 8 ;            
-            maxRightMarginIfNoButtons = 16 ;            
-            
-            %minBottomMargin = 38 ;  % works ok with HG1
-            minBottomMargin = 44 ;  % works ok with HG2 and HG1
-            maxBottomMargin = 52 ;
-            
-            minTopMargin = 10 ;
-            maxTopMargin = 26 ;            
-            
-            minAxesAndButtonsAreaWidth = 20 ;
-            minAxesAndButtonsAreaHeight = 20 ;
-            
-            fromAxesToYRangeButtonsWidth = 6 ;
-            yRangeButtonSize = 20 ;  % those buttons are square
-            spaceBetweenScrollButtons=5;
-            spaceBetweenZoomButtons=5;
-            spaceBetweenZoomToDataButtons=5;
-            minHeightBetweenButtonBanks = 5 ;
-            
-            % Show buttons only if user wants them
-            doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
-
-            if doesUserWantToSeeButtons ,
-                minRightMargin = minRightMarginIfButtons ;
-                maxRightMargin = maxRightMarginIfButtons ;
-            else
-                minRightMargin = minRightMarginIfNoButtons ;
-                maxRightMargin = maxRightMarginIfNoButtons ;
-            end
+        function figureSize = layoutFixedControls_(self)
+            % The only fixed controls are menus, which require no layout
             
             % Get the current figure width, height
             figurePosition = get(self.FigureGH, 'Position') ;
             figureSize = figurePosition(3:4);
-            figureWidth = figureSize(1) ;
-            figureHeight = figureSize(2) ;
             
-            % Calculate the first-pass dimensions
-            leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
-            rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
-            bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
-            topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
-            axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
-            axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
-
-            % If not enough vertical space for the buttons, hide them
-            if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
-                isEnoughHeightForButtons = false ;
-                % Recalculate some things that are affected by this change
-                minRightMargin = minRightMarginIfNoButtons ;
-                maxRightMargin = maxRightMarginIfNoButtons ;
-                rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
-                axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;                
-            else
-                isEnoughHeightForButtons = true ;
-            end
-            doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons ;
-            
-            % If the axes-and-buttons-area is too small, make it larger,
-            % and change the right margin and/or bottom margin to accomodate
-            if axesAndButtonsAreaWidth<minAxesAndButtonsAreaWidth ,                
-                axesAndButtonsAreaWidth = minAxesAndButtonsAreaWidth ;
-                %rightMargin = figureWidth - axesAndButtonsAreaWidth - leftMargin ;  % can be less than minRightMargin, and that's ok
-            end
-            if axesAndButtonsAreaHeight<minAxesAndButtonsAreaHeight ,                
-                axesAndButtonsAreaHeight = minAxesAndButtonsAreaHeight ;
-                bottomMargin = figureHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
-            end
-
-            % Set the axes width, depends on whether we're showing the
-            % buttons or not
-            if doShowButtons ,
-                axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
-            else
-                axesWidth = axesAndButtonsAreaWidth ;
-            end
-            axesHeight = axesAndButtonsAreaHeight ;            
-            
-            % Update the axes position
-            axesXOffset = leftMargin ;
-            axesYOffset = bottomMargin ;
-            set(self.AxesGH_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
-            
-            % the zoom buttons
-            yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
-            zoomOutButtonX=yRangeButtonsX;
-            zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
-            set(self.YZoomOutButtonGH_, ...
-                'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[zoomOutButtonX zoomOutButtonY ...
-                            yRangeButtonSize yRangeButtonSize]);
-            zoomInButtonX=yRangeButtonsX;
-            zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
-            set(self.YZoomInButtonGH_, ...
-                'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[zoomInButtonX zoomInButtonY ...
-                            yRangeButtonSize yRangeButtonSize]);
-            
-            % the scroll buttons
-            scrollUpButtonX=yRangeButtonsX;
-            scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
-            set(self.YScrollUpButtonGH_, ...
-                'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[scrollUpButtonX scrollUpButtonY ...
-                            yRangeButtonSize yRangeButtonSize]);
-            scrollDownButtonX=yRangeButtonsX;
-            scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
-            set(self.YScrollDownButtonGH_, ...
-                'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[scrollDownButtonX scrollDownButtonY ...
-                            yRangeButtonSize yRangeButtonSize]);
-                        
-            % the zoom-to-data buttons
-            zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
-            zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
-            setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
-            set(self.SetYLimTightToDataButtonGH_, ...
-                'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
-                            yRangeButtonSize yRangeButtonSize]);
-            setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
-            set(self.SetYLimTightToDataLockedButtonGH_, ...
-                'Visible',ws.onIff(doShowButtons) , ...
-                'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
-                            yRangeButtonSize yRangeButtonSize]);
-            
+%             % Layout parameters
+%             minLeftMargin = 46 ;
+%             maxLeftMargin = 62 ;
+%             
+%             minRightMarginIfButtons = 8 ;            
+%             maxRightMarginIfButtons = 8 ;            
+% 
+%             minRightMarginIfNoButtons = 8 ;            
+%             maxRightMarginIfNoButtons = 16 ;            
+%             
+%             %minBottomMargin = 38 ;  % works ok with HG1
+%             minBottomMargin = 44 ;  % works ok with HG2 and HG1
+%             maxBottomMargin = 52 ;
+%             
+%             minTopMargin = 10 ;
+%             maxTopMargin = 26 ;            
+%             
+%             minAxesAndButtonsAreaWidth = 20 ;
+%             minAxesAndButtonsAreaHeight = 20 ;
+%             
+%             fromAxesToYRangeButtonsWidth = 6 ;
+%             yRangeButtonSize = 20 ;  % those buttons are square
+%             spaceBetweenScrollButtons=5;
+%             spaceBetweenZoomButtons=5;
+%             spaceBetweenZoomToDataButtons=5;
+%             minHeightBetweenButtonBanks = 5 ;
+%             
+%             % Show buttons only if user wants them
+%             doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
+% 
+%             if doesUserWantToSeeButtons ,
+%                 minRightMargin = minRightMarginIfButtons ;
+%                 maxRightMargin = maxRightMarginIfButtons ;
+%             else
+%                 minRightMargin = minRightMarginIfNoButtons ;
+%                 maxRightMargin = maxRightMarginIfNoButtons ;
+%             end
+%             
+%             % Get the current figure width, height
+%             figurePosition = get(self.FigureGH, 'Position') ;
+%             figureSize = figurePosition(3:4);
+%             figureWidth = figureSize(1) ;
+%             figureHeight = figureSize(2) ;
+%             
+%             % Calculate the first-pass dimensions
+%             leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
+%             rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
+%             bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
+%             topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
+%             axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
+%             axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
+% 
+%             % If not enough vertical space for the buttons, hide them
+%             if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
+%                 isEnoughHeightForButtons = false ;
+%                 % Recalculate some things that are affected by this change
+%                 minRightMargin = minRightMarginIfNoButtons ;
+%                 maxRightMargin = maxRightMarginIfNoButtons ;
+%                 rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
+%                 axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;                
+%             else
+%                 isEnoughHeightForButtons = true ;
+%             end
+%             doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons ;
+%             
+%             % If the axes-and-buttons-area is too small, make it larger,
+%             % and change the right margin and/or bottom margin to accomodate
+%             if axesAndButtonsAreaWidth<minAxesAndButtonsAreaWidth ,                
+%                 axesAndButtonsAreaWidth = minAxesAndButtonsAreaWidth ;
+%                 %rightMargin = figureWidth - axesAndButtonsAreaWidth - leftMargin ;  % can be less than minRightMargin, and that's ok
+%             end
+%             if axesAndButtonsAreaHeight<minAxesAndButtonsAreaHeight ,                
+%                 axesAndButtonsAreaHeight = minAxesAndButtonsAreaHeight ;
+%                 bottomMargin = figureHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
+%             end
+% 
+%             % Set the axes width, depends on whether we're showing the
+%             % buttons or not
+%             if doShowButtons ,
+%                 axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
+%             else
+%                 axesWidth = axesAndButtonsAreaWidth ;
+%             end
+%             axesHeight = axesAndButtonsAreaHeight ;            
+%             
+%             % Update the axes position
+%             axesXOffset = leftMargin ;
+%             axesYOffset = bottomMargin ;
+%             set(self.AxesGH_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
+%             
+%             % the zoom buttons
+%             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
+%             zoomOutButtonX=yRangeButtonsX;
+%             zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
+%             set(self.YZoomOutButtonGH_, ...
+%                 'Visible',ws.onIff(doShowButtons) , ...
+%                 'Position',[zoomOutButtonX zoomOutButtonY ...
+%                             yRangeButtonSize yRangeButtonSize]);
+%             zoomInButtonX=yRangeButtonsX;
+%             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
+%             set(self.YZoomInButtonGH_, ...
+%                 'Visible',ws.onIff(doShowButtons) , ...
+%                 'Position',[zoomInButtonX zoomInButtonY ...
+%                             yRangeButtonSize yRangeButtonSize]);
+%             
+%             % the scroll buttons
+%             scrollUpButtonX=yRangeButtonsX;
+%             scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
+%             set(self.YScrollUpButtonGH_, ...
+%                 'Visible',ws.onIff(doShowButtons) , ...
+%                 'Position',[scrollUpButtonX scrollUpButtonY ...
+%                             yRangeButtonSize yRangeButtonSize]);
+%             scrollDownButtonX=yRangeButtonsX;
+%             scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
+%             set(self.YScrollDownButtonGH_, ...
+%                 'Visible',ws.onIff(doShowButtons) , ...
+%                 'Position',[scrollDownButtonX scrollDownButtonY ...
+%                             yRangeButtonSize yRangeButtonSize]);
+%                         
+%             % the zoom-to-data buttons
+%             zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
+%             zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
+%             setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
+%             set(self.SetYLimTightToDataButtonGH_, ...
+%                 'Visible',ws.onIff(doShowButtons) , ...
+%                 'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
+%                             yRangeButtonSize yRangeButtonSize]);
+%             setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
+%             set(self.SetYLimTightToDataLockedButtonGH_, ...
+%                 'Visible',ws.onIff(doShowButtons) , ...
+%                 'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
+%                             yRangeButtonSize yRangeButtonSize]);            
         end  % function
         
     end
@@ -1017,9 +1050,32 @@ classdef DisplayFigure < ws.MCOSFigure
         end  % function 
         
         function updateLineXDataAndYData_(self)
-            model = self.Model ;            
-            thisLineGH = self.LineGHs_ ;
-            ws.setifhg(thisLineGH, 'XData', model.XData, 'YData', model.YData) ;
+            for i = 1:length(self.ScopePlots_) ,
+                self.ScopePlots_(i).updateLineXDataAndYData_() ;
+            end
+            %model = self.Model ;            
+            %thisLineGH = self.LineGHs_ ;
+            %ws.setifhg(thisLineGH, 'XData', model.XData, 'YData', model.YData) ;
+        end  % function
+
+        function updateAxisLabels_(self,axisForegroundColor)
+            for i = 1:length(self.ScopePlots_) ,
+                self.ScopePlots_(i).updateAxisLabels_(axisForegroundColor) ;
+            end            
+%             if self.Model.NChannels==0 ,
+%                 ylabel(self.AxesGH_,'Signal','Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
+%             else
+%                 firstChannelName=self.Model.ChannelNames{1};
+%                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
+%                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
+%                 units=self.Model.YUnits;
+%                 if isempty(units) ,
+%                     unitsString = 'pure' ;
+%                 else
+%                     unitsString = units ;
+%                 end
+%                 ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
+%             end
         end  % function
         
         function updateYAxisLabel_(self,color)
@@ -1047,8 +1103,8 @@ classdef DisplayFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            xlimInModel=self.Model.XLim ;
-            for i = 1:self.NScopes ,
+            xlimInModel=self.Model.XOffset + [0 self.Model.XSpan] ;
+            for i = 1:length(self.ScopePlots_) ,
                 self.ScopePlots_(i).updateXaxisLimits_(xlimInModel) ;
             end
             %set(self.AxesGH_, 'XLim', xlimInModel) ;
@@ -1059,8 +1115,11 @@ classdef DisplayFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            ylimInModel=self.Model.YLim;
-            set(self.AxesGH_, 'YLim', ylimInModel);
+            for i = 1:length(self.ScopePlots_) ,
+                self.ScopePlots_(i).updateYaxisLimits_() ;
+            end
+%             ylimInModel=self.Model.YLim;
+%             set(self.AxesGH_, 'YLim', ylimInModel);
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)

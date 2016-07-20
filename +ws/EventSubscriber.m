@@ -7,7 +7,12 @@ classdef (Abstract=true) EventSubscriber < handle
                                      'methodName',cell(1,0));
     end  % properties
     
-    methods
+    methods        
+        function delete(self)
+            % Unsubscribe from all subscriptions before being destructed
+            self.unsubscribeFromAll();
+        end
+        
         function registerSubscription(self,broadcaster,eventName,propertyName,methodName)
             % This method is designed to be called by an EventBroadcaster
             % as part of the subscribeMe() method.  It allows the subscriber
@@ -73,11 +78,6 @@ classdef (Abstract=true) EventSubscriber < handle
 %                 end
                 self.unsubscribe(1);  % each time we call this, the subscription list gets shorter by 1
             end
-        end
-        
-        function delete(self)
-            % Unsubscribe from all subscriptions before being destructed
-            self.unsubscribeFromAll();
         end
     end
 end  % classdef

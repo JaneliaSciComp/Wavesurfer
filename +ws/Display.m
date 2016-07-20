@@ -2,6 +2,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     %Display Manages the display and update of one or more Scope objects.
     
     properties (Dependent = true)
+        IsGridOn
+        AreColorsNormal        
+        DoShowButtons        
         UpdateRate  % the rate at which the scopes are updated, in Hz
         XOffset  % the x coord at the left edge of the scope windows
         XSpan  % the trace duration shown in the scope windows
@@ -23,6 +26,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
 
     properties (Access = protected)
+        IsGridOn_ = true
+        AreColorsNormal_ = true  % if false, colors are inverted, approximately
+        DoShowButtons_ = true % if false, don't show buttons in the figure
         Scopes_  % a cell array of ws.ScopeModel objects
         XSpan_ 
         UpdateRate_
@@ -189,54 +195,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %         function didSetDeviceName(self)
 %             %self.initializeScopes_() ;
 %         end
-        
-        function addScope(self, scopeTag, scopeTitle, channelName)
-            if isempty(scopeTag)
-                scopeTag = sprintf('Scope_%d', self.NScopes + 1);
-            end
-            if isempty(scopeTitle)
-                scopeTitle = sprintf('Scope %d', self.NScopes + 1);
-            end
-            
-            % Create the scope model
-            scopeModel = ws.ScopeModel(self, scopeTag, scopeTitle, channelName);
-            
-            % add the channels to the scope model                          
-            %nChannels=length(channelNames);
-            %for i = 1:nChannels
-                %channelName = channelNames{i};
-            %scopeModel.addChannel(channelName);
-            %end
-            
-            % Add the new scope to Scopes
-            self.Scopes_{end + 1} = scopeModel;
-            %self.IsScopeVisibleWhenDisplayEnabled(end+1) = true;
-
-            % We want to know if the visibility of the scope changes
-            %scopeModel.addlistener('Visible', 'PostSet', @self.scopeVisibleDidChange);
-            %scopeModel.subscribeMe(self,'PostSet','Visible','scopeVisibleDidChange');
-            
-            % Let anyone who cares know that the number of scopes has
-            % changed
-            self.broadcast('NScopesMayHaveChanged');
-        end
-
-%         function registerScopeController(self,scopeController)
-%             %scopeController.subscribeMe(self,'ScopeVisibilitySet','','scopeVisibleDidChange');
-%          end
-
-        function removeScope(self, index)
-            self.Scopes_(index) = [];
-            self.broadcast('NScopesMayHaveChanged');
-        end
-        
-        function removeScopes(self)
-            if ~isempty(self.Scopes_) ,
-                self.Scopes_ = cell(1,0);
-                self.broadcast('NScopesMayHaveChanged');
-            end
-        end
-        
+                
         function toggleIsVisibleWhenDisplayEnabled(self,scopeIndex)
             originalState = self.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled ;
             % self.Scopes_{scopeIndex}.IsVisibleWhenDisplayEnabled = ~originalState ;  
@@ -277,7 +236,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
             %channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, newChannelName);
+            self.addScope_(scopeTag, scopeTitle, newChannelName);
         end
         
         function didAddDigitalInputChannel(self)
@@ -289,15 +248,15 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
             scopeTitle=sprintf('Channel %s', newChannelName);
             %channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, newChannelName);
+            self.addScope_(scopeTag, scopeTitle, newChannelName);
         end
 
         function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName(nameOfRemovedChannels) ;
+            self.removeScopesByName_(nameOfRemovedChannels) ;
         end
         
         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName(nameOfRemovedChannels) ;
+            self.removeScopesByName_(nameOfRemovedChannels) ;
         end
         
 %         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
@@ -316,26 +275,132 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
         
-        function removeScopesByName(self, namesOfChannelsToRemove)
+        function toggleIsGridOn(self)
+            self.IsGridOn = ~(self.IsGridOn) ;
+        end
+
+        function toggleAreColorsNormal(self)
+            self.AreColorsNormal = ~(self.AreColorsNormal) ;
+        end
+
+        function toggleDoShowButtons(self)
+            self.DoShowButtons = ~(self.DoShowButtons) ;
+        end
+        
+        function set.IsGridOn(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.IsGridOn_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.IsGridOn(self)
+            result = self.IsGridOn_ ;
+        end
+            
+        function set.AreColorsNormal(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.AreColorsNormal_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.AreColorsNormal(self)
+            result = self.AreColorsNormal_ ;
+        end
+            
+        function set.DoShowButtons(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.DoShowButtons_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.DoShowButtons(self)
+            result = self.DoShowButtons_ ;
+        end                    
+    end  % public methods block
+    
+    methods (Access=protected)
+        function addScope_(self, scopeTag, scopeTitle, channelName)
+            if isempty(scopeTag)
+                scopeTag = sprintf('Scope_%d', self.NScopes + 1);
+            end
+            if isempty(scopeTitle)
+                scopeTitle = sprintf('Scope %d', self.NScopes + 1);
+            end
+            
+            % Create the scope model
+            scopeModel = ws.ScopeModel(self, scopeTag, scopeTitle, channelName);
+            
+            % add the channels to the scope model                          
+            %nChannels=length(channelNames);
+            %for i = 1:nChannels
+                %channelName = channelNames{i};
+            %scopeModel.addChannel(channelName);
+            %end
+            
+            % Add the new scope to Scopes
+            self.Scopes_{end + 1} = scopeModel;
+            %self.IsScopeVisibleWhenDisplayEnabled(end+1) = true;
+
+            % We want to know if the visibility of the scope changes
+            %scopeModel.addlistener('Visible', 'PostSet', @self.scopeVisibleDidChange);
+            %scopeModel.subscribeMe(self,'PostSet','Visible','scopeVisibleDidChange');
+            
+            % Let anyone who cares know that the number of scopes has
+            % changed
+            self.broadcast('NScopesMayHaveChanged');
+        end
+
+        function removeScopesByName_(self, namesOfChannelsToRemove)
             self.disableBroadcasts() ;
             nChannels = length(namesOfChannelsToRemove) ;
             for i = 1:nChannels ,
                 channelName = namesOfChannelsToRemove{i} ;
-                self.removeScopeByName(channelName) ;
+                self.removeScopeByName_(channelName) ;
             end
             self.enableBroadcastsMaybe() ;
             self.broadcast('NScopesMayHaveChanged');
         end  % function
         
-        function removeScopeByName(self, nameOfChannelToRemove)
+        function removeScopeByName_(self, nameOfChannelToRemove)
             [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;
             if ~isempty(theScope) ,
-                self.removeScope(indexOfTheScope) ;
+                self.removeScope_(indexOfTheScope) ;
             end
         end  % function
-    end
-    
-    methods (Access=protected)
+
+        function removeScope_(self, index)
+            self.Scopes_(index) = [];
+            self.broadcast('NScopesMayHaveChanged');
+        end
+        
+        function removeScopes_(self)
+            if ~isempty(self.Scopes_) ,
+                self.Scopes_ = cell(1,0);
+                self.broadcast('NScopesMayHaveChanged');
+            end
+        end
+        
         function [theScope, indexOfTheScope] = getScopeByName_(self, channelName)
             nScopes = self.NScopes ;
             didFindIt = false ;
@@ -545,7 +610,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         % scopes changes.
         function decodeUnwrappedEncodingCore_(self, encoding)            
             % Need to clear the existing scopes first
-            self.removeScopes();
+            self.removeScopes_();
             
             % Now call the superclass method
             self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);

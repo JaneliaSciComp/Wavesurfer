@@ -11,9 +11,9 @@ classdef ScopeModel < ws.Model
         XSpan  % the difference between the xcoord shown at the rightmost edge of the plot and XOffset
         XLim
         YLim
-        IsGridOn
-        AreColorsNormal        
-        DoShowButtons
+%         IsGridOn
+%         AreColorsNormal        
+%         DoShowButtons
         IsVisibleWhenDisplayEnabled
           % Indicates whether scope is visible when the Display subsystem
           % is enabled.  If display subsystem is disabled, the scopes are
@@ -55,9 +55,9 @@ classdef ScopeModel < ws.Model
         %ChannelNames_ = cell(1,0)  % row vector
         ChannelName_ = '' ;
         ChannelColorIndex_ = 1
-        IsGridOn_ = true
-        AreColorsNormal_ = true  % if false, colors are inverted, approximately
-        DoShowButtons_ = true % if false, don't show buttons in the figure
+%         IsGridOn_ = true
+%         AreColorsNormal_ = true  % if false, colors are inverted, approximately
+%         DoShowButtons_ = true % if false, don't show buttons in the figure
         IsVisibleWhenDisplayEnabled_  = true
     end
 
@@ -232,68 +232,68 @@ classdef ScopeModel < ws.Model
 %             end
 %         end
 
-        function toggleIsGridOn(self)
-            self.IsGridOn = ~(self.IsGridOn) ;
-        end
-
-        function toggleAreColorsNormal(self)
-            self.AreColorsNormal = ~(self.AreColorsNormal) ;
-        end
-
-        function toggleDoShowButtons(self)
-            self.DoShowButtons = ~(self.DoShowButtons) ;
-        end
-        
-        function set.IsGridOn(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.IsGridOn_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
-                end
-            end
-            self.broadcast('Update');
-        end
-        
-        function result = get.IsGridOn(self)
-            result = self.IsGridOn_ ;
-        end
-            
-        function set.AreColorsNormal(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.AreColorsNormal_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
-                end
-            end
-            self.broadcast('Update');
-        end
-        
-        function result = get.AreColorsNormal(self)
-            result = self.AreColorsNormal_ ;
-        end
-            
-        function set.DoShowButtons(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.DoShowButtons_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
-                end
-            end
-            self.broadcast('Update');
-        end
-        
-        function result = get.DoShowButtons(self)
-            result = self.DoShowButtons_ ;
-        end
+%         function toggleIsGridOn(self)
+%             self.IsGridOn = ~(self.IsGridOn) ;
+%         end
+% 
+%         function toggleAreColorsNormal(self)
+%             self.AreColorsNormal = ~(self.AreColorsNormal) ;
+%         end
+% 
+%         function toggleDoShowButtons(self)
+%             self.DoShowButtons = ~(self.DoShowButtons) ;
+%         end
+%         
+%         function set.IsGridOn(self,newValue)
+%             if ws.isASettableValue(newValue) ,
+%                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+%                     self.IsGridOn_ = logical(newValue) ;
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'IsGridOn must be a scalar, and must be logical, 0, or 1');
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end
+%         
+%         function result = get.IsGridOn(self)
+%             result = self.IsGridOn_ ;
+%         end
+%             
+%         function set.AreColorsNormal(self,newValue)
+%             if ws.isASettableValue(newValue) ,
+%                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+%                     self.AreColorsNormal_ = logical(newValue) ;
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end
+%         
+%         function result = get.AreColorsNormal(self)
+%             result = self.AreColorsNormal_ ;
+%         end
+%             
+%         function set.DoShowButtons(self,newValue)
+%             if ws.isASettableValue(newValue) ,
+%                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+%                     self.DoShowButtons_ = logical(newValue) ;
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'DoShowButtons must be a scalar, and must be logical, 0, or 1');
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end
+%         
+%         function result = get.DoShowButtons(self)
+%             result = self.DoShowButtons_ ;
+%         end
             
         function set.XOffset(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,

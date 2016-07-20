@@ -428,8 +428,9 @@ classdef ScopePlot < ws.EventSubscriber
         function updateControlsInExistance_(self)            
             % Make it so we have the same number of lines as channels,
             % adding/deleting them as needed
-            nChannels = self.Model.NChannels ;            
-            currentLineGHs = self.LineGHs_ ;            
+            scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
+            nChannels = scopeModel.NChannels ;
+            currentLineGHs = self.LineGHs_ ;          
             nLines= length(currentLineGHs);
             if nLines>nChannels ,
                 delete(self.LineGHs_(nChannels+1:nLines));
@@ -724,11 +725,12 @@ classdef ScopePlot < ws.EventSubscriber
     methods (Access = protected)
         function addChannelLineToAxes_(self)
             % Creates a new channel line, adding it to the end of self.LineGHs_.
+            scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
             iChannel=length(self.LineGHs_)+1;
-            newChannelName=self.Model.ChannelNames{iChannel};
+            newChannelName=scopeModel.ChannelNames{iChannel};
             
             colorOrder = get(self.AxesGH_ ,'ColorOrder');
-            color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
+            color = colorOrder(scopeModel.ChannelColorIndex(iChannel), :);
             
             self.LineGHs_(iChannel) = ...
                 line('Parent', self.AxesGH_,...
@@ -736,7 +738,7 @@ classdef ScopePlot < ws.EventSubscriber
                      'YData', [],...
                      'ZData', [],...
                      'Color', color,...
-                     'Tag', sprintf('%s::%s', self.Model.Tag, newChannelName));
+                     'Tag', sprintf('%s::%s', scopeModel.Tag, newChannelName));
 %                                      'LineWidth', 2,...
 %                      'Marker', self.Model.Marker,...
 %                      'LineStyle', self.Model.LineStyle,...
@@ -751,9 +753,9 @@ classdef ScopePlot < ws.EventSubscriber
         end  % function 
         
         function updateLineXDataAndYData_(self)
-            model = self.Model ;            
+            scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
             thisLineGH = self.LineGHs_ ;
-            ws.setifhg(thisLineGH, 'XData', model.XData, 'YData', model.YData) ;
+            ws.setifhg(thisLineGH, 'XData', scopeModel.XData, 'YData', scopeModel.YData) ;
         end  % function
         
         function updateYAxisLabel_(self,color)
