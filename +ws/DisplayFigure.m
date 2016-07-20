@@ -702,47 +702,10 @@ classdef DisplayFigure < ws.MCOSFigure
             if isempty(model) || ~isvalid(model) ,
                 return
             end
-
-            persistent persistentYScrollUpIcon
-            if isempty(persistentYScrollUpIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-                persistentYScrollUpIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-
-            persistent persistentYScrollDownIcon
-            if isempty(persistentYScrollDownIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-                persistentYScrollDownIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-
-            persistent persistentYTightToDataIcon
-            if isempty(persistentYTightToDataIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-                persistentYTightToDataIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
             
-            persistent persistentYTightToDataLockedIcon
-            if isempty(persistentYTightToDataLockedIcon) ,
-                wavesurferDirName=fileparts(which('wavesurfer'));
-                iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-                persistentYTightToDataLockedIcon = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            end
-            
-            % Update the title, tag
-            set(self.FigureGH, ...
-                'Tag',self.Model.Tag,...
-                'Name',self.Model.Title);
-            
-            % Update the togglebutton
-            %dbstack
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-            %setYLimTightToDataLockedButtonGH = self.SetYLimTightToDataLockedButtonGH_
-            
-            %set(self.SetYLimTightToDataLockedButtonGH_,'Value',areYLimitsLockedTightToData);            
-            set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
+%             % Update the togglebutton
+%             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;           
+%             set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
 
             % Update the Show Grid togglemenu
             isGridOn = self.Model.IsGridOn ;
@@ -763,12 +726,12 @@ classdef DisplayFigure < ws.MCOSFigure
             controlForeground = ws.fif(areColorsNormal,'k','w') ;
             figureBackground = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             set(self.FigureGH,'Color',figureBackground);
-            axesBackground = ws.fif(areColorsNormal,'w','k') ;
-            set(self.AxesGH_,'Color',axesBackground);
-            axesForeground = ws.fif(areColorsNormal,'k','g') ;
-            set(self.AxesGH_,'XColor',axesForeground);
-            set(self.AxesGH_,'YColor',axesForeground);
-            set(self.AxesGH_,'ZColor',axesForeground);
+%             axesBackground = ws.fif(areColorsNormal,'w','k') ;
+%             set(self.AxesGH_,'Color',axesBackground);
+%             axesForeground = ws.fif(areColorsNormal,'k','g') ;
+%             set(self.AxesGH_,'XColor',axesForeground);
+%             set(self.AxesGH_,'YColor',axesForeground);
+%             set(self.AxesGH_,'ZColor',axesForeground);
             if areColorsNormal ,
                 colorOrder = ...
                     [      0                         0                         0  ; ...
@@ -791,14 +754,18 @@ classdef DisplayFigure < ws.MCOSFigure
                         0.75                      0.75                      0.75  ] ;
                 
             end
-            set(self.AxesGH_,'ColorOrder',colorOrder);
+            self.ColorOrder = colorOrder ;  % this will be used by the ScopePlots
+            %set(self.AxesGH_,'ColorOrder',colorOrder);
 
-            % Set the line colors
-            for iChannel = 1:length(self.LineGHs_)
-                lineGH = self.LineGHs_(iChannel) ;
-                color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
-                set(lineGH,'Color',color);
-            end
+%             % Set the line colors
+%             for iChannel = 1:length(self.LineGHs_)
+%                 lineGH = self.LineGHs_(iChannel) ;
+%                 color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
+%                 set(lineGH,'Color',color);
+%             end
+
+            % update the individual plots
+            nScopePlots = length(self.ScopePlots_) ;
 
             % Set the button colors
             set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
