@@ -23,43 +23,15 @@ classdef DisplayFigure < ws.MCOSFigure
 
     properties (Access = protected)
         ScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
-        %AxesGH_  % HG handle to axes
-        %LineGHs_ = zeros(1,0)  % row vector, the line graphics handles for each channel
-        %HeldLineGHs;        
-%         HorizontalCenterLineGH;  % HG handle to line
-%         VerticalCenterLineGH;  % HG handle to line
-%         GroundLineGH;  % HG handle to line
-%         YForPlotting_  
-%             % nScans x nChannels
-%             % Y data downsampled to approximately two points per pixel,
-%             % with the first point the min for that pixel, second point the
-%             % max for that pixel.
-%         XForPlotting_  
-%             % nScans x 1
-%             % X data for the points in YForPlotting_.  As such, this consist
-%             % of a sequence of pairs, with each member of a pair being
-%             % equal.
-%         XLim_
-%         YLim_
-        %SetYLimTightToDataButtonGH_
-        %SetYLimTightToDataLockedButtonGH_
                 
         ViewMenuGH_
-        %YZoomInMenuItemGH_
-        %YZoomOutMenuItemGH_        
-        %SetYLimTightToDataMenuItemGH_
-        %SetYLimTightToDataLockedMenuItemGH_        
-        %YScrollUpMenuItemGH_
-        %YScrollDownMenuItemGH_
-        %YLimitsMenuItemGH_
         InvertColorsMenuItemGH_
         ShowGridMenuItemGH_
         DoShowButtonsMenuItemGH_
-        
-        %YZoomInButtonGH_
-        %YZoomOutButtonGH_
-        %YScrollUpButtonGH_
-        %YScrollDownButtonGH_
+
+        ChannelsMenuGH_
+        AnalogChannelMenuItemGHs_
+        DigitalChannelMenuItemGHs_
         
         YScrollUpIcon_ 
         YScrollDownIcon_ 
@@ -156,7 +128,7 @@ classdef DisplayFigure < ws.MCOSFigure
             % Subscribe to events
             if ~isempty(model) ,
                model.subscribeMe(self,'Update','','update');
-               model.subscribeMe(self,'NScopesMayHaveChanged','','update');
+               %model.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.subscribeMe(self,'DidSetIsEnabled','','update');
                model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
                model.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
@@ -625,7 +597,12 @@ end  % public methods block
 %                           'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
 %                           'CData', cdata, ...
 %                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
-                       
+
+            % Add the channels menu
+            self.ChannelsMenuGH_ = ...
+                uimenu('Parent',self.FigureGH, ...
+                       'Label','Channels');
+
             % Add a menu, and a single menu item
             self.ViewMenuGH_ = ...
                 uimenu('Parent',self.FigureGH, ...
@@ -728,6 +705,93 @@ end  % public methods block
             else
                 % do nothing --- we already have the right number of
                 % ScopePlots
+            end
+            
+            % Update the Channels menu
+            self.updateScopeMenu_() ;
+        end  % function
+
+        function updateScopeMenu_(self,broadcaster,eventName,propertyName,source,event)  %#ok<INUSD>            
+            % Update the scope menu match the model state
+            import ws.onIff
+            
+            % A typical structure of the menus under the Scopes menu item:
+            % 
+            %   Scopes > Remove > Remove "Channel V1"
+            %                     Remove "Channel V2"
+            %                     Remove "Channel I1"
+            %                     Remove "Channel I2"
+            %            (separator)
+            %            Channel V1 (checkable)
+            %            Channel V2 (checkable)
+            %            Channel I1 (checkable)
+            %            Channel I2 (checkable)
+            %
+            % I.e. if the Remove item is unexpanded, it looks like:
+            %
+            %   Scopes > Remove >
+            %            (separator)
+            %            Channel V1 (checkable)
+            %            Channel V2 (checkable)
+            %            Channel I1 (checkable)
+            %            Channel I2 (checkable)
+            
+            % Delete all the menu items in the Scopes submenu except the
+            % first item, which is the "Remove" item.
+            ws.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
+            self.ShowHideChannelMenuItems=[];
+            
+            % Delete all the items in the "Remove" subsubmenu
+            ws.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
+            self.RemoveSubsubmenuItems=[];
+            
+            % 
+            % At this point, the Scopes submenu has been reduced to a blank
+            % slate, with only the single "Remove" item
+            %
+            
+            % If no model, can't really do much, so return
+            model=self.Model;
+            if isempty(model) ,
+                return
+            end
+            
+            % Get the HG object representing the "Scopes" item in the
+            % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
+            scopesMenuItem = self.ChannelsMenuGH_ ;
+            %removeItem=self.RemoveMenuItem;
+            
+            % Set the enablement of the Scopes menu item
+            isIdle=isequal(model.State,'idle');
+            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            
+            % Set the Visibility of the Remove item in the Scope submenu
+            %set(removeItem,'Visible',onIff(model.Display.NScopes>0));
+            
+%             % For each ScopeModel, create a menu item to remove the
+%             % scope, with an appropriate command binding, and add it to
+%             % the Remove subsubmenu.
+%             for i = 1:model.Display.NScopes ,
+%                 menuItem = uimenu('Parent',removeItem, ...
+%                                   'Label',sprintf('Remove %s',model.Display.Scopes{i}.Title), ...
+%                                   'Tag',sprintf('RemoveSubsubmenuItems(%02d)',i), ...
+%                                   'Callback',@(source,event)(self.controlActuated('RemoveSubsubmenuItems',source,event)));
+%                 %if i==1 ,
+%                 %    set(menuItem,'Separator','on');
+%                 %end
+%                 self.RemoveSubsubmenuItems(end+1)=menuItem;
+%             end
+            
+            % For each ScopeModel, create a checkable menu item to
+            % show/hide the scope, with an appropriate command binding, and add it to
+            % the Scopes submenu.
+            for i = 1:model.Display.NScopes ,
+                menuItem = uimenu('Parent',scopesMenuItem, ...
+                                  'Label',model.Display.Scopes{i}.Title, ...
+                                  'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
+                                  'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
+                                  'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
+                self.ShowHideChannelMenuItems(end+1)=menuItem;                       
             end
         end  % function
         
@@ -1021,25 +1085,25 @@ end  % public methods block
     end
     
     methods (Access = protected)
-        function addChannelLineToAxes_(self)
-            % Creates a new channel line, adding it to the end of self.LineGHs_.
-            iChannel=length(self.LineGHs_)+1;
-            newChannelName=self.Model.ChannelNames{iChannel};
-            
-            colorOrder = get(self.AxesGH_ ,'ColorOrder');
-            color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
-            
-            self.LineGHs_(iChannel) = ...
-                line('Parent', self.AxesGH_,...
-                     'XData', [],...
-                     'YData', [],...
-                     'ZData', [],...
-                     'Color', color,...
-                     'Tag', sprintf('%s::%s', self.Model.Tag, newChannelName));
-%                                      'LineWidth', 2,...
-%                      'Marker', self.Model.Marker,...
-%                      'LineStyle', self.Model.LineStyle,...
-        end  % function
+%         function addChannelLineToAxes_(self)
+%             % Creates a new channel line, adding it to the end of self.LineGHs_.
+%             iChannel=length(self.LineGHs_)+1;
+%             newChannelName=self.Model.ChannelNames{iChannel};
+%             
+%             colorOrder = get(self.AxesGH_ ,'ColorOrder');
+%             color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
+%             
+%             self.LineGHs_(iChannel) = ...
+%                 line('Parent', self.AxesGH_,...
+%                      'XData', [],...
+%                      'YData', [],...
+%                      'ZData', [],...
+%                      'Color', color,...
+%                      'Tag', sprintf('%s::%s', self.Model.Tag, newChannelName));
+% %                                      'LineWidth', 2,...
+% %                      'Marker', self.Model.Marker,...
+% %                      'LineStyle', self.Model.LineStyle,...
+%         end  % function
         
 %         function modelAxisLimitWasSet(self)
 %             self.updateReferenceLines();

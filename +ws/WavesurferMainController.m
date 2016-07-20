@@ -1023,22 +1023,22 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         end  % function
 %     end  % methods
         
-    methods (Access = public)
-        function scopeVisibleMenuItemTwiddled(self, source)
-            % Called when one of the scope menu items is checked or
-            % unchecked.
-            
-            % Which scope?
-            tag=get(source,'Tag');
-            scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
-            
-            % Make that change
-            self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
-            %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
-            %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
-            % should automatically uopdate now
-        end        
-    end
+%     methods (Access = public)
+%         function scopeVisibleMenuItemTwiddled(self, source)
+%             % Called when one of the scope menu items is checked or
+%             % unchecked.
+%             
+%             % Which scope?
+%             tag=get(source,'Tag');
+%             scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
+%             
+%             % Make that change
+%             self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
+%             %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
+%             %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
+%             % should automatically uopdate now
+%         end        
+%     end
     
 %     methods (Access = public)
 %         function removeScope(self, source)
@@ -1970,10 +1970,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end                        
         end
         
-        % Tools > Scopes submenu                
-        function ShowHideChannelMenuItemsActuated(self,source,event) %#ok<INUSD>
-            self.scopeVisibleMenuItemTwiddled(source);
-        end
+%         % Tools > Scopes submenu                
+%         function ShowHideChannelMenuItemsActuated(self,source,event) %#ok<INUSD>
+%             self.scopeVisibleMenuItemTwiddled(source);
+%         end
         
 %         % Tools > Scopes > Remove subsubmenu
 %         function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>

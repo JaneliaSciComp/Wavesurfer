@@ -1107,7 +1107,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
 
         function deleteMarkedAnalogChannels(self)
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
+            %channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case for when all channels are being deleted.
                 % Have to do this because we want all these properties to
@@ -1132,7 +1132,8 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
-            self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
+            wasDeleted = isToBeDeleted ;
+            self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
         end  % function
         
 %         function removeDigitalChannel(self,channelIndex)

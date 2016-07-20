@@ -4,7 +4,7 @@ classdef ScopePlot < ws.EventSubscriber
         Parent_  % a ws.DisplayFigure
         ScopeIndex_  % Index of this scope within the DisplayFigure, top scope is 1, next is 2, etc.
         AxesGH_  % HG handle to axes
-        LineGHs_ = zeros(1,0)  % row vector, the line graphics handles for each channel
+        LineGH_ % HG handle to trace line in the axes
         SetYLimTightToDataButtonGH_
         SetYLimTightToDataLockedButtonGH_
         SetYLimButtonGH_
@@ -35,7 +35,7 @@ classdef ScopePlot < ws.EventSubscriber
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
             %fprintf('ScopeFigure::delete()\n');
-            ws.deleteIfValidHGHandle(self.LineGHs_);
+            ws.deleteIfValidHGHandle(self.LineGH_);
             ws.deleteIfValidHGHandle(self.AxesGH_);            
         end  % function        
         
@@ -61,72 +61,7 @@ classdef ScopePlot < ws.EventSubscriber
             self.updateControlPropertiesImplementation_();
             self.updateControlEnablementImplementation_();
             self.layout_();
-        end
-                
-        function willSetModel_(self)            
-            % % clear the downsampled data
-            % self.XForPlotting_=zeros(0,1);
-            % self.YForPlotting_=zeros(0,0);
-
-            % Call the superclass method
-            willSetModel_@ws.MCOSFigure(self);
-
-            % Get the Model
-            model = self.Model ;            
-
-            % If model is nonempty, do some unsubscribing
-            if ~isempty(model) ,
-                % Unsubscribe from events in the model
-                %model.unsubscribeMeFromAll(self) ;
-
-                % Unsubsribe from events in the master model
-                display=model.Parent;
-                if ~isempty(display) && isvalid(display) ,
-                    wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) && isvalid(display) ,
-                        wavesurferModel.unsubscribeMeFromAll(self);
-                    end
-                end
-            end
-        end  % function
-        
-        function didSetModel_(self)
-            model = self.Model ;
-
-            % % reset the downsampled data
-            % if ~isempty(model) ,
-            %     nChannels=length(model.ChannelNames);
-            %     self.XForPlotting_=zeros(0,1);
-            %     self.YForPlotting_=zeros(0,nChannels);
-            % end
-
-            % Call the superclass method
-            didSetModel_@ws.MCOSFigure(self);
-
-            % Subscribe to some model events
-            if ~isempty(model) ,
-                model.subscribeMe(self,'Update','','update');
-                %model.subscribeMe(self,'UpdateXAxisLimits','','updateXAxisLimits');
-                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-                model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-                model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-                model.subscribeMe(self,'DataAdded','','modelDataAdded');
-                model.subscribeMe(self,'DataCleared','','modelDataCleared');
-                model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');
-                model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
-            end
-
-            % Subscribe to events in the master model
-            if ~isempty(model) ,
-                display=model.Parent;
-                if ~isempty(display) ,
-                    wavesurferModel=display.Parent;
-                    if ~isempty(wavesurferModel) ,
-                        wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                    end
-                end
-            end
-        end  % function
+        end                
     end  % protected methods block    
     
     methods
@@ -376,11 +311,14 @@ classdef ScopePlot < ws.EventSubscriber
                      'HandleVisibility','off', ...
                      'Box','on' );
             
-            % Add black to the front of the color order for the axes     
-            colorOrder = get(self.AxesGH_, 'ColorOrder');
-            colorOrder = [0 0 0; colorOrder];
-            set(self.AxesGH_, 'ColorOrder', colorOrder);
-                                                             
+            % Add the trace line, with no data for now                 
+            self.LineGH_(iChannel) = ...
+                line('Parent', self.AxesGH_,...
+                     'XData', [],...
+                     'YData', [],...
+                     'ZData', [],...
+                     'Color', self.Parent_.ColorOrder(1,:) );            
+                 
             % Y axis control buttons
             self.YZoomInButtonGH_ = ...
                 ws.uicontrol('Parent',self.Parent_.FigureGH, ...
@@ -425,21 +363,8 @@ classdef ScopePlot < ws.EventSubscriber
                              'Callback',@(source,event)(self.Parent_.controlActuated('SetYLimButtonGH',source,event,self.ScopeIndex_)));                      
         end  % function            
 
-        function updateControlsInExistance_(self)            
-            % Make it so we have the same number of lines as channels,
-            % adding/deleting them as needed
-            scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
-            nChannels = scopeModel.NChannels ;
-            currentLineGHs = self.LineGHs_ ;          
-            nLines= length(currentLineGHs);
-            if nLines>nChannels ,
-                delete(self.LineGHs_(nChannels+1:nLines));
-                self.LineGHs_(nChannels+1:nLines)=[];
-            elseif nLines<nChannels
-                for i=nLines+1:nChannels ,
-                    self.addChannelLineToAxes_();
-                end                
-            end
+        function updateControlsInExistance_(self)  %#ok<MANU>
+            % All controls are fixed, so nothing to do here.
         end  % function
         
         function updateControlPropertiesImplementation_(self)
@@ -503,11 +428,9 @@ classdef ScopePlot < ws.EventSubscriber
             set(self.AxesGH_,'ColorOrder',colorOrder);
 
             % Set the line colors
-            for iChannel = 1:length(self.LineGHs_)
-                lineGH = self.LineGHs_(iChannel) ;
-                color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
-                set(lineGH,'Color',color);
-            end
+            lineGH = self.LineGH_ ;
+            color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
+            set(lineGH,'Color',color);
 
             % Set the button colors
             set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
@@ -723,38 +646,13 @@ classdef ScopePlot < ws.EventSubscriber
     end  % public methods block
     
     methods (Access = protected)
-        function addChannelLineToAxes_(self)
-            % Creates a new channel line, adding it to the end of self.LineGHs_.
-            scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
-            iChannel=length(self.LineGHs_)+1;
-            newChannelName=scopeModel.ChannelNames{iChannel};
-            
-            colorOrder = get(self.AxesGH_ ,'ColorOrder');
-            color = colorOrder(scopeModel.ChannelColorIndex(iChannel), :);
-            
-            self.LineGHs_(iChannel) = ...
-                line('Parent', self.AxesGH_,...
-                     'XData', [],...
-                     'YData', [],...
-                     'ZData', [],...
-                     'Color', color,...
-                     'Tag', sprintf('%s::%s', scopeModel.Tag, newChannelName));
-%                                      'LineWidth', 2,...
-%                      'Marker', self.Model.Marker,...
-%                      'LineStyle', self.Model.LineStyle,...
-        end  % function
-        
-%         function modelAxisLimitWasSet(self)
-%             self.updateReferenceLines();
-%         end
-        
         function modelGenericVisualPropertyWasSet_(self)
             self.update();
         end  % function 
         
         function updateLineXDataAndYData_(self)
             scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
-            thisLineGH = self.LineGHs_ ;
+            thisLineGH = self.LineGH_ ;
             ws.setifhg(thisLineGH, 'XData', scopeModel.XData, 'YData', scopeModel.YData) ;
         end  % function
         
@@ -870,12 +768,12 @@ classdef ScopePlot < ws.EventSubscriber
 %         end  % function
 %     end
     
-    methods
-        function castOffAllAttachments(self)
-            self.unsubscribeFromAll() ;
-            %self.deleteFigureGH() ;
-        end
-    end
+%     methods
+%         function castOffAllAttachments(self)
+%             self.unsubscribeFromAll() ;
+%             %self.deleteFigureGH() ;
+%         end
+%     end
 
     methods (Static=true)
         function result=getWidthInPixels(ax)
@@ -885,54 +783,27 @@ classdef ScopePlot < ws.EventSubscriber
             pos=get(ax,'Position');
             result=pos(3);
             set(ax,'Units',savedUnits);            
-        end  % function
-        
-%         function r=ratioSubsampling(t,T_view,n_pels_view)
-%             % Computes r, a good ratio to use for subsampling data on time base t
-%             % for plotting in Spoke_main_plot plot, given that the x axis of
-%             % Spoke_main_plot spans T_view seconds.  Returns the empty matrix if no
-%             % subsampling is called for.
-%             n_t=length(t);
-%             if n_t==0
-%                 r=[];
-%             else
-%                 dt=(t(end)-t(1))/(n_t-1);
-%                 n_t_view=T_view/dt;
-%                 samples_per_pel=n_t_view/n_pels_view;
-%                 %if samples_per_pel>10  % original value
-%                 if samples_per_pel>2
-%                     %if samples_per_pel>1.2
-%                     % figure out how much we're going to subsample
-%                     samples_per_pel_want=2;  % original value
-%                     %samples_per_pel_want=1;
-%                     n_t_view_want=n_pels_view*samples_per_pel_want;
-%                     r=floor(n_t_view/n_t_view_want);
-%                 else
-%                     r=[];  % no need for resampling
-%                 end
-%             end
-%         end  % function
-        
+        end  % function        
     end  % static methods block
     
-    methods (Access = protected)
-        % Have to override with identical function text b/c of
-        % protected/protected horseshit
-        function setHGTagsToPropertyNames_(self)
-            % For each object property, if it's an HG object, set the tag
-            % based on the property name, and set other HG object properties that can be
-            % set systematically.
-            mc=metaclass(self);
-            propertyNames={mc.PropertyList.Name};
-            for i=1:length(propertyNames) ,
-                propertyName=propertyNames{i};
-                propertyThing=self.(propertyName);
-                if ~isempty(propertyThing) && all(ishghandle(propertyThing)) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
-                    % Set Tag
-                    set(propertyThing,'Tag',propertyName);                    
-                end
-            end
-        end  % function        
-    end  % protected methods block
+%     methods (Access = protected)
+%         % Have to override with identical function text b/c of
+%         % protected/protected horseshit
+%         function setHGTagsToPropertyNames_(self)
+%             % For each object property, if it's an HG object, set the tag
+%             % based on the property name, and set other HG object properties that can be
+%             % set systematically.
+%             mc=metaclass(self);
+%             propertyNames={mc.PropertyList.Name};
+%             for i=1:length(propertyNames) ,
+%                 propertyName=propertyNames{i};
+%                 propertyThing=self.(propertyName);
+%                 if ~isempty(propertyThing) && all(ishghandle(propertyThing)) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
+%                     % Set Tag
+%                     set(propertyThing,'Tag',propertyName);                    
+%                 end
+%             end
+%         end  % function        
+%     end  % protected methods block
     
 end

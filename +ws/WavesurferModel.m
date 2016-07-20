@@ -2381,9 +2381,9 @@ classdef WavesurferModel < ws.RootModel
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
         
-        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
+        function didDeleteAnalogInputChannels(self, wasDeleted)
             self.syncIsAIChannelTerminalOvercommitted_() ;            
-            self.Display.didDeleteAnalogInputChannels(nameOfRemovedChannels) ;
+            self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
