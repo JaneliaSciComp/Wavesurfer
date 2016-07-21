@@ -343,6 +343,7 @@ classdef FlyOnBall < ws.UserClass
          %       wsModel.Stimulation.DigitalOutputStateIfUntimed = ~ wsModel.Stimulation.DigitalOutputStateIfUntimed;
             end
             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
+                whichFigureHandle = [whichHeatmap{:} 'FigureHandle_'];
                 whichAxis = [whichHeatmap{:} 'Axis_'];
                 dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
                 maxDataHeatmap = max(dataForHeatmap(:));
@@ -350,7 +351,8 @@ classdef FlyOnBall < ws.UserClass
                 nanIndices = isnan(dataForHeatmap);
                 [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
                 dataForHeatmap(nanIndices) = maxDataHeatmap+0.1*abs(maxDataHeatmap);
-                axes(self.(whichAxis));
+              % axes(self.(whichAxis));
+              set(0,'CurrentFigure',self.(whichFigureHandle)); % sets current figure without bringing to front
                 imagesc(dataForHeatmap,[minDataHeatmap maxDataHeatmap]);
                 xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
                 ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
