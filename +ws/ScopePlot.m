@@ -1,6 +1,6 @@
 classdef ScopePlot < handle
     
-    properties
+    properties (Dependent=true)
         IsGridOn
     end
     
@@ -14,6 +14,8 @@ classdef ScopePlot < handle
         YZoomOutButtonGH_
         YScrollUpButtonGH_
         YScrollDownButtonGH_
+        XAxisLabelGH_
+        YAxisLabelGH_
     end
     
     methods
@@ -36,25 +38,25 @@ classdef ScopePlot < handle
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'String','+', ...
-                             'Callback',@(source,event)(parent.controlActuated('YZoomInButtonGH',source,event,isAnalog, channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YZoomInButtonGH',source,event,isAnalog,channelIndex)));
             self.YZoomOutButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'String','-', ...
-                             'Callback',@(source,event)(parent.controlActuated('YZoomOutButtonGH',source,event,isAnalog, channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YZoomOutButtonGH',source,event,isAnalog,channelIndex)));
             self.YScrollUpButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
-                             'Callback',@(source,event)(parent.controlActuated('YScrollUpButtonGH',source,event,isAnalog, channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YScrollUpButtonGH',source,event,isAnalog,channelIndex)));
             self.YScrollDownButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
-                             'Callback',@(source,event)(parent.controlActuated('YScrollDownButtonGH',source,event,isAnalog, channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YScrollDownButtonGH',source,event,isAnalog,channelIndex)));
             self.SetYLimTightToDataButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits tight to data', ....
-                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataButtonGH',source,event,isAnalog, channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataButtonGH',source,event,isAnalog,channelIndex)));
             % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
             % we want to do with this button when we change to
             % green-on-black mode.  Also, there's a checked menu item that
@@ -67,46 +69,55 @@ classdef ScopePlot < handle
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
-                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataLockedButtonGH',source,event,isAnalog, channelIndex)));                      
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataLockedButtonGH',source,event,isAnalog,channelIndex)));                      
             self.SetYLimButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits', ....
-                             'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH',source,event,isAnalog, channelIndex)));                      
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH',source,event,isAnalog,channelIndex)));                      
         end  % constructor
         
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
             %fprintf('ScopeFigure::delete()\n');
-            ws.deleteIfValidHGHandle(self.LineGH_);
-            ws.deleteIfValidHGHandle(self.AxesGH_);            
+            ws.deleteIfValidHGHandle(self.LineGH_) ;
+            ws.deleteIfValidHGHandle(self.AxesGH_) ;            
+            ws.deleteIfValidHGHandle(self.SetYLimTightToDataButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.SetYLimTightToDataLockedButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.SetYLimButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.YZoomInButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.YZoomOutButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.YScrollUpButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.YScrollDownButtonGH_) ;
+            ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
+            ws.deleteIfValidHGHandle(self.YAxisLabelGH_) ;
         end  % function        
         
-        function update(self,varargin)
-            % Called when the caller wants the figure to fully re-sync with the
-            % model, from scratch.  This may cause the figure to be
-            % resized, but this is always done in such a way that the
-            % upper-righthand corner stays in the same place.
-            self.updateImplementation_(varargin{:});
-        end        
+%         function update(self,varargin)
+%             % Called when the caller wants the figure to fully re-sync with the
+%             % model, from scratch.  This may cause the figure to be
+%             % resized, but this is always done in such a way that the
+%             % upper-righthand corner stays in the same place.
+%             self.updateImplementation_(varargin{:});
+%         end        
     end  % public methods block
     
-    methods (Access=protected)        
-        function updateImplementation_(self, isAnalog, channelIndex)
-            % This method should make sure the figure is fully synched with the
-            % model state after it is called.  This includes existance,
-            % placement, sizing, enablement, and properties of each control, and
-            % of the figure itself.
-
-            % This implementation should work in most cases, but can be overridden by
-            % subclasses if needed.
-            self.updateControlsInExistance_();
-            self.updateControlPropertiesImplementation_(isAnalog, channelIndex);
-            self.updateControlEnablementImplementation_(isAnalog, channelIndex);
-            self.layout_();
-        end                
-    end  % protected methods block    
+%     methods (Access=protected)        
+%         function updateImplementation_(self, isAnalog, channelIndex)
+%             % This method should make sure the figure is fully synched with the
+%             % model state after it is called.  This includes existance,
+%             % placement, sizing, enablement, and properties of each control, and
+%             % of the figure itself.
+% 
+%             % This implementation should work in most cases, but can be overridden by
+%             % subclasses if needed.
+%             self.updateControlsInExistance_();
+%             self.updateControlPropertiesImplementation_(isAnalog, channelIndex);
+%             self.updateControlEnablementImplementation_(isAnalog, channelIndex);
+%             self.layout_();
+%         end                
+%     end  % protected methods block    
     
     methods
 %         function set.Visible(self,newValue)
@@ -174,98 +185,57 @@ classdef ScopePlot < handle
 %             end
 %         end
         
-        function updateXAxisLimits(self,xl)
-            self.updateXAxisLimits_(xl);
-        end  % function
-        
-        function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.updateYAxisLimits_();
-        end  % function
-        
-        function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            %self.updateAreYLimitsLockedTightToData_();
-            %self.updateControlEnablement_();
-            self.update() ;
-        end  % function
-        
-        function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Redimension downsampled data, clearing the existing data in
-%             % the process
-%             nChannels=self.Model.NChannels;
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,nChannels);
-            
-            % Do other stuff
-            self.addChannelLineToAxes_();
-            self.update();
-        end  % function
+%         function updateXAxisLimits(self,xl)
+%             self.updateXAxisLimits_(xl);
+%         end  % function
+%         
+%         function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.updateYAxisLimits_();
+%         end  % function
+%         
+%         function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             %self.updateAreYLimitsLockedTightToData_();
+%             %self.updateControlEnablement_();
+%             self.update() ;
+%         end  % function
+%         
+%         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+% %             % Redimension downsampled data, clearing the existing data in
+% %             % the process
+% %             nChannels=self.Model.NChannels;
+% %             self.XForPlotting_=zeros(0,1);
+% %             self.YForPlotting_=zeros(0,nChannels);
+%             
+%             % Do other stuff
+%             self.addChannelLineToAxes_();
+%             self.update();
+%         end  % function
         
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
             xSpanInPixels=ws.ScopeAxes.getWidthInPixels(self.AxesGH_) ;
             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
         end
         
-        function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Need to pack up all the y data into a single array for
-%             % downsampling (should change things more globally to make this
-%             % unnecessary)
-%             x = self.Model.XData ;
-%             y = self.Model.YData ;
-%             %nScans = length(x) ;
-%             
-%             % This shouldn't ever happen, but just in case...
-%             if isempty(x) ,
-%                 return
-%             end
-%             
-%             % Figure out the downsampling ratio
-%             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-%             r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
-%             
-%             % get the current downsampled data
-%             xForPlottingOriginal=self.XForPlotting_;
-%             yForPlottingOriginal=self.YForPlotting_;
-%             
-%             % Trim off any that is beyond the left edge of the plotted data
-%             x0=x(1);  % this is the time of the first sample in the model's XData
-%             keep=(x0<=xForPlottingOriginal);
-%             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
-%             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
-%             
-%             % Get just the new data
-%             if isempty(xForPlottingOriginal)
-%                 xNew=x;
-%                 yNew=y;
-%             else                
-%                 isNew=(xForPlottingOriginal(end)<x);
-%                 xNew=x(isNew);
-%                 yNew=y(isNew);
-%             end
-%             
-%             % Downsample the new data
-%             [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
-%             
-%             % Concatenate old and new downsampled data, commit to self
-%             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
-%                                xForPlottingNew];
-%             self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
-%                                yForPlottingNew];
-
-            % Update the lines
-            self.updateLineXDataAndYData_();
-        end  % function
+        function result = getAxesWidthInPixels(self)
+            result = ws.ScopePlot.getWidthInPixels(self.AxesGH_) ;
+        end
         
-        function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            %fprintf('ScopeFigure::modelDataCleared()\n');
-            %nChannels=self.Model.NChannels;
-            %self.XForPlotting_=zeros(0,1);
-            %self.YForPlotting_=zeros(0,nChannels);                        
-            self.updateLineXDataAndYData_();                      
-        end  % function
+%         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             % Update the lines
+%             self.updateLineXDataAndYData_();
+%         end  % function
         
-        function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.update();
-        end  % function
+%         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             %fprintf('ScopeFigure::modelDataCleared()\n');
+%             %nChannels=self.Model.NChannels;
+%             %self.XForPlotting_=zeros(0,1);
+%             %self.YForPlotting_=zeros(0,nChannels);                        
+%             self.updateLineXDataAndYData_();                      
+%         end  % function
+%         
+%         function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.update();
+%         end  % function
 
         function setColorsAndIcons(self, controlForegroundColor, controlBackgroundColor, ...
                                          axesForegroundColor, axesBackgroundColor, ...
@@ -394,88 +364,88 @@ classdef ScopePlot < handle
 %             self.YScrollDownIcon_ = cdata ;
 %         end
 
-        function updateControlsInExistance_(self)  %#ok<MANU>
-            % All controls are fixed, so nothing to do here.
-        end  % function
-        
-        function updateControlPropertiesImplementation_(self, isAnalog, channelIndex)
-            % If there are issues with the model, just return
-            displayFigure = self.Parent_ ;
-            displayModel = displayFigure.Model ;            
-            
-            % Update the colors
-            controlBackgroundColor  = displayFigure.ControlBackgroundColor ;
-            controlForegroundColor = displayFigure.ControlForegroundColor ;
-            axesBackgroundColor = displayFigure.AxesBackgroundColor ;
-            axesForegroundColor = displayFigure.AxesForegroundColor ;
-            set(self.AxesGH_,'Color',axesBackgroundColor);
-            set(self.AxesGH_,'XColor',axesForegroundColor);
-            set(self.AxesGH_,'YColor',axesForegroundColor);
-            set(self.AxesGH_,'ZColor',axesForegroundColor);
-            set(self.AxesGH_,'ColorOrder',displayFigure.ColorOrder);
-
-            % Set the line color
-            set(self.LineGH_,'Color',displayFigure.TraceLineColor);
-
-            % Set the button colors
-            set(self.YZoomInButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
-            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
-            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
-            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
-            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
-            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
-            
-            % Set the button scroll up/down button images
-            yScrollUpIcon   = self.Parent_.YScrollUpIcon   ;
-            yScrollDownIcon = self.Parent_.YScrollDownIcon ;
-            yTightToDataIcon = self.Parent_.YTightToDataIcon ;
-            yTightToDataLockedIcon = self.Parent_.YTightToDataLockedIcon ;
-            set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
-            set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
-            set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
-            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
-            
-            % Update the axes grid on/off
-            isGridOn = displayModel.IsGridOn ;
-            set(self.AxesGH_, ...
-                'XGrid', ws.onIff(isGridOn), ...
-                'YGrid', ws.onIff(isGridOn) ...
-                );
-            
-            % Update the axis limits
-            self.updateXAxisLimits_();
-            self.updateYAxisLimits_(isAnalog, channelIndex);
-            
-            % Update the graphics objects to match the model
-            xlabel(self.AxesGH_,'Time (s)','Color',axesForegroundColor,'FontSize',10,'Interpreter','none');
-            self.updateYAxisLabel_(isAnalog, channelIndex, axesForegroundColor);
-            self.updateLineXDataAndYData_();
-        end  % function
-        
-        function updateControlEnablementImplementation_(self)
-            % Update the enablement of controls
-            if isempty(self.Model) || ~isvalid(self.Model) ,
-                return
-            end
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-            
-            onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
-            %set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
-            set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            %set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            %set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            %set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            %set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-        end  % function
+%         function updateControlsInExistance_(self)  %#ok<MANU>
+%             % All controls are fixed, so nothing to do here.
+%         end  % function
+%         
+%         function updateControlPropertiesImplementation_(self, isAnalog, channelIndex)
+%             % If there are issues with the model, just return
+%             displayFigure = self.Parent_ ;
+%             displayModel = displayFigure.Model ;            
+%             
+%             % Update the colors
+%             controlBackgroundColor  = displayFigure.ControlBackgroundColor ;
+%             controlForegroundColor = displayFigure.ControlForegroundColor ;
+%             axesBackgroundColor = displayFigure.AxesBackgroundColor ;
+%             axesForegroundColor = displayFigure.AxesForegroundColor ;
+%             set(self.AxesGH_,'Color',axesBackgroundColor);
+%             set(self.AxesGH_,'XColor',axesForegroundColor);
+%             set(self.AxesGH_,'YColor',axesForegroundColor);
+%             set(self.AxesGH_,'ZColor',axesForegroundColor);
+%             set(self.AxesGH_,'ColorOrder',displayFigure.ColorOrder);
+% 
+%             % Set the line color
+%             set(self.LineGH_,'Color',displayFigure.TraceLineColor);
+% 
+%             % Set the button colors
+%             set(self.YZoomInButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+%             set(self.YZoomOutButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+%             set(self.YScrollUpButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+%             set(self.YScrollDownButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+%             set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+%             set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+%             
+%             % Set the button scroll up/down button images
+%             yScrollUpIcon   = self.Parent_.YScrollUpIcon   ;
+%             yScrollDownIcon = self.Parent_.YScrollDownIcon ;
+%             yTightToDataIcon = self.Parent_.YTightToDataIcon ;
+%             yTightToDataLockedIcon = self.Parent_.YTightToDataLockedIcon ;
+%             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
+%             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
+%             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
+%             set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
+%             
+%             % Update the axes grid on/off
+%             isGridOn = displayModel.IsGridOn ;
+%             set(self.AxesGH_, ...
+%                 'XGrid', ws.onIff(isGridOn), ...
+%                 'YGrid', ws.onIff(isGridOn) ...
+%                 );
+%             
+%             % Update the axis limits
+%             self.updateXAxisLimits_();
+%             self.updateYAxisLimits_(isAnalog, channelIndex);
+%             
+%             % Update the graphics objects to match the model
+%             xlabel(self.AxesGH_,'Time (s)','Color',axesForegroundColor,'FontSize',10,'Interpreter','none');
+%             self.updateYAxisLabel_(isAnalog, channelIndex, axesForegroundColor);
+%             self.updateLineXDataAndYData_();
+%         end  % function
+%         
+%         function updateControlEnablementImplementation_(self)
+%             % Update the enablement of controls
+%             if isempty(self.Model) || ~isvalid(self.Model) ,
+%                 return
+%             end
+%             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
+%             
+%             onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
+%             %set(self.YLimitsMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);            
+%             set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             set(self.SetYLimTightToDataMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             %set(self.YZoomInMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             %set(self.YZoomOutMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             %set(self.YScrollUpMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%             %set(self.YScrollDownMenuItemGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+%         end  % function
     end
     
     methods
-        function layout(self, nScopesVisible, indexOfThisScopeAmongVisibleScopes)
+        function setPositionAndLayout(self, figurePosition, nScopesVisible, indexOfThisScopeAmongVisibleScopes)
             % This method should make sure all the controls are sized and placed
             % appropriately given the current model state.  
 
@@ -518,7 +488,6 @@ classdef ScopePlot < handle
             end
             
             % Get the current figure width, height
-            figurePosition = get(self.Parent_.FigureGH, 'Position') ;
             figureSize = figurePosition(3:4);
             figureWidth = figureSize(1) ;
             figureHeight = figureSize(2) ;
@@ -630,41 +599,82 @@ classdef ScopePlot < handle
         function setXAxisLimits(self, xl)
             set(self.AxesGH_, 'XLim', xl) ;
         end  % function                
+        
+        function setYAxisLimits(self, yl)
+            set(self.AxesGH_, 'YLim', yl) ;
+        end  % function                
+        
+        function setYAxisLabel(self, channelName, units, color)
+            self.clearYAxisLabel() ;
+            % set the new value
+            if isempty(units) ,
+                unitsString = 'pure' ;
+            else
+                unitsString = units ;
+            end
+            self.YAxisLabelGH_ = ylabel(self.AxesGH_,sprintf('%s (%s)',channelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
+        end  % function                
+        
+        function clearYAxisLabel(self)
+            if isempty(self.YAxisLabelGH_) ,
+                % nothing to do
+            else
+                ws.deleteIfValidHGHandle(self.YAxisLabelGH_) ;
+                self.YAxisLabelGH_ = [] ;
+            end
+        end  % function                
+        
+        function setXAxisLabel(self, color)
+            self.clearXAxisLabel() ;
+            % set the new value
+            self.XAxisLabelGH_ = ylabel(self.AxesGH_,sprintf('Time (s)'),'Color',color,'FontSize',10,'Interpreter','none');
+        end  % function                
+        
+        function clearXAxisLabel(self)
+            if isempty(self.XAxisLabelGH_) ,
+                % nothing to do
+            else
+                ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
+                self.XAxisLabelGH_ = [] ;
+            end
+        end  % function                
+        
+        
     end  % public methods block
     
     methods (Access = protected)
-        function modelGenericVisualPropertyWasSet_(self)
-            self.update();
-        end  % function 
+%         function modelGenericVisualPropertyWasSet_(self)
+%             self.update();
+%         end  % function 
         
-        function updateYAxisLabel_(self,color)
-            % Updates the y axis label handle graphics to match the model state
-            % and that of the Acquisition subsystem.
-            %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
-            if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
-            else
-                firstChannelName=self.Model.ChannelNames{1};
-                %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
-                %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
-                units=self.Model.YUnits;
-                if isempty(units) ,
-                    unitsString = 'pure' ;
-                else
-                    unitsString = units ;
-                end
-                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
-            end
-        end  % function        
-
-        function updateYAxisLimits_(self)
-            % Update the axes limits to match those in the model
-            if isempty(self.Model) || ~isvalid(self.Model) ,
-                return
-            end
-            ylimInModel=self.Model.YLim;
-            set(self.AxesGH_, 'YLim', ylimInModel);
-        end  % function        
+%         function updateYAxisLabel_(self,color)
+%             % Updates the y axis label handle graphics to match the model state
+%             % and that of the Acquisition subsystem.
+%             %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
+%             if self.Model.NChannels==0 ,
+%                 ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
+%             else
+%                 firstChannelName=self.Model.ChannelNames{1};
+%                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
+%                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
+%                 units=self.Model.YUnits;
+%                 if isempty(units) ,
+%                     unitsString = 'pure' ;
+%                 else
+%                     unitsString = units ;
+%                 end
+%                 ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
+%             end
+%         end  % function        
+% 
+%         function updateYAxisLimits_(self)
+%             % Update the axes limits to match those in the model
+%             if isempty(self.Model) || ~isvalid(self.Model) ,
+%                 return
+%             end
+%             ylimInModel=self.Model.YLim;
+%             set(self.AxesGH_, 'YLim', ylimInModel);
+%         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)
 %             % Update the axes limits to match those in the model

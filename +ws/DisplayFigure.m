@@ -159,6 +159,15 @@ classdef DisplayFigure < ws.MCOSFigure
             self.ScopePlots_ = [] ;  % not really necessary
         end  % function
         
+        function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+            if isempty(self.ScopePlots) ,
+                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+            else
+                xSpanInPixels=self.ScopePlots(1).getAxesWidthInPixels() ;
+            end
+            self.Model.hereIsXSpanInPixels(xSpanInPixels) ;
+        end
+        
 %         function set(self,propName,value)
 %             % Override MCOSFigure set to catch XLim, YLim
 %             if strcmpi(propName,'XLim') ,

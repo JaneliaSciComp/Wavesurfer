@@ -41,6 +41,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
+        XSpanInPixels_
         XData_
         YData_  % analog and digital together, all as doubles, but only for the *active* channels
     end
@@ -76,6 +77,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function result = get.NScopes(self)
             result = length(self.IsAnalogChannelDisplayed_) + length(self.IsDigitalChannelDisplayed_) ;
         end
+        
+        function hereIsXSpanInPixels(self, xSpanInPixels)
+            self.XSpanInPixels_ = xSpanInPixels ;
+        end        
         
         function value = get.UpdateRate(self)
             value = self.UpdateRate_;
