@@ -11,35 +11,45 @@ classdef DisplayFigure < ws.MCOSFigure
 %         YLim
 %     end
 
-    properties (Dependent=true)
-        YScrollUpIcon
-        YScrollDownIcon 
-        YTightToDataIcon 
-        YTightToDataLockedIcon 
-        ColorOrder
-        ControlForegroundColor
-        ControlBackgroundColor
-    end
+%     properties (Dependent=true)
+%         YScrollUpIcon
+%         YScrollDownIcon 
+%         YTightToDataIcon 
+%         YTightToDataLockedIcon 
+%         ControlForegroundColor
+%         ControlBackgroundColor
+%         AxesForegroundColor
+%         AxesBackgroundColor
+%         TraceLineColor
+%     end
 
     properties (Access = protected)
-        ScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
+        AnalogScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
+        DigitalScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
                 
-        ViewMenuGH_
-        InvertColorsMenuItemGH_
-        ShowGridMenuItemGH_
-        DoShowButtonsMenuItemGH_
+        ViewMenu_
+        InvertColorsMenuItem_
+        ShowGridMenuItem_
+        DoShowButtonsMenuItem_
 
-        ChannelsMenuGH_
-        AnalogChannelMenuItemGHs_
-        DigitalChannelMenuItemGHs_
+        ChannelsMenu_
+        AnalogChannelMenuItems_
+        DigitalChannelMenuItems_
         
-        YScrollUpIcon_ 
-        YScrollDownIcon_ 
-        YTightToDataIcon_ 
-        YTightToDataLockedIcon_ 
-        ColorOrder_
-        ControlForegroundColor_
-        ControlBackgroundColor_
+        NormalYScrollUpIcon_ 
+        NormalYScrollDownIcon_ 
+        NormalYTightToDataIcon_ 
+        NormalYTightToDataLockedIcon_ 
+        
+%         YScrollUpIcon_ 
+%         YScrollDownIcon_ 
+%         YTightToDataIcon_ 
+%         YTightToDataLockedIcon_ 
+%         ControlForegroundColor_
+%         ControlBackgroundColor_
+%         AxesForegroundColor_
+%         AxesBackgroundColor_
+%         TraceLineColor_
     end    
     
 %     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
@@ -71,13 +81,13 @@ classdef DisplayFigure < ws.MCOSFigure
             % Load in the needed icons from disk
             wavesurferDirName=fileparts(which('wavesurfer'));
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
-            self.YScrollUpIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
+            self.NormalYScrollUpIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
-            self.YScrollDownIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            self.NormalYScrollDownIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
-            self.YTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
+            self.NormalYTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
-            self.YTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            self.NormalYTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 
             % Create the widgets that will persist through the life of the
             % figure
@@ -160,33 +170,41 @@ classdef DisplayFigure < ws.MCOSFigure
 %             end
 %         end  % function
 
-        function result = get.YScrollUpIcon(self)
-            result = self.YScrollUpIcon_ ;
-        end
-        
-        function result = get.YScrollDownIcon(self)
-            result = self.YScrollDownIcon_ ;
-        end
-        
-        function result = get.YTightToDataIcon(self)
-            result = self.YTightToDataIcon_ ;
-        end
-        
-        function result = get.YTightToDataLockedIcon(self)
-            result = self.YTightToDataLockedIcon_ ;
-        end
-
-        function result = get.ColorOrder(self)
-            result = self.ColorOrder_ ;
-        end
-        
-        function result = get.ControlForegroundColor(self)
-            result = self.ControlForegroundColor_ ;
-        end
-        
-        function result = get.ControlBackgroundColor(self)
-            result = self.ControlBackgroundColor_ ;
-        end
+%         function result = get.YScrollUpIcon(self)
+%             result = self.YScrollUpIcon_ ;
+%         end
+%         
+%         function result = get.YScrollDownIcon(self)
+%             result = self.YScrollDownIcon_ ;
+%         end
+%         
+%         function result = get.YTightToDataIcon(self)
+%             result = self.YTightToDataIcon_ ;
+%         end
+%         
+%         function result = get.YTightToDataLockedIcon(self)
+%             result = self.YTightToDataLockedIcon_ ;
+%         end
+% 
+%         function result = get.TraceColorLine(self)
+%             result = self.TraceColorLine_ ;
+%         end
+%         
+%         function result = get.ControlForegroundColor(self)
+%             result = self.ControlForegroundColor_ ;
+%         end
+%         
+%         function result = get.ControlBackgroundColor(self)
+%             result = self.ControlBackgroundColor_ ;
+%         end
+%         
+%         function result = get.AxesForegroundColor(self)
+%             result = self.AxesForegroundColor_ ;
+%         end
+%         
+%         function result = get.AxesBackgroundColor(self)
+%             result = self.AxesBackgroundColor_ ;
+%         end
 end  % public methods block
     
     methods (Access=protected)        
@@ -599,77 +617,77 @@ end  % public methods block
 %                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
 
             % Add the channels menu
-            self.ChannelsMenuGH_ = ...
+            self.ChannelsMenu_ = ...
                 uimenu('Parent',self.FigureGH, ...
                        'Label','Channels');
 
             % Add a menu, and a single menu item
-            self.ViewMenuGH_ = ...
+            self.ViewMenu_ = ...
                 uimenu('Parent',self.FigureGH, ...
                        'Label','View');
-%             self.YScrollUpMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.YScrollUpMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Scroll Up Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YScrollUpMenuItemGH',source,event));            
-%             self.YScrollDownMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.YScrollDownMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Scroll Down Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YScrollDownMenuItemGH',source,event));                               
 % 
-%             self.SetYLimTightToDataMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.SetYLimTightToDataMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Y Limits Tight to Data', ...
 %                        'Callback',@(source,event)self.controlActuated('SetYLimTightToDataMenuItemGH',source,event));            
-%             self.SetYLimTightToDataLockedMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.SetYLimTightToDataLockedMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Lock Y Limits Tight to Data', ...
 %                        'Callback',@(source,event)self.controlActuated('SetYLimTightToDataLockedMenuItemGH',source,event));            
 %                    
-%             self.YZoomInMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.YZoomInMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Zoom In Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YZoomInMenuItemGH',source,event));            
-%             self.YZoomOutMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.YZoomOutMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Zoom Out Y-Axis', ...
 %                        'Callback',@(source,event)self.controlActuated('YZoomOutMenuItemGH',source,event));            
-%             self.YLimitsMenuItemGH_ = ...
-%                 uimenu('Parent',self.ViewMenuGH_, ...
+%             self.YLimitsMenuItem_ = ...
+%                 uimenu('Parent',self.ViewMenu_, ...
 %                        'Label','Y Limits...', ...
 %                        'Callback',@(source,event)self.controlActuated('YLimitsMenuItemGH',source,event));            
-            self.InvertColorsMenuItemGH_ = ...
-                uimenu('Parent',self.ViewMenuGH_, ...
+            self.InvertColorsMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
                        'Label','Green On Black', ...
                        'Callback',@(source,event)self.controlActuated('InvertColorsMenuItemGH',source,event));            
-            self.ShowGridMenuItemGH_ = ...
-                uimenu('Parent',self.ViewMenuGH_, ...
+            self.ShowGridMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
-            self.DoShowButtonsMenuItemGH_ = ...
-                uimenu('Parent',self.ViewMenuGH_, ...
+            self.DoShowButtonsMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
                        'Label','Show Buttons', ...
                        'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
                                       
 %             % Y axis control buttons
-%             self.YZoomInButtonGH_ = ...
+%             self.YZoomInButton_ = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'String','+', ...
 %                           'Callback',@(source,event)(self.controlActuated('YZoomInButtonGH',source,event)));
-%             self.YZoomOutButtonGH_ = ...
+%             self.YZoomOutButton_ = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'String','-', ...
 %                           'Callback',@(source,event)(self.controlActuated('YZoomOutButtonGH',source,event)));
-%             self.YScrollUpButtonGH_ = ...
+%             self.YScrollUpButton_ = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'Callback',@(source,event)(self.controlActuated('YScrollUpButtonGH',source,event)));
-%             self.YScrollDownButtonGH_ = ...
+%             self.YScrollDownButton_ = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'Callback',@(source,event)(self.controlActuated('YScrollDownButtonGH',source,event)));
-%             self.SetYLimTightToDataButtonGH_ = ...
+%             self.SetYLimTightToDataButton_ = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'TooltipString', 'Set y-axis limits tight to data', ....
@@ -682,7 +700,7 @@ end  % public methods block
 %             % look toggled after she presses it.  I think it should be OK
 %             % --- sometimes it's hard to tell even when a togglebutton is
 %             % toggled.
-%             self.SetYLimTightToDataLockedButtonGH_ = ...
+%             self.SetYLimTightToDataLockedButton_ = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
 %                           'Style','pushbutton', ...
 %                           'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
@@ -708,46 +726,21 @@ end  % public methods block
             end
             
             % Update the Channels menu
-            self.updateScopeMenu_() ;
+            self.updateChannelsMenu_() ;
         end  % function
 
-        function updateScopeMenu_(self,broadcaster,eventName,propertyName,source,event)  %#ok<INUSD>            
+        function updateChannelsMenu_(self)
             % Update the scope menu match the model state
-            import ws.onIff
             
-            % A typical structure of the menus under the Scopes menu item:
+            % Delete all the menu items in the Channels menu
+            ws.deleteIfValidHGHandle(self.AnalogChannelMenuItems_);
+            ws.deleteIfValidHGHandle(self.DigitalChannelMenuItems_);
+            self.AnalogChannelMenuItems_ = [] ;
+            self.DigitalChannelMenuItems_ = [] ;
+                        
             % 
-            %   Scopes > Remove > Remove "Channel V1"
-            %                     Remove "Channel V2"
-            %                     Remove "Channel I1"
-            %                     Remove "Channel I2"
-            %            (separator)
-            %            Channel V1 (checkable)
-            %            Channel V2 (checkable)
-            %            Channel I1 (checkable)
-            %            Channel I2 (checkable)
-            %
-            % I.e. if the Remove item is unexpanded, it looks like:
-            %
-            %   Scopes > Remove >
-            %            (separator)
-            %            Channel V1 (checkable)
-            %            Channel V2 (checkable)
-            %            Channel I1 (checkable)
-            %            Channel I2 (checkable)
-            
-            % Delete all the menu items in the Scopes submenu except the
-            % first item, which is the "Remove" item.
-            ws.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
-            self.ShowHideChannelMenuItems=[];
-            
-            % Delete all the items in the "Remove" subsubmenu
-            ws.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
-            self.RemoveSubsubmenuItems=[];
-            
-            % 
-            % At this point, the Scopes submenu has been reduced to a blank
-            % slate, with only the single "Remove" item
+            % At this point, the Channels menu has been reduced to a blank
+            % slate
             %
             
             % If no model, can't really do much, so return
@@ -758,40 +751,34 @@ end  % public methods block
             
             % Get the HG object representing the "Scopes" item in the
             % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
-            scopesMenuItem = self.ChannelsMenuGH_ ;
-            %removeItem=self.RemoveMenuItem;
-            
-            % Set the enablement of the Scopes menu item
-            isIdle=isequal(model.State,'idle');
-            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            channelsMenu = self.ChannelsMenu_ ;
             
             % Set the Visibility of the Remove item in the Scope submenu
             %set(removeItem,'Visible',onIff(model.Display.NScopes>0));
             
-%             % For each ScopeModel, create a menu item to remove the
-%             % scope, with an appropriate command binding, and add it to
-%             % the Remove subsubmenu.
-%             for i = 1:model.Display.NScopes ,
-%                 menuItem = uimenu('Parent',removeItem, ...
-%                                   'Label',sprintf('Remove %s',model.Display.Scopes{i}.Title), ...
-%                                   'Tag',sprintf('RemoveSubsubmenuItems(%02d)',i), ...
-%                                   'Callback',@(source,event)(self.controlActuated('RemoveSubsubmenuItems',source,event)));
-%                 %if i==1 ,
-%                 %    set(menuItem,'Separator','on');
-%                 %end
-%                 self.RemoveSubsubmenuItems(end+1)=menuItem;
-%             end
+            % Add a menu item for each AI channel
+            aiChannelNames = self.Model.Parent.Acquisition.AnalogChannelNames ;
+            for i = 1:length(aiChannelNames) ,
+                menuItem = uimenu('Parent', channelsMenu, ...
+                                  'Label', aiChannelNames{i}, ...
+                                  'Tag', sprintf('AnalogChannelMenuItem %d',i), ...
+                                  'Checked', ws.onIff(model.IsAnalogChannelDisplayed(i)), ...
+                                  'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event)));
+                self.AnalogChannelMenuItems_ = horzcat(self.AnalogChannelMenuItems_, menuItem) ;
+            end
             
-            % For each ScopeModel, create a checkable menu item to
-            % show/hide the scope, with an appropriate command binding, and add it to
-            % the Scopes submenu.
-            for i = 1:model.Display.NScopes ,
-                menuItem = uimenu('Parent',scopesMenuItem, ...
-                                  'Label',model.Display.Scopes{i}.Title, ...
-                                  'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
-                                  'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
-                                  'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
-                self.ShowHideChannelMenuItems(end+1)=menuItem;                       
+            % Add a menu item for each DI channel
+            diChannelNames = self.Model.Parent.Acquisition.DigitalChannelNames ;
+            for i = 1:length(diChannelNames) ,
+                menuItem = uimenu('Parent', channelsMenu, ...
+                                  'Label', diChannelNames{i}, ...
+                                  'Tag', sprintf('DigitalChannelMenuItem %d',i), ...
+                                  'Checked', ws.onIff(model.IsDigitalChannelDisplayed(i)), ...
+                                  'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event)));
+                if i==1 ,
+                    set(menuItem, 'Separator', 'on') ;
+                end
+                self.DigitalChannelMenuItems_ = horzcat(self.DigitalChannelMenuItems_, menuItem) ;
             end
         end  % function
         
@@ -804,124 +791,86 @@ end  % public methods block
             
 %             % Update the togglebutton
 %             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;           
-%             set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
+%             set(self.SetYLimTightToDataLockedMenuItem_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
 
             % Update the Show Grid togglemenu
             isGridOn = self.Model.IsGridOn ;
-            set(self.ShowGridMenuItemGH_,'Checked',ws.onIff(isGridOn));
+            set(self.ShowGridMenuItem_,'Checked',ws.onIff(isGridOn));
 
             % Update the Invert Colors togglemenu
             areColorsNormal = self.Model.AreColorsNormal ;
-            set(self.InvertColorsMenuItemGH_,'Checked',ws.onIff(~areColorsNormal));
+            set(self.InvertColorsMenuItem_,'Checked',ws.onIff(~areColorsNormal));
 
             % Update the Do Show Buttons togglemenu
             doShowButtons = self.Model.DoShowButtons ;
-            set(self.DoShowButtonsMenuItemGH_,'Checked',ws.onIff(doShowButtons));
+            set(self.DoShowButtonsMenuItem_,'Checked',ws.onIff(doShowButtons));
 
-            % Update the colors
+            % Compute the colors
             areColorsNormal = self.Model.AreColorsNormal ;
             defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
-            controlBackground  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
-            controlForeground = ws.fif(areColorsNormal,'k','w') ;
+            controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
             figureBackground = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             set(self.FigureGH,'Color',figureBackground);
-%             axesBackground = ws.fif(areColorsNormal,'w','k') ;
-%             set(self.AxesGH_,'Color',axesBackground);
-%             axesForeground = ws.fif(areColorsNormal,'k','g') ;
-%             set(self.AxesGH_,'XColor',axesForeground);
-%             set(self.AxesGH_,'YColor',axesForeground);
-%             set(self.AxesGH_,'ZColor',axesForeground);
+            axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
+            axesForegroundColor = ws.fif(areColorsNormal,'k','g') ;
+            traceLineColor = ws.fif(areColorsNormal,'b','w') ;
+
+            % Compute the icons
             if areColorsNormal ,
-                colorOrder = ...
-                    [      0                         0                         0  ; ...
-                           0                         0                         1  ; ...
-                           0                       0.5                         0  ; ...
-                           1                         0                         0  ; ...
-                           0                      0.75                      0.75  ; ...
-                        0.75                         0                      0.75  ; ...
-                        0.75                      0.75                         0  ; ...
-                        0.25                      0.25                      0.25  ] ;
+                yScrollUpIcon   = self.NormalYScrollUpIcon_   ;
+                yScrollDownIcon = self.NormalYScrollDownIcon_ ;
+                yTightToDataIcon = self.NormalYTightToDataIcon_ ;
+                yTightToDataLockedIcon = self.NormalYTightToDataLockedIcon_ ;
             else
-                colorOrder = ...
-                    [      1                         1                         1  ; ...
-                           0                       0.5                         1  ; ...
-                           0                         1                         0  ; ...
-                           1                         0                         1  ; ...
-                           0                         1                         1  ; ...
-                        0.75                         0                      0.75  ; ...
-                           1                         1                         0  ; ...
-                        0.75                      0.75                      0.75  ] ;
-                
-            end
-            
-            % Set the properties that are made public for the ScopePlots to
-            % use
-            self.ControlForegroundColor_ = controlForeground ;
-            self.ControlBackgroundColor_ = controlBackground ;
-            
-            self.ColorOrder_ = colorOrder ;  % this will be used by the ScopePlots, via the ColorOrder public property
-            %set(self.AxesGH_,'ColorOrder',colorOrder);
+                yScrollUpIcon   = 1-self.NormalYScrollUpIcon_   ;  % RGB images, so this inverts them, leaving nan's alone
+                yScrollDownIcon = 1-self.NormalYScrollDownIcon_ ;                
+                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataIcon_) ;  
+                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataLockedIcon_) ;
+            end                
 
-%             % Set the line colors
-%             for iChannel = 1:length(self.LineGHs_)
-%                 lineGH = self.LineGHs_(iChannel) ;
-%                 color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
-%                 set(lineGH,'Color',color);
-%             end
+            % Determine the common x-axis limits
+            xl = self.Model.XOffset + [0 self.Model.XSpan] ;
 
-            % update the individual plots
-            nScopePlots = length(self.ScopePlots_) ;
-            for i=1:nScopePlots ,
-                self.ScopePlots_(i).updateControlProperties() ;
+            % Get the y-axis limits for all analog channels
+            yLimitsPerAnalogChannel = self.Model.YLimitsPerAnalogChannel ;
+
+            % Update the individual plot colors and icons
+            for i=1:length(self.AnalogScopePlots_) ,
+                thisPlot = self.AnalogScopePlots_(i) ;
+                thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                           axesForegroundColor, axesBackgroundColor, ...
+                                           traceLineColor, ...
+                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon) ;
+                thisPlot.IsGridOn = isGridOn ;                       
+                thisPlot.setXAxisLimits(xl) ;
+                thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,i)') ;
             end
-            
-%             % Set the button colors
-%             set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-%             set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-%             set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-%             set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-%             set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-%             set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-            
-%             % Set the button scroll up/down button images
-%             if areColorsNormal ,
-%                 yScrollUpIcon   = persistentYScrollUpIcon   ;
-%                 yScrollDownIcon = persistentYScrollDownIcon ;
-%                 yTightToDataIcon = persistentYTightToDataIcon ;
-%                 yTightToDataLockedIcon = persistentYTightToDataLockedIcon ;
-%             else
-%                 yScrollUpIcon   = 1-persistentYScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
-%                 yScrollDownIcon = 1-persistentYScrollDownIcon ;                
-%                 yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataIcon) ;  
-%                 yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(persistentYTightToDataLockedIcon) ;
-%             end                
-%             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
-%             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
-%             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
-%             set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
-            
-%             % Update the axes grid on/off
-%             set(self.AxesGH_, ...
-%                 'XGrid', ws.onIff(isGridOn), ...
-%                 'YGrid', ws.onIff(isGridOn) ...
-%                 );
-            
-            % Update the axis limits
-            self.updateXAxisLimits_();
-            self.updateYAxisLimits_();
-            
-            self.updateAxisLabels_()
-            % Update the graphics objects to match the model
-            %xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
-            %self.updateYAxisLabel_(axesForeground);
-            self.updateLineXDataAndYData_();
+            for i=1:length(self.DigitalScopePlots_) ,
+                thisPlot = self.DigitalScopePlots_(i) ;
+                thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                           axesForegroundColor, axesBackgroundColor, ...
+                                           traceLineColor, ...
+                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon) ;
+                thisPlot.IsGridOn = isGridOn ;                       
+                thisPlot.setXAxisLimits(xl) ;
+                thisPlot.setYAxisLimits([-0.05 1.05]) ;
+            end
+                                    
+%             self.updateAxisLabels_()
+%             % Update the graphics objects to match the model
+%             %xlabel(self.Axes_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
+%             %self.updateYAxisLabel_(axesForeground);
+%             self.updateLineXDataAndYData_();
         end  % function
         
         function updateControlEnablementImplementation_(self)
             % Update the enablement of controls
-            nScopePlots = length(self.ScopePlots_) ;
-            for i=1:nScopePlots ,
-                self.ScopePlots_(i).updateControlEnablement() ;
+            for i=1:length(self.AnalogScopePlots_) ,
+                self.AnalogScopePlots_(i).updateControlEnablement(true, i) ;
+            end
+            for i=1:length(self.DigitalScopePlots_) ,
+                self.DigitalScopePlots_(i).updateControlEnablement(false, i) ;
             end
         end  % function
         
@@ -1036,19 +985,19 @@ end  % public methods block
 %             % Update the axes position
 %             axesXOffset = leftMargin ;
 %             axesYOffset = bottomMargin ;
-%             set(self.AxesGH_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
+%             set(self.Axes_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
 %             
 %             % the zoom buttons
 %             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
 %             zoomOutButtonX=yRangeButtonsX;
 %             zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
-%             set(self.YZoomOutButtonGH_, ...
+%             set(self.YZoomOutButton_, ...
 %                 'Visible',ws.onIff(doShowButtons) , ...
 %                 'Position',[zoomOutButtonX zoomOutButtonY ...
 %                             yRangeButtonSize yRangeButtonSize]);
 %             zoomInButtonX=yRangeButtonsX;
 %             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
-%             set(self.YZoomInButtonGH_, ...
+%             set(self.YZoomInButton_, ...
 %                 'Visible',ws.onIff(doShowButtons) , ...
 %                 'Position',[zoomInButtonX zoomInButtonY ...
 %                             yRangeButtonSize yRangeButtonSize]);
@@ -1056,13 +1005,13 @@ end  % public methods block
 %             % the scroll buttons
 %             scrollUpButtonX=yRangeButtonsX;
 %             scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
-%             set(self.YScrollUpButtonGH_, ...
+%             set(self.YScrollUpButton_, ...
 %                 'Visible',ws.onIff(doShowButtons) , ...
 %                 'Position',[scrollUpButtonX scrollUpButtonY ...
 %                             yRangeButtonSize yRangeButtonSize]);
 %             scrollDownButtonX=yRangeButtonsX;
 %             scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
-%             set(self.YScrollDownButtonGH_, ...
+%             set(self.YScrollDownButton_, ...
 %                 'Visible',ws.onIff(doShowButtons) , ...
 %                 'Position',[scrollDownButtonX scrollDownButtonY ...
 %                             yRangeButtonSize yRangeButtonSize]);
@@ -1071,12 +1020,12 @@ end  % public methods block
 %             zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
 %             zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
 %             setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
-%             set(self.SetYLimTightToDataButtonGH_, ...
+%             set(self.SetYLimTightToDataButton_, ...
 %                 'Visible',ws.onIff(doShowButtons) , ...
 %                 'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
 %                             yRangeButtonSize yRangeButtonSize]);
 %             setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
-%             set(self.SetYLimTightToDataLockedButtonGH_, ...
+%             set(self.SetYLimTightToDataLockedButton_, ...
 %                 'Visible',ws.onIff(doShowButtons) , ...
 %                 'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
 %                             yRangeButtonSize yRangeButtonSize]);            
@@ -1090,11 +1039,11 @@ end  % public methods block
 %             iChannel=length(self.LineGHs_)+1;
 %             newChannelName=self.Model.ChannelNames{iChannel};
 %             
-%             colorOrder = get(self.AxesGH_ ,'ColorOrder');
+%             colorOrder = get(self.Axes_ ,'ColorOrder');
 %             color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
 %             
 %             self.LineGHs_(iChannel) = ...
-%                 line('Parent', self.AxesGH_,...
+%                 line('Parent', self.Axes_,...
 %                      'XData', [],...
 %                      'YData', [],...
 %                      'ZData', [],...
@@ -1114,12 +1063,30 @@ end  % public methods block
         end  % function 
         
         function updateLineXDataAndYData_(self)
-            for i = 1:length(self.ScopePlots_) ,
-                self.ScopePlots_(i).updateLineXDataAndYData_() ;
+            xData = self.Model.XData ;
+            yData = self.Model.YData ;            
+            acq = self.Model.Parent.Acquistion ;
+            isAIChannelActive = acq.IsAnalogChannelActive ;
+            activeChannelIndex = 0 ;
+            for aiChannelIndex = 1:length(self.AnalogScopePlots_) ,
+                if isAIChannelActive(aiChannelIndex) ,
+                    activeChannelIndex = activeChannelIndex + 1 ;
+                    yDataForThisChannel = yData(:,activeChannelIndex) ;
+                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData_(xData, yDataForThisChannel) ;
+                else
+                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData_([],[]) ;
+                end
             end
-            %model = self.Model ;            
-            %thisLineGH = self.LineGHs_ ;
-            %ws.setifhg(thisLineGH, 'XData', model.XData, 'YData', model.YData) ;
+            isDIChannelActive = acq.IsDigitalChannelActive ;
+            for diChannelIndex = 1:length(self.DigitalScopePlots_) ,
+                if isDIChannelActive(diChannelIndex) ,
+                    activeChannelIndex = activeChannelIndex + 1 ;
+                    yDataForThisChannel = yData(:,activeChannelIndex) ;
+                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData_(xData, yDataForThisChannel) ;
+                else
+                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData_([],[]) ;
+                end
+            end
         end  % function
 
         function updateAxisLabels_(self,axisForegroundColor)
@@ -1127,7 +1094,7 @@ end  % public methods block
                 self.ScopePlots_(i).updateAxisLabels_(axisForegroundColor) ;
             end            
 %             if self.Model.NChannels==0 ,
-%                 ylabel(self.AxesGH_,'Signal','Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
+%                 ylabel(self.Axes_,'Signal','Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
 %             else
 %                 firstChannelName=self.Model.ChannelNames{1};
 %                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
@@ -1138,16 +1105,16 @@ end  % public methods block
 %                 else
 %                     unitsString = units ;
 %                 end
-%                 ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
+%                 ylabel(self.Axes_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
 %             end
         end  % function
         
         function updateYAxisLabel_(self,color)
             % Updates the y axis label handle graphics to match the model state
             % and that of the Acquisition subsystem.
-            %set(self.AxesGH_,'YLim',self.YOffset+[0 self.YRange]);
+            %set(self.Axes_,'YLim',self.YOffset+[0 self.YRange]);
             if self.Model.NChannels==0 ,
-                ylabel(self.AxesGH_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
+                ylabel(self.Axes_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
             else
                 firstChannelName=self.Model.ChannelNames{1};
                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
@@ -1158,7 +1125,7 @@ end  % public methods block
                 else
                     unitsString = units ;
                 end
-                ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
+                ylabel(self.Axes_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
             end
         end  % function
         
@@ -1167,11 +1134,13 @@ end  % public methods block
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            xlimInModel=self.Model.XOffset + [0 self.Model.XSpan] ;
-            for i = 1:length(self.ScopePlots_) ,
-                self.ScopePlots_(i).updateXaxisLimits_(xlimInModel) ;
+            xl = self.Model.XOffset + [0 self.Model.XSpan] ;
+            for i = 1:length(self.AnalogScopePlots_) ,
+                self.AnalogScopePlots_(i).setXAxisLimits(xl) ;
             end
-            %set(self.AxesGH_, 'XLim', xlimInModel) ;
+            for i = 1:length(self.DigitalScopePlots_) ,
+                self.DigitalScopePlots_(i).setXAxisLimits(xl) ;
+            end
         end  % function        
 
         function updateYAxisLimits_(self)
@@ -1179,11 +1148,14 @@ end  % public methods block
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            for i = 1:length(self.ScopePlots_) ,
-                self.ScopePlots_(i).updateYaxisLimits_() ;
+            yLimitsPerAnalogChannel = self.Model.YLimitsPerAnalogChannel ;
+            for i = 1:length(self.AnalogScopePlots_) ,
+                yl = yLimitsPerAnalogChannel(:,i)' ;
+                self.AnalogScopePlots_(i).setYAxisLimits(yl) ;
             end
-%             ylimInModel=self.Model.YLim;
-%             set(self.AxesGH_, 'YLim', ylimInModel);
+            for i = 1:length(self.DigitalScopePlots_) ,
+                self.DigitalScopePlots_(i).setYAxisLimits([-0.05 1.05]) ;
+            end
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)
@@ -1192,7 +1164,7 @@ end  % public methods block
 %                 return
 %             end
 %             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;
-%             set(self.SetYLimTightToDataLockedButtonGH_,'State',ws.onIff(areYLimitsLockedTightToData));            
+%             set(self.SetYLimTightToDataLockedButton_,'State',ws.onIff(areYLimitsLockedTightToData));            
 %         end  % function        
         
         
@@ -1203,14 +1175,14 @@ end  % public methods block
 %             end
 %             xl=self.Model.XLim;
 %             yl=self.Model.YLim;
-%             setifhg(self.AxesGH_, 'XLim', xl, 'YLim', yl);
+%             setifhg(self.Axes_, 'XLim', xl, 'YLim', yl);
 %         end
 
 %         function updateScaling(self)
 % %             % Update the axes x-limits to accomodate the lines in it.
 % %             xMax=self.Model.MaxXData;            
 % %             xLim = [max([0, xMax - self.Model.XRange]), max(xMax, self.Model.XRange)];
-% %             setifhg(self.AxesGH_, 'XLim', xLim);
+% %             setifhg(self.Axes_, 'XLim', xLim);
 %         end
         
 %         function updateReferenceLines(self)

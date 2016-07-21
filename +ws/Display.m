@@ -41,6 +41,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
+        XData_
+        YData_  % analog and digital together, all as doubles, but only for the *active* channels
     end
     
     events
@@ -305,11 +307,68 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end        
         
         function clearData_(self)
+            self.XData_ = zeros(0,1) ;
+            acquisition = self.Parent.Acquistion ;
+            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+            self.YData_ = zeros(0,nActiveChannels) ;
             self.broadcast('DataCleared') ;
         end
         
-        function addData_(self, t, scaledAnalogData, rawDigitalData, sampleRate, xOffset)
-            self.broadcast('DataAdded') ;
+        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate, xOffset)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            % Compute a timeline for the new data
+            nNewScans = size(yRecent, 1) ;
+            dt = 1/sampleRate ;  % s
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
+            
+            % TODO: Need to add code below to get the uint8/uint16/uint32 data
+            % out of recentRawDigitalData into a matrix of logical data,
+            % then convert it to doubles and concat it only the
+            % recentScaledAnalogData, storing the result in yRecent.
+            
+            % Figure out the downsampling ratio
+            self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
+              % At this point, self.XSpanPixels_ should be set to the
+              % correct value, or the fallback value if there's no view
+            %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+            xSpanInPixels = self.XSpanInPixels_ ;
+            r = ws.ratioSubsampling(dt, self.XSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
+            
+            % deal with XData
+            xAllOriginal = self.XData ;  % these are already downsampled
+            yAllOriginal = self.YData ;            
+            
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (xOffsetInParent<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the x offset in the scope to match that in the Display
+            % subsystem
+            if xOffset ~= self.XOffset , 
+                self.XOffset = xOffset ;
+            end
+            
+            % Change the y limits to match the data, if appropriate
+            self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
+            
+            % Broadcast the change
+            self.broadcast('DataAdded');            
         end        
     end
         

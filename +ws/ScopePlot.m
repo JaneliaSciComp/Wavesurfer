@@ -1,8 +1,10 @@
-classdef ScopePlot < ws.EventSubscriber
+classdef ScopePlot < handle
+    
+    properties
+        IsGridOn
+    end
     
     properties (Access = protected)
-        Parent_  % a ws.DisplayFigure
-        ScopeIndex_  % Index of this scope within the DisplayFigure, top scope is 1, next is 2, etc.
         AxesGH_  % HG handle to axes
         LineGH_ % HG handle to trace line in the axes
         SetYLimTightToDataButtonGH_
@@ -15,20 +17,62 @@ classdef ScopePlot < ws.EventSubscriber
     end
     
     methods
-        function self=ScopePlot(parent, scopeIndex)
-            self.Parent_ = parent ;
-            self.ScopeIndex_ = scopeIndex ;
+        function self=ScopePlot(parent, isAnalog, channelIndex)
+            self.AxesGH_ = ...
+                axes('Parent', parent.FigureGH, ...
+                     'Units','pixels', ...
+                     'HandleVisibility','off', ...
+                     'Box','on' );
             
-            % Create the widgets that will persist through the life of the
-            % object
-            self.createFixedControls_();
-                        
-            % sync up self to model
-            self.update();
-            
-            % position next to main window
-            mainFigure = controller.Parent.Figure ;
-            self.positionUpperLeftRelativeToOtherUpperRight(mainFigure, [40 0]) ;
+            % Add the trace line, with no data for now                 
+            self.LineGH_ = ...
+                line('Parent', self.AxesGH_,...
+                     'XData', [],...
+                     'YData', [],...
+                     'ZData', []);            
+                 
+            % Y axis control buttons
+            self.YZoomInButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'String','+', ...
+                             'Callback',@(source,event)(parent.controlActuated('YZoomInButtonGH',source,event,isAnalog, channelIndex)));
+            self.YZoomOutButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'String','-', ...
+                             'Callback',@(source,event)(parent.controlActuated('YZoomOutButtonGH',source,event,isAnalog, channelIndex)));
+            self.YScrollUpButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'Callback',@(source,event)(parent.controlActuated('YScrollUpButtonGH',source,event,isAnalog, channelIndex)));
+            self.YScrollDownButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'Callback',@(source,event)(parent.controlActuated('YScrollDownButtonGH',source,event,isAnalog, channelIndex)));
+            self.SetYLimTightToDataButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'TooltipString', 'Set y-axis limits tight to data', ....
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataButtonGH',source,event,isAnalog, channelIndex)));
+            % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
+            % we want to do with this button when we change to
+            % green-on-black mode.  Also, there's a checked menu item that
+            % shows when this toggle is engaged or disengaged, so hopefully
+            % it won't be too jarring to the user when this button doesn't
+            % look toggled after she presses it.  I think it should be OK
+            % --- sometimes it's hard to tell even when a togglebutton is
+            % toggled.
+            self.SetYLimTightToDataLockedButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataLockedButtonGH',source,event,isAnalog, channelIndex)));                      
+            self.SetYLimButtonGH_ = ...
+                ws.uicontrol('Parent',parent.FigureGH, ...
+                             'Style','pushbutton', ...
+                             'TooltipString', 'Set y-axis limits', ....
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH',source,event,isAnalog, channelIndex)));                      
         end  % constructor
         
         function delete(self)
@@ -44,12 +88,12 @@ classdef ScopePlot < ws.EventSubscriber
             % model, from scratch.  This may cause the figure to be
             % resized, but this is always done in such a way that the
             % upper-righthand corner stays in the same place.
-            self.updateImplementation_();
+            self.updateImplementation_(varargin{:});
         end        
     end  % public methods block
     
     methods (Access=protected)        
-        function updateImplementation_(self)
+        function updateImplementation_(self, isAnalog, channelIndex)
             % This method should make sure the figure is fully synched with the
             % model state after it is called.  This includes existance,
             % placement, sizing, enablement, and properties of each control, and
@@ -58,8 +102,8 @@ classdef ScopePlot < ws.EventSubscriber
             % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.
             self.updateControlsInExistance_();
-            self.updateControlPropertiesImplementation_();
-            self.updateControlEnablementImplementation_();
+            self.updateControlPropertiesImplementation_(isAnalog, channelIndex);
+            self.updateControlEnablementImplementation_(isAnalog, channelIndex);
             self.layout_();
         end                
     end  % protected methods block    
@@ -223,6 +267,56 @@ classdef ScopePlot < ws.EventSubscriber
             self.update();
         end  % function
 
+        function setColorsAndIcons(self, controlForegroundColor, controlBackgroundColor, ...
+                                         axesForegroundColor, axesBackgroundColor, ...
+                                         traceLineColor, ...
+                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon)
+            % If there are issues with the model, just return
+            %displayFigure = self.Parent_ ;
+            
+            % Update the colors
+            %controlBackgroundColor  = displayFigure.ControlBackgroundColor ;
+            %controlForegroundColor = displayFigure.ControlForegroundColor ;
+            %axesBackgroundColor = displayFigure.AxesBackgroundColor ;
+            %axesForegroundColor = displayFigure.AxesForegroundColor ;
+            set(self.AxesGH_,'Color',axesBackgroundColor);
+            set(self.AxesGH_,'XColor',axesForegroundColor);
+            set(self.AxesGH_,'YColor',axesForegroundColor);
+            set(self.AxesGH_,'ZColor',axesForegroundColor);
+
+            % Set the line color
+            set(self.LineGH_,'Color',traceLineColor);
+
+            % Set the button colors
+            set(self.YZoomInButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+            
+            % Set the button scroll up/down button images
+%             yScrollUpIcon   = displayFigure.YScrollUpIcon   ;
+%             yScrollDownIcon = displayFigure.YScrollDownIcon ;
+%             yTightToDataIcon = displayFigure.YTightToDataIcon ;
+%             yTightToDataLockedIcon = displayFigure.YTightToDataLockedIcon ;
+            set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
+            set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
+            set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
+            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);            
+        end  % function
+
+        function set.IsGridOn(self, newValue)
+            set(self.AxesGH_, ...
+                'XGrid', ws.onIff(newValue), ...
+                'YGrid', ws.onIff(newValue) );
+        end
+           
+        function result = get.IsGridOn(self)
+            onOrOff = get(self.AxesGH_, 'XGrid') ;
+            result = isequal(onOrOff, 'on') ;
+        end
+        
 %         function syncTitleAndTagsToModel(self)
 %             import ws.onIff
 %             
@@ -300,164 +394,49 @@ classdef ScopePlot < ws.EventSubscriber
 %             self.YScrollDownIcon_ = cdata ;
 %         end
 
-        function createFixedControls_(self)
-            % Creates the controls that are guaranteed to persist
-            % throughout the life of the window.
-            
-            %model = self.Model ;
-            self.AxesGH_ = ...
-                axes('Parent', self.Parent_.FigureGH, ...
-                     'Units','pixels', ...
-                     'HandleVisibility','off', ...
-                     'Box','on' );
-            
-            % Add the trace line, with no data for now                 
-            self.LineGH_(iChannel) = ...
-                line('Parent', self.AxesGH_,...
-                     'XData', [],...
-                     'YData', [],...
-                     'ZData', [],...
-                     'Color', self.Parent_.ColorOrder(1,:) );            
-                 
-            % Y axis control buttons
-            self.YZoomInButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'String','+', ...
-                             'Callback',@(source,event)(self.Parent_.controlActuated('YZoomInButtonGH',source,event,self.ScopeIndex_)));
-            self.YZoomOutButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'String','-', ...
-                             'Callback',@(source,event)(self.Parent_.controlActuated('YZoomOutButtonGH',source,event,self.ScopeIndex_)));
-            self.YScrollUpButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'Callback',@(source,event)(self.Parent_.controlActuated('YScrollUpButtonGH',source,event,self.ScopeIndex_)));
-            self.YScrollDownButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'Callback',@(source,event)(self.Parent_.controlActuated('YScrollDownButtonGH',source,event,self.ScopeIndex_)));
-            self.SetYLimTightToDataButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'TooltipString', 'Set y-axis limits tight to data', ....
-                             'Callback',@(source,event)(self.Parent_.controlActuated('SetYLimTightToDataButtonGH',source,event,self.ScopeIndex_)));
-            % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
-            % we want to do with this button when we change to
-            % green-on-black mode.  Also, there's a checked menu item that
-            % shows when this toggle is engaged or disengaged, so hopefully
-            % it won't be too jarring to the user when this button doesn't
-            % look toggled after she presses it.  I think it should be OK
-            % --- sometimes it's hard to tell even when a togglebutton is
-            % toggled.
-            self.SetYLimTightToDataLockedButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
-                             'Callback',@(source,event)(self.Parent_.controlActuated('SetYLimTightToDataLockedButtonGH',source,event,self.ScopeIndex_)));                      
-            self.SetYLimButtonGH_ = ...
-                ws.uicontrol('Parent',self.Parent_.FigureGH, ...
-                             'Style','pushbutton', ...
-                             'TooltipString', 'Set y-axis limits', ....
-                             'Callback',@(source,event)(self.Parent_.controlActuated('SetYLimButtonGH',source,event,self.ScopeIndex_)));                      
-        end  % function            
-
         function updateControlsInExistance_(self)  %#ok<MANU>
             % All controls are fixed, so nothing to do here.
         end  % function
         
-        function updateControlPropertiesImplementation_(self)
+        function updateControlPropertiesImplementation_(self, isAnalog, channelIndex)
             % If there are issues with the model, just return
-            model=self.Model;
-            if isempty(model) || ~isvalid(model) ,
-                return
-            end
+            displayFigure = self.Parent_ ;
+            displayModel = displayFigure.Model ;            
             
-            % Update the togglebutton
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToData ;            
-            set(self.SetYLimTightToDataLockedMenuItemGH_,'Checked',ws.onIff(areYLimitsLockedTightToData));            
-
-%             % Update the Show Grid togglemenu
-            isGridOn = self.Parent_.Model.IsGridOn ;
-%             set(self.ShowGridMenuItemGH_,'Checked',ws.onIff(isGridOn));
-% 
-%             % Update the Invert Colors togglemenu
-%             areColorsNormal = self.Model.AreColorsNormal ;
-%             set(self.InvertColorsMenuItemGH_,'Checked',ws.onIff(~areColorsNormal));
-% 
-%             % Update the Do Show Buttons togglemenu
-%             doShowButtons = self.Model.DoShowButtons ;
-%             set(self.DoShowButtonsMenuItemGH_,'Checked',ws.onIff(doShowButtons));
-
             % Update the colors
-            areColorsNormal = self.Model.AreColorsNormal ;
-            defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
-            controlBackground  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
-            controlForeground = ws.fif(areColorsNormal,'k','w') ;
-            figureBackground = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
-            set(self.FigureGH,'Color',figureBackground);
-            axesBackground = ws.fif(areColorsNormal,'w','k') ;
-            set(self.AxesGH_,'Color',axesBackground);
-            axesForeground = ws.fif(areColorsNormal,'k','g') ;
-            set(self.AxesGH_,'XColor',axesForeground);
-            set(self.AxesGH_,'YColor',axesForeground);
-            set(self.AxesGH_,'ZColor',axesForeground);
-            if areColorsNormal ,
-                colorOrder = ...
-                    [      0                         0                         0  ; ...
-                           0                         0                         1  ; ...
-                           0                       0.5                         0  ; ...
-                           1                         0                         0  ; ...
-                           0                      0.75                      0.75  ; ...
-                        0.75                         0                      0.75  ; ...
-                        0.75                      0.75                         0  ; ...
-                        0.25                      0.25                      0.25  ] ;
-            else
-                colorOrder = ...
-                    [      1                         1                         1  ; ...
-                           0                       0.5                         1  ; ...
-                           0                         1                         0  ; ...
-                           1                         0                         1  ; ...
-                           0                         1                         1  ; ...
-                        0.75                         0                      0.75  ; ...
-                           1                         1                         0  ; ...
-                        0.75                      0.75                      0.75  ] ;
-                
-            end
-            set(self.AxesGH_,'ColorOrder',colorOrder);
+            controlBackgroundColor  = displayFigure.ControlBackgroundColor ;
+            controlForegroundColor = displayFigure.ControlForegroundColor ;
+            axesBackgroundColor = displayFigure.AxesBackgroundColor ;
+            axesForegroundColor = displayFigure.AxesForegroundColor ;
+            set(self.AxesGH_,'Color',axesBackgroundColor);
+            set(self.AxesGH_,'XColor',axesForegroundColor);
+            set(self.AxesGH_,'YColor',axesForegroundColor);
+            set(self.AxesGH_,'ZColor',axesForegroundColor);
+            set(self.AxesGH_,'ColorOrder',displayFigure.ColorOrder);
 
-            % Set the line colors
-            lineGH = self.LineGH_ ;
-            color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
-            set(lineGH,'Color',color);
+            % Set the line color
+            set(self.LineGH_,'Color',displayFigure.TraceLineColor);
 
             % Set the button colors
-            set(self.YZoomInButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);
-            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
-            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForeground,'BackgroundColor',controlBackground);            
+            set(self.YZoomInButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.YZoomOutButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.YScrollUpButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.YScrollDownButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+            set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+            set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
             
             % Set the button scroll up/down button images
-            if areColorsNormal ,
-                yScrollUpIcon   = self.Parent_.YScrollUpIcon   ;
-                yScrollDownIcon = self.Parent_.YScrollDownIcon ;
-                yTightToDataIcon = self.Parent_.YTightToDataIcon ;
-                yTightToDataLockedIcon = self.Parent_.YTightToDataLockedIcon ;
-            else
-                yScrollUpIcon   = 1-self.Parent_.YScrollUpIcon   ;  % RGB images, so this inverts them, leaving nan's alone
-                yScrollDownIcon = 1-self.Parent_.YScrollDownIcon ;                
-                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(self.Parent_.YTightToDataIcon) ;  
-                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(self.Parent_.YTightToDataLockedIcon) ;
-            end                
+            yScrollUpIcon   = self.Parent_.YScrollUpIcon   ;
+            yScrollDownIcon = self.Parent_.YScrollDownIcon ;
+            yTightToDataIcon = self.Parent_.YTightToDataIcon ;
+            yTightToDataLockedIcon = self.Parent_.YTightToDataLockedIcon ;
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
             set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
             
             % Update the axes grid on/off
+            isGridOn = displayModel.IsGridOn ;
             set(self.AxesGH_, ...
                 'XGrid', ws.onIff(isGridOn), ...
                 'YGrid', ws.onIff(isGridOn) ...
@@ -465,11 +444,11 @@ classdef ScopePlot < ws.EventSubscriber
             
             % Update the axis limits
             self.updateXAxisLimits_();
-            self.updateYAxisLimits_();
+            self.updateYAxisLimits_(isAnalog, channelIndex);
             
             % Update the graphics objects to match the model
-            xlabel(self.AxesGH_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
-            self.updateYAxisLabel_(axesForeground);
+            xlabel(self.AxesGH_,'Time (s)','Color',axesForegroundColor,'FontSize',10,'Interpreter','none');
+            self.updateYAxisLabel_(isAnalog, channelIndex, axesForegroundColor);
             self.updateLineXDataAndYData_();
         end  % function
         
@@ -643,18 +622,20 @@ classdef ScopePlot < ws.EventSubscriber
                             yRangeButtonSize yRangeButtonSize]);
             
         end  % function        
+        
+        function setLineXDataAndYData(self, xData, yData)
+            ws.setifhg(self.LineGH_, 'XData', xData, 'YData', yData) ;
+        end  % function
+        
+        function setXAxisLimits(self, xl)
+            set(self.AxesGH_, 'XLim', xl) ;
+        end  % function                
     end  % public methods block
     
     methods (Access = protected)
         function modelGenericVisualPropertyWasSet_(self)
             self.update();
         end  % function 
-        
-        function updateLineXDataAndYData_(self)
-            scopeModel = self.Parent_.Model.Scopes{self.ScopeIndex_} ;
-            thisLineGH = self.LineGH_ ;
-            ws.setifhg(thisLineGH, 'XData', scopeModel.XData, 'YData', scopeModel.YData) ;
-        end  % function
         
         function updateYAxisLabel_(self,color)
             % Updates the y axis label handle graphics to match the model state
@@ -674,11 +655,6 @@ classdef ScopePlot < ws.EventSubscriber
                 end
                 ylabel(self.AxesGH_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
             end
-        end  % function
-        
-        function updateXAxisLimits_(self, xlimInModel)
-            % Update the axes limits to match those in the model
-            set(self.AxesGH_, 'XLim', xlimInModel) ;
         end  % function        
 
         function updateYAxisLimits_(self)
