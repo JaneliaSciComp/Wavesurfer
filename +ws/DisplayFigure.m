@@ -156,7 +156,8 @@ classdef DisplayFigure < ws.MCOSFigure
         end  % constructor
         
         function delete(self)
-            self.ScopePlots_ = [] ;  % not really necessary
+            self.AnalogScopePlots_ = [] ;  % not really necessary
+            self.DigitalScopePlots_ = [] ;  % not really necessary
         end  % function
         
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
@@ -235,7 +236,7 @@ end  % public methods block
             
             % Position the figure in the middle of the screen
             nScopes = self.Model.NScopes ;
-            initialHeight = min(200 * nScopes, maxInitialHeight) ;
+            initialHeight = min(200 * max(1,nScopes), maxInitialHeight) ;
             initialSize=[570 initialHeight];
             figurePosition=[offset initialSize];
             set(self.FigureGH,'Position',figurePosition);
@@ -388,84 +389,80 @@ end  % public methods block
             self.update() ;
         end  % function
         
-        function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Redimension downsampled data, clearing the existing data in
-%             % the process
-%             nChannels=self.Model.NChannels;
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,nChannels);
-            
-            % Do other stuff
-            self.addChannelLineToAxes_();
-            self.update();
-        end  % function
+%         function modelChannelAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+% %             % Redimension downsampled data, clearing the existing data in
+% %             % the process
+% %             nChannels=self.Model.NChannels;
+% %             self.XForPlotting_=zeros(0,1);
+% %             self.YForPlotting_=zeros(0,nChannels);
+%             
+%             % Do other stuff
+%             self.addChannelLineToAxes_();
+%             self.update();
+%         end  % function
         
 %         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
 %             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
 %             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
 %         end
         
-        function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Need to pack up all the y data into a single array for
-%             % downsampling (should change things more globally to make this
-%             % unnecessary)
-%             x = self.Model.XData ;
-%             y = self.Model.YData ;
-%             %nScans = length(x) ;
-%             
-%             % This shouldn't ever happen, but just in case...
-%             if isempty(x) ,
-%                 return
-%             end
-%             
-%             % Figure out the downsampling ratio
-%             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-%             r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
-%             
-%             % get the current downsampled data
-%             xForPlottingOriginal=self.XForPlotting_;
-%             yForPlottingOriginal=self.YForPlotting_;
-%             
-%             % Trim off any that is beyond the left edge of the plotted data
-%             x0=x(1);  % this is the time of the first sample in the model's XData
-%             keep=(x0<=xForPlottingOriginal);
-%             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
-%             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
-%             
-%             % Get just the new data
-%             if isempty(xForPlottingOriginal)
-%                 xNew=x;
-%                 yNew=y;
-%             else                
-%                 isNew=(xForPlottingOriginal(end)<x);
-%                 xNew=x(isNew);
-%                 yNew=y(isNew);
-%             end
-%             
-%             % Downsample the new data
-%             [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
-%             
-%             % Concatenate old and new downsampled data, commit to self
-%             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
-%                                xForPlottingNew];
-%             self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
-%                                yForPlottingNew];
-
-            % Update the lines
-            self.updateLineXDataAndYData_();
-        end  % function
+%         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+% %             % Need to pack up all the y data into a single array for
+% %             % downsampling (should change things more globally to make this
+% %             % unnecessary)
+% %             x = self.Model.XData ;
+% %             y = self.Model.YData ;
+% %             %nScans = length(x) ;
+% %             
+% %             % This shouldn't ever happen, but just in case...
+% %             if isempty(x) ,
+% %                 return
+% %             end
+% %             
+% %             % Figure out the downsampling ratio
+% %             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+% %             r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
+% %             
+% %             % get the current downsampled data
+% %             xForPlottingOriginal=self.XForPlotting_;
+% %             yForPlottingOriginal=self.YForPlotting_;
+% %             
+% %             % Trim off any that is beyond the left edge of the plotted data
+% %             x0=x(1);  % this is the time of the first sample in the model's XData
+% %             keep=(x0<=xForPlottingOriginal);
+% %             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
+% %             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
+% %             
+% %             % Get just the new data
+% %             if isempty(xForPlottingOriginal)
+% %                 xNew=x;
+% %                 yNew=y;
+% %             else                
+% %                 isNew=(xForPlottingOriginal(end)<x);
+% %                 xNew=x(isNew);
+% %                 yNew=y(isNew);
+% %             end
+% %             
+% %             % Downsample the new data
+% %             [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
+% %             
+% %             % Concatenate old and new downsampled data, commit to self
+% %             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
+% %                                xForPlottingNew];
+% %             self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
+% %                                yForPlottingNew];
+% 
+%             % Update the lines
+%             self.updateLineXDataAndYData_();
+%         end  % function
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            %fprintf('ScopeFigure::modelDataCleared()\n');
-            %nChannels=self.Model.NChannels;
-            %self.XForPlotting_=zeros(0,1);
-            %self.YForPlotting_=zeros(0,nChannels);                        
             self.updateLineXDataAndYData_();                      
         end  % function
         
-        function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.update();
-        end  % function
+%         function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.update();
+%         end  % function
 
 %         function syncTitleAndTagsToModel(self)
 %             import ws.onIff
@@ -718,20 +715,36 @@ end  % public methods block
         end  % function            
 
         function updateControlsInExistance_(self)
-            % Make it so we have the same number of lines as channels,
+            % Make it so we have the same number of scopes as analog channels,
             % adding/deleting them as needed
-            nScopePlots = length(self.ScopePlots_) ;
-            %isScopeVisible = self.Model.IsScopeVisibleWhenDisplayEnabled ;            
-            nScopeModels = self.Model.NScopes ;
-            if nScopeModels>nScopePlots ,
-                for i = nScopePlots+1:nScopeModels ,
-                    self.ScopePlots_(1,i) = ws.ScopePlot(self, i) ;  % Have to create each ws.ScopePlot scalar separately b/c Matlab is dumb
+            nAnalogScopePlots = length(self.AnalogScopePlots_) ;
+            nAnalogChannels = self.Model.Parent.Acquisition.NAnalogChannels ;
+            if nAnalogChannels>nAnalogScopePlots ,
+                for i = nAnalogScopePlots+1:nAnalogChannels ,
+                    newScopePlot = ws.ScopePlot(self, true, i) ;
+                    self.AnalogScopePlots_ = horzcat(self.AnalogScopePlots_, newScopePlot);
                 end
-            elseif nScopeModels<nScopePlots ,
-                self.ScopePlots_ = self.ScopePlots_(1:nScopeModels) ;
+            elseif nAnalogChannels<nAnalogScopePlots ,
+                self.AnalogScopePlots_ = self.AnalogScopePlots_(1:nAnalogChannels) ;
             else
                 % do nothing --- we already have the right number of
-                % ScopePlots
+                % analog ScopePlots
+            end
+
+            % Make it so we have the same number of scopes as digital channels,
+            % adding/deleting them as needed
+            nDigitalScopePlots = length(self.DigitalScopePlots_) ;
+            nDigitalChannels = self.Model.Parent.Acquisition.NDigitalChannels ;
+            if nDigitalChannels>nDigitalScopePlots ,
+                for i = nDigitalScopePlots+1:nDigitalChannels ,
+                    newScopePlot = ws.ScopePlot(self, false, i) ;
+                    self.DigitalScopePlots_ = horzcat(self.DigitalScopePlots_, newScopePlot);
+                end
+            elseif nDigitalChannels<nDigitalScopePlots ,
+                self.DigitalScopePlots_ = self.DigitalScopePlots_(1:nDigitalChannels) ;
+            else
+                % do nothing --- we already have the right number of
+                % digital ScopePlots
             end
             
             % Update the Channels menu
@@ -844,6 +857,12 @@ end  % public methods block
             % Get the y-axis limits for all analog channels
             yLimitsPerAnalogChannel = self.Model.YLimitsPerAnalogChannel ;
 
+            % Get the channel names and units for all channels
+            acq = model.Parent.Acquisition ;
+            aiChannelNames = acq.AnalogChannelNames ;            
+            diChannelNames = acq.DigitalChannelNames ;
+            aiChannelUnits = acq.AnalogChannelUnits ;            
+            
             % Update the individual plot colors and icons
             for i=1:length(self.AnalogScopePlots_) ,
                 thisPlot = self.AnalogScopePlots_(i) ;
@@ -854,6 +873,7 @@ end  % public methods block
                 thisPlot.IsGridOn = isGridOn ;                       
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,i)') ;
+                thisPlot.setYAxisLabel(aiChannelNames{i}, true, aiChannelUnits{i}, axesForegroundColor) ;
             end
             for i=1:length(self.DigitalScopePlots_) ,
                 thisPlot = self.DigitalScopePlots_(i) ;
@@ -864,183 +884,60 @@ end  % public methods block
                 thisPlot.IsGridOn = isGridOn ;                       
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits([-0.05 1.05]) ;
+                thisPlot.setYAxisLabel(diChannelNames{i}, false, [], axesForegroundColor) ;
             end
-                                    
-%             self.updateAxisLabels_()
-%             % Update the graphics objects to match the model
-%             %xlabel(self.Axes_,'Time (s)','Color',axesForeground,'FontSize',10,'Interpreter','none');
-%             %self.updateYAxisLabel_(axesForeground);
-%             self.updateLineXDataAndYData_();
+
+            % Do this separately, although we could do it at same time if
+            % speed is an issue...
+            self.updateLineXDataAndYData_();
         end  % function
         
         function updateControlEnablementImplementation_(self)
-            % Update the enablement of controls
+%             % Set the menu enablement
+%             wavesurferModel = self.Model.Parent ;
+%             isIdle=isequal(wavesurferModel.State,'idle');
+%             set(self.InvertColorsMenuItem_,  'Enable',onIff(isIdle));            
+%             set(self.ShowGridMenuItem_,      'Enable',onIff(isIdle));            
+%             set(self.DoShowButtonsMenuItem_, 'Enable',onIff(isIdle));            
+            
+            % Update the enablement of buttons in the panels
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
             for i=1:length(self.AnalogScopePlots_) ,
-                self.AnalogScopePlots_(i).updateControlEnablement(true, i) ;
+                self.AnalogScopePlots_(i).setControlEnablement(areYLimitsLockedTightToData(i)) ;
             end
             for i=1:length(self.DigitalScopePlots_) ,
-                self.DigitalScopePlots_(i).updateControlEnablement(false, i) ;
+                self.DigitalScopePlots_(i).setControlEnablement(true) ;  % digital channels are always locked tight to data
             end
         end  % function
         
-%         function layout_(self)
-%             % This method should make sure all the controls are sized and placed
-%             % appropraitely given the current model state.  
-% 
-%             % We can use a simplified version of this, since all the
-%             % controls are fixed (i.e. they exist for the lifetime of the
-%             % figure)
-%             self.layoutFixedControls_() ;
-%             
-%             % This implementation should work in most cases, but can be overridden by
-%             % subclasses if needed.
-%             %figureSize=self.layoutFixedControls_();
-%             %figureSizeModified=self.layoutNonfixedControls_(figureSize);
-%             %ws.resizeLeavingUpperLeftFixedBang(self.FigureGH,figureSizeModified);            
-%         end  % function
-        
-        function figureSize = layoutFixedControls_(self)
-            % The only fixed controls are menus, which require no layout
+        function layout_(self)
+            % This method should make sure all the controls are sized and placed
+            % appropraitely given the current model state.
             
-            % Get the current figure width, height
+            %figureSize=self.layoutFixedControls_();
             figurePosition = get(self.FigureGH, 'Position') ;
-            figureSize = figurePosition(3:4);
+            figureSize = figurePosition(3:4) ;
             
-%             % Layout parameters
-%             minLeftMargin = 46 ;
-%             maxLeftMargin = 62 ;
-%             
-%             minRightMarginIfButtons = 8 ;            
-%             maxRightMarginIfButtons = 8 ;            
-% 
-%             minRightMarginIfNoButtons = 8 ;            
-%             maxRightMarginIfNoButtons = 16 ;            
-%             
-%             %minBottomMargin = 38 ;  % works ok with HG1
-%             minBottomMargin = 44 ;  % works ok with HG2 and HG1
-%             maxBottomMargin = 52 ;
-%             
-%             minTopMargin = 10 ;
-%             maxTopMargin = 26 ;            
-%             
-%             minAxesAndButtonsAreaWidth = 20 ;
-%             minAxesAndButtonsAreaHeight = 20 ;
-%             
-%             fromAxesToYRangeButtonsWidth = 6 ;
-%             yRangeButtonSize = 20 ;  % those buttons are square
-%             spaceBetweenScrollButtons=5;
-%             spaceBetweenZoomButtons=5;
-%             spaceBetweenZoomToDataButtons=5;
-%             minHeightBetweenButtonBanks = 5 ;
-%             
-%             % Show buttons only if user wants them
-%             doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
-% 
-%             if doesUserWantToSeeButtons ,
-%                 minRightMargin = minRightMarginIfButtons ;
-%                 maxRightMargin = maxRightMarginIfButtons ;
-%             else
-%                 minRightMargin = minRightMarginIfNoButtons ;
-%                 maxRightMargin = maxRightMarginIfNoButtons ;
-%             end
-%             
-%             % Get the current figure width, height
-%             figurePosition = get(self.FigureGH, 'Position') ;
-%             figureSize = figurePosition(3:4);
-%             figureWidth = figureSize(1) ;
-%             figureHeight = figureSize(2) ;
-%             
-%             % Calculate the first-pass dimensions
-%             leftMargin = max(minLeftMargin,min(0.13*figureWidth,maxLeftMargin)) ;
-%             rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
-%             bottomMargin = max(minBottomMargin,min(0.11*figureHeight,maxBottomMargin)) ;
-%             topMargin = max(minTopMargin,min(0.075*figureHeight,maxTopMargin)) ;            
-%             axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;
-%             axesAndButtonsAreaHeight = figureHeight - bottomMargin - topMargin ;
-% 
-%             % If not enough vertical space for the buttons, hide them
-%             if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
-%                 isEnoughHeightForButtons = false ;
-%                 % Recalculate some things that are affected by this change
-%                 minRightMargin = minRightMarginIfNoButtons ;
-%                 maxRightMargin = maxRightMarginIfNoButtons ;
-%                 rightMargin = max(minRightMargin,min(0.095*figureWidth,maxRightMargin)) ;
-%                 axesAndButtonsAreaWidth = figureWidth - leftMargin - rightMargin ;                
-%             else
-%                 isEnoughHeightForButtons = true ;
-%             end
-%             doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons ;
-%             
-%             % If the axes-and-buttons-area is too small, make it larger,
-%             % and change the right margin and/or bottom margin to accomodate
-%             if axesAndButtonsAreaWidth<minAxesAndButtonsAreaWidth ,                
-%                 axesAndButtonsAreaWidth = minAxesAndButtonsAreaWidth ;
-%                 %rightMargin = figureWidth - axesAndButtonsAreaWidth - leftMargin ;  % can be less than minRightMargin, and that's ok
-%             end
-%             if axesAndButtonsAreaHeight<minAxesAndButtonsAreaHeight ,                
-%                 axesAndButtonsAreaHeight = minAxesAndButtonsAreaHeight ;
-%                 bottomMargin = figureHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
-%             end
-% 
-%             % Set the axes width, depends on whether we're showing the
-%             % buttons or not
-%             if doShowButtons ,
-%                 axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
-%             else
-%                 axesWidth = axesAndButtonsAreaWidth ;
-%             end
-%             axesHeight = axesAndButtonsAreaHeight ;            
-%             
-%             % Update the axes position
-%             axesXOffset = leftMargin ;
-%             axesYOffset = bottomMargin ;
-%             set(self.Axes_,'Position',[axesXOffset axesYOffset axesWidth axesHeight]);            
-%             
-%             % the zoom buttons
-%             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
-%             zoomOutButtonX=yRangeButtonsX;
-%             zoomOutButtonY=axesYOffset;  % want bottom-aligned with axes
-%             set(self.YZoomOutButton_, ...
-%                 'Visible',ws.onIff(doShowButtons) , ...
-%                 'Position',[zoomOutButtonX zoomOutButtonY ...
-%                             yRangeButtonSize yRangeButtonSize]);
-%             zoomInButtonX=yRangeButtonsX;
-%             zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
-%             set(self.YZoomInButton_, ...
-%                 'Visible',ws.onIff(doShowButtons) , ...
-%                 'Position',[zoomInButtonX zoomInButtonY ...
-%                             yRangeButtonSize yRangeButtonSize]);
-%             
-%             % the scroll buttons
-%             scrollUpButtonX=yRangeButtonsX;
-%             scrollUpButtonY=axesYOffset+axesHeight-yRangeButtonSize;  % want top-aligned with axes
-%             set(self.YScrollUpButton_, ...
-%                 'Visible',ws.onIff(doShowButtons) , ...
-%                 'Position',[scrollUpButtonX scrollUpButtonY ...
-%                             yRangeButtonSize yRangeButtonSize]);
-%             scrollDownButtonX=yRangeButtonsX;
-%             scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
-%             set(self.YScrollDownButton_, ...
-%                 'Visible',ws.onIff(doShowButtons) , ...
-%                 'Position',[scrollDownButtonX scrollDownButtonY ...
-%                             yRangeButtonSize yRangeButtonSize]);
-%                         
-%             % the zoom-to-data buttons
-%             zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
-%             zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
-%             setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
-%             set(self.SetYLimTightToDataButton_, ...
-%                 'Visible',ws.onIff(doShowButtons) , ...
-%                 'Position',[yRangeButtonsX setYLimTightToDataButtonY ...
-%                             yRangeButtonSize yRangeButtonSize]);
-%             setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
-%             set(self.SetYLimTightToDataLockedButton_, ...
-%                 'Visible',ws.onIff(doShowButtons) , ...
-%                 'Position',[yRangeButtonsX setYLimTightToDataLockedButtonY ...
-%                             yRangeButtonSize yRangeButtonSize]);            
-        end  % function
-        
-    end
+            doesUserWantToSeeButtons = self.Model.DoShowButtons ;
+            isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
+            isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
+            nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
+            indexOfThisScopeAmongVisibleScopes = 0 ;
+            for i=1:length(self.AnalogScopePlots_)
+                if isAnalogChannelDisplayed(i) ,
+                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1;
+                    self.AnalogScopePlots_(i).setPositionAndLayout(figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons) ;
+                end
+            end
+            indexOfThisScopeAmongVisibleScopes = 0 ;
+            for i=1:length(self.DigitalScopePlots_)
+                if isDigitalChannelDisplayed(i) ,
+                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1;
+                    self.DigitalScopePlots_(i).setPositionAndLayout(figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons) ;
+                end
+            end
+        end
+    end  % protected methods block
     
     methods (Access = protected)
 %         function addChannelLineToAxes_(self)
@@ -1074,16 +971,16 @@ end  % public methods block
         function updateLineXDataAndYData_(self)
             xData = self.Model.XData ;
             yData = self.Model.YData ;            
-            acq = self.Model.Parent.Acquistion ;
+            acq = self.Model.Parent.Acquisition ;
             isAIChannelActive = acq.IsAnalogChannelActive ;
             activeChannelIndex = 0 ;
             for aiChannelIndex = 1:length(self.AnalogScopePlots_) ,
                 if isAIChannelActive(aiChannelIndex) ,
                     activeChannelIndex = activeChannelIndex + 1 ;
                     yDataForThisChannel = yData(:,activeChannelIndex) ;
-                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData_(xData, yDataForThisChannel) ;
+                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData(xData, yDataForThisChannel) ;
                 else
-                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData_([],[]) ;
+                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData([],[]) ;
                 end
             end
             isDIChannelActive = acq.IsDigitalChannelActive ;
@@ -1091,9 +988,9 @@ end  % public methods block
                 if isDIChannelActive(diChannelIndex) ,
                     activeChannelIndex = activeChannelIndex + 1 ;
                     yDataForThisChannel = yData(:,activeChannelIndex) ;
-                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData_(xData, yDataForThisChannel) ;
+                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData(xData, yDataForThisChannel) ;
                 else
-                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData_([],[]) ;
+                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData([],[]) ;
                 end
             end
         end  % function

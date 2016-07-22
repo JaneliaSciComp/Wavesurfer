@@ -19,6 +19,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         AreYLimitsLockedTightToDataForAnalogChannel  % 1 x nAIChannels
         YLimitsPerAnalogChannel  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
         NScopes
+        XData
+        YData
     end
 
     properties (Access = protected)
@@ -78,9 +80,29 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = length(self.IsAnalogChannelDisplayed_) + length(self.IsDigitalChannelDisplayed_) ;
         end
         
+        function result = get.XData(self)
+            result = self.XData_ ;
+        end
+        
+        function result = get.YData(self)
+            result = self.YData_ ;
+        end
+        
+        function result = get.AreYLimitsLockedTightToDataForAnalogChannel(self)
+            result = self.AreYLimitsLockedTightToDataForAnalogChannel_ ;
+        end
+        
         function hereIsXSpanInPixels(self, xSpanInPixels)
             self.XSpanInPixels_ = xSpanInPixels ;
         end        
+        
+        function result = get.IsAnalogChannelDisplayed(self)
+            result = self.IsAnalogChannelDisplayed_ ;
+        end
+        
+        function result = get.IsDigitalChannelDisplayed(self)
+            result = self.IsDigitalChannelDisplayed_ ;
+        end
         
         function value = get.UpdateRate(self)
             value = self.UpdateRate_;
@@ -155,6 +177,24 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('UpdateXOffset');
         end
         
+        function value = get.YLimitsPerAnalogChannel(self)
+            value = self.YLimitsPerAnalogChannel_ ;
+        end
+
+        function setYLimitsForSingleAnalogChannel(self, newValue, i)
+            if isnumeric(newValue) && isequal(size(newValue),[2 1]) && newValue(1)<=newValue(2) ,
+                self.YLimitsPerAnalogChannel_(:,i) = double(newValue) ;
+                wasSet = true ;
+            else
+                wasSet = false ;
+            end
+            broadcast('Update') ;
+            if ~wasSet ,
+                error('most:Model:invalidPropVal', ...
+                      'YLimitsPerAnalogChannel column must be 2 element numeric col vector, with the first element less than or equal to the second') ;
+            end
+        end
+        
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
             if self.Parent.AreSweepsContinuous ,
                 value = false ;
@@ -209,11 +249,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = horzcat(self.IsAnalogChannelDisplayed_, true) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = horzcat(self.AreYLimitsLockedTightToDataForAnalogChannel_, false) ;
             self.YLimitsPerAnalogChannel_ = horzcat(self.YLimitsPerAnalogChannel_, [-10 +10]') ;
+            self.clearData_() ;
             self.broadcast('Update') ;
         end
         
         function didAddDigitalInputChannel(self)
             self.IsDigitalChannelDisplayed_(1,end+1) = true ;
+            self.clearData_() ;
             self.broadcast('Update') ;            
         end
 
@@ -222,12 +264,14 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = self.IsAnalogChannelDisplayed_(wasKept) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = self.AreYLimitsLockedTightToDataForAnalogChannel_(wasKept) ;
             self.YLimitsPerAnalogChannel_ = self.YLimitsPerAnalogChannel_(:,wasKept) ;
+            self.clearData_() ;
             self.broadcast('Update') ;            
         end
         
         function didDeleteDigitalInputChannels(self, wasDeleted)            
             wasKept = ~wasDeleted ;
             self.IsDigitalChannelDisplayed_ = self.IsDigitalChannelDisplayed_(wasKept) ;
+            self.clearData_() ;
             self.broadcast('Update') ;            
         end
         
@@ -313,10 +357,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function clearData_(self)
             self.XData_ = zeros(0,1) ;
-            acquisition = self.Parent.Acquistion ;
+            acquisition = self.Parent.Acquisition ;
             nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
             self.YData_ = zeros(0,nActiveChannels) ;
-            self.broadcast('DataCleared') ;
         end
         
         function addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate, xOffset)
@@ -371,9 +414,6 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             % Change the y limits to match the data, if appropriate
             self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
-            
-            % Broadcast the change
-            self.broadcast('DataAdded');            
         end        
     end
         
@@ -389,6 +429,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             if self.ClearOnNextData_ ,
                 self.clearData_() ;
+                self.broadcast('DataCleared') ;
             end            
             self.ClearOnNextData_ = false;
             
@@ -404,6 +445,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 
             % Add the data
             self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
+            self.broadcast('DataAdded');          
             
 %             % Feed the data to the scopes
 %             activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;

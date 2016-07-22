@@ -14,7 +14,7 @@ classdef ScopePlot < handle
         YZoomOutButtonGH_
         YScrollUpButtonGH_
         YScrollDownButtonGH_
-        XAxisLabelGH_
+        %XAxisLabelGH_
         YAxisLabelGH_
     end
     
@@ -90,7 +90,7 @@ classdef ScopePlot < handle
             ws.deleteIfValidHGHandle(self.YZoomOutButtonGH_) ;
             ws.deleteIfValidHGHandle(self.YScrollUpButtonGH_) ;
             ws.deleteIfValidHGHandle(self.YScrollDownButtonGH_) ;
-            ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
+            %ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
             ws.deleteIfValidHGHandle(self.YAxisLabelGH_) ;
         end  % function        
         
@@ -445,7 +445,7 @@ classdef ScopePlot < handle
     end
     
     methods
-        function setPositionAndLayout(self, figurePosition, nScopesVisible, indexOfThisScopeAmongVisibleScopes)
+        function setPositionAndLayout(self, figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons)
             % This method should make sure all the controls are sized and placed
             % appropriately given the current model state.  
 
@@ -477,7 +477,7 @@ classdef ScopePlot < handle
             minHeightBetweenButtonBanks = 5 ;
             
             % Show buttons only if user wants them
-            doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
+            %doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
 
             if doesUserWantToSeeButtons ,
                 minRightMargin = minRightMarginIfButtons ;
@@ -488,7 +488,7 @@ classdef ScopePlot < handle
             end
             
             % Get the current figure width, height
-            figureSize = figurePosition(3:4);
+            %figureSize = figurePosition(3:4);
             figureWidth = figureSize(1) ;
             figureHeight = figureSize(2) ;
             
@@ -604,15 +604,22 @@ classdef ScopePlot < handle
             set(self.AxesGH_, 'YLim', yl) ;
         end  % function                
         
-        function setYAxisLabel(self, channelName, units, color)
+        function setYAxisLabel(self, channelName, doShowUnits, units, color)
             self.clearYAxisLabel() ;
             % set the new value
-            if isempty(units) ,
-                unitsString = 'pure' ;
+            if doShowUnits ,
+                if isempty(units) ,
+                    unitsString = 'pure' ;
+                else
+                    unitsString = units ;
+                end
+                label = sprintf('%s (%s)',channelName,unitsString) ;
             else
-                unitsString = units ;
+                label = sprintf('%s',channelName) ;
             end
-            self.YAxisLabelGH_ = ylabel(self.AxesGH_,sprintf('%s (%s)',channelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
+            self.YAxisLabelGH_ = ylabel(self.AxesGH_, ...
+                                        label, ...
+                                        'Color',color, 'FontSize',10, 'Interpreter','none');
         end  % function                
         
         function clearYAxisLabel(self)
@@ -624,21 +631,29 @@ classdef ScopePlot < handle
             end
         end  % function                
         
-        function setXAxisLabel(self, color)
-            self.clearXAxisLabel() ;
-            % set the new value
-            self.XAxisLabelGH_ = ylabel(self.AxesGH_,sprintf('Time (s)'),'Color',color,'FontSize',10,'Interpreter','none');
-        end  % function                
+%         function setXAxisLabel(self, color)
+%             self.clearXAxisLabel() ;
+%             % set the new value
+%             self.XAxisLabelGH_ = ylabel(self.AxesGH_,sprintf('Time (s)'),'Color',color,'FontSize',10,'Interpreter','none');
+%         end  % function                
+%         
+%         function clearXAxisLabel(self)
+%             if isempty(self.XAxisLabelGH_) ,
+%                 % nothing to do
+%             else
+%                 ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
+%                 self.XAxisLabelGH_ = [] ;
+%             end
+%         end  % function                
         
-        function clearXAxisLabel(self)
-            if isempty(self.XAxisLabelGH_) ,
-                % nothing to do
-            else
-                ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
-                self.XAxisLabelGH_ = [] ;
-            end
-        end  % function                
-        
+        function setControlEnablement(self, areYLimitsLockedTightToData)
+            onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
+            set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+        end  % function
         
     end  % public methods block
     
