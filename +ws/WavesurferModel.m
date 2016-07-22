@@ -149,7 +149,7 @@ classdef WavesurferModel < ws.RootModel
             if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
                 doRunInDebugMode = false ;
             end
-            
+            doRunInDebugMode = true;
 %             if ~exist('mode','var') || isempty(mode),
 %                 mode = 'release' ;
 %             end
