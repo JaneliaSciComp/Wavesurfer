@@ -16,7 +16,7 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     end  % methods block
     
     methods
-        function controlActuated(self,controlName,source,event)            
+        function controlActuated(self,controlName,source,event,varargin)            
             try
                 type=get(source,'Type');
                 if isequal(type,'uicontrol') ,

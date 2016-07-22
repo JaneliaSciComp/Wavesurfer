@@ -313,14 +313,14 @@ classdef Controller < handle
     end  % protected methods that are designed to be optionally overridden
     
     methods
-        function controlActuated(self,controlName,source,event)            
+        function controlActuated(self,controlName,source,event,varargin)            
             try
                 %controlName
                 if isempty(source) ,
                     % this means the control actuated was a 'faux' control
-                    methodName=[controlName 'Actuated'];
+                    methodName=[controlName 'Actuated'] ;
                     if ismethod(self,methodName) ,
-                        self.(methodName)(source,event);
+                        self.(methodName)(source,event,varargin{:});
                     end
                 else
                     type=get(source,'Type');
@@ -331,12 +331,12 @@ classdef Controller < handle
                             methodName=[controlName 'CellSelected'];
                         end
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event);
+                            self.(methodName)(source,event,varargin{:});
                         end                    
                     elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
-                        methodName=[controlName 'Actuated'];
+                        methodName=[controlName 'Actuated']
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event);
+                            self.(methodName)(source,event,varargin{:});
                         end
                     else
                         % odd --- just ignore

@@ -35,7 +35,7 @@ classdef YLimDialogController < ws.Controller
             self.Parent_=[];
         end
                 
-        function controlActuated(self,source,event)
+        function controlActuated(self,source,event,varargin)
             figureObject=self.Figure;
             try
                 if source==figureObject.OKButton ,

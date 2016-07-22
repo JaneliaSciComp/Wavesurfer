@@ -1,4 +1,4 @@
-classdef DisplayController < ws.Controller    %& ws.EventSubscriber
+classdef DisplayController < ws.Controller
     
     properties
         MyYLimDialogController=[]
@@ -6,87 +6,41 @@ classdef DisplayController < ws.Controller    %& ws.EventSubscriber
 
     methods
         function self=DisplayController(wavesurferController, wavesurferModel)
-            self = self@ws.Controller(wavesurferController, wavesurferModel);
+            % Call the superclass constructor
+            displayModel = wavesurferModel.Display ;
+            self = self@ws.Controller(wavesurferController, displayModel);
 
             % Create the figure, store a pointer to it
-            displayModel = wavesurferModel.Display ;
             fig = ws.DisplayFigure(displayModel,self) ;
             self.Figure_ = fig ;
-
-%             displayModel.subscribeMe(self,'WindowVisibilityNeedsToBeUpdated','','updateWindowVisibility');            
-%             displayModel.subscribeMe(self,'DidSetIsEnabled','','displayEnablementMayHaveChanged');
-%             self.updateWindowVisibility();
-%               % Need to update the window visibility to match Display
-%               % subsystem enablement and the per-scope visibility setting.
         end
         
         function delete(self)
              self.MyYLimDialogController=[];
         end
         
-%         function showFigure(self)
-%             % We override this method and interpret it as a request to show
-%             % the window, but the actual showing of the window is left to
-%             % the showFigureForReals() method.  Here we update the model,
-%             % and that indirectly causes showFigureForReals to get called.
-%             %
-%             % There's only one ScopeFigure per ScopeController, so windows
-%             % is ignored
-%             if isempty(self) || ~isvalid(self) ,
-%                 return
-%             end
-%             if isempty(self.Model) || ~isvalid(self.Model) ,
-%                 return
-%             end
-%             if isempty(self.Model.Parent) || ~isvalid(self.Model.Parent) ,
-%                 return
-%             end
-%             
-%             self.Model.IsVisibleWhenDisplayEnabled = true ;
-%             %display=self.Model.Parent;
-%             %display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=true;
-%         end
-%         
-%         function hideFigure(self)
-%             % We override this method and interpret it as a request to hide
-%             % the window, but the actual hiding of the window is left to
-%             % the hideFigureForReals() method.  Here we update the model,
-%             % and that indirectly causes hideFigureForReals to get called.
-% 
-%             % There's only one ScopeFigure per ScopeController, so windows
-%             % is ignored
-%             if isempty(self) || ~isvalid(self) ,
-%                 return
-%             end       
-%             if isempty(self.Model) || ~isvalid(self.Model) ,
-%                 return
-%             end
-%             if isempty(self.Model.Parent) || ~isvalid(self.Model.Parent) ,
-%                 return
-%             end
-%             
-%             self.Model.IsVisibleWhenDisplayEnabled = false ;
-% %             display=self.Model.Parent;
-% %             display.Scopes(display.Scopes==self.Model).IsVisibleWhenDisplayEnabled=false;
-%         end
-%         
-%         function showFigureForReals_(self)
-%             % Low-level method that actually makes the window visible            
-% %             isValid=isvalid(self.Figure);
-% %             validFigure=self.Figure(isValid);
-% %             arrayfun(@(w)set(w, 'Visible', 'on'), validFigure);
-%             
-%             self.Figure.show();
-%         end  % method
-%         
-%         function hideFigureForReals_(self)
-%             % Low-level method that actually makes the window invisible
-% %             isValid=isvalid(self.Figure);
-% %             validFigure=self.Figure(isValid);
-% %             arrayfun(@(w)set(w, 'Visible', 'off'), validFigure);
-% 
-%             self.Figure.hide();
-%         end  % method
+        function ShowGridMenuItemGHActuated(self, varargin)
+            self.Model.toggleIsGridOn();
+        end  % method        
+
+        function DoShowButtonsMenuItemGHActuated(self, varargin)
+            self.Model.toggleDoShowButtons();
+        end  % method        
+
+        function InvertColorsMenuItemGHActuated(self, varargin)
+            self.Model.toggleAreColorsNormal();
+        end  % method        
+
+        function AnalogChannelMenuItemsActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
+            self.Model.toggleIsAnalogChannelDisplayed(aiChannelIndex) ;
+        end  % method        
+
+        
+        
+        
+        
+        
+        
         
         function setYLimTightToDataButtonActuated(self, scopeIndex)
             self.Model.setYAxisLimitsTightToData(scopeIndex);
@@ -95,127 +49,7 @@ classdef DisplayController < ws.Controller    %& ws.EventSubscriber
         function setYLimTightToDataLockedButtonActuated(self, scopeIndex)
             self.Model.toggleAreYLimitsLockedTightToData(scopeIndex);
         end  % method       
-        
-%         function displayEnablementMayHaveChanged(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Called to advise the controller that it may need to show/hide
-%             % the window.
-%             % Currently, calls self.updateWindowVisibility(), which queries the WavesurferModel.Display to see whether
-%             % the window should be visible, and adjusts accordingly.
-%             self.updateWindowVisibility();
-%         end  % method
-        
-%         function updateWindowVisibility(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             % Queries the WavesurferModel.Display and the scope model to see whether
-%             % the window should be visible, and adjusts accordingly.
-%             if isempty(self) || ~isvalid(self) ,
-%                 return
-%             end
-%             if isempty(self.Model) || ~isvalid(self.Model) ,
-%                 return
-%             end
-%             if isempty(self.Model.Parent) || ~isvalid(self.Model.Parent) ,
-%                 return
-%             end
-% %             display=self.Model.Parent;
-% %             iScope=find(display.Scopes==self.Model);
-% %             if isscalar(iScope) ,
-% %                 shouldBeVisible=(display.IsEnabled && display.Scopes{iScope}.IsVisibleWhenDisplayEnabled);
-% %                 if shouldBeVisible ,
-% %                     self.showFigureForReals_();
-% %                 else
-% %                     self.hideFigureForReals_();
-% %                 end
-% %             end
-%             
-%             display=self.Model.Parent;
-%             shouldBeVisible=(display.IsEnabled && self.Model.IsVisibleWhenDisplayEnabled);
-%             if shouldBeVisible ,
-%                 self.showFigureForReals_();
-%             else
-%                 self.hideFigureForReals_();
-%             end
-%         end  % method
-        
-%         function didSetXLimInView(self,varargin)
-%             %fprintf('ScopeController::didSetXLimInView()\n');
-%             xlimInFigure=self.Figure.XLim;
-%             xLowInFigure=xlimInFigure(1);
-%             xHighInFigure=xlimInFigure(2);
-%             xlimInModel=self.Model.XLim;
-%             xLowInModel=xlimInModel(1);
-%             xHighInModel=xlimInModel(2);
-%             % Check if this is a real change to avoid infinite loops
-%             if xLowInFigure~=xLowInModel || xHighInFigure~=xHighInModel ,
-%                 self.Model.XLim=xlimInFigure;
-%             end
-%         end  % method
-        
-%         function didSetYLimInView(self,varargin)
-%             %fprintf('ScopeController::didSetYLimInView()\n');
-%             ylimInFigure=self.Figure.YLim;
-%             yLowInFigure=ylimInFigure(1);
-%             yHighInFigure=ylimInFigure(2);
-%             ylimInModel=self.Model.YLim;
-%             yLowInModel=ylimInModel(1);
-%             yHighInModel=ylimInModel(2);
-%             % Check if this is a real change to avoid infinite loops
-%             if yLowInFigure~=yLowInModel || yHighInFigure~=yHighInModel ,
-%                 self.Model.YLim=ylimInFigure;
-%             end
-%         end  % method
-        
-%         function controlActuated(self,controlName,source,event,varargin)  %#ok<INUSL>
-%             %figureObject=self.Figure;
-%             try
-%                 switch controlName ,
-%                     case {'SetYLimTightToDataButtonGH', 'SetYLimTightToDataMenuItemGH'} ,
-%                         self.setYLimTightToDataButtonActuated(varargin{:});
-%                     case {'SetYLimTightToDataLockedButtonGH', 'SetYLimTightToDataLockedMenuItemGH'} ,
-%                         self.setYLimTightToDataLockedButtonActuated(varargin{:});
-%                     case 'YLimitsMenuItemGH' ,
-%                         self.yLimitsMenuItemActuated();
-%                     case 'InvertColorsMenuItemGH' ,
-%                         self.invertColorsMenuItemActuated();
-%                     case 'DoShowButtonsMenuItemGH' ,
-%                         self.doShowButtonsMenuItemActuated();
-%                     case 'ShowGridMenuItemGH' ,
-%                         self.showGridMenuItemActuated();
-%                     case {'YZoomInButtonGH','YZoomInMenuItemGH'} ,
-%                         self.zoomInButtonPressed();
-%                     case {'YZoomOutButtonGH','YZoomOutMenuItemGH'} ,
-%                         self.zoomOutButtonPressed();
-%                     case {'YScrollUpButtonGH','YScrollUpMenuItemGH'} ,
-%                         self.scrollUpButtonPressed();
-%                     case {'YScrollDownButtonGH','YScrollDownMenuItemGH'} ,
-%                         self.scrollDownButtonPressed();
-%                 end  % switch
-%             catch me
-% %                 isInDebugMode=~isempty(dbstatus());
-% %                 if isInDebugMode ,
-% %                     rethrow(me);
-% %                 else
-%                     ws.errordlg(me.message,'Error','modal');
-% %                 end
-%             end
-%         end  % method
-        
-        function yLimitsMenuItemActuated(self)
-            self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
-            self.MyYLimDialogController=...
-                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLim');
-        end  % method        
-        
-        function showGridMenuItemActuated(self)
-            self.Model.toggleIsGridOn();
-        end  % method        
-
-        function doShowButtonsMenuItemActuated(self)
-            self.Model.toggleDoShowButtons();
-        end  % method        
-
-        function invertColorsMenuItemActuated(self)
-            self.Model.toggleAreColorsNormal();
-        end  % method        
+                
 
         function zoomInButtonPressed(self)
             self.Model.zoomIn();
@@ -232,6 +66,12 @@ classdef DisplayController < ws.Controller    %& ws.EventSubscriber
         function scrollDownButtonPressed(self)
             self.Model.scrollDown();
         end
+        
+        function yLimitsMenuItemActuated(self)
+            self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
+            self.MyYLimDialogController=...
+                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLim');
+        end  % method        
         
     end  % public methods block
 

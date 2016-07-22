@@ -40,6 +40,7 @@ classdef DisplayFigure < ws.MCOSFigure
         NormalYScrollDownIcon_ 
         NormalYTightToDataIcon_ 
         NormalYTightToDataLockedIcon_ 
+        NormalYCaretIcon_ 
         
 %         YScrollUpIcon_ 
 %         YScrollDownIcon_ 
@@ -88,6 +89,8 @@ classdef DisplayFigure < ws.MCOSFigure
             self.NormalYTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
             self.NormalYTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
+            self.NormalYCaretIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 
             % Create the widgets that will persist through the life of the
             % figure
@@ -236,8 +239,8 @@ end  % public methods block
             
             % Position the figure in the middle of the screen
             nScopes = self.Model.NScopes ;
-            initialHeight = min(200 * max(1,nScopes), maxInitialHeight) ;
-            initialSize=[570 initialHeight];
+            initialHeight = min(250 * max(1,nScopes), maxInitialHeight) ;
+            initialSize=[700 initialHeight];
             figurePosition=[offset initialSize];
             set(self.FigureGH,'Position',figurePosition);
         end  % function
@@ -785,7 +788,7 @@ end  % public methods block
                                   'Label', aiChannelNames{i}, ...
                                   'Tag', sprintf('AnalogChannelMenuItem %d',i), ...
                                   'Checked', ws.onIff(model.IsAnalogChannelDisplayed(i)), ...
-                                  'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event)));
+                                  'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event,i)));
                 self.AnalogChannelMenuItems_ = horzcat(self.AnalogChannelMenuItems_, menuItem) ;
             end
             
@@ -796,7 +799,7 @@ end  % public methods block
                                   'Label', diChannelNames{i}, ...
                                   'Tag', sprintf('DigitalChannelMenuItem %d',i), ...
                                   'Checked', ws.onIff(model.IsDigitalChannelDisplayed(i)), ...
-                                  'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event)));
+                                  'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event,i)));
                 if i==1 ,
                     set(menuItem, 'Separator', 'on') ;
                 end
@@ -844,11 +847,13 @@ end  % public methods block
                 yScrollDownIcon = self.NormalYScrollDownIcon_ ;
                 yTightToDataIcon = self.NormalYTightToDataIcon_ ;
                 yTightToDataLockedIcon = self.NormalYTightToDataLockedIcon_ ;
+                yCaretIcon = self.NormalYCaretIcon_ ;
             else
                 yScrollUpIcon   = 1-self.NormalYScrollUpIcon_   ;  % RGB images, so this inverts them, leaving nan's alone
                 yScrollDownIcon = 1-self.NormalYScrollDownIcon_ ;                
                 yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataIcon_) ;  
                 yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataLockedIcon_) ;
+                yCaretIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYCaretIcon_) ;
             end                
 
             % Determine the common x-axis limits
@@ -869,7 +874,7 @@ end  % public methods block
                 thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                            axesForegroundColor, axesBackgroundColor, ...
                                            traceLineColor, ...
-                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon) ;
+                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
                 thisPlot.IsGridOn = isGridOn ;                       
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,i)') ;
@@ -880,7 +885,7 @@ end  % public methods block
                 thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                            axesForegroundColor, axesBackgroundColor, ...
                                            traceLineColor, ...
-                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon) ;
+                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
                 thisPlot.IsGridOn = isGridOn ;                       
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits([-0.05 1.05]) ;
@@ -901,11 +906,15 @@ end  % public methods block
 %             set(self.DoShowButtonsMenuItem_, 'Enable',onIff(isIdle));            
             
             % Update the enablement of buttons in the panels
+            isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
+            isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;            
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
             for i=1:length(self.AnalogScopePlots_) ,
+                self.AnalogScopePlots_(i).IsVisible = isAnalogChannelDisplayed(i) ;
                 self.AnalogScopePlots_(i).setControlEnablement(areYLimitsLockedTightToData(i)) ;
             end
             for i=1:length(self.DigitalScopePlots_) ,
+                self.DigitalScopePlots_(i).IsVisible = isDigitalChannelDisplayed(i) ;
                 self.DigitalScopePlots_(i).setControlEnablement(true) ;  % digital channels are always locked tight to data
             end
         end  % function
@@ -925,14 +934,13 @@ end  % public methods block
             indexOfThisScopeAmongVisibleScopes = 0 ;
             for i=1:length(self.AnalogScopePlots_)
                 if isAnalogChannelDisplayed(i) ,
-                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1;
+                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
                     self.AnalogScopePlots_(i).setPositionAndLayout(figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons) ;
                 end
             end
-            indexOfThisScopeAmongVisibleScopes = 0 ;
             for i=1:length(self.DigitalScopePlots_)
                 if isDigitalChannelDisplayed(i) ,
-                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1;
+                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
                     self.DigitalScopePlots_(i).setPositionAndLayout(figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons) ;
                 end
             end

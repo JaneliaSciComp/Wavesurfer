@@ -1114,31 +1114,31 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
     end
 
-    methods (Static)    
-        function isMatch = doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers)
-            % Looks at all the scope models, and all the scope controllers,
-            % and returns an nScopeModels x nScopeControllers matrix which
-            % is 1 if that model goes with that controller, and 0
-            % otherwise.  So all-zero rows of the matrix correspond to
-            % models with no controller, and all-zero columns correspond to
-            % controllers with no model among the current scope models
-            
-            %scopeModels = self.Model.Display.Scopes ;
-            %scopeControllers = self.ScopeControllers ;
-            controllerModels = cellfun(@(controller)(controller.Model),scopeControllers,'UniformOutput',false) ;
-%             isMatch = bsxfun(@(scopeModelCell,scopeControllerModelCell)(scopeModelCell{1}==scopeControllerModelCell{1}), ...
-%                              scopeModels' , ...
-%                              scopeControllerModels) ;
-            nModels = length(scopeModels) ;
-            nControllers = length(scopeControllers) ;
-            isMatch = zeros(nModels,nControllers) ;
-            for i = 1:nModels ,
-                for j = 1:nControllers ,
-                    isMatch(i,j) = (scopeModels{i}==controllerModels{j}) ;
-                end
-            end
-        end        
-    end
+%     methods (Static)    
+%         function isMatch = doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers)
+%             % Looks at all the scope models, and all the scope controllers,
+%             % and returns an nScopeModels x nScopeControllers matrix which
+%             % is 1 if that model goes with that controller, and 0
+%             % otherwise.  So all-zero rows of the matrix correspond to
+%             % models with no controller, and all-zero columns correspond to
+%             % controllers with no model among the current scope models
+%             
+%             %scopeModels = self.Model.Display.Scopes ;
+%             %scopeControllers = self.ScopeControllers ;
+%             controllerModels = cellfun(@(controller)(controller.Model),scopeControllers,'UniformOutput',false) ;
+% %             isMatch = bsxfun(@(scopeModelCell,scopeControllerModelCell)(scopeModelCell{1}==scopeControllerModelCell{1}), ...
+% %                              scopeModels' , ...
+% %                              scopeControllerModels) ;
+%             nModels = length(scopeModels) ;
+%             nControllers = length(scopeControllers) ;
+%             isMatch = zeros(nModels,nControllers) ;
+%             for i = 1:nModels ,
+%                 for j = 1:nControllers ,
+%                     isMatch(i,j) = (scopeModels{i}==controllerModels{j}) ;
+%                 end
+%             end
+%         end        
+%     end
         
     methods (Access = protected)    
 %         function deleteAllScopeControllers_(self)
@@ -1150,18 +1150,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %         end
         
-        function deleteScopeController_(self, indexInScopeControllers)
-            % Deletes a single scope controller+view, leaving the model alone.
-            
-            scopeController = self.ScopeControllers{indexInScopeControllers} ;
-            isMatch = cellfun(@(childController)(scopeController==childController), self.ChildControllers) ;
-            scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-            self.ScopeControllers(indexInScopeControllers) = [] ;  % delete an element from the cell array
-            indexInChildControllers = find(isMatch,1) ;
-            if ~isempty(indexInChildControllers) ,
-                self.ChildControllers(indexInChildControllers) = [] ;  % delete an element from the cell array
-            end
-        end
+%         function deleteScopeController_(self, indexInScopeControllers)
+%             % Deletes a single scope controller+view, leaving the model alone.
+%             
+%             scopeController = self.ScopeControllers{indexInScopeControllers} ;
+%             isMatch = cellfun(@(childController)(scopeController==childController), self.ChildControllers) ;
+%             scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%             self.ScopeControllers(indexInScopeControllers) = [] ;  % delete an element from the cell array
+%             indexInChildControllers = find(isMatch,1) ;
+%             if ~isempty(indexInChildControllers) ,
+%                 self.ChildControllers(indexInChildControllers) = [] ;  % delete an element from the cell array
+%             end
+%         end
         
     end
     

@@ -174,7 +174,7 @@ classdef YLimDialogFigure < ws.MCOSFigure
             set(self.FigureGH,'Position',newPosition);
         end
         
-        function controlActuated(self,source,event)
+        function controlActuated(self,source,event,varargin)
             % This makes it so that we don't have all these implicit
             % references to the controller in the closures attached to HG
             % object callbacks.  It also means we can just do nothing if

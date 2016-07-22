@@ -1,6 +1,7 @@
 classdef ScopePlot < handle
     
     properties (Dependent=true)
+        IsVisible
         IsGridOn
     end
     
@@ -240,7 +241,7 @@ classdef ScopePlot < handle
         function setColorsAndIcons(self, controlForegroundColor, controlBackgroundColor, ...
                                          axesForegroundColor, axesBackgroundColor, ...
                                          traceLineColor, ...
-                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon)
+                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon)
             % If there are issues with the model, just return
             %displayFigure = self.Parent_ ;
             
@@ -264,6 +265,7 @@ classdef ScopePlot < handle
             set(self.YScrollDownButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
             set(self.SetYLimTightToDataButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
             set(self.SetYLimTightToDataLockedButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
+            set(self.SetYLimButtonGH_,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);            
             
             % Set the button scroll up/down button images
 %             yScrollUpIcon   = displayFigure.YScrollUpIcon   ;
@@ -274,6 +276,7 @@ classdef ScopePlot < handle
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
             set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);            
+            set(self.SetYLimButtonGH_,'CData',yCaretIcon);            
         end  % function
 
         function set.IsGridOn(self, newValue)
@@ -284,6 +287,23 @@ classdef ScopePlot < handle
            
         function result = get.IsGridOn(self)
             onOrOff = get(self.AxesGH_, 'XGrid') ;
+            result = isequal(onOrOff, 'on') ;
+        end
+        
+        function set.IsVisible(self, newValue)
+            set(self.AxesGH_, 'Visible', ws.onIff(newValue));
+            set(self.SetYLimTightToDataButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.SetYLimTightToDataLockedButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.SetYLimButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.YZoomInButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.YZoomOutButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.YScrollUpButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.YScrollDownButtonGH_, 'Visible', ws.onIff(newValue));
+            set(self.YAxisLabelGH_, 'Visible', ws.onIff(newValue));
+        end
+           
+        function result = get.IsVisible(self)
+            onOrOff = get(self.AxesGH_, 'Visible') ;
             result = isequal(onOrOff, 'on') ;
         end
         
@@ -448,7 +468,7 @@ classdef ScopePlot < handle
         function setPositionAndLayout(self, figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons)
             % This method should make sure all the controls are sized and placed
             % appropriately given the current model state.  
-
+            
             % Layout parameters
             minLeftMargin = 46 ;
             maxLeftMargin = 62 ;
@@ -471,10 +491,11 @@ classdef ScopePlot < handle
             
             fromAxesToYRangeButtonsWidth = 6 ;
             yRangeButtonSize = 20 ;  % those buttons are square
-            spaceBetweenScrollButtons=5;
-            spaceBetweenZoomButtons=5;
-            spaceBetweenZoomToDataButtons=5;
-            minHeightBetweenButtonBanks = 5 ;
+            spaceBetweenButtonsInSameBank=5;
+            %spaceBetweenButtonsInSameBank=spaceBetweenButtonsInSameBank;
+            %spaceBetweenButtonsInSameBank=spaceBetweenButtonsInSameBank;
+            %spaceBetweenButtonsInSameBank=spaceBetweenButtonsInSameBank;
+            minHeightBetweenButtonBanks = 10 ;
             
             % Show buttons only if user wants them
             %doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
@@ -510,7 +531,7 @@ classdef ScopePlot < handle
             axesAndButtonsAreaHeight = panelHeight - bottomMargin - topMargin ;
 
             % If not enough vertical space for the buttons, hide them
-            if axesAndButtonsAreaHeight < 4*yRangeButtonSize + spaceBetweenScrollButtons + spaceBetweenZoomButtons + minHeightBetweenButtonBanks ,
+            if axesAndButtonsAreaHeight < 7*yRangeButtonSize + 4*spaceBetweenButtonsInSameBank + 2*minHeightBetweenButtonBanks ,
                 isEnoughHeightForButtons = false ;
                 % Recalculate some things that are affected by this change
                 minRightMargin = minRightMarginIfNoButtons ;
@@ -545,7 +566,7 @@ classdef ScopePlot < handle
             % Update the axes position
             axesXOffset = leftMargin ;
             axesYOffset = bottomMargin ;
-            set(self.AxesGH_,'Position',[panelXOffset+axesXOffset axesYOffset axesWidth axesHeight]);            
+            set(self.AxesGH_,'Position',[panelXOffset+axesXOffset panelYOffset+axesYOffset axesWidth axesHeight]);            
             
             % the zoom buttons
             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
@@ -556,7 +577,7 @@ classdef ScopePlot < handle
                 'Position',[panelXOffset+zoomOutButtonX panelYOffset+zoomOutButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             zoomInButtonX=yRangeButtonsX;
-            zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenZoomButtons;  % want just above other zoom button
+            zoomInButtonY=zoomOutButtonY+yRangeButtonSize+spaceBetweenButtonsInSameBank;  % want just above other zoom button
             set(self.YZoomInButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[panelXOffset+zoomInButtonX panelYOffset+zoomInButtonY ...
@@ -570,24 +591,29 @@ classdef ScopePlot < handle
                 'Position',[panelXOffset+scrollUpButtonX panelYOffset+scrollUpButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             scrollDownButtonX=yRangeButtonsX;
-            scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenScrollButtons;  % want under scroll up button
+            scrollDownButtonY=scrollUpButtonY-yRangeButtonSize-spaceBetweenButtonsInSameBank;  % want under scroll up button
             set(self.YScrollDownButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[panelXOffset+scrollDownButtonX panelYOffset+scrollDownButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
                         
             % the zoom-to-data buttons
-            zoomToDataButtonsHeight = yRangeButtonSize + spaceBetweenZoomToDataButtons + yRangeButtonSize ;
+            zoomToDataButtonsHeight = 3* yRangeButtonSize + 2*spaceBetweenButtonsInSameBank ;
             zoomToDataButtonsY = axesYOffset+axesHeight/2-zoomToDataButtonsHeight/2 ;            
-            setYLimTightToDataButtonY = zoomToDataButtonsY + yRangeButtonSize + spaceBetweenZoomToDataButtons ;
+            setYLimTightToDataButtonY = zoomToDataButtonsY + 2*(yRangeButtonSize + spaceBetweenButtonsInSameBank) ;
             set(self.SetYLimTightToDataButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[panelXOffset+yRangeButtonsX panelYOffset+setYLimTightToDataButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
-            setYLimTightToDataLockedButtonY = zoomToDataButtonsY ;
+            setYLimTightToDataLockedButtonY = zoomToDataButtonsY + (yRangeButtonSize + spaceBetweenButtonsInSameBank) ;
             set(self.SetYLimTightToDataLockedButtonGH_, ...
                 'Visible',ws.onIff(doShowButtons) , ...
                 'Position',[panelXOffset+yRangeButtonsX panelYOffset+setYLimTightToDataLockedButtonY ...
+                            yRangeButtonSize yRangeButtonSize]);
+            setYLimButtonY = zoomToDataButtonsY ;
+            set(self.SetYLimButtonGH_, ...
+                'Visible',ws.onIff(doShowButtons) , ...
+                'Position',[panelXOffset+yRangeButtonsX panelYOffset+setYLimButtonY ...
                             yRangeButtonSize yRangeButtonSize]);
             
         end  % function        

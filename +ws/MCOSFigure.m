@@ -476,7 +476,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     end  % methods    
     
     methods
-        function controlActuated(self,controlName,source,event)
+        function controlActuated(self,controlName,source,event,varargin)
             % This makes it so that we don't have all these implicit
             % references to the controller in the closures attached to HG
             % object callbacks.  It also means we can just do nothing if
@@ -484,7 +484,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             if isempty(self.Controller_) || ~isvalid(self.Controller_) ,
                 % do nothing
             else
-                self.Controller_.controlActuated(controlName,source,event);
+                self.Controller_.controlActuated(controlName,source,event,varargin{:});
             end
         end  % function       
     end  % methods

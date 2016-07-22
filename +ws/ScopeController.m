@@ -183,7 +183,7 @@ classdef ScopeController < ws.Controller & ws.EventSubscriber
 %             end
 %         end  % method
         
-        function controlActuated(self,controlName,source,event)  %#ok<INUSD>
+        function controlActuated(self,controlName,source,event,varargin)  %#ok<INUSD>
             %figureObject=self.Figure;
             try
                 switch controlName ,
