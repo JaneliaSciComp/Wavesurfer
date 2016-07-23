@@ -55,6 +55,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         DidSetUpdateRate
         UpdateXSpan
         UpdateXOffset
+        UpdateYAxisLimits
         DataAdded
         DataCleared
     end
@@ -385,6 +386,56 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function result = get.DoShowButtons(self)
             result = self.DoShowButtons_ ;
         end                    
+        
+        function scrollUp(self, aiChannelIndex)  % works on analog channels only
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+                    yMiddle=mean(yLimits);
+                    ySpan=diff(yLimits);
+                    yRadius=0.5*ySpan;
+                    newYLimits=(yMiddle+0.1*ySpan)+yRadius*[-1 +1]' ;
+                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to scrollUp() must be a valid AI channel index') ;
+            end                
+        end  % function
+        
+        function scrollDown(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            ySpan=diff(yLimits);
+            yRadius=0.5*ySpan;
+            newYLimits=(yMiddle-0.1*ySpan)+yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function        
+        
+        function zoomIn(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            yRadius=0.5*diff(yLimits);
+            newYLimits=yMiddle+0.5*yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function
+        
+        function zoomOut(self)
+            yLimits=self.YLim;
+            yMiddle=mean(yLimits);
+            yRadius=0.5*diff(yLimits);
+            newYLimits=yMiddle+2*yRadius*[-1 +1];
+            self.YLim=newYLimits;
+        end  % function
+        
     end  % public methods block
     
     methods (Access=protected)

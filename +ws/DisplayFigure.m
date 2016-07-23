@@ -148,6 +148,7 @@ classdef DisplayFigure < ws.MCOSFigure
                %model.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
+               model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
                model.subscribeMe(self,'DataAdded','','modelDataAdded');
                model.subscribeMe(self,'DataCleared','','modelDataCleared');
                wavesurferModel=model.Parent;
@@ -382,8 +383,10 @@ end  % public methods block
             self.updateXAxisLimits_();
         end  % function
         
-        function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.updateYAxisLimits_();
+        function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSL>
+            args = event.Args ;
+            aiChannelIndex = args{1} ;
+            self.updateYAxisLimits_(aiChannelIndex);
         end  % function
         
         function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
@@ -1057,19 +1060,14 @@ end  % public methods block
             end
         end  % function        
 
-        function updateYAxisLimits_(self)
+        function updateYAxisLimits_(self, aiChannelIndex)
             % Update the axes limits to match those in the model
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
             yLimitsPerAnalogChannel = self.Model.YLimitsPerAnalogChannel ;
-            for i = 1:length(self.AnalogScopePlots_) ,
-                yl = yLimitsPerAnalogChannel(:,i)' ;
-                self.AnalogScopePlots_(i).setYAxisLimits(yl) ;
-            end
-            for i = 1:length(self.DigitalScopePlots_) ,
-                self.DigitalScopePlots_(i).setYAxisLimits([-0.05 1.05]) ;
-            end
+            yl = yLimitsPerAnalogChannel(:,aiChannelIndex)' ;
+            self.AnalogScopePlots_(aiChannelIndex).setYAxisLimits(yl) ;
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)

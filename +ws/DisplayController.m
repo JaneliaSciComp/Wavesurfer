@@ -62,8 +62,9 @@ classdef DisplayController < ws.Controller
             self.Model.zoomOut();
         end
         
-        function scrollUpButtonPressed(self)
-            self.Model.scrollUp();
+        function YScrollUpButtonGHActuated(self, source, event, channelIndex)
+            channelIndex
+            self.Model.scrollUp(channelIndex);
         end
         
         function scrollDownButtonPressed(self)
