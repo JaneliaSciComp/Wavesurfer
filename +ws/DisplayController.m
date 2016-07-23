@@ -35,6 +35,9 @@ classdef DisplayController < ws.Controller
             self.Model.toggleIsAnalogChannelDisplayed(aiChannelIndex) ;
         end  % method        
 
+        function DigitalChannelMenuItemsActuated(self, source, event, diChannelIndex)  %#ok<INUSL>
+            self.Model.toggleIsDigitalChannelDisplayed(diChannelIndex) ;
+        end  % method        
         
         
         

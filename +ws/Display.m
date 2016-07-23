@@ -103,7 +103,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function toggleIsAnalogChannelDisplayed(self, aiChannelIndex) 
             if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex))
                 nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-                if 1<=aiChannelIndex && aiChannelIndex<nAIChannels ,
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
                     currentValue = self.IsAnalogChannelDisplayed_(aiChannelIndex) ;
                     self.IsAnalogChannelDisplayed_(aiChannelIndex) = ~currentValue ;
                     isValid = true ;
@@ -117,6 +117,26 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if ~isValid ,
                 error('most:Model:invalidPropVal', ...
                       'Argument to toggleIsAnalogChannelDisplayed must be a valid AI channel index') ;
+            end                
+        end
+        
+        function toggleIsDigitalChannelDisplayed(self, diChannelIndex) 
+            if isnumeric(diChannelIndex) && isscalar(diChannelIndex) && isreal(diChannelIndex) && (diChannelIndex==round(diChannelIndex))
+                nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
+                if 1<=diChannelIndex && diChannelIndex<=nDIChannels ,
+                    currentValue = self.IsDigitalChannelDisplayed_(diChannelIndex) ;
+                    self.IsDigitalChannelDisplayed_(diChannelIndex) = ~currentValue ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('Update');
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to toggleIsDigitalChannelDisplayed must be a valid DI channel index') ;
             end                
         end
         
