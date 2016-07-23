@@ -62,15 +62,22 @@ classdef DisplayController < ws.Controller
             self.Model.zoomOut();
         end
         
-        function YScrollUpButtonGHActuated(self, source, event, channelIndex)
-            channelIndex
+        function YScrollUpButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
             self.Model.scrollUp(channelIndex);
         end
-        
-        function scrollDownButtonPressed(self)
-            self.Model.scrollDown();
+                
+        function YScrollDownButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
+            self.Model.scrollDown(channelIndex);
         end
-        
+                
+        function YZoomInButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
+            self.Model.zoomIn(channelIndex);
+        end
+                
+        function YZoomOutButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
+            self.Model.zoomOut(channelIndex);
+        end
+                
         function yLimitsMenuItemActuated(self)
             self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
             self.MyYLimDialogController=...
