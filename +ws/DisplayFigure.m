@@ -144,7 +144,7 @@ classdef DisplayFigure < ws.MCOSFigure
                %model.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.subscribeMe(self,'DidSetIsEnabled','','update');
                model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               model.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
+               %model.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                %model.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');

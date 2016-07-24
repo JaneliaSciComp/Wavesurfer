@@ -245,6 +245,14 @@ classdef AcquisitionSubsystem < ws.Subsystem
             %self.broadcast('DidSetIsChannelActive');
         end
         
+        function result = indexOfAnalogChannelWithinActiveAnalogChannels(self, aiChannelIndex)
+            % aiChannelIndex is the index of a single channel within the
+            % list of all channels.  The result is the index of the same
+            % channel in a list of just the active channels.
+            resultForAllAIChannels = cumsum(self.IsAnalogChannelActive_) ;
+            result = resultForAllAIChannels(aiChannelIndex) ;
+        end
+        
         function result=get.IsAnalogChannelMarkedForDeletion(self)
             % Boolean array indicating which of the available analog channels is
             % active.

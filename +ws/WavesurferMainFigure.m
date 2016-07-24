@@ -157,7 +157,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
+               %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
                model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');

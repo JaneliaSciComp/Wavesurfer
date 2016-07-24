@@ -38,30 +38,7 @@ classdef DisplayController < ws.Controller
         function DigitalChannelMenuItemsActuated(self, source, event, diChannelIndex)  %#ok<INUSL>
             self.Model.toggleIsDigitalChannelDisplayed(diChannelIndex) ;
         end  % method        
-        
-        
-        
-        
-        
-        
-        
-        function setYLimTightToDataButtonActuated(self, scopeIndex)
-            self.Model.setYAxisLimitsTightToData(scopeIndex);
-        end  % method       
-        
-        function setYLimTightToDataLockedButtonActuated(self, scopeIndex)
-            self.Model.toggleAreYLimitsLockedTightToData(scopeIndex);
-        end  % method       
-                
-
-        function zoomInButtonPressed(self)
-            self.Model.zoomIn();
-        end
-        
-        function zoomOutButtonPressed(self)
-            self.Model.zoomOut();
-        end
-        
+                                
         function YScrollUpButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
             self.Model.scrollUp(channelIndex);
         end
@@ -78,7 +55,16 @@ classdef DisplayController < ws.Controller
             self.Model.zoomOut(channelIndex);
         end
                 
-        function yLimitsMenuItemActuated(self)
+        function SetYLimTightToDataButtonGHActuated(self, channelIndex)
+            self.Model.setYAxisLimitsTightToData(channelIndex);
+        end  % method       
+        
+        function SetYLimTightToDataLockedButtonGHActuated(self, channelIndex)
+            %self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
+        end  % method       
+
+        function SetYLimButtonGHActuated(self, channelIndex)
+            return
             self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
             self.MyYLimDialogController=...
                 ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLim');

@@ -50,7 +50,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     
     events
         %NScopesMayHaveChanged
-        DidSetScopeIsVisibleWhenDisplayEnabled
+        %DidSetScopeIsVisibleWhenDisplayEnabled
         %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
@@ -481,9 +481,63 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end                
         end  % function
                 
+        function setYAxisLimitsTightToData(self, aiChannelIndex)            
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    self.setYAxisLimitsTightToData_(aiChannelIndex) ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
+            end                
+        end  % function
+
+        function toggleAreYLimitsLockedTightToData(self, aiChannelIndex)
+            currentValue = self.AreYLimitsLockedTightToDataForAnalogChannel_(aiChannelIndex) ;
+            self.AreYLimitsLockedTightToDataForAnalogChannel_(aiChannelIndex) = ~currentValue ;
+            self.setYAxisLimitsTightToData_(aiChannelIndex) ;  % this doesn't call .broadcast()
+            self.broadcast('Update') ;  % Would be nice to be more surgical about this...
+        end        
     end  % public methods block
     
-    methods (Access=protected)
+    methods (Access=protected)        
+        function setYAxisLimitsTightToData_(self, aiChannelIndex)            
+            % this core function does no arg checking and doesn't call
+            % .broadcast.  It just mutates the state.
+            yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
+            if any(~isfinite(yMinAndMax)) ,
+                return
+            end
+            yCenter=mean(yMinAndMax);
+            yRadius=0.5*diff(yMinAndMax);
+            if yRadius==0 ,
+                yRadius=0.001;
+            end
+            newYLimits = yCenter + 1.05*yRadius*[-1 +1]' ;
+            self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;            
+        end
+        
+        function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
+            % Min and max of the data, across all plotted channels.
+            % Returns a 1x2 array.
+            % If all channels are empty, returns [+inf -inf].
+            indexWithinData = self.Parent.Acquisiton.indexOfAnalogChannelWithinActiveAnalogChannels(aiChannelIndex) ;
+            y = self.YData(:,indexWithinData) ;
+            yMinRaw=min(y);
+            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
+            yMaxRaw=max(y);
+            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
+            yMinAndMax=double([yMin yMax]);
+        end
+        
         function completingOrStoppingOrAbortingRun_(self)
             if ~isempty(self.CachedDisplayXSpan_)
                 self.XSpan = self.CachedDisplayXSpan_;
