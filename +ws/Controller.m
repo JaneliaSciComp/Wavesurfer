@@ -334,7 +334,7 @@ classdef Controller < handle
                             self.(methodName)(source,event,varargin{:});
                         end                    
                     elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
-                        methodName=[controlName 'Actuated']
+                        methodName=[controlName 'Actuated'] ;
                         if ismethod(self,methodName) ,
                             self.(methodName)(source,event,varargin{:});
                         end

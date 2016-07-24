@@ -941,7 +941,7 @@ end  % public methods block
         function updateLineXDataAndYData_(self)
             xData = self.Model.XData ;
             yData = self.Model.YData ;
-            sizeYData = size(yData)
+            sizeYData = size(yData) ;
             acq = self.Model.Parent.Acquisition ;
             isAIChannelActive = acq.IsAnalogChannelActive ;
             activeChannelIndex = 0 ;
