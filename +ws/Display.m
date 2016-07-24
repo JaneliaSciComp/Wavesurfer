@@ -602,7 +602,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Trim off scans that would be off the screen anyway
             doKeepScan = (self.XOffset_<=xAllProto) ;
             xNew = xAllProto(doKeepScan) ;
-            yNew = yAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan,:) ;
 
             % Commit the data to self
             self.XData_ = xNew ;
