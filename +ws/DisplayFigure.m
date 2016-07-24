@@ -151,6 +151,7 @@ classdef DisplayFigure < ws.MCOSFigure
                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
                model.subscribeMe(self,'DataAdded','','modelDataAdded');
                model.subscribeMe(self,'DataCleared','','modelDataCleared');
+               model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
                wavesurferModel=model.Parent;
                if ~isempty(wavesurferModel) ,
                    wavesurferModel.subscribeMe(self,'DidSetState','','update');
@@ -165,10 +166,14 @@ classdef DisplayFigure < ws.MCOSFigure
         end  % function
         
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            if isempty(self.ScopePlots) ,
-                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+            if isempty(self.AnalogScopePlots_) ,
+                if isempty(self.AnalogScopePlots_) ,
+                    xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+                else
+                    xSpanInPixels=self.DigitalScopePlots_(1).getAxesWidthInPixels() ;
+                end
             else
-                xSpanInPixels=self.ScopePlots(1).getAxesWidthInPixels() ;
+                xSpanInPixels=self.AnalogScopePlots_(1).getAxesWidthInPixels() ;
             end
             self.Model.hereIsXSpanInPixels(xSpanInPixels) ;
         end
@@ -412,55 +417,9 @@ end  % public methods block
 %             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
 %         end
         
-%         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-% %             % Need to pack up all the y data into a single array for
-% %             % downsampling (should change things more globally to make this
-% %             % unnecessary)
-% %             x = self.Model.XData ;
-% %             y = self.Model.YData ;
-% %             %nScans = length(x) ;
-% %             
-% %             % This shouldn't ever happen, but just in case...
-% %             if isempty(x) ,
-% %                 return
-% %             end
-% %             
-% %             % Figure out the downsampling ratio
-% %             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-% %             r=ws.ScopeFigure.ratioSubsampling(x,self.Model.XSpan,xSpanInPixels);
-% %             
-% %             % get the current downsampled data
-% %             xForPlottingOriginal=self.XForPlotting_;
-% %             yForPlottingOriginal=self.YForPlotting_;
-% %             
-% %             % Trim off any that is beyond the left edge of the plotted data
-% %             x0=x(1);  % this is the time of the first sample in the model's XData
-% %             keep=(x0<=xForPlottingOriginal);
-% %             xForPlottingOriginalTrimmed=xForPlottingOriginal(keep);
-% %             yForPlottingOriginalTrimmed=yForPlottingOriginal(keep,:);
-% %             
-% %             % Get just the new data
-% %             if isempty(xForPlottingOriginal)
-% %                 xNew=x;
-% %                 yNew=y;
-% %             else                
-% %                 isNew=(xForPlottingOriginal(end)<x);
-% %                 xNew=x(isNew);
-% %                 yNew=y(isNew);
-% %             end
-% %             
-% %             % Downsample the new data
-% %             [xForPlottingNew,yForPlottingNew]=ws.minMaxDownsampleMex(xNew,yNew,r);            
-% %             
-% %             % Concatenate old and new downsampled data, commit to self
-% %             self.XForPlotting_=[xForPlottingOriginalTrimmed; ...
-% %                                xForPlottingNew];
-% %             self.YForPlotting_=[yForPlottingOriginalTrimmed; ...
-% %                                yForPlottingNew];
-% 
-%             % Update the lines
-%             self.updateLineXDataAndYData_();
-%         end  % function
+        function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+            self.updateLineXDataAndYData_();
+        end  % function
         
         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateLineXDataAndYData_();                      
@@ -842,7 +801,7 @@ end  % public methods block
             set(self.FigureGH,'Color',figureBackground);
             axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
             axesForegroundColor = ws.fif(areColorsNormal,'k','g') ;
-            traceLineColor = ws.fif(areColorsNormal,'b','w') ;
+            traceLineColor = ws.fif(areColorsNormal,'k','w') ;
 
             % Compute the icons
             if areColorsNormal ,
@@ -981,7 +940,8 @@ end  % public methods block
         
         function updateLineXDataAndYData_(self)
             xData = self.Model.XData ;
-            yData = self.Model.YData ;            
+            yData = self.Model.YData ;
+            sizeYData = size(yData)
             acq = self.Model.Parent.Acquisition ;
             isAIChannelActive = acq.IsAnalogChannelActive ;
             activeChannelIndex = 0 ;

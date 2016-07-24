@@ -49,15 +49,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
     
     events
-        %NScopesMayHaveChanged
-        %DidSetScopeIsVisibleWhenDisplayEnabled
-        %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
         UpdateXOffset
         UpdateYAxisLimits
         DataAdded
         DataCleared
+        ItWouldBeNiceToKnowXSpanInPixels
     end
 
     methods
@@ -545,6 +543,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.CachedDisplayXSpan_ = [];
         end        
         
+        function setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
+            areYLimitsLockedTightToData = self.AreYLimitsLockedTightToData ;
+            if self.AreYLimitsLockedTightToData ,
+                self.setYAxisLimitsTightToData_();
+            end
+        end  % function
+        
         function clearData_(self)
             self.XData_ = zeros(0,1) ;
             acquisition = self.Parent.Acquisition ;
@@ -557,16 +562,23 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
 
-            % Compute a timeline for the new data
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
+            if nActiveDigitalChannels==0 ,
+                yRecent = recentScaledAnalogData ;
+            else
+                recentDigitalData = double(bitget(recentRawDigitalData,1:nActiveDigitalChannels)) ;
+                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
+            end
+            
+            % Compute a timeline for the new data            
             nNewScans = size(yRecent, 1) ;
             dt = 1/sampleRate ;  % s
             t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
             xRecent = t0 + dt*(0:(nNewScans-1))' ;
-            
-            % TODO: Need to add code below to get the uint8/uint16/uint32 data
-            % out of recentRawDigitalData into a matrix of logical data,
-            % then convert it to doubles and concat it only the
-            % recentScaledAnalogData, storing the result in yRecent.
             
             % Figure out the downsampling ratio
             self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
@@ -588,7 +600,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
             
             % Trim off scans that would be off the screen anyway
-            doKeepScan = (xOffsetInParent<=xAllProto) ;
+            doKeepScan = (self.XOffset_<=xAllProto) ;
             xNew = xAllProto(doKeepScan) ;
             yNew = yAllProto(doKeepScan) ;
 
@@ -602,8 +614,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 self.XOffset = xOffset ;
             end
             
-            % Change the y limits to match the data, if appropriate
-            self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
+            % TODO: Need to bring this back, make it work
+            % % Change the y limits to match the data, if appropriate
+            % self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
         end        
     end
         
