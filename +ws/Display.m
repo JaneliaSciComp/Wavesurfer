@@ -527,7 +527,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            indexWithinData = self.Parent.Acquisiton.indexOfAnalogChannelWithinActiveAnalogChannels(aiChannelIndex) ;
+            indexWithinData = self.Parent.Acquisition.indexOfAnalogChannelWithinActiveAnalogChannels(aiChannelIndex) ;
             y = self.YData(:,indexWithinData) ;
             yMinRaw=min(y);
             yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);

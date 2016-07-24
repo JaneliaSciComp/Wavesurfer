@@ -55,15 +55,15 @@ classdef DisplayController < ws.Controller
             self.Model.zoomOut(channelIndex);
         end
                 
-        function SetYLimTightToDataButtonGHActuated(self, channelIndex)
+        function SetYLimTightToDataButtonGHActuated(self, source, event, channelIndex)
             self.Model.setYAxisLimitsTightToData(channelIndex);
         end  % method       
         
-        function SetYLimTightToDataLockedButtonGHActuated(self, channelIndex)
-            %self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
+        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, channelIndex)
+            self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
         end  % method       
 
-        function SetYLimButtonGHActuated(self, channelIndex)
+        function SetYLimButtonGHActuated(self, source, event, channelIndex)
             return
             self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
             self.MyYLimDialogController=...

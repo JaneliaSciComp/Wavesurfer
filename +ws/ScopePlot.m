@@ -676,6 +676,7 @@ classdef ScopePlot < handle
         function setControlEnablement(self, areYLimitsLockedTightToData)
             onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
             set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+            set(self.SetYLimButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
             set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
