@@ -42,6 +42,7 @@ classdef DisplayFigure < ws.MCOSFigure
         NormalYTightToDataLockedIcon_ 
         NormalYCaretIcon_ 
         
+        TraceColorSequence_
 %         YScrollUpIcon_ 
 %         YScrollDownIcon_ 
 %         YTightToDataIcon_ 
@@ -92,6 +93,9 @@ classdef DisplayFigure < ws.MCOSFigure
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
             self.NormalYCaretIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 
+            % Create the trace color sequence
+            self.TraceColorSequence_ = ws.makeColorSequence() ;
+            
             % Create the widgets that will persist through the life of the
             % figure
             self.createFixedControls_();
@@ -801,7 +805,7 @@ end  % public methods block
             set(self.FigureGH,'Color',figureBackground);
             axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
             axesForegroundColor = ws.fif(areColorsNormal,'k','g') ;
-            traceLineColor = ws.fif(areColorsNormal,'k','w') ;
+            %traceLineColor = ws.fif(areColorsNormal,'k','w') ;
 
             % Compute the icons
             if areColorsNormal ,
@@ -831,8 +835,14 @@ end  % public methods block
             aiChannelUnits = acq.AnalogChannelUnits ;            
             
             % Update the individual plot colors and icons
+            indexOfScope = 0 ;
             for i=1:length(self.AnalogScopePlots_) ,
                 thisPlot = self.AnalogScopePlots_(i) ;
+                indexOfScope = indexOfScope + 1 ;
+                traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
+                %if ~areColorsNormal ,
+                %    traceLineColor = 1 - traceLineColor ;
+                %end
                 thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                            axesForegroundColor, axesBackgroundColor, ...
                                            traceLineColor, ...
@@ -844,6 +854,11 @@ end  % public methods block
             end
             for i=1:length(self.DigitalScopePlots_) ,
                 thisPlot = self.DigitalScopePlots_(i) ;
+                indexOfScope = indexOfScope + 1 ;
+                traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
+                %if ~areColorsNormal ,
+                %    traceLineColor = 1 - traceLineColor ;
+                %end
                 thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                            axesForegroundColor, axesBackgroundColor, ...
                                            traceLineColor, ...
