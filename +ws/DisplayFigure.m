@@ -835,10 +835,17 @@ end  % public methods block
             aiChannelUnits = acq.AnalogChannelUnits ;            
             
             % Update the individual plot colors and icons
+            isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
+            isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
+            nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
+            indexOfThisScopeAmongVisibleScopes = 0 ;
             indexOfScope = 0 ;
             for i=1:length(self.AnalogScopePlots_) ,
                 thisPlot = self.AnalogScopePlots_(i) ;
                 indexOfScope = indexOfScope + 1 ;
+                if isAnalogChannelDisplayed(i) ,
+                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
+                end
                 traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
                 %if ~areColorsNormal ,
                 %    traceLineColor = 1 - traceLineColor ;
@@ -851,10 +858,18 @@ end  % public methods block
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,i)') ;
                 thisPlot.setYAxisLabel(aiChannelNames{i}, true, aiChannelUnits{i}, axesForegroundColor) ;
+                if indexOfThisScopeAmongVisibleScopes==nScopesVisible ,
+                    thisPlot.setXAxisLabel(axesForegroundColor) ;
+                else
+                    thisPlot.clearXAxisLabel() ;
+                end
             end
             for i=1:length(self.DigitalScopePlots_) ,
                 thisPlot = self.DigitalScopePlots_(i) ;
                 indexOfScope = indexOfScope + 1 ;
+                if isDigitalChannelDisplayed(i) ,
+                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
+                end
                 traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
                 %if ~areColorsNormal ,
                 %    traceLineColor = 1 - traceLineColor ;
@@ -867,6 +882,11 @@ end  % public methods block
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits([-0.05 1.05]) ;
                 thisPlot.setYAxisLabel(diChannelNames{i}, false, [], axesForegroundColor) ;
+                if indexOfThisScopeAmongVisibleScopes==nScopesVisible ,
+                    thisPlot.setXAxisLabel(axesForegroundColor) ;
+                else
+                    thisPlot.clearXAxisLabel() ;
+                end
             end
 
             % Do this separately, although we could do it at same time if
@@ -903,6 +923,8 @@ end  % public methods block
             %figureSize=self.layoutFixedControls_();
             figurePosition = get(self.FigureGH, 'Position') ;
             figureSize = figurePosition(3:4) ;
+        
+            xAxisLabelAreaHeight = 44 ;
             
             doesUserWantToSeeButtons = self.Model.DoShowButtons ;
             isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
@@ -912,13 +934,21 @@ end  % public methods block
             for i=1:length(self.AnalogScopePlots_)
                 if isAnalogChannelDisplayed(i) ,
                     indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
-                    self.AnalogScopePlots_(i).setPositionAndLayout(figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons) ;
+                    self.AnalogScopePlots_(i).setPositionAndLayout(figureSize, ...
+                                                                   xAxisLabelAreaHeight, ...
+                                                                   nScopesVisible, ...
+                                                                   indexOfThisScopeAmongVisibleScopes, ...
+                                                                   doesUserWantToSeeButtons) ;
                 end
             end
             for i=1:length(self.DigitalScopePlots_)
                 if isDigitalChannelDisplayed(i) ,
                     indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
-                    self.DigitalScopePlots_(i).setPositionAndLayout(figureSize, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons) ;
+                    self.DigitalScopePlots_(i).setPositionAndLayout(figureSize, ...
+                                                                    xAxisLabelAreaHeight, ...
+                                                                    nScopesVisible, ...
+                                                                    indexOfThisScopeAmongVisibleScopes, ...
+                                                                    doesUserWantToSeeButtons) ;
                 end
             end
         end
@@ -956,7 +986,7 @@ end  % public methods block
         function updateLineXDataAndYData_(self)
             xData = self.Model.XData ;
             yData = self.Model.YData ;
-            sizeYData = size(yData) ;
+            %sizeYData = size(yData) ;
             acq = self.Model.Parent.Acquisition ;
             isAIChannelActive = acq.IsAnalogChannelActive ;
             activeChannelIndex = 0 ;
