@@ -372,3 +372,4 @@ Version History
                          run at an unlucky moment would put WS into a
                          weird, unusable state.
 
+0.921    Jul 26, 2016    Fixed another bug with manual stopping.
