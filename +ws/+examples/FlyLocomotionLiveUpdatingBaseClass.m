@@ -27,24 +27,26 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         BarPositionHistogramAxis_
         ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];
         ForwardVsRotationalVelocityHeatmapAxis_
+        ForwardVsRotationalVelocityHeatmapColorRange_ = [];
         HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
         HeadingVsRotationalVelocityHeatmapAxis_
+        HeadingVsRotationalVelocityHeatmapColorRange_ = [];
         tForSweep_
         XSpanInPixels_ % if running without a UI, this a reasonable fallback value
         CumulativeRotationRecent_
         CumulativeRotationSum_
         CumulativeRotationMeanToSubtract_
-        CumulativeRotationForPlottingXData_
+        CumulativeRotationForPlottingTimeData_
         CumulativeRotationForPlottingYData_
         BarPositionWrappedRecent_
         BarPositionUnwrappedRecent_
         BarPositionWrappedSum_
         BarPositionWrappedMeanToSubtract_
-        BarPositionUnwrappedForPlottingXData_
+        BarPositionUnwrappedForPlottingTimeData_
         BarPositionUnwrappedForPlottingYData_
         Gain_
-        XRecent_
         CurrentNumberOfScansInFirstOnePercentOfSweep_
+        StoreTimeInFirstOnePercentOfSweep_
         StoreCumulativeRotationInFirstOnePercentOfSweep_
         StoreBarPositionWrappedInFirstOnePercentOfSweep_
         StoreBarPositionUnwrappedInFirstOnePercentOfSweep_
@@ -79,13 +81,14 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         
         StartedSweepIndices_
         
-        StoreSweepXDataForPlotting_ 
-        StoreSweepBarPositionUnwrapped_
-        StoreSweepBarPositionWrapped_
-        StoreSweepCumulativeRotation_
-        StoreSweepForwardDisplacement_
-        StoreSweepRotationalDisplacement_
-        
+         StoreSweepTimeData_
+         TimeRecent_
+         StoreSweepBarPositionUnwrapped_
+%         StoreSweepBarPositionWrapped_
+         StoreSweepCumulativeRotation_
+%         StoreSweepForwardDisplacement_
+%         StoreSweepRotationalDisplacement_
+%         
         RootModelType_
     end
     
@@ -175,6 +178,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             self.FirstOnePercent_ = wsModel.Acquisition.Duration/100; %wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
             
+            tic();
         end
         
         function completingRun(self,wsModel,eventName)
@@ -211,28 +215,31 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             self.BarPositionWrappedSum_ = 0;
             self.tForSweep_ = 0;
             self.CurrentNumberOfScansInFirstOnePercentOfSweep_ = 0;
-            self.StoreCumulativeRotationInFirstOnePercentOfSweep_ = zeros(self.FirstOnePercent_/self.Dt_,1);
-            self.StoreBarPositionWrappedInFirstOnePercentOfSweep_ = zeros(self.FirstOnePercent_/self.Dt_,1);
-            self.StoreBarPositionUnwrappedInFirstOnePercentOfSweep_ = zeros(self.FirstOnePercent_/self.Dt_,1);
-            self.CumulativeRotationForPlottingXData_ = [];
+            numberOfScansInFirstOnePercentOfSweep = round(self.FirstOnePercent_/self.Dt_);
+            self.StoreTimeInFirstOnePercentOfSweep_ = zeros(numberOfScansInFirstOnePercentOfSweep,1);
+            self.StoreCumulativeRotationInFirstOnePercentOfSweep_ = zeros(numberOfScansInFirstOnePercentOfSweep,1);
+            self.StoreBarPositionWrappedInFirstOnePercentOfSweep_ = zeros(numberOfScansInFirstOnePercentOfSweep,1);
+            self.StoreBarPositionUnwrappedInFirstOnePercentOfSweep_ = zeros(numberOfScansInFirstOnePercentOfSweep,1);
+            self.CumulativeRotationForPlottingTimeData_ = [];
             self.CumulativeRotationForPlottingYData_ = [];
-            self.BarPositionUnwrappedForPlottingXData_ = [];
+            self.BarPositionUnwrappedForPlottingTimeData_ = [];
             self.BarPositionUnwrappedForPlottingYData_ = [];
             self.BarPositionWrappedRecent_ = [];
             self.BarPositionUnwrappedRecent_ = [];
             self.TotalScansInSweep_ = 0;
             self.TotalScans_ = 0;
             maximumNumberOfScansPerSweep = wsModel.Acquisition.SampleRate * wsModel.Acquisition.Duration;
-            self.StoreSweepBarPositionUnwrapped_ = zeros(maximumNumberOfScansPerSweep,1);
-            self.StoreSweepBarPositionWrapped_ = zeros(maximumNumberOfScansPerSweep,1);
-            self.StoreSweepCumulativeRotation_ = zeros(maximumNumberOfScansPerSweep,1);
-            self.StoreSweepForwardDisplacement_ = zeros(maximumNumberOfScansPerSweep,1);
-            self.StoreSweepRotationalDisplacement_ = zeros(maximumNumberOfScansPerSweep,1);
-            self.StoreSweepXDataForPlotting_ = zeros(maximumNumberOfScansPerSweep,1);
-            if isgraphics(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_)
-                set(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_,'XData',0.5, 'YData', 0.5,'visible','off');
-                set(self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_,'XData',0.5, 'YData', 0.5,'visible','off');            
-            end
+            self.StoreSweepTimeData_ = zeros(maximumNumberOfScansPerSweep,1);
+             self.StoreSweepBarPositionUnwrapped_ = zeros(maximumNumberOfScansPerSweep,1);
+%             self.StoreSweepBarPositionWrapped_ = zeros(maximumNumberOfScansPerSweep,1);
+             self.StoreSweepCumulativeRotation_ = zeros(maximumNumberOfScansPerSweep,1);
+%             self.StoreSweepForwardDisplacement_ = zeros(maximumNumberOfScansPerSweep,1);
+%             self.StoreSweepRotationalDisplacement_ = zeros(maximumNumberOfScansPerSweep,1);
+            %if ~ishghandle(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_) % so don't need to clear it again the first time
+                cla(self.ArenaAndBallRotationAxis_);
+                self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,0.5,0.5,'b','visible','off');
+                self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,0.5,0.5,'g','visible','off');
+            %end
         end
         
         function completingSweep(self,wsModel,eventName)
@@ -245,16 +252,24 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         end
         
         function dataAvailable(self,wsModel,eventName)
+                timeToCallDataAvailableAgain = toc;
+
                     % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
             %      get(self.ArenaAndBallRotationAxis_,'Position');
-            tic();
+            dataAvailableTicID = tic();
             analogData = wsModel.Acquisition.getLatestAnalogData();
             nScans = size(analogData,1);
             totalScansInSweepPrevious = self.TotalScansInSweep_;
             self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;
             analogData = self.DataFromFile_.data(totalScansInSweepPrevious+1:self.TotalScansInSweep_,:);
+            if ~isempty (self.BarPositionUnwrappedRecent_)
+                lastTimePointPrevious = (totalScansInSweepPrevious-1)*self.Dt_;
+                lastCumulativeRotationPrevious = self.CumulativeRotationRecent_(end);
+                lastBarPositionUnwrappedPrevious = self.BarPositionUnwrappedRecent_(end);
+            end
             self.analyzeFlyLocomotion_ (analogData);
+
             %   digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             % t_ is a protected property of WavesurferModel, and is the
             % time *just after* scan completes. so since we don't have
@@ -262,11 +277,17 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             % and no delay between scans
             t0 = self.tForSweep_; % timestamp of first scan in newData
             % %
-            self.XRecent_ = t0 + self.Dt_*(0:(nScans-1))';
-            self.tForSweep_ = self.XRecent_(end)+self.Dt_;
-            if self.XRecent_(1) < self.FirstOnePercent_
-                indicesInFirstOnePercentOfSweepRecent = find(self.XRecent_<self.FirstOnePercent_);
+            self.TimeRecent_ = t0 + self.Dt_*(0:(nScans-1))';
+            self.tForSweep_ = self.TimeRecent_(end)+self.Dt_;
+                        self.downsampleDataForPlotting('BarPositionUnwrapped');
+            self.downsampleDataForPlotting('CumulativeRotation');
+            if t0 == 0 %first time in sweep
+                title(self.ArenaAndBallRotationAxis_,self.ArenaCondition_(self.ArenaOn_+1));
+            end
+            if self.TimeRecent_(1) < self.FirstOnePercent_
+                indicesInFirstOnePercentOfSweepRecent = find(self.TimeRecent_<self.FirstOnePercent_);
                 numberOfNewDataPoints = length(indicesInFirstOnePercentOfSweepRecent);
+                indicesAfterFirstOnePercentOfSweepRecent = (numberOfNewDataPoints:length(self.TimeRecent_)); %include one point in first one percent so there is no gap in plot
                 newIndicesForAddingDataStart = self.CurrentNumberOfScansInFirstOnePercentOfSweep_+1;
                 newIndicesForAddingDataEnd = self.CurrentNumberOfScansInFirstOnePercentOfSweep_+numberOfNewDataPoints;
                 newIndicesForAddingData = (newIndicesForAddingDataStart:newIndicesForAddingDataEnd);
@@ -284,32 +305,37 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 
                 self.Gain_=mean( (self.StoreBarPositionUnwrappedInFirstOnePercentOfSweep_(1:self.CurrentNumberOfScansInFirstOnePercentOfSweep_) - self.BarPositionWrappedMeanToSubtract_)./...
                     (self.StoreCumulativeRotationInFirstOnePercentOfSweep_(1:self.CurrentNumberOfScansInFirstOnePercentOfSweep_) - self.CumulativeRotationMeanToSubtract_));
-                if self.XRecent_(end) + self.Dt_ >= self.FirstOnePercent_ ;
+                
+                self.StoreTimeInFirstOnePercentOfSweep_(newIndicesForAddingData) = self.TimeRecent_(indicesInFirstOnePercentOfSweepRecent);
+                indicesToPlot = (1:self.CurrentNumberOfScansInFirstOnePercentOfSweep_);
+                set(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_,...
+                    'XData', self.StoreTimeInFirstOnePercentOfSweep_(indicesToPlot),...
+                    'YData',self.StoreCumulativeRotationInFirstOnePercentOfSweep_(indicesToPlot)-self.CumulativeRotationMeanToSubtract_,...
+                    'Visible','on');
+                set(self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_,...
+                    'XData',self.StoreTimeInFirstOnePercentOfSweep_(indicesToPlot),...
+                    'YData',self.StoreBarPositionUnwrappedInFirstOnePercentOfSweep_(indicesToPlot)-self.BarPositionWrappedMeanToSubtract_,...
+                    'Visible','on');
+                if length(indicesAfterFirstOnePercentOfSweepRecent)>1 % then there are some data points here that are not within first one percent
+                    plot(self.ArenaAndBallRotationAxis_,...
+                        self.TimeRecent_(indicesAfterFirstOnePercentOfSweepRecent), self.CumulativeRotationRecent_(indicesAfterFirstOnePercentOfSweepRecent)-self.CumulativeRotationMeanToSubtract_,'b',...
+                        self.TimeRecent_(indicesAfterFirstOnePercentOfSweepRecent), self.BarPositionUnwrappedRecent_(indicesAfterFirstOnePercentOfSweepRecent)-self.BarPositionWrappedMeanToSubtract_,'g');
+                end
+                if self.TimeRecent_(end) + self.Dt_ >= self.FirstOnePercent_ ;
                     %Then this is the last time gain will be
                     %calculated
                     ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(self.Gain_)]);
                 end
-            end
-            if t0 == 0 %first time in sweep
-                title(self.ArenaAndBallRotationAxis_,self.ArenaCondition_(self.ArenaOn_+1));
+            else
+                hold(self.ArenaAndBallRotationAxis_,'off');
+                plot(self.ArenaAndBallRotationAxis_,...
+                    self.CumulativeRotationForPlottingTimeData_, self.CumulativeRotationForPlottingYData_-self.CumulativeRotationMeanToSubtract_,'b',...
+                    self.BarPositionUnwrappedForPlottingTimeData_, self.BarPositionUnwrappedForPlottingYData_-self.BarPositionWrappedMeanToSubtract_,'g');
             end
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
-            recentScans = (totalScansInSweepPrevious + 1: self.TotalScansInSweep_);
-            cumulativeScans = (1 : self.TotalScansInSweep_);
-
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
-            self.StoreSweepBarPositionWrapped_(recentScans) = self.BarPositionWrappedRecent_;
-            self.StoreSweepBarPositionUnwrapped_(recentScans) = self.BarPositionUnwrappedRecent_;
-            self.StoreSweepCumulativeRotation_(recentScans) = self.CumulativeRotationRecent_;           
-            self.StoreSweepXDataForPlotting_(recentScans) = self.XRecent_;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
             self.BarPositionHistogramCountsTotal_ = self.BarPositionHistogramCountsTotal_ + barPositionHistogramCountsRecent;
-            xDataForPlotting = self.StoreSweepXDataForPlotting_(cumulativeScans);
-  %          tic();
-            cumulativeRotationYDataForPlotting = self.StoreSweepCumulativeRotation_(cumulativeScans) - self.CumulativeRotationMeanToSubtract_;
-            set(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_,'XData',xDataForPlotting, 'YData', cumulativeRotationYDataForPlotting,'visible','on');
-            barPositionUnwrappedYDataForPlotting = self.StoreSweepBarPositionUnwrapped_(cumulativeScans) - self.BarPositionWrappedMeanToSubtract_;
-            set(self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_,'XData',xDataForPlotting, 'YData', barPositionUnwrappedYDataForPlotting,'visible','on');
             timeToPlotPositions = toc();
             % bar histogram stuff
     %        tic();
@@ -317,25 +343,41 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             timeToPlotHistogram = toc();
             self.quantifyCellularResponse(analogData);
             self.addDataForHeatmaps(wsModel);
-       %     tic();
-            for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
-                whichFigureHandle = [whichHeatmap{:} 'FigureHandle_'];
-                dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
-                minDataHeatmap = min(dataForHeatmap(:));
-                maxDataHeatmap = max(dataForHeatmap(:));
-                nanIndices = isnan(dataForHeatmap);
-                [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
-                newNanValuesForPlotting = maxDataHeatmap+0.01*abs(maxDataHeatmap);
-                dataForHeatmap(nanIndices) = newNanValuesForPlotting;
-                set(0,'CurrentFigure',self.(whichFigureHandle)); % sets current figure without bringing to front
+      %      tic();
+
+             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
+                  whichFigureHandle = [whichHeatmap{:} 'FigureHandle_'];
+                  whichAxis = [whichHeatmap{:} 'Axis_'];
+                  dataForHeatmap = self.(['DataFor' whichHeatmap{:} 'Sum_'])./self.(['DataFor' whichHeatmap{:} 'Counts_']);
+                  minDataHeatmap = min(dataForHeatmap(:));
+                  maxDataHeatmap = max(dataForHeatmap(:));
+                  nanIndices = isnan(dataForHeatmap);
+                  [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
+                  newNanValuesForPlotting = maxDataHeatmap+0.01*abs(maxDataHeatmap);
+                  dataForHeatmap(nanIndices) = newNanValuesForPlotting;
+                 set(0,'CurrentFigure',self.(whichFigureHandle)); % sets current figure without bringing to front
+                 heatmapColorRangeRecent = [minDataHeatmap newNanValuesForPlotting];
+                 whichHeatmapColorRange = [whichHeatmap{:} 'ColorRange_'];
+
+                 if isequal(heatmapColorRangeRecent, self.(whichHeatmapColorRange))
+              imagesc(dataForHeatmap);
+            %    plot(rand(10,1))
+                  % imagesc(rand(size(dataForHeatmap)));
+                 else
                 imagesc(dataForHeatmap,[minDataHeatmap newNanValuesForPlotting]);
-                xlim([min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
-                ylim([min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
-            end
-            timeToPlotHeatmaps = toc();
-            
-            fprintf('%f %f %f\n',timeToPlotPositions, timeToPlotHistogram,timeToPlotHeatmaps);
+                     self.(whichHeatmapColorRange) = heatmapColorRangeRecent;
+                 end
+
+            %     xlim(self.(whichAxis), [min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
+            %     ylim(self.(whichAxis),[min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
+
+             end
+  %           fprintf('%d %f\n',nScans,timeToCallDataAvailableAgain);
+  %tic;
+
+         %   fprintf('%f %f %f\n',timeToPlotPositions, timeToPlotHistogram,timeToPlotHeatmaps);
         end
+
         
         % These methods are called in the looper process
         function samplesAcquired(self,looper,eventName,analogData,digitalData)
@@ -389,6 +431,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,0.5,0.5,'b','visible','off');
             self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,0.5,0.5,'g','visible','off');
             legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
+            legendcolorbarlayout(self.ArenaAndBallRotationAxis_, 'remove')
             xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
             ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
             title(self.ArenaAndBallRotationAxis_,'Arena is ...');            
@@ -433,7 +476,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                     imagesc([1,1],'Parent',self.(whichAxis)); %just to set it up first
                     set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
                         'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),'box','on');
-                    hold(self.(whichAxis),'on');
+             %       hold(self.(whichAxis),'on');
                 end
                % hold(self.(whichAxis),'on');
                
@@ -455,6 +498,28 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 cla(self.(whichAxis));
             end
                         
+        end
+        
+         function downsampleDataForPlotting(self, whichData)
+            % At this point, xSpanInPixels should be set to the
+            % correct value, or the fallback value if there's no view
+        %    xLimits = self.TimeRecent_; %get(self.ArenaAndBallRotationAxis_, 'xLim');
+        %    xSpan = self.TimeRecent_(end) - self.TimeRecent_(1);
+            r = 130; %ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            yRecent = self.([whichData 'Recent_']);%self.(['StoreSweep' whichData]);
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(self.TimeRecent_, yRecent, r) ;
+            
+            % Deal with TimeData_
+            xAllOriginal = self.([whichData 'ForPlottingTimeData_']); % these are already downsampled
+            yAllOriginal = self.([whichData 'ForPlottingYData_']);
+            
+            % Concatenate the old data that we're keeping with the new data
+            xNew = vertcat(xAllOriginal, xForPlottingNew) ;
+            yNew = vertcat(yAllOriginal, yForPlottingNew) ;
+            self.([whichData 'ForPlottingTimeData_']) = xNew;
+            self.([whichData 'ForPlottingYData_']) = yNew;
         end
         
          function outputString = generateFormattedStringFromListOfNumbers(self, arrayOfNumbers) %#ok<INUSL>

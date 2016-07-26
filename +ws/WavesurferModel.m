@@ -149,7 +149,6 @@ classdef WavesurferModel < ws.RootModel
             if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
                 doRunInDebugMode = false ;
             end
-            doRunInDebugMode = true;
 %             if ~exist('mode','var') || isempty(mode),
 %                 mode = 'release' ;
 %             end
@@ -1645,7 +1644,7 @@ classdef WavesurferModel < ws.RootModel
             nScansPerUpdate = self.NScansPerUpdate_ ;
             %fprintf('nScansInBuffer, nScansPerUpdate: %10d, %10d\n',nScansInBuffer,nScansPerUpdate);
             if nScansInBuffer >= nScansPerUpdate ,
-                %profile resume
+%               profile resume
                 ticId = tic() ;
                 self.dataAvailable_() ;
                 durationOfDataAvailableCall = toc(ticId) ;
@@ -1660,7 +1659,6 @@ classdef WavesurferModel < ws.RootModel
                                          max(2*round(durationOfDataAvailableCall*fs), ...
                                              self.DesiredNScansPerUpdate_ ) ) ;                                      
                 self.NScansPerUpdate_= nScansPerUpdateNew ;
-                %profile off
             end
         end
         
