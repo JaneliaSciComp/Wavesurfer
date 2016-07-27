@@ -660,60 +660,29 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
             
-            if self.ClearOnNextData_ ,
-                self.clearData_() ;
-                self.broadcast('UpdateData') ;
-            end            
-            self.ClearOnNextData_ = false;
-            
-            % update the x offset
-            if self.XAutoScroll_ ,                
-                scale=min(1,self.XSpan);
-                tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
-                xOffsetNudged=tNudged-self.XSpan;
-                if xOffsetNudged>self.XOffset ,
-                    self.XOffset_=xOffsetNudged;
-                end
-            end
+            if self.IsActive , 
+                if self.ClearOnNextData_ ,
+                    self.clearData_() ;
+                    self.broadcast('UpdateData') ;
+                end            
+                self.ClearOnNextData_ = false;
 
-            % Add the data
-            self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
-            self.broadcast('UpdateData');          
-            
-%             % Feed the data to the scopes
-%             activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
-%             isActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
-%             for sdx = 1:numel(self.Scopes)
-%                 % Figure out which channels go in this scope, and the
-%                 % corresponding channel names
-%                 % Although this looks like it might be slow, in practice it
-%                 % takes negligible time compared to the call to
-%                 % ScopeModel.addChannel() below.
-%                 thisScope = self.Scopes{sdx} ;
-%                 jInAnalogData = [];                
-%                 jInDigitalData = [];                
-%                 NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
-%                 for cdx = 1:length(activeInputChannelNames)
-%                     channelName=activeInputChannelNames{cdx};
-%                     if isequal(channelName, thisScope.ChannelName) ,
-%                         if isActiveChannelAnalog(cdx)
-%                             jInAnalogData(end + 1) = cdx; %#ok<AGROW>
-%                         else
-%                             jInDigitalData(end + 1) = cdx - NActiveAnalogChannels; %#ok<AGROW>
-%                         end
-%                     end
-%                 end
-%                 
-%                 % Add the data for the appropriate channels to this scope
-%                 if ~isempty(jInAnalogData) ,
-%                     dataForThisScope = scaledAnalogData(:, jInAnalogData) ;
-%                     thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
-%                 end
-%                 if ~isempty(jInDigitalData) ,
-%                     dataForThisScope = double(bitget(rawDigitalData, jInDigitalData)) ;  % has to be double for ws.minMaxResampleMex()
-%                     thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
-%                 end
-%             end
+                % update the x offset
+                if self.XAutoScroll_ ,                
+                    scale=min(1,self.XSpan);
+                    tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
+                    xOffsetNudged=tNudged-self.XSpan;
+                    if xOffsetNudged>self.XOffset ,
+                        self.XOffset_=xOffsetNudged;
+                    end
+                end
+
+                % Add the data
+                self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
+                self.broadcast('UpdateData');          
+            else
+                % if not active, do nothing
+            end
         end
         
         function didSetAreSweepsFiniteDuration(self)
