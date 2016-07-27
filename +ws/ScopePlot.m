@@ -82,7 +82,7 @@ classdef ScopePlot < handle
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
-            fprintf('ScopePlot::delete()\n');
+            %fprintf('ScopePlot::delete()\n');
             self.deleteChildMatlabUIObjects() ;
         end  % function        
         

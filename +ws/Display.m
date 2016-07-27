@@ -545,7 +545,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
             areYLimitsLockedTightToData = self.AreYLimitsLockedTightToData ;
-            if self.AreYLimitsLockedTightToData ,
+            if areYLimitsLockedTightToData ,
                 self.setYAxisLimitsTightToData_();
             end
         end  % function
@@ -570,7 +570,14 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if nActiveDigitalChannels==0 ,
                 yRecent = recentScaledAnalogData ;
             else
-                recentDigitalData = double(bitget(recentRawDigitalData,1:nActiveDigitalChannels)) ;
+                % Might need to write a mex function to quickly translate
+                % recentRawDigitalData to recentDigitalData.
+                nScans = size(recentRawDigitalData,1) ;                
+                recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
+                for j = 1:nActiveDigitalChannels ,
+                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
+                end
+                % End of code that might need to mex-ify
                 yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
             end
             

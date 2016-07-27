@@ -1113,7 +1113,8 @@ classdef AcquisitionSubsystem < ws.Subsystem
 %             self.removeAnalogChannel(nChannels) ;
 %         end  % function
 
-        function deleteMarkedAnalogChannels(self)
+        function wasDeleted = deleteMarkedAnalogChannels_(self)
+            % This should only be called by self.Parent.
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
             %channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
@@ -1141,7 +1142,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             wasDeleted = isToBeDeleted ;
-            self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
+            %self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
         end  % function
         
 %         function removeDigitalChannel(self,channelIndex)
