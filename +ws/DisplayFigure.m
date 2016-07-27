@@ -153,8 +153,9 @@ classdef DisplayFigure < ws.MCOSFigure
                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-               model.subscribeMe(self,'DataAdded','','modelDataAdded');
-               model.subscribeMe(self,'DataCleared','','modelDataCleared');
+               model.subscribeMe(self,'UpdateData','','updateData');
+               %model.subscribeMe(self,'DataAdded','','modelDataAdded');
+               %model.subscribeMe(self,'DataCleared','','modelDataCleared');
                model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
                wavesurferModel=model.Parent;
                if ~isempty(wavesurferModel) ,
@@ -420,14 +421,18 @@ end  % public methods block
 %             xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_) ;
 %             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
 %         end
-        
-        function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+
+        function updateData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateLineXDataAndYData_();
         end  % function
-        
-        function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.updateLineXDataAndYData_();                      
-        end  % function
+
+%         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.updateLineXDataAndYData_();
+%         end  % function
+%         
+%         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.updateLineXDataAndYData_();                      
+%         end  % function
         
 %         function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
 %             self.update();

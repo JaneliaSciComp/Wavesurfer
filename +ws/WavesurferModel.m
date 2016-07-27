@@ -760,12 +760,14 @@ classdef WavesurferModel < ws.RootModel
         
         function didSetAnalogInputTerminalID(self)
             self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.Display.didSetAnalogInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
         end
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Display.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
                 %value = self.Acquisition.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
@@ -833,6 +835,7 @@ classdef WavesurferModel < ws.RootModel
         
         function didSetIsInputChannelActive(self) 
             self.Ephys.didSetIsInputChannelActive() ;
+            self.Display.didSetIsInputChannelActive() ;
             self.broadcast('UpdateChannels') ;
         end
         

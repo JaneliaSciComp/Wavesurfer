@@ -307,26 +307,10 @@ classdef AcquisitionSubsystem < ws.Subsystem
             % Boolean array indicating which of the available channels is
             % active.
             if islogical(newIsDigitalChannelActive) && isequal(size(newIsDigitalChannelActive),size(self.IsDigitalChannelActive)) ,
-                % For the current settings, break into analog and digital
-                % parts.
-%                 % We'll check these for changes later.
-%                 originalIsDigitalChannelActive = self.IsDigitalChannelActive ;
-
                 % Set the setting
                 self.IsDigitalChannelActive_ = newIsDigitalChannelActive;
-
-%                 % Now delete any tasks that have the wrong channel subsets,
-%                 % if needed
-%                 if ~isempty(self.DigitalInputTask_) ,
-%                     if isequal(newIsDigitalChannelActive,originalIsDigitalChannelActive) ,
-%                         % no need to do anything
-%                     else
-%                         self.DigitalInputTask_= [] ;  % need to clear, will re-create when needed 
-%                     end
-%                 end
             end
             self.Parent.didSetIsInputChannelActive() ;            
-            %self.broadcast('DidSetIsChannelActive');            
         end
         
         function value = get.NActiveChannels(self)
@@ -419,9 +403,8 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
-            import ws.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            self.AnalogChannelScales_=fif(isChangeable,newValue,self.AnalogChannelScales_);
+            self.AnalogChannelScales_ = ws.fif(isChangeable,newValue,self.AnalogChannelScales_) ;
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
@@ -1066,9 +1049,9 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end        
         
         function newChannelName = addAnalogChannel(self)
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;

@@ -53,8 +53,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         UpdateXSpan
         UpdateXOffset
         UpdateYAxisLimits
-        DataAdded
-        DataCleared
+        UpdateData
+        %DataAdded
+        %DataCleared
         ItWouldBeNiceToKnowXSpanInPixels
     end
 
@@ -262,7 +263,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             value = self.Parent.AreSweepsFiniteDuration ;
         end  % function       
         
-        function self=didSetAnalogChannelUnitsOrScales(self)
+        function didSetAnalogChannelUnitsOrScales(self)
+            self.clearData_() ;
             self.broadcast('Update') ;
         end       
         
@@ -314,12 +316,19 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('Update') ;            
         end
         
-        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
-            self.broadcast('UpdateControlProperties') ;            
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
         
-        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
-            self.broadcast('UpdateControlProperties') ;            
+        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
+            self.clearData_() ;
+            self.broadcast('Update') ;            
+        end
+        
+        function didSetIsInputChannelActive(self) 
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
         
         function toggleIsGridOn(self)
@@ -504,6 +513,20 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.setYAxisLimitsTightToData_(aiChannelIndex) ;  % this doesn't call .broadcast()
             self.broadcast('Update') ;  % Would be nice to be more surgical about this...
         end        
+        
+        function didSetAnalogInputTerminalID_(self)
+            % This should only be called by the parent, hence the
+            % underscore.
+            self.clearData_() ;
+            self.broadcast('UpdateData') ;
+        end        
+        
+        function didSetDigitalInputTerminalID_(self)
+            % This should only be called by the parent, hence the
+            % underscore.
+            self.clearData_() ;
+            self.broadcast('UpdateData') ;
+        end        
     end  % public methods block
     
     methods (Access=protected)        
@@ -639,7 +662,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             if self.ClearOnNextData_ ,
                 self.clearData_() ;
-                self.broadcast('DataCleared') ;
+                self.broadcast('UpdateData') ;
             end            
             self.ClearOnNextData_ = false;
             
@@ -655,7 +678,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 
             % Add the data
             self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
-            self.broadcast('DataAdded');          
+            self.broadcast('UpdateData');          
             
 %             % Feed the data to the scopes
 %             activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
