@@ -82,7 +82,11 @@ classdef ScopePlot < handle
         function delete(self)
             % Do I even need to do this stuff?  Those GHs will become
             % invalid when the figure HG object is deleted...
-            %fprintf('ScopeFigure::delete()\n');
+            fprintf('ScopePlot::delete()\n');
+            self.deleteChildMatlabUIObjects() ;
+        end  % function        
+        
+        function deleteChildMatlabUIObjects(self)
             ws.deleteIfValidHGHandle(self.LineGH_) ;
             ws.deleteIfValidHGHandle(self.AxesGH_) ;            
             ws.deleteIfValidHGHandle(self.SetYLimTightToDataButtonGH_) ;
@@ -92,9 +96,9 @@ classdef ScopePlot < handle
             ws.deleteIfValidHGHandle(self.YZoomOutButtonGH_) ;
             ws.deleteIfValidHGHandle(self.YScrollUpButtonGH_) ;
             ws.deleteIfValidHGHandle(self.YScrollDownButtonGH_) ;
-            %ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
+            ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
             ws.deleteIfValidHGHandle(self.YAxisLabelGH_) ;
-        end  % function        
+        end
         
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
             xSpanInPixels=ws.ScopeAxes.getWidthInPixels(self.AxesGH_) ;

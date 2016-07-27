@@ -694,6 +694,9 @@ end  % public methods block
                     self.AnalogScopePlots_ = horzcat(self.AnalogScopePlots_, newScopePlot);
                 end
             elseif nAnalogChannels<nAnalogScopePlots ,
+                for i = nAnalogChannels+1:nAnalogScopePlots ,
+                    self.AnalogScopePlots_(i).deleteChildMatlabUIObjects() ;  % Have to delete the graphics objects for each ScopePlot
+                end
                 self.AnalogScopePlots_ = self.AnalogScopePlots_(1:nAnalogChannels) ;
             else
                 % do nothing --- we already have the right number of
@@ -710,6 +713,9 @@ end  % public methods block
                     self.DigitalScopePlots_ = horzcat(self.DigitalScopePlots_, newScopePlot);
                 end
             elseif nDigitalChannels<nDigitalScopePlots ,
+                for i = nDigitalChannels+1:nDigitalScopePlots ,
+                    self.DigitalScopePlots_(i).deleteChildMatlabUIObjects() ;  % Have to delete the graphics objects for each ScopePlot
+                end
                 self.DigitalScopePlots_ = self.DigitalScopePlots_(1:nDigitalChannels) ;
             else
                 % do nothing --- we already have the right number of
