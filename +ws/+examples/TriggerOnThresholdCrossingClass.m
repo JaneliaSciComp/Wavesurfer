@@ -12,6 +12,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         OutputDOChannelIndex
         BlankingDIChannelIndex
         InputThreshold  % In native units of the AI input channel
+        NScansToBlank  % After a rising edge on the blanking channel
     end  % properties
 
     % Information that you want to stick around between calls to the
@@ -20,6 +21,8 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     % protected.)
     properties (Transient, Access=protected)        
         LastRTOutput_
+        NScansSinceBlankingRisingEdge_
+        FinalBlankingValue_  % the last value of the blanking signal from the previous call to samplesAcquired
     end
     
     methods
@@ -30,7 +33,10 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             self.OutputDOChannelIndex = 1 ;
             self.BlankingDIChannelIndex = 1 ;
             self.InputThreshold = 1 ;  
+            self.NScansToBlank = 40000 ;  % 2 sec at normal sampling freq
             self.LastRTOutput_ = -1 ;  % set to this so always different from the first calculated RT value
+            self.NScansSinceBlankingRisingEdge_ = inf ;
+            self.FinalBlankingValue_ = false ;
         end
         
         function delete(self) %#ok<INUSD>
@@ -83,20 +89,41 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSL>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
+            
+            % Determine how many scans have passed since the most-recent
+            % rising edge of the blanking TTL
+            nScans = size(digitalData,1) ;
+            blanking = logical(bitget(digitalData, self.BlankingDIChannelIndex)) ;
+            blankingPadded = vertcat(self.FinalBlankingValue_, blanking) ;
+            didBlankingRise = diff(blankingPadded) ;
+            indexOfLastBlankingRise = find(didBlankingRise, 1, 'last') ;
+            if isempty(indexOfLastBlankingRise) , 
+                nScansSinceBlankingRisingEdge = self.NScansSinceBlankingRisingEdge_ + nScans ;
+            else
+                nScansSinceBlankingRisingEdge = nScans - indexOfLastBlankingRise ;
+            end
+            
+            % Determine the output value
             if self.IsEnabled ,
-                if analogData(end, self.InputAIChannelIndex) > self.InputThreshold ,
-                    if ~bitget(digitalData(end), self.BlankingDIChannelIndex) ,
+                if nScansSinceBlankingRisingEdge>self.NScansToBlank ,                    
+                    lastInputValue = analogData(end, self.InputAIChannelIndex) ;
+                    if lastInputValue > self.InputThreshold ,
                         newValueForRTOutput = 1 ;
                     else
                         newValueForRTOutput = 0 ;
+                        %fprintf('option 1\n') ;
                     end
                 else
                     newValueForRTOutput = 0 ;
+                    %fprintf('option 2\n') ;
                 end
             else
                 newValueForRTOutput = 0 ;
+                %fprintf('option 3\n') ;
             end
-            %newValueForRTOutput
+            %fprintf('newValueForRTOutput: %d\n', newValueForRTOutput) ;
+            
+            % If the new output value differs from the old, set it
             if newValueForRTOutput ~= self.LastRTOutput_ ,
                 fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
                 doStateWhenUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
@@ -108,6 +135,11 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDOChannel) ;            
                 self.LastRTOutput_ = newValueForRTOutput ;
             end
+            
+            % Update the things that need to be updated after each call to
+            % this function
+            self.NScansSinceBlankingRisingEdge_ = nScansSinceBlankingRisingEdge ;
+            self.FinalBlankingValue_ = blanking(end) ;                        
         end
         
         % These methods are called in the refiller process
