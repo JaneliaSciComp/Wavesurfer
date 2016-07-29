@@ -34,6 +34,10 @@ classdef UserCodeManager < ws.Subsystem
             self.IsEnabled=true;            
         end  % function
 
+        function delete(self)
+            %keyboard
+        end
+        
         function result = get.ClassName(self)
             result = self.ClassName_;
         end
@@ -144,6 +148,10 @@ classdef UserCodeManager < ws.Subsystem
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end            
+        end
+        
+        function quittingWavesurfer(self)
+            ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
         end
         
         % You might thing user methods would get invoked inside the
