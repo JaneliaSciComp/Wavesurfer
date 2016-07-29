@@ -8,14 +8,11 @@ classdef ExampleUserClass < ws.UserClass
     % object.
     properties
         Greeting = 'Hello, there!'
-    end  % properties
-
-    % Information that you want to stick around between calls to the
-    % functions below, but that only the methods themselves need access to.
-    % (The underscore in the name is to help remind you that it's
-    % protected.)
-    properties (Access=protected)
-        TimeAtStartOfLastRunAsString_ = ''
+        TimeAtStartOfLastRunAsString_ = ''  
+          % This should really only be set from within the object, but
+          % that's a little bit of a pain to implement in a user class, so 
+          % we just put an underscore at the end of the name to remind
+          % ourselves not to mess with this outside of the class.
     end
     
     methods        
