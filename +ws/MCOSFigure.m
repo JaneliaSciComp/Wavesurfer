@@ -57,7 +57,6 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
         function delete(self)
-            %keyboard
             self.deleteFigureGH();
             self.Controller_=[];
             %self.setModel_([]);

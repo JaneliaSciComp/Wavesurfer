@@ -96,6 +96,10 @@ classdef Controller < handle
             self.Figure.hide();
         end
         
+        function quittingWavesurfer(self)   
+            self.deleteFigureGH();
+        end  % function
+        
         function deleteFigureGH(self)   
             self.tellFigureToDeleteFigureGH_();
         end  % function
