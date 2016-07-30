@@ -51,7 +51,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % Create timer so Wavesurfer will be stopped 5 seconds after
             % timer starts, which will prevent it from collecting any data
             % since no trigger will be created.
-            timerToStopWavesurfer = timer('TimerFcn',@(~,~)wsModel.stop(),'StartDelay',5);
+            timerToStopWavesurfer = timer('TimerFcn',@(~,~)wsModel.stop(),'StartDelay',10);
             start(timerToStopWavesurfer);
             wsModel.record();
             

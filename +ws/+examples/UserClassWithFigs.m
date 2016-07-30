@@ -1,4 +1,4 @@
-classdef ExampleUserClass < ws.UserClass
+classdef UserClassWithFigs < ws.UserClass
 
     % This is a very simple user class.  It writes to the console when
     % things like a sweep start/end happen.
@@ -8,14 +8,31 @@ classdef ExampleUserClass < ws.UserClass
     % object.
     properties
         Greeting = 'Hello, there!'
-        TimeAtStartOfLastRunAsString_ = ''  % should only be accessed from the methods below, but making it protected is a pain.
+    end  % properties
+
+    % Information that you want to stick around between calls to the
+    % functions below, but that only the methods themselves need access to.
+    % (The underscore in the name is to help remind you that it's
+    % protected.)
+    properties (Access=protected)
+        TimeAtStartOfLastRunAsString_ = ''
+    end
+    
+    properties (Transient=true, Access=protected)
+        FigureGH_
+        ButtonGH_
     end
     
     methods        
-        function self = ExampleUserClass(rootModel)
+        function self = UserClassWithFigs(rootModel)
             % creates the "user object"
             fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
+            self.FigureGH_ = figure() ;
+            self.ButtonGH_ = uicontrol('Parent', self.FigureGH_ , ...
+                                       'Style', 'pushbutton', ...
+                                       'String', 'Push Me!', ...
+                                       'Callback', @(source,event)(self.buttonPushed()) ) ;
         end
         
         function delete(self)
@@ -23,6 +40,8 @@ classdef ExampleUserClass < ws.UserClass
             % prior to its memory being freed.
             fprintf('%s  An instance of ExampleUserClass is being deleted.\n', ...
                     self.Greeting);
+            delete(self.ButtonGH_) ;
+            delete(self.FigureGH_) ;
         end
         
         % These methods are called in the frontend process
@@ -114,6 +133,10 @@ classdef ExampleUserClass < ws.UserClass
         function abortingEpisode(self,refiller,eventName)
             % Called if a episode goes wrong
             fprintf('%s  Oh noes!  An episode aborted.\n',self.Greeting);
+        end
+        
+        function buttonPushed(self)
+            fprintf('Button was pushed!\n');            
         end
     end  % methods
     
