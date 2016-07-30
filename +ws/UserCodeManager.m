@@ -69,7 +69,7 @@ classdef UserCodeManager < ws.Subsystem
             end
         end  % function
         
-        function reinstantiateUserObject(self)
+        function instantiateUserObject(self)
             err = self.tryToInstantiateObject_() ;
             self.broadcast('Update');
             if ~isempty(err) ,
