@@ -3,7 +3,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
         ClassNameText
         ClassNameEdit        
         %ChooseButton
-        ReinstantiateButton
+        InstantiateButton
         %AbortCallsCompleteCheckbox
     end  % properties
     
@@ -62,10 +62,10 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 ws.uiedit('Parent',self.FigureGH, ...
                           'HorizontalAlignment','left');
                       
-            self.ReinstantiateButton = ...
+            self.InstantiateButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','pushbutton', ...
-                          'String','Reinstantiate');
+                          'String','Instantiate');
                       
 %             self.ChooseButton = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -144,9 +144,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %widthFromEditToChooseButton=5;
             %chooseButtonWidth = 80 ;
 
-            heightFromReinstantiateButtonToBottomEdit=6;
-            reinstantiateButtonHeight = 24 ;
-            reinstantiateButtonWidth = 80 ;
+            heightFromInstantiateButtonToBottomEdit=6;
+            instantiateButtonHeight = 24 ;
+            instantiateButtonWidth = 80 ;
             
             % Just want to use the default edit height
             sampleEditPosition=get(self.ClassNameEdit,'Position');
@@ -162,8 +162,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %figureWidth=leftPadWidth+labelWidth+editWidth+ widthFromEditToChooseButton +chooseButtonWidth+rightPadWidth;
             figureHeight= bottomPadHeight + ...
                           editHeight + ...
-                          reinstantiateButtonHeight + ...
-                          heightFromReinstantiateButtonToBottomEdit + ...
+                          instantiateButtonHeight + ...
+                          heightFromInstantiateButtonToBottomEdit + ...
                           topPadHeight;
             
             % The edit and its label
@@ -180,10 +180,10 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %                 'Position',[chooseButtonXOffset chooseButtonYOffset chooseButtonWidth chooseButtonHeight]);
                                       
             % Button
-            reinstantiateButtonXOffset = editXOffset + editWidth - reinstantiateButtonWidth ;
-            reinstantiateButtonYOffset = editYOffset - heightFromReinstantiateButtonToBottomEdit - reinstantiateButtonHeight ;
-            set(self.ReinstantiateButton, ...
-                'Position',[reinstantiateButtonXOffset reinstantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
+            instantiateButtonXOffset = editXOffset + editWidth - instantiateButtonWidth ;
+            instantiateButtonYOffset = editYOffset - heightFromInstantiateButtonToBottomEdit - instantiateButtonHeight ;
+            set(self.InstantiateButton, ...
+                'Position',[instantiateButtonXOffset instantiateButtonYOffset instantiateButtonWidth instantiateButtonHeight]);
                                       
 %             % Checkbox
 %             checkboxFullExtent=get(self.AbortCallsCompleteCheckbox,'Extent');
@@ -234,6 +234,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 'String', model.ClassName, ...
                 'BackgroundColor', backgroundColor );
             %set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
+            set(self.InstantiateButton, 'String', ws.fif(isempty(model.TheObject), ...
+                                                         'Instantiate', ...
+                                                         'Reinstantiate') ) ;
         end
     end
     
@@ -250,7 +253,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             isIdle = isequal(wavesurferModel.State,'idle') ;
             set(self.ClassNameEdit, 'Enable', ws.onIff(isIdle) );
             %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
-            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
+            %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
+            set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
         end
     end
     
