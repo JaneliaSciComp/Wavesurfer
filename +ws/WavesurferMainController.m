@@ -1294,8 +1294,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             self.Figure.update();
 %             self.tellScopeControllersThatDisplayEnablementWasSet();
 %         end  % function
-        
-        function windowCloseRequested(self, source, event) %#ok<INUSD>
+
+        function quit(self, source, event) %#ok<INUSD>
             % Need to put in some checks here so that user doesn't quit
             % by being slightly clumsy.
             % This is the final common path for the Quit menu item and the
@@ -1307,12 +1307,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             for i=1:length(self.ChildControllers) ,
                 thisChildController = self.ChildControllers{i} ;
                 if isvalid(thisChildController) ,
-                    thisChildController.deleteFigureGH();
+                    thisChildController.quittingWavesurfer();
                 end
             end
 
             self.tellFigureToDeleteFigureGH_() ;
             %self.delete();
+        end  % function
+
+        function windowCloseRequested(self, source, event) %#ok<INUSD>            
+            self.quit() ;
         end  % function
         
 %         function tellScopeControllersThatDisplayEnablementWasSet(self)
