@@ -80,14 +80,14 @@ classdef FlyOnBall < ws.UserClass
     
     methods
         function self = FlyOnBall(rootModel)
-            if isa(rootModel,'ws.WavesurferModel')
+            if isa(rootModel,'ws.WavesurferModel') || isempty(rootModel)
                 fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);
                 % Only want this to happen in frontend, not the looper
                 % creates the "user object"
-                if ~isempty(rootModel.UserCodeManager.TheObject) && isvalid(rootModel.UserCodeManager.TheObject)
-                    delete(rootModel.UserCodeManager.TheObject) %destructor not called by default when callback function is used, not ideal
-                end
+%                 if ~isempty(rootModel.UserCodeManager.TheObject) && isvalid(rootModel.UserCodeManager.TheObject)
+%                     delete(rootModel.UserCodeManager.TheObject) %destructor not called by default when callback function is used, not ideal
+%                 end
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
                 
@@ -434,11 +434,11 @@ classdef FlyOnBall < ws.UserClass
                     'String', self.UndersampledBarPositionBinPopupMenuContent_,...
                     'Position', [undersampledBarPositionBinPopupMenuXOffset uicontrolsYOffset+5 undersampledBarPositionBinPopupMenuWidth uicontrolsHeight],...
                     'BackgroundColor','White',...
-                    'Callback',@self.undersampledBarPositionBinPopupMenuActuated);
+                    'Callback',@(source,event)(self.undersampledBarPositionBinPopupMenuActuated(source, event)) );
                 self.UndersampledBarPositionEnableFeedbackCheckbox_ = uicontrol(self.BarPositionHistogramFigureHandle_, 'Style', 'checkbox','String', 'Enable Feedback',...
                     'Position', [undersampledBarPositionEnableFeedbackCheckboxXOffset uicontrolsYOffset undersampledBarPositionEnableFeedbackCheckboxWidth uicontrolsHeight],...
                      'BackgroundColor','White','Enable',ws.onIff(~strcmp('None',get(self.UndersampledBarPositionBinPopupMenu_,'String'))),...
-                     'Callback', @self.undersampledBarPositionEnableFeedbackCheckboxActivated);
+                     'Callback', @(source, event)(self.undersampledBarPositionEnableFeedbackCheckboxActivated(source, event)));
                 
                 
                 self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigureHandle_,...
