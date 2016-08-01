@@ -112,7 +112,7 @@ classdef ScopePlot < handle
         function setColorsAndIcons(self, controlForegroundColor, controlBackgroundColor, ...
                                          axesForegroundColor, axesBackgroundColor, ...
                                          traceLineColor, ...
-                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon)            
+                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedOrUnlockedIcon, yCaretIcon)            
             % Update the colors
             set(self.AxesGH_,'Color',axesBackgroundColor);
             set(self.AxesGH_,'XColor',axesForegroundColor);
@@ -135,7 +135,7 @@ classdef ScopePlot < handle
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
-            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);            
+            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedOrUnlockedIcon);            
             set(self.SetYLimButtonGH_,'CData',yCaretIcon);            
         end  % function
 
@@ -390,14 +390,14 @@ classdef ScopePlot < handle
             end
         end  % function                
         
-        function setControlEnablement(self, areYLimitsLockedTightToData)
-            onIffNotAreYLimitsLockedTightToData = ws.onIff(~areYLimitsLockedTightToData) ;
-            set(self.SetYLimTightToDataButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.SetYLimButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomInButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YZoomOutButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollUpButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
-            set(self.YScrollDownButtonGH_,'Enable',onIffNotAreYLimitsLockedTightToData);
+        function setControlEnablement(self, isAnalog, areYLimitsLockedTightToData)
+            set(self.SetYLimTightToDataButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
+            set(self.SetYLimTightToDataLockedButtonGH_,'Enable',ws.onIff(isAnalog));
+            set(self.SetYLimButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
+            set(self.YZoomInButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
+            set(self.YZoomOutButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
+            set(self.YScrollUpButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
+            set(self.YScrollDownButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
         end  % function        
     end  % public methods block
     

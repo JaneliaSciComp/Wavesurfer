@@ -40,6 +40,7 @@ classdef DisplayFigure < ws.MCOSFigure
         NormalYScrollDownIcon_ 
         NormalYTightToDataIcon_ 
         NormalYTightToDataLockedIcon_ 
+        NormalYTightToDataUnlockedIcon_ 
         NormalYCaretIcon_ 
         
         TraceColorSequence_
@@ -90,6 +91,8 @@ classdef DisplayFigure < ws.MCOSFigure
             self.NormalYTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;            
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
             self.NormalYTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_unlocked.png');
+            self.NormalYTightToDataUnlockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
             self.NormalYCaretIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
 
@@ -824,12 +827,14 @@ end  % public methods block
                 yScrollDownIcon = self.NormalYScrollDownIcon_ ;
                 yTightToDataIcon = self.NormalYTightToDataIcon_ ;
                 yTightToDataLockedIcon = self.NormalYTightToDataLockedIcon_ ;
+                yTightToDataUnlockedIcon = self.NormalYTightToDataUnlockedIcon_ ;
                 yCaretIcon = self.NormalYCaretIcon_ ;
             else
                 yScrollUpIcon   = 1-self.NormalYScrollUpIcon_   ;  % RGB images, so this inverts them, leaving nan's alone
                 yScrollDownIcon = 1-self.NormalYScrollDownIcon_ ;                
                 yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataIcon_) ;  
                 yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataLockedIcon_) ;
+                yTightToDataUnlockedIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataUnlockedIcon_) ;
                 yCaretIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYCaretIcon_) ;
             end                
 
@@ -846,6 +851,7 @@ end  % public methods block
             aiChannelUnits = acq.AnalogChannelUnits ;            
             
             % Update the individual plot colors and icons
+            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
             isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
             isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
             nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
@@ -861,10 +867,17 @@ end  % public methods block
                 %if ~areColorsNormal ,
                 %    traceLineColor = 1 - traceLineColor ;
                 %end
-                thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
-                                           axesForegroundColor, axesBackgroundColor, ...
-                                           traceLineColor, ...
-                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
+                if areYLimitsLockedTightToData(i) ,                    
+                    thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                               axesForegroundColor, axesBackgroundColor, ...
+                                               traceLineColor, ...
+                                               yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
+                else
+                    thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                               axesForegroundColor, axesBackgroundColor, ...
+                                               traceLineColor, ...
+                                               yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataUnlockedIcon, yCaretIcon) ;
+                end
                 thisPlot.IsGridOn = isGridOn ;                       
                 thisPlot.setXAxisLimits(xl) ;
                 thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,i)') ;
@@ -919,11 +932,11 @@ end  % public methods block
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
             for i=1:length(self.AnalogScopePlots_) ,
                 self.AnalogScopePlots_(i).IsVisible = isAnalogChannelDisplayed(i) ;
-                self.AnalogScopePlots_(i).setControlEnablement(areYLimitsLockedTightToData(i)) ;
+                self.AnalogScopePlots_(i).setControlEnablement(true, areYLimitsLockedTightToData(i)) ;
             end
             for i=1:length(self.DigitalScopePlots_) ,
                 self.DigitalScopePlots_(i).IsVisible = isDigitalChannelDisplayed(i) ;
-                self.DigitalScopePlots_(i).setControlEnablement(true) ;  % digital channels are always locked tight to data
+                self.DigitalScopePlots_(i).setControlEnablement(false) ;  % digital channels are always locked tight to data
             end
         end  % function
         
@@ -1076,14 +1089,16 @@ end  % public methods block
             end
         end  % function        
 
-        function updateYAxisLimits_(self, aiChannelIndex)
+        function updateYAxisLimits_(self, aiChannelIndices)
             % Update the axes limits to match those in the model
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
             yLimitsPerAnalogChannel = self.Model.YLimitsPerAnalogChannel ;
-            yl = yLimitsPerAnalogChannel(:,aiChannelIndex)' ;
-            self.AnalogScopePlots_(aiChannelIndex).setYAxisLimits(yl) ;
+            for aiChannelIndex = aiChannelIndices ,
+                yl = yLimitsPerAnalogChannel(:,aiChannelIndex)' ;
+                self.AnalogScopePlots_(aiChannelIndex).setYAxisLimits(yl) ;
+            end
         end  % function        
 
 %         function updateAreYLimitsLockedTightToData_(self)

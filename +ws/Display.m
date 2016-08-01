@@ -566,11 +566,17 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.CachedDisplayXSpan_ = [];
         end        
         
-        function setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
-            areYLimitsLockedTightToData = self.AreYLimitsLockedTightToData ;
-            if areYLimitsLockedTightToData ,
-                self.setYAxisLimitsTightToData_();
+        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
+            areYLimitsLockedTightToData = self.AreYLimitsLockedTightToDataForAnalogChannel_ ;
+            nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+            doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
+            for i = 1:nAIChannels ,                
+                if areYLimitsLockedTightToData(i) ,
+                    doesAIChannelNeedYLimitUpdate(i) = true ;
+                    self.setYAxisLimitsTightToData_(i) ;
+                end
             end
+            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
         end  % function
         
         function clearData_(self)
@@ -580,7 +586,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.YData_ = zeros(0,nActiveChannels) ;
         end
         
-        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate, xOffset)
+        function indicesOfAIChannelsNeedingYLimitUpdate = addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate, xOffset)
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
@@ -644,9 +650,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 self.XOffset = xOffset ;
             end
             
-            % TODO: Need to bring this back, make it work
-            % % Change the y limits to match the data, if appropriate
-            % self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_();
+            % Change the y limits to match the data, if appropriate
+            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
         end        
     end
         
@@ -678,8 +683,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 end
 
                 % Add the data
-                self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
-                self.broadcast('UpdateData');          
+                indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
+                self.broadcast('UpdateData');       
+                self.broadcast('UpdateYAxisLimits', indicesOfAIChannelsNeedingYLimitUpdate) ;
             else
                 % if not active, do nothing
             end
