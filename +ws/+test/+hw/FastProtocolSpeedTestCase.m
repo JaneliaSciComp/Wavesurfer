@@ -1,6 +1,6 @@
 classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)
+    % To run these tests, need to have an NI daq attached.  (Can be a
+    % simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>

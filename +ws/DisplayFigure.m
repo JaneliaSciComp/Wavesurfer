@@ -863,10 +863,11 @@ end  % public methods block
                 if isAnalogChannelDisplayed(i) ,
                     indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
                 end
-                traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
-                %if ~areColorsNormal ,
-                %    traceLineColor = 1 - traceLineColor ;
-                %end
+                if areColorsNormal ,
+                    traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
+                else
+                    traceLineColor = 1 - self.TraceColorSequence_(indexOfScope,:) ;
+                end
                 if areYLimitsLockedTightToData(i) ,                    
                     thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                                axesForegroundColor, axesBackgroundColor, ...
@@ -894,10 +895,11 @@ end  % public methods block
                 if isDigitalChannelDisplayed(i) ,
                     indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
                 end
-                traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
-                %if ~areColorsNormal ,
-                %    traceLineColor = 1 - traceLineColor ;
-                %end
+                if areColorsNormal ,
+                    traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
+                else
+                    traceLineColor = 1 - self.TraceColorSequence_(indexOfScope,:) ;
+                end
                 thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                            axesForegroundColor, axesBackgroundColor, ...
                                            traceLineColor, ...

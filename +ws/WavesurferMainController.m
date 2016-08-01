@@ -1953,7 +1953,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.showAndRaiseChildFigure_('TestPulserController');
         end
         
-        function DisplayMenuItemActuated(self,source,event) %#ok<INUSD>
+        function DisplayMenuItemActuated(self, source, event)  %#ok<INUSD>
             self.showAndRaiseChildFigure_('DisplayController');
         end
         

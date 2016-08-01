@@ -1,5 +1,5 @@
 classdef Display < ws.Subsystem   %& ws.EventSubscriber
-    %Display Manages the display and update of one or more Scope objects.
+    % Display manages the display and update of one or more Scope objects.
     
     properties (Dependent = true)
         IsGridOn
@@ -808,6 +808,25 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.enableBroadcastsMaybe() ;
         end
     end  % protected methods block
+    
+    methods (Access=protected)    
+        function setIsEnabledImplementation_(self, newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.IsEnabled_ = logical(newValue) ;
+                if ~self.IsEnabled_ ,
+                    self.clearData_() ;  % if we just disabled Display, clear the data
+                end
+                didSucceed = true ;
+            else
+                didSucceed = false ;
+            end
+            self.broadcast('DidSetIsEnabled') ;
+            if ~didSucceed ,
+                error('most:Model:invalidPropVal', ...
+                      'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
+            end
+        end
+    end  % protected methods block    
     
     methods (Static=true)
         function y = sanitizeYLimitsArrayLength(x, targetLength, defaultValue)
