@@ -1,10 +1,9 @@
 classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
-    % WavesurferController -- A singleton class that is the controller for the
-    % main wavesurfer window.  You get a handle to the singleton by calling the
-    % class method sharedController().
+    % The controller from the main wavesurfer window.
     
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
+        DisplayController = [];
         TriggersController = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
@@ -94,14 +93,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.syncVariousThingsFromModel_();
             self.updateSubscriptionsToModel_()
             
-            % Bring the scopes into sync
-            %self.nukeAndRepaveScopeControllers();
-            self.syncScopeControllersWithScopeModels() ;
+%             % Bring the scopes into sync
+%             self.syncScopeControllersWithScopeModels() ;
             
             % Update all the controls
             %self.Figure.updateControlsInExistance();
             %self.Figure.updateControlEnablement();            
-            self.Figure.update();
+            self.Figure.update();            
+            
+            % Show the display figure by default
+            self.showAndRaiseChildFigure_('DisplayController');
         end
     end
     
@@ -773,25 +774,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             if isempty(self.Model)                
                 % If there's no model, not much to configure
             else
-                % Additional bindings for (dis/en)abled control states not supported in
-                % controller.
-%                 self.Model.subscribeMe(self,'PostSet','FastProtocols','didSetFastProtocols');                
-%                 for i = 1:numel(self.Model.FastProtocols) ,
-%                     thisFastProtocol=self.Model.FastProtocols(i);
-%                     thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','didSetFastProtocols');
-%                     thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','didSetFastProtocols');
-%                 end                                
-                %self.Model.subscribeMe(self,'PreSet','State','willSetModelState');
-                %self.Model.subscribeMe(self,'PostSet','State','didSetModelState');
-                self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
-                %self.Model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateIsYokedToScanImage');
-                %self.Model.subscribeMe(self,'PostSet','AreSweepsFiniteDuration','updateEnablementAndVisibilityOfControls');
-                %self.Model.Stimulation.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfControls');
-                %self.Model.Display.subscribeMe(self,'NScopesMayHaveChanged','','updateScopeMenu');
-                %self.Model.Display.subscribeMe(self,'PostSet','Enabled','updateAfterDisplayEnablementChange');
-                %self.Model.Display.subscribeMe(self,'PostSet','IsXSpanSlavedToAcquistionDuration','updateEnablementAndVisibilityOfDisplayControls');
-                %self.Model.Logging.subscribeMe(self,'PostSet','Enabled','updateEnablementAndVisibilityOfLoggingControls');
-                self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
+                %self.Model.subscribeMe(self,'DidChangeNumberOfInputChannels','','syncScopeControllersWithScopeModels');
+                %self.Model.subscribeMe(self,'DidLoadProtocolFile','','syncScopeControllersWithScopeModels');
             end            
         end  % function
     end  % protected methods
@@ -1039,49 +1023,49 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         end  % function
 %     end  % methods
         
-    methods (Access = public)
-        function scopeVisibleMenuItemTwiddled(self, source)
-            % Called when one of the scope menu items is checked or
-            % unchecked.
-            
-            % Which scope?
-            tag=get(source,'Tag');
-            scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
-            
-            % Make that change
-            self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
-            %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
-            %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
-            % should automatically uopdate now
-        end        
-    end
+%     methods (Access = public)
+%         function scopeVisibleMenuItemTwiddled(self, source)
+%             % Called when one of the scope menu items is checked or
+%             % unchecked.
+%             
+%             % Which scope?
+%             tag=get(source,'Tag');
+%             scopeIndex = sscanf(tag, 'ShowHideChannelMenuItems(%d)');
+%             
+%             % Make that change
+%             self.Model.Display.toggleIsVisibleWhenDisplayEnabled(scopeIndex);
+%             %originalState=self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled;
+%             %self.Model.Display.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled=~originalState;
+%             % should automatically uopdate now
+%         end        
+%     end
     
-    methods (Access = public)
-        function removeScope(self, source)
-            % Called when one the menu items to remove a scope is called.
-            
-            % Get the scope index
-            tag = get(source,'Tag');
-            indexAsString=tag(end-2:end-1);
-            scopeIndex=str2double(indexAsString);
-            
-            % Delete the controller and thereby the window, and update our
-            % records appropriately
-            thisScopeController=self.ScopeControllers{scopeIndex};
-            isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
-            
-            % thisScopeController.delete();
-            thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-            self.ScopeControllers(scopeIndex)=[];
-            self.ChildControllers(isMatchAsChild)=[];
-            
-            % Delete the ScopeModel     
-            self.Model.Display.removeScope(scopeIndex);
-            
-            % % Update the scope menu (this is handled via event)
-            % self.updateScopeMenu();
-        end
-    end  % public methods block
+%     methods (Access = public)
+%         function removeScope(self, source)
+%             % Called when one the menu items to remove a scope is called.
+%             
+%             % Get the scope index
+%             tag = get(source,'Tag');
+%             indexAsString=tag(end-2:end-1);
+%             scopeIndex=str2double(indexAsString);
+%             
+%             % Delete the controller and thereby the window, and update our
+%             % records appropriately
+%             thisScopeController=self.ScopeControllers{scopeIndex};
+%             isMatchAsChild=cellfun(@(sc)(sc==thisScopeController),self.ChildControllers);
+%             
+%             % thisScopeController.delete();
+%             thisScopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%             self.ScopeControllers(scopeIndex)=[];
+%             self.ChildControllers(isMatchAsChild)=[];
+%             
+%             % Delete the ScopeModel     
+%             self.Model.Display.removeScope(scopeIndex);
+%             
+%             % % Update the scope menu (this is handled via event)
+%             % self.updateScopeMenu();
+%         end
+%     end  % public methods block
     
     methods
 %         function nukeAndRepaveScopeControllers(self,varargin)
@@ -1099,62 +1083,62 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %         end
         
-        function syncScopeControllersWithScopeModels(self,varargin)
-            % Creates a controller and a window for each ScopeModel
-            % in the WavesurferModel Display subsystem.
-            
-            % Figure out which scope controllers go with which models
-            scopeModels = self.Model.Display.Scopes ;
-            scopeControllers = self.ScopeControllers ;            
-            isMatch = ws.WavesurferMainController.doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers) ;
-            
-            % Delete controllers with no model
-            nModelsForController = sum(isMatch,1) ;
-            nControllers = length(scopeControllers) ;
-            for indexOfScopeController = nControllers:-1:1 ,  % delete from last to first so low-index ones don't change index
-                if nModelsForController(indexOfScopeController)==0 ,
-                    self.deleteScopeController_(indexOfScopeController) ;
-                end
-            end
-            
-            % If a model has no controller, create one
-            nControllersForModel = sum(isMatch,2)' ;
-            nModels = length(scopeModels) ;
-            for indexOfScopeModel = 1:nModels ,
-                if nControllersForModel(indexOfScopeModel)==0 ,
-                    scopeModel=self.Model.Display.Scopes{indexOfScopeModel};
-                    self.createChildControllerIfNonexistant('ScopeController',scopeModel);
-                end
-            end
-        end  % function
+%         function syncScopeControllersWithScopeModels(self,varargin)
+%             % Creates a controller and a window for each ScopeModel
+%             % in the WavesurferModel Display subsystem.
+%             
+%             % Figure out which scope controllers go with which models
+%             scopeModels = self.Model.Display.Scopes ;
+%             scopeControllers = self.ScopeControllers ;            
+%             isMatch = ws.WavesurferMainController.doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers) ;
+%             
+%             % Delete controllers with no model
+%             nModelsForController = sum(isMatch,1) ;
+%             nControllers = length(scopeControllers) ;
+%             for indexOfScopeController = nControllers:-1:1 ,  % delete from last to first so low-index ones don't change index
+%                 if nModelsForController(indexOfScopeController)==0 ,
+%                     self.deleteScopeController_(indexOfScopeController) ;
+%                 end
+%             end
+%             
+%             % If a model has no controller, create one
+%             nControllersForModel = sum(isMatch,2)' ;
+%             nModels = length(scopeModels) ;
+%             for indexOfScopeModel = 1:nModels ,
+%                 if nControllersForModel(indexOfScopeModel)==0 ,
+%                     scopeModel=self.Model.Display.Scopes{indexOfScopeModel};
+%                     self.createChildControllerIfNonexistant('ScopeController',scopeModel);
+%                 end
+%             end
+%         end  % function
         
     end
 
-    methods (Static)    
-        function isMatch = doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers)
-            % Looks at all the scope models, and all the scope controllers,
-            % and returns an nScopeModels x nScopeControllers matrix which
-            % is 1 if that model goes with that controller, and 0
-            % otherwise.  So all-zero rows of the matrix correspond to
-            % models with no controller, and all-zero columns correspond to
-            % controllers with no model among the current scope models
-            
-            %scopeModels = self.Model.Display.Scopes ;
-            %scopeControllers = self.ScopeControllers ;
-            controllerModels = cellfun(@(controller)(controller.Model),scopeControllers,'UniformOutput',false) ;
-%             isMatch = bsxfun(@(scopeModelCell,scopeControllerModelCell)(scopeModelCell{1}==scopeControllerModelCell{1}), ...
-%                              scopeModels' , ...
-%                              scopeControllerModels) ;
-            nModels = length(scopeModels) ;
-            nControllers = length(scopeControllers) ;
-            isMatch = zeros(nModels,nControllers) ;
-            for i = 1:nModels ,
-                for j = 1:nControllers ,
-                    isMatch(i,j) = (scopeModels{i}==controllerModels{j}) ;
-                end
-            end
-        end        
-    end
+%     methods (Static)    
+%         function isMatch = doesScopeModelMatchScopeControllerModel(scopeModels,scopeControllers)
+%             % Looks at all the scope models, and all the scope controllers,
+%             % and returns an nScopeModels x nScopeControllers matrix which
+%             % is 1 if that model goes with that controller, and 0
+%             % otherwise.  So all-zero rows of the matrix correspond to
+%             % models with no controller, and all-zero columns correspond to
+%             % controllers with no model among the current scope models
+%             
+%             %scopeModels = self.Model.Display.Scopes ;
+%             %scopeControllers = self.ScopeControllers ;
+%             controllerModels = cellfun(@(controller)(controller.Model),scopeControllers,'UniformOutput',false) ;
+% %             isMatch = bsxfun(@(scopeModelCell,scopeControllerModelCell)(scopeModelCell{1}==scopeControllerModelCell{1}), ...
+% %                              scopeModels' , ...
+% %                              scopeControllerModels) ;
+%             nModels = length(scopeModels) ;
+%             nControllers = length(scopeControllers) ;
+%             isMatch = zeros(nModels,nControllers) ;
+%             for i = 1:nModels ,
+%                 for j = 1:nControllers ,
+%                     isMatch(i,j) = (scopeModels{i}==controllerModels{j}) ;
+%                 end
+%             end
+%         end        
+%     end
         
     methods (Access = protected)    
 %         function deleteAllScopeControllers_(self)
@@ -1166,18 +1150,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             end
 %         end
         
-        function deleteScopeController_(self, indexInScopeControllers)
-            % Deletes a single scope controller+view, leaving the model alone.
-            
-            scopeController = self.ScopeControllers{indexInScopeControllers} ;
-            isMatch = cellfun(@(childController)(scopeController==childController), self.ChildControllers) ;
-            scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
-            self.ScopeControllers(indexInScopeControllers) = [] ;  % delete an element from the cell array
-            indexInChildControllers = find(isMatch,1) ;
-            if ~isempty(indexInChildControllers) ,
-                self.ChildControllers(indexInChildControllers) = [] ;  % delete an element from the cell array
-            end
-        end
+%         function deleteScopeController_(self, indexInScopeControllers)
+%             % Deletes a single scope controller+view, leaving the model alone.
+%             
+%             scopeController = self.ScopeControllers{indexInScopeControllers} ;
+%             isMatch = cellfun(@(childController)(scopeController==childController), self.ChildControllers) ;
+%             scopeController.castOffAllAttachments() ; % Causes the controller and figure to unsubscribeFromAll(), and the figure GH to be deleted
+%             self.ScopeControllers(indexInScopeControllers) = [] ;  % delete an element from the cell array
+%             indexInChildControllers = find(isMatch,1) ;
+%             if ~isempty(indexInChildControllers) ,
+%                 self.ChildControllers(indexInChildControllers) = [] ;  % delete an element from the cell array
+%             end
+%         end
         
     end
     
@@ -1674,7 +1658,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             specs.TestPulserController.className = 'ws.TestPulserController';
             %specs.TestPulserController.controlName = 'TestPulserFigure';
             
-            specs.ScopeController.className = 'ws.ScopeController';
+            specs.DisplayController.className = 'ws.DisplayController';
             %specs.ScopeController.controlName = 'ScopeFigure';
             
             specs.ElectrodeManagerController.className = 'ws.ElectrodeManagerController';
@@ -1682,27 +1666,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % function
 
         function [controller,didCreate] = createChildControllerIfNonexistant(self, controllerName, varargin)
-            switch controllerName ,                                        
-                case 'ScopeController' ,
-                    scopeModel=varargin{1};
-                    fullControllerClassName=['ws.' controllerName];
-                    controller = feval(fullControllerClassName, ...
-                                       self, ...
-                                       scopeModel);
-                    self.ChildControllers{end+1}=controller;
-                    self.ScopeControllers{end+1}=controller;                    
-                    didCreate = true ;
-                otherwise ,
-                    if isempty(self.(controllerName)) ,
-                        fullControllerClassName=['ws.' controllerName];
-                        controller = feval(fullControllerClassName,self,self.Model);
-                        self.ChildControllers{end+1}=controller;
-                        self.(controllerName)=controller;
-                        didCreate = true ;
-                    else
-                        controller = self.(controllerName);
-                        didCreate = false ;
-                    end
+            if isempty(self.(controllerName)) ,
+                fullControllerClassName=['ws.' controllerName];
+                controller = feval(fullControllerClassName,self,self.Model);
+                self.ChildControllers{end+1}=controller;
+                self.(controllerName)=controller;
+                didCreate = true ;
+            else
+                controller = self.(controllerName);
+                didCreate = false ;
             end
         end  % function
 
@@ -1981,6 +1953,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.showAndRaiseChildFigure_('TestPulserController');
         end
         
+        function DisplayMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.showAndRaiseChildFigure_('DisplayController');
+        end
+        
         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>
             %fprintf('Inside YokeToScanimageMenuItemActuated()\n');
             model=self.Model;
@@ -1998,15 +1974,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end                        
         end
         
-        % Tools > Scopes submenu                
-        function ShowHideChannelMenuItemsActuated(self,source,event) %#ok<INUSD>
-            self.scopeVisibleMenuItemTwiddled(source);
-        end
+%         % Tools > Scopes submenu                
+%         function ShowHideChannelMenuItemsActuated(self,source,event) %#ok<INUSD>
+%             self.scopeVisibleMenuItemTwiddled(source);
+%         end
         
-        % Tools > Scopes > Remove subsubmenu
-        function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>
-            self.removeScope(source);
-        end
+%         % Tools > Scopes > Remove subsubmenu
+%         function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>
+%             self.removeScope(source);
+%         end
         
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>

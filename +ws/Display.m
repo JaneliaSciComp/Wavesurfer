@@ -2,6 +2,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     %Display Manages the display and update of one or more Scope objects.
     
     properties (Dependent = true)
+        IsGridOn
+        AreColorsNormal        
+        DoShowButtons        
         UpdateRate  % the rate at which the scopes are updated, in Hz
         XOffset  % the x coord at the left edge of the scope windows
         XSpan  % the trace duration shown in the scope windows
@@ -11,56 +14,138 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsXSpanSlavedToAcquistionDurationSettable
           % true iff IsXSpanSlavedToAcquistionDuration is currently
           % settable
-        Scopes  % a cell array of ws.ScopeModel objects
+        IsAnalogChannelDisplayed  % 1 x nAIChannels
+        IsDigitalChannelDisplayed  % 1 x nDIChannels
+        AreYLimitsLockedTightToDataForAnalogChannel  % 1 x nAIChannels
+        YLimitsPerAnalogChannel  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
         NScopes
+        XData
+        YData
     end
 
     properties (Access = protected)
-        Scopes_  % a cell array of ws.ScopeModel objects
+        IsGridOn_ = true
+        AreColorsNormal_ = true  % if false, colors are inverted, approximately
+        DoShowButtons_ = true % if false, don't show buttons in the figure
         XSpan_ 
         UpdateRate_
         XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
         IsXSpanSlavedToAcquistionDuration_
           % if true, the x span for all the scopes is set to the acquisiton
           % sweep duration
+        IsAnalogChannelDisplayed_  % 1 x nAIChannels
+        IsDigitalChannelDisplayed_  % 1 x nDIChannels
+        AreYLimitsLockedTightToDataForAnalogChannel_  % 1 x nAIChannels
+        YLimitsPerAnalogChannel_  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
     end
     
     properties (Access = protected, Transient=true)
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
+        XSpanInPixels_
+        XData_
+        YData_  % analog and digital together, all as doubles, but only for the *active* channels
     end
     
     events
-        NScopesMayHaveChanged
-        DidSetScopeIsVisibleWhenDisplayEnabled
-        %DidSetIsXSpanSlavedToAcquistionDuration        
         DidSetUpdateRate
         UpdateXSpan
+        UpdateXOffset
+        UpdateYAxisLimits
+        UpdateData
+        %DataAdded
+        %DataCleared
+        ItWouldBeNiceToKnowXSpanInPixels
     end
 
     methods
         function self = Display(parent)
             self@ws.Subsystem(parent) ;
-            self.Scopes_ = cell(1,0) ;
             self.XOffset_ = 0;  % s
             self.XSpan_ = 1;  % s
             self.UpdateRate_ = 10;  % Hz
             self.XAutoScroll_ = false ;
             self.IsXSpanSlavedToAcquistionDuration_ = true ;
+            self.IsAnalogChannelDisplayed_ = true(1,0) ; % 1 x nAIChannels
+            self.IsDigitalChannelDisplayed_  = true(1,0) ; % 1 x nDIChannels
+            self.AreYLimitsLockedTightToDataForAnalogChannel_ = false(1,0) ; % 1 x nAIChannels
+            self.YLimitsPerAnalogChannel_ = zeros(2,0) ; % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit            
         end
         
-        function delete(self)
-            %self.removeScopes();
-            self.Scopes_ = cell(1,0) ;
+        function delete(self)  %#ok<INUSD>
+        end
+        
+        function result = get.NScopes(self)
+            result = length(self.IsAnalogChannelDisplayed_) + length(self.IsDigitalChannelDisplayed_) ;
+        end
+        
+        function result = get.XData(self)
+            result = self.XData_ ;
+        end
+        
+        function result = get.YData(self)
+            result = self.YData_ ;
+        end
+        
+        function result = get.AreYLimitsLockedTightToDataForAnalogChannel(self)
+            result = self.AreYLimitsLockedTightToDataForAnalogChannel_ ;
+        end
+        
+        function hereIsXSpanInPixels(self, xSpanInPixels)
+            self.XSpanInPixels_ = xSpanInPixels ;
+        end        
+        
+        function result = get.IsAnalogChannelDisplayed(self)
+            result = self.IsAnalogChannelDisplayed_ ;
+        end
+        
+        function toggleIsAnalogChannelDisplayed(self, aiChannelIndex) 
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex))
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    currentValue = self.IsAnalogChannelDisplayed_(aiChannelIndex) ;
+                    self.IsAnalogChannelDisplayed_(aiChannelIndex) = ~currentValue ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('Update');
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to toggleIsAnalogChannelDisplayed must be a valid AI channel index') ;
+            end                
+        end
+        
+        function toggleIsDigitalChannelDisplayed(self, diChannelIndex) 
+            if isnumeric(diChannelIndex) && isscalar(diChannelIndex) && isreal(diChannelIndex) && (diChannelIndex==round(diChannelIndex))
+                nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
+                if 1<=diChannelIndex && diChannelIndex<=nDIChannels ,
+                    currentValue = self.IsDigitalChannelDisplayed_(diChannelIndex) ;
+                    self.IsDigitalChannelDisplayed_(diChannelIndex) = ~currentValue ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('Update');
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to toggleIsDigitalChannelDisplayed must be a valid DI channel index') ;
+            end                
+        end
+        
+        function result = get.IsDigitalChannelDisplayed(self)
+            result = self.IsDigitalChannelDisplayed_ ;
         end
         
         function value = get.UpdateRate(self)
             value = self.UpdateRate_;
-        end
-        
-        function value = get.Scopes(self)
-            value = self.Scopes_ ;
         end
         
         function set.UpdateRate(self, newValue)
@@ -85,10 +170,6 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                     return
                 end
-%                 acquisition=wavesurferModel.Acquisition;
-%                 if isempty(acquisition) || ~isvalid(acquisition),
-%                     return
-%                 end
                 duration=wavesurferModel.SweepDuration;
                 value=fif(isfinite(duration),duration,1);
             else
@@ -103,9 +184,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 else
                     if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
                         self.XSpan_ = double(newValue);
-                        for idx = 1:numel(self.Scopes) ,
-                            self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                        end
+                        % for idx = 1:numel(self.Scopes) ,
+                        %     self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                        % end
                     else
                         self.broadcast('UpdateXSpan');
                         error('most:Model:invalidPropVal', ...
@@ -124,16 +205,34 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if ws.isASettableValue(newValue) ,
                 if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                     self.XOffset_ = double(newValue);
-                    for idx = 1:numel(self.Scopes)
-                        self.Scopes_{idx}.XOffset = newValue;
-                    end
+                    % for idx = 1:numel(self.Scopes)
+                    %     self.Scopes_{idx}.XOffset = newValue;
+                    % end
                 else
-                    self.broadcast('Update');
+                    self.broadcast('UpdateXOffset');
                     error('most:Model:invalidPropVal', ...
                           'XOffset must be a scalar finite number') ;
                 end
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateXOffset');
+        end
+        
+        function value = get.YLimitsPerAnalogChannel(self)
+            value = self.YLimitsPerAnalogChannel_ ;
+        end
+
+        function setYLimitsForSingleAnalogChannel(self, i, newValue)
+            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
+                self.YLimitsPerAnalogChannel_(:,i) = double(newValue') ;
+                wasSet = true ;
+            else
+                wasSet = false ;
+            end
+            self.broadcast('Update') ;
+            if ~wasSet ,
+                error('most:Model:invalidPropVal', ...
+                      'YLimitsPerAnalogChannel column must be 2 element numeric row vector, with the first element less than or equal to the second') ;
+            end
         end
         
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
@@ -148,9 +247,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if self.IsXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
-                    for idx = 1:numel(self.Scopes) ,
-                        self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                    end
+                    % for idx = 1:numel(self.Scopes) ,
+                    %     self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+                    % end
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
@@ -164,76 +263,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             value = self.Parent.AreSweepsFiniteDuration ;
         end  % function       
         
-        function self=didSetAnalogChannelUnitsOrScales(self)
-            scopes=self.Scopes;
-            for i=1:length(scopes) ,
-                scopes{i}.didSetAnalogChannelUnitsOrScales();
-            end
+        function didSetAnalogChannelUnitsOrScales(self)
+            self.clearData_() ;
+            self.broadcast('Update') ;
         end       
-        
-%         function didSetDeviceName(self)
-%             %self.initializeScopes_() ;
-%         end
-        
-        function addScope(self, scopeTag, scopeTitle, channelName)
-            if isempty(scopeTag)
-                scopeTag = sprintf('Scope_%d', self.NScopes + 1);
-            end
-            if isempty(scopeTitle)
-                scopeTitle = sprintf('Scope %d', self.NScopes + 1);
-            end
-            
-            % Create the scope model
-            scopeModel = ws.ScopeModel(self, scopeTag, scopeTitle, channelName);
-            
-            % add the channels to the scope model                          
-            %nChannels=length(channelNames);
-            %for i = 1:nChannels
-                %channelName = channelNames{i};
-            %scopeModel.addChannel(channelName);
-            %end
-            
-            % Add the new scope to Scopes
-            self.Scopes_{end + 1} = scopeModel;
-            %self.IsScopeVisibleWhenDisplayEnabled(end+1) = true;
-
-            % We want to know if the visibility of the scope changes
-            %scopeModel.addlistener('Visible', 'PostSet', @self.scopeVisibleDidChange);
-            %scopeModel.subscribeMe(self,'PostSet','Visible','scopeVisibleDidChange');
-            
-            % Let anyone who cares know that the number of scopes has
-            % changed
-            self.broadcast('NScopesMayHaveChanged');
-        end
-
-%         function registerScopeController(self,scopeController)
-%             %scopeController.subscribeMe(self,'ScopeVisibilitySet','','scopeVisibleDidChange');
-%          end
-
-        function removeScope(self, index)
-            self.Scopes_(index) = [];
-            self.broadcast('NScopesMayHaveChanged');
-        end
-        
-        function removeScopes(self)
-            if ~isempty(self.Scopes_) ,
-                self.Scopes_ = cell(1,0);
-                self.broadcast('NScopesMayHaveChanged');
-            end
-        end
-        
-        function toggleIsVisibleWhenDisplayEnabled(self,scopeIndex)
-            originalState = self.Scopes{scopeIndex}.IsVisibleWhenDisplayEnabled ;
-            % self.Scopes_{scopeIndex}.IsVisibleWhenDisplayEnabled = ~originalState ;  
-            %   Doing things with the single line above doesn't work, b/c
-            %   self.Scopes_{scopeIndex} is set to empty for a time, and
-            %   that causes havoc for the some of the event handlers that
-            %   fire when IsVisibleWhenDisplayEnabled is set.  I don't
-            %   understand why that element is briefly set to empty, but
-            %   doing things as below fixes it.  -- ALT, 2015-08-04
-            theScopeModel = self.Scopes_{scopeIndex} ;
-            theScopeModel.IsVisibleWhenDisplayEnabled = ~originalState ;
-        end
         
         function startingRun(self)
             self.XOffset = 0;
@@ -254,106 +287,276 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function didAddAnalogInputChannel(self)
-            % Add a scope to match the new channel (newly added channels
-            % are always active)
-            channelNames = self.Parent.Acquisition.AnalogChannelNames ;            
-            newChannelName = channelNames{end} ;
-            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
-            scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
-            scopeTitle=sprintf('Channel %s', newChannelName);
-            %channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, newChannelName);
+            self.IsAnalogChannelDisplayed_ = horzcat(self.IsAnalogChannelDisplayed_, true) ;
+            self.AreYLimitsLockedTightToDataForAnalogChannel_ = horzcat(self.AreYLimitsLockedTightToDataForAnalogChannel_, false) ;
+            self.YLimitsPerAnalogChannel_ = horzcat(self.YLimitsPerAnalogChannel_, [-10 +10]') ;
+            self.clearData_() ;
+            self.broadcast('Update') ;
         end
         
         function didAddDigitalInputChannel(self)
-            % Add a scope to match the new channel (newly added channels
-            % are always active)
-            channelNames = self.Parent.Acquisition.DigitalChannelNames ;            
-            newChannelName = channelNames{end} ;
-            prototypeScopeTag=sprintf('Channel_%s', newChannelName);
-            scopeTag = ws.Display.tagFromString(prototypeScopeTag);  % this is a static method call
-            scopeTitle=sprintf('Channel %s', newChannelName);
-            %channelNamesForNewScope={newChannelName};
-            self.addScope(scopeTag, scopeTitle, newChannelName);
+            self.IsDigitalChannelDisplayed_(1,end+1) = true ;
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
 
-        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName(nameOfRemovedChannels) ;
+        function didDeleteAnalogInputChannels(self, wasDeleted)
+            wasKept = ~wasDeleted ;
+            self.IsAnalogChannelDisplayed_ = self.IsAnalogChannelDisplayed_(wasKept) ;
+            self.AreYLimitsLockedTightToDataForAnalogChannel_ = self.AreYLimitsLockedTightToDataForAnalogChannel_(wasKept) ;
+            self.YLimitsPerAnalogChannel_ = self.YLimitsPerAnalogChannel_(:,wasKept) ;
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
         
-        function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)            
-            self.removeScopesByName(nameOfRemovedChannels) ;
+        function didDeleteDigitalInputChannels(self, wasDeleted)            
+            wasKept = ~wasDeleted ;
+            self.IsDigitalChannelDisplayed_ = self.IsDigitalChannelDisplayed_(wasKept) ;
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
         
-%         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
-%             self.removeScopeByName(nameOfRemovedChannel) ;
-%         end
-        
-        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
-            if didSucceed , 
-                self.renameScope_(oldValue, newValue) ;
-            end
+        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
         
-        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
-            if didSucceed , 
-                self.renameScope_(oldValue, newValue) ;
-            end
+        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
+            self.clearData_() ;
+            self.broadcast('Update') ;            
         end
         
-        function removeScopesByName(self, namesOfChannelsToRemove)
-            self.disableBroadcasts() ;
-            nChannels = length(namesOfChannelsToRemove) ;
-            for i = 1:nChannels ,
-                channelName = namesOfChannelsToRemove{i} ;
-                self.removeScopeByName(channelName) ;
-            end
-            self.enableBroadcastsMaybe() ;
-            self.broadcast('NScopesMayHaveChanged');
-        end  % function
+        function didSetIsInputChannelActive(self) 
+            self.clearData_() ;
+            self.broadcast('Update') ;            
+        end
         
-        function removeScopeByName(self, nameOfChannelToRemove)
-            [theScope, indexOfTheScope] = self.getScopeByName_(nameOfChannelToRemove) ;
-            if ~isempty(theScope) ,
-                self.removeScope(indexOfTheScope) ;
-            end
-        end  % function
-    end
-    
-    methods (Access=protected)
-        function [theScope, indexOfTheScope] = getScopeByName_(self, channelName)
-            nScopes = self.NScopes ;
-            didFindIt = false ;
-            for i = 1:nScopes ,
-                thisScope = self.Scopes{i} ;
-                thisScopeChannelNames = thisScope.ChannelNames ;
-                if ~isempty(thisScopeChannelNames) ,                    
-                    thisScopeChannelName = thisScopeChannelNames{1} ;
-                    if isequal(thisScopeChannelName,channelName) ,                        
-                        theScope = thisScope ;
-                        indexOfTheScope = i ;
-                        didFindIt = true ;
-                        break
-                    end
+        function toggleIsGridOn(self)
+            self.IsGridOn = ~(self.IsGridOn) ;
+        end
+
+        function toggleAreColorsNormal(self)
+            self.AreColorsNormal = ~(self.AreColorsNormal) ;
+        end
+
+        function toggleDoShowButtons(self)
+            self.DoShowButtons = ~(self.DoShowButtons) ;
+        end
+        
+        function set.IsGridOn(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.IsGridOn_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
                 end
             end
-            if ~didFindIt ,
-                theScope = [] ;
-                indexOfTheScope = [] ;
-            end
+            self.broadcast('Update');
         end
         
-        function renameScope_(self, oldChannelName, newChannelName)
-            theScope = self.getScopeByName_(oldChannelName) ;
-            if ~isempty(theScope) ,
-                prototypeNewScopeTag = sprintf('Channel_%s', newChannelName) ;
-                newScopeTag = ws.Display.tagFromString(prototypeNewScopeTag) ;  % this is a static method call
-                newScopeTitle = sprintf('Channel %s', newChannelName) ;
-                %newChannelNames = {newChannelName} ;
-                theScope.ChannelName = newChannelName ;
-                theScope.Title = newScopeTitle ;
-                theScope.Tag = newScopeTag ;
+        function result = get.IsGridOn(self)
+            result = self.IsGridOn_ ;
+        end
+            
+        function set.AreColorsNormal(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.AreColorsNormal_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+                end
             end
+            self.broadcast('Update');
+        end
+        
+        function result = get.AreColorsNormal(self)
+            result = self.AreColorsNormal_ ;
+        end
+            
+        function set.DoShowButtons(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.DoShowButtons_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.DoShowButtons(self)
+            result = self.DoShowButtons_ ;
+        end                    
+        
+        function scrollUp(self, aiChannelIndex)  % works on analog channels only
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+                    yMiddle=mean(yLimits);
+                    ySpan=diff(yLimits);
+                    yRadius=0.5*ySpan;
+                    newYLimits=(yMiddle+0.1*ySpan)+yRadius*[-1 +1]' ;
+                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to scrollUp() must be a valid AI channel index') ;
+            end                
+        end  % function
+        
+        function scrollDown(self, aiChannelIndex)  % works on analog channels only
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+                    yMiddle=mean(yLimits);
+                    ySpan=diff(yLimits);
+                    yRadius=0.5*ySpan;
+                    newYLimits=(yMiddle-0.1*ySpan)+yRadius*[-1 +1]' ;
+                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to scrollDown() must be a valid AI channel index') ;
+            end                
+        end  % function
+                
+        function zoomIn(self, aiChannelIndex)  % works on analog channels only
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+                    yMiddle=mean(yLimits);
+                    yRadius=0.5*diff(yLimits);
+                    newYLimits=yMiddle+0.5*yRadius*[-1 +1]' ;
+                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to zoomIn() must be a valid AI channel index') ;
+            end                
+        end  % function
+                
+        function zoomOut(self, aiChannelIndex)  % works on analog channels only
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+                    yMiddle=mean(yLimits);
+                    yRadius=0.5*diff(yLimits);
+                    newYLimits=yMiddle+2*yRadius*[-1 +1]' ;
+                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to zoomIn() must be a valid AI channel index') ;
+            end                
+        end  % function
+                
+        function setYAxisLimitsTightToData(self, aiChannelIndex)            
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
+                    self.setYAxisLimitsTightToData_(aiChannelIndex) ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            if ~isValid ,
+                error('most:Model:invalidPropVal', ...
+                      'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
+            end                
+        end  % function
+
+        function toggleAreYLimitsLockedTightToData(self, aiChannelIndex)
+            currentValue = self.AreYLimitsLockedTightToDataForAnalogChannel_(aiChannelIndex) ;
+            self.AreYLimitsLockedTightToDataForAnalogChannel_(aiChannelIndex) = ~currentValue ;
+            self.setYAxisLimitsTightToData_(aiChannelIndex) ;  % this doesn't call .broadcast()
+            self.broadcast('Update') ;  % Would be nice to be more surgical about this...
+        end        
+        
+        function didSetAnalogInputTerminalID_(self)
+            % This should only be called by the parent, hence the
+            % underscore.
+            self.clearData_() ;
+            self.broadcast('UpdateData') ;
+        end        
+        
+        function didSetDigitalInputTerminalID_(self)
+            % This should only be called by the parent, hence the
+            % underscore.
+            self.clearData_() ;
+            self.broadcast('UpdateData') ;
+        end        
+    end  % public methods block
+    
+    methods (Access=protected)        
+        function setYAxisLimitsTightToData_(self, aiChannelIndex)            
+            % this core function does no arg checking and doesn't call
+            % .broadcast.  It just mutates the state.
+            yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
+            if any(~isfinite(yMinAndMax)) ,
+                return
+            end
+            yCenter=mean(yMinAndMax);
+            yRadius=0.5*diff(yMinAndMax);
+            if yRadius==0 ,
+                yRadius=0.001;
+            end
+            newYLimits = yCenter + 1.05*yRadius*[-1 +1]' ;
+            self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;            
+        end
+        
+        function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
+            % Min and max of the data, across all plotted channels.
+            % Returns a 1x2 array.
+            % If all channels are empty, returns [+inf -inf].
+            indexWithinData = self.Parent.Acquisition.indexOfAnalogChannelWithinActiveAnalogChannels(aiChannelIndex) ;
+            y = self.YData(:,indexWithinData) ;
+            yMinRaw=min(y);
+            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
+            yMaxRaw=max(y);
+            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
+            yMinAndMax=double([yMin yMax]);
         end
         
         function completingOrStoppingOrAbortingRun_(self)
@@ -363,107 +566,129 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.CachedDisplayXSpan_ = [];
         end        
         
-%         function initializeScopes_(self)
-%             % Set up the initial set of scope models, one per AI channel
-%             activeChannelNames = self.Parent.Acquisition.ActiveChannelNames;
-%             for iChannel = 1:length(activeChannelNames) ,
-%                 thisChannelName=activeChannelNames{iChannel};
-%                 prototypeScopeTag=sprintf('Channel_%s', thisChannelName);
-%                 scopeTag=self.tagFromString(prototypeScopeTag);  % this is a static method call
-%                 scopeTitle=sprintf('Channel %s', thisChannelName);
-%                 channelNames={thisChannelName};
-%                 self.addScope(scopeTag, scopeTitle, channelNames);
-%             end
-%             %self.addScope('All_Channels','All Channels', activeChannelNames);            
-%         end        
+        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
+            areYLimitsLockedTightToData = self.AreYLimitsLockedTightToDataForAnalogChannel_ ;
+            nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+            doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
+            for i = 1:nAIChannels ,                
+                if areYLimitsLockedTightToData(i) ,
+                    doesAIChannelNeedYLimitUpdate(i) = true ;
+                    self.setYAxisLimitsTightToData_(i) ;
+                end
+            end
+            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+        end  % function
+        
+        function clearData_(self)
+            self.XData_ = zeros(0,1) ;
+            acquisition = self.Parent.Acquisition ;
+            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+            self.YData_ = zeros(0,nActiveChannels) ;
+        end
+        
+        function indicesOfAIChannelsNeedingYLimitUpdate = addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate, xOffset)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
+            if nActiveDigitalChannels==0 ,
+                yRecent = recentScaledAnalogData ;
+            else
+                % Might need to write a mex function to quickly translate
+                % recentRawDigitalData to recentDigitalData.
+                nScans = size(recentRawDigitalData,1) ;                
+                recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
+                for j = 1:nActiveDigitalChannels ,
+                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
+                end
+                % End of code that might need to mex-ify
+                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
+            end
+            
+            % Compute a timeline for the new data            
+            nNewScans = size(yRecent, 1) ;
+            dt = 1/sampleRate ;  % s
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
+            
+            % Figure out the downsampling ratio
+            self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
+              % At this point, self.XSpanPixels_ should be set to the
+              % correct value, or the fallback value if there's no view
+            %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+            xSpanInPixels = self.XSpanInPixels_ ;
+            r = ws.ratioSubsampling(dt, self.XSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
+            
+            % deal with XData
+            xAllOriginal = self.XData ;  % these are already downsampled
+            yAllOriginal = self.YData ;            
+            
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (self.XOffset_<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan,:) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the x offset in the scope to match that in the Display
+            % subsystem
+            if xOffset ~= self.XOffset , 
+                self.XOffset = xOffset ;
+            end
+            
+            % Change the y limits to match the data, if appropriate
+            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
+        end        
     end
         
     methods    
         function startingSweep(self)
             self.ClearOnNextData_ = true;
         end
-        
+         
         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)  %#ok<INUSL,INUSD>
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
             
-            %fprintf('Display::dataAvailable()\n');
-            %dbstack
-            %T=zeros(4,1);
-            %ticId=tic();                     
-            if self.ClearOnNextData_
-                %fprintf('About to clear scopes...\n');
-                for sdx = 1:numel(self.Scopes)
-                    self.Scopes{sdx}.clearData();
-                end
-            end            
-            self.ClearOnNextData_ = false;
-            %T(1)=toc(ticId);
-            
-            % update the x offset
-            if self.XAutoScroll_ ,                
-                scale=min(1,self.XSpan);
-                tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
-                xOffsetNudged=tNudged-self.XSpan;
-                if xOffsetNudged>self.XOffset ,
-                    self.XOffset_=xOffsetNudged;
-                end
-            end
-            %T(2)=toc(ticId);
+            if self.IsEnabled , 
+                if self.ClearOnNextData_ ,
+                    self.clearData_() ;
+                    self.broadcast('UpdateData') ;
+                end            
+                self.ClearOnNextData_ = false;
 
-            % Feed the data to the scopes
-            %T=zeros(3,1);
-            activeInputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
-            isActiveChannelAnalog =  self.Parent.Acquisition.IsChannelAnalog(self.Parent.Acquisition.IsChannelActive);
-            for sdx = 1:numel(self.Scopes)
-                % Figure out which channels go in this scope, and the
-                % corresponding channel names
-                % Although this looks like it might be slow, in practice it
-                % takes negligible time compared to the call to
-                % ScopeModel.addChannel() below.
-                %TInner=zeros(1,2);
-                %ticId2=tic();
-                thisScope = self.Scopes{sdx} ;
-                %didFindChannelOnThisScope = false ;
-                %channelNamesForThisScope = cell(1,0);
-                jInAnalogData = [];                
-                jInDigitalData = [];                
-                NActiveAnalogChannels = sum(self.Parent.Acquisition.IsAnalogChannelActive);
-                for cdx = 1:length(activeInputChannelNames)
-                    %channelName = sprintf('Acq_%d', inputTerminalIDs(cdx));
-                    channelName=activeInputChannelNames{cdx};
-                    if isequal(channelName, thisScope.ChannelName) ,
-                        %didFindChannelOnThisScope = true ;
-                        %channelNamesForThisScope{end + 1} = channelName; %#ok<AGROW>
-                        if isActiveChannelAnalog(cdx)
-                            jInAnalogData(end + 1) = cdx; %#ok<AGROW>
-                        else
-                            jInDigitalData(end + 1) = cdx - NActiveAnalogChannels; %#ok<AGROW>
-                        end
+                % update the x offset
+                if self.XAutoScroll_ ,                
+                    scale=min(1,self.XSpan);
+                    tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
+                    xOffsetNudged=tNudged-self.XSpan;
+                    if xOffsetNudged>self.XOffset ,
+                        self.XOffset_=xOffsetNudged;
                     end
                 end
-                %TInner(1)=toc(ticId2);
-                
-                % Add the data for the appropriate channels to this scope
-                if ~isempty(jInAnalogData) ,
-                    dataForThisScope = scaledAnalogData(:, jInAnalogData) ;
-                    thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
-                end
-                if ~isempty(jInDigitalData) ,
-                    dataForThisScope = double(bitget(rawDigitalData, jInDigitalData)) ;  % has to be double for ws.minMaxResampleMex()
-                    thisScope.addData(t, dataForThisScope, self.Parent.Acquisition.SampleRate, self.XOffset_);
-                end
-                %TInner(2)=toc(ticId2);
-            %fprintf('    In Display.dataAvailable() loop: %10.3f %10.3f\n',TInner);
+
+                % Add the data
+                indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
+                self.broadcast('UpdateData');       
+                self.broadcast('UpdateYAxisLimits', indicesOfAIChannelsNeedingYLimitUpdate) ;
+            else
+                % if not active, do nothing
             end
-            %fprintf('In Display dataAvailable(): %20g %20g %20g\n',T);
-            %T(3)=toc(ticId);
-            
-            %T(4)=toc(ticId);
-            %fprintf('In Display.dataAvailable(): %10.3f %10.3f %10.3f %10.3f\n',T);
-            %T=toc(ticId);
-            %fprintf('Time in Display.dataAvailable(): %7.3f s\n',T);
         end
         
         function didSetAreSweepsFiniteDuration(self)
@@ -472,9 +697,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             % Want any listeners on XSpan set to get called
             %if self.IsXSpanSlavedToAcquistionDuration ,
-            for idx = 1:numel(self.Scopes) ,
-                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-            end
+%             for idx = 1:numel(self.Scopes) ,
+%                 self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+%             end
             self.broadcast('UpdateXSpan');
             %end    
             %self.XSpan = nan;
@@ -486,17 +711,17 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             % Want any listeners on XSpan set to get called
             %if self.IsXSpanSlavedToAcquistionDuration ,
-            for idx = 1:numel(self.Scopes) ,
-                self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-            end
+%             for idx = 1:numel(self.Scopes) ,
+%                 self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
+%             end
             self.broadcast('UpdateXSpan');
             %end    
             %self.XSpan = nan;
         end
         
-        function out = get.NScopes(self)
-            out = length(self.Scopes);
-        end
+%         function out = get.NScopes(self)
+%             out = length(self.Scopes);
+%         end
                 
 %         % Need to override the decodeProperties() method supplied by
 %         % ws.Coding() to get correct behavior when the number of
@@ -519,26 +744,26 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.broadcast('NScopesMayHaveChanged');
 %         end  % function
         
-        function didSetScopeIsVisibleWhenDisplayEnabled(self)
-            self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
-        end
+%         function didSetScopeIsVisibleWhenDisplayEnabled(self)
+%             self.broadcast('DidSetScopeIsVisibleWhenDisplayEnabled');
+%         end
     end  % pulic methods block
     
-    methods (Access = protected)        
-        % Need to override the decodeUnwrappedEncodingCore_() method supplied
-        % by ws.Coding() to get correct behavior when the number of
-        % scopes changes.
-        function decodeUnwrappedEncodingCore_(self, encoding)            
-            % Need to clear the existing scopes first
-            self.removeScopes();
-            
-            % Now call the superclass method
-            self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
-
-            % Update the view
-            %self.broadcast('NScopesMayHaveChanged');  % do I need this?
-        end  % function        
-    end  % protected methods block
+%     methods (Access = protected)        
+%         % Need to override the decodeUnwrappedEncodingCore_() method supplied
+%         % by ws.Coding() to get correct behavior when the number of
+%         % scopes changes.
+%         function decodeUnwrappedEncodingCore_(self, encoding)            
+%             % Need to clear the existing scopes first
+%             self.removeScopes_();
+%             
+%             % Now call the superclass method
+%             self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
+% 
+%             % Update the view
+%             %self.broadcast('NScopesMayHaveChanged');  % do I need this?
+%         end  % function        
+%     end  % protected methods block
     
     methods (Access = protected)        
         % Allows access to protected and protected variables from ws.Coding.
@@ -549,75 +774,68 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
-%             if isequal(name,'Scopes') ,
-%                 % Make sure they back-reference to the right Display (i.e. self)
-%                 for i=1:length(self.Scopes)
-%                     setPropertyValue_(self.Scopes(i),'Parent',self);
-%                 end                
-%             end                
-        end  % function
-        
+        end  % function        
     end  % protected methods
     
-    methods (Static=true)
-        function tag=tagFromString(str)
-            % Transform an arbitrary ASCII string into a tag, which must be
-            % a valid Matlab identifier            
-            if isempty(str) ,
-                tag=str;  % maybe should throw error, but they'll find out soon enough...
-                return
-            end
-            
-            % Replace illegal chars with underscores
-            isAlphanumeric=isstrprop(str,'alphanum');
-            isUnderscore=(str=='_');
-            isIllegal= ~isAlphanumeric & ~isUnderscore;
-            temp=str;
-            temp(isIllegal)='_';
-            
-            % If first char is not alphabetic, replace with 'a'
-            isFirstCharAlphabetic=isstrprop(temp(1),'alpha');
-            if ~isFirstCharAlphabetic, 
-                temp(1)='a';
-            end
-            
-            % Return the tag
-            tag=temp;
-        end  % function
-    end
+%     methods (Static=true)
+%         function tag=tagFromString(str)
+%             % Transform an arbitrary ASCII string into a tag, which must be
+%             % a valid Matlab identifier            
+%             if isempty(str) ,
+%                 tag=str;  % maybe should throw error, but they'll find out soon enough...
+%                 return
+%             end
+%             
+%             % Replace illegal chars with underscores
+%             isAlphanumeric=isstrprop(str,'alphanum');
+%             isUnderscore=(str=='_');
+%             isIllegal= ~isAlphanumeric & ~isUnderscore;
+%             temp=str;
+%             temp(isIllegal)='_';
+%             
+%             % If first char is not alphabetic, replace with 'a'
+%             isFirstCharAlphabetic=isstrprop(temp(1),'alpha');
+%             if ~isFirstCharAlphabetic, 
+%                 temp(1)='a';
+%             end
+%             
+%             % Return the tag
+%             tag=temp;
+%         end  % function
+%     end
     
-    methods
-        function mimic(self, other)
-            % Cause self to resemble other.
-
-            % Disable broadcasts for speed
-            self.disableBroadcasts();
-            
-            % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
-            
-            % Set each property to the corresponding one
-            for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Scopes_'})) ,
-                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
-                    self.(thisPropertyName) = target ;
-                else
-                    if isprop(other,thisPropertyName) ,
-                        source = other.getPropertyValue_(thisPropertyName) ;
-                        self.setPropertyValue_(thisPropertyName, source) ;
-                    end
-                end
-            end
-            
-            % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
-
-            % Broadcast update
-            self.broadcast('Update');
-        end  % function
-    end  % public methods block
+%     methods
+%         function mimic(self, other)
+%             % Cause self to resemble other.
+% 
+%             % Disable broadcasts for speed
+%             self.disableBroadcasts();
+%             
+%             % Get the list of property names for this file type
+%             propertyNames = self.listPropertiesForPersistence();
+%             
+%             % Set each property to the corresponding one
+%             for i = 1:length(propertyNames) ,
+%                 thisPropertyName=propertyNames{i};
+% %                 if any(strcmp(thisPropertyName,{'Scopes_'})) ,
+% %                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+% %                     target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+% %                     self.(thisPropertyName) = target ;
+% %                 else
+%                 if isprop(other,thisPropertyName) ,
+%                     source = other.getPropertyValue_(thisPropertyName) ;
+%                     self.setPropertyValue_(thisPropertyName, source) ;
+%                 end
+% %                 end
+%             end
+%             
+%             % Re-enable broadcasts
+%             self.enableBroadcastsMaybe();
+% 
+%             % Broadcast update
+%             self.broadcast('Update');
+%         end  % function
+%     end  % public methods block
     
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct() ;

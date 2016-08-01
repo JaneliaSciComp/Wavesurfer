@@ -538,9 +538,11 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
 
-        function deleteMarkedAnalogChannels(self)
+        function wasDeleted = deleteMarkedAnalogChannels_(self)
+            % This has to be public so that the parent can call it, but it
+            % should not be called by anyone but the parent.
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;
+            %channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;
             if all(isToBeDeleted)
                 % Want everything to still be a row vector
                 %self.AnalogDeviceNames_ = cell(1,0) ;
@@ -560,8 +562,10 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             end
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
 
-            self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
-            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.Parent.didDeleteAnalogOutputChannels(channelNamesToDelete) ;
+            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            
+            wasDeleted = isToBeDeleted() ;
         end  % function
         
         function didSetDeviceName(self)

@@ -1,6 +1,8 @@
-classdef (Abstract) MCOSFigure < ws.EventSubscriber
+classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
     % This is a base class that wraps a handle graphics figure in a proper
-    % MCOS object.
+    % MCOS object, but does not have a separate controller.  All methods
+    % fired by UI actions are methods of the MCOSFigureWithSelfControl
+    % subclass.
     
     properties (Access=protected, Transient=true)
         DegreeOfEnablement_ = 1
@@ -20,23 +22,18 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         %IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
     end
     
-    properties (Dependent=true, SetAccess=immutable)
-        FigureGH  % the figure graphics handle
-        Controller  % the controller, an instance of ws.Controller
-        Model  % the model        
-    end  % properties
+%     properties (Dependent=true, SetAccess=immutable)
+%         FigureGH  % the figure graphics handle
+%         Model  % the model        
+%     end  % properties
 
     properties (Access=protected)
         FigureGH_  % the figure graphics handle
-        Controller_  % the controller, an instance of ws.Controller
         Model_  % the model        
     end  % properties    
     
     methods
-        function self=MCOSFigure(model,controller)
-            % Note that when this is called, the controller is in a
-            % not-completely-initialized state, so it's not safe to do much
-            % of anything with it except copy a pointer to it.
+        function self = MCOSFigureWithSelfControl(model)
             backgroundColor = ws.getDefaultUIControlBackgroundColor() ;
             self.FigureGH_=figure('Units','Pixels', ...
                                   'Color',backgroundColor, ...
@@ -44,49 +41,22 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
                                   'HandleVisibility','off', ...
                                   'DockControls','off', ...
                                   'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
-            if exist('model','var')
-                self.setModel_(model);
+            if exist('model','var') ,
+                self.Model_ = model ;
+                if ~isempty(model) && isvalid(model) ,
+                    model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
+                end
             else
-                self.setModel_([]);  % need this to can create an empty array of MCOSFigures
-            end
-            if exist('controller','var')
-                self.Controller_=controller;
-            else
-                self.Controller_=[];  % need this to can create an empty array of MCOSFigures
+                self.Model_ = [] ;  % need this to can create an empty array of MCOSFigures
             end
         end
         
         function delete(self)
-            self.deleteFigureGH();
-            self.Controller_=[];
+            self.deleteFigureGH_();
+            %self.Controller_=[];
             %self.setModel_([]);
             self.Model_ = [] ;
             %fprintf('here i am doing something\n');
-        end
-
-%         function deleteFigureGH(self)
-%             if ~isempty(self.FigureGH) && ishghandle(self.FigureGH) ,
-%               delete(self.FigureGH);  % delete the HG figure 
-%             end
-%             self.FigureGH=[];
-%         end
-        
-        function output = get.Model(self)
-            output = self.Model_ ;
-        end
-        
-        function output = get.FigureGH(self)
-            output = self.FigureGH_ ;
-        end
-        
-        function output = get.Controller(self)
-            output = self.Controller_ ;
-        end
-                
-        function setModel_(self,newValue)
-            self.willSetModel_();
-            self.Model_ = newValue ;            
-            self.didSetModel_();
         end
         
         function set.AreUpdatesEnabled(self,newValue)
@@ -153,26 +123,28 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             %        self.DegreeOfEnablement_);
             value=(self.DegreeOfEnablement_>0);
         end
+    end  % public methods block
+    
+    methods (Access=protected)
+%         function set(self,propName,value)
+%             if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
+%                 % special case to deal with Visible, which seems to
+%                 % sometimes be a boolean
+%                 if value,
+%                     set(self.FigureGH_,'Visible','on');
+%                 else
+%                     set(self.FigureGH_,'Visible','off');
+%                 end
+%             else
+%                 set(self.FigureGH_,propName,value);
+%             end
+%         end
+%         
+%         function value=get(self,propName)
+%             value=get(self.FigureGH_,propName);
+%         end
         
-        function set(self,propName,value)
-            if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
-                % special case to deal with Visible, which seems to
-                % sometimes be a boolean
-                if value,
-                    set(self.FigureGH_,'Visible','on');
-                else
-                    set(self.FigureGH_,'Visible','off');
-                end
-            else
-                set(self.FigureGH_,propName,value);
-            end
-        end
-        
-        function value=get(self,propName)
-            value=get(self.FigureGH_,propName);
-        end
-        
-        function update(self,varargin)
+        function update_(self,varargin)
             % Called when the caller wants the figure to fully re-sync with the
             % model, from scratch.  This may cause the figure to be
             % resized, but this is always done in such a way that the
@@ -184,7 +156,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             end
         end
         
-        function updateControlProperties(self,varargin)
+        function updateControlProperties_(self,varargin)
             % Called when caller wants the control properties (Properties besides enablement, that is.) to re-sync
             % with the model, but doesn't need to update the controls that are in existance, or change the positions of the controls.
             if self.AreUpdatesEnabled ,
@@ -194,7 +166,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             end
         end
         
-        function updateControlEnablement(self,varargin)
+        function updateControlEnablement_(self,varargin)
             % Called when caller only needs to update the
             % enablement/disablment of the controls, given the model state.
             if self.AreUpdatesEnabled ,
@@ -236,21 +208,19 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 %             value=(self.DegreeOfReadiness_>0);
 %         end       
         
-        function updateReadiness(self,varargin)
+        function updateReadiness_(self,varargin)
             self.updateReadinessImplementation_();
         end
 
-        function positionUpperLeftRelativeToOtherUpperRight(self, other, offset)
+        function positionUpperLeftRelativeToOtherUpperRight_(self, other, offset)
             % Positions the upper left corner of the figure relative to the upper
             % *right* corner of the other figure.  offset is 2x1, with the 1st
             % element the number of pixels from the right side of the other figure,
             % the 2nd the number of pixels from the top of the other figure.
 
-            ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH, offset) ;
+            ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH_, offset) ;
         end
-    end  % public methods
-
-    methods (Access=protected)
+        
         createFixedControls_(self)
             % In subclass, this should create all the controls that persist
             % throughout the lifetime of the figure.
@@ -356,115 +326,18 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         function raise(self)
             self.hide() ;
             self.show() ;  
-              % This above turns out to work really well for bringing
-              % figures to the front.  You don't even see the figure hide
-              % and then show b/c of the buffering of graphics commands in
-              % Matlab (I assume that's why...)
-              
-            % This code below is unreliable.  It leads to weird behavior where hidden windows (that are not self.FigureGH_) get shown, 
-            % and then their close button stops working, and madness
-            % ensues.
-%             figureGHs=allchild(0);  % ws.MCOSFigure defaults to figures having HandleVisibility=='off'
-%             % sometimes figureGHs is a col vector, which seems odd...
-%             if iscolumn(figureGHs) ,
-%                 figureGHs = figureGHs' ;
-%             end
-%             isMe=(figureGHs==self.FigureGH_);
-%             i=find(isMe,1);
-%             if isempty(i) ,
-%                 % do nothing
-%             else
-%                 otherRootChildren=figureGHs(~isMe);
-%                 newRootChildren=[self.FigureGH_ otherRootChildren];
-%                 set(0,'Children',newRootChildren);
-%             end
         end  % function       
-    end  % methods
-    
-    methods (Access = protected)
-        function updateGuidata_(self)
-            % Set up the figure guidata the way it would be if this were a
-            % GUIDE UI, or close enough to fool a ws.most.Controller.
-            handles=ws.MCOSFigure.updateGuidataHelper_(struct(),self.FigureGH_);
-            % Add a pointer to self to the figure guidata
-            handles.FigureObject=self;
-            % commit to the guidata
-            guidata(self.FigureGH_,handles);
-        end  % function        
-    end  % protected methods block
+    end  % public methods block
     
     methods (Access=protected)
-        function willSetModel_(self)
-            % This can be overridden if the figure wants something special to
-            % happen just before the model is set
-            self.unsubscribeFromAll();
-        end
-        
-        function didSetModel_(self) 
-            % This can be overridden if the figure wants something special to
-            % happen just after the model is set
-            model=self.Model_;
-            if ~isempty(model) && isvalid(model) ,
-                model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
-            end
-        end
-    end   
-    
-    methods (Static=true)
-        function handles=updateGuidataHelper_(handles,containerGH)
-            % For a figure or uipanel graphics handle, containerGH, adds
-            % fields to the scalar structure handle, one per control in
-            % containerGH.  The field name is equal to the Tag of the child
-            % control.  If the child control is a uipanel, recursively adds
-            % fields for the controls within the panel.  The resulting
-            % struct is returned in handles.
-            childControlGHs=get(containerGH,'Children');
-            nChildren=length(childControlGHs);
-            for i=1:nChildren ,
-                childControlGH=childControlGHs(i);
-                tag=get(childControlGH,'Tag');
-                handles.(tag)=childControlGH;
-                % If a uipanel, recurse
-                if isequal(get(childControlGH,'Type'),'uipanel') ,
-                    handles=ws.MCOSFigure.updateGuidataHelper_(handles,childControlGH);
-                end
-            end
-            % Add the container itself
-            tag=get(containerGH,'Tag');
-            handles.(tag)=containerGH;
-        end  % function        
-    end  % protected methods block
-    
-    methods (Access = protected)
-        function setHGTagsToPropertyNames_(self)
-            % For each object property, if it's an HG object, set the tag
-            % based on the property name, and set other HG object properties that can be
-            % set systematically.
-            mc=metaclass(self);
-            propertyNames={mc.PropertyList.Name};
-            for i=1:length(propertyNames) ,
-                propertyName=propertyNames{i};
-                propertyThing=self.(propertyName);
-                if ~isempty(propertyThing) && all(ishghandle(propertyThing)) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
-                    % Set Tag
-                    set(propertyThing,'Tag',propertyName);                    
-                end
-            end
-        end  % function        
-    end  % protected methods block
-    
-    methods
-        function closeRequested(self,source,event)            
-            if isempty(self.Controller_) ,
-                self.deleteFigureGH();
-            else
-                self.Controller_.windowCloseRequested(source,event);
-            end
+        function closeRequested_(self, source, event)  %#ok<INUSD>
+            % Subclasses can override this if it's not to their liking
+            self.deleteFigureGH_();
         end  % function       
     end  % methods    
-    
-    methods
-        function deleteFigureGH(self)   
+            
+    methods (Access=protected)
+        function deleteFigureGH_(self)   
             % This causes the figure HG object to be deleted, with no ifs
             % ands or buts
             if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
@@ -473,20 +346,57 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             self.FigureGH_ = [] ;
         end  % function       
     end  % methods    
-    
+        
     methods
-        function controlActuated(self,controlName,source,event,varargin)
-            % This makes it so that we don't have all these implicit
-            % references to the controller in the closures attached to HG
-            % object callbacks.  It also means we can just do nothing if
-            % the Controller is invalid, instead of erroring.
-            if isempty(self.Controller_) || ~isvalid(self.Controller_) ,
-                % do nothing
-            else
-                self.Controller_.controlActuated(controlName,source,event,varargin{:});
+        function controlActuated(self, methodNameStem, source, event, varargin)  % public so that control actuation can be easily faked          
+            % E.g. self.CancelButton_ would typically have the method name stem 'cancelButton'.
+            % The advantage of passing in the methodNameStem, rather than,
+            % say always storing it in the tag of the graphics object, and
+            % then reading it out of the source arg, is that doing it this
+            % way makes it easier to fake control actuations by calling
+            % this function with the desired methodNameStem and an empty
+            % source and event.
+            try
+                if isempty(source) ,
+                    % this means the control actuated was a 'faux' control
+                    methodName=[methodNameStem 'Actuated'] ;
+                    if ismethod(self,methodName) ,
+                        self.(methodName)(source, event, varargin{:});
+                    end
+                else
+                    type=get(source,'Type');
+                    if isequal(type,'uitable') ,
+                        if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
+                            methodName=[methodNameStem 'CellEdited'];
+                        else
+                            methodName=[methodNameStem 'CellSelected'];
+                        end
+                        if ismethod(self,methodName) ,
+                            self.(methodName)(source, event, varargin{:});
+                        end
+                    elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
+                        methodName=[methodNameStem 'Actuated'] ;
+                        if ismethod(self,methodName) ,
+                            self.(methodName)(source, event, varargin{:});
+                        end
+                    else
+                        % odd --- just ignore
+                    end
+                end
+            catch me
+                if ~isempty(self.Model_) ,
+                    self.Model_.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
+                end
+                if isempty(me.cause) 
+                    ws.errordlg(me.message,'Error','modal');
+                else
+                    firstCause = me.cause{1} ;
+                    errorString = sprintf('%s:\n%s',me.message,firstCause.message) ;
+                    ws.errordlg(errorString, 'Error', 'modal');
+                end
             end
         end  % function       
-    end  % methods
+    end
     
     methods
         function constrainPositionToMonitors(self, monitorPositions)
@@ -495,8 +405,8 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 
             % get the figure's OuterPosition
             %dbstack
-            figureOuterPosition = get(self.FigureGH, 'OuterPosition') ;
-            figurePosition = get(self.FigureGH, 'Position') ;
+            figureOuterPosition = get(self.FigureGH_, 'OuterPosition') ;
+            figurePosition = get(self.FigureGH_, 'Position') ;
             %monitorPositions
             
             % define some local functions we'll need
@@ -561,8 +471,50 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
               % sometimes.  (Maybe setting the 'OuterSize' is the problem?)
             
             % Set it
-            set(self.FigureGH, 'Position', newFigurePosition) ;
+            set(self.FigureGH_, 'Position', newFigurePosition) ;
         end  % function        
     end  % public methods block
+    
+%     methods (Static)
+%         function result = methodNameStemFromControlName(controlName)
+%             % We want to translate typical control names like
+%             % 'CancelButton_' to method name stems like 'cancelButton'.
+%             % Also, want e.g. 'OKButton_' to go to 'okButton'.
+%             if isempty(controlName) ,
+%                 result = '' ;
+%             elseif isscalar(controlName) ,
+%                 result = lower(controlName) ;
+%             else
+%                 % control is at least 2 chars long
+%                 isUpperCaseLetter = arrayfun(controlName, @(c)(('A'<=c)&&(c<='Z'))) ;                
+%                 indexOfFirstNonUpperCaseLetter = find(~isUpperCaseLetter,1) ;
+%                 if isempty(indexOfFirstNonUpperCaseLetter) ,
+%                     % controlName is all uppercase letters
+%                     lowerCamelCaseControlName = lower(controlName) ;
+%                 else
+%                     if indexOfFirstNonUpperCaseLetter==1 ,
+%                         lowerCamelCaseControlName = controlName ;
+%                     elseif indexOfFirstNonUpperCaseLetter==2 ,
+%                         % This is probably the most common case, e.g.
+%                         % 'CancelButton_', for which the case-corrected
+%                         % contol name is 'cancelButton_'                        
+%                         lowerCamelCaseControlName = horzcat(lower(controlName(1)), controlName(2:end)) ;
+%                     else
+%                         % E.g. 'OKButton_', for which the case-corrected
+%                         % contol name is 'okButton_'                        
+%                         indexOfLastUpperCaseLetter = indexOfFirstNonUpperCaseLetter - 1 ;
+%                         indexOfLastCharacterInFirstWord = indexOfLastUpperCaseLetter - 1 ;  % where the first "word" might be something like "OK"
+%                         lowerCamelCaseControlName = horzcat(lower(controlName(1:indexOfLastCharacterInFirstWord)), controlName(indexOfLastCharacterInFirstWord+1:end)) ;                        
+%                     end
+%                 end
+%                 % Now delete any trailing underscore                
+%                 if isequal(lowerCamelCaseControlName(end),'_') ,
+%                     result = lowerCamelCaseControlName(1:end-1) ;
+%                 else
+%                     result = lowerCamelCaseControlName ;
+%                 end                    
+%             end
+%         end
+%     end
     
 end  % classdef

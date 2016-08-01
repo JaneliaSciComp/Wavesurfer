@@ -760,12 +760,14 @@ classdef WavesurferModel < ws.RootModel
         
         function didSetAnalogInputTerminalID(self)
             self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.Display.didSetAnalogInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
         end
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Display.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
                 %value = self.Acquisition.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
@@ -833,6 +835,7 @@ classdef WavesurferModel < ws.RootModel
         
         function didSetIsInputChannelActive(self) 
             self.Ephys.didSetIsInputChannelActive() ;
+            self.Display.didSetIsInputChannelActive() ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -2381,18 +2384,27 @@ classdef WavesurferModel < ws.RootModel
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
         
-        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
+%         function didDeleteAnalogInputChannels(self, wasDeleted)
+%             self.syncIsAIChannelTerminalOvercommitted_() ;            
+%             self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
+        
+        function deleteMarkedAIChannels(self)
+            wasDeleted = self.Acquisition.deleteMarkedAnalogChannels_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
-            self.Display.didDeleteAnalogInputChannels(nameOfRemovedChannels) ;
+            self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
         function deleteMarkedDIChannels(self)
-            namesOfDeletedChannels = self.Acquisition.deleteMarkedDigitalChannels_() ;
+            wasDeleted = self.Acquisition.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Display.didDeleteDigitalInputChannels(namesOfDeletedChannels) ;
+            self.Display.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
@@ -2472,10 +2484,24 @@ classdef WavesurferModel < ws.RootModel
                                     isTerminalOvercommittedForEachDOChannel) ;
         end
         
-        function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
+%         function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
+%             self.syncIsAOChannelTerminalOvercommitted_() ;            
+%             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+%         end
+
+        function deleteMarkedAOChannels(self)
+            self.Stimulation.deleteMarkedAnalogChannels_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfOutputChannels();
+            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
+              % we might be able to call this from within
+              % self.Stimulation.deleteMarkedAnalogChannels, and that would
+              % generally be better, but I'm afraid of introducing new
+              % bugs...
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end

@@ -16,24 +16,27 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         ExportModelAndControllerToWorkspaceMenuItem
         QuitMenuItem
         
-        ToolsMenu
-        FastProtocolsMenuItem
-        ScopesMenuItem
+        ProtocolMenu
+        %ScopesMenuItem
         ChannelsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
         UserCodeManagerMenuItem
         ElectrodesMenuItem
         TestPulseMenuItem
+        DisplayMenuItem
         YokeToScanimageMenuItem
+        
+        UserMenu
+        FastProtocolsMenuItem
         
         HelpMenu
         AboutMenuItem
 
         % Stuff under Tools > Scopes
-        RemoveMenuItem
-        ShowHideChannelMenuItems
-        RemoveSubsubmenuItems
+        %RemoveMenuItem
+        %ShowHideChannelMenuItems
+        %RemoveSubsubmenuItems
         
         PlayButton
         RecordButton
@@ -151,10 +154,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
                
                model.Display.subscribeMe(self,'Update','','update');
-               model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
+               %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
+               %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
                model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
@@ -206,15 +209,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.SaveProtocolAsMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Save Protocol As...');
-            self.LoadUserSettingsMenuItem = ...
-                uimenu('Parent',self.FileMenu, ...
-                       'Label','Open User Settings...');
-            self.SaveUserSettingsMenuItem = ...
-                uimenu('Parent',self.FileMenu, ...
-                       'Label','Save User Settings');
-            self.SaveUserSettingsAsMenuItem = ...
-                uimenu('Parent',self.FileMenu, ...
-                       'Label','Save User Settings As...');
             self.ExportModelAndControllerToWorkspaceMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Export Model and Controller to Workspace');
@@ -222,41 +216,61 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Quit');
             
-            % Tools menu       
-            self.ToolsMenu=uimenu('Parent',self.FigureGH, ...
-                                  'Label','Tools');
-            self.FastProtocolsMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
-                       'Label','Fast Protocols...');
-            self.ScopesMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
-                       'Label','Scopes');
+            % Tools menu
+            self.ProtocolMenu=uimenu('Parent',self.FigureGH, ...
+                                  'Label','Protocol');
             self.ChannelsMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
+                uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Device & Channels...');
-            self.TriggersMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
-                       'Label','Triggers...');
             self.StimulusLibraryMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
+                uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Stimulus Library...');
+%             self.ScopesMenuItem = ...
+%                 uimenu('Parent',self.ProtocolMenu, ...
+%                        'Label','Scopes');
+            self.TriggersMenuItem = ...
+                uimenu('Parent',self.ProtocolMenu, ...
+                       'Label','Triggers...');
+            self.DisplayMenuItem = ...
+                uimenu('Parent',self.ProtocolMenu, ...
+                       'Label','Display...');
             self.UserCodeManagerMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
+                uimenu('Parent',self.ProtocolMenu, ...
                        'Label','User Code...');
             self.ElectrodesMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
+                uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Electrodes...');
             self.TestPulseMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
+                uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Test Pulse...');
             self.YokeToScanimageMenuItem = ...
-                uimenu('Parent',self.ToolsMenu, ...
+                uimenu('Parent',self.ProtocolMenu, ...
+                       'Separator','on', ...
                        'Label','Yoke to Scanimage');
+
+            % User menu
+            self.UserMenu = ...
+                uimenu('Parent',self.FigureGH, ...
+                       'Label','User');
+            self.FastProtocolsMenuItem = ...
+                uimenu('Parent',self.UserMenu, ...
+                       'Label','Fast Protocols...');
+            self.LoadUserSettingsMenuItem = ...
+                uimenu('Parent',self.UserMenu, ...
+                       'Separator','on', ...
+                       'Label','Open User Settings...');
+            self.SaveUserSettingsMenuItem = ...
+                uimenu('Parent',self.UserMenu, ...
+                       'Label','Save User Settings');
+            self.SaveUserSettingsAsMenuItem = ...
+                uimenu('Parent',self.UserMenu, ...
+                       'Label','Save User Settings As...');
+
                    
-            % Scopes submenu
-            self.RemoveMenuItem = ...
-                uimenu('Parent',self.ScopesMenuItem, ...
-                       'Label','Remove');
+%             % Scopes submenu
+%             self.RemoveMenuItem = ...
+%                 uimenu('Parent',self.ScopesMenuItem, ...
+%                        'Label','Remove');
                    
             % Help menu       
             self.HelpMenu=uimenu('Parent',self.FigureGH, ...
@@ -1003,11 +1017,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     end  % protected methods block
 
     methods (Access = protected)
-        function updateControlsInExistance_(self)
+        function updateControlsInExistance_(self) %#ok<MANU>
             % In subclass, this should make sure the non-fixed controls in
             % existance are synced with the model state, deleting
             % inappropriate ones and creating appropriate ones as needed.            
-            self.updateScopeMenu_();
+            %self.updateScopeMenu_();
         end
     end
         
@@ -1210,7 +1224,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Tools Menu
             set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-            set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            set(self.DisplayMenuItem,'Enable',onIff(isIdle));
+            %set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
             set(self.ChannelsMenuItem,'Enable',onIff(true));  
               % Device & Channels menu is always available so that
               % user can get at radiobutton for untimed DO channels,
@@ -1267,91 +1282,91 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         end
     end
     
-    methods (Access = protected)
-        function updateScopeMenu_(self,broadcaster,eventName,propertyName,source,event)  %#ok<INUSD>            
-            % Update the scope menu match the model state
-            import ws.onIff
-            
-            % A typical structure of the menus under the Scopes menu item:
-            % 
-            %   Scopes > Remove > Remove "Channel V1"
-            %                     Remove "Channel V2"
-            %                     Remove "Channel I1"
-            %                     Remove "Channel I2"
-            %            (separator)
-            %            Channel V1 (checkable)
-            %            Channel V2 (checkable)
-            %            Channel I1 (checkable)
-            %            Channel I2 (checkable)
-            %
-            % I.e. if the Remove item is unexpanded, it looks like:
-            %
-            %   Scopes > Remove >
-            %            (separator)
-            %            Channel V1 (checkable)
-            %            Channel V2 (checkable)
-            %            Channel I1 (checkable)
-            %            Channel I2 (checkable)
-            
-            % Delete all the menu items in the Scopes submenu except the
-            % first item, which is the "Remove" item.
-            ws.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
-            self.ShowHideChannelMenuItems=[];
-            
-            % Delete all the items in the "Remove" subsubmenu
-            ws.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
-            self.RemoveSubsubmenuItems=[];
-            
-            % 
-            % At this point, the Scopes submenu has been reduced to a blank
-            % slate, with only the single "Remove" item
-            %
-            
-            % If no model, can't really do much, so return
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            
-            % Get the HG object representing the "Scopes" item in the
-            % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
-            scopesMenuItem = self.ScopesMenuItem;
-            removeItem=self.RemoveMenuItem;
-            
-            % Set the enablement of the Scopes menu item
-            isIdle=isequal(model.State,'idle');
-            set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            
-            % Set the Visibility of the Remove item in the Scope submenu
-            set(removeItem,'Visible',onIff(model.Display.NScopes>0));
-            
-            % For each ScopeModel, create a menu item to remove the
-            % scope, with an appropriate command binding, and add it to
-            % the Remove subsubmenu.
-            for i = 1:model.Display.NScopes ,
-                menuItem = uimenu('Parent',removeItem, ...
-                                  'Label',sprintf('Remove %s',model.Display.Scopes{i}.Title), ...
-                                  'Tag',sprintf('RemoveSubsubmenuItems(%02d)',i), ...
-                                  'Callback',@(source,event)(self.controlActuated('RemoveSubsubmenuItems',source,event)));
-                %if i==1 ,
-                %    set(menuItem,'Separator','on');
-                %end
-                self.RemoveSubsubmenuItems(end+1)=menuItem;
-            end
-            
-            % For each ScopeModel, create a checkable menu item to
-            % show/hide the scope, with an appropriate command binding, and add it to
-            % the Scopes submenu.
-            for i = 1:model.Display.NScopes ,
-                menuItem = uimenu('Parent',scopesMenuItem, ...
-                                  'Label',model.Display.Scopes{i}.Title, ...
-                                  'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
-                                  'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
-                                  'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
-                self.ShowHideChannelMenuItems(end+1)=menuItem;                       
-            end
-        end  % function
-    end
+%     methods (Access = protected)
+%         function updateScopeMenu_(self,broadcaster,eventName,propertyName,source,event)  %#ok<INUSD>            
+%             % Update the scope menu match the model state
+%             import ws.onIff
+%             
+%             % A typical structure of the menus under the Scopes menu item:
+%             % 
+%             %   Scopes > Remove > Remove "Channel V1"
+%             %                     Remove "Channel V2"
+%             %                     Remove "Channel I1"
+%             %                     Remove "Channel I2"
+%             %            (separator)
+%             %            Channel V1 (checkable)
+%             %            Channel V2 (checkable)
+%             %            Channel I1 (checkable)
+%             %            Channel I2 (checkable)
+%             %
+%             % I.e. if the Remove item is unexpanded, it looks like:
+%             %
+%             %   Scopes > Remove >
+%             %            (separator)
+%             %            Channel V1 (checkable)
+%             %            Channel V2 (checkable)
+%             %            Channel I1 (checkable)
+%             %            Channel I2 (checkable)
+%             
+%             % Delete all the menu items in the Scopes submenu except the
+%             % first item, which is the "Remove" item.
+%             ws.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
+%             self.ShowHideChannelMenuItems=[];
+%             
+%             % Delete all the items in the "Remove" subsubmenu
+%             ws.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
+%             self.RemoveSubsubmenuItems=[];
+%             
+%             % 
+%             % At this point, the Scopes submenu has been reduced to a blank
+%             % slate, with only the single "Remove" item
+%             %
+%             
+%             % If no model, can't really do much, so return
+%             model=self.Model;
+%             if isempty(model) ,
+%                 return
+%             end
+%             
+%             % Get the HG object representing the "Scopes" item in the
+%             % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
+%             scopesMenuItem = self.ScopesMenuItem;
+%             removeItem=self.RemoveMenuItem;
+%             
+%             % Set the enablement of the Scopes menu item
+%             isIdle=isequal(model.State,'idle');
+%             set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+%             
+%             % Set the Visibility of the Remove item in the Scope submenu
+%             set(removeItem,'Visible',onIff(model.Display.NScopes>0));
+%             
+%             % For each ScopeModel, create a menu item to remove the
+%             % scope, with an appropriate command binding, and add it to
+%             % the Remove subsubmenu.
+%             for i = 1:model.Display.NScopes ,
+%                 menuItem = uimenu('Parent',removeItem, ...
+%                                   'Label',sprintf('Remove %s',model.Display.Scopes{i}.Title), ...
+%                                   'Tag',sprintf('RemoveSubsubmenuItems(%02d)',i), ...
+%                                   'Callback',@(source,event)(self.controlActuated('RemoveSubsubmenuItems',source,event)));
+%                 %if i==1 ,
+%                 %    set(menuItem,'Separator','on');
+%                 %end
+%                 self.RemoveSubsubmenuItems(end+1)=menuItem;
+%             end
+%             
+%             % For each ScopeModel, create a checkable menu item to
+%             % show/hide the scope, with an appropriate command binding, and add it to
+%             % the Scopes submenu.
+%             for i = 1:model.Display.NScopes ,
+%                 menuItem = uimenu('Parent',scopesMenuItem, ...
+%                                   'Label',model.Display.Scopes{i}.Title, ...
+%                                   'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
+%                                   'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
+%                                   'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
+%                 self.ShowHideChannelMenuItems(end+1)=menuItem;                       
+%             end
+%         end  % function
+%     end
     
     methods (Access = protected)
         function updateEnablementAndVisibilityOfDisplayControls_(self,varargin)
