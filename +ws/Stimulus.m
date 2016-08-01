@@ -281,7 +281,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     methods 
         function mimic(self, other)
             % Disable broadcasts for speed
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();           
@@ -325,10 +325,10 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             self.synchronizeTransientStateToPersistedState_() ;            
             
             % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
+            %self.enableBroadcastsMaybe();
             
             % Broadcast update
-            self.broadcast('Update');            
+            %self.broadcast('Update');            
         end  % function
     
 %         function other = copyGivenParent(self,parent)

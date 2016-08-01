@@ -278,4 +278,14 @@ classdef Acquisition < ws.AcquisitionSubsystem
         end
     end  % protected methods block
     
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
+        end
+    end  % protected methods block
+    
 end  % classdef

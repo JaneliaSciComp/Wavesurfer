@@ -779,6 +779,108 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end  % function        
     end  % protected methods
     
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+            nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+            self.IsAnalogChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelDisplayed_, nAIChannels, true) ;
+            self.AreYLimitsLockedTightToDataForAnalogChannel_ = ...
+                ws.sanitizeRowVectorLength(self.AreYLimitsLockedTightToDataForAnalogChannel_, nAIChannels, false) ;
+            self.YLimitsPerAnalogChannel_ = ...
+                ws.Display.sanitizeYLimitsArrayLength(self.YLimitsPerAnalogChannel_, nAIChannels, [-10 +10]') ;
+            
+            nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
+            self.IsDigitalChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelDisplayed_, nDIChannels, true) ;            
+            
+            self.clearData_() ;  % This will ensure that the size of YData is appropriate
+        end
+    end  % protected methods block
+    
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
+        end
+    end  % protected methods block
+    
+    methods (Static=true)
+        function y = sanitizeYLimitsArrayLength(x, targetLength, defaultValue)
+            % If x is 2xtargetLength, with all(x(1,:)<x(2,:)), return x.
+            % Otherwise, massage x in various ways to make the result
+            % 2xtargetLength, with all(y(1,:)<y(2,:)).
+            [nRowsOriginal,nColsOriginal] = size(x) ;
+            
+            % As a first step, fix the shape, so that yProto is 2xn, with
+            % all(yProto(1,:)<yProto(2,:)).
+            if nRowsOriginal==2 && nColsOriginal==2 ,
+                if all(x(1,:)<x(2,:)) ,
+                    % Everything looks good.
+                    yProto = x ;
+                elseif all(x(:,1)<x(:,2)),
+                    % if each row has the first el less than
+                    % the second, can fix things by transposing.
+                    yProto = x' ;                    
+                else
+                    % WTF?  Force elements to be in right order
+                    yProto = ws.prewashYLimitsArray(x) ;
+                end                    
+            elseif nRowsOriginal==2 ,
+                if all(x(1,:)<x(2,:)) ,
+                    % Everything looks good.
+                    % This should be the common case, want it to be fast, and hopefully
+                    % involve no copying...                    
+                    yProto = x ;
+                else
+                    yProto = ws.prewashYLimitsArray(x) ;
+                end
+            elseif nColsOriginal==2 ,
+                yProto = ws.prewashYLimitsArray(x') ;
+            else
+                % Just use the default value, repeated
+                yProto = repmat(defaultValue,[1 targetLength]) ;
+            end
+            
+            % At this point yProto is 2xn, for some n, with 
+            % all( yProto(1,:)<yProto(2,:) ).
+            nCols = size(yProto,2) ;
+            if nCols>targetLength ,
+                y = yProto(:,targetLength) ;
+            elseif nCols<targetLength ,
+                nNewCols = targetLength-nCols ;
+                y = horzcat(yProto, repmat(defaultValue,[1 nNewCols])) ;
+            else
+                % yProto has the right number of cols
+                y = yProto ;
+            end               
+        end        
+        
+        function y = prewashYLimitsArray(x)
+            % x must be 2xn.  Makes sure each col has the first element
+            % strictly less than the second.
+            n = size(x,2) ;
+            y = zeros(2,n) ;
+            for i = 1:n ,
+                if x(1,i)<x(2,i) ,
+                    y(:,i) = x(:,i) ;
+                elseif x(1,i)>x(2,i) ;
+                    y(:,i) = flipud(x(:,i)) ;
+                else
+                    % both els equal, so just add/subtract one to make a range
+                    y(:,i) = x(1,i) + [-1 +1]' ;
+                end
+            end
+        end
+    
+    end  % static methods block
+
+    
+    
 %     methods (Static=true)
 %         function tag=tagFromString(str)
 %             % Transform an arbitrary ASCII string into a tag, which must be

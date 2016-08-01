@@ -208,6 +208,16 @@ classdef UserCodeManager < ws.Subsystem
         end  % function
     end
         
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
+        end
+    end  % protected methods block
+    
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct();        
 %         mdlHeaderExcludeProps = {};

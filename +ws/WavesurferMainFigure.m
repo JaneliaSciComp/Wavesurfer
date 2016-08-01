@@ -1449,7 +1449,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             originalModelState=self.OriginalModelState_;
             self.OriginalModelState_=[];
             
-            % If we're switching out of the "no MDF" mode, update the scope menu            
+            % If we're switching out of the "no_device" mode, update the scope menu            
             if isequal(originalModelState,'no_device') && ~isequal(self.Model.State,'no_device') ,
                 self.update();
             else
