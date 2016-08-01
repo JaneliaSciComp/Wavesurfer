@@ -152,6 +152,7 @@ classdef ScopePlot < handle
         
         function set.IsVisible(self, newValue)
             set(self.AxesGH_, 'Visible', ws.onIff(newValue));
+            set(self.LineGH_, 'Visible', ws.onIff(newValue));
             set(self.SetYLimTightToDataButtonGH_, 'Visible', ws.onIff(newValue));
             set(self.SetYLimTightToDataLockedButtonGH_, 'Visible', ws.onIff(newValue));
             set(self.SetYLimButtonGH_, 'Visible', ws.onIff(newValue));
