@@ -221,17 +221,17 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             value = self.YLimitsPerAnalogChannel_ ;
         end
 
-        function setYLimitsForSingleAnalogChannel(self, newValue, i)
-            if isnumeric(newValue) && isequal(size(newValue),[2 1]) && newValue(1)<=newValue(2) ,
-                self.YLimitsPerAnalogChannel_(:,i) = double(newValue) ;
+        function setYLimitsForSingleAnalogChannel(self, i, newValue)
+            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
+                self.YLimitsPerAnalogChannel_(:,i) = double(newValue') ;
                 wasSet = true ;
             else
                 wasSet = false ;
             end
-            broadcast('Update') ;
+            self.broadcast('Update') ;
             if ~wasSet ,
                 error('most:Model:invalidPropVal', ...
-                      'YLimitsPerAnalogChannel column must be 2 element numeric col vector, with the first element less than or equal to the second') ;
+                      'YLimitsPerAnalogChannel column must be 2 element numeric row vector, with the first element less than or equal to the second') ;
             end
         end
         
@@ -660,7 +660,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
             
-            if self.IsActive , 
+            if self.IsEnabled , 
                 if self.ClearOnNextData_ ,
                     self.clearData_() ;
                     self.broadcast('UpdateData') ;

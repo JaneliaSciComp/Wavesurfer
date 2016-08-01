@@ -1,7 +1,7 @@
 classdef DisplayController < ws.Controller
     
     properties
-        MyYLimDialogController=[]
+        MyYLimDialogFigure=[]
     end
 
     methods
@@ -16,7 +16,7 @@ classdef DisplayController < ws.Controller
         end
         
         function delete(self)
-             self.MyYLimDialogController=[];
+             self.MyYLimDialogFigure=[];
         end
         
         function ShowGridMenuItemGHActuated(self, varargin)
@@ -63,11 +63,15 @@ classdef DisplayController < ws.Controller
             self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
         end  % method       
 
-        function SetYLimButtonGHActuated(self, source, event, channelIndex)
-            return
-            self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
-            self.MyYLimDialogController=...
-                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLim');
+        function SetYLimButtonGHActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
+            self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
+            myYLimDialogModel = [] ;
+            parentFigurePosition = get(self.Figure,'Position') ;
+            yLimits = self.Model.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
+            yUnits = self.Model.Parent.Acquisition.AnalogChannelUnits{aiChannelIndex} ;
+            callbackFunction = @(newYLimits)(self.Model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
+            self.MyYLimDialogFigure = ...
+                ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method        
         
     end  % public methods block

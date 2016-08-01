@@ -1,6 +1,6 @@
 classdef TestPulserController < ws.Controller
     properties
-        MyYLimDialogController=[]
+        MyYLimDialogFigure=[]
     end
     
     methods            
@@ -136,9 +136,18 @@ classdef TestPulserController < ws.Controller
         end
         
         function YLimitsButtonPressed(self)
-            self.MyYLimDialogController=[];  % if not first call, this should cause the old controller to be garbage collectable
-            self.MyYLimDialogController=...
-                ws.YLimDialogController(self,self.Model,get(self.Figure,'Position'),'YLimits');
+            self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
+            
+            function setModelYLimits(newYLimits)
+                self.Model.YLimits=newYLimits ;
+            end
+            
+            self.MyYLimDialogFigure = ...
+                ws.YLimDialogFigure(self.Model, ...
+                                    get(self.Figure,'Position'), ...
+                                    self.Model.YLimits, ...
+                                    self.Model.YUnits, ...
+                                    @setModelYLimits);
         end
         
         function scrollUpButtonPressed(self)
