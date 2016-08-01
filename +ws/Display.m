@@ -71,6 +71,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsDigitalChannelDisplayed_  = true(1,0) ; % 1 x nDIChannels
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = false(1,0) ; % 1 x nAIChannels
             self.YLimitsPerAnalogChannel_ = zeros(2,0) ; % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit            
+            self.XSpanInPixels_ = 400 ;  % for when we're running headless, this is a reasonable fallback value
         end
         
         function delete(self)  %#ok<INUSD>
@@ -622,7 +623,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
               % correct value, or the fallback value if there's no view
             %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
             xSpanInPixels = self.XSpanInPixels_ ;
-            r = ws.ratioSubsampling(dt, self.XSpan, xSpanInPixels) ;
+            xSpan = self.XSpan ;
+            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
             
             % Downsample the new data
             [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
