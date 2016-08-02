@@ -170,12 +170,17 @@ classdef UserCodeManager < ws.Subsystem
             % exception will be nonempty, and will be an MException.  But
             % the object should nevertheless be left in a self-consistent
             % state, natch.
+            
+            % First clear out the old one, if there is one
+            ws.deleteIfValidHandle(self.TheObject_) ;  % explicit delete to delete figs, listeners, etc.
+            self.TheObject_ = [] ;
+
+            % Now try to create a new one
             className = self.ClassName_ ;
             if isempty(className) ,
                 % this is ok, and in this case we just don't
                 % instantiate an object
                 %self.IsClassNameValid_ = true ;
-                self.TheObject_ = [] ;
                 exception = [] ;
             else
                 % value is non-empty
@@ -188,10 +193,10 @@ classdef UserCodeManager < ws.Subsystem
                 if didSucceed ,                    
                     exception = [] ;
                     %self.IsClassNameValid_ = true ;
-                    self.TheObject_ = newObject ;
+                    self.TheObject_ = newObject ;                    
                 else
                     %self.IsClassNameValid_ = false ;
-                    self.TheObject_ = [] ;
+                    %self.TheObject_ = [] ;
                 end
             end
         end  % function
