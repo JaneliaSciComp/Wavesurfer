@@ -29,7 +29,7 @@ classdef IPCRequester < ws.ZMQConnecter
                 %fprintf('Just before recv\n');
                 %fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
                 %serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
-                serializedMessage = self.Socket.recv(262144, 'ZMQ_DONTWAIT') ;                
+                serializedMessage = self.Socket.recv(400000000, 'ZMQ_DONTWAIT') ;                
                 %serializedMessage = zmq.core.recv(self.Socket) ;  % this should block
                 %fprintf('Just after recv\n');
             catch me

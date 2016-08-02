@@ -11,20 +11,36 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
     % velocity are continuously updated with the results of all the
     % cumulative data since the User Class was last instantiated.
 
-    properties (Access=protected)
-        ScreenSize_
-        RootModelType_ 
-        
-        % Time in first one percent of data and delta time
-        FirstOnePercentEndTime_
-        Dt_
-        
-        % The next four chunks are related to each of the four figures:
+    properties (Transient = true)
         ArenaAndBallRotationFigureHandle_ = [];
         ArenaAndBallRotationAxis_
         ArenaAndBallRotationAxisCumulativeRotationPlotHandle_
         ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_
-        ArenaAndBallRotationAxisXLimListener_
+        ArenaAndBallRotationAxisXlimListener_
+
+        BarPositionHistogramFigureHandle_ = [];
+        BarPositionHistogramAxis_
+        BarPositionHistogramPlotHandle_
+        
+        ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];
+        ForwardVsRotationalVelocityHeatmapAxis_
+        ForwardVsRotationalVelocityHeatmapImageHandle_
+
+        HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
+        HeadingVsRotationalVelocityHeatmapAxis_
+        HeadingVsRotationalVelocityHeatmapImageHandle_        
+    end
+    
+    properties (Access=protected)
+        ScreenSize_
+        RootModelType_ 
+        
+        % Time and number of scans in first one percent of data and delta time
+        FirstOnePercentEndTime_
+        NumberOfScansInFirstOnePercentEndTime_
+        Dt_
+        
+        % The next four chunks are related to each of the four figures:
         IndicesCorrespondingToArenaAndBallRotationAxisRecent_
         CumulativeRotationRecent_
         CumulativeRotationMeanToSubtract_
@@ -41,16 +57,10 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         ArenaOn_
         Gain_
         
-        BarPositionHistogramFigureHandle_ = [];
-        BarPositionHistogramAxis_
-        BarPositionHistogramPlotHandle_
         NumberOfBarPositionHistogramBins_
         BarPositionHistogramBinCenters_
         BarPositionHistogramCountsTotal_
 
-        ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];     
-        ForwardVsRotationalVelocityHeatmapAxis_
-        ForwardVsRotationalVelocityHeatmapImageHandle_
         ForwardDisplacementRecent_
         ForwardVelocityBinEdges_
         RotationalDisplacementRecent_
@@ -58,10 +68,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         DataForForwardVsRotationalVelocityHeatmapSum_
         DataForForwardVsRotationalVelocityHeatmapCounts_
         
-        HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
         HeadingBinEdges_
-        HeadingVsRotationalVelocityHeatmapAxis_
-        HeadingVsRotationalVelocityHeatmapImageHandle_
         DataForHeadingVsRotationalVelocityHeatmapSum_
         DataForHeadingVsRotationalVelocityHeatmapCounts_
         ModifiedJetColormap_             
@@ -130,6 +137,8 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             % Called when there are no more references to the object, just
             % prior to its memory being freed.
             fprintf('in delete\n');
+         %  delete(self.ArenaAndBallRotationAxisXlimListener_);
+         %   set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn','');
             ws.deleteIfValidHGHandle(self.ArenaAndBallRotationFigureHandle_);
             ws.deleteIfValidHGHandle(self.BarPositionHistogramFigureHandle_);
             ws.deleteIfValidHGHandle(self.ForwardVsRotationalVelocityHeatmapFigureHandle_);
@@ -143,6 +152,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             
             self.FirstOnePercentEndTime_ = wsModel.Acquisition.Duration/100; %wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
+            self.NumberOfScansInFirstOnePercentEndTime_ = ceil(self.FirstOnePercentEndTime_/self.Dt_);
             % Choose a maximum downsampling ratio. Here we choose the
             % maximum downsample ratio to be the downsampling ratio
             % corresponding to 10% of the acquisiton on an axis the width
@@ -150,7 +160,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             % store data for an entire sweep. If the calculated
             % downsampling ratio is less than this maximum (eg, if we zoom
             % in on a plot) then we will re-downsample the data.
-            self.        MaximumDownsamplingRatioForArenaAndBallRotationAxis_ =ws.ratioSubsampling(self.Dt_, 0.1*wsModel.Acquisition.Duration, self.ScreenSize_(4));
+            self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ = ws.ratioSubsampling(self.Dt_, 0.1*wsModel.Acquisition.Duration, self.ScreenSize_(4));
             if isempty(self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ )
                 self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ =1;
             end
@@ -211,8 +221,6 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 set(self.HeadingVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Heading Vs Rotational Velocity: Sweeps %s', stringOfStartedSweepIndices));
                 set(self.BarPositionHistogramFigureHandle_,'Name',sprintf('Bar Position Histogram: Sweeps %s', stringOfStartedSweepIndices));
             end 
-
-            
          
         end
         
@@ -616,7 +624,7 @@ tic;
             indicesCorrespondingToArenaAndBallRotationAxisPrevious = self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_;
             self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_ = (startIndexCorrespondingToArenaAndBallRotationAxisRecent : endIndexCorrespondingToArenaAndBallRotationAxisRecent);
             if ~isempty( self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_ ) && ~isequal(self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_,indicesCorrespondingToArenaAndBallRotationAxisPrevious)
-                xSpanInPixels = ws.ScopeFigure.getWidthInPixels(self.ArenaAndBallRotationAxis_);
+                xSpanInPixels = ws.ScopePlot.getWidthInPixels(self.ArenaAndBallRotationAxis_);
                downsamplingRatioForArenaAndBallRotationAxisRecent = ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
                 if isempty(downsamplingRatioForArenaAndBallRotationAxisRecent) || downsamplingRatioForArenaAndBallRotationAxisRecent < self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ 
                     % resample and plot
@@ -646,14 +654,29 @@ tic;
         end
         
         function plotArenaAndBallRotationWithAllSweepDataWhenSweepTerminates(self)
-        %    delete(self.ArenaAndBallRotationAxisXlimListener_);
-        %   set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn','');
+      %      delete(self.ArenaAndBallRotationAxisXlimListener_);
+      %     set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn','');
             set(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_,'XData', self.StoreSweepTime_(1:self.TotalScansInSweep_), 'YData',self.StoreSweepCumulativeRotation_(1:self.TotalScansInSweep_)-self.CumulativeRotationMeanToSubtract_);
             set(self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_,'XData',self.StoreSweepTime_(1:self.TotalScansInSweep_), 'YData',self.StoreSweepBarPositionUnwrapped_(1:self.TotalScansInSweep_)-self.BarPositionWrappedMeanToSubtract_);
         end
     end
     
-  
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to encode private/protected variables, or do
+            % some other kind of transformation on encoding, this method can be overridden.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to decode private/protected variables, or do
+            % some other kind of transformation on decoding, this method can be overridden.
+            self.(name) = value;
+        end
+    end
+      
     methods (Static = true)
         function [mu ul ll] = circ_mean_(alpha, w, dim)
             %
