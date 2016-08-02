@@ -20,7 +20,7 @@ classdef ScopePlot < handle
     end
     
     methods
-        function self=ScopePlot(parent, isAnalog, channelIndex)
+        function self=ScopePlot(parent, isAnalog, channelIndex)  %#ok<INUSL>
             self.AxesGH_ = ...
                 axes('Parent', parent.FigureGH, ...
                      'Units','pixels', ...
@@ -330,7 +330,17 @@ classdef ScopePlot < handle
         end  % function                
         
         function setYAxisLimits(self, yl)
-            set(self.AxesGH_, 'YLim', yl) ;
+            [yTicks,yTickLabels] = ws.yTicksFromYLimits(yl) ;
+            set(self.AxesGH_, 'YLim', yl, 'YTick', yTicks, 'YTickLabel', yTickLabels) ;
+            %set(self.AxesGH_, 'YTickLabel', arrayfun(@(y)(sprintf('%.3g',y)), yTicks, 'UniformOutput', false)) ;
+              % We set the y tick labels manually, to eliminate the
+              % "x10^y" thing that Matlab puts at the top of the y axis if
+              % the range is very big or very small.  Setting the tick
+              % labels changes the YTickLabelMode to 'manual', which turns
+              % off that functionality.
+              % But then there are circumstances where matlan will change
+              % the tick positions without telling us, so we set those
+              % manually too.
         end  % function                
         
         function setYAxisLabel(self, channelName, doShowUnits, units, color)
