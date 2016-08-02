@@ -1,69 +1,30 @@
 classdef DisplayFigure < ws.MCOSFigure
     
-%     properties (Dependent=true)
-%         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
-%         % to enable us to keep the ScopeModel state in sync with the HG figure XLim and YLim if the 
-%         % user changes them using the default Matlab HG figure tools.  Basically, the ScopeFigure defines 
-%         % events DidSetXLim and DidSetYLim, which it fires if the HG figure XLim or YLim are changes.  The
-%         % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
-%         % model.  Care has to be taken to avoid infinite loops, as you might imagine.
-%         XLim
-%         YLim
-%     end
-
-%     properties (Dependent=true)
-%         YScrollUpIcon
-%         YScrollDownIcon 
-%         YTightToDataIcon 
-%         YTightToDataLockedIcon 
-%         ControlForegroundColor
-%         ControlBackgroundColor
-%         AxesForegroundColor
-%         AxesBackgroundColor
-%         TraceLineColor
-%     end
-
     properties (Access = protected)
         AnalogScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
         DigitalScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
-                
-        ViewMenu_
-        InvertColorsMenuItem_
-        ShowGridMenuItem_
-        DoShowButtonsMenuItem_
-
+        
         ChannelsMenu_
         AnalogChannelMenuItems_
         DigitalChannelMenuItems_
         
+        ViewMenu_
+        InvertColorsMenuItem_
+        ShowGridMenuItem_
+        DoShowButtonsMenuItem_
+        ArrangementMenuItem_
+
+        % Stuff below are cached resources that we use in all the
+        % ScopePlots
         NormalYScrollUpIcon_ 
         NormalYScrollDownIcon_ 
         NormalYTightToDataIcon_ 
         NormalYTightToDataLockedIcon_ 
         NormalYTightToDataUnlockedIcon_ 
-        NormalYCaretIcon_ 
-        
+        NormalYCaretIcon_         
         TraceColorSequence_
-%         YScrollUpIcon_ 
-%         YScrollDownIcon_ 
-%         YTightToDataIcon_ 
-%         YTightToDataLockedIcon_ 
-%         ControlForegroundColor_
-%         ControlBackgroundColor_
-%         AxesForegroundColor_
-%         AxesBackgroundColor_
-%         TraceLineColor_
     end    
     
-%     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
-%         IsVisibleWhenDisplayEnabled
-%     end
-    
-%     events
-%         DidSetXLim
-%         DidSetYLim
-%     end
-
     methods
         function self=DisplayFigure(model, controller)
             % Call the superclass constructor
@@ -105,39 +66,7 @@ classdef DisplayFigure < ws.MCOSFigure
             
             % Set the initial figure position
             self.setInitialFigureSize_();
-            
-            % Subscribe to some model events
-            %self.didSetModel_();
-            
-%             % reset the downsampled data
-%             nChannels=length(model.ChannelNames);
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,nChannels);
-%             
-%             % Subscribe to some model events
-%             model.subscribeMe(self,'Update','','update');
-%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
-%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
-%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
-% 
-%             % Subscribe to events in the master model
-%             if ~isempty(model) ,
-%                 display=model.Parent;
-%                 if ~isempty(display) ,
-%                     wavesurferModel=display.Parent;
-%                     if ~isempty(wavesurferModel) ,
-%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
-%                     end
-%                 end
-%             end            
-            
-%             % Do stuff to make ws.most.Controller happy
-%             self.setHGTagsToPropertyNames_();
-%             self.updateGuidata_();
-            
+                        
             % sync up self to model
             self.update();
             
@@ -650,6 +579,11 @@ end  % public methods block
                 uimenu('Parent',self.ViewMenu_, ...
                        'Label','Show Buttons', ...
                        'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
+            self.ArrangementMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Separator', 'on', ...
+                       'Label','Arrangement...', ...
+                       'Callback',@(source,event)self.controlActuated('arrangementMenuItem',source,event));            
                                       
 %             % Y axis control buttons
 %             self.YZoomInButton_ = ...

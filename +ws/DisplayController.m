@@ -4,6 +4,10 @@ classdef DisplayController < ws.Controller
         MyYLimDialogFigure=[]
     end
 
+    properties (Access=protected)
+        PlotArrangementDialogFigure_ = []
+    end
+    
     methods
         function self=DisplayController(wavesurferController, wavesurferModel)
             % Call the superclass constructor
@@ -29,6 +33,23 @@ classdef DisplayController < ws.Controller
 
         function InvertColorsMenuItemGHActuated(self, varargin)
             self.Model.toggleAreColorsNormal();
+        end  % method        
+
+        function arrangementMenuItemActuated(self, varargin)
+            self.PlotArrangementDialogFigure_ = [] ;  % if not first call, this should cause the old controller to be garbage collectable
+            plotArrangementDialogModel = [] ;
+            parentFigurePosition = get(self.Figure,'Position') ;
+            channelNames = self.Model.Parent.Acquisition.ChannelNames ;
+            isDisplayed = horzcat(self.Model.IsAnalogChannelDisplayed, self.Model.IsDigitalChannelDisplayed) ;
+            nChannels = length(channelNames) ;
+            plotHeights = ones(1,nChannels) ;
+            plotOrdinality = 1:nChannels ;
+            callbackFunction = @(isDisplayed,plotHeights,plotOrdinality)(ws.nop()) ;
+            self.PlotArrangementDialogFigure_ = ...
+                ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
+                                               parentFigurePosition, ...
+                                               channelNames, isDisplayed, plotHeights, plotOrdinality, ...
+                                               callbackFunction) ;
         end  % method        
 
         function AnalogChannelMenuItemsActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
