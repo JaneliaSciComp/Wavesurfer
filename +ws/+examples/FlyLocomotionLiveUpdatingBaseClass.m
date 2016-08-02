@@ -13,25 +13,19 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
 
     properties (Access=protected)
         ScreenSize_
+        RootModelType_ 
+        
+        % Time in first one percent of data and delta time
         FirstOnePercentEndTime_
         Dt_
-                RootModelType_
-
+        
+        % The next four chunks are related to each of the four figures:
         ArenaAndBallRotationFigureHandle_ = [];
         ArenaAndBallRotationAxis_
         ArenaAndBallRotationAxisCumulativeRotationPlotHandle_
         ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_
         ArenaAndBallRotationAxisXLimListener_
-        
-        BarPositionHistogramFigureHandle_ = [];
-        BarPositionHistogramAxis_
-        ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];
-        ForwardVsRotationalVelocityHeatmapAxis_
-        ForwardVsRotationalVelocityHeatmapImageHandle_
-        HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
-        HeadingVsRotationalVelocityHeatmapAxis_
-        HeadingVsRotationalVelocityHeatmapImageHandle_
-                
+        IndicesCorrespondingToArenaAndBallRotationAxisRecent_
         CumulativeRotationRecent_
         CumulativeRotationMeanToSubtract_
         CumulativeRotationForPlottingTimeData_
@@ -42,45 +36,51 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         BarPositionWrappedMeanToSubtract_
         BarPositionUnwrappedForPlottingTimeData_
         BarPositionUnwrappedForPlottingYData_
-        Gain_
-
-        BarPositionHistogramBinCenters_
-        BarPositionHistogramCountsTotal_
-        
-        DataFromFile_
+        MaximumDownsamplingRatioForArenaAndBallRotationAxis_
         ArenaCondition_={'Arena is On', 'Arena is Off'};
         ArenaOn_
-        TotalScansInSweep_
+        Gain_
         
-        Vm_
-        %useful for heatmaps
+        BarPositionHistogramFigureHandle_ = [];
+        BarPositionHistogramAxis_
+        BarPositionHistogramPlotHandle_
+        NumberOfBarPositionHistogramBins_
+        BarPositionHistogramBinCenters_
+        BarPositionHistogramCountsTotal_
+
+        ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];     
+        ForwardVsRotationalVelocityHeatmapAxis_
+        ForwardVsRotationalVelocityHeatmapImageHandle_
         ForwardDisplacementRecent_
+        ForwardVelocityBinEdges_
         RotationalDisplacementRecent_
         RotationalVelocityBinEdges_
-        ForwardVelocityBinEdges_
-        HeadingBinEdges_
         DataForForwardVsRotationalVelocityHeatmapSum_
         DataForForwardVsRotationalVelocityHeatmapCounts_
+        
+        HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
+        HeadingBinEdges_
+        HeadingVsRotationalVelocityHeatmapAxis_
+        HeadingVsRotationalVelocityHeatmapImageHandle_
         DataForHeadingVsRotationalVelocityHeatmapSum_
         DataForHeadingVsRotationalVelocityHeatmapCounts_
-        ModifiedJetColormap_
-        NumberOfBarPositionHistogramBins_
-        BarPositionHistogramPlotHandle_
+        ModifiedJetColormap_             
         
-        StartedSweepIndices_
-        NumberOfScansInFirstOnePercentEndTime_
-        
+        % Used to keep track of collected data
+        TotalScansInSweep_
         TimeRecent_
         StoreSweepTime_
         StoreSweepBarPositionUnwrapped_
         StoreSweepBarPositionWrapped_
         StoreSweepCumulativeRotation_
         
-        MaximumDownsamplingRatio_
-                
-        IndicesCorrespondingToArenaAndBallRotationAxisRecent_
+        % Vm_ used to calculate heatmap data
+        Vm_
         
-        ArenaAndBallRotationAxisXlimListener_
+        % Used for naming the figures
+        StartedSweepIndices_
+
+        DataFromFile_
     end
     
     methods
@@ -91,25 +91,29 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 self.DataFromFile_ = load([filepath 'firstSweep.mat']);
             end
             if strcmp(self.RootModelType_, 'ws.WavesurferModel')
-                % Only want this to happen in frontend, not the looper
-                % creates the "user object"
+                % Only want this to happen in frontend
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
                 
+                % Set up bar histogram plot
                 self.NumberOfBarPositionHistogramBins_ = 16;
                 self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);
                 self.RotationalVelocityBinEdges_ = (-600:60:600);
                 self.ForwardVelocityBinEdges_= (-20:5:40);
                 self.HeadingBinEdges_ = linspace(0, 2*pi,9);
-                                
+                        
+                % Get colorbar for heatmap
                 temporaryFigureForGettingColormap = figure('visible','off');
                 set(temporaryFigureForGettingColormap,'colormap',jet);
                 originalJetColormap = get(temporaryFigureForGettingColormap,'colormap');
                 self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
                 close(temporaryFigureForGettingColormap);
 
+                % Generate the figures
                 self.generateClearedFigures();                
                 
+                % Initialize the heatmap and bar histogram plots whenever
+                % class is initialized.
                 self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
@@ -119,14 +123,13 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 
                 self.StartedSweepIndices_ = [];
                 
-            end
-            % end
-            
+            end            
         end
         
         function delete(self)
             % Called when there are no more references to the object, just
             % prior to its memory being freed.
+            fprintf('in delete\n');
             ws.deleteIfValidHGHandle(self.ArenaAndBallRotationFigureHandle_);
             ws.deleteIfValidHGHandle(self.BarPositionHistogramFigureHandle_);
             ws.deleteIfValidHGHandle(self.ForwardVsRotationalVelocityHeatmapFigureHandle_);
@@ -140,7 +143,6 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             
             self.FirstOnePercentEndTime_ = wsModel.Acquisition.Duration/100; %wsModel.Acquisition.Duration/100;
             self.Dt_ = 1/wsModel.Acquisition.SampleRate ;  % s
-            self.NumberOfScansInFirstOnePercentEndTime_ = ceil(self.FirstOnePercentEndTime_/self.Dt_);
             % Choose a maximum downsampling ratio. Here we choose the
             % maximum downsample ratio to be the downsampling ratio
             % corresponding to 10% of the acquisiton on an axis the width
@@ -148,9 +150,9 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             % store data for an entire sweep. If the calculated
             % downsampling ratio is less than this maximum (eg, if we zoom
             % in on a plot) then we will re-downsample the data.
-            self.MaximumDownsamplingRatio_ =ws.ratioSubsampling(self.Dt_, 0.1*wsModel.Acquisition.Duration, self.ScreenSize_(4));
-            if isempty(self.MaximumDownsamplingRatio_)
-                self.MaximumDownsamplingRatio_=1;
+            self.        MaximumDownsamplingRatioForArenaAndBallRotationAxis_ =ws.ratioSubsampling(self.Dt_, 0.1*wsModel.Acquisition.Duration, self.ScreenSize_(4));
+            if isempty(self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ )
+                self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ =1;
             end
             self.ArenaAndBallRotationAxisXlimListener_ = addlistener(self.ArenaAndBallRotationAxis_,'XLim','PostSet',@(src,event)(self.updateArenaAndBallRotationFigureIfNecessary()));
             set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn',@(src,evt)(self.updateArenaAndBallRotationFigureIfNecessary()));
@@ -425,7 +427,7 @@ tic;
             
             % Downsample the new data
             yRecent = self.([whichData 'Recent_']);%self.(['StoreSweep' whichData]);
-            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(self.TimeRecent_, yRecent, self.MaximumDownsamplingRatio_) ;
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(self.TimeRecent_, yRecent, self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ ) ;
             
             % Deal with TimeData_
             xAllOriginal = self.([whichData 'ForPlottingTimeData_']); % these are already downsampled
@@ -616,7 +618,7 @@ tic;
             if ~isempty( self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_ ) && ~isequal(self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_,indicesCorrespondingToArenaAndBallRotationAxisPrevious)
                 xSpanInPixels = ws.ScopeFigure.getWidthInPixels(self.ArenaAndBallRotationAxis_);
                downsamplingRatioForArenaAndBallRotationAxisRecent = ws.ratioSubsampling(self.Dt_, xSpan, xSpanInPixels) ;
-                if isempty(downsamplingRatioForArenaAndBallRotationAxisRecent) || downsamplingRatioForArenaAndBallRotationAxisRecent < self.MaximumDownsamplingRatio_
+                if isempty(downsamplingRatioForArenaAndBallRotationAxisRecent) || downsamplingRatioForArenaAndBallRotationAxisRecent < self.MaximumDownsamplingRatioForArenaAndBallRotationAxis_ 
                     % resample and plot
                     timeCorrespondingToZoomedRegion = self.StoreSweepTime_(self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_);
                     cumulativeRotationCorrespondingToZoomedRegion = self.StoreSweepCumulativeRotation_(self.IndicesCorrespondingToArenaAndBallRotationAxisRecent_);
@@ -644,8 +646,8 @@ tic;
         end
         
         function plotArenaAndBallRotationWithAllSweepDataWhenSweepTerminates(self)
-            delete(self.ArenaAndBallRotationAxisXlimListener_);
-           set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn','');
+        %    delete(self.ArenaAndBallRotationAxisXlimListener_);
+        %   set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn','');
             set(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_,'XData', self.StoreSweepTime_(1:self.TotalScansInSweep_), 'YData',self.StoreSweepCumulativeRotation_(1:self.TotalScansInSweep_)-self.CumulativeRotationMeanToSubtract_);
             set(self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_,'XData',self.StoreSweepTime_(1:self.TotalScansInSweep_), 'YData',self.StoreSweepBarPositionUnwrapped_(1:self.TotalScansInSweep_)-self.BarPositionWrappedMeanToSubtract_);
         end
