@@ -80,7 +80,8 @@ classdef ChannelsController < ws.Controller
         end
         
         function DeleteAIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
-            self.Model.Acquisition.deleteMarkedAnalogChannels() ;
+            %self.Model.Acquisition.deleteMarkedAnalogChannels() ;
+            self.Model.deleteMarkedAIChannels() ;
         end
         
         function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
@@ -139,7 +140,8 @@ classdef ChannelsController < ws.Controller
         end
         
         function DeleteAOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
-            self.Model.Stimulation.deleteMarkedAnalogChannels() ;
+            %self.Model.Stimulation.deleteMarkedAnalogChannels() ;
+            self.Model.deleteMarkedAOChannels() ;
         end
         
         function DIChannelNameEditsActuated(self,source,event) %#ok<INUSD>

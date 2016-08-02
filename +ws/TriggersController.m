@@ -148,7 +148,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     end
     
     methods
-        function controlActuated(self,controlName,source,event)
+        function controlActuated(self,controlName,source,event,varargin)
             try
                 type=get(source,'Type');
                 if isequal(type,'uicontrol') || isequal(type,'uitable') ,

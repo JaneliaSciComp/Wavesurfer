@@ -966,7 +966,7 @@ classdef Looper < ws.RootModel
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.IsUserCodeManagerEnabled_ = self.UserCodeManager.IsEnabled ;  % cache for speed                             
             self.IsPerformingRun_ = true ;
-            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
             
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
@@ -1049,14 +1049,22 @@ classdef Looper < ws.RootModel
             % goes wrong
             %err = [] ;
             
-            if ~self.IsPerformingRun_ ,
-                error('ws:Looper:askedToPrepareForSweepWhileNotInRun', ...
-                      'The looper was asked to prepare for a sweep while not in a run') ;
+            if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
+                % If we're not in the right mode for this message, ignore
+                % it.  This now happens in the normal course of things (b/c
+                % we have two incomming sockets, basically), so we need to
+                % just ignore the message quietly.
+                result = [] ;
+                return
             end
-            if self.IsPerformingSweep_ ,
-                error('ws:Looper:askedToPrepareForSweepWhileInSweep', ...
-                      'The looper was asked to prepare for a sweep while already in a sweep') ;
-            end
+%             if ~self.IsPerformingRun_ ,   
+%                 error('ws:Looper:askedToPrepareForSweepWhileNotInRun', ...
+%                       'The looper was asked to prepare for a sweep while not in a run') ;
+%             end
+%             if self.IsPerformingSweep_ ,
+%                 error('ws:Looper:askedToPrepareForSweepWhileInSweep', ...
+%                       'The looper was asked to prepare for a sweep while already in a sweep') ;
+%             end
             
             % Reset the sample count for the sweep
             %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
@@ -1083,7 +1091,7 @@ classdef Looper < ws.RootModel
                 
             % Final preparations...
             self.IsPerformingSweep_ = true ;
-            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             %profile on
             
             % Nothing to return
@@ -1131,7 +1139,7 @@ classdef Looper < ws.RootModel
 
             %profile off
             self.IsPerformingSweep_ = false ;
-            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             % Notify the front end
             %self.RPCClient_.call('looperCompletedSweep') ;            
@@ -1150,7 +1158,7 @@ classdef Looper < ws.RootModel
 
             %profile off
             self.IsPerformingSweep_ = false ;
-            fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             %self.callUserCodeManager_('didAbortSweep');
             
@@ -1169,7 +1177,7 @@ classdef Looper < ws.RootModel
             %self.callUserCodeManager_('completingRun');
 
             self.IsPerformingRun_ = false ;       
-            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function stopTheOngoingRun_(self)
@@ -1183,7 +1191,7 @@ classdef Looper < ws.RootModel
             %self.callUserCodeManager_('stoppingRun');
 
             self.IsPerformingRun_ = false ;   
-            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingRun_(self)
@@ -1196,7 +1204,7 @@ classdef Looper < ws.RootModel
             %self.callUserCodeManager_('abortingRun');
 
             self.IsPerformingRun_ = false ;
-            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)

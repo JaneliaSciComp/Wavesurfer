@@ -232,9 +232,9 @@ classdef Acquisition < ws.AcquisitionSubsystem
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
-        function channelNamesToDelete = deleteMarkedDigitalChannels_(self)
+        function wasDeleted = deleteMarkedDigitalChannels_(self)
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
+            %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case so things stay row vectors
                 %self.DigitalDeviceNames_ = cell(1,0) ;
@@ -250,7 +250,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             end
-            
+            wasDeleted = isToBeDeleted ;
 %             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
@@ -275,6 +275,16 @@ classdef Acquisition < ws.AcquisitionSubsystem
     methods (Access=protected)
         function result = getAnalogScalingCoefficients_(self)
             result = self.AnalogScalingCoefficientsCache_ ;
+        end
+    end  % protected methods block
+    
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
         end
     end  % protected methods block
     

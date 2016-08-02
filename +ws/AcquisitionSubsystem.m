@@ -245,6 +245,14 @@ classdef AcquisitionSubsystem < ws.Subsystem
             %self.broadcast('DidSetIsChannelActive');
         end
         
+        function result = indexOfAnalogChannelWithinActiveAnalogChannels(self, aiChannelIndex)
+            % aiChannelIndex is the index of a single channel within the
+            % list of all channels.  The result is the index of the same
+            % channel in a list of just the active channels.
+            resultForAllAIChannels = cumsum(self.IsAnalogChannelActive_) ;
+            result = resultForAllAIChannels(aiChannelIndex) ;
+        end
+        
         function result=get.IsAnalogChannelMarkedForDeletion(self)
             % Boolean array indicating which of the available analog channels is
             % active.
@@ -299,26 +307,10 @@ classdef AcquisitionSubsystem < ws.Subsystem
             % Boolean array indicating which of the available channels is
             % active.
             if islogical(newIsDigitalChannelActive) && isequal(size(newIsDigitalChannelActive),size(self.IsDigitalChannelActive)) ,
-                % For the current settings, break into analog and digital
-                % parts.
-%                 % We'll check these for changes later.
-%                 originalIsDigitalChannelActive = self.IsDigitalChannelActive ;
-
                 % Set the setting
                 self.IsDigitalChannelActive_ = newIsDigitalChannelActive;
-
-%                 % Now delete any tasks that have the wrong channel subsets,
-%                 % if needed
-%                 if ~isempty(self.DigitalInputTask_) ,
-%                     if isequal(newIsDigitalChannelActive,originalIsDigitalChannelActive) ,
-%                         % no need to do anything
-%                     else
-%                         self.DigitalInputTask_= [] ;  % need to clear, will re-create when needed 
-%                     end
-%                 end
             end
             self.Parent.didSetIsInputChannelActive() ;            
-            %self.broadcast('DidSetIsChannelActive');            
         end
         
         function value = get.NActiveChannels(self)
@@ -411,9 +403,8 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
-            import ws.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            self.AnalogChannelScales_=fif(isChangeable,newValue,self.AnalogChannelScales_);
+            self.AnalogChannelScales_ = ws.fif(isChangeable,newValue,self.AnalogChannelScales_) ;
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
@@ -1058,9 +1049,9 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end        
         
         function newChannelName = addAnalogChannel(self)
-            deviceName = self.Parent.DeviceName ;
+            %deviceName = self.Parent.DeviceName ;
             
-            newChannelDeviceName = deviceName ;
+            %newChannelDeviceName = deviceName ;
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;
@@ -1105,9 +1096,10 @@ classdef AcquisitionSubsystem < ws.Subsystem
 %             self.removeAnalogChannel(nChannels) ;
 %         end  % function
 
-        function deleteMarkedAnalogChannels(self)
+        function wasDeleted = deleteMarkedAnalogChannels_(self)
+            % This should only be called by self.Parent.
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
+            %channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case for when all channels are being deleted.
                 % Have to do this because we want all these properties to
@@ -1132,7 +1124,8 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
-            self.Parent.didDeleteAnalogInputChannels(channelNamesToDelete) ;
+            wasDeleted = isToBeDeleted ;
+            %self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
         end  % function
         
 %         function removeDigitalChannel(self,channelIndex)

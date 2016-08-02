@@ -352,3 +352,24 @@ Version History
                          coefficients to old files taken with devices
                          with more than 16 (single-ended) AI
                          terminals.
+
+0.92     Jun 27, 2016    Added support for more recent versions of
+                         DAQmx.  Can now duplicate stimuli, maps,
+                         sequences.  Better support for old protocol
+                         files.  Fixed bug causing errors on stimulus
+                         deletion in some cases.  Can now write
+                         calibration data to disk, use that file to
+                         add calibration to data files.  Fixed bug
+                         with electrode AO scaling.  Added debugging
+                         mode which shows satellite windows running in
+                         full-JVM Matlab sessions.  Added checkbox to
+                         optionally turn off electrode gain reading
+                         before a run or a test pulse.  Added tooltips
+                         to fast protocol buttons.  Improved speed of
+                         protocol file loading.  Improvements to
+                         display and data scaling speed, especially
+                         for long sweeps.  Fixed bug where stopping a
+                         run at an unlucky moment would put WS into a
+                         weird, unusable state.
+
+0.921    Jul 26, 2016    Fixed another bug with manual stopping.
