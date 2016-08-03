@@ -374,7 +374,6 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;
             % Stuff here about forward velocity or bar position
-
         end
         
         % These methods are called in the refiller process
