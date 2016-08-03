@@ -12,7 +12,7 @@ classdef ExampleUserClass < ws.UserClass
     end
     
     methods        
-        function self = ExampleUserClass(rootModel)
+        function self = ExampleUserClass(parent)
             % creates the "user object"
             fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);

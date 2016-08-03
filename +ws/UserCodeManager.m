@@ -180,10 +180,9 @@ classdef UserCodeManager < ws.Subsystem
             if isempty(className) ,
                 % this is ok, and in this case we just don't
                 % instantiate an object
-                %self.IsClassNameValid_ = true ;
                 exception = [] ;
             else
-                % value is non-empty
+                % className is non-empty
                 try 
                     newObject = feval(className,self.Parent) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
@@ -191,12 +190,12 @@ classdef UserCodeManager < ws.Subsystem
                     didSucceed = false ;
                 end
                 if didSucceed ,                    
+                    % Store the new object in self, and set exception to
+                    % empty
                     exception = [] ;
-                    %self.IsClassNameValid_ = true ;
                     self.TheObject_ = newObject ;                    
                 else
-                    %self.IsClassNameValid_ = false ;
-                    %self.TheObject_ = [] ;
+                    % do nothing
                 end
             end
         end  % function
