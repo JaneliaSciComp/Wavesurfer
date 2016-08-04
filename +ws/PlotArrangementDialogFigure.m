@@ -146,8 +146,10 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
 
         function layout_(self)
             % Layout the figure elements
-            nPlots = length(self.ChannelNames_) ;
-            nRows = nPlots ;
+            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
+            nChannels = length(self.ChannelNames_) ;
+            nRows = nChannels ;
             titleRowHeight=18;
             heightBetweenTitleRowAndWidgetRows = 4 ;
             rowHeight=20;
@@ -216,19 +218,20 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             
             % Layout the rows
             yOffsetOfTopRow = yOffsetOfTitleRow - heightBetweenTitleRowAndWidgetRows - rowHeight ;
-            for i = 1:nPlots ,
-                if i==1 ,
+            for iRow = 1:nRows ,
+                if iRow==1 ,
                     yOffsetOfThisRow = yOffsetOfTopRow ;
                 else
                     yOffsetOfThisRow = yOffsetOfThisRow - (interRowHeight+rowHeight) ;
                 end
+                iChannel = channelIndexFromRowIndex(iRow) ;
                 ws.centerTextVerticallyWithinRectangleBang( ...
-                    self.ChannelNameTexts_(i)     ,             [channelColXOffset  yOffsetOfThisRow channelColWidth     rowHeight] ) ;
+                    self.ChannelNameTexts_(iChannel)     ,             [channelColXOffset  yOffsetOfThisRow channelColWidth     rowHeight] ) ;
                 ws.centerCheckboxWithinRectangleBang( ...
-                    self.IsDisplayedCheckboxes_(i),             [checkboxColXOffset yOffsetOfThisRow isDisplayedColWidth rowHeight] ) ;
-                set(self.PlotHeightEdits_(i)      , 'Position', [editXOffset        yOffsetOfThisRow plotSizeEditWidth   plotSizeEditHeight] ) ;
-                set(self.MoveUpButtons_(i)        , 'Position', [upButtonXOffset    yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
-                set(self.MoveDownButtons_(i)      , 'Position', [downButtonXOffset  yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
+                    self.IsDisplayedCheckboxes_(iChannel),             [checkboxColXOffset yOffsetOfThisRow isDisplayedColWidth rowHeight] ) ;
+                set(self.PlotHeightEdits_(iChannel)      , 'Position', [editXOffset        yOffsetOfThisRow plotSizeEditWidth   plotSizeEditHeight] ) ;
+                set(self.MoveUpButtons_(iChannel)        , 'Position', [upButtonXOffset    yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
+                set(self.MoveDownButtons_(iChannel)      , 'Position', [downButtonXOffset  yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
             end
 
             % Layout the bottom buttons
@@ -250,18 +253,18 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             newOffset=parentOffset+(parentSize-size)/2;
             newPosition=[newOffset size];
             set(self.FigureGH_,'Position',newPosition);
-        end
+        end        
     end % protected methods block
     
     methods        
-        function controlActuated(self, methodNameStem, source, event, varargin)
-            controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
-%             if isequal(source, self.YMaxEdit_) || isequal(source, self.YMinEdit_) ,
-%                 self.syncOKButtonEnablementFromEditContents_() ;
-%             else
-%                 controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
-%             end
-        end  % function
+%         function controlActuated(self, methodNameStem, source, event, varargin)
+%             controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
+% %             if isequal(source, self.YMaxEdit_) || isequal(source, self.YMinEdit_) ,
+% %                 self.syncOKButtonEnablementFromEditContents_() ;
+% %             else
+% %                 controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
+% %             end
+%         end  % function
        
         function keyPressedOnButton(self, methodNameStem, source, event)
             % This makes it so the user can press "Enter" when a button has keyboard focus to "press" the button.
@@ -271,18 +274,58 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
         end  % function
     end  % public methods block
     
-    methods (Access=protected)
-        function syncOKButtonEnablementFromEditContents_(self)
-            yMaxAsString=get(self.YMaxEdit_,'String');
-            yMinAsString=get(self.YMinEdit_,'String');
-            yMax=str2double(yMaxAsString);
-            yMin=str2double(yMinAsString);
-            isEnabled= isfinite(yMax) && isfinite(yMin) && (yMin~=yMax);
-            set(self.OKButton_,'Enable',ws.onIff(isEnabled));
-        end
-    end 
+%     methods (Access=protected)
+%         function syncOKButtonEnablementFromEditContents_(self)
+%             yMaxAsString=get(self.YMaxEdit_,'String');
+%             yMinAsString=get(self.YMinEdit_,'String');
+%             yMax=str2double(yMaxAsString);
+%             yMin=str2double(yMinAsString);
+%             isEnabled= isfinite(yMax) && isfinite(yMin) && (yMin~=yMax);
+%             set(self.OKButton_,'Enable',ws.onIff(isEnabled));
+%         end
+%     end 
         
     methods
+        function isDisplayedCheckboxActuated(self, source, event, channelIndex)  %#ok<INUSL>
+            self.IsDisplayed_(channelIndex) = get(source, 'Value') ;
+            self.updateControlProperties_() ;
+        end  % function
+        
+        function plotHeightEditActuated(self, source, event, channelIndex)  %#ok<INUSL>
+            newValueAsString = get(source, 'String') ;
+            newValueAsDouble = str2double(newValueAsString) ;            
+            if isnan(newValueAsDouble) ,
+                % do nothing
+            else
+                if isreal(newValueAsDouble) && newValueAsDouble>=0.09 ,
+                    newValueRounded = round(10*newValueAsDouble)/10 ;  % want 10* the value to be an integer
+                    self.PlotHeightEdits_(channelIndex) = newValueRounded ;
+                else
+                    % Value is complex, or negative, or zero, or too small
+                    % to bother with, so ignore.
+                end
+            end
+            self.updateControlProperties_() ;
+        end  % function
+
+        function moveUpButtonActuated(self, source, event, channelIndex)  %#ok<INUSL>
+            % Swap the row corresponding to channelIndex with the row just
+            % above it visually.  I.e. if channelIndex corresponds to
+            % rowIndex, want to swap rowIndex with rowIndex-1.  This is
+            % slightly tricky b/c we need to determine the channel index
+            % corresponding to rowIndex-1.
+            self.swapRows_(channelIndex, -1) ;
+        end  % function
+
+        function moveDownButtonActuated(self, source, event, channelIndex)  %#ok<INUSL>
+            % Swap the row corresponding to channelIndex with the row just
+            % above it visually.  I.e. if channelIndex corresponds to
+            % rowIndex, want to swap rowIndex with rowIndex+1.  This is
+            % slightly tricky b/c we need to determine the channel index
+            % corresponding to rowIndex-1.
+            self.swapRows_(channelIndex, +1) ;
+        end  % function
+        
         function okButtonActuated(self,source,event) 
 %             yMaxAsString=get(self.YMaxEdit_,'String');
 %             yMinAsString=get(self.YMinEdit_,'String');
@@ -316,7 +359,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
 %             %self.layout();
 %         end
         
-        function self=updateControlPropertiesImplementation_(self, varargin)
+        function updateControlPropertiesImplementation_(self, varargin)
             % Get props out of self
             channelNames = self.ChannelNames_ ;
             isDisplayed = self.IsDisplayed_ ;
@@ -333,7 +376,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             end
         end
         
-        function self=updateControlEnablementImplementation_(self, varargin)
+        function updateControlEnablementImplementation_(self, varargin)
             % Get props out of self
             channelNames = self.ChannelNames_ ;
             %isDisplayed = self.IsDisplayed_ ;
@@ -341,14 +384,28 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
 
             % Invert the channel->row mapping
-            nChannels = length(channelNames) ;
-            identity = 1:nChannels ;
-            channelIndexFromRowIndex(rowIndexFromChannelIndex) = identity ;   
+            channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;   
             
             % Turn off the top move up button, the bottom move down button
+            nChannels = length(channelNames) ;
             set(self.MoveUpButtons_(  channelIndexFromRowIndex(1        )), 'Enable', 'off') ;
             set(self.MoveDownButtons_(channelIndexFromRowIndex(nChannels)), 'Enable', 'off') ;
         end
         
+        function swapRows_(self, channelIndex, delta)
+            % Swap the row indicated by channelIndex with the row above (when delta==-1) or
+            % below (when delta==+1) it.  Delta must be -1 or +1.
+            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            rowIndex = rowIndexFromChannelIndex(channelIndex) ;
+            otherRowIndex = rowIndex + delta ;
+            nRows = length(rowIndexFromChannelIndex) ;  % number of channels, also number of rows
+            if 1<=otherRowIndex && otherRowIndex<=nRows ,
+                channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
+                otherChannelIndex = channelIndexFromRowIndex(otherRowIndex) ;
+                newRowIndexFromChannelIndex = ws.swapElementsInPermutation(rowIndexFromChannelIndex, channelIndex, otherChannelIndex) ;
+                self.RowIndexFromChannelIndex_ = newRowIndexFromChannelIndex ;
+            end
+            self.update_() ;            
+        end
     end
 end  % classdef
