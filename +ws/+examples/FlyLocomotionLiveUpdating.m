@@ -114,7 +114,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
             self.DataFromFile_ = load([filepath 'firstSweep.mat']);
             self.TotalScansCollectedBySamplesAcquired_ = 0;
-                       
             if strcmp(self.RootModelType_, 'ws.WavesurferModel')
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
@@ -852,7 +851,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             
             % Generate the figures if necessary if loaded from protocol
             % file
-            self.generateFigures();
+            if strcmp(self.RootModelType_, 'ws.WavesurferModel')
+                disp('syncrhonize');
+                disp(self.RootModelType_);
+                self.generateFigures();
+            end
         end
     end
 end  % classdef
