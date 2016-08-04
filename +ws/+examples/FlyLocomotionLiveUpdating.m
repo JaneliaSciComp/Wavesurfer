@@ -13,21 +13,21 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         % Handles/listeners related to the four figures are set to
         % transient
         
-        ArenaAndBallRotationFigureHandle_ = [];
+        ArenaAndBallRotationFigureHandle_
         ArenaAndBallRotationAxis_
         ArenaAndBallRotationAxisCumulativeRotationPlotHandle_
         ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_
         ArenaAndBallRotationAxisXlimListener_
 
-        BarPositionHistogramFigureHandle_ = [];
+        BarPositionHistogramFigureHandle_
         BarPositionHistogramAxis_
         BarPositionHistogramPlotHandle_
         
-        ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];
+        ForwardVsRotationalVelocityHeatmapFigureHandle_
         ForwardVsRotationalVelocityHeatmapAxis_
         ForwardVsRotationalVelocityHeatmapImageHandle_
 
-        HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
+        HeadingVsRotationalVelocityHeatmapFigureHandle_
         HeadingVsRotationalVelocityHeatmapAxis_
         HeadingVsRotationalVelocityHeatmapImageHandle_        
     end
@@ -57,7 +57,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         BarPositionWrappedMeanToSubtract_
         BarPositionUnwrappedForPlotting_
         MaximumDownsamplingRatio_
-        ArenaCondition_={'Arena is On', 'Arena is Off'};
+        ArenaCondition_
         ArenaOn_
         
         % Bar position Histogram
@@ -114,6 +114,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
             self.DataFromFile_ = load([filepath 'firstSweep.mat']);
             self.TotalScansCollectedBySamplesAcquired_ = 0;
+                       
             if strcmp(self.RootModelType_, 'ws.WavesurferModel')
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
@@ -143,6 +144,14 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 originalJetColormap = get(temporaryFigureForGettingColormap,'colormap');
                 self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
                 close(temporaryFigureForGettingColormap);
+                
+                % Initialize arena condtion string and figure handles
+                self.ArenaCondition_={'Arena is On', 'Arena is Off'};
+                self.ArenaAndBallRotationFigureHandle_ = [];
+                self.BarPositionHistogramFigureHandle_ = [];
+                self.ForwardVsRotationalVelocityHeatmapFigureHandle_ = [];
+                self.HeadingVsRotationalVelocityHeatmapFigureHandle_ = [];
+
                 
                 % Generate the figures
                 self.generateFigures();
@@ -411,8 +420,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                             self.setLEDState(looper,turnOnOrOff);
                             self.NumberOfScansSinceLEDTurnedOn_=0;
                             self.IsLEDOn_ = true;
-                            totalElapsedTime = self.TotalScansCollectedBySamplesAcquired_/looper.Acquisition.SampleRate;
-                            fprintf('In Sweep %d, LED turned on at time: %f \n', looper.NSweepsCompletedInThisRun+1, totalElapsedTime - looper.NSweepsCompletedInThisRun*looper.SweepDuration);
+               %             totalElapsedTime = self.TotalScansCollectedBySamplesAcquired_/looper.Acquisition.SampleRate;
+               %             fprintf('In Sweep %d, LED turned on at time: %f \n', looper.NSweepsCompletedInThisRun+1, totalElapsedTime - looper.NSweepsCompletedInThisRun*looper.SweepDuration);
                             self.ShouldLEDBeTurnedOnThisTime_ = false; % Toggle this, so we don't turn the LED the next time the condition is met
                         else
                             % Then the fly was moving forward and the
@@ -431,8 +440,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     self.setLEDState(looper,turnOnOrOff);
                     self.IsLEDOn_ = false;
                     self.NumberOfScansSinceLEDTurnedOff_ = 0;
-                    totalElapsedTime = self.TotalScansCollectedBySamplesAcquired_/looper.Acquisition.SampleRate;
-                    fprintf('In Sweep %d, LED turned off at time: %f \n', looper.NSweepsCompletedInThisRun+1, totalElapsedTime - looper.NSweepsCompletedInThisRun*looper.SweepDuration);
+                %    totalElapsedTime = self.TotalScansCollectedBySamplesAcquired_/looper.Acquisition.SampleRate;
+                %    fprintf('In Sweep %d, LED turned off at time: %f \n', looper.NSweepsCompletedInThisRun+1, totalElapsedTime - looper.NSweepsCompletedInThisRun*looper.SweepDuration);
                 end
             end
             %             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
@@ -476,70 +485,75 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             rightColumnLeftCorner = leftColumnLeftCorner + figureWidth + 50;
             
             % Arena and Ball Rotation Figure
-            self.ArenaAndBallRotationFigureHandle_ = figure('Name', 'Arena and Ball Rotation: Waiting to start...',...
-                                                            'NumberTitle','off',...
-                                                            'Units','pixels',...
-                                                            'Position', [leftColumnLeftCorner topRowBottomCorner figureWidth figureHeight]);
-            self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigureHandle_,...
-                                                  'box','on');
-            hold(self.ArenaAndBallRotationAxis_,'on');
-            self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,-0.5,0.5,'b');
-            self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,-0.5,0.5,'g');
-            set(self.ArenaAndBallRotationAxis_,'xlim',[0,1],'ylim',[0,1]);
-            hold(self.ArenaAndBallRotationAxis_,'off');
-            xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
-            ylabel(self.ArenaAndBallRotationAxis_,'gain: Waiting to Begin...');
-            legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
-            title(self.ArenaAndBallRotationAxis_,'Arena is ...');
-            
+            disp(ishghandle(self.ArenaAndBallRotationFigureHandle_))
+            if isempty(self.ArenaAndBallRotationFigureHandle_) || ~ishghandle(self.ArenaAndBallRotationFigureHandle_)
+                self.ArenaAndBallRotationFigureHandle_ = figure('Name', 'Arena and Ball Rotation: Waiting to start...',...
+                    'NumberTitle','off',...
+                    'Units','pixels',...
+                    'Position', [leftColumnLeftCorner topRowBottomCorner figureWidth figureHeight]);
+                self.ArenaAndBallRotationAxis_ = axes('Parent',self.ArenaAndBallRotationFigureHandle_,...
+                    'box','on');
+                hold(self.ArenaAndBallRotationAxis_,'on');
+                self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,-0.5,0.5,'b');
+                self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_ = plot(self.ArenaAndBallRotationAxis_,-0.5,0.5,'g');
+                set(self.ArenaAndBallRotationAxis_,'xlim',[0,1],'ylim',[0,1]);
+                hold(self.ArenaAndBallRotationAxis_,'off');
+                xlabel(self.ArenaAndBallRotationAxis_,'Time (s)');
+                ylabel(self.ArenaAndBallRotationAxis_,'gain: Waiting to Begin...');
+                legend(self.ArenaAndBallRotationAxis_,{'fly','bar'});
+                title(self.ArenaAndBallRotationAxis_,'Arena is ...');
+            end
             % Bar Position Histogram Figure
-            self.BarPositionHistogramFigureHandle_ = figure('Name', 'Bar Position Histogram: Waiting to start...',...
-                                                            'NumberTitle','off',...
-                                                            'Units','pixels',...
-                                                            'Position', [rightColumnLeftCorner topRowBottomCorner figureWidth figureHeight]);
-            self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigureHandle_,...
-                                                  'box','on', 'xlim', [-.1 2*pi+0.1]);
-            hold(self.BarPositionHistogramAxis_,'on');
-            self.BarPositionHistogramPlotHandle_ = plot(self.BarPositionHistogramAxis_, -0.5, 0.5); % just to initialize it
-            xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]')
-            ylabel(self.BarPositionHistogramAxis_,'Time [s]')
-            
+            if isempty(self.BarPositionHistogramFigureHandle_) || ~ishghandle(self.BarPositionHistogramFigureHandle_)
+                self.BarPositionHistogramFigureHandle_ = figure('Name', 'Bar Position Histogram: Waiting to start...',...
+                    'NumberTitle','off',...
+                    'Units','pixels',...
+                    'Position', [rightColumnLeftCorner topRowBottomCorner figureWidth figureHeight]);
+                self.BarPositionHistogramAxis_ = axes('Parent',self.BarPositionHistogramFigureHandle_,...
+                    'box','on', 'xlim', [-.1 2*pi+0.1]);
+                hold(self.BarPositionHistogramAxis_,'on');
+                self.BarPositionHistogramPlotHandle_ = plot(self.BarPositionHistogramAxis_, -0.5, 0.5); % just to initialize it
+                xlabel(self.BarPositionHistogramAxis_,'Bar Position [rad]')
+                ylabel(self.BarPositionHistogramAxis_,'Time [s]')
+            end
             % Forward vs Rotational Velocity Heatmap Figure
             for whichHeatmap = [{'Forward'},{'Heading'}]
                 whichFigure = [whichHeatmap{:} 'VsRotationalVelocityHeatmapFigureHandle_'];
-                whichAxis = [whichHeatmap{:} 'VsRotationalVelocityHeatmapAxis_'];
-                whichImageHandle = [whichHeatmap{:} 'VsRotationalVelocityHeatmapImageHandle_'];
-                if strcmp(whichHeatmap{:},'Forward')
-                    whichBinEdges = 'ForwardVelocityBinEdges_';
-                    leftCorner = leftColumnLeftCorner;
-                else
-                    whichBinEdges = 'HeadingBinEdges_';
-                    leftCorner = rightColumnLeftCorner;
+                if isempty(self.(whichFigure)) || ~ishghandle(self.(whichFigure))
+                    whichAxis = [whichHeatmap{:} 'VsRotationalVelocityHeatmapAxis_'];
+                    whichImageHandle = [whichHeatmap{:} 'VsRotationalVelocityHeatmapImageHandle_'];
+                    if strcmp(whichHeatmap{:},'Forward')
+                        whichBinEdges = 'ForwardVelocityBinEdges_';
+                        leftCorner = leftColumnLeftCorner;
+                    else
+                        whichBinEdges = 'HeadingBinEdges_';
+                        leftCorner = rightColumnLeftCorner;
+                    end
+                    self.(whichFigure) = figure('Name', [whichHeatmap{:} ' vs Rotational Velocity: Waiting to start...'],...
+                        'NumberTitle','off',...
+                        'Units','pixels',...
+                        'colormap',self.ModifiedJetColormap_,...
+                        'Position', [leftCorner bottomRowBottomCorner figureWidth figureHeight]);
+                    self.(whichAxis) = axes('Parent',self.(whichFigure));
+                    imagesc(Inf*ones(20),'Parent',self.(whichAxis)); %just to set it up first
+                    self.(whichImageHandle) = get(self.(whichAxis),'children');
+                    set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
+                        'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),'box','on');
+                    
+                    xlabel(self.(whichAxis),'v_r_o_t [°/s]');
+                    if strcmp(whichHeatmap{:},'Forward')
+                        ylabel(self.(whichAxis),'v_f_w [mm/s]');
+                        set(self.(whichAxis),'yTick',(0.5:3:length(self.(whichBinEdges))),'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)))
+                    else
+                        ylabel(self.(whichAxis),'Heading [rad]');
+                        set(self.(whichAxis),'yTick',(0.5:length(self.(whichBinEdges))/4:length(self.(whichBinEdges))+0.5),'yTickLabel', {'0','pi/2','pi','3pi/2','2pi'})
+                    end
+                    xlim(self.(whichAxis),[0.5 length(self.RotationalVelocityBinEdges_)+0.5]);
+                    ylim(self.(whichAxis),[0.5 length(self.(whichBinEdges))+0.5]);
+                    
+                    heatmapColorBar = colorbar('peer',self.(whichAxis));
+                    ylabel(heatmapColorBar,'Vm [mV]');
                 end
-                self.(whichFigure) = figure('Name', [whichHeatmap{:} ' vs Rotational Velocity: Waiting to start...'],...
-                                            'NumberTitle','off',...
-                                            'Units','pixels',...
-                                            'colormap',self.ModifiedJetColormap_,...
-                                            'Position', [leftCorner bottomRowBottomCorner figureWidth figureHeight]);
-                self.(whichAxis) = axes('Parent',self.(whichFigure));
-                imagesc(Inf*ones(20),'Parent',self.(whichAxis)); %just to set it up first
-                self.(whichImageHandle) = get(self.(whichAxis),'children');
-                set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
-                    'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),'box','on');
-                
-                xlabel(self.(whichAxis),'v_r_o_t [°/s]');
-                if strcmp(whichHeatmap{:},'Forward')
-                    ylabel(self.(whichAxis),'v_f_w [mm/s]');
-                    set(self.(whichAxis),'yTick',(0.5:3:length(self.(whichBinEdges))),'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)))
-                else
-                    ylabel(self.(whichAxis),'Heading [rad]');
-                    set(self.(whichAxis),'yTick',(0.5:length(self.(whichBinEdges))/4:length(self.(whichBinEdges))+0.5),'yTickLabel', {'0','pi/2','pi','3pi/2','2pi'})
-                end
-                xlim(self.(whichAxis),[0.5 length(self.RotationalVelocityBinEdges_)+0.5]);
-                ylim(self.(whichAxis),[0.5 length(self.(whichBinEdges))+0.5]);
-                
-                heatmapColorBar = colorbar('peer',self.(whichAxis));
-                ylabel(heatmapColorBar,'Vm [mV]');
             end
         end
         
@@ -823,6 +837,22 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % If a Coding subclass wants to decode private/protected variables, or do
             % some other kind of transformation on decoding, this method can be overridden.
             self.(name) = value;
+        end
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            % Generate the figures if necessary if loaded from protocol
+            % file
+            self.generateFigures();
         end
     end
 end  % classdef
