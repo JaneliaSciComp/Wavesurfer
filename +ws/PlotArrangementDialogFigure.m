@@ -15,7 +15,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
         ChannelNames_  % the names of the channels
         IsDisplayed_
         PlotHeights_
-        PlotOrdinality_  
+        RowIndexFromChannelIndex_  
           % the order the plots are displayed in.
           % self.ChannelNames_{self.PlotOrdinality(1)} is at the top,
           % self.ChannelNames_{self.PlotOrdinality(2)} next, etc.
@@ -31,7 +31,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             self.ChannelNames_ = channelNames ;
             self.IsDisplayed_ = isDisplayed ;
             self.PlotHeights_ = plotHeights ;
-            self.PlotOrdinality_ = plotOrdinality ;
+            self.RowIndexFromChannelIndex_ = plotOrdinality ;
             self.CallbackFunction_ = callbackFunction ;
             
             % Set the relevant properties of the figure itself
@@ -50,9 +50,10 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             self.createFixedControls_() ;
             
             % sync up self to 'model', which is basically
-            % self.ChannelNames_, self.PlotHeights_, and self.PlotOrdinality_
-            self.updateControlProperties_() ;
-            self.layout_() ;
+            % self.ChannelNames_, self.PlotHeights_, and self.RowIndexFromChannelIndex_
+            %self.updateControlProperties_() ;
+            %self.layout_() ;
+            self.update_() ;
             
             % Do stuff specific to dialog boxes
             self.centerOnParentPosition_(parentFigurePosition) ;
@@ -110,6 +111,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
                 self.PlotHeightEdits_(i) = ...
                     ws.uiedit('Parent',self.FigureGH_, ...
                               'Tag',sprintf('PlotHeightEdits_(%d)',i), ...
+                              'HorizontalAlignment','right', ...
                               'Callback',@(source,event)(self.controlActuated('plotHeightEdit',source,event,i)) ) ;
                 self.MoveUpButtons_(i) = ...
                     ws.uicontrol('Parent',self.FigureGH_, ...
@@ -307,21 +309,46 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
     end  % methods
 
     methods (Access=protected)
-        function self=updateImplementation_(self,varargin)
-            % Syncs self with model, making no prior assumptions about what
-            % might have changed or not changed in the model.
-            self.updateControlPropertiesImplementation_();
-            %self.layout();
-        end
+%         function self=updateImplementation_(self,varargin)
+%             % Syncs self with model, making no prior assumptions about what
+%             % might have changed or not changed in the model.
+%             self.updateControlPropertiesImplementation_();
+%             %self.layout();
+%         end
         
         function self=updateControlPropertiesImplementation_(self, varargin)
-%             % Update the relevant controls
-%             yl = self.YLimits_ ;
-%             unitsString = self.YUnits_ ;
-%             set(self.YMaxEdit_     ,'String',sprintf('%0.3g',yl(2)));
-%             set(self.YMaxUnitsText_,'String',unitsString);
-%             set(self.YMinEdit_     ,'String',sprintf('%0.3g',yl(1)));
-%             set(self.YMinUnitsText_,'String',unitsString);            
+            % Get props out of self
+            channelNames = self.ChannelNames_ ;
+            isDisplayed = self.IsDisplayed_ ;
+            plotHeights = self.PlotHeights_ ;
+            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            
+            % Set the content of each widget
+            nChannels = length(self.ChannelNames_) ;
+            for iChannel = 1:nChannels ,
+                iRow = rowIndexFromChannelIndex(iChannel) ;
+                set(self.ChannelNameTexts_(iRow), 'String', channelNames{iChannel}) ;
+                set(self.IsDisplayedCheckboxes_(iRow), 'Value', isDisplayed(iChannel) ) ;
+                set(self.PlotHeightEdits_(iRow), 'String', sprintf('%g', plotHeights(iChannel) ) ) ;
+            end
         end
+        
+        function self=updateControlEnablementImplementation_(self, varargin)
+            % Get props out of self
+            channelNames = self.ChannelNames_ ;
+            %isDisplayed = self.IsDisplayed_ ;
+            %plotHeights = self.PlotHeights_ ;
+            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+
+            % Invert the channel->row mapping
+            nChannels = length(channelNames) ;
+            identity = 1:nChannels ;
+            channelIndexFromRowIndex(rowIndexFromChannelIndex) = identity ;   
+            
+            % Turn off the top move up button, the bottom move down button
+            set(self.MoveUpButtons_(  channelIndexFromRowIndex(1        )), 'Enable', 'off') ;
+            set(self.MoveDownButtons_(channelIndexFromRowIndex(nChannels)), 'Enable', 'off') ;
+        end
+        
     end
 end  % classdef
