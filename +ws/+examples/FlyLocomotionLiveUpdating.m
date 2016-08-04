@@ -1,4 +1,4 @@
-classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
+classdef FlyLocomotionLiveUpdating < ws.UserClass
        
     % This is a user class created for Stephanie Wegener in Vivek
     % Jayaraman's lab for online analysis and live updating of fly
@@ -93,17 +93,27 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         % Used for naming the figures
         StartedSweepIndices_
 
+        % Used for triggering
+        NumberOfScansSinceLEDTurnedOff_
+        NumberOfScansSinceLEDTurnedOn_
+        NumberOfScansForLEDToBeOn_
+        NumberOfScansToWaitBeforeTurningLEDBackOn_
+        ShouldLEDBeTurnedOnThisTime_
+        LEDDigitalOutputChannelIndex_
+       
+        IsLEDOn_
+        TotalScansCollectedBySamplesAcquired_
+        
         % Used for testing
         DataFromFile_
     end
     
     methods
-        function self = FlyLocomotionLiveUpdatingBaseClass(rootModel)
+        function self = FlyLocomotionLiveUpdating(rootModel)
             self.RootModelType_ = class(rootModel);
-            if strcmp(self.RootModelType_,'ws.WavesurferModel') || strcmp(self.RootModelType_, 'ws.Looper')
-                filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
-                self.DataFromFile_ = load([filepath 'firstSweep.mat']);
-            end
+            filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
+            self.DataFromFile_ = load([filepath 'firstSweep.mat']);
+            self.TotalScansCollectedBySamplesAcquired_ = 0;
             if strcmp(self.RootModelType_, 'ws.WavesurferModel')
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
@@ -126,23 +136,30 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 self.DataForForwardVsRotationalVelocityHeatmapCounts_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
-                        
+                
                 % Get colorbar for heatmap
                 temporaryFigureForGettingColormap = figure('visible','off');
                 set(temporaryFigureForGettingColormap,'colormap',jet);
                 originalJetColormap = get(temporaryFigureForGettingColormap,'colormap');
                 self.ModifiedJetColormap_ = [originalJetColormap(1:end-1,:); 1,1,1];
                 close(temporaryFigureForGettingColormap);
-
+                
                 % Generate the figures
-                self.generateFigures();                
+                self.generateFigures();
                 
                 % Initialize to number of started sweeps to an empty array.
                 % This will be filled with the numbers of all started
                 % sweeps.
                 self.StartedSweepIndices_ = [];
                 
-            end            
+            end
+            self.NumberOfScansSinceLEDTurnedOff_ = 0;
+            self.NumberOfScansSinceLEDTurnedOn_ = 0;
+            self.NumberOfScansForLEDToBeOn_ = 5*20000; % 5 seconds, at normal sampling frequency
+            self.NumberOfScansToWaitBeforeTurningLEDBackOn_ = 5*20000; % 5 seconds, at normal sampling frequency
+            self.ShouldLEDBeTurnedOnThisTime_ = false;
+            self.LEDDigitalOutputChannelIndex_ = 1;
+            self.IsLEDOn_ = false;
         end
         
         function delete(self)
@@ -245,6 +262,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
         end
         
         function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
+            tic;
             % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
             
@@ -268,7 +286,8 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             % Wegener. This updates self.BarPositionUnwrappedRecent_,
             % self.BarPositionWrappedRecent_, and
             % self.CumulativeRotationRecent_.
-            self.analyzeFlyLocomotion_(analogData);
+            isInFrontend = true;
+            self.analyzeFlyLocomotion_(analogData,isInFrontend);
           
             % Update and store sweep data
             self.StoreSweepTime_(totalScansInSweepPrevious+1:self.TotalScansInSweep_) = self.TimeRecent_;
@@ -361,19 +380,73 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
                 xlim(self.(whichAxis), [min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
                 ylim(self.(whichAxis),[min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
             end
+            toc;
         end
 
         
         % These methods are called in the looper process
         function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSD,INUSL>
-            nScans = size(analogData,1);
-            analogData = self.DataFromFile_.data(self.TotalScansInSweep_+1:self.TotalScansInSweep_+nScans,:);
-            self.analyzeFlyLocomotion_(analogData);
+            % This is used to acquire the data, and performs the necessary
+            % analysis to trigger an LED
             
-            barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
-            self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
-            self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;
-            % Stuff here about forward velocity or bar position
+            % Update Variables
+            nScans = size(analogData,1);
+            analogData = self.DataFromFile_.data(self.TotalScansCollectedBySamplesAcquired_+1:self.TotalScansCollectedBySamplesAcquired_+nScans,:);
+            self.TotalScansCollectedBySamplesAcquired_ = self.TotalScansCollectedBySamplesAcquired_ + nScans;       
+            
+            % Check whether to turn the LED on or off
+            if ~self.IsLEDOn_ % Then the LED is off
+                self.NumberOfScansSinceLEDTurnedOff_ = self.NumberOfScansSinceLEDTurnedOff_ + nScans;
+                if self.NumberOfScansSinceLEDTurnedOff_ > self.NumberOfScansToWaitBeforeTurningLEDBackOn_ % Then it has been off for enough time
+                    % Need to check if the fly is moving forward before deciding
+                    % if we can turn the LED on;
+                    isInFrontend = false;
+                    self.analyzeFlyLocomotion_(analogData, isInFrontend);
+                    % analyzeFlyLocomotion gives us the recent forward
+                    % displacement of the fly.
+                    if any(self.ForwardDisplacementRecent_>0) % Then fly is moving forward, and LED *may* be turned on
+                        if rand()>0.5 % self.ShouldLEDBeTurnedOnThisTime_ % Use this variable to turn on the LED every other time the condition is met. If want random, replace "self.ShouldLEDBeTurnedOnThisTime_" with "rand()>0.5"
+                            % Then we can turn on the LED this time
+                            turnOnOrOff = 1;
+                            self.setLEDState(looper,turnOnOrOff);
+                            self.NumberOfScansSinceLEDTurnedOn_=0;
+                            self.IsLEDOn_ = true;
+                            totalElapsedTime = self.TotalScansCollectedBySamplesAcquired_/looper.Acquisition.SampleRate;
+                            fprintf('In Sweep %d, LED turned on at time: %f \n', looper.NSweepsCompletedInThisRun+1, totalElapsedTime - looper.NSweepsCompletedInThisRun*looper.SweepDuration);
+                            self.ShouldLEDBeTurnedOnThisTime_ = false; % Toggle this, so we don't turn the LED the next time the condition is met
+                        else
+                            % Then the fly was moving forward and the
+                            % desired time elapsed, but we we didn't want
+                            % to turn on the LED this time. Reset variables
+                            % so we do it the next time.
+                            self.ShouldLEDBeTurnedOnThisTime_ = true;
+                            self.NumberOfScansSinceLEDTurnedOff_ = 0;
+                        end
+                    end
+                end
+            else
+                self.NumberOfScansSinceLEDTurnedOn_ = self.NumberOfScansSinceLEDTurnedOn_ + nScans;
+                if self.NumberOfScansSinceLEDTurnedOn_ > self.NumberOfScansForLEDToBeOn_
+                    turnOnOrOff = 0;
+                    self.setLEDState(looper,turnOnOrOff);
+                    self.IsLEDOn_ = false;
+                    self.NumberOfScansSinceLEDTurnedOff_ = 0;
+                    totalElapsedTime = self.TotalScansCollectedBySamplesAcquired_/looper.Acquisition.SampleRate;
+                    fprintf('In Sweep %d, LED turned off at time: %f \n', looper.NSweepsCompletedInThisRun+1, totalElapsedTime - looper.NSweepsCompletedInThisRun*looper.SweepDuration);
+                end
+            end
+            %             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
+            %             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
+        end
+        
+        function setLEDState(self, looper, onOrOff)
+            % Will set the LED to the opposite state than it currently is
+            digitalOutputStateIfUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
+            desiredDigitalOutputStateIfUntimed = digitalOutputStateIfUntimed ;
+            desiredDigitalOutputStateIfUntimed(self.LEDDigitalOutputChannelIndex_) = onOrOff ;
+            isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
+            desiredOutputForEachUntimedDigitalOutputChannel = desiredDigitalOutputStateIfUntimed(isDOChannelUntimed) ;
+            looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDigitalOutputChannel) ;
         end
         
         % These methods are called in the refiller process
@@ -568,7 +641,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             end
         end
         
-        function analyzeFlyLocomotion_(self, data)
+        function analyzeFlyLocomotion_(self, data, isInFrontend)
             % This function quantifies the locomotor activity of the fly
             % and updates the key parameters used by the subsequent
             % functions. It was provided by Stephanie Wegener, but has been
@@ -606,7 +679,7 @@ classdef FlyLocomotionLiveUpdatingBaseClass < ws.UserClass
             %displacement of the fly as computed from ball tracker readout in mm
             self.ForwardDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) + inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
             self.BarPositionWrappedRecent_ = self.circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
-            if strcmp(self.RootModelType_,'ws.WavesurferModel') % do not need to do this in looper, helps save time
+            if isInFrontend % do not need to do this in looper, helps save time
                 
                 %  self.SideDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) - inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
                 self.RotationalDisplacementRecent_ =(inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
