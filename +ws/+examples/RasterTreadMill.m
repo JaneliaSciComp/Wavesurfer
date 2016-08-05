@@ -19,6 +19,7 @@ classdef RasterTreadMill < ws.UserClass
 
     % local variables
     properties (Access = protected, Transient = true)
+        Parent_
         BinWidth
         BinCenters
         SampleRate
@@ -52,22 +53,15 @@ classdef RasterTreadMill < ws.UserClass
         LastLED
     end
     
-    methods
-        
-        function self = RasterTreadMill(wsModel)
-            if isa(wsModel,'ws.WavesurferModel') ,
-                % Only want this to happen in the frontend, not the looper
-                % or refiller
-                self.SampleRate = wsModel.Acquisition.SampleRate;
-                self.BinWidth = self.TreadMillLength / self.NBins;
-                self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
-                self.syncRasterFigAndAxes_(wsModel) ;
-                self.syncLatencyFigAndAxes_() ;
-            end
+    methods        
+        function self = RasterTreadMill(userCodeManager)
+            fprintf('RasterTreadMill::RasterTreadMill()\n') ;
+            self.Parent_ = userCodeManager ;
+            self.synchronizeTransientStateToPersistentState_() ;
         end
         
         function delete(self)
-            %fprintf('RasterTreadMill::delete()\n') ;
+            fprintf('RasterTreadMill::delete()\n') ;
             if ~isempty(self.RasterFig) ,
                 if ishghandle(self.RasterFig) ,
                     close(self.RasterFig) ;
@@ -80,6 +74,7 @@ classdef RasterTreadMill < ws.UserClass
                 end
                 self.LatencyFig = [] ;
             end                
+            self.Parent_ = [] ;
         end
         
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
@@ -95,11 +90,7 @@ classdef RasterTreadMill < ws.UserClass
         end
         
         function startingRun(self,wsModel,eventName) %#ok<INUSD>
-            self.SampleRate = wsModel.Acquisition.SampleRate;
-            self.BinWidth = self.TreadMillLength / self.NBins;
-            self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
-            self.syncRasterFigAndAxes_(wsModel) ;
-            self.syncLatencyFigAndAxes_() ;            
+            self.synchronizeTransientStateToPersistentState_() ;
             
             % Initialize the pre-run variables
             self.Lap=1;
@@ -412,6 +403,21 @@ classdef RasterTreadMill < ws.UserClass
             self.ElectrodeLines = zeros(1,0) ; 
             self.LaserLines = zeros(1,0) ;             
         end        
+    end
+    
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistentState_(self)
+            rootModel = self.Parent_.Parent ;
+            if isa(rootModel,'ws.WavesurferModel') ,
+                self.SampleRate = rootModel.Acquisition.SampleRate;
+                self.BinWidth = self.TreadMillLength / self.NBins;
+                self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
+                if rootModel.IsITheOneTrueWavesurferModel ,
+                    self.syncRasterFigAndAxes_(rootModel) ;
+                    self.syncLatencyFigAndAxes_() ;
+                end
+            end
+        end
     end
     
     methods (Static=true)
