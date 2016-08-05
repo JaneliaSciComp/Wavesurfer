@@ -28,7 +28,7 @@ classdef UserCodeManager < ws.Subsystem
             self.IsEnabled=true;            
         end  % function
 
-        function delete(self)
+        function delete(self) %#ok<INUSD>
             %keyboard
         end
         
@@ -92,7 +92,7 @@ classdef UserCodeManager < ws.Subsystem
 %             self.broadcast('Update');
 %         end  % function
 
-        function startingRun(self)
+        function startingRun(self) %#ok<MANU>
 %             % Instantiate a user object, if one doesn't already exist
 %             if isempty(self.TheObject_) ,
 %                 exception = self.tryToInstantiateObject_() ;
@@ -161,7 +161,46 @@ classdef UserCodeManager < ws.Subsystem
 %        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
 %             self.invoke(self.Parent,'samplesAcquired');
 %        end
-    end  % methods
+
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if isequal(thisPropertyName,'TheObject_') ,                    
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
+                    target = self.(thisPropertyName) ;
+                    if ~isempty(target)
+                        target.delete() ;  % want to explicitly delete the old user object                        
+                    end
+                    if isempty(source) ,
+                        newUserObject = [] ;
+                    else
+                        newUserObject = source.copyGivenParent(self) ;
+                    end
+                    self.setPropertyValue_(thisPropertyName, newUserObject) ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
+        end  % function
+    end  % public methods block
        
     methods (Access=protected)
         function exception = tryToInstantiateObject_(self)
@@ -184,7 +223,7 @@ classdef UserCodeManager < ws.Subsystem
             else
                 % className is non-empty
                 try 
-                    newObject = feval(className,self.Parent) ;  % if this fails, self will still be self-consistent
+                    newObject = feval(className,self) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
                 catch exception
                     didSucceed = false ;
