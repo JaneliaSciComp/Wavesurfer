@@ -223,7 +223,7 @@ classdef UserCodeManager < ws.Subsystem
             else
                 % className is non-empty
                 try 
-                    newObject = feval(className,self.Parent) ;  % if this fails, self will still be self-consistent
+                    newObject = feval(className,self) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
                 catch exception
                     didSucceed = false ;
