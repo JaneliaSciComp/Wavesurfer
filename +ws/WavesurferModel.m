@@ -2691,6 +2691,12 @@ classdef WavesurferModel < ws.RootModel
             %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
         end
         
+        function propNames = listPropertiesForCheckingIndependence(self)
+            % Define a helper function
+            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
+            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
+        end
+        
         function debug(self) %#ok<MANU>
             keyboard
         end
