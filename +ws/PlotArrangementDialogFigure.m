@@ -13,17 +13,16 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
         
         % Other things
         ChannelNames_  % the names of the channels
-        IsDisplayed_
-        PlotHeights_
-        RowIndexFromChannelIndex_  
-          % the order the plots are displayed in.
-          % self.ChannelNames_{self.PlotOrdinality(1)} is at the top,
-          % self.ChannelNames_{self.PlotOrdinality(2)} next, etc.
+        IsDisplayed_  % indexed by the *channel* index
+        PlotHeights_  % indexed by the *channel* index
+        RowIndexFromChannelIndex_  % indexed by the *channel* index, of course
+        ChannelIndexFromRowIndex_  % indexed by the row index, of course.  Must be kept in sync with RowIndexFromChannelIndex_
         CallbackFunction_
     end
     
     methods
-        function self = PlotArrangementDialogFigure(model, parentFigurePosition, channelNames, isDisplayed, plotHeights, plotOrdinality, callbackFunction)
+        function self = PlotArrangementDialogFigure(model, parentFigurePosition, channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
+                                                    callbackFunction)
             % Call the super-class consructor
             self = self@ws.MCOSFigureWithSelfControl(model) ;
             
@@ -31,7 +30,8 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             self.ChannelNames_ = channelNames ;
             self.IsDisplayed_ = isDisplayed ;
             self.PlotHeights_ = plotHeights ;
-            self.RowIndexFromChannelIndex_ = plotOrdinality ;
+            self.RowIndexFromChannelIndex_ = rowIndexFromChannelIndex ;
+            self.ChannelIndexFromRowIndex_ = ws.invertPermutation(rowIndexFromChannelIndex) ;
             self.CallbackFunction_ = callbackFunction ;
             
             % Set the relevant properties of the figure itself
@@ -88,45 +88,55 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             
             % Preallocate arrays of graphics objects
             channelNames = self.ChannelNames_ ;
-            nPlots = length(channelNames) ;
-            self.ChannelNameTexts_ = gobjects(1,nPlots) ;
-            self.IsDisplayedCheckboxes_ = gobjects(1,nPlots) ;
-            self.PlotHeightEdits_ = gobjects(1,nPlots) ;
-            self.MoveUpButtons_ = gobjects(1,nPlots) ;
-            self.MoveDownButtons_ = gobjects(1,nPlots) ;
+            nChannels = length(channelNames) ;
+            nRows = nChannels ;
+            self.ChannelNameTexts_ = gobjects(1,nRows) ;
+            self.IsDisplayedCheckboxes_ = gobjects(1,nRows) ;
+            self.PlotHeightEdits_ = gobjects(1,nRows) ;
+            self.MoveUpButtons_ = gobjects(1,nRows) ;
+            self.MoveDownButtons_ = gobjects(1,nRows) ;
             
             % Create all the one-per-channel widgets
-            for i = 1:nPlots ,  % i the channel index
-                self.ChannelNameTexts_(i) = ...
+            channelIndexFromRowIndex = self.ChannelIndexFromRowIndex_ ;
+            for iRow = 1:nRows ,  % i the channel index
+                iChannel = channelIndexFromRowIndex(iRow) ;
+                self.ChannelNameTexts_(iRow) = ...
                     ws.uicontrol('Parent',self.FigureGH_, ...
                                  'Style','text', ...
-                                 'String',sprintf('%s:',channelNames{i}), ...
+                                 'String',sprintf('%s:',channelNames{iChannel}), ...
                                  'HorizontalAlignment','right', ...
-                                 'Tag',sprintf('ChannelNameTexts_(%d)',i) ) ;
-                self.IsDisplayedCheckboxes_(i) = ...
+                                 'Tag',sprintf('ChannelNameTexts_(%d)',iRow) ) ;
+                self.IsDisplayedCheckboxes_(iRow) = ...
                     ws.uicontrol('Parent',self.FigureGH_, ...
                                  'Style','checkbox', ...
-                                 'Tag',sprintf('IsDisplayedCheckboxes_(%d)',i), ...
-                                 'Callback',@(source,event)(self.controlActuated('isDisplayedCheckbox',source,event,i)) ) ;
-                self.PlotHeightEdits_(i) = ...
+                                 'Tag',sprintf('IsDisplayedCheckboxes_(%d)',iRow), ...
+                                 'Callback',@(source,event)(self.controlActuated('isDisplayedCheckbox',source,event,iRow)) ) ;
+                self.PlotHeightEdits_(iRow) = ...
                     ws.uiedit('Parent',self.FigureGH_, ...
-                              'Tag',sprintf('PlotHeightEdits_(%d)',i), ...
+                              'Tag',sprintf('PlotHeightEdits_(%d)',iRow), ...
                               'HorizontalAlignment','right', ...
-                              'Callback',@(source,event)(self.controlActuated('plotHeightEdit',source,event,i)) ) ;
-                self.MoveUpButtons_(i) = ...
+                              'Callback',@(source,event)(self.controlActuated('plotHeightEdit',source,event,iRow)) ) ;
+                self.MoveUpButtons_(iRow) = ...
                     ws.uicontrol('Parent',self.FigureGH_, ...
                                  'Style','pushbutton', ...
-                                 'Tag',sprintf('MoveUpButtons_(%d)',i), ...
+                                 'Tag',sprintf('MoveUpButtons_(%d)',iRow), ...
                                  'CData',upIcon, ...
-                                 'Callback',@(source,event)(self.controlActuated('moveUpButton',source,event,i)) ) ;
-                self.MoveDownButtons_(i) = ...
+                                 'Callback',@(source,event)(self.controlActuated('moveUpButton',source,event,iRow)) ) ;
+                self.MoveDownButtons_(iRow) = ...
                     ws.uicontrol('Parent',self.FigureGH_, ...
                                  'Style','pushbutton', ...
-                                 'Tag',sprintf('MoveDownButtons_(%d)',i), ...
+                                 'Tag',sprintf('MoveDownButtons_(%d)',iRow), ...
                                  'CData',downIcon, ...
-                                 'Callback',@(source,event)(self.controlActuated('moveDownButton',source,event,i)) ) ;
+                                 'Callback',@(source,event)(self.controlActuated('moveDownButton',source,event,iRow)) ) ;
             end
 
+            % Disable two of the buttons, which will stay disabled for
+            % their whole life.  (Sniff.)
+            if nRows>0 ,
+                set(self.MoveUpButtons_(1)    , 'Enable', 'off') ;
+                set(self.MoveDownButtons_(end), 'Enable', 'off') ;
+            end
+            
             % Create the OK and Cancel buttons
             self.OKButton_ = ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
@@ -145,9 +155,9 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
         end  % function
 
         function layout_(self)
-            % Layout the figure elements
-            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
-            channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
+            % Layout the figure elements            
+            %rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            %channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
             nChannels = length(self.ChannelNames_) ;
             nRows = nChannels ;
             titleRowHeight=18;
@@ -224,14 +234,13 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
                 else
                     yOffsetOfThisRow = yOffsetOfThisRow - (interRowHeight+rowHeight) ;
                 end
-                iChannel = channelIndexFromRowIndex(iRow) ;
                 ws.centerTextVerticallyWithinRectangleBang( ...
-                    self.ChannelNameTexts_(iChannel)     ,             [channelColXOffset  yOffsetOfThisRow channelColWidth     rowHeight] ) ;
+                    self.ChannelNameTexts_(iRow)     ,             [channelColXOffset  yOffsetOfThisRow channelColWidth     rowHeight] ) ;
                 ws.centerCheckboxWithinRectangleBang( ...
-                    self.IsDisplayedCheckboxes_(iChannel),             [checkboxColXOffset yOffsetOfThisRow isDisplayedColWidth rowHeight] ) ;
-                set(self.PlotHeightEdits_(iChannel)      , 'Position', [editXOffset        yOffsetOfThisRow plotSizeEditWidth   plotSizeEditHeight] ) ;
-                set(self.MoveUpButtons_(iChannel)        , 'Position', [upButtonXOffset    yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
-                set(self.MoveDownButtons_(iChannel)      , 'Position', [downButtonXOffset  yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
+                    self.IsDisplayedCheckboxes_(iRow),             [checkboxColXOffset yOffsetOfThisRow isDisplayedColWidth rowHeight] ) ;
+                set(self.PlotHeightEdits_(iRow)      , 'Position', [editXOffset        yOffsetOfThisRow plotSizeEditWidth   plotSizeEditHeight] ) ;
+                set(self.MoveUpButtons_(iRow)        , 'Position', [upButtonXOffset    yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
+                set(self.MoveDownButtons_(iRow)      , 'Position', [downButtonXOffset  yOffsetOfThisRow upDownButtonSize    upDownButtonSize] ) ;
             end
 
             % Layout the bottom buttons
@@ -286,12 +295,14 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
 %     end 
         
     methods
-        function isDisplayedCheckboxActuated(self, source, event, channelIndex)  %#ok<INUSL>
+        function isDisplayedCheckboxActuated(self, source, event, rowIndex)  %#ok<INUSL>            
+            channelIndex = self.ChannelIndexFromRowIndex_(rowIndex) ;
             self.IsDisplayed_(channelIndex) = get(source, 'Value') ;
             self.updateControlProperties_() ;
         end  % function
         
-        function plotHeightEditActuated(self, source, event, channelIndex)  %#ok<INUSL>
+        function plotHeightEditActuated(self, source, event, rowIndex)  %#ok<INUSL>
+            channelIndex = self.ChannelIndexFromRowIndex_(rowIndex) ;
             newValueAsString = get(source, 'String') ;
             newValueAsDouble = str2double(newValueAsString) ;            
             if isnan(newValueAsDouble) ,
@@ -299,7 +310,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             else
                 if isreal(newValueAsDouble) && newValueAsDouble>=0.09 ,
                     newValueRounded = round(10*newValueAsDouble)/10 ;  % want 10* the value to be an integer
-                    self.PlotHeightEdits_(channelIndex) = newValueRounded ;
+                    self.PlotHeights_(channelIndex) = newValueRounded ;
                 else
                     % Value is complex, or negative, or zero, or too small
                     % to bother with, so ignore.
@@ -308,22 +319,22 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             self.updateControlProperties_() ;
         end  % function
 
-        function moveUpButtonActuated(self, source, event, channelIndex)  %#ok<INUSL>
+        function moveUpButtonActuated(self, source, event, rowIndex)  %#ok<INUSL>
             % Swap the row corresponding to channelIndex with the row just
             % above it visually.  I.e. if channelIndex corresponds to
             % rowIndex, want to swap rowIndex with rowIndex-1.  This is
             % slightly tricky b/c we need to determine the channel index
             % corresponding to rowIndex-1.
-            self.swapRows_(channelIndex, -1) ;
+            self.swapRows_(rowIndex, -1) ;
         end  % function
 
-        function moveDownButtonActuated(self, source, event, channelIndex)  %#ok<INUSL>
+        function moveDownButtonActuated(self, source, event, rowIndex)  %#ok<INUSL>
             % Swap the row corresponding to channelIndex with the row just
             % above it visually.  I.e. if channelIndex corresponds to
             % rowIndex, want to swap rowIndex with rowIndex+1.  This is
             % slightly tricky b/c we need to determine the channel index
             % corresponding to rowIndex-1.
-            self.swapRows_(channelIndex, +1) ;
+            self.swapRows_(rowIndex, +1) ;
         end  % function
         
         function okButtonActuated(self,source,event) 
@@ -364,50 +375,52 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             channelNames = self.ChannelNames_ ;
             isDisplayed = self.IsDisplayed_ ;
             plotHeights = self.PlotHeights_ ;
-            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            %rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            channelIndexFromRowIndex = self.ChannelIndexFromRowIndex_ ;
             
             % Set the content of each widget
-            nChannels = length(self.ChannelNames_) ;
-            for iChannel = 1:nChannels ,
-                iRow = rowIndexFromChannelIndex(iChannel) ;
+            nRows = length(channelIndexFromRowIndex) ;
+            for iRow = 1:nRows ,
+                iChannel = channelIndexFromRowIndex(iRow) ;
                 set(self.ChannelNameTexts_(iRow), 'String', channelNames{iChannel}) ;
                 set(self.IsDisplayedCheckboxes_(iRow), 'Value', isDisplayed(iChannel) ) ;
                 set(self.PlotHeightEdits_(iRow), 'String', sprintf('%g', plotHeights(iChannel) ) ) ;
             end
         end
         
-        function updateControlEnablementImplementation_(self, varargin)
-            % Get props out of self
-            channelNames = self.ChannelNames_ ;
-            %isDisplayed = self.IsDisplayed_ ;
-            %plotHeights = self.PlotHeights_ ;
-            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
-
-            % Invert the channel->row mapping
-            channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;   
-            
-            % Turn off the top move up button, the bottom move down button
-            nChannels = length(channelNames) ;
-            set(self.MoveUpButtons_(  channelIndexFromRowIndex(2:end    )), 'Enable', 'on' ) ;
-            set(self.MoveUpButtons_(  channelIndexFromRowIndex(1        )), 'Enable', 'off') ;
-            set(self.MoveDownButtons_(channelIndexFromRowIndex(1:end-1  )), 'Enable', 'on' ) ;
-            set(self.MoveDownButtons_(channelIndexFromRowIndex(nChannels)), 'Enable', 'off') ;
+        function updateControlEnablementImplementation_(self, varargin) %#ok<INUSD>
+%             % Get props out of self
+%             channelNames = self.ChannelNames_ ;
+%             %isDisplayed = self.IsDisplayed_ ;
+%             %plotHeights = self.PlotHeights_ ;
+%             rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+% 
+%             % Invert the channel->row mapping
+%             channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;   
+%             
+%             % Turn off the top move up button, the bottom move down button
+%             nChannels = length(channelNames) ;
+%             set(self.MoveUpButtons_(  channelIndexFromRowIndex(1        )), 'Enable', 'off') ;
+%             set(self.MoveUpButtons_(  channelIndexFromRowIndex(2:end    )), 'Enable', 'on' ) ;
+%             set(self.MoveDownButtons_(channelIndexFromRowIndex(1:end-1  )), 'Enable', 'on' ) ;
+%             set(self.MoveDownButtons_(channelIndexFromRowIndex(nChannels)), 'Enable', 'off') ;
         end
         
-        function swapRows_(self, channelIndex, delta)
-            % Swap the row indicated by channelIndex with the row above (when delta==-1) or
+        function swapRows_(self, rowIndex, delta)
+            % Swap the row indicated by rowIndex with the row above (when delta==-1) or
             % below (when delta==+1) it.  Delta must be -1 or +1.
-            rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
-            rowIndex = rowIndexFromChannelIndex(channelIndex) ;
+            channelIndexFromRowIndex = self.ChannelIndexFromRowIndex_ ;
+            %rowIndexFromChannelIndex = self.RowIndexFromChannelIndex_ ;
+            %rowIndex = rowIndexFromChannelIndex(channelIndex) ;
             otherRowIndex = rowIndex + delta ;
-            nRows = length(rowIndexFromChannelIndex) ;  % number of channels, also number of rows
+            nRows = length(channelIndexFromRowIndex) ;  % number of channels, also number of rows
             if 1<=otherRowIndex && otherRowIndex<=nRows ,
-                channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
-                otherChannelIndex = channelIndexFromRowIndex(otherRowIndex) ;
-                newRowIndexFromChannelIndex = ws.swapElementsInPermutation(rowIndexFromChannelIndex, channelIndex, otherChannelIndex) ;
+                newChannelIndexFromRowIndex = ws.swapElementsInPermutation(channelIndexFromRowIndex, rowIndex, otherRowIndex) ;
+                newRowIndexFromChannelIndex = ws.invertPermutation(newChannelIndexFromRowIndex) ;
                 self.RowIndexFromChannelIndex_ = newRowIndexFromChannelIndex ;
+                self.ChannelIndexFromRowIndex_ = newChannelIndexFromRowIndex ;
             end
-            self.update_() ;            
+            self.updateControlProperties_() ;            
         end
     end
 end  % classdef
