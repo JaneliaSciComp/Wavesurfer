@@ -37,6 +37,7 @@ classdef WavesurferModel < ws.RootModel
         State
         VersionString
         %DeviceName
+        IsITheOneTrueWavesurferModel
     end
     
     %
@@ -870,6 +871,10 @@ classdef WavesurferModel < ws.RootModel
 
         function value=get.IsYokedToScanImage(self)
             value = self.IsYokedToScanImage_ ;
+        end  % function        
+        
+        function value=get.IsITheOneTrueWavesurferModel(self)
+            value = self.IsITheOneTrueWavesurferModel_ ;
         end  % function        
         
         function willPerformTestPulse(self)
@@ -2689,6 +2694,12 @@ classdef WavesurferModel < ws.RootModel
             %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
             %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
             %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
+        end
+        
+        function propNames = listPropertiesForCheckingIndependence(self)
+            % Define a helper function
+            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
+            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
         end
         
         function debug(self) %#ok<MANU>

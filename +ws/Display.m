@@ -587,7 +587,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.YData_ = zeros(0,nActiveChannels) ;
         end
         
-        function indicesOfAIChannelsNeedingYLimitUpdate = addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate, xOffset)
+        function indicesOfAIChannelsNeedingYLimitUpdate = addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate)
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
@@ -646,11 +646,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.XData_ = xNew ;
             self.YData_ = yNew ;
             
-            % Update the x offset in the scope to match that in the Display
-            % subsystem
-            if xOffset ~= self.XOffset , 
-                self.XOffset = xOffset ;
-            end
+%             % Update the x offset in the scope to match that in the Display
+%             % subsystem
+%             fprintf('xOffset: %20g     self.XOffset: %20g\n', xOffset, self.XOffset) ;
+%             if xOffset ~= self.XOffset , 
+%                 fprintf('About to change x offset\n') ;
+%                 self.XOffset = xOffset ;
+%             end
             
             % Change the y limits to match the data, if appropriate
             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
@@ -681,11 +683,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     xOffsetNudged=tNudged-self.XSpan;
                     if xOffsetNudged>self.XOffset ,
                         self.XOffset_=xOffsetNudged;
+                        self.broadcast('UpdateXOffset') ;
                     end
                 end
 
                 % Add the data
-                indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate, self.XOffset_) ;
+                indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate) ;
                 self.broadcast('UpdateData');       
                 self.broadcast('UpdateYAxisLimits', indicesOfAIChannelsNeedingYLimitUpdate) ;
             else
