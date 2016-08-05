@@ -37,6 +37,7 @@ classdef WavesurferModel < ws.RootModel
         State
         VersionString
         %DeviceName
+        IsITheOneTrueWavesurferModel
     end
     
     %
@@ -870,6 +871,10 @@ classdef WavesurferModel < ws.RootModel
 
         function value=get.IsYokedToScanImage(self)
             value = self.IsYokedToScanImage_ ;
+        end  % function        
+        
+        function value=get.IsITheOneTrueWavesurferModel(self)
+            value = self.IsITheOneTrueWavesurferModel_ ;
         end  % function        
         
         function willPerformTestPulse(self)
