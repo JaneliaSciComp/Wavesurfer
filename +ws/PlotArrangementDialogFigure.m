@@ -388,7 +388,9 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             
             % Turn off the top move up button, the bottom move down button
             nChannels = length(channelNames) ;
+            set(self.MoveUpButtons_(  channelIndexFromRowIndex(2:end    )), 'Enable', 'on' ) ;
             set(self.MoveUpButtons_(  channelIndexFromRowIndex(1        )), 'Enable', 'off') ;
+            set(self.MoveDownButtons_(channelIndexFromRowIndex(1:end-1  )), 'Enable', 'on' ) ;
             set(self.MoveDownButtons_(channelIndexFromRowIndex(nChannels)), 'Enable', 'off') ;
         end
         
