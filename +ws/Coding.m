@@ -3,10 +3,7 @@ classdef (Abstract) Coding < handle
     methods
         function propNames = listPropertiesForCheckingIndependence(self)
             % Define a helper function
-            doesNeedToBeChecked = @(x)(~x.Dependent && ~x.Constant) ;
-
-            % Actually get the prop names that satisfy the predicate
-            propNames = self.propertyNamesSatisfyingPredicate_(doesNeedToBeChecked);
+            propNames = self.listPropertiesForPersistence() ;
         end
         
         function propNames = listPropertiesForPersistence(self)
@@ -77,7 +74,7 @@ classdef (Abstract) Coding < handle
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
+                thisPropertyName=propertyNames{i} ;
                 if isequal(thisPropertyName, 'Parent_') ,
                     % skip to avoid infinite recursion
                 else
@@ -89,7 +86,7 @@ classdef (Abstract) Coding < handle
                                 fprintf('Failure for property %s\n',thisPropertyName) ;
                                 result = false ;
                                 return
-                            else                                
+                            elseif isa(selfProperty, 'ws.Coding') ,                                
                                 isThisPropertyIndependent = selfProperty.isIndependentFrom(otherProperty) ;
                                 if isThisPropertyIndependent ,
                                     % these are independent, so keep checking...
@@ -99,6 +96,8 @@ classdef (Abstract) Coding < handle
                                     result = false ;
                                     return
                                 end
+                            else
+                                fprintf('Assuming independence of two objects of class %s and %s.\n', class(selfProperty), class(otherProperty)) ;
                             end
                         else
                             % source is a value, so must be independent, so nothing
