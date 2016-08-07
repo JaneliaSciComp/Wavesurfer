@@ -338,6 +338,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
         end  % function
         
         function okButtonActuated(self,source,event) 
+            feval(self.CallbackFunction_, self.IsDisplayed_, self.PlotHeights_, self.RowIndexFromChannelIndex_) ;
 %             yMaxAsString=get(self.YMaxEdit_,'String');
 %             yMinAsString=get(self.YMinEdit_,'String');
 %             yMax=str2double(yMaxAsString);

@@ -21,6 +21,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         NScopes
         XData
         YData
+        AnalogChannelHeights  % 1 x nAIChannels
+        DigitalChannelHeights  % 1 x nDIChannels
+        RowIndexFromAnalogChannelIndex  % 1 x nAIChannels
+        RowIndexFromDigitalChannelIndex  % 1 x nDIChannels
     end
 
     properties (Access = protected)
@@ -37,6 +41,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsDigitalChannelDisplayed_  % 1 x nDIChannels
         AreYLimitsLockedTightToDataForAnalogChannel_  % 1 x nAIChannels
         YLimitsPerAnalogChannel_  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
+        AnalogChannelHeights_  % 1 x nAIChannels
+        DigitalChannelHeights_  % 1 x nDIChannels
+        RowIndexFromAnalogChannelIndex_  % 1 x nAIChannels
+        RowIndexFromDigitalChannelIndex_  % 1 x nDIChannels
     end
     
     properties (Access = protected, Transient=true)
@@ -62,9 +70,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     methods
         function self = Display(parent)
             self@ws.Subsystem(parent) ;
-            self.XOffset_ = 0;  % s
-            self.XSpan_ = 1;  % s
-            self.UpdateRate_ = 10;  % Hz
+            self.XOffset_ = 0 ;  % s
+            self.XSpan_ = 1 ;  % s
+            self.UpdateRate_ = 10 ;  % Hz
             self.XAutoScroll_ = false ;
             self.IsXSpanSlavedToAcquistionDuration_ = true ;
             self.IsAnalogChannelDisplayed_ = true(1,0) ; % 1 x nAIChannels
@@ -72,6 +80,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = false(1,0) ; % 1 x nAIChannels
             self.YLimitsPerAnalogChannel_ = zeros(2,0) ; % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit            
             self.XSpanInPixels_ = 400 ;  % for when we're running headless, this is a reasonable fallback value
+            self.AnalogChannelHeights_ = zeros(1,0) ;
+            self.DigitalChannelHeights_ = zeros(1,0) ;
+            self.RowIndexFromAnalogChannelIndex_ = zeros(1,0) ;  % 1 x nAIChannels
+            self.RowIndexFromDigitalChannelIndex_ = zeros(1,0) ;  % 1 x nDIChannels            
         end
         
         function delete(self)  %#ok<INUSD>
@@ -143,6 +155,22 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function result = get.IsDigitalChannelDisplayed(self)
             result = self.IsDigitalChannelDisplayed_ ;
+        end
+
+        function result= get.AnalogChannelHeights(self)
+            result = self.AnalogChannelHeights_ ;
+        end
+        
+        function result= get.DigitalChannelHeights(self)
+            result = self.DigitalChannelHeights_ ;
+        end
+        
+        function result= get.RowIndexFromAnalogChannelIndex(self)
+            result = self.RowIndexFromAnalogChannelIndex_ ;
+        end
+        
+        function result= get.RowIndexFromDigitalChannelIndex(self)
+            result = self.RowIndexFromDigitalChannelIndex_ ;
         end
         
         function value = get.UpdateRate(self)
@@ -291,12 +319,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = horzcat(self.IsAnalogChannelDisplayed_, true) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = horzcat(self.AreYLimitsLockedTightToDataForAnalogChannel_, false) ;
             self.YLimitsPerAnalogChannel_ = horzcat(self.YLimitsPerAnalogChannel_, [-10 +10]') ;
+            self.AnalogChannelHeights_ = horzcat(self.AnalogChannelHeights_, 1) ;
+            nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
+            self.RowIndexFromAnalogChannelIndex_ = horzcat(self.RowIndexFromAnalogChannelIndex_, nRowsBefore+1) ;
             self.clearData_() ;
             self.broadcast('Update') ;
         end
         
         function didAddDigitalInputChannel(self)
             self.IsDigitalChannelDisplayed_(1,end+1) = true ;
+            self.DigitalChannelHeights_ = horzcat(self.DigitalChannelHeights_, 1) ;
+            nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
+            self.RowIndexFromDigitalChannelIndex_ = horzcat(self.RowIndexFromDigitalChannelIndex_, nRowsBefore+1) ;
             self.clearData_() ;
             self.broadcast('Update') ;            
         end
@@ -306,6 +340,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = self.IsAnalogChannelDisplayed_(wasKept) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = self.AreYLimitsLockedTightToDataForAnalogChannel_(wasKept) ;
             self.YLimitsPerAnalogChannel_ = self.YLimitsPerAnalogChannel_(:,wasKept) ;
+            self.AnalogChannelHeights_ = self.AnalogChannelHeights_(wasKept) ;
+            self.RowIndexFromAnalogChannelIndex_ = self.RowIndexFromAnalogChannelIndex_(wasKept) ;
+            [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+                ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
             self.clearData_() ;
             self.broadcast('Update') ;            
         end
@@ -313,6 +351,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function didDeleteDigitalInputChannels(self, wasDeleted)            
             wasKept = ~wasDeleted ;
             self.IsDigitalChannelDisplayed_ = self.IsDigitalChannelDisplayed_(wasKept) ;
+            self.DigitalChannelHeights_ = self.DigitalChannelHeights_(wasKept) ;
+            self.RowIndexFromDigitalChannelIndex_ = self.RowIndexFromDigitalChannelIndex_(wasKept) ;
+            [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+                ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
             self.clearData_() ;
             self.broadcast('Update') ;            
         end
@@ -527,7 +569,30 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % underscore.
             self.clearData_() ;
             self.broadcast('UpdateData') ;
-        end        
+        end
+        
+        function setPlotHeightsAndOrder_(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
+            % Typically called by ws.PlotArrangementDialogFigure after OK
+            % button is pressed.  Does no argument checking.
+            nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
+            %nDIChannels = length(self.IsDigitalChannelDisplayed_) ;
+            %nChannels = nAIChannels + nDIChannels ;
+%             if islogical(isDisplayed) && isequal(size(isDisplayed),[1 nChannels]) && ...
+%                isdouble(plotHeights) && isreal(plotHeights) && isequal(size(plotHeights),[1 nChannels]) && all(plotHeights>=0.1)&& ...     
+%                isdouble(rowIndexFromChannelIndex) && isreal(rowIndexFromChannelIndex) && isequal(size(rowIndexFromChannelIndex),[1 nChannels]) ,
+%                 % Normalize plotHeights, rowIndexFromChannelIndex
+%                 plotHeights = round(10*plotHeights)/10 ;
+%                 [~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex,'stable') ;
+%                 rowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
+            % Set properties
+            self.IsAnalogChannelDisplayed_ = isDisplayed(1:nAIChannels) ;
+            self.IsDigitalChannelDisplayed_ = isDisplayed(nAIChannels+1:end) ;
+            self.AnalogChannelHeights_ = plotHeights(1:nAIChannels) ;
+            self.DigitalChannelHeights_ = plotHeights(nAIChannels+1:end) ;
+            self.RowIndexFromAnalogChannelIndex_ = rowIndexFromChannelIndex(1:nAIChannels) ;
+            self.RowIndexFromDigitalChannelIndex_ = rowIndexFromChannelIndex(nAIChannels+1:end) ;
+            self.broadcast('Update') ;            
+        end
     end  % public methods block
     
     methods (Access=protected)        
@@ -794,9 +859,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.sanitizeRowVectorLength(self.AreYLimitsLockedTightToDataForAnalogChannel_, nAIChannels, false) ;
             self.YLimitsPerAnalogChannel_ = ...
                 ws.Display.sanitizeYLimitsArrayLength(self.YLimitsPerAnalogChannel_, nAIChannels, [-10 +10]') ;
+            self.AnalogChannelHeights_  = ...
+                ws.sanitizeRowVectorLength(self.AnalogChannelHeights_, nAIChannels, 1) ;
             
             nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
             self.IsDigitalChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelDisplayed_, nDIChannels, true) ;            
+            self.DigitalChannelHeights_  = ...
+                ws.sanitizeRowVectorLength(self.DigitalChannelHeights_, nDIChannels, 1) ;
+
+            % The analog row indices have to be fixed using
+            % knowledge of the digital row indices, and vice-versa
+            [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+                ws.Display.sanitizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_, nAIChannels, nDIChannels) ;
             
             self.clearData_() ;  % This will ensure that the size of YData is appropriate
         end
@@ -899,6 +973,29 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
     
+        function [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
+                renormalizeRowIndices(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex)
+            % Used, e.g. after channel deletion, to maintain the ordering
+            % of the row indices, but eliminate any gaps, so that the go
+            % from 1 to the number of channels.
+            nAIChannels = length(rowIndexFromAnalogChannelIndex) ;
+            nDIChannels = length(rowIndexFromDigitalChannelIndex) ;
+            nChannels = nAIChannels + nDIChannels ;
+            rowIndexFromChannelIndex = horzcat(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex) ;
+            [~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex) ;
+            newRowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
+            newRowIndexFromAnalogChannelIndex = newRowIndexFromChannelIndex(1:nAIChannels) ;
+            newRowIndexFromDigitalChannelIndex = newRowIndexFromChannelIndex(nAIChannels+1:end) ;
+        end
+        
+        function [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
+                sanitizeRowIndices(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex, nAIChannels, nDIChannels)
+            protoNewRowIndexFromAnalogChannelIndex = ws.sanitizeRowVectorLength(rowIndexFromAnalogChannelIndex, nAIChannels, +inf) ;
+            protoNewRowIndexFromDigitalChannelIndex = ws.sanitizeRowVectorLength(rowIndexFromDigitalChannelIndex, nDIChannels, +inf) ;
+            [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
+                ws.Display.renormalizeRowIndices(protoNewRowIndexFromAnalogChannelIndex, protoNewRowIndexFromDigitalChannelIndex) ;
+        end
+
     end  % static methods block
 
     

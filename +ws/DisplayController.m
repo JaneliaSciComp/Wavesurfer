@@ -41,14 +41,17 @@ classdef DisplayController < ws.Controller
             parentFigurePosition = get(self.Figure,'Position') ;
             channelNames = self.Model.Parent.Acquisition.ChannelNames ;
             isDisplayed = horzcat(self.Model.IsAnalogChannelDisplayed, self.Model.IsDigitalChannelDisplayed) ;
-            nChannels = length(channelNames) ;
-            plotHeights = ones(1,nChannels) ;
-            plotOrdinality = 1:nChannels ;
-            callbackFunction = @(isDisplayed,plotHeights,plotOrdinality)(ws.nop()) ;
+            plotHeights = horzcat(self.Model.AnalogChannelHeights, self.Model.DigitalChannelHeights) ;
+            rowIndexFromChannelIndex = horzcat(self.Model.RowIndexFromAnalogChannelIndex, self.Model.RowIndexFromDigitalChannelIndex) ;
+            %nChannels = length(channelNames) ;
+            %plotHeights = ones(1,nChannels) ;
+            %plotOrdinality = 1:nChannels ;
+            callbackFunction = ...
+                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder_(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             self.PlotArrangementDialogFigure_ = ...
                 ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
                                                parentFigurePosition, ...
-                                               channelNames, isDisplayed, plotHeights, plotOrdinality, ...
+                                               channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
                                                callbackFunction) ;
         end  % method        
 
@@ -76,11 +79,11 @@ classdef DisplayController < ws.Controller
             self.Model.zoomOut(channelIndex);
         end
                 
-        function SetYLimTightToDataButtonGHActuated(self, source, event, channelIndex)
+        function SetYLimTightToDataButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
             self.Model.setYAxisLimitsTightToData(channelIndex);
         end  % method       
         
-        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, channelIndex)
+        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
             self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
         end  % method       
 
