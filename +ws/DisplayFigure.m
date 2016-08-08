@@ -766,18 +766,20 @@ end  % public methods block
             areYLimitsLockedTightToDataFromAIChannelIndex = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
             channelIndexWithinTypeFromPlotIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex ;
             isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
+            channelIndexFromPlotIndex = self.Model.ChannelIndexFromPlotIndex ;
             %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
             nPlots = length(self.ScopePlots_) ;
             for plotIndex=1:length(self.ScopePlots_) ,
                 thisPlot = self.ScopePlots_(plotIndex) ;
                 isThisChannelAnalog = isAnalogFromPlotIndex(plotIndex) ;
                 indexOfThisChannelWithinType =  channelIndexWithinTypeFromPlotIndex(plotIndex) ;  % where "type" means analog or digital
+                indexOfThisChannel = channelIndexFromPlotIndex(plotIndex) ;
                 
                 if isThisChannelAnalog ,
                     if areColorsNormal ,
-                        traceLineColor = self.TraceColorSequence_(plotIndex,:) ;
+                        traceLineColor = self.TraceColorSequence_(indexOfThisChannel,:) ;
                     else
-                        traceLineColor = 1 - self.TraceColorSequence_(plotIndex,:) ;
+                        traceLineColor = 1 - self.TraceColorSequence_(indexOfThisChannel,:) ;
                     end
                     if areYLimitsLockedTightToDataFromAIChannelIndex(indexOfThisChannelWithinType) ,                    
                         thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
