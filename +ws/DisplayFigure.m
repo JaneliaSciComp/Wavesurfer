@@ -4,16 +4,16 @@ classdef DisplayFigure < ws.MCOSFigure
         ScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
         %DigitalScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
         
-        ChannelsMenu_
-        AnalogChannelMenuItems_
-        DigitalChannelMenuItems_
+%         ChannelsMenu_
+%         AnalogChannelMenuItems_
+%         DigitalChannelMenuItems_
         
         ViewMenu_
         InvertColorsMenuItem_
         ShowGridMenuItem_
         DoShowButtonsMenuItem_
         DoColorTracesMenuItem_
-        ArrangementMenuItem_
+        PlotArrangementMenuItem_
 
         % Stuff below are cached resources that we use in all the
         % ScopePlots
@@ -525,10 +525,10 @@ end  % public methods block
 %                           'CData', cdata, ...
 %                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
 
-            % Add the channels menu
-            self.ChannelsMenu_ = ...
-                uimenu('Parent',self.FigureGH, ...
-                       'Label','Channels');
+%             % Add the channels menu
+%             self.ChannelsMenu_ = ...
+%                 uimenu('Parent',self.FigureGH, ...
+%                        'Label','Channels');
 
             % Add a menu, and a single menu item
             self.ViewMenu_ = ...
@@ -580,10 +580,10 @@ end  % public methods block
                 uimenu('Parent',self.ViewMenu_, ...
                        'Label','Color Traces', ...
                        'Callback',@(source,event)self.controlActuated('doColorTracesMenuItem',source,event));            
-            self.ArrangementMenuItem_ = ...
+            self.PlotArrangementMenuItem_ = ...
                 uimenu('Parent',self.ViewMenu_, ...
                        'Separator', 'on', ...
-                       'Label','Arrangement...', ...
+                       'Label','Plot Arrangement...', ...
                        'Callback',@(source,event)self.controlActuated('arrangementMenuItem',source,event));            
                                       
 %             % Y axis control buttons
@@ -647,62 +647,62 @@ end  % public methods block
                 % ScopePlots
             end
             
-            % Update the Channels menu
-            self.updateChannelsMenu_() ;
+%             % Update the Channels menu
+%             self.updateChannelsMenu_() ;
         end  % function
 
-        function updateChannelsMenu_(self)
-            % Update the scope menu match the model state
-            
-            % Delete all the menu items in the Channels menu
-            ws.deleteIfValidHGHandle(self.AnalogChannelMenuItems_);
-            ws.deleteIfValidHGHandle(self.DigitalChannelMenuItems_);
-            self.AnalogChannelMenuItems_ = [] ;
-            self.DigitalChannelMenuItems_ = [] ;
-                        
-            % 
-            % At this point, the Channels menu has been reduced to a blank
-            % slate
-            %
-            
-            % If no model, can't really do much, so return
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            
-            % Get the HG object representing the "Scopes" item in the
-            % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
-            channelsMenu = self.ChannelsMenu_ ;
-            
-            % Set the Visibility of the Remove item in the Scope submenu
-            %set(removeItem,'Visible',onIff(model.Display.NScopes>0));
-            
-            % Add a menu item for each AI channel
-            aiChannelNames = self.Model.Parent.Acquisition.AnalogChannelNames ;
-            for i = 1:length(aiChannelNames) ,
-                menuItem = uimenu('Parent', channelsMenu, ...
-                                  'Label', aiChannelNames{i}, ...
-                                  'Tag', sprintf('AnalogChannelMenuItem %d',i), ...
-                                  'Checked', ws.onIff(model.IsAnalogChannelDisplayed(i)), ...
-                                  'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event,i)));
-                self.AnalogChannelMenuItems_ = horzcat(self.AnalogChannelMenuItems_, menuItem) ;
-            end
-            
-            % Add a menu item for each DI channel
-            diChannelNames = self.Model.Parent.Acquisition.DigitalChannelNames ;
-            for i = 1:length(diChannelNames) ,
-                menuItem = uimenu('Parent', channelsMenu, ...
-                                  'Label', diChannelNames{i}, ...
-                                  'Tag', sprintf('DigitalChannelMenuItem %d',i), ...
-                                  'Checked', ws.onIff(model.IsDigitalChannelDisplayed(i)), ...
-                                  'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event,i)));
-                if i==1 ,
-                    set(menuItem, 'Separator', 'on') ;
-                end
-                self.DigitalChannelMenuItems_ = horzcat(self.DigitalChannelMenuItems_, menuItem) ;
-            end
-        end  % function
+%         function updateChannelsMenu_(self)
+%             % Update the scope menu match the model state
+%             
+%             % Delete all the menu items in the Channels menu
+%             ws.deleteIfValidHGHandle(self.AnalogChannelMenuItems_);
+%             ws.deleteIfValidHGHandle(self.DigitalChannelMenuItems_);
+%             self.AnalogChannelMenuItems_ = [] ;
+%             self.DigitalChannelMenuItems_ = [] ;
+%                         
+%             % 
+%             % At this point, the Channels menu has been reduced to a blank
+%             % slate
+%             %
+%             
+%             % If no model, can't really do much, so return
+%             model=self.Model;
+%             if isempty(model) ,
+%                 return
+%             end
+%             
+%             % Get the HG object representing the "Scopes" item in the
+%             % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
+%             channelsMenu = self.ChannelsMenu_ ;
+%             
+%             % Set the Visibility of the Remove item in the Scope submenu
+%             %set(removeItem,'Visible',onIff(model.Display.NScopes>0));
+%             
+%             % Add a menu item for each AI channel
+%             aiChannelNames = self.Model.Parent.Acquisition.AnalogChannelNames ;
+%             for i = 1:length(aiChannelNames) ,
+%                 menuItem = uimenu('Parent', channelsMenu, ...
+%                                   'Label', aiChannelNames{i}, ...
+%                                   'Tag', sprintf('AnalogChannelMenuItem %d',i), ...
+%                                   'Checked', ws.onIff(model.IsAnalogChannelDisplayed(i)), ...
+%                                   'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event,i)));
+%                 self.AnalogChannelMenuItems_ = horzcat(self.AnalogChannelMenuItems_, menuItem) ;
+%             end
+%             
+%             % Add a menu item for each DI channel
+%             diChannelNames = self.Model.Parent.Acquisition.DigitalChannelNames ;
+%             for i = 1:length(diChannelNames) ,
+%                 menuItem = uimenu('Parent', channelsMenu, ...
+%                                   'Label', diChannelNames{i}, ...
+%                                   'Tag', sprintf('DigitalChannelMenuItem %d',i), ...
+%                                   'Checked', ws.onIff(model.IsDigitalChannelDisplayed(i)), ...
+%                                   'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event,i)));
+%                 if i==1 ,
+%                     set(menuItem, 'Separator', 'on') ;
+%                 end
+%                 self.DigitalChannelMenuItems_ = horzcat(self.DigitalChannelMenuItems_, menuItem) ;
+%             end
+%         end  % function
         
         function updateControlPropertiesImplementation_(self)
             % If there are issues with the model, just return
