@@ -265,10 +265,15 @@ classdef ScopePlot < handle
             %end
             axesHeight = axesAndButtonsAreaHeight ;            
             
+            % Calculate the tick length, so they don't get crazy big/small
+            tickLengthInPels=5;
+            tickLength = tickLengthInPels/max(axesWidth,axesHeight) ;
+            
             % Update the axes position
             axesXOffset = leftMargin ;
             axesYOffset = bottomMargin ;
-            set(self.AxesGH_,'Position',[panelXOffset+axesXOffset panelYOffset+axesYOffset axesWidth axesHeight]);            
+            set(self.AxesGH_,'Position', [panelXOffset+axesXOffset panelYOffset+axesYOffset axesWidth axesHeight], ...
+                             'TickLength', tickLength*[1 2.5]) ;
             
             % the zoom buttons
             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
