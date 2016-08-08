@@ -12,6 +12,7 @@ classdef DisplayFigure < ws.MCOSFigure
         InvertColorsMenuItem_
         ShowGridMenuItem_
         DoShowButtonsMenuItem_
+        DoColorTracesMenuItem_
         ArrangementMenuItem_
 
         % Stuff below are cached resources that we use in all the
@@ -575,6 +576,10 @@ end  % public methods block
                 uimenu('Parent',self.ViewMenu_, ...
                        'Label','Show Buttons', ...
                        'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
+            self.DoColorTracesMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Label','Color Traces', ...
+                       'Callback',@(source,event)self.controlActuated('doColorTracesMenuItem',source,event));            
             self.ArrangementMenuItem_ = ...
                 uimenu('Parent',self.ViewMenu_, ...
                        'Separator', 'on', ...
@@ -722,8 +727,11 @@ end  % public methods block
             doShowButtons = self.Model.DoShowButtons ;
             set(self.DoShowButtonsMenuItem_,'Checked',ws.onIff(doShowButtons));
 
+            % Update the Do Color Traces togglemenu
+            doColorTraces = self.Model.DoColorTraces ;
+            set(self.DoColorTracesMenuItem_,'Checked',ws.onIff(doColorTraces));
+
             % Compute the colors
-            areColorsNormal = self.Model.AreColorsNormal ;
             defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
             controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
@@ -774,13 +782,20 @@ end  % public methods block
                 isThisChannelAnalog = isAnalogFromPlotIndex(plotIndex) ;
                 indexOfThisChannelWithinType =  channelIndexWithinTypeFromPlotIndex(plotIndex) ;  % where "type" means analog or digital
                 indexOfThisChannel = channelIndexFromPlotIndex(plotIndex) ;
-                
+
+                % Determine trace color for this plot
+                if doColorTraces ,
+                    normalTraceLineColor = self.TraceColorSequence_(indexOfThisChannel,:) ;
+                else
+                    normalTraceLineColor = [0 0 0] ;  % black
+                end
+                if areColorsNormal ,
+                    traceLineColor = normalTraceLineColor ;
+                else
+                    traceLineColor = 1 - normalTraceLineColor ;
+                end
+                    
                 if isThisChannelAnalog ,
-                    if areColorsNormal ,
-                        traceLineColor = self.TraceColorSequence_(indexOfThisChannel,:) ;
-                    else
-                        traceLineColor = 1 - self.TraceColorSequence_(indexOfThisChannel,:) ;
-                    end
                     if areYLimitsLockedTightToDataFromAIChannelIndex(indexOfThisChannelWithinType) ,                    
                         thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                                    axesForegroundColor, axesBackgroundColor, ...
@@ -806,11 +821,6 @@ end  % public methods block
                     end
                 else
                     % this channel is digital
-                    if areColorsNormal ,
-                        traceLineColor = self.TraceColorSequence_(plotIndex,:) ;
-                    else
-                        traceLineColor = 1 - self.TraceColorSequence_(plotIndex,:) ;
-                    end
                     thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                                axesForegroundColor, axesBackgroundColor, ...
                                                traceLineColor, ...

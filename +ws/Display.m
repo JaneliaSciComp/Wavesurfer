@@ -5,6 +5,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsGridOn
         AreColorsNormal        
         DoShowButtons        
+        DoColorTraces
         UpdateRate  % the rate at which the scopes are updated, in Hz
         XOffset  % the x coord at the left edge of the scope windows
         XSpan  % the trace duration shown in the scope windows
@@ -37,6 +38,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsGridOn_ = true
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
         DoShowButtons_ = true % if false, don't show buttons in the figure
+        DoColorTraces_ = true % if false, traces are black/white
         XSpan_ 
         UpdateRate_
         XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
@@ -428,6 +430,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.DoShowButtons = ~(self.DoShowButtons) ;
         end
         
+        function toggleDoColorTraces(self)
+            self.DoColorTraces = ~(self.DoColorTraces) ;
+        end
+        
         function set.IsGridOn(self,newValue)
             if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
@@ -477,6 +483,23 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function result = get.DoShowButtons(self)
             result = self.DoShowButtons_ ;
+        end                    
+        
+        function set.DoColorTraces(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.DoColorTraces_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DoColorTraces must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.DoColorTraces(self)
+            result = self.DoColorTraces_ ;
         end                    
         
         function scrollUp(self, plotIndex)  % works on analog channels only

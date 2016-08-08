@@ -31,6 +31,10 @@ classdef DisplayController < ws.Controller
             self.Model.toggleDoShowButtons();
         end  % method        
 
+        function doColorTracesMenuItemActuated(self, varargin)
+            self.Model.toggleDoColorTraces();
+        end  % method        
+        
         function InvertColorsMenuItemGHActuated(self, varargin)
             self.Model.toggleAreColorsNormal();
         end  % method        
