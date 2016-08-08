@@ -63,31 +63,31 @@ classdef DisplayController < ws.Controller
             self.Model.toggleIsDigitalChannelDisplayed(diChannelIndex) ;
         end  % method        
                                 
-        function YScrollUpButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.scrollUp(channelIndex);
+        function YScrollUpButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.scrollUp(aiChannelIndex);
         end
                 
-        function YScrollDownButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.scrollDown(channelIndex);
+        function YScrollDownButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.scrollDown(aiChannelIndex);
         end
                 
-        function YZoomInButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.zoomIn(channelIndex);
+        function YZoomInButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.zoomIn(aiChannelIndex);
         end
                 
-        function YZoomOutButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.zoomOut(channelIndex);
+        function YZoomOutButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.zoomOut(aiChannelIndex);
         end
                 
-        function SetYLimTightToDataButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.setYAxisLimitsTightToData(channelIndex);
+        function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.setYAxisLimitsTightToData(aiChannelIndex);
         end  % method       
         
-        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
+        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.toggleAreYLimitsLockedTightToData(aiChannelIndex);
         end  % method       
 
-        function SetYLimButtonGHActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
+        function SetYLimButtonGHActuated(self, source, event, plotIndex)
             self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;

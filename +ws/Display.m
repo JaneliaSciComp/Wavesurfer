@@ -761,6 +761,35 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
         
+%         function result = getPlotIndexFromChannelIndex(self)
+%             % The "channel index" here is is equal to the AI channel index
+%             % for AI channels, and is equal to the DI channel index
+%             % plus the number of AI channels for DI channels.  The plot
+%             % index is set to nan for undisplayed channels.
+%             isChannelDisplayed = horzcat(self.IsAnalogChannelDisplayed_, self.IsDigitalChannelDisplayed_) ;
+%             rowIndexFromChannelIndex = horzcat(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;
+%             rowIndexFromChannelIndexAmongDisplayed = rowIndexFromChannelIndex(isChannelDisplayed) ;
+%             plotIndexFromChannelIndexAmongDisplayed = ws.sortedOrder(rowIndexFromChannelIndexAmongDisplayed) ;
+%             nChannels = length(isChannelDisplayed) ;
+%             result = nan(1,nChannels) ;
+%             result(isChannelDisplayed) = plotIndexFromChannelIndexAmongDisplayed ;            
+%         end        
+        
+        function [channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = getChannelIndexFromPlotIndexMapping(self)
+            isAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
+            isDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
+            nAnalogChannels = length(isAnalogChannelDisplayed) ;
+            nDigitalChannels = length(isDigitalChannelDisplayed) ;
+            %nChannels = nAnalogChannels + nDigitalChannels ;
+            isAnalogFromChannelIndex = horzcat( true(1,nAnalogChannels), false(1,nDigitalChannels) ) ;
+            isDisplayedFromChannelIndex = horzcat(isAnalogChannelDisplayed, isDigitalChannelDisplayed) ;
+            rowIndexFromChannelIndex = horzcat(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;
+            channelIndexFromPlotIndex = ws.Display.computeChannelIndexFromPlotIndexMapping(rowIndexFromChannelIndex, isDisplayedFromChannelIndex) ;
+            isAnalogFromPlotIndex = isAnalogFromChannelIndex(channelIndexFromPlotIndex) ;
+            channelIndexWithinTypeFromPlotIndex = ...
+                arrayfun(@(channelIndex)(ws.fif(channelIndex>nAnalogChannels,channelIndex-nAnalogChannels,el)), channelIndexFromPlotIndex) ;
+        end
+        
         function didSetAreSweepsFiniteDuration(self)
             % Called by the parent to notify of a change to the acquisition
             % duration
@@ -976,14 +1005,15 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
                 renormalizeRowIndices(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex)
             % Used, e.g. after channel deletion, to maintain the ordering
-            % of the row indices, but eliminate any gaps, so that the go
+            % of the row indices, but eliminate any gaps, so that they go
             % from 1 to the number of channels.
-            nAIChannels = length(rowIndexFromAnalogChannelIndex) ;
-            nDIChannels = length(rowIndexFromDigitalChannelIndex) ;
-            nChannels = nAIChannels + nDIChannels ;
-            rowIndexFromChannelIndex = horzcat(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex) ;
-            [~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex) ;
-            newRowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
+            %nAIChannels = length(rowIndexFromAnalogChannelIndex) ;
+            %nDIChannels = length(rowIndexFromDigitalChannelIndex) ;
+            %nChannels = nAIChannels + nDIChannels ;
+            rowIndexFromChannelIndex = horzcat(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex) ;  % this may have gaps in the ordering
+            newRowIndexFromChannelIndex = ws.sortedOrder(rowIndexFromChannelIndex) ;
+            %[~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex) ;
+            %newRowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
             newRowIndexFromAnalogChannelIndex = newRowIndexFromChannelIndex(1:nAIChannels) ;
             newRowIndexFromDigitalChannelIndex = newRowIndexFromChannelIndex(nAIChannels+1:end) ;
         end
@@ -996,6 +1026,17 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.Display.renormalizeRowIndices(protoNewRowIndexFromAnalogChannelIndex, protoNewRowIndexFromDigitalChannelIndex) ;
         end
 
+        function result = computeChannelIndexFromPlotIndexMapping(rowIndexFromChannelIndex, isDisplayedFromChannelIndex)
+            % Computes the mapping from plot index to channel index, given
+            % the relevant inputs.  "rows" here refers to rows in the
+            % dialog box that the user uses to order the channels for
+            % display.  If isDisplayedFromChannelIndex is all true, then
+            % the result is simply the inverse permutation of
+            % rowIndexFromChannelIndex.
+            channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
+            isDisplayedFromRowIndex(rowIndexFromChannelIndex) = isDisplayedFromChannelIndex ;
+            result = channelIndexFromRowIndex(isDisplayedFromRowIndex) ;
+        end  % function
     end  % static methods block
 
     
