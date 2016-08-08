@@ -18,17 +18,19 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsDigitalChannelDisplayed  % 1 x nDIChannels
         AreYLimitsLockedTightToDataForAnalogChannel  % 1 x nAIChannels
         YLimitsPerAnalogChannel  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
-        NScopes
+        NPlots
         XData
         YData
-        AnalogChannelHeights  % 1 x nAIChannels
-        DigitalChannelHeights  % 1 x nDIChannels
+        PlotHeightFromAnalogChannelIndex  % 1 x nAIChannels
+        PlotHeightFromDigitalChannelIndex  % 1 x nDIChannels
+        PlotHeightFromChannelIndex  % 1 x nChannels
         RowIndexFromAnalogChannelIndex  % 1 x nAIChannels
         RowIndexFromDigitalChannelIndex  % 1 x nDIChannels
-        ChannelIndexWithinTypeFromPlotIndex  % 1 x NScopes
-        IsAnalogFromPlotIndex  % 1 x NScopes
-        ChannelIndexFromPlotIndex  % 1 x NScopes       
+        ChannelIndexWithinTypeFromPlotIndex  % 1 x NPlots
+        IsAnalogFromPlotIndex  % 1 x NPlots
+        ChannelIndexFromPlotIndex  % 1 x NPlots       
         PlotIndexFromChannelIndex  % 1 x nChannels
+        PlotHeightFromPlotIndex  % 1 x NPlots
     end
 
     properties (Access = protected)
@@ -45,8 +47,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsDigitalChannelDisplayed_  % 1 x nDIChannels
         AreYLimitsLockedTightToDataForAnalogChannel_  % 1 x nAIChannels
         YLimitsPerAnalogChannel_  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
-        AnalogChannelHeights_  % 1 x nAIChannels
-        DigitalChannelHeights_  % 1 x nDIChannels
+        PlotHeightFromAnalogChannelIndex_  % 1 x nAIChannels
+        PlotHeightFromDigitalChannelIndex_  % 1 x nDIChannels
         RowIndexFromAnalogChannelIndex_  % 1 x nAIChannels
         RowIndexFromDigitalChannelIndex_  % 1 x nDIChannels
     end
@@ -58,9 +60,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         XSpanInPixels_
         XData_
         YData_  % analog and digital together, all as doubles, but only for the *active* channels
-        ChannelIndexWithinTypeFromPlotIndex_  % 1 x NScopes
-        IsAnalogFromPlotIndex_  % 1 x NScopes
-        ChannelIndexFromPlotIndex_  % 1 x NScopes (the channel index is in the list of all analog, then all digital, channels)
+        ChannelIndexWithinTypeFromPlotIndex_  % 1 x NPlots
+        IsAnalogFromPlotIndex_  % 1 x NPlots
+        ChannelIndexFromPlotIndex_  % 1 x NPlots (the channel index is in the list of all analog, then all digital, channels)
         PlotIndexFromChannelIndex_ % 1 x nChannels (this has nan's for channels that are not displayed)
     end
     
@@ -88,8 +90,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = false(1,0) ; % 1 x nAIChannels
             self.YLimitsPerAnalogChannel_ = zeros(2,0) ; % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit            
             self.XSpanInPixels_ = 400 ;  % for when we're running headless, this is a reasonable fallback value
-            self.AnalogChannelHeights_ = zeros(1,0) ;
-            self.DigitalChannelHeights_ = zeros(1,0) ;
+            self.PlotHeightFromAnalogChannelIndex_ = zeros(1,0) ;
+            self.PlotHeightFromDigitalChannelIndex_ = zeros(1,0) ;
             self.RowIndexFromAnalogChannelIndex_ = zeros(1,0) ;  % 1 x nAIChannels
             self.RowIndexFromDigitalChannelIndex_ = zeros(1,0) ;  % 1 x nDIChannels     
             self.updateMappingsFromPlotIndices_() ;
@@ -98,7 +100,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function delete(self)  %#ok<INUSD>
         end
         
-        function result = get.NScopes(self)
+        function result = get.NPlots(self)
             result = length(self.IsAnalogChannelDisplayed_) + length(self.IsDigitalChannelDisplayed_) ;
         end
         
@@ -168,12 +170,21 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = self.IsDigitalChannelDisplayed_ ;
         end
 
-        function result = get.AnalogChannelHeights(self)
-            result = self.AnalogChannelHeights_ ;
+        function result = get.PlotHeightFromAnalogChannelIndex(self)
+            result = self.PlotHeightFromAnalogChannelIndex_ ;
         end
         
-        function result = get.DigitalChannelHeights(self)
-            result = self.DigitalChannelHeights_ ;
+        function result = get.PlotHeightFromDigitalChannelIndex(self)
+            result = self.PlotHeightFromDigitalChannelIndex_ ;
+        end
+        
+        function result = get.PlotHeightFromChannelIndex(self)
+            result = horzcat(self.PlotHeightFromAnalogChannelIndex_, self.PlotHeightFromDigitalChannelIndex_) ;
+        end
+
+        function result = get.PlotHeightFromPlotIndex(self)
+            plotHeightFromChannelIndex = self.PlotHeightFromChannelIndex ;
+            result = plotHeightFromChannelIndex(self.ChannelIndexFromPlotIndex) ;
         end
         
         function result = get.RowIndexFromAnalogChannelIndex(self)
@@ -346,7 +357,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = horzcat(self.IsAnalogChannelDisplayed_, true) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = horzcat(self.AreYLimitsLockedTightToDataForAnalogChannel_, false) ;
             self.YLimitsPerAnalogChannel_ = horzcat(self.YLimitsPerAnalogChannel_, [-10 +10]') ;
-            self.AnalogChannelHeights_ = horzcat(self.AnalogChannelHeights_, 1) ;
+            self.PlotHeightFromAnalogChannelIndex_ = horzcat(self.PlotHeightFromAnalogChannelIndex_, 1) ;
             nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
             self.RowIndexFromAnalogChannelIndex_ = horzcat(self.RowIndexFromAnalogChannelIndex_, nRowsBefore+1) ;
             self.updateMappingsFromPlotIndices_() ;
@@ -356,7 +367,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function didAddDigitalInputChannel(self)
             self.IsDigitalChannelDisplayed_(1,end+1) = true ;
-            self.DigitalChannelHeights_ = horzcat(self.DigitalChannelHeights_, 1) ;
+            self.PlotHeightFromDigitalChannelIndex_ = horzcat(self.PlotHeightFromDigitalChannelIndex_, 1) ;
             nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
             self.RowIndexFromDigitalChannelIndex_ = horzcat(self.RowIndexFromDigitalChannelIndex_, nRowsBefore+1) ;
             self.updateMappingsFromPlotIndices_() ;
@@ -369,7 +380,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = self.IsAnalogChannelDisplayed_(wasKept) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = self.AreYLimitsLockedTightToDataForAnalogChannel_(wasKept) ;
             self.YLimitsPerAnalogChannel_ = self.YLimitsPerAnalogChannel_(:,wasKept) ;
-            self.AnalogChannelHeights_ = self.AnalogChannelHeights_(wasKept) ;
+            self.PlotHeightFromAnalogChannelIndex_ = self.PlotHeightFromAnalogChannelIndex_(wasKept) ;
             self.RowIndexFromAnalogChannelIndex_ = self.RowIndexFromAnalogChannelIndex_(wasKept) ;
             [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
                 ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
@@ -381,7 +392,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function didDeleteDigitalInputChannels(self, wasDeleted)            
             wasKept = ~wasDeleted ;
             self.IsDigitalChannelDisplayed_ = self.IsDigitalChannelDisplayed_(wasKept) ;
-            self.DigitalChannelHeights_ = self.DigitalChannelHeights_(wasKept) ;
+            self.PlotHeightFromDigitalChannelIndex_ = self.PlotHeightFromDigitalChannelIndex_(wasKept) ;
             self.RowIndexFromDigitalChannelIndex_ = self.RowIndexFromDigitalChannelIndex_(wasKept) ;
             [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
                 ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
@@ -635,8 +646,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Set properties
             self.IsAnalogChannelDisplayed_ = isDisplayed(1:nAIChannels) ;
             self.IsDigitalChannelDisplayed_ = isDisplayed(nAIChannels+1:end) ;
-            self.AnalogChannelHeights_ = plotHeights(1:nAIChannels) ;
-            self.DigitalChannelHeights_ = plotHeights(nAIChannels+1:end) ;
+            self.PlotHeightFromAnalogChannelIndex_ = plotHeights(1:nAIChannels) ;
+            self.PlotHeightFromDigitalChannelIndex_ = plotHeights(nAIChannels+1:end) ;
             self.RowIndexFromAnalogChannelIndex_ = rowIndexFromChannelIndex(1:nAIChannels) ;
             self.RowIndexFromDigitalChannelIndex_ = rowIndexFromChannelIndex(nAIChannels+1:end) ;
             self.updateMappingsFromPlotIndices_() ;
@@ -869,7 +880,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             %self.XSpan = nan;
         end
         
-%         function out = get.NScopes(self)
+%         function out = get.NPlots(self)
 %             out = length(self.Scopes);
 %         end
                 
@@ -891,7 +902,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.decodeProperties@ws.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
 % 
 %             % Update the view
-%             self.broadcast('NScopesMayHaveChanged');
+%             self.broadcast('NPlotsMayHaveChanged');
 %         end  % function
         
 %         function didSetScopeIsVisibleWhenDisplayEnabled(self)
@@ -911,7 +922,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
 % 
 %             % Update the view
-%             %self.broadcast('NScopesMayHaveChanged');  % do I need this?
+%             %self.broadcast('NPlotsMayHaveChanged');  % do I need this?
 %         end  % function        
 %     end  % protected methods block
     
@@ -939,13 +950,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.sanitizeRowVectorLength(self.AreYLimitsLockedTightToDataForAnalogChannel_, nAIChannels, false) ;
             self.YLimitsPerAnalogChannel_ = ...
                 ws.Display.sanitizeYLimitsArrayLength(self.YLimitsPerAnalogChannel_, nAIChannels, [-10 +10]') ;
-            self.AnalogChannelHeights_  = ...
-                ws.sanitizeRowVectorLength(self.AnalogChannelHeights_, nAIChannels, 1) ;
+            self.PlotHeightFromAnalogChannelIndex_  = ...
+                ws.sanitizeRowVectorLength(self.PlotHeightFromAnalogChannelIndex_, nAIChannels, 1) ;
             
             nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
             self.IsDigitalChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelDisplayed_, nDIChannels, true) ;            
-            self.DigitalChannelHeights_  = ...
-                ws.sanitizeRowVectorLength(self.DigitalChannelHeights_, nDIChannels, 1) ;
+            self.PlotHeightFromDigitalChannelIndex_  = ...
+                ws.sanitizeRowVectorLength(self.PlotHeightFromDigitalChannelIndex_, nDIChannels, 1) ;
 
             % The analog row indices have to be fixed using
             % knowledge of the digital row indices, and vice-versa

@@ -41,7 +41,7 @@ classdef DisplayController < ws.Controller
             parentFigurePosition = get(self.Figure,'Position') ;
             channelNames = self.Model.Parent.Acquisition.ChannelNames ;
             isDisplayed = horzcat(self.Model.IsAnalogChannelDisplayed, self.Model.IsDigitalChannelDisplayed) ;
-            plotHeights = horzcat(self.Model.AnalogChannelHeights, self.Model.DigitalChannelHeights) ;
+            plotHeights = horzcat(self.Model.PlotHeightFromAnalogChannelIndex, self.Model.PlotHeightFromDigitalChannelIndex) ;
             rowIndexFromChannelIndex = horzcat(self.Model.RowIndexFromAnalogChannelIndex, self.Model.RowIndexFromDigitalChannelIndex) ;
             %nChannels = length(channelNames) ;
             %plotHeights = ones(1,nChannels) ;

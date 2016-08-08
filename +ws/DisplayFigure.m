@@ -176,8 +176,8 @@ end  % public methods block
             maxInitialHeight = screenHeight - 50 ;  % pels
             
             % Position the figure in the middle of the screen
-            nScopes = self.Model.NScopes ;
-            initialHeight = min(250 * max(1,nScopes), maxInitialHeight) ;
+            nPlots = self.Model.NPlots ;
+            initialHeight = min(250 * max(1,nPlots), maxInitialHeight) ;
             initialSize=[700 initialHeight];
             figurePosition=[offset initialSize];
             set(self.FigureGH,'Position',figurePosition);
@@ -861,6 +861,10 @@ end  % public methods block
         
             xAxisLabelAreaHeight = 44 ;
             
+            plotHeightFromPlotIndex = self.Model.PlotHeightFromPlotIndex ;
+            normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
+            totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
+            
             doesUserWantToSeeButtons = self.Model.DoShowButtons ;
             %isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
             %isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
@@ -871,11 +875,11 @@ end  % public methods block
                 %channelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
                 self.ScopePlots_(iPlot).setPositionAndLayout(figureSize, ...
                                                              xAxisLabelAreaHeight, ...
-                                                             nPlots, ...
-                                                             iPlot, ...
+                                                             normalizedPlotHeightFromPlotIndex(iPlot) , ...
+                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...
                                                              doesUserWantToSeeButtons) ;
             end
-        end
+        end  % function
     end  % protected methods block
     
     methods (Access = protected)

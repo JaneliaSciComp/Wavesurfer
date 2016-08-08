@@ -164,7 +164,9 @@ classdef ScopePlot < handle
             result = isequal(onOrOff, 'on') ;
         end
         
-        function setPositionAndLayout(self, figureSize, xAxisLabelAreaHeight, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons)
+        function setPositionAndLayout(self, figureSize, xAxisLabelAreaHeight, ...
+                                      normalizedPlotHeight, totalNormalizedHeightOfPreviousPlots , ...            
+                                      doesUserWantToSeeButtons)
             % This method should make sure all the controls are sized and placed
             % appropriately given the current model state.  
             
@@ -217,9 +219,10 @@ classdef ScopePlot < handle
             % position of the panel within the figure rectangle.
             panelWidth = figureWidth ;
             %nScopesVisible = self.Model.Parent.IsScopeVisibleWhenDisplayEnabled ;
-            panelHeight = (figureHeight-xAxisLabelAreaHeight)/nScopesVisible ;
+            plotAreaHeight = figureHeight-xAxisLabelAreaHeight ;
             panelXOffset = 0 ;
-            panelYOffset = figureHeight - panelHeight*indexOfThisScopeAmongVisibleScopes ;            
+            panelHeight = plotAreaHeight * normalizedPlotHeight ;
+            panelYOffset = figureHeight - totalNormalizedHeightOfPreviousPlots*plotAreaHeight ;
             
             % Calculate the first-pass dimensions
             leftMargin = max(minLeftMargin,min(0.13*panelWidth,maxLeftMargin)) ;
@@ -255,11 +258,11 @@ classdef ScopePlot < handle
 
             % Set the axes width, depends on whether we're showing the
             % buttons or not
-            if doShowButtons ,
-                axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
-            else
-                axesWidth = axesAndButtonsAreaWidth ;
-            end
+            %if doShowButtons ,
+            axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;
+            %else
+            %    axesWidth = axesAndButtonsAreaWidth ;
+            %end
             axesHeight = axesAndButtonsAreaHeight ;            
             
             % Update the axes position
