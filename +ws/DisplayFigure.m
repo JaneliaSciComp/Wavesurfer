@@ -105,7 +105,7 @@ classdef DisplayFigure < ws.MCOSFigure
             if isempty(self.ScopePlots_) ,
                 xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
             else
-                xSpanInPixels=self.lScopePlots_(1).getAxesWidthInPixels() ;
+                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
             end
             self.Model.hereIsXSpanInPixels(xSpanInPixels) ;
         end
@@ -764,7 +764,9 @@ end  % public methods block
             
             % Update the individual plot colors and icons
             areYLimitsLockedTightToDataFromAIChannelIndex = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            [channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            channelIndexWithinTypeFromPlotIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
+            %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
             nPlots = length(self.ScopePlots_) ;
             for plotIndex=1:length(self.ScopePlots_) ,
                 thisPlot = self.ScopePlots_(plotIndex) ;
@@ -833,7 +835,9 @@ end  % public methods block
             %isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
             %isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;            
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            [channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            channelIndexWithinTypeFromPlotIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
             for iPlot=1:length(self.ScopePlots_) ,
                 isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
                 thisChannelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
@@ -842,7 +846,7 @@ end  % public methods block
                     self.ScopePlots_(iPlot).setControlEnablement(true, areYLimitsLockedTightToData(thisChannelIndex)) ;
                 else
                     % this channel/plot is digital
-                    self.DigitalScopePlots_(iPlot).setControlEnablement(false) ;  % digital channels are always locked tight to data
+                    self.ScopePlots_(iPlot).setControlEnablement(false) ;  % digital channels are always locked tight to data
                 end
             end
         end  % function
@@ -883,36 +887,22 @@ end  % public methods block
             xData = self.Model.XData ;
             yData = self.Model.YData ;
             acq = self.Model.Parent.Acquisition ;
-            isActiveFromAIChannelIndex = acq.IsAnalogChannelActive ;
-            isActiveFromDIChannelIndex = acq.IsDigitalChannelActive ;
-            activeChannelIndexFromAIChannelIndex = cumsum(isActiveFromAIChannelIndex) ;
-            activeChannelIndexFromDIChannelIndex = sum(isActiveFromAIChannelIndex) + cumsum(isActiveFromDIChannelIndex) ;
-            [channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            activeChannelIndexFromChannelIndex = acq.ActiveChannelIndexFromChannelIndex ;            
+            %isActiveFromChannelIndex = acq.IsChannelActive ;
+            channelIndexFromPlotIndex = self.Model.ChannelIndexFromPlotIndex ;
+            %isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;            
             nPlots = length(self.ScopePlots_) ;
             for iPlot = 1:nPlots ,
                 thisPlot = self.ScopePlots_(iPlot) ;
-                if isAnalogFromPlotIndex(iPlot) ,
-                    % Channel/plot is analog
-                    aiChannelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
-                    if isActiveFromAIChannelIndex(aiChannelIndex) ,
-                        % Channel is analog, and active
-                        activeChannelIndex = activeChannelIndexFromAIChannelIndex(aiChannelIndex) ;
-                        yDataForThisChannel = yData(:,activeChannelIndex) ;
-                        thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;                        
-                    else
-                        thisPlot.setLineXDataAndYData([],[]) ;
-                    end
+                channelIndex = channelIndexFromPlotIndex(iPlot) ;
+                activeChannelIndex = activeChannelIndexFromChannelIndex(channelIndex) ;
+                if isnan(activeChannelIndex) ,
+                    % channel is not active
+                    thisPlot.setLineXDataAndYData([],[]) ;
                 else
-                    % Channel/plot is digital
-                    diChannelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
-                    if isActiveFromDIChannelIndex(diChannelIndex) ,
-                        % Channel is digital, and active
-                        activeChannelIndex = activeChannelIndexFromDIChannelIndex(diChannelIndex) ;
-                        yDataForThisChannel = yData(:,activeChannelIndex) ;
-                        thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;                        
-                    else
-                        thisPlot.setLineXDataAndYData([],[]) ;
-                    end                    
+                    % channel is active
+                    yDataForThisChannel = yData(:,activeChannelIndex) ;
+                    thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;
                 end
             end
         end  % function

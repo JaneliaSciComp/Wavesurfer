@@ -27,6 +27,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         RowIndexFromDigitalChannelIndex  % 1 x nDIChannels
         ChannelIndexWithinTypeFromPlotIndex  % 1 x NScopes
         IsAnalogFromPlotIndex  % 1 x NScopes
+        ChannelIndexFromPlotIndex  % 1 x NScopes       
+        PlotIndexFromChannelIndex  % 1 x nChannels
     end
 
     properties (Access = protected)
@@ -58,6 +60,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         YData_  % analog and digital together, all as doubles, but only for the *active* channels
         ChannelIndexWithinTypeFromPlotIndex_  % 1 x NScopes
         IsAnalogFromPlotIndex_  % 1 x NScopes
+        ChannelIndexFromPlotIndex_  % 1 x NScopes (the channel index is in the list of all analog, then all digital, channels)
+        PlotIndexFromChannelIndex_ % 1 x nChannels (this has nan's for channels that are not displayed)
     end
     
     events
@@ -164,27 +168,35 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = self.IsDigitalChannelDisplayed_ ;
         end
 
-        function result= get.AnalogChannelHeights(self)
+        function result = get.AnalogChannelHeights(self)
             result = self.AnalogChannelHeights_ ;
         end
         
-        function result= get.DigitalChannelHeights(self)
+        function result = get.DigitalChannelHeights(self)
             result = self.DigitalChannelHeights_ ;
         end
         
-        function result= get.RowIndexFromAnalogChannelIndex(self)
+        function result = get.RowIndexFromAnalogChannelIndex(self)
             result = self.RowIndexFromAnalogChannelIndex_ ;
         end
         
-        function result= get.RowIndexFromDigitalChannelIndex(self)
+        function result = get.RowIndexFromDigitalChannelIndex(self)
             result = self.RowIndexFromDigitalChannelIndex_ ;
         end
         
-        function result= get.ChannelIndexWithinTypeFromPlotIndex(self)
+        function result = get.ChannelIndexWithinTypeFromPlotIndex(self)
             result = self.ChannelIndexWithinTypeFromPlotIndex_ ;
         end
 
-        function result= get.IsAnalogFromPlotIndex(self)
+        function result = get.ChannelIndexFromPlotIndex(self)
+            result = self.ChannelIndexFromPlotIndex_ ;
+        end
+
+        function result = get.PlotIndexFromChannelIndex(self)
+            result = self.PlotIndexFromChannelIndex_ ;
+        end
+        
+        function result = get.IsAnalogFromPlotIndex(self)
             result = self.IsAnalogFromPlotIndex_ ;
         end
         
@@ -653,7 +665,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            indexWithinData = self.Parent.Acquisition.indexOfAnalogChannelWithinActiveAnalogChannels(aiChannelIndex) ;
+            activeChannelIndexFromChannelIndex = self.Parent.Acquisition.ActiveChannelIndexFromChannelIndex ;
+            indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
             y = self.YData(:,indexWithinData) ;
             yMinRaw=min(y);
             yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
@@ -791,8 +804,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 
                 % Add the data
                 indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate) ;
+                plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex_(indicesOfAIChannelsNeedingYLimitUpdate) ;
                 self.broadcast('UpdateData');       
-                self.broadcast('UpdateYAxisLimits', indicesOfAIChannelsNeedingYLimitUpdate) ;
+                self.broadcast('UpdateYAxisLimits', plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
             else
                 % if not active, do nothing
             end
@@ -979,18 +993,21 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             isDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
             nAnalogChannels = length(isAnalogChannelDisplayed) ;
             nDigitalChannels = length(isDigitalChannelDisplayed) ;
-            %nChannels = nAnalogChannels + nDigitalChannels ;
             isAnalogFromChannelIndex = horzcat( true(1,nAnalogChannels), false(1,nDigitalChannels) ) ;
             isDisplayedFromChannelIndex = horzcat(isAnalogChannelDisplayed, isDigitalChannelDisplayed) ;
             rowIndexFromChannelIndex = horzcat(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;
             channelIndexFromPlotIndex = ws.Display.computeChannelIndexFromPlotIndexMapping(rowIndexFromChannelIndex, isDisplayedFromChannelIndex) ;
             isAnalogFromPlotIndex = isAnalogFromChannelIndex(channelIndexFromPlotIndex) ;
             channelIndexWithinTypeFromPlotIndex = ...
-                arrayfun(@(channelIndex)(ws.fif(channelIndex>nAnalogChannels,channelIndex-nAnalogChannels,el)), channelIndexFromPlotIndex) ;
+                arrayfun(@(channelIndex)(ws.fif(channelIndex>nAnalogChannels,channelIndex-nAnalogChannels,channelIndex)), channelIndexFromPlotIndex) ;
+            % Determine the channel index -> plot index mapping
+            plotIndexFromChannelIndex = ws.sortedOrderLeavingNansInPlace(rowIndexFromChannelIndex) ;
+            % Finally, set the state variables that we need to set
             self.IsAnalogFromPlotIndex_ = isAnalogFromPlotIndex ;
             self.ChannelIndexWithinTypeFromPlotIndex_ = channelIndexWithinTypeFromPlotIndex ;            
+            self.ChannelIndexFromPlotIndex_ = channelIndexFromPlotIndex ;
+            self.PlotIndexFromChannelIndex_ = plotIndexFromChannelIndex ;
         end  % function
-        
         
     end  % protected methods block    
     
@@ -1067,7 +1084,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Used, e.g. after channel deletion, to maintain the ordering
             % of the row indices, but eliminate any gaps, so that they go
             % from 1 to the number of channels.
-            %nAIChannels = length(rowIndexFromAnalogChannelIndex) ;
+            nAIChannels = length(rowIndexFromAnalogChannelIndex) ;
             %nDIChannels = length(rowIndexFromDigitalChannelIndex) ;
             %nChannels = nAIChannels + nDIChannels ;
             rowIndexFromChannelIndex = horzcat(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex) ;  % this may have gaps in the ordering

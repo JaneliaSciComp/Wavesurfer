@@ -48,6 +48,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         %IsDigitalChannelTerminalOvercommitted
         AnalogScalingCoefficients
         DataCacheDurationWhenContinuous
+        ActiveChannelIndexFromChannelIndex
     end
     
     properties (Access = protected) 
@@ -92,6 +93,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         IsAllDataInCacheValid_
         TimeOfLastPollingTimerFire_
         NScansReadThisSweep_
+        ActiveChannelIndexFromChannelIndex_ = zeros(1,0) ;
     end    
     
     events 
@@ -240,9 +242,14 @@ classdef AcquisitionSubsystem < ws.Subsystem
             if islogical(newIsAnalogChannelActive) && isequal(size(newIsAnalogChannelActive),size(self.IsAnalogChannelActive)) ,
                 % Set the setting
                 self.IsAnalogChannelActive_ = newIsAnalogChannelActive;
+                self.updateActiveChannelIndexFromChannelIndex_() ;
             end
             self.Parent.didSetIsInputChannelActive() ;
             %self.broadcast('DidSetIsChannelActive');
+        end
+        
+        function result = get.ActiveChannelIndexFromChannelIndex(self)
+            result = self.ActiveChannelIndexFromChannelIndex_ ;
         end
         
         function result = indexOfAnalogChannelWithinActiveAnalogChannels(self, aiChannelIndex)
@@ -309,6 +316,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             if islogical(newIsDigitalChannelActive) && isequal(size(newIsDigitalChannelActive),size(self.IsDigitalChannelActive)) ,
                 % Set the setting
                 self.IsDigitalChannelActive_ = newIsDigitalChannelActive;
+                self.updateActiveChannelIndexFromChannelIndex_() ;
             end
             self.Parent.didSetIsInputChannelActive() ;            
         end
@@ -1067,6 +1075,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            self.updateActiveChannelIndexFromChannelIndex_() ;
             
             self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
@@ -1122,6 +1131,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
+            self.updateActiveChannelIndexFromChannelIndex_() ;
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             wasDeleted = isToBeDeleted ;
@@ -1187,8 +1197,19 @@ classdef AcquisitionSubsystem < ws.Subsystem
             self.DigitalTerminalIDs_ = ws.sanitizeRowVectorLength(self.DigitalTerminalIDs_, nDIChannels, 0) ;
             self.IsDigitalChannelActive_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelActive_, nDIChannels, true) ;
             self.IsDigitalChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelMarkedForDeletion_, nDIChannels, false) ;
-        end
-    end
+        end  % function
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            self.updateActiveChannelIndexFromChannelIndex_() ;            
+        end  % function        
+        
+        function updateActiveChannelIndexFromChannelIndex_(self)
+            isChannelActive = horzcat(self.IsAnalogChannelActive_, self.IsDigitalChannelActive_) ;
+            activeChannelIndexFromChannelIndex = cumsum(isChannelActive) ;
+            activeChannelIndexFromChannelIndex(~isChannelActive) = nan ;  % want inactive channels to be nan in this array, so save us a get.() in some cases
+            self.ActiveChannelIndexFromChannelIndex_ = activeChannelIndexFromChannelIndex ;
+        end  % function
+    end  % protected methods block
 
 end  % classdef
 

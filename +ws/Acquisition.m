@@ -250,6 +250,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             end
+            self.updateActiveChannelIndexFromChannelIndex_() ;
             wasDeleted = isToBeDeleted ;
 %             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
