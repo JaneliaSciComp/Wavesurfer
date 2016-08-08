@@ -322,8 +322,9 @@ end  % public methods block
         
         function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSL>
             args = event.Args ;
-            aiChannelIndex = args{1} ;
-            self.updateYAxisLimits_(aiChannelIndex);
+            plotIndex = args{1} ;
+            aiChannelIndex = args{2} ;
+            self.updateYAxisLimits_(plotIndex, aiChannelIndex) ;
         end  % function
         
         function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
@@ -953,15 +954,17 @@ end  % public methods block
             end
         end  % function        
 
-        function updateYAxisLimits_(self, aiChannelIndices)
+        function updateYAxisLimits_(self, plotIndices, aiChannelIndices)
             % Update the axes limits to match those in the model
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
             yLimitsFromAIChannelIndex = self.Model.YLimitsPerAnalogChannel ;
-            for aiChannelIndex = aiChannelIndices ,
+            for i = 1:length(plotIndices) ,
+                plotIndex = plotIndices(i) ;
+                aiChannelIndex = aiChannelIndices(i) ;
                 yl = yLimitsFromAIChannelIndex(:,aiChannelIndex)' ;
-                self.AnalogScopePlots_(aiChannelIndex).setYAxisLimits(yl) ;
+                self.ScopePlots_(plotIndex).setYAxisLimits(yl) ;
             end
         end  % function        
 

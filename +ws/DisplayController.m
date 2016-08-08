@@ -64,33 +64,34 @@ classdef DisplayController < ws.Controller
         end  % method        
                                 
         function YScrollUpButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.scrollUp(aiChannelIndex);
+            self.Model.scrollUp(plotIndex);
         end
                 
         function YScrollDownButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.scrollDown(aiChannelIndex);
+            self.Model.scrollDown(plotIndex);
         end
                 
         function YZoomInButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.zoomIn(aiChannelIndex);
+            self.Model.zoomIn(plotIndex);
         end
                 
         function YZoomOutButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.zoomOut(aiChannelIndex);
+            self.Model.zoomOut(plotIndex);
         end
                 
         function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.setYAxisLimitsTightToData(aiChannelIndex);
+            self.Model.setYAxisLimitsTightToData(plotIndex);
         end  % method       
         
         function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.toggleAreYLimitsLockedTightToData(aiChannelIndex);
+            self.Model.toggleAreYLimitsLockedTightToData(plotIndex);
         end  % method       
 
-        function SetYLimButtonGHActuated(self, source, event, plotIndex)
+        function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
             self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
+            aiChannelIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
             yLimits = self.Model.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
             yUnits = self.Model.Parent.Acquisition.AnalogChannelUnits{aiChannelIndex} ;
             callbackFunction = @(newYLimits)(self.Model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
