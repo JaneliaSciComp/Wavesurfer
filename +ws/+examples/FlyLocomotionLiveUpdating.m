@@ -1,5 +1,5 @@
 classdef FlyLocomotionLiveUpdating < ws.UserClass
-       
+    
     % This is a user class created for Stephanie Wegener in Vivek
     % Jayaraman's lab for online analysis and live updating of fly
     % locomotion data. In particular, a graph of the fly and ball rotational
@@ -8,16 +8,15 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     % function of forward vs rotational velocity or heading vs rotational
     % velocity are continuously updated with the results of all the
     % cumulative data since the User Class was last instantiated.
-
+    
     properties (Access = protected)
         BarPositionHistogramTotal_
-        TestVariable_
     end
     
     properties (Transient = true, Access=protected)
         ScreenSize_
-        IsParentAWavesurferModel_ 
-     
+        IsUserCodeManagerParentOneTrueWavesurferModel_
+        
         % Useful time and scan information
         FirstOnePercentEndTime_
         DeltaTime_
@@ -47,14 +46,14 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_
         ArenaAndBallRotationAxisXlimListener_
         
-        % Bar position Histogram       
+        % Bar position Histogram
         NumberOfBarPositionHistogramBins_
         BarPositionHistogramBinCenters_
         BarPositionHistogramFigureHandle_
         BarPositionHistogramAxis_
         BarPositionHistogramPlotHandle_
-
-        % Forward velocity vs rotational velocity heatmap        
+        
+        % Forward velocity vs rotational velocity heatmap
         ForwardDisplacementRecent_
         ForwardVelocityBinEdges_
         RotationalDisplacementRecent_
@@ -65,16 +64,16 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         ForwardVsRotationalVelocityHeatmapAxis_
         ForwardVsRotationalVelocityHeatmapImageHandle_
         
-        % Heading vs rotational velocity heatmap   
+        % Heading vs rotational velocity heatmap
         HeadingBinEdges_
         DataForHeadingVsRotationalVelocityHeatmapSum_
         DataForHeadingVsRotationalVelocityHeatmapCounts_
         HeadingVsRotationalVelocityHeatmapFigureHandle_
         HeadingVsRotationalVelocityHeatmapAxis_
-        HeadingVsRotationalVelocityHeatmapImageHandle_       
+        HeadingVsRotationalVelocityHeatmapImageHandle_
         
         % Heatmap colormap and data
-        ModifiedJetColormap_                  
+        ModifiedJetColormap_
         Vm_
         
         % Used to keep track of collected data
@@ -87,10 +86,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         
         % Used for naming the figures
         StartedSweepIndices_
-
+        
         % Used for triggering LED
-        TimeSinceLEDTurnedOff_
-        TimeSinceLEDTurnedOn_
+        TimeLEDTurnedOff_
+        TimeLEDTurnedOn_
         TimeForLEDToBeOn_
         TimeToWaitBeforeTurningLEDBackOn_
         ShouldTheLEDBeTurnedOnForRealThisTime_
@@ -98,8 +97,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         CurrentLEDState_
         TimeInThisSweep_ = 0
         NSweepsCompletedInThisRunPrevious_
-        RunJustStarted_ = 0
         LooperBarPositionHistogramTotal_
+        RunAlreadyStarted_ = 0
         
         % Used for testing
         DataFromFile_
@@ -107,19 +106,25 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end
     
     methods
-        function self = FlyLocomotionLiveUpdating(rootModel)
-            self.IsParentAWavesurferModel_ = isa( rootModel , 'ws.WavesurferModel' );
+        function self = FlyLocomotionLiveUpdating(userCodeManager)
+            % Figure out which is the one true Wavesurfer model so that we
+            % only create figures in the true Wavesurfer model:
+            if isa(userCodeManager.Parent, 'ws.WavesurferModel')
+                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = userCodeManager.Parent.IsITheOneTrueWavesurferModel;
+            else
+                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
+            end
             filepath = ('c:/users/ackermand/Google Drive/Janelia/ScientificComputing/Wavesurfer/+ws/+examples/WavesurferUserClass/');
             self.DataFromFile_ = load([filepath 'firstSweep.mat']);
             % Set up bar histogram information that will be used by
             % frontend and looper
             self.NumberOfBarPositionHistogramBins_ = 16;
             self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);
-            if self.IsParentAWavesurferModel_
+            if self.IsUserCodeManagerParentOneTrueWavesurferModel_
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
-                              
+                
                 % Set up heatmap bins and initialize heatmap data. Since
                 % the data will be plotted as averages per bin, we store
                 % both the sum and counts so that we may update the
@@ -133,9 +138,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 self.DataForHeadingVsRotationalVelocityHeatmapSum_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 self.DataForHeadingVsRotationalVelocityHeatmapCounts_ = zeros(length(self.HeadingBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
                 
-                % Set up bar histogram for the graphs
-%                self.NumberOfBarPositionHistogramBins_ = 16;
-%                self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);
+                % Set up bar histogram cache that will be used by
+                % frontend
                 self.BarPositionHistogramTotal_ = zeros(1,self.NumberOfBarPositionHistogramBins_);
                 
                 % Get colorbar for heatmap
@@ -159,7 +163,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 % This will be filled with the numbers of all started
                 % sweeps.
                 self.StartedSweepIndices_ = [];
-                            
+                
             end
             
             self.TimeForLEDToBeOn_ = 20; % 20 seconds
@@ -174,10 +178,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         function delete(self)
             % Called when there are no more references to the object, just
             % prior to its memory being freed.
-            
-            % Removing listeners, callback functions and figures
+
+            % Removing listeners and figures
             delete(self.ArenaAndBallRotationAxisXlimListener_);
-            set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn','');
             ws.deleteIfValidHGHandle(self.ArenaAndBallRotationFigureHandle_);
             ws.deleteIfValidHGHandle(self.BarPositionHistogramFigureHandle_);
             ws.deleteIfValidHGHandle(self.ForwardVsRotationalVelocityHeatmapFigureHandle_);
@@ -196,7 +199,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             self.DeltaTime_ = 1/wsModel.Acquisition.SampleRate ;  % s
             self.NumberOfScansInFirstOnePercentEndTime_ = ceil(self.FirstOnePercentEndTime_/self.DeltaTime_);
             self.MaximumNumberOfScansPerSweep_ = wsModel.Acquisition.SampleRate * wsModel.Acquisition.Duration;
-
+            
             % Choose a maximum downsampling ratio. Here we choose the
             % maximum downsample ratio to be the downsampling ratio
             % corresponding to 10% of the acquisiton on an axis the width
@@ -216,7 +219,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         function completingRun(self,wsModel,eventName) %#ok<INUSD>
         end
         
-        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>           
+        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>
         end
         
         function abortingRun(self,wsModel,eventName) %#ok<INUSD>
@@ -225,11 +228,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Store only the sweep indices that are started, used to name
             % the figures
-            if wsModel.Logging.IsEnabled
-                self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex-1];
-            else
-                self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex];
-            end
+            self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex];
             
             % Initialize necessary variables, where "Recent" corresponds to
             % data just collected
@@ -239,7 +238,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             
             self.CumulativeRotationRecent_ = 0;
             self.CumulativeRotationMeanToSubtract_ = [];
-
+            
             self.BarPositionWrappedRecent_ = [];
             self.BarPositionUnwrappedRecent_ = [];
             self.BarPositionWrappedMeanToSubtract_ = [];
@@ -283,20 +282,19 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             
             % Get the analog data and number of scans
             analogData = wsModel.Acquisition.getLatestAnalogData();
-            nScans = size(analogData,1);       
+            nScans = size(analogData,1);
             totalScansInSweepPrevious = self.TotalScansInSweep_;
             self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;
             self.TimeRecent_ = timeAtStartOfDataAvailableCall + self.DeltaTime_*(0:(nScans-1))';
-
+            
             analogData = self.DataFromFile_.data(totalScansInSweepPrevious+1:self.TotalScansInSweep_,:); % This is for troubleshooting
             
             % Analyze the fly locomotion, a function provided by Stephanie
             % Wegener. This updates self.BarPositionUnwrappedRecent_,
             % self.BarPositionWrappedRecent_, and
             % self.CumulativeRotationRecent_.
-            isInFrontend = true;
-            self.analyzeFlyLocomotion_(analogData,isInFrontend);
-          
+            self.analyzeFlyLocomotion_(analogData,self.IsUserCodeManagerParentOneTrueWavesurferModel_);
+            
             % Update and store sweep data
             self.StoreSweepTime_(totalScansInSweepPrevious+1:self.TotalScansInSweep_) = self.TimeRecent_;
             self.StoreSweepBarPositionUnwrapped_(totalScansInSweepPrevious+1:self.TotalScansInSweep_) = self.BarPositionUnwrappedRecent_;
@@ -308,13 +306,13 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % vectors used for plotting
             self.downsampleDataForPlotting();
             
-            if self.TimeRecent_(1) < self.FirstOnePercentEndTime_  % Then it is still within first one percent of time. 
-               %The gain and the means of cumulative rotation and wrapped
-               %bar position need to be calculated for the first one
-               %percent of data. Here we update the means continuously
-               %until the first one percent is complete, and
-               %calculate/display the gain when the first one percent is
-               %complete.
+            if self.TimeRecent_(1) < self.FirstOnePercentEndTime_  % Then it is still within first one percent of time.
+                %The gain and the means of cumulative rotation and wrapped
+                %bar position need to be calculated for the first one
+                %percent of data. Here we update the means continuously
+                %until the first one percent is complete, and
+                %calculate/display the gain when the first one percent is
+                %complete.
                 self.CumulativeRotationMeanToSubtract_ = nanmean(self.StoreSweepCumulativeRotation_(1:self.NumberOfScansInFirstOnePercentEndTime_));
                 self.BarPositionWrappedMeanToSubtract_ = nanmean(self.StoreSweepBarPositionWrapped_(1:self.NumberOfScansInFirstOnePercentEndTime_));
                 if self.TimeRecent_(end) + self.DeltaTime_ >= self.FirstOnePercentEndTime_ ;
@@ -324,19 +322,19 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     ylabel(self.ArenaAndBallRotationAxis_,['gain: ' num2str(gain)]);
                 end
             end
-        
+            
             if timeAtStartOfDataAvailableCall == 0 % Then this is the first time in sweep
                 % Update the figures, where the arena and ball rotation figure
                 % only displays data for the current ongoing sweep.
                 set(self.ArenaAndBallRotationFigureHandle_,'Name',sprintf('Arena and Ball Rotation: Sweep %d', self.StartedSweepIndices_(end)));
                 ylabel(self.ArenaAndBallRotationAxis_,'gain: Calculating...');
                 title(self.ArenaAndBallRotationAxis_,self.ArenaCondition_(self.ArenaOn_+1));
-
+                
                 % Reset the XData and YData
                 set(self.ArenaAndBallRotationAxisCumulativeRotationPlotHandle_,'XData',[], 'YData',[]);
                 set(self.ArenaAndBallRotationAxisBarPositionUnwrappedPlotHandle_,'XData',[], 'YData',[]);
                 set(self.ArenaAndBallRotationAxis_,'xlimmode','auto','ylimmode','auto');
-
+                
                 if length(self.StartedSweepIndices_) == 1
                     set(self.ForwardVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Forward Vs Rotational Velocity: Sweep %d', self.StartedSweepIndices_(1)));
                     set(self.HeadingVsRotationalVelocityHeatmapFigureHandle_,'Name',sprintf('Heading Vs Rotational Velocity: Sweep %d', self.StartedSweepIndices_(1)));
@@ -353,7 +351,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 % add a callback function to check when the figure gets
                 % resized. These will then update the plot, if necessary.
                 self.ArenaAndBallRotationAxisXlimListener_ = addlistener(self.ArenaAndBallRotationAxis_,'XLim','PostSet',@(src,event)(self.updateArenaAndBallRotationFigureIfNecessary()));
-                set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn',@(src,evt)(self.updateArenaAndBallRotationFigureIfNecessary()));                
+                set(self.ArenaAndBallRotationFigureHandle_,'ResizeFcn',@(src,evt)(self.updateArenaAndBallRotationFigureIfNecessary()));
             end
             
             % Since new data has been collected, update the arena and ball
@@ -368,9 +366,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             self.BarPositionHistogramTotal_ = self.BarPositionHistogramTotal_ + barPositionHistogramCountsRecent/wsModel.Acquisition.SampleRate;
             set(self.BarPositionHistogramPlotHandle_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramTotal_);
             
-            % Calculate Vm, and update heatmap data and plots 
+            % Calculate Vm, and update heatmap data and plots
             self.quantifyCellularResponse(analogData);
-            self.addDataForHeatmaps(wsModel);          
+            self.addDataForHeatmaps(wsModel);
             for whichHeatmap = [{'ForwardVsRotationalVelocityHeatmap'},{'HeadingVsRotationalVelocityHeatmap'}]
                 whichAxis = [whichHeatmap{:} 'Axis_'];
                 whichImageHandle = [whichHeatmap{:} 'ImageHandle_'];
@@ -382,46 +380,53 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 dataForHeatmap(nanIndices) = newNaNValuesForPlotting;
                 set(self.(whichImageHandle),'CData',dataForHeatmap);
                 set(self.(whichImageHandle),'CData',dataForHeatmap);
-                                
+                
                 % Set Limits
                 [binsWithDataRows, binsWithDataColumns] = find(~nanIndices);
                 xlim(self.(whichAxis), [min(binsWithDataColumns)-0.5 max(binsWithDataColumns)+0.5]);
                 ylim(self.(whichAxis),[min(binsWithDataRows)-0.5 max(binsWithDataRows)+0.5]);
             end
         end
-
         
         % These methods are called in the looper process
         function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSD,INUSL>
             % This is used to acquire the data, and performs the necessary
             % analysis to trigger an LED
-            if self.RunJustStarted_ == 0
+            clockStart = tic;
+            if self.RunAlreadyStarted_ == 0
                 % Then a run just started
-                self.LooperBarPositionHistogramTotal_ = self.BarPositionHistogramTotal_; % Initialize the Looper bar positions
+                self.LooperBarPositionHistogramTotal_ = self.BarPositionHistogramTotal_; % Sync looper bar positions to frontend
                 self.NSweepsCompletedInThisRunPrevious_ = NaN;
-                self.RunJustStarted_ = 1;
+                self.RunAlreadyStarted_ = 1;
             end
             if self.NSweepsCompletedInThisRunPrevious_ ~= looper.NSweepsCompletedInThisRun
                 % Then a new sweep has started
-                self.TimeSinceLEDTurnedOff_ = Inf; % Set it to infinity so each sweep starts by treating the LED as if it has always been off
-                self.TimeInThisSweep_ = 0;
+                self.TimeLEDTurnedOff_ = -Inf; % Set it to -infinity so each sweep starts by treating the LED as if it has always been off
+                self.TimeInThisSweep_ = -1/looper.Acquisition.SampleRate; % Initialize to this so that eg. the first scan equals time 0
                 self.NSweepsCompletedInThisRunPrevious_ = looper.NSweepsCompletedInThisRun;
             end
+      
             % Update Variables
             numberOfScansRecent = size(analogData,1);
             analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+numberOfScansRecent,:);
             self.TotalNumberOfScans_ = self.TotalNumberOfScans_+numberOfScansRecent;
-            self.TimeInThisSweep_ = self.TimeInThisSweep_ + numberOfScansRecent/looper.Acquisition.SampleRate;
-            isInFrontend = false;
-            self.analyzeFlyLocomotion_(analogData, isInFrontend); % analyzeFlyLocomotion gives us the recent forward displacement of the fly, and the recent barposition
+            lengthOfTimeAcquired = numberOfScansRecent/looper.Acquisition.SampleRate;
+            self.TimeInThisSweep_ = self.TimeInThisSweep_ + lengthOfTimeAcquired;
+            self.analyzeFlyLocomotion_(analogData, self.IsUserCodeManagerParentOneTrueWavesurferModel_); % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
+            
+            barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
+            self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
+            barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
+            self.LooperBarPositionHistogramTotal_ = self.LooperBarPositionHistogramTotal_ + barPositionHistogramCountsRecent/looper.Acquisition.SampleRate;
+            
             % Check whether to turn the LED on or off
             if strcmp(self.CurrentLEDState_, 'Off') % Then the LED is off
-                self.TimeSinceLEDTurnedOff_ = self.TimeSinceLEDTurnedOff_ + numberOfScansRecent/looper.Acquisition.SampleRate;
-                if self.TimeInThisSweep_ > 5 && self.TimeInThisSweep_ < (looper.SweepDuration - (self.TimeForLEDToBeOn_+0.1))
+                timeSinceLEDTurnedOff = self.TimeInThisSweep_ - self.TimeLEDTurnedOff_;
+                if self.TimeInThisSweep_ >= 5 && self.TimeInThisSweep_ < (looper.SweepDuration - (self.TimeForLEDToBeOn_+0.1))
                     % Then the sweep has been going for at least 5 seconds,
                     % and still has enough time left for a complete LED
                     % "On" cycle
-                    if self.TimeSinceLEDTurnedOff_ > self.TimeToWaitBeforeTurningLEDBackOn_ % Then it has been off for enough time
+                    if timeSinceLEDTurnedOff >= self.TimeToWaitBeforeTurningLEDBackOn_ % Then it has been off for enough time
                         % Need to check if the fly is moving forward before deciding
                         % if we can turn the LED on;
                         if any(self.ForwardDisplacementRecent_>0) % Then fly was moving forward at some point, and LED *may* be turned on
@@ -437,15 +442,15 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                                 % trying to turn it on again.
                                 self.CurrentLEDState_ = 'Pseudo On';
                             end
-                            self.TimeSinceLEDTurnedOn_=0;
+                            self.TimeLEDTurnedOn_=self.TimeInThisSweep_;
                             self.ShouldTheLEDBeTurnedOnForRealThisTime_ = ~self.ShouldTheLEDBeTurnedOnForRealThisTime_; % Toggle this. Only affects next LED state if not randomizing
                         end
                     end
                 end
             else
                 % The LED is "On" or "Pseudo On"
-                self.TimeSinceLEDTurnedOn_ = self.TimeSinceLEDTurnedOn_ + numberOfScansRecent/looper.Acquisition.SampleRate;
-                if self.TimeSinceLEDTurnedOn_ > self.TimeForLEDToBeOn_ % then want to turn it off
+                timeSinceLEDTurnedOn = self.TimeInThisSweep_ - self.TimeLEDTurnedOn_;
+                if timeSinceLEDTurnedOn >= self.TimeForLEDToBeOn_ % then want to turn it off
                     if strcmp(self.CurrentLEDState_,'On')
                         turnOnOrOff = 0;
                         self.setLEDState(looper,turnOnOrOff);
@@ -454,14 +459,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                         % actually turn it off
                     end
                     self.CurrentLEDState_ = 'Off';
-                    self.TimeSinceLEDTurnedOff_ = 0;
+                    self.TimeLEDTurnedOff_ = self.TimeInThisSweep_;
                 end
             end
-             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
-             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
-             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
-             self.LooperBarPositionHistogramTotal_ = self.LooperBarPositionHistogramTotal_ + barPositionHistogramCountsRecent/looper.Acquisition.SampleRate;
-            % disp(sum(self.LooperBarPositionHistogramTotal_));
+            clockEnd = toc(clockStart);
+            fprintf('%f %d \n',clockEnd,numberOfScansRecent);
         end
         
         % These methods are called in the refiller process
@@ -479,7 +481,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end  % methods
     
     methods
-          
+        
         function setLEDState(self, looper, onOrOff)
             % Will set the LED to the opposite state than it currently is
             digitalOutputStateIfUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
@@ -502,7 +504,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             rightColumnLeftCorner = leftColumnLeftCorner + figureWidth + 50;
             
             % Arena and Ball Rotation Figure
-            disp(ishghandle(self.ArenaAndBallRotationFigureHandle_))
             if isempty(self.ArenaAndBallRotationFigureHandle_) || ~ishghandle(self.ArenaAndBallRotationFigureHandle_)
                 self.ArenaAndBallRotationFigureHandle_ = figure('Name', 'Arena and Ball Rotation: Waiting to start...',...
                     'NumberTitle','off',...
@@ -601,7 +602,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             
             self.TimeDataForPlotting_ = vertcat(self.TimeDataForPlotting_, timeForPlottingRecent);
             self.CumulativeRotationForPlotting_ = vertcat(self.CumulativeRotationForPlotting_, yForPlottingRecent(:,1));
-            self.BarPositionUnwrappedForPlotting_ = vertcat(self.BarPositionUnwrappedForPlotting_, yForPlottingRecent(:,2));            
+            self.BarPositionUnwrappedForPlotting_ = vertcat(self.BarPositionUnwrappedForPlotting_, yForPlottingRecent(:,2));
         end
         
         function updateArenaAndBallRotationFigureIfNecessary(self)
@@ -629,7 +630,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     timeCorrespondingToZoomedRegion = self.StoreSweepTime_(self.IndicesForDownsampling_);
                     cumulativeRotationCorrespondingToZoomedRegion = self.StoreSweepCumulativeRotation_(self.IndicesForDownsampling_);
                     barPositionUnwrappedCorrespondingToZoomedRegion = self.StoreSweepBarPositionUnwrapped_(self.IndicesForDownsampling_);
-                    [downsampledTimeData, downsampledYData] = ws.minMaxDownsampleMex(timeCorrespondingToZoomedRegion, [cumulativeRotationCorrespondingToZoomedRegion, barPositionUnwrappedCorrespondingToZoomedRegion], downsamplingRatio) ;                
+                    [downsampledTimeData, downsampledYData] = ws.minMaxDownsampleMex(timeCorrespondingToZoomedRegion, [cumulativeRotationCorrespondingToZoomedRegion, barPositionUnwrappedCorrespondingToZoomedRegion], downsamplingRatio) ;
                     timeDataForPlotting = downsampledTimeData;
                     cumulativeRotationForPlottingZoomedRegionYData = downsampledYData(:,1);
                     barPositionUnwrappedForPlottingZoomedRegionYData =downsampledYData(:,2);
@@ -672,13 +673,13 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
         end
         
-        function analyzeFlyLocomotion_(self, data, isInFrontend)
+        function analyzeFlyLocomotion_(self, data, isITheOneTrueWavesurferModel)
             % This function quantifies the locomotor activity of the fly
             % and updates the key parameters used by the subsequent
             % functions. It was provided by Stephanie Wegener, but has been
             % updated so that there is no downsampling and can be used to
             % do analyze the data continuously rather than just at the end
-            % of a sweep.         
+            % of a sweep.
             
             %% a few constants for the conversion of the ball tracker readout to locomotor metrics
             
@@ -706,11 +707,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             %     inp_dig=round((inp-2.51)/0.14); %this is with the NEW wavesurfer AD conversion
             
             inp_dig = inp_dig/80; %divide by 80 to correct for pulse frequency and duration
-          
+            
             %displacement of the fly as computed from ball tracker readout in mm
             self.ForwardDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) + inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
             self.BarPositionWrappedRecent_ = self.circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
-            if isInFrontend % do not need to do this in looper, helps save time
+            if isITheOneTrueWavesurferModel % do not need to do this in looper, helps save time
                 
                 %  self.SideDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) - inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
                 self.RotationalDisplacementRecent_ =(inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
@@ -737,7 +738,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 self.ArenaOn_=data(1,4)>7.5; %arena on will report output of ~9V, arena off ~4V
             end
         end
-               
+        
         function quantifyCellularResponse (self, data)
             % Not downsampling
             self.Vm_ = data(:,1);
@@ -776,9 +777,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     self.DataForHeadingVsRotationalVelocityHeatmapCounts_(headingBin,rotationalVelocityBin) =  self.DataForHeadingVsRotationalVelocityHeatmapCounts_(headingBin,rotationalVelocityBin) + numberWithinTwoDimensionalBin;
                 end
             end
-        end   
+        end
     end
-      
+    
     methods (Static = true)
         function [mu, ul, ll] = circ_mean_(alpha, w, dim)
             %
@@ -839,8 +840,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 ll = mu - t;
             end
         end
-    end    
-        
+    end
+    
     methods (Access = protected)
         function out = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
@@ -855,25 +856,18 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % some other kind of transformation on decoding, this method can be overridden.
             self.(name) = value;
         end
-%         
-%         function synchronizeTransientStateToPersistedState_(self)
-%             % This method should set any transient state variables to
-%             % ensure that the object invariants are met, given the values
-%             % of the persisted state variables.  The default implementation
-%             % does nothing, but subclasses can override it to make sure the
-%             % object invariants are satisfied after an object is decoded
-%             % from persistant storage.  This is called by
-%             % ws.Coding.decodeEncodingContainerGivenParent() after
-%             % a new object is instantiated, and after its persistent state
-%             % variables have been set to the encoded values.
-%             
-%             % Generate the figures if necessary if loaded from protocol
-%             % file
-%             disp(self.IsParentAWavesurferModel_);
-%             if self.IsParentAWavesurferModel_
-%                 disp('syncrhonize');
-%                 self.generateFigures();
-%             end
-%         end
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+        end
     end
 end  % classdef
