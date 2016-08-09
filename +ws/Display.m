@@ -5,6 +5,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsGridOn
         AreColorsNormal        
         DoShowButtons        
+        DoColorTraces
         UpdateRate  % the rate at which the scopes are updated, in Hz
         XOffset  % the x coord at the left edge of the scope windows
         XSpan  % the trace duration shown in the scope windows
@@ -18,15 +19,26 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsDigitalChannelDisplayed  % 1 x nDIChannels
         AreYLimitsLockedTightToDataForAnalogChannel  % 1 x nAIChannels
         YLimitsPerAnalogChannel  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
-        NScopes
+        NPlots
         XData
         YData
+        PlotHeightFromAnalogChannelIndex  % 1 x nAIChannels
+        PlotHeightFromDigitalChannelIndex  % 1 x nDIChannels
+        PlotHeightFromChannelIndex  % 1 x nChannels
+        RowIndexFromAnalogChannelIndex  % 1 x nAIChannels
+        RowIndexFromDigitalChannelIndex  % 1 x nDIChannels
+        ChannelIndexWithinTypeFromPlotIndex  % 1 x NPlots
+        IsAnalogFromPlotIndex  % 1 x NPlots
+        ChannelIndexFromPlotIndex  % 1 x NPlots       
+        PlotIndexFromChannelIndex  % 1 x nChannels
+        PlotHeightFromPlotIndex  % 1 x NPlots
     end
 
     properties (Access = protected)
         IsGridOn_ = true
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
         DoShowButtons_ = true % if false, don't show buttons in the figure
+        DoColorTraces_ = true % if false, traces are black/white
         XSpan_ 
         UpdateRate_
         XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
@@ -37,6 +49,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         IsDigitalChannelDisplayed_  % 1 x nDIChannels
         AreYLimitsLockedTightToDataForAnalogChannel_  % 1 x nAIChannels
         YLimitsPerAnalogChannel_  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
+        PlotHeightFromAnalogChannelIndex_  % 1 x nAIChannels
+        PlotHeightFromDigitalChannelIndex_  % 1 x nDIChannels
+        RowIndexFromAnalogChannelIndex_  % 1 x nAIChannels
+        RowIndexFromDigitalChannelIndex_  % 1 x nDIChannels
     end
     
     properties (Access = protected, Transient=true)
@@ -46,6 +62,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         XSpanInPixels_
         XData_
         YData_  % analog and digital together, all as doubles, but only for the *active* channels
+        ChannelIndexWithinTypeFromPlotIndex_  % 1 x NPlots
+        IsAnalogFromPlotIndex_  % 1 x NPlots
+        ChannelIndexFromPlotIndex_  % 1 x NPlots (the channel index is in the list of all analog, then all digital, channels)
+        PlotIndexFromChannelIndex_ % 1 x nChannels (this has nan's for channels that are not displayed)
     end
     
     events
@@ -62,9 +82,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     methods
         function self = Display(parent)
             self@ws.Subsystem(parent) ;
-            self.XOffset_ = 0;  % s
-            self.XSpan_ = 1;  % s
-            self.UpdateRate_ = 10;  % Hz
+            self.XOffset_ = 0 ;  % s
+            self.XSpan_ = 1 ;  % s
+            self.UpdateRate_ = 10 ;  % Hz
             self.XAutoScroll_ = false ;
             self.IsXSpanSlavedToAcquistionDuration_ = true ;
             self.IsAnalogChannelDisplayed_ = true(1,0) ; % 1 x nAIChannels
@@ -72,12 +92,17 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = false(1,0) ; % 1 x nAIChannels
             self.YLimitsPerAnalogChannel_ = zeros(2,0) ; % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit            
             self.XSpanInPixels_ = 400 ;  % for when we're running headless, this is a reasonable fallback value
+            self.PlotHeightFromAnalogChannelIndex_ = zeros(1,0) ;
+            self.PlotHeightFromDigitalChannelIndex_ = zeros(1,0) ;
+            self.RowIndexFromAnalogChannelIndex_ = zeros(1,0) ;  % 1 x nAIChannels
+            self.RowIndexFromDigitalChannelIndex_ = zeros(1,0) ;  % 1 x nDIChannels     
+            self.updateMappingsFromPlotIndices_() ;
         end
         
         function delete(self)  %#ok<INUSD>
         end
         
-        function result = get.NScopes(self)
+        function result = get.NPlots(self)
             result = length(self.IsAnalogChannelDisplayed_) + length(self.IsDigitalChannelDisplayed_) ;
         end
         
@@ -107,6 +132,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
                     currentValue = self.IsAnalogChannelDisplayed_(aiChannelIndex) ;
                     self.IsAnalogChannelDisplayed_(aiChannelIndex) = ~currentValue ;
+                    self.updateMappingsFromPlotIndices_() ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -127,6 +153,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 if 1<=diChannelIndex && diChannelIndex<=nDIChannels ,
                     currentValue = self.IsDigitalChannelDisplayed_(diChannelIndex) ;
                     self.IsDigitalChannelDisplayed_(diChannelIndex) = ~currentValue ;
+                    self.updateMappingsFromPlotIndices_() ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -143,6 +170,47 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function result = get.IsDigitalChannelDisplayed(self)
             result = self.IsDigitalChannelDisplayed_ ;
+        end
+
+        function result = get.PlotHeightFromAnalogChannelIndex(self)
+            result = self.PlotHeightFromAnalogChannelIndex_ ;
+        end
+        
+        function result = get.PlotHeightFromDigitalChannelIndex(self)
+            result = self.PlotHeightFromDigitalChannelIndex_ ;
+        end
+        
+        function result = get.PlotHeightFromChannelIndex(self)
+            result = horzcat(self.PlotHeightFromAnalogChannelIndex_, self.PlotHeightFromDigitalChannelIndex_) ;
+        end
+
+        function result = get.PlotHeightFromPlotIndex(self)
+            plotHeightFromChannelIndex = self.PlotHeightFromChannelIndex ;
+            result = plotHeightFromChannelIndex(self.ChannelIndexFromPlotIndex) ;
+        end
+        
+        function result = get.RowIndexFromAnalogChannelIndex(self)
+            result = self.RowIndexFromAnalogChannelIndex_ ;
+        end
+        
+        function result = get.RowIndexFromDigitalChannelIndex(self)
+            result = self.RowIndexFromDigitalChannelIndex_ ;
+        end
+        
+        function result = get.ChannelIndexWithinTypeFromPlotIndex(self)
+            result = self.ChannelIndexWithinTypeFromPlotIndex_ ;
+        end
+
+        function result = get.ChannelIndexFromPlotIndex(self)
+            result = self.ChannelIndexFromPlotIndex_ ;
+        end
+
+        function result = get.PlotIndexFromChannelIndex(self)
+            result = self.PlotIndexFromChannelIndex_ ;
+        end
+        
+        function result = get.IsAnalogFromPlotIndex(self)
+            result = self.IsAnalogFromPlotIndex_ ;
         end
         
         function value = get.UpdateRate(self)
@@ -291,12 +359,20 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = horzcat(self.IsAnalogChannelDisplayed_, true) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = horzcat(self.AreYLimitsLockedTightToDataForAnalogChannel_, false) ;
             self.YLimitsPerAnalogChannel_ = horzcat(self.YLimitsPerAnalogChannel_, [-10 +10]') ;
+            self.PlotHeightFromAnalogChannelIndex_ = horzcat(self.PlotHeightFromAnalogChannelIndex_, 1) ;
+            nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
+            self.RowIndexFromAnalogChannelIndex_ = horzcat(self.RowIndexFromAnalogChannelIndex_, nRowsBefore+1) ;
+            self.updateMappingsFromPlotIndices_() ;
             self.clearData_() ;
             self.broadcast('Update') ;
         end
         
         function didAddDigitalInputChannel(self)
             self.IsDigitalChannelDisplayed_(1,end+1) = true ;
+            self.PlotHeightFromDigitalChannelIndex_ = horzcat(self.PlotHeightFromDigitalChannelIndex_, 1) ;
+            nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
+            self.RowIndexFromDigitalChannelIndex_ = horzcat(self.RowIndexFromDigitalChannelIndex_, nRowsBefore+1) ;
+            self.updateMappingsFromPlotIndices_() ;
             self.clearData_() ;
             self.broadcast('Update') ;            
         end
@@ -306,6 +382,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.IsAnalogChannelDisplayed_ = self.IsAnalogChannelDisplayed_(wasKept) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = self.AreYLimitsLockedTightToDataForAnalogChannel_(wasKept) ;
             self.YLimitsPerAnalogChannel_ = self.YLimitsPerAnalogChannel_(:,wasKept) ;
+            self.PlotHeightFromAnalogChannelIndex_ = self.PlotHeightFromAnalogChannelIndex_(wasKept) ;
+            self.RowIndexFromAnalogChannelIndex_ = self.RowIndexFromAnalogChannelIndex_(wasKept) ;
+            [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+                ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
+            self.updateMappingsFromPlotIndices_() ;
             self.clearData_() ;
             self.broadcast('Update') ;            
         end
@@ -313,6 +394,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function didDeleteDigitalInputChannels(self, wasDeleted)            
             wasKept = ~wasDeleted ;
             self.IsDigitalChannelDisplayed_ = self.IsDigitalChannelDisplayed_(wasKept) ;
+            self.PlotHeightFromDigitalChannelIndex_ = self.PlotHeightFromDigitalChannelIndex_(wasKept) ;
+            self.RowIndexFromDigitalChannelIndex_ = self.RowIndexFromDigitalChannelIndex_(wasKept) ;
+            [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+                ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
+            self.updateMappingsFromPlotIndices_() ;
             self.clearData_() ;
             self.broadcast('Update') ;            
         end
@@ -342,6 +428,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 
         function toggleDoShowButtons(self)
             self.DoShowButtons = ~(self.DoShowButtons) ;
+        end
+        
+        function toggleDoColorTraces(self)
+            self.DoColorTraces = ~(self.DoColorTraces) ;
         end
         
         function set.IsGridOn(self,newValue)
@@ -395,16 +485,35 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = self.DoShowButtons_ ;
         end                    
         
-        function scrollUp(self, aiChannelIndex)  % works on analog channels only
-            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
-                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
-                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+        function set.DoColorTraces(self,newValue)
+            if ws.isASettableValue(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                    self.DoColorTraces_ = logical(newValue) ;
+                else
+                    self.broadcast('Update');
+                    error('most:Model:invalidPropVal', ...
+                          'DoColorTraces must be a scalar, and must be logical, 0, or 1');
+                end
+            end
+            self.broadcast('Update');
+        end
+        
+        function result = get.DoColorTraces(self)
+            result = self.DoColorTraces_ ;
+        end                    
+        
+        function scrollUp(self, plotIndex)  % works on analog channels only
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    yLimits = self.YLimitsPerAnalogChannel_(:,channelIndex) ;  % NB: a 2-el col vector
                     yMiddle=mean(yLimits);
                     ySpan=diff(yLimits);
                     yRadius=0.5*ySpan;
                     newYLimits=(yMiddle+0.1*ySpan)+yRadius*[-1 +1]' ;
-                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    self.YLimitsPerAnalogChannel_(:,channelIndex) = newYLimits ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -412,23 +521,25 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('most:Model:invalidPropVal', ...
                       'Argument to scrollUp() must be a valid AI channel index') ;
             end                
         end  % function
         
-        function scrollDown(self, aiChannelIndex)  % works on analog channels only
-            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
-                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
-                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+        function scrollDown(self, plotIndex)  % works on analog channels only
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    yLimits = self.YLimitsPerAnalogChannel_(:,channelIndex) ;  % NB: a 2-el col vector
                     yMiddle=mean(yLimits);
                     ySpan=diff(yLimits);
                     yRadius=0.5*ySpan;
                     newYLimits=(yMiddle-0.1*ySpan)+yRadius*[-1 +1]' ;
-                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    self.YLimitsPerAnalogChannel_(:,channelIndex) = newYLimits ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -436,22 +547,24 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('most:Model:invalidPropVal', ...
                       'Argument to scrollDown() must be a valid AI channel index') ;
             end                
         end  % function
                 
-        function zoomIn(self, aiChannelIndex)  % works on analog channels only
-            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
-                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
-                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+        function zoomIn(self, plotIndex)  % works on analog channels only
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    yLimits = self.YLimitsPerAnalogChannel_(:,channelIndex) ;  % NB: a 2-el col vector
                     yMiddle=mean(yLimits);
                     yRadius=0.5*diff(yLimits);
                     newYLimits=yMiddle+0.5*yRadius*[-1 +1]' ;
-                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    self.YLimitsPerAnalogChannel_(:,channelIndex) = newYLimits ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -459,22 +572,24 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('most:Model:invalidPropVal', ...
                       'Argument to zoomIn() must be a valid AI channel index') ;
             end                
         end  % function
                 
-        function zoomOut(self, aiChannelIndex)  % works on analog channels only
-            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
-                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
-                    yLimits = self.YLimitsPerAnalogChannel_(:,aiChannelIndex) ;  % NB: a 2-el col vector
+        function zoomOut(self, plotIndex)  % works on analog channels only
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    yLimits = self.YLimitsPerAnalogChannel_(:,channelIndex) ;  % NB: a 2-el col vector
                     yMiddle=mean(yLimits);
                     yRadius=0.5*diff(yLimits);
                     newYLimits=yMiddle+2*yRadius*[-1 +1]' ;
-                    self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;
+                    self.YLimitsPerAnalogChannel_(:,channelIndex) = newYLimits ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -482,18 +597,20 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('most:Model:invalidPropVal', ...
                       'Argument to zoomIn() must be a valid AI channel index') ;
             end                
         end  % function
                 
-        function setYAxisLimitsTightToData(self, aiChannelIndex)            
-            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
-                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-                if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
-                    self.setYAxisLimitsTightToData_(aiChannelIndex) ;
+        function setYAxisLimitsTightToData(self, plotIndex)            
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    self.setYAxisLimitsTightToData_(channelIndex) ;
                     isValid = true ;
                 else
                     isValid = false ;
@@ -501,17 +618,24 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            self.broadcast('UpdateYAxisLimits', aiChannelIndex);
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('most:Model:invalidPropVal', ...
                       'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
             end                
         end  % function
 
-        function toggleAreYLimitsLockedTightToData(self, aiChannelIndex)
-            currentValue = self.AreYLimitsLockedTightToDataForAnalogChannel_(aiChannelIndex) ;
-            self.AreYLimitsLockedTightToDataForAnalogChannel_(aiChannelIndex) = ~currentValue ;
-            self.setYAxisLimitsTightToData_(aiChannelIndex) ;  % this doesn't call .broadcast()
+        function toggleAreYLimitsLockedTightToData(self, plotIndex)
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    currentValue = self.AreYLimitsLockedTightToDataForAnalogChannel_(channelIndex) ;
+                    self.AreYLimitsLockedTightToDataForAnalogChannel_(channelIndex) = ~currentValue ;
+                    self.setYAxisLimitsTightToData_(channelIndex) ;  % this doesn't call .broadcast()
+                end
+            end
             self.broadcast('Update') ;  % Would be nice to be more surgical about this...
         end        
         
@@ -527,7 +651,31 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % underscore.
             self.clearData_() ;
             self.broadcast('UpdateData') ;
-        end        
+        end
+        
+        function setPlotHeightsAndOrder_(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
+            % Typically called by ws.PlotArrangementDialogFigure after OK
+            % button is pressed.  Does no argument checking.
+            nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
+            %nDIChannels = length(self.IsDigitalChannelDisplayed_) ;
+            %nChannels = nAIChannels + nDIChannels ;
+%             if islogical(isDisplayed) && isequal(size(isDisplayed),[1 nChannels]) && ...
+%                isdouble(plotHeights) && isreal(plotHeights) && isequal(size(plotHeights),[1 nChannels]) && all(plotHeights>=0.1)&& ...     
+%                isdouble(rowIndexFromChannelIndex) && isreal(rowIndexFromChannelIndex) && isequal(size(rowIndexFromChannelIndex),[1 nChannels]) ,
+%                 % Normalize plotHeights, rowIndexFromChannelIndex
+%                 plotHeights = round(10*plotHeights)/10 ;
+%                 [~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex,'stable') ;
+%                 rowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
+            % Set properties
+            self.IsAnalogChannelDisplayed_ = isDisplayed(1:nAIChannels) ;
+            self.IsDigitalChannelDisplayed_ = isDisplayed(nAIChannels+1:end) ;
+            self.PlotHeightFromAnalogChannelIndex_ = plotHeights(1:nAIChannels) ;
+            self.PlotHeightFromDigitalChannelIndex_ = plotHeights(nAIChannels+1:end) ;
+            self.RowIndexFromAnalogChannelIndex_ = rowIndexFromChannelIndex(1:nAIChannels) ;
+            self.RowIndexFromDigitalChannelIndex_ = rowIndexFromChannelIndex(nAIChannels+1:end) ;
+            self.updateMappingsFromPlotIndices_() ;
+            self.broadcast('Update') ;            
+        end
     end  % public methods block
     
     methods (Access=protected)        
@@ -551,7 +699,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            indexWithinData = self.Parent.Acquisition.indexOfAnalogChannelWithinActiveAnalogChannels(aiChannelIndex) ;
+            activeChannelIndexFromChannelIndex = self.Parent.Acquisition.ActiveChannelIndexFromChannelIndex ;
+            indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
             y = self.YData(:,indexWithinData) ;
             yMinRaw=min(y);
             yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
@@ -689,12 +838,42 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 
                 % Add the data
                 indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate) ;
+                plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex_(indicesOfAIChannelsNeedingYLimitUpdate) ;
                 self.broadcast('UpdateData');       
-                self.broadcast('UpdateYAxisLimits', indicesOfAIChannelsNeedingYLimitUpdate) ;
+                self.broadcast('UpdateYAxisLimits', plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
             else
                 % if not active, do nothing
             end
         end
+        
+%         function result = getPlotIndexFromChannelIndex(self)
+%             % The "channel index" here is is equal to the AI channel index
+%             % for AI channels, and is equal to the DI channel index
+%             % plus the number of AI channels for DI channels.  The plot
+%             % index is set to nan for undisplayed channels.
+%             isChannelDisplayed = horzcat(self.IsAnalogChannelDisplayed_, self.IsDigitalChannelDisplayed_) ;
+%             rowIndexFromChannelIndex = horzcat(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;
+%             rowIndexFromChannelIndexAmongDisplayed = rowIndexFromChannelIndex(isChannelDisplayed) ;
+%             plotIndexFromChannelIndexAmongDisplayed = ws.sortedOrder(rowIndexFromChannelIndexAmongDisplayed) ;
+%             nChannels = length(isChannelDisplayed) ;
+%             result = nan(1,nChannels) ;
+%             result(isChannelDisplayed) = plotIndexFromChannelIndexAmongDisplayed ;            
+%         end        
+        
+%         function [channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = getChannelIndexFromPlotIndexMapping(self)
+%             isAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
+%             isDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
+%             nAnalogChannels = length(isAnalogChannelDisplayed) ;
+%             nDigitalChannels = length(isDigitalChannelDisplayed) ;
+%             %nChannels = nAnalogChannels + nDigitalChannels ;
+%             isAnalogFromChannelIndex = horzcat( true(1,nAnalogChannels), false(1,nDigitalChannels) ) ;
+%             isDisplayedFromChannelIndex = horzcat(isAnalogChannelDisplayed, isDigitalChannelDisplayed) ;
+%             rowIndexFromChannelIndex = horzcat(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;
+%             channelIndexFromPlotIndex = ws.Display.computeChannelIndexFromPlotIndexMapping(rowIndexFromChannelIndex, isDisplayedFromChannelIndex) ;
+%             isAnalogFromPlotIndex = isAnalogFromChannelIndex(channelIndexFromPlotIndex) ;
+%             channelIndexWithinTypeFromPlotIndex = ...
+%                 arrayfun(@(channelIndex)(ws.fif(channelIndex>nAnalogChannels,channelIndex-nAnalogChannels,el)), channelIndexFromPlotIndex) ;
+%         end
         
         function didSetAreSweepsFiniteDuration(self)
             % Called by the parent to notify of a change to the acquisition
@@ -724,7 +903,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             %self.XSpan = nan;
         end
         
-%         function out = get.NScopes(self)
+%         function out = get.NPlots(self)
 %             out = length(self.Scopes);
 %         end
                 
@@ -746,7 +925,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.decodeProperties@ws.Coding(propSet);  % not _really_ the originalValues, but I don't think it matters...
 % 
 %             % Update the view
-%             self.broadcast('NScopesMayHaveChanged');
+%             self.broadcast('NPlotsMayHaveChanged');
 %         end  % function
         
 %         function didSetScopeIsVisibleWhenDisplayEnabled(self)
@@ -766,7 +945,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.decodeUnwrappedEncodingCore_@ws.Coding(encoding);
 % 
 %             % Update the view
-%             %self.broadcast('NScopesMayHaveChanged');  % do I need this?
+%             %self.broadcast('NPlotsMayHaveChanged');  % do I need this?
 %         end  % function        
 %     end  % protected methods block
     
@@ -794,12 +973,25 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.sanitizeRowVectorLength(self.AreYLimitsLockedTightToDataForAnalogChannel_, nAIChannels, false) ;
             self.YLimitsPerAnalogChannel_ = ...
                 ws.Display.sanitizeYLimitsArrayLength(self.YLimitsPerAnalogChannel_, nAIChannels, [-10 +10]') ;
+            self.PlotHeightFromAnalogChannelIndex_  = ...
+                ws.sanitizeRowVectorLength(self.PlotHeightFromAnalogChannelIndex_, nAIChannels, 1) ;
             
             nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
             self.IsDigitalChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelDisplayed_, nDIChannels, true) ;            
-            
-            self.clearData_() ;  % This will ensure that the size of YData is appropriate
+            self.PlotHeightFromDigitalChannelIndex_  = ...
+                ws.sanitizeRowVectorLength(self.PlotHeightFromDigitalChannelIndex_, nDIChannels, 1) ;
+
+            % The analog row indices have to be fixed using
+            % knowledge of the digital row indices, and vice-versa
+            [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+                ws.Display.sanitizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_, nAIChannels, nDIChannels) ;
         end
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            self.updateMappingsFromPlotIndices_() ;            
+            self.clearData_() ;  % This will ensure that the size of YData is appropriate
+        end        
+        
     end  % protected methods block
     
     methods (Access=protected)    
@@ -829,6 +1021,28 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
             end
         end
+        
+        function updateMappingsFromPlotIndices_(self)
+            isAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
+            isDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
+            nAnalogChannels = length(isAnalogChannelDisplayed) ;
+            nDigitalChannels = length(isDigitalChannelDisplayed) ;
+            isAnalogFromChannelIndex = horzcat( true(1,nAnalogChannels), false(1,nDigitalChannels) ) ;
+            isDisplayedFromChannelIndex = horzcat(isAnalogChannelDisplayed, isDigitalChannelDisplayed) ;
+            rowIndexFromChannelIndex = horzcat(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;
+            channelIndexFromPlotIndex = ws.Display.computeChannelIndexFromPlotIndexMapping(rowIndexFromChannelIndex, isDisplayedFromChannelIndex) ;
+            isAnalogFromPlotIndex = isAnalogFromChannelIndex(channelIndexFromPlotIndex) ;
+            channelIndexWithinTypeFromPlotIndex = ...
+                arrayfun(@(channelIndex)(ws.fif(channelIndex>nAnalogChannels,channelIndex-nAnalogChannels,channelIndex)), channelIndexFromPlotIndex) ;
+            % Determine the channel index -> plot index mapping
+            plotIndexFromChannelIndex = ws.sortedOrderLeavingNansInPlace(rowIndexFromChannelIndex) ;
+            % Finally, set the state variables that we need to set
+            self.IsAnalogFromPlotIndex_ = isAnalogFromPlotIndex ;
+            self.ChannelIndexWithinTypeFromPlotIndex_ = channelIndexWithinTypeFromPlotIndex ;            
+            self.ChannelIndexFromPlotIndex_ = channelIndexFromPlotIndex ;
+            self.PlotIndexFromChannelIndex_ = plotIndexFromChannelIndex ;
+        end  % function
+        
     end  % protected methods block    
     
     methods (Static=true)
@@ -899,6 +1113,41 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
     
+        function [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
+                renormalizeRowIndices(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex)
+            % Used, e.g. after channel deletion, to maintain the ordering
+            % of the row indices, but eliminate any gaps, so that they go
+            % from 1 to the number of channels.
+            nAIChannels = length(rowIndexFromAnalogChannelIndex) ;
+            %nDIChannels = length(rowIndexFromDigitalChannelIndex) ;
+            %nChannels = nAIChannels + nDIChannels ;
+            rowIndexFromChannelIndex = horzcat(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex) ;  % this may have gaps in the ordering
+            newRowIndexFromChannelIndex = ws.sortedOrder(rowIndexFromChannelIndex) ;
+            %[~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex) ;
+            %newRowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
+            newRowIndexFromAnalogChannelIndex = newRowIndexFromChannelIndex(1:nAIChannels) ;
+            newRowIndexFromDigitalChannelIndex = newRowIndexFromChannelIndex(nAIChannels+1:end) ;
+        end
+        
+        function [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
+                sanitizeRowIndices(rowIndexFromAnalogChannelIndex, rowIndexFromDigitalChannelIndex, nAIChannels, nDIChannels)
+            protoNewRowIndexFromAnalogChannelIndex = ws.sanitizeRowVectorLength(rowIndexFromAnalogChannelIndex, nAIChannels, +inf) ;
+            protoNewRowIndexFromDigitalChannelIndex = ws.sanitizeRowVectorLength(rowIndexFromDigitalChannelIndex, nDIChannels, +inf) ;
+            [newRowIndexFromAnalogChannelIndex, newRowIndexFromDigitalChannelIndex] = ...
+                ws.Display.renormalizeRowIndices(protoNewRowIndexFromAnalogChannelIndex, protoNewRowIndexFromDigitalChannelIndex) ;
+        end
+
+        function result = computeChannelIndexFromPlotIndexMapping(rowIndexFromChannelIndex, isDisplayedFromChannelIndex)
+            % Computes the mapping from plot index to channel index, given
+            % the relevant inputs.  "rows" here refers to rows in the
+            % dialog box that the user uses to order the channels for
+            % display.  If isDisplayedFromChannelIndex is all true, then
+            % the result is simply the inverse permutation of
+            % rowIndexFromChannelIndex.
+            channelIndexFromRowIndex = ws.invertPermutation(rowIndexFromChannelIndex) ;
+            isDisplayedFromRowIndex(rowIndexFromChannelIndex) = isDisplayedFromChannelIndex ;
+            result = channelIndexFromRowIndex(isDisplayedFromRowIndex) ;
+        end  % function
     end  % static methods block
 
     

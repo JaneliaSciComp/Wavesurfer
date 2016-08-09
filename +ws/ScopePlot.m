@@ -20,7 +20,10 @@ classdef ScopePlot < handle
     end
     
     methods
-        function self=ScopePlot(parent, isAnalog, channelIndex)
+        function self=ScopePlot(parent, plotIndex)
+            % Only displayed channels have ScopePlots, and plotIndex is the
+            % index of *this* ScopePlot in the array of ScopePlots in the
+            % DisplayFigure.
             self.AxesGH_ = ...
                 axes('Parent', parent.FigureGH, ...
                      'Units','pixels', ...
@@ -40,25 +43,25 @@ classdef ScopePlot < handle
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'String','+', ...
-                             'Callback',@(source,event)(parent.controlActuated('YZoomInButtonGH',source,event,channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YZoomInButtonGH',source,event,plotIndex)));
             self.YZoomOutButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'String','-', ...
-                             'Callback',@(source,event)(parent.controlActuated('YZoomOutButtonGH',source,event,channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YZoomOutButtonGH',source,event,plotIndex)));
             self.YScrollUpButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
-                             'Callback',@(source,event)(parent.controlActuated('YScrollUpButtonGH',source,event,channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YScrollUpButtonGH',source,event,plotIndex)));
             self.YScrollDownButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
-                             'Callback',@(source,event)(parent.controlActuated('YScrollDownButtonGH',source,event,channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('YScrollDownButtonGH',source,event,plotIndex)));
             self.SetYLimTightToDataButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits tight to data', ....
-                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataButtonGH',source,event,channelIndex)));
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataButtonGH',source,event,plotIndex)));
             % This next button used to be a togglebutton, but Matlab doesn't let you change the foreground/background colors of togglebuttons, which
             % we want to do with this button when we change to
             % green-on-black mode.  Also, there's a checked menu item that
@@ -71,22 +74,15 @@ classdef ScopePlot < handle
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits tight to data, and keep that way', ....
-                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataLockedButtonGH',source,event,channelIndex)));                      
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataLockedButtonGH',source,event,plotIndex)));                      
             self.SetYLimButtonGH_ = ...
                 ws.uicontrol('Parent',parent.FigureGH, ...
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits', ....
-                             'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH',source,event,channelIndex)));                      
+                             'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH',source,event,plotIndex)));                      
         end  % constructor
         
         function delete(self)
-            % Do I even need to do this stuff?  Those GHs will become
-            % invalid when the figure HG object is deleted...
-            %fprintf('ScopePlot::delete()\n');
-            self.deleteChildMatlabUIObjects() ;
-        end  % function        
-        
-        function deleteChildMatlabUIObjects(self)
             ws.deleteIfValidHGHandle(self.LineGH_) ;
             ws.deleteIfValidHGHandle(self.AxesGH_) ;            
             ws.deleteIfValidHGHandle(self.SetYLimTightToDataButtonGH_) ;
@@ -98,8 +94,8 @@ classdef ScopePlot < handle
             ws.deleteIfValidHGHandle(self.YScrollDownButtonGH_) ;
             ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
             ws.deleteIfValidHGHandle(self.YAxisLabelGH_) ;
-        end
-        
+        end  % function        
+                
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
             xSpanInPixels=ws.ScopeAxes.getWidthInPixels(self.AxesGH_) ;
             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
@@ -168,7 +164,9 @@ classdef ScopePlot < handle
             result = isequal(onOrOff, 'on') ;
         end
         
-        function setPositionAndLayout(self, figureSize, xAxisLabelAreaHeight, nScopesVisible, indexOfThisScopeAmongVisibleScopes, doesUserWantToSeeButtons)
+        function setPositionAndLayout(self, figureSize, xAxisLabelAreaHeight, ...
+                                      normalizedPlotHeight, totalNormalizedHeightOfPreviousPlots , ...            
+                                      doesUserWantToSeeButtons)
             % This method should make sure all the controls are sized and placed
             % appropriately given the current model state.  
             
@@ -221,9 +219,10 @@ classdef ScopePlot < handle
             % position of the panel within the figure rectangle.
             panelWidth = figureWidth ;
             %nScopesVisible = self.Model.Parent.IsScopeVisibleWhenDisplayEnabled ;
-            panelHeight = (figureHeight-xAxisLabelAreaHeight)/nScopesVisible ;
+            plotAreaHeight = figureHeight-xAxisLabelAreaHeight ;
             panelXOffset = 0 ;
-            panelYOffset = figureHeight - panelHeight*indexOfThisScopeAmongVisibleScopes ;            
+            panelHeight = plotAreaHeight * normalizedPlotHeight ;
+            panelYOffset = figureHeight - totalNormalizedHeightOfPreviousPlots*plotAreaHeight ;
             
             % Calculate the first-pass dimensions
             leftMargin = max(minLeftMargin,min(0.13*panelWidth,maxLeftMargin)) ;
@@ -259,17 +258,22 @@ classdef ScopePlot < handle
 
             % Set the axes width, depends on whether we're showing the
             % buttons or not
-            if doShowButtons ,
-                axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;                
-            else
-                axesWidth = axesAndButtonsAreaWidth ;
-            end
+            %if doShowButtons ,
+            axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;
+            %else
+            %    axesWidth = axesAndButtonsAreaWidth ;
+            %end
             axesHeight = axesAndButtonsAreaHeight ;            
+            
+            % Calculate the tick length, so they don't get crazy big/small
+            tickLengthInPels=5;
+            tickLength = tickLengthInPels/max(axesWidth,axesHeight) ;
             
             % Update the axes position
             axesXOffset = leftMargin ;
             axesYOffset = bottomMargin ;
-            set(self.AxesGH_,'Position',[panelXOffset+axesXOffset panelYOffset+axesYOffset axesWidth axesHeight]);            
+            set(self.AxesGH_,'Position', [panelXOffset+axesXOffset panelYOffset+axesYOffset axesWidth axesHeight], ...
+                             'TickLength', tickLength*[1 2.5]) ;
             
             % the zoom buttons
             yRangeButtonsX=axesXOffset+axesWidth+fromAxesToYRangeButtonsWidth;
@@ -330,7 +334,17 @@ classdef ScopePlot < handle
         end  % function                
         
         function setYAxisLimits(self, yl)
-            set(self.AxesGH_, 'YLim', yl) ;
+            [yTicks,yTickLabels] = ws.yTicksFromYLimits(yl) ;
+            set(self.AxesGH_, 'YLim', yl, 'YTick', yTicks, 'YTickLabel', yTickLabels) ;
+            %set(self.AxesGH_, 'YTickLabel', arrayfun(@(y)(sprintf('%.3g',y)), yTicks, 'UniformOutput', false)) ;
+              % We set the y tick labels manually, to eliminate the
+              % "x10^y" thing that Matlab puts at the top of the y axis if
+              % the range is very big or very small.  Setting the tick
+              % labels changes the YTickLabelMode to 'manual', which turns
+              % off that functionality.
+              % But then there are circumstances where matlan will change
+              % the tick positions without telling us, so we set those
+              % manually too.
         end  % function                
         
         function setYAxisLabel(self, channelName, doShowUnits, units, color)
