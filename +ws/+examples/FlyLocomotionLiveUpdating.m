@@ -88,17 +88,22 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         StartedSweepIndices_
         
         % Used for triggering LED
-        TimeLEDTurnedOff_
-        TimeLEDTurnedOn_
         TimeForLEDToBeOn_
         TimeToWaitBeforeTurningLEDBackOn_
         ShouldTheLEDBeTurnedOnForRealThisTime_
+        TimeWhenWeCanTurnOnLED_
+        TimeWhenWeShouldTurnOffLED_
         LEDDigitalOutputChannelIndex_
         CurrentLEDState_
-        TimeInThisSweep_ = 0
+        TimeSpentInThisSweep_ = 0
         NSweepsCompletedInThisRunPrevious_
         LooperBarPositionHistogramTotal_
         RunAlreadyStarted_ = 0
+        InitialTimeToWaitPerSweepBeforeTurningOnLED_
+        % For filtering forward displacement:
+        Alpha_
+        OneMinusAlpha_
+        RCFilteredForwardDisplacementPrevious_
         
         % Used for testing
         DataFromFile_
@@ -166,6 +171,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 
             end
             
+            self.InitialTimeToWaitPerSweepBeforeTurningOnLED_ = 5; %5 seconds
             self.TimeForLEDToBeOn_ = 20; % 20 seconds
             self.TimeToWaitBeforeTurningLEDBackOn_ = 40; % 40 seconds
             self.ShouldTheLEDBeTurnedOnForRealThisTime_ = true;
@@ -393,64 +399,79 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % This is used to acquire the data, and performs the necessary
             % analysis to trigger an LED
             clockStart = tic;
+            numberOfScansRecent = size(analogData,1);
+            analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+numberOfScansRecent,:);
+            self.TotalNumberOfScans_ = self.TotalNumberOfScans_+numberOfScansRecent;
+            self.analyzeFlyLocomotion_(analogData, self.IsUserCodeManagerParentOneTrueWavesurferModel_); % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
+            
             if self.RunAlreadyStarted_ == 0
                 % Then a run just started
                 self.LooperBarPositionHistogramTotal_ = self.BarPositionHistogramTotal_; % Sync looper bar positions to frontend
                 self.NSweepsCompletedInThisRunPrevious_ = NaN;
+                self.DeltaTime_ = 1/looper.Acquisition.SampleRate;
+                tau = 1; % 1s time constant for RC filter
+                self.Alpha_ = self.DeltaTime_/(tau+self.DeltaTime_);
+                self.OneMinusAlpha_ = 1 - self.Alpha_;
                 self.RunAlreadyStarted_ = 1;
             end
             if self.NSweepsCompletedInThisRunPrevious_ ~= looper.NSweepsCompletedInThisRun
                 % Then a new sweep has started
-                self.TimeLEDTurnedOff_ = -Inf; % Set it to -infinity so each sweep starts by treating the LED as if it has always been off
-                self.TimeInThisSweep_ = -1/looper.Acquisition.SampleRate; % Initialize to this so that eg. the first scan equals time 0
+                self.TimeSpentInThisSweep_ = -self.DeltaTime_; % Initialize to this so that eg. the first scan equals time 0
                 self.NSweepsCompletedInThisRunPrevious_ = looper.NSweepsCompletedInThisRun;
+                self.RCFilteredForwardDisplacementPrevious_ = self.ForwardDisplacementRecent_(1);
+                timeForLEDToBeOff = self.InitialTimeToWaitPerSweepBeforeTurningOnLED_;
+                self.TimeWhenWeCanTurnOnLED_ = self.InitialTimeToWaitPerSweepBeforeTurningOnLED_;
+            else
+                timeForLEDToBeOff = self.TimeToWaitBeforeTurningLEDBackOn_;
             end
-      
-            % Update Variables
-            numberOfScansRecent = size(analogData,1);
-            analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+numberOfScansRecent,:);
-            self.TotalNumberOfScans_ = self.TotalNumberOfScans_+numberOfScansRecent;
-            lengthOfTimeAcquired = numberOfScansRecent/looper.Acquisition.SampleRate;
-            self.TimeInThisSweep_ = self.TimeInThisSweep_ + lengthOfTimeAcquired;
-            self.analyzeFlyLocomotion_(analogData, self.IsUserCodeManagerParentOneTrueWavesurferModel_); % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
             
+            % Update TimeSpentInThisSweep
+            timesRecent = self.TimeSpentInThisSweep_ + (1:numberOfScansRecent)'*self.DeltaTime_;
+            self.TimeSpentInThisSweep_ = timesRecent(end);
+            
+            % Bar
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
             self.LooperBarPositionHistogramTotal_ = self.LooperBarPositionHistogramTotal_ + barPositionHistogramCountsRecent/looper.Acquisition.SampleRate;
             
+            % Use RC filter of forward displacement to determine if fly is
+            % moving forward enough to turn LED on.
+            %             while
+            %
+            %             end
             % Check whether to turn the LED on or off
             if strcmp(self.CurrentLEDState_, 'Off') % Then the LED is off
-                timeSinceLEDTurnedOff = self.TimeInThisSweep_ - self.TimeLEDTurnedOff_;
-                if self.TimeInThisSweep_ >= 5 && self.TimeInThisSweep_ < (looper.SweepDuration - (self.TimeForLEDToBeOn_+0.1))
-                    % Then the sweep has been going for at least 5 seconds,
-                    % and still has enough time left for a complete LED
-                    % "On" cycle
-                    if timeSinceLEDTurnedOff >= self.TimeToWaitBeforeTurningLEDBackOn_ % Then it has been off for enough time
-                        % Need to check if the fly is moving forward before deciding
-                        % if we can turn the LED on;
-                        if any(self.ForwardDisplacementRecent_>0) % Then fly was moving forward at some point, and LED *may* be turned on
-                            self.ShouldTheLEDBeTurnedOnForRealThisTime_ = 1;%rand()>0.5; % randomize whether it will be turned on for real. Comment this out and it will alternate if it is turned on for real.
-                            if self.ShouldTheLEDBeTurnedOnForRealThisTime_
-                                % The LED will really be turned on.
-                                turnOnOrOff = 1;
-                                self.setLEDState(looper,turnOnOrOff);
-                                self.CurrentLEDState_ = 'On';
-                            else
-                                % We will pretend as if the LED was turned on so
-                                % we wait an appropriate amount of time before
-                                % trying to turn it on again.
-                                self.CurrentLEDState_ = 'Pseudo On';
-                            end
-                            self.TimeLEDTurnedOn_=self.TimeInThisSweep_;
-                            self.ShouldTheLEDBeTurnedOnForRealThisTime_ = ~self.ShouldTheLEDBeTurnedOnForRealThisTime_; % Toggle this. Only affects next LED state if not randomizing
-                        end
+                shouldWeTurnOnTheLED = any(timesRecent >= self.TimeWhenWeCanTurnOnLED_...
+                    & timesRecent < (looper.SweepDuration - (self.TimeForLEDToBeOn_+0.1))...
+                    & self.ForwardDisplacementRecent_>0);
+                timeShouldTurnOn = timesRecent(find(timesRecent >= self.TimeWhenWeCanTurnOnLED_...
+                    & timesRecent < (looper.SweepDuration - (self.TimeForLEDToBeOn_+0.1))...
+                    & self.ForwardDisplacementRecent_>0,1));
+                if timeShouldTurnOn>5.00001
+                   fprintf('why'); 
+                end
+                if shouldWeTurnOnTheLED % Then fly was moving forward at some point, and LED *may* be turned on
+                    self.ShouldTheLEDBeTurnedOnForRealThisTime_ = 1;%rand()>0.5; % randomize whether it will be turned on for real. Comment this out and it will alternate if it is turned on for real.
+                    if self.ShouldTheLEDBeTurnedOnForRealThisTime_
+                        % The LED will really be turned on.
+                        turnOnOrOff = 1;
+                        self.setLEDState(looper,turnOnOrOff);
+                        self.CurrentLEDState_ = 'On';
+                        clockEnd = toc(clockStart);
+                        fprintf('%f %f %s %f %d \n',self.TimeSpentInThisSweep_,timeShouldTurnOn, self.CurrentLEDState_,clockEnd,numberOfScansRecent);
+                    else
+                        % We will pretend as if the LED was turned on so
+                        % we wait an appropriate amount of time before
+                        % trying to turn it on again.
+                        self.CurrentLEDState_ = 'Pseudo On';
                     end
+                    self.TimeWhenWeShouldTurnOffLED_ = self.TimeSpentInThisSweep_+self.TimeForLEDToBeOn_;
+                    self.ShouldTheLEDBeTurnedOnForRealThisTime_ = ~self.ShouldTheLEDBeTurnedOnForRealThisTime_; % Toggle this. Only affects next LED state if not randomizing
                 end
             else
                 % The LED is "On" or "Pseudo On"
-                timeSinceLEDTurnedOn = self.TimeInThisSweep_ - self.TimeLEDTurnedOn_;
-                if timeSinceLEDTurnedOn >= self.TimeForLEDToBeOn_ % then want to turn it off
+                if self.TimeSpentInThisSweep_ >= self.TimeWhenWeShouldTurnOffLED_ % then want to turn it off
                     if strcmp(self.CurrentLEDState_,'On')
                         turnOnOrOff = 0;
                         self.setLEDState(looper,turnOnOrOff);
@@ -459,11 +480,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                         % actually turn it off
                     end
                     self.CurrentLEDState_ = 'Off';
-                    self.TimeLEDTurnedOff_ = self.TimeInThisSweep_;
+                    self.TimeWhenWeCanTurnOnLED_ = self.TimeSpentInThisSweep_ + timeForLEDToBeOff;
                 end
             end
-            clockEnd = toc(clockStart);
-            fprintf('%f %d \n',clockEnd,numberOfScansRecent);
+            
         end
         
         % These methods are called in the refiller process
