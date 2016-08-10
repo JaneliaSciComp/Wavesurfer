@@ -4,6 +4,10 @@ classdef DisplayController < ws.Controller
         MyYLimDialogFigure=[]
     end
 
+    properties (Access=protected)
+        PlotArrangementDialogFigure_ = []
+    end
+    
     methods
         function self=DisplayController(wavesurferController, wavesurferModel)
             % Call the superclass constructor
@@ -27,8 +31,32 @@ classdef DisplayController < ws.Controller
             self.Model.toggleDoShowButtons();
         end  % method        
 
+        function doColorTracesMenuItemActuated(self, varargin)
+            self.Model.toggleDoColorTraces();
+        end  % method        
+        
         function InvertColorsMenuItemGHActuated(self, varargin)
             self.Model.toggleAreColorsNormal();
+        end  % method        
+
+        function arrangementMenuItemActuated(self, varargin)
+            self.PlotArrangementDialogFigure_ = [] ;  % if not first call, this should cause the old controller to be garbage collectable
+            plotArrangementDialogModel = [] ;
+            parentFigurePosition = get(self.Figure,'Position') ;
+            channelNames = self.Model.Parent.Acquisition.ChannelNames ;
+            isDisplayed = horzcat(self.Model.IsAnalogChannelDisplayed, self.Model.IsDigitalChannelDisplayed) ;
+            plotHeights = horzcat(self.Model.PlotHeightFromAnalogChannelIndex, self.Model.PlotHeightFromDigitalChannelIndex) ;
+            rowIndexFromChannelIndex = horzcat(self.Model.RowIndexFromAnalogChannelIndex, self.Model.RowIndexFromDigitalChannelIndex) ;
+            %nChannels = length(channelNames) ;
+            %plotHeights = ones(1,nChannels) ;
+            %plotOrdinality = 1:nChannels ;
+            callbackFunction = ...
+                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder_(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
+            self.PlotArrangementDialogFigure_ = ...
+                ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
+                                               parentFigurePosition, ...
+                                               channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
+                                               callbackFunction) ;
         end  % method        
 
         function AnalogChannelMenuItemsActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
@@ -39,34 +67,35 @@ classdef DisplayController < ws.Controller
             self.Model.toggleIsDigitalChannelDisplayed(diChannelIndex) ;
         end  % method        
                                 
-        function YScrollUpButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.scrollUp(channelIndex);
+        function YScrollUpButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.scrollUp(plotIndex);
         end
                 
-        function YScrollDownButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.scrollDown(channelIndex);
+        function YScrollDownButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.scrollDown(plotIndex);
         end
                 
-        function YZoomInButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.zoomIn(channelIndex);
+        function YZoomInButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.zoomIn(plotIndex);
         end
                 
-        function YZoomOutButtonGHActuated(self, source, event, channelIndex) %#ok<INUSL>
-            self.Model.zoomOut(channelIndex);
+        function YZoomOutButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.zoomOut(plotIndex);
         end
                 
-        function SetYLimTightToDataButtonGHActuated(self, source, event, channelIndex)
-            self.Model.setYAxisLimitsTightToData(channelIndex);
+        function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.setYAxisLimitsTightToData(plotIndex);
         end  % method       
         
-        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, channelIndex)
-            self.Model.toggleAreYLimitsLockedTightToData(channelIndex);
+        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Model.toggleAreYLimitsLockedTightToData(plotIndex);
         end  % method       
 
-        function SetYLimButtonGHActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
+        function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
             self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
+            aiChannelIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
             yLimits = self.Model.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
             yUnits = self.Model.Parent.Acquisition.AnalogChannelUnits{aiChannelIndex} ;
             callbackFunction = @(newYLimits)(self.Model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;

@@ -1,69 +1,31 @@
 classdef DisplayFigure < ws.MCOSFigure
     
-%     properties (Dependent=true)
-%         % Typically, MCOSFigures don't have public properties like this.  These exist for ScopeFigure
-%         % to enable us to keep the ScopeModel state in sync with the HG figure XLim and YLim if the 
-%         % user changes them using the default Matlab HG figure tools.  Basically, the ScopeFigure defines 
-%         % events DidSetXLim and DidSetYLim, which it fires if the HG figure XLim or YLim are changes.  The
-%         % ScopeController subscribes to these events, and when they occur it sets the corresponding properties in the
-%         % model.  Care has to be taken to avoid infinite loops, as you might imagine.
-%         XLim
-%         YLim
-%     end
-
-%     properties (Dependent=true)
-%         YScrollUpIcon
-%         YScrollDownIcon 
-%         YTightToDataIcon 
-%         YTightToDataLockedIcon 
-%         ControlForegroundColor
-%         ControlBackgroundColor
-%         AxesForegroundColor
-%         AxesBackgroundColor
-%         TraceLineColor
-%     end
-
     properties (Access = protected)
-        AnalogScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
-        DigitalScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
-                
+        ScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
+        %DigitalScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
+        
+%         ChannelsMenu_
+%         AnalogChannelMenuItems_
+%         DigitalChannelMenuItems_
+        
         ViewMenu_
         InvertColorsMenuItem_
         ShowGridMenuItem_
         DoShowButtonsMenuItem_
+        DoColorTracesMenuItem_
+        PlotArrangementMenuItem_
 
-        ChannelsMenu_
-        AnalogChannelMenuItems_
-        DigitalChannelMenuItems_
-        
+        % Stuff below are cached resources that we use in all the
+        % ScopePlots
         NormalYScrollUpIcon_ 
         NormalYScrollDownIcon_ 
         NormalYTightToDataIcon_ 
         NormalYTightToDataLockedIcon_ 
         NormalYTightToDataUnlockedIcon_ 
-        NormalYCaretIcon_ 
-        
+        NormalYCaretIcon_         
         TraceColorSequence_
-%         YScrollUpIcon_ 
-%         YScrollDownIcon_ 
-%         YTightToDataIcon_ 
-%         YTightToDataLockedIcon_ 
-%         ControlForegroundColor_
-%         ControlBackgroundColor_
-%         AxesForegroundColor_
-%         AxesBackgroundColor_
-%         TraceLineColor_
     end    
     
-%     properties (Dependent=true, SetAccess=immutable, Hidden=true)  % hidden so not show in disp() output
-%         IsVisibleWhenDisplayEnabled
-%     end
-    
-%     events
-%         DidSetXLim
-%         DidSetYLim
-%     end
-
     methods
         function self=DisplayFigure(model, controller)
             % Call the superclass constructor
@@ -105,39 +67,7 @@ classdef DisplayFigure < ws.MCOSFigure
             
             % Set the initial figure position
             self.setInitialFigureSize_();
-            
-            % Subscribe to some model events
-            %self.didSetModel_();
-            
-%             % reset the downsampled data
-%             nChannels=length(model.ChannelNames);
-%             self.XForPlotting_=zeros(0,1);
-%             self.YForPlotting_=zeros(0,nChannels);
-%             
-%             % Subscribe to some model events
-%             model.subscribeMe(self,'Update','','update');
-%             model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-%             model.subscribeMe(self,'UpdateAreYLimitsLockedTightToData','','updateAreYLimitsLockedTightToData');
-%             model.subscribeMe(self,'ChannelAdded','','modelChannelAdded');
-%             model.subscribeMe(self,'DataAdded','','modelDataAdded');
-%             model.subscribeMe(self,'DataCleared','','modelDataCleared');
-%             model.subscribeMe(self,'DidSetChannelUnits','','modelChannelUnitsSet');           
-% 
-%             % Subscribe to events in the master model
-%             if ~isempty(model) ,
-%                 display=model.Parent;
-%                 if ~isempty(display) ,
-%                     wavesurferModel=display.Parent;
-%                     if ~isempty(wavesurferModel) ,
-%                         wavesurferModel.subscribeMe(self,'DidSetState','','update');
-%                     end
-%                 end
-%             end            
-            
-%             % Do stuff to make ws.most.Controller happy
-%             self.setHGTagsToPropertyNames_();
-%             self.updateGuidata_();
-            
+                        
             % sync up self to model
             self.update();
             
@@ -169,19 +99,14 @@ classdef DisplayFigure < ws.MCOSFigure
         end  % constructor
         
         function delete(self)
-            self.AnalogScopePlots_ = [] ;  % not really necessary
-            self.DigitalScopePlots_ = [] ;  % not really necessary
+            self.ScopePlots_ = [] ;  % not really necessary
         end  % function
         
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            if isempty(self.AnalogScopePlots_) ,
-                if isempty(self.AnalogScopePlots_) ,
-                    xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
-                else
-                    xSpanInPixels=self.DigitalScopePlots_(1).getAxesWidthInPixels() ;
-                end
+            if isempty(self.ScopePlots_) ,
+                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
             else
-                xSpanInPixels=self.AnalogScopePlots_(1).getAxesWidthInPixels() ;
+                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
             end
             self.Model.hereIsXSpanInPixels(xSpanInPixels) ;
         end
@@ -252,8 +177,8 @@ end  % public methods block
             maxInitialHeight = screenHeight - 50 ;  % pels
             
             % Position the figure in the middle of the screen
-            nScopes = self.Model.NScopes ;
-            initialHeight = min(250 * max(1,nScopes), maxInitialHeight) ;
+            nPlots = self.Model.NPlots ;
+            initialHeight = min(250 * max(1,nPlots), maxInitialHeight) ;
             initialSize=[700 initialHeight];
             figurePosition=[offset initialSize];
             set(self.FigureGH,'Position',figurePosition);
@@ -398,8 +323,9 @@ end  % public methods block
         
         function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSL>
             args = event.Args ;
-            aiChannelIndex = args{1} ;
-            self.updateYAxisLimits_(aiChannelIndex);
+            plotIndex = args{1} ;
+            aiChannelIndex = args{2} ;
+            self.updateYAxisLimits_(plotIndex, aiChannelIndex) ;
         end  % function
         
         function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
@@ -599,10 +525,10 @@ end  % public methods block
 %                           'CData', cdata, ...
 %                           'Callback',@(source,event)(self.controlActuated('SetYLimTightToDataLockedButtonGH',source,event)));
 
-            % Add the channels menu
-            self.ChannelsMenu_ = ...
-                uimenu('Parent',self.FigureGH, ...
-                       'Label','Channels');
+%             % Add the channels menu
+%             self.ChannelsMenu_ = ...
+%                 uimenu('Parent',self.FigureGH, ...
+%                        'Label','Channels');
 
             % Add a menu, and a single menu item
             self.ViewMenu_ = ...
@@ -650,6 +576,15 @@ end  % public methods block
                 uimenu('Parent',self.ViewMenu_, ...
                        'Label','Show Buttons', ...
                        'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
+            self.DoColorTracesMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Label','Color Traces', ...
+                       'Callback',@(source,event)self.controlActuated('doColorTracesMenuItem',source,event));            
+            self.PlotArrangementMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Separator', 'on', ...
+                       'Label','Plot Arrangement...', ...
+                       'Callback',@(source,event)self.controlActuated('arrangementMenuItem',source,event));            
                                       
 %             % Y axis control buttons
 %             self.YZoomInButton_ = ...
@@ -692,100 +627,82 @@ end  % public methods block
         end  % function            
 
         function updateControlsInExistance_(self)
-            % Make it so we have the same number of scopes as analog channels,
-            % adding/deleting them as needed
-            nAnalogScopePlots = length(self.AnalogScopePlots_) ;
-            nAnalogChannels = self.Model.Parent.Acquisition.NAnalogChannels ;
-            if nAnalogChannels>nAnalogScopePlots ,
-                for i = nAnalogScopePlots+1:nAnalogChannels ,
-                    newScopePlot = ws.ScopePlot(self, true, i) ;
-                    self.AnalogScopePlots_ = horzcat(self.AnalogScopePlots_, newScopePlot);
+            % Make it so we have the same number of scopes as displayed channels,
+            % adding/deleting them as needed.
+            isChannelDisplayed = horzcat(self.Model.IsAnalogChannelDisplayed, self.Model.IsDigitalChannelDisplayed) ;
+            nChannelsDisplayed = sum(isChannelDisplayed) ;
+            nScopePlots = length(self.ScopePlots_) ;
+            if nChannelsDisplayed>nScopePlots ,
+                for i = nScopePlots+1:nChannelsDisplayed ,
+                    newScopePlot = ws.ScopePlot(self, i) ;
+                    self.ScopePlots_ = horzcat(self.ScopePlots_, newScopePlot);
                 end
-            elseif nAnalogChannels<nAnalogScopePlots ,
-                for i = nAnalogChannels+1:nAnalogScopePlots ,
-                    self.AnalogScopePlots_(i).deleteChildMatlabUIObjects() ;  % Have to delete the graphics objects for each ScopePlot
+            elseif nChannelsDisplayed<nScopePlots ,
+                for i = nChannelsDisplayed+1:nScopePlots ,
+                    self.ScopePlots_(i).delete() ;  % Have to delete to eliminate UI objects
                 end
-                self.AnalogScopePlots_ = self.AnalogScopePlots_(1:nAnalogChannels) ;
+                self.ScopePlots_ = self.ScopePlots_(1:nChannelsDisplayed) ;
             else
                 % do nothing --- we already have the right number of
-                % analog ScopePlots
-            end
-
-            % Make it so we have the same number of scopes as digital channels,
-            % adding/deleting them as needed
-            nDigitalScopePlots = length(self.DigitalScopePlots_) ;
-            nDigitalChannels = self.Model.Parent.Acquisition.NDigitalChannels ;
-            if nDigitalChannels>nDigitalScopePlots ,
-                for i = nDigitalScopePlots+1:nDigitalChannels ,
-                    newScopePlot = ws.ScopePlot(self, false, i) ;
-                    self.DigitalScopePlots_ = horzcat(self.DigitalScopePlots_, newScopePlot);
-                end
-            elseif nDigitalChannels<nDigitalScopePlots ,
-                for i = nDigitalChannels+1:nDigitalScopePlots ,
-                    self.DigitalScopePlots_(i).deleteChildMatlabUIObjects() ;  % Have to delete the graphics objects for each ScopePlot
-                end
-                self.DigitalScopePlots_ = self.DigitalScopePlots_(1:nDigitalChannels) ;
-            else
-                % do nothing --- we already have the right number of
-                % digital ScopePlots
+                % ScopePlots
             end
             
-            % Update the Channels menu
-            self.updateChannelsMenu_() ;
+%             % Update the Channels menu
+%             self.updateChannelsMenu_() ;
         end  % function
 
-        function updateChannelsMenu_(self)
-            % Update the scope menu match the model state
-            
-            % Delete all the menu items in the Channels menu
-            ws.deleteIfValidHGHandle(self.AnalogChannelMenuItems_);
-            ws.deleteIfValidHGHandle(self.DigitalChannelMenuItems_);
-            self.AnalogChannelMenuItems_ = [] ;
-            self.DigitalChannelMenuItems_ = [] ;
-                        
-            % 
-            % At this point, the Channels menu has been reduced to a blank
-            % slate
-            %
-            
-            % If no model, can't really do much, so return
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            
-            % Get the HG object representing the "Scopes" item in the
-            % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
-            channelsMenu = self.ChannelsMenu_ ;
-            
-            % Set the Visibility of the Remove item in the Scope submenu
-            %set(removeItem,'Visible',onIff(model.Display.NScopes>0));
-            
-            % Add a menu item for each AI channel
-            aiChannelNames = self.Model.Parent.Acquisition.AnalogChannelNames ;
-            for i = 1:length(aiChannelNames) ,
-                menuItem = uimenu('Parent', channelsMenu, ...
-                                  'Label', aiChannelNames{i}, ...
-                                  'Tag', sprintf('AnalogChannelMenuItem %d',i), ...
-                                  'Checked', ws.onIff(model.IsAnalogChannelDisplayed(i)), ...
-                                  'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event,i)));
-                self.AnalogChannelMenuItems_ = horzcat(self.AnalogChannelMenuItems_, menuItem) ;
-            end
-            
-            % Add a menu item for each DI channel
-            diChannelNames = self.Model.Parent.Acquisition.DigitalChannelNames ;
-            for i = 1:length(diChannelNames) ,
-                menuItem = uimenu('Parent', channelsMenu, ...
-                                  'Label', diChannelNames{i}, ...
-                                  'Tag', sprintf('DigitalChannelMenuItem %d',i), ...
-                                  'Checked', ws.onIff(model.IsDigitalChannelDisplayed(i)), ...
-                                  'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event,i)));
-                if i==1 ,
-                    set(menuItem, 'Separator', 'on') ;
-                end
-                self.DigitalChannelMenuItems_ = horzcat(self.DigitalChannelMenuItems_, menuItem) ;
-            end
-        end  % function
+%         function updateChannelsMenu_(self)
+%             % Update the scope menu match the model state
+%             
+%             % Delete all the menu items in the Channels menu
+%             ws.deleteIfValidHGHandle(self.AnalogChannelMenuItems_);
+%             ws.deleteIfValidHGHandle(self.DigitalChannelMenuItems_);
+%             self.AnalogChannelMenuItems_ = [] ;
+%             self.DigitalChannelMenuItems_ = [] ;
+%                         
+%             % 
+%             % At this point, the Channels menu has been reduced to a blank
+%             % slate
+%             %
+%             
+%             % If no model, can't really do much, so return
+%             model=self.Model;
+%             if isempty(model) ,
+%                 return
+%             end
+%             
+%             % Get the HG object representing the "Scopes" item in the
+%             % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
+%             channelsMenu = self.ChannelsMenu_ ;
+%             
+%             % Set the Visibility of the Remove item in the Scope submenu
+%             %set(removeItem,'Visible',onIff(model.Display.NScopes>0));
+%             
+%             % Add a menu item for each AI channel
+%             aiChannelNames = self.Model.Parent.Acquisition.AnalogChannelNames ;
+%             for i = 1:length(aiChannelNames) ,
+%                 menuItem = uimenu('Parent', channelsMenu, ...
+%                                   'Label', aiChannelNames{i}, ...
+%                                   'Tag', sprintf('AnalogChannelMenuItem %d',i), ...
+%                                   'Checked', ws.onIff(model.IsAnalogChannelDisplayed(i)), ...
+%                                   'Callback', @(source,event)(self.controlActuated('AnalogChannelMenuItems',source,event,i)));
+%                 self.AnalogChannelMenuItems_ = horzcat(self.AnalogChannelMenuItems_, menuItem) ;
+%             end
+%             
+%             % Add a menu item for each DI channel
+%             diChannelNames = self.Model.Parent.Acquisition.DigitalChannelNames ;
+%             for i = 1:length(diChannelNames) ,
+%                 menuItem = uimenu('Parent', channelsMenu, ...
+%                                   'Label', diChannelNames{i}, ...
+%                                   'Tag', sprintf('DigitalChannelMenuItem %d',i), ...
+%                                   'Checked', ws.onIff(model.IsDigitalChannelDisplayed(i)), ...
+%                                   'Callback', @(source,event)(self.controlActuated('DigitalChannelMenuItems',source,event,i)));
+%                 if i==1 ,
+%                     set(menuItem, 'Separator', 'on') ;
+%                 end
+%                 self.DigitalChannelMenuItems_ = horzcat(self.DigitalChannelMenuItems_, menuItem) ;
+%             end
+%         end  % function
         
         function updateControlPropertiesImplementation_(self)
             % If there are issues with the model, just return
@@ -810,8 +727,11 @@ end  % public methods block
             doShowButtons = self.Model.DoShowButtons ;
             set(self.DoShowButtonsMenuItem_,'Checked',ws.onIff(doShowButtons));
 
+            % Update the Do Color Traces togglemenu
+            doColorTraces = self.Model.DoColorTraces ;
+            set(self.DoColorTracesMenuItem_,'Checked',ws.onIff(doColorTraces));
+
             % Compute the colors
-            areColorsNormal = self.Model.AreColorsNormal ;
             defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
             controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
@@ -851,67 +771,69 @@ end  % public methods block
             aiChannelUnits = acq.AnalogChannelUnits ;            
             
             % Update the individual plot colors and icons
-            areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
-            isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
-            nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
-            indexOfThisScopeAmongVisibleScopes = 0 ;
-            indexOfScope = 0 ;
-            for i=1:length(self.AnalogScopePlots_) ,
-                thisPlot = self.AnalogScopePlots_(i) ;
-                indexOfScope = indexOfScope + 1 ;
-                if isAnalogChannelDisplayed(i) ,
-                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
+            areYLimitsLockedTightToDataFromAIChannelIndex = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
+            channelIndexWithinTypeFromPlotIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
+            channelIndexFromPlotIndex = self.Model.ChannelIndexFromPlotIndex ;
+            %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            nPlots = length(self.ScopePlots_) ;
+            for plotIndex=1:length(self.ScopePlots_) ,
+                thisPlot = self.ScopePlots_(plotIndex) ;
+                isThisChannelAnalog = isAnalogFromPlotIndex(plotIndex) ;
+                indexOfThisChannelWithinType =  channelIndexWithinTypeFromPlotIndex(plotIndex) ;  % where "type" means analog or digital
+                indexOfThisChannel = channelIndexFromPlotIndex(plotIndex) ;
+
+                % Determine trace color for this plot
+                if doColorTraces ,
+                    normalTraceLineColor = self.TraceColorSequence_(indexOfThisChannel,:) ;
+                else
+                    normalTraceLineColor = [0 0 0] ;  % black
                 end
                 if areColorsNormal ,
-                    traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
+                    traceLineColor = normalTraceLineColor ;
                 else
-                    traceLineColor = 1 - self.TraceColorSequence_(indexOfScope,:) ;
+                    traceLineColor = 1 - normalTraceLineColor ;
                 end
-                if areYLimitsLockedTightToData(i) ,                    
+                    
+                if isThisChannelAnalog ,
+                    if areYLimitsLockedTightToDataFromAIChannelIndex(indexOfThisChannelWithinType) ,                    
+                        thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                                   axesForegroundColor, axesBackgroundColor, ...
+                                                   traceLineColor, ...
+                                                   yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
+                    else
+                        thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                                   axesForegroundColor, axesBackgroundColor, ...
+                                                   traceLineColor, ...
+                                                   yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataUnlockedIcon, yCaretIcon) ;
+                    end
+                    thisPlot.IsGridOn = isGridOn ;                       
+                    thisPlot.setXAxisLimits(xl) ;
+                    thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,indexOfThisChannelWithinType)') ;
+                    thisPlot.setYAxisLabel(aiChannelNames{indexOfThisChannelWithinType}, ...
+                                           true, ...
+                                           aiChannelUnits{indexOfThisChannelWithinType}, ...
+                                           axesForegroundColor) ;
+                    if plotIndex==nPlots ,
+                        thisPlot.setXAxisLabel(axesForegroundColor) ;
+                    else
+                        thisPlot.clearXAxisLabel() ;
+                    end
+                else
+                    % this channel is digital
                     thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
                                                axesForegroundColor, axesBackgroundColor, ...
                                                traceLineColor, ...
                                                yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
-                else
-                    thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
-                                               axesForegroundColor, axesBackgroundColor, ...
-                                               traceLineColor, ...
-                                               yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataUnlockedIcon, yCaretIcon) ;
-                end
-                thisPlot.IsGridOn = isGridOn ;                       
-                thisPlot.setXAxisLimits(xl) ;
-                thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,i)') ;
-                thisPlot.setYAxisLabel(aiChannelNames{i}, true, aiChannelUnits{i}, axesForegroundColor) ;
-                if indexOfThisScopeAmongVisibleScopes==nScopesVisible ,
-                    thisPlot.setXAxisLabel(axesForegroundColor) ;
-                else
-                    thisPlot.clearXAxisLabel() ;
-                end
-            end
-            for i=1:length(self.DigitalScopePlots_) ,
-                thisPlot = self.DigitalScopePlots_(i) ;
-                indexOfScope = indexOfScope + 1 ;
-                if isDigitalChannelDisplayed(i) ,
-                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
-                end
-                if areColorsNormal ,
-                    traceLineColor = self.TraceColorSequence_(indexOfScope,:) ;
-                else
-                    traceLineColor = 1 - self.TraceColorSequence_(indexOfScope,:) ;
-                end
-                thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
-                                           axesForegroundColor, axesBackgroundColor, ...
-                                           traceLineColor, ...
-                                           yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yCaretIcon) ;
-                thisPlot.IsGridOn = isGridOn ;                       
-                thisPlot.setXAxisLimits(xl) ;
-                thisPlot.setYAxisLimits([-0.05 1.05]) ;
-                thisPlot.setYAxisLabel(diChannelNames{i}, false, [], axesForegroundColor) ;
-                if indexOfThisScopeAmongVisibleScopes==nScopesVisible ,
-                    thisPlot.setXAxisLabel(axesForegroundColor) ;
-                else
-                    thisPlot.clearXAxisLabel() ;
+                    thisPlot.IsGridOn = isGridOn ;                       
+                    thisPlot.setXAxisLimits(xl) ;
+                    thisPlot.setYAxisLimits([-0.05 1.05]) ;
+                    thisPlot.setYAxisLabel(diChannelNames{indexOfThisChannelWithinType}, false, [], axesForegroundColor) ;
+                    if plotIndex==nPlots ,
+                        thisPlot.setXAxisLabel(axesForegroundColor) ;
+                    else
+                        thisPlot.clearXAxisLabel() ;
+                    end
                 end
             end
 
@@ -921,24 +843,23 @@ end  % public methods block
         end  % function
         
         function updateControlEnablementImplementation_(self)
-%             % Set the menu enablement
-%             wavesurferModel = self.Model.Parent ;
-%             isIdle=isequal(wavesurferModel.State,'idle');
-%             set(self.InvertColorsMenuItem_,  'Enable',onIff(isIdle));            
-%             set(self.ShowGridMenuItem_,      'Enable',onIff(isIdle));            
-%             set(self.DoShowButtonsMenuItem_, 'Enable',onIff(isIdle));            
-            
             % Update the enablement of buttons in the panels
-            isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
-            isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;            
+            %isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
+            %isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;            
             areYLimitsLockedTightToData = self.Model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            for i=1:length(self.AnalogScopePlots_) ,
-                self.AnalogScopePlots_(i).IsVisible = isAnalogChannelDisplayed(i) ;
-                self.AnalogScopePlots_(i).setControlEnablement(true, areYLimitsLockedTightToData(i)) ;
-            end
-            for i=1:length(self.DigitalScopePlots_) ,
-                self.DigitalScopePlots_(i).IsVisible = isDigitalChannelDisplayed(i) ;
-                self.DigitalScopePlots_(i).setControlEnablement(false) ;  % digital channels are always locked tight to data
+            %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            channelIndexWithinTypeFromPlotIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
+            for iPlot=1:length(self.ScopePlots_) ,
+                isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
+                thisChannelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
+                %self.ScopePlots_(iPlot).IsVisible = true ;
+                if isThisPlotAnalog ,
+                    self.ScopePlots_(iPlot).setControlEnablement(true, areYLimitsLockedTightToData(thisChannelIndex)) ;
+                else
+                    % this channel/plot is digital
+                    self.ScopePlots_(iPlot).setControlEnablement(false) ;  % digital channels are always locked tight to data
+                end
             end
         end  % function
         
@@ -952,87 +873,52 @@ end  % public methods block
         
             xAxisLabelAreaHeight = 44 ;
             
+            plotHeightFromPlotIndex = self.Model.PlotHeightFromPlotIndex ;
+            normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
+            totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
+            
             doesUserWantToSeeButtons = self.Model.DoShowButtons ;
-            isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
-            isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
-            nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
-            indexOfThisScopeAmongVisibleScopes = 0 ;
-            for i=1:length(self.AnalogScopePlots_)
-                if isAnalogChannelDisplayed(i) ,
-                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
-                    self.AnalogScopePlots_(i).setPositionAndLayout(figureSize, ...
-                                                                   xAxisLabelAreaHeight, ...
-                                                                   nScopesVisible, ...
-                                                                   indexOfThisScopeAmongVisibleScopes, ...
-                                                                   doesUserWantToSeeButtons) ;
-                end
+            %isAnalogChannelDisplayed = self.Model.IsAnalogChannelDisplayed ;
+            %isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
+            %nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
+            %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;            
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot=1:nPlots ,
+                %channelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
+                self.ScopePlots_(iPlot).setPositionAndLayout(figureSize, ...
+                                                             xAxisLabelAreaHeight, ...
+                                                             normalizedPlotHeightFromPlotIndex(iPlot) , ...
+                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...
+                                                             doesUserWantToSeeButtons) ;
             end
-            for i=1:length(self.DigitalScopePlots_)
-                if isDigitalChannelDisplayed(i) ,
-                    indexOfThisScopeAmongVisibleScopes = indexOfThisScopeAmongVisibleScopes + 1 ;
-                    self.DigitalScopePlots_(i).setPositionAndLayout(figureSize, ...
-                                                                    xAxisLabelAreaHeight, ...
-                                                                    nScopesVisible, ...
-                                                                    indexOfThisScopeAmongVisibleScopes, ...
-                                                                    doesUserWantToSeeButtons) ;
-                end
-            end
-        end
+        end  % function
     end  % protected methods block
     
     methods (Access = protected)
-%         function addChannelLineToAxes_(self)
-%             % Creates a new channel line, adding it to the end of self.LineGHs_.
-%             iChannel=length(self.LineGHs_)+1;
-%             newChannelName=self.Model.ChannelNames{iChannel};
-%             
-%             colorOrder = get(self.Axes_ ,'ColorOrder');
-%             color = colorOrder(self.Model.ChannelColorIndex(iChannel), :);
-%             
-%             self.LineGHs_(iChannel) = ...
-%                 line('Parent', self.Axes_,...
-%                      'XData', [],...
-%                      'YData', [],...
-%                      'ZData', [],...
-%                      'Color', color,...
-%                      'Tag', sprintf('%s::%s', self.Model.Tag, newChannelName));
-% %                                      'LineWidth', 2,...
-% %                      'Marker', self.Model.Marker,...
-% %                      'LineStyle', self.Model.LineStyle,...
-%         end  % function
-        
-%         function modelAxisLimitWasSet(self)
-%             self.updateReferenceLines();
-%         end
-        
-        function modelGenericVisualPropertyWasSet_(self)
-            self.update();
-        end  % function 
+%         function modelGenericVisualPropertyWasSet_(self)
+%             self.update();
+%         end  % function 
         
         function updateLineXDataAndYData_(self)
             xData = self.Model.XData ;
             yData = self.Model.YData ;
-            %sizeYData = size(yData) ;
             acq = self.Model.Parent.Acquisition ;
-            isAIChannelActive = acq.IsAnalogChannelActive ;
-            activeChannelIndex = 0 ;
-            for aiChannelIndex = 1:length(self.AnalogScopePlots_) ,
-                if isAIChannelActive(aiChannelIndex) ,
-                    activeChannelIndex = activeChannelIndex + 1 ;
-                    yDataForThisChannel = yData(:,activeChannelIndex) ;
-                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData(xData, yDataForThisChannel) ;
+            activeChannelIndexFromChannelIndex = acq.ActiveChannelIndexFromChannelIndex ;            
+            %isActiveFromChannelIndex = acq.IsChannelActive ;
+            channelIndexFromPlotIndex = self.Model.ChannelIndexFromPlotIndex ;
+            %isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;            
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot = 1:nPlots ,
+                thisPlot = self.ScopePlots_(iPlot) ;
+                channelIndex = channelIndexFromPlotIndex(iPlot) ;
+                activeChannelIndex = activeChannelIndexFromChannelIndex(channelIndex) ;
+                if isnan(activeChannelIndex) ,
+                    % channel is not active
+                    thisPlot.setLineXDataAndYData([],[]) ;
                 else
-                    self.AnalogScopePlots_(aiChannelIndex).setLineXDataAndYData([],[]) ;
-                end
-            end
-            isDIChannelActive = acq.IsDigitalChannelActive ;
-            for diChannelIndex = 1:length(self.DigitalScopePlots_) ,
-                if isDIChannelActive(diChannelIndex) ,
-                    activeChannelIndex = activeChannelIndex + 1 ;
+                    % channel is active
                     yDataForThisChannel = yData(:,activeChannelIndex) ;
-                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData(xData, yDataForThisChannel) ;
-                else
-                    self.DigitalScopePlots_(diChannelIndex).setLineXDataAndYData([],[]) ;
+                    thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;
                 end
             end
         end  % function
@@ -1041,23 +927,9 @@ end  % public methods block
             for i = 1:length(self.ScopePlots_) ,
                 self.ScopePlots_(i).updateAxisLabels_(axisForegroundColor) ;
             end            
-%             if self.Model.NChannels==0 ,
-%                 ylabel(self.Axes_,'Signal','Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
-%             else
-%                 firstChannelName=self.Model.ChannelNames{1};
-%                 %iFirstChannel=self.Model.WavesurferModel.Acquisition.iChannelFromName(firstChannelName);
-%                 %units=self.Model.WavesurferModel.Acquisition.ChannelUnits(iFirstChannel);
-%                 units=self.Model.YUnits;
-%                 if isempty(units) ,
-%                     unitsString = 'pure' ;
-%                 else
-%                     unitsString = units ;
-%                 end
-%                 ylabel(self.Axes_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',axisForegroundColor,'FontSize',10,'Interpreter','none');
-%             end
         end  % function
         
-        function updateYAxisLabel_(self,color)
+        function updateYAxisLabel_(self, color)
             % Updates the y axis label handle graphics to match the model state
             % and that of the Acquisition subsystem.
             %set(self.Axes_,'YLim',self.YOffset+[0 self.YRange]);
@@ -1083,23 +955,22 @@ end  % public methods block
                 return
             end
             xl = self.Model.XOffset + [0 self.Model.XSpan] ;
-            for i = 1:length(self.AnalogScopePlots_) ,
-                self.AnalogScopePlots_(i).setXAxisLimits(xl) ;
-            end
-            for i = 1:length(self.DigitalScopePlots_) ,
-                self.DigitalScopePlots_(i).setXAxisLimits(xl) ;
+            for i = 1:length(self.ScopePlots_) ,
+                self.ScopePlots_(i).setXAxisLimits(xl) ;
             end
         end  % function        
 
-        function updateYAxisLimits_(self, aiChannelIndices)
+        function updateYAxisLimits_(self, plotIndices, aiChannelIndices)
             % Update the axes limits to match those in the model
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-            yLimitsPerAnalogChannel = self.Model.YLimitsPerAnalogChannel ;
-            for aiChannelIndex = aiChannelIndices ,
-                yl = yLimitsPerAnalogChannel(:,aiChannelIndex)' ;
-                self.AnalogScopePlots_(aiChannelIndex).setYAxisLimits(yl) ;
+            yLimitsFromAIChannelIndex = self.Model.YLimitsPerAnalogChannel ;
+            for i = 1:length(plotIndices) ,
+                plotIndex = plotIndices(i) ;
+                aiChannelIndex = aiChannelIndices(i) ;
+                yl = yLimitsFromAIChannelIndex(:,aiChannelIndex)' ;
+                self.ScopePlots_(plotIndex).setYAxisLimits(yl) ;
             end
         end  % function        
 

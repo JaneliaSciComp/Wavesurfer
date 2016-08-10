@@ -228,6 +228,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             
+            self.updateActiveChannelIndexFromChannelIndex_() ;
             %self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
@@ -250,6 +251,7 @@ classdef Acquisition < ws.AcquisitionSubsystem
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             end
+            self.updateActiveChannelIndexFromChannelIndex_() ;
             wasDeleted = isToBeDeleted ;
 %             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
