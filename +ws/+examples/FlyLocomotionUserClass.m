@@ -22,7 +22,8 @@ classdef FlyLocomotionUserClass < ws.UserClass
     % functions below, but that only the methods themselves need access to.
     % (The underscore in the name is to help remind you that it's
     % protected.)
-    properties (Access=protected)
+    
+    properties (Transient=true, Access=protected)
         % DataFromFile_
         ScreenSize_
         
@@ -57,19 +58,23 @@ classdef FlyLocomotionUserClass < ws.UserClass
               
         % Used to track which sweeps completed
         CompletedSweepIndices_
-        NextSweepIndexIfNotLogging_
     end
     
     methods
-        function self = FlyLocomotionUserClass(rootModel)
+        function self = FlyLocomotionUserClass(userCodeManager)
             % creates the "user object"
-            if isa(rootModel,'ws.WavesurferModel')
+            if isa(userCodeManager.Parent, 'ws.WavesurferModel')
+                isUserCodeManagerParentOneTrueWavesurferModel = userCodeManager.Parent.IsITheOneTrueWavesurferModel;
+            else
+                isUserCodeManagerParentOneTrueWavesurferModel = 0;
+            end
+            if isUserCodeManagerParentOneTrueWavesurferModel
                 % Only want this to happen in frontend, not the looper
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
                 
                 % For testing, read in data from a file:
-                % fprintf('Instantiating an instance of FlyLocomotionUserClass.\n');
+                fprintf('Instantiating an instance of FlyLocomotionUserClass.\n');
                 % filepath = ('c:/users/ackermand/desktop/temporary files/');
                 % self.DataFromFile_ = load([filepath 'firstSweep.mat']);
                 % self.CurrentTotalScans_ = 0;
@@ -146,8 +151,6 @@ classdef FlyLocomotionUserClass < ws.UserClass
                 set(self.ForwardVsRotationalVelocityHeatMapFigureHandle_,'Name',sprintf('Forward Vs Rotational Velocity: Collecting Sweep %d Data...', wsModel.Logging.NextSweepIndex));
                 set(self.HeadingVsRotationalVelocityHeatMapFigureHandle_,'Name',sprintf('Heading Vs Rotational Velocity: Collecting Sweep %d Data...', wsModel.Logging.NextSweepIndex));
             end
-            
-            self.NextSweepIndexIfNotLogging_ = wsModel.Logging.NextSweepIndex;
         end
         
         function completingRun(self,wsModel,eventName) %#ok<INUSD>
@@ -171,13 +174,12 @@ classdef FlyLocomotionUserClass < ws.UserClass
         function completingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Called after each sweep completes
             
-            self.NextSweepIndexIfNotLogging_ = self.NextSweepIndexIfNotLogging_+1;
             % Store only the completed sweep indices
-                if wsModel.Logging.IsEnabled
-                    self.CompletedSweepIndices_ = [self.CompletedSweepIndices_, wsModel.Logging.NextSweepIndex-1];
-                else
-                    self.CompletedSweepIndices_ = [self.CompletedSweepIndices_, self.NextSweepIndexIfNotLogging_-1];
-                end
+            if wsModel.Logging.IsEnabled
+                self.CompletedSweepIndices_ = [self.CompletedSweepIndices_, wsModel.Logging.NextSweepIndex-1];
+            else
+                self.CompletedSweepIndices_ = [self.CompletedSweepIndices_, wsModel.Logging.NextSweepIndex];
+            end
             
             % Clear the figures and relabel them appropriately
             self.generateClearedFigures();
@@ -725,5 +727,20 @@ classdef FlyLocomotionUserClass < ws.UserClass
         end
     end
     
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to encode private/protected variables, or do
+            % some other kind of transformation on encoding, this method can be overridden.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % By default this behaves as expected - allowing access to public properties.
+            % If a Coding subclass wants to decode private/protected variables, or do
+            % some other kind of transformation on decoding, this method can be overridden.
+            self.(name) = value;
+        end
+    end
 end  % classdef
 
