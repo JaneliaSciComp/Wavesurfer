@@ -23,6 +23,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         LastRTOutput_
         NScansSinceBlankingRisingEdge_
         FinalBlankingValue_  % the last value of the blanking signal from the previous call to samplesAcquired
+        NSweepsCompletedInThisRunAtLastCheck_
     end
     
     methods
@@ -34,9 +35,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             self.BlankingDIChannelIndex = 1 ;
             self.InputThreshold = 1 ;  
             self.NScansToBlank = 40000 ;  % 2 sec at normal sampling freq
-            self.LastRTOutput_ = -1 ;  % set to this so always different from the first calculated RT value
-            self.NScansSinceBlankingRisingEdge_ = inf ;
-            self.FinalBlankingValue_ = false ;
+            self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
         end
         
         function delete(self) %#ok<INUSD>
@@ -89,6 +88,21 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSL>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
+            
+            % Check if this is the first call of the run, and act
+            % accordingly
+            nSweepsCompletedInThisRun = looper.NSweepsCompletedInThisRun ;
+            if self.NSweepsCompletedInThisRunAtLastCheck_ ~= nSweepsCompletedInThisRun ,
+                % This must be the first call to samplesAcquired() in 
+                % this sweep.
+                % Initialize things that should be initialized at the
+                % start of a sweep.
+                self.LastRTOutput_ = -1 ;  % set to this so always different from the first calculated RT value
+                self.NScansSinceBlankingRisingEdge_ = inf ;
+                self.FinalBlankingValue_ = false ;
+                % Record the new NSweepsCompletedInThisRun
+                self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
+            end
             
             % Determine how many scans have passed since the most-recent
             % rising edge of the blanking TTL
