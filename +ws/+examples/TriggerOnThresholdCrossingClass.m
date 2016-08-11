@@ -1,5 +1,4 @@
 classdef TriggerOnThresholdCrossingClass < ws.UserClass
-
     % This is a class to set a TTL high when a signal is above threshold,
     % but only when a blanking signal (a TTL) is off.    
     
@@ -9,8 +8,8 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     properties
         IsEnabled
         InputAIChannelIndex
-        OutputDOChannelIndex
         BlankingDIChannelIndex
+        OutputDOChannelIndex
         InputThreshold  % In native units of the AI input channel
         NScansToBlank  % After a rising edge on the blanking channel
     end  % properties
@@ -86,7 +85,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSL>
+        function samplesAcquired(self, looper, eventName, analogData, digitalData)  %#ok<INUSL>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             
@@ -125,7 +124,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             
             % If the new output value differs from the old, set it
             if newValueForRTOutput ~= self.LastRTOutput_ ,
-                fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
+                %fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
                 doStateWhenUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
                 outputDOChannelIndex = self.OutputDOChannelIndex ;
                 desiredDOStateWhenUntimed = doStateWhenUntimed ;
