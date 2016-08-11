@@ -418,7 +418,6 @@ classdef WavesurferModel < ws.RootModel
     methods  % These are all the methods that get called in response to ZMQ messages
         function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
-            
             % If we are not performing sweeps, just ignore.  This can
             % happen after stopping a run and then starting another, where some old messages from the last run are
             % still in the queue
