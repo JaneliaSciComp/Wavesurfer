@@ -117,8 +117,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         RCFilteredForwardDisplacementPrevious_
         
         % Used for testing
-        DataFromFile_
-        TotalNumberOfScans_
+      %  DataFromFile_
+      %  TotalNumberOfScans_
     end
     
     methods
@@ -130,8 +130,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             else
                 self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
             end
-          filepath = ('c:/users/ackermand/desktop/temporary files/wavesurferuserclass/');
-            self.DataFromFile_ = load([filepath 'secondSweep.mat']);
+            %filepath = ('c:/users/ackermand/desktop/temporary files/wavesurferuserclass/');
+            %self.DataFromFile_ = load([filepath 'secondSweep.mat']);
             % Set up bar histogram information that will be used by
             % frontend and looper
             self.NumberOfBarPositionHistogramBins_ = 16;
@@ -146,7 +146,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 % both the sum and counts so that we may update the
                 % averages whenever we want to plot by dividing the sum by
                 % the counts.
-                self.RotationalVelocityBinEdges_ = (-1200:60:1200);
+                self.RotationalVelocityBinEdges_ = (-2400:60:2400);
                 self.ForwardVelocityBinEdges_= (-40:5:80);
                 self.HeadingBinEdges_ = linspace(0, 2*pi,9);
                 self.DataForForwardVsRotationalVelocityHeatmapSum_ = zeros(length(self.ForwardVelocityBinEdges_)-1 , length(self.RotationalVelocityBinEdges_)-1);
@@ -183,8 +183,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end  
             
             self.CurrentLEDState_ = 'Off';
+            
             % Used for testing
-            self.TotalNumberOfScans_ = 0;
+            % self.TotalNumberOfScans_ = 0;
         end
         
         function delete(self)
@@ -300,8 +301,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;
             self.TimeRecent_ = timeAtStartOfDataAvailableCall + self.DeltaTime_*(0:(nScans-1))';
             
-            analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+nScans,:); % This is for troubleshooting
-            self.TotalNumberOfScans_=self.TotalNumberOfScans_+nScans;
+            
+          %  analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+nScans,:); % This is for troubleshooting
+          %  self.TotalNumberOfScans_=self.TotalNumberOfScans_+nScans;
+          
             % Analyze the fly locomotion, a function provided by Stephanie
             % Wegener. This updates self.BarPositionUnwrappedRecent_,
             % self.BarPositionWrappedRecent_, and
@@ -405,8 +408,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % This is used to acquire the data, and performs the necessary
             % analysis to trigger an LED
             numberOfScansRecent = size(analogData,1);
-            analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+numberOfScansRecent,:);
-            self.TotalNumberOfScans_ = self.TotalNumberOfScans_+numberOfScansRecent;
+            
+       %     analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+numberOfScansRecent,:);
+       %     self.TotalNumberOfScans_ = self.TotalNumberOfScans_+numberOfScansRecent;
+       
             % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
             self.analyzeFlyLocomotion_(analogData, self.IsUserCodeManagerParentOneTrueWavesurferModel_);
             
@@ -420,9 +425,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 self.RunAlreadyStarted_ = true;
                 self.ShouldTheLEDBeTurnedOnForRealThisTime_ = true;
             end
-            if self.TotalNumberOfScans_>3541230
-            fprintf('what');
-            end
+
             if self.NSweepsCompletedInThisRunPrevious_ ~= looper.NSweepsCompletedInThisRun
                 % Then a new sweep has just started
                 self.TimeSpentInThisSweep_ = -self.DeltaTime_; % Initialize to this so that eg. the first scan equals time 0
@@ -586,12 +589,13 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     if strcmp(whichHeatmap{:},'Forward')
                         ylabel(self.(whichAxis),'v_f_w [mm/s]');
                         set(self.(whichAxis),'yTick',(0.5:3:length(self.(whichBinEdges))),'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)))
+                        ylim(self.(whichAxis),[3*round(length(self.(whichBinEdges))/8)+0.5 7*round(length(self.(whichBinEdges))/8)+0.5]);
                     else
                         ylabel(self.(whichAxis),'Heading [rad]');
                         set(self.(whichAxis),'yTick',(0.5:length(self.(whichBinEdges))/4:length(self.(whichBinEdges))+0.5),'yTickLabel', {'0','pi/2','pi','3pi/2','2pi'})
+                        ylim(self.(whichAxis),[0.5 length(self.(whichBinEdges))+0.5]);
                     end
-                    xlim(self.(whichAxis),[round(length(self.RotationalVelocityBinEdges_)/4)+0.5 3*round(length(self.RotationalVelocityBinEdges_)/4)+0.5 ]);
-                    ylim(self.(whichAxis),[0.5 length(self.(whichBinEdges))+0.5]);
+                    xlim(self.(whichAxis),[3*round(length(self.RotationalVelocityBinEdges_)/8)+0.5 5*round(length(self.RotationalVelocityBinEdges_)/8)+0.5 ]);
                     
                     heatmapColorBar = colorbar('peer',self.(whichAxis));
                     ylabel(heatmapColorBar,'Vm [mV]');
