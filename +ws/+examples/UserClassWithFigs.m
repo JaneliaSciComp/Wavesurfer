@@ -1,5 +1,4 @@
 classdef UserClassWithFigs < ws.UserClass
-
     % This is a very simple user class.  It writes to the console when
     % things like a sweep start/end happen.
     

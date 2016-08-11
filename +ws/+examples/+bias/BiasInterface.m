@@ -2,7 +2,7 @@
 % Author: Arunesh Mittal mittala@janelia.org (Adapted from code written by 
 % Jinyang Liu)
 
-classdef biasInterface < handle
+classdef BiasInterface < handle
     
     properties
         address = '';
@@ -18,7 +18,7 @@ classdef biasInterface < handle
     end
     
     methods
-        function self = biasInterface(address, port)
+        function self = BiasInterface(address, port)
             self.address = address;
             self.port = port;
             [~,cmdout] = system(sprintf('tasklist /fo LIST /fi "Imagename eq %s"',self.biasExeFile));
