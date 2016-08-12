@@ -256,13 +256,18 @@ classdef ScopePlot < handle
                 bottomMargin = panelHeight - axesAndButtonsAreaHeight - topMargin ;  % can be less than minBottomMargin, and that's ok
             end
 
-            % Set the axes width, depends on whether we're showing the
-            % buttons or not
-            %if doShowButtons ,
-            axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;
-            %else
-            %    axesWidth = axesAndButtonsAreaWidth ;
-            %end
+            % Set the axes width, depends on whether the user wants to see buttons
+            % or not.
+            if doesUserWantToSeeButtons ,
+                % If user wants to see buttons, leave space for them, even
+                % though we will only show them on plots where there's
+                % enough vertical space.
+                axesWidth = axesAndButtonsAreaWidth - fromAxesToYRangeButtonsWidth - yRangeButtonSize ;
+            else
+                % If user doesn't want to see buttons, no reason to leave
+                % space for them.
+                axesWidth = axesAndButtonsAreaWidth ;
+            end
             axesHeight = axesAndButtonsAreaHeight ;            
             
             % Calculate the tick length, so they don't get crazy big/small
