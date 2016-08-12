@@ -74,8 +74,6 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         UpdateXOffset
         UpdateYAxisLimits
         UpdateData
-        %DataAdded
-        %DataCleared
         ItWouldBeNiceToKnowXSpanInPixels
     end
 
@@ -232,38 +230,38 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function value = get.XSpan(self)
-            import ws.*
             if self.IsXSpanSlavedToAcquistionDuration ,
-                value=1;  % s, fallback value
-                wavesurferModel=self.Parent;
+                wavesurferModel = self.Parent ;
                 if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
-                    return
+                    value = 1 ;  % s, fallback value
+                else
+                    sweepDuration = wavesurferModel.SweepDuration ;
+                    value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
                 end
-                duration=wavesurferModel.SweepDuration;
-                value=fif(isfinite(duration),duration,1);
             else
-                value = self.XSpan_;
+                value = self.XSpan_ ;
             end
         end
         
         function set.XSpan(self, newValue)            
-            if ws.isASettableValue(newValue) ,
-                if self.IsXSpanSlavedToAcquistionDuration ,
-                    % don't set anything
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                % don't set anything
+                didSucceed = true ;  % this is by convention
+            else
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                    self.XSpan_ = double(newValue);
+                    self.clearData_() ;
+                    self.broadcast('UpdateData') ;
+                    didSucceed = true ;
                 else
-                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                        self.XSpan_ = double(newValue);
-                        % for idx = 1:numel(self.Scopes) ,
-                        %     self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                        % end
-                    else
-                        self.broadcast('UpdateXSpan');
-                        error('most:Model:invalidPropVal', ...
-                              'XSpan must be a scalar finite positive number') ;
-                    end
+                    didSucceed = false ;
                 end
             end
-            self.broadcast('UpdateXSpan');            
+            self.broadcast('UpdateXSpan');
+            if ~didSucceed ,
+                error('most:Model:invalidPropVal', ...
+                      'XSpan must be a scalar finite positive number') ;
+            end                
         end  % function
                 
         function value = get.XOffset(self)
@@ -315,17 +313,21 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
             if self.IsXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                    isNewValueAllowed = true ;
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
-                    % for idx = 1:numel(self.Scopes) ,
-                    %     self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                    % end
+                    self.clearData_() ; 
+                    self.broadcast('UpdateData');
                 else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
+                    isNewValueAllowed = false ;
                 end
+            else
+                isNewValueAllowed = true ;  % sort of in a trivial sense...
             end
             self.broadcast('Update');            
+            if ~isNewValueAllowed ,
+                error('most:Model:invalidPropVal', ...
+                      'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
+            end                
         end
         
         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
@@ -891,16 +893,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function didSetSweepDurationIfFinite(self)
             % Called by the parent to notify of a change to the acquisition
-            % duration
-            
-            % Want any listeners on XSpan set to get called
-            %if self.IsXSpanSlavedToAcquistionDuration ,
-%             for idx = 1:numel(self.Scopes) ,
-%                 self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-%             end
+            % duration.            
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                self.clearData_() ;
+                self.broadcast('UpdateData') ;
+            end                
             self.broadcast('UpdateXSpan');
-            %end    
-            %self.XSpan = nan;
         end
         
 %         function out = get.NPlots(self)

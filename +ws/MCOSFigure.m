@@ -90,8 +90,6 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
         function set.AreUpdatesEnabled(self,newValue)
-            import ws.*
-
             %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
             %fprintf('  class of self: %s\n',class(self));
             %newValue
@@ -112,9 +110,9 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             newValueAsSign=2*double(newValue)-1;  % [0,1] -> [-1,+1]
             newDegreeOfEnablementRaw=self.DegreeOfEnablement_+newValueAsSign;
             self.DegreeOfEnablement_ = ...
-                    fif(newDegreeOfEnablementRaw<=1, ...
-                        newDegreeOfEnablementRaw, ...
-                        1);
+                    ws.fif(newDegreeOfEnablementRaw<=1, ...
+                           newDegreeOfEnablementRaw, ...
+                           1);
                         
 %             if isa(self,'ws.TestPulserFigure') ,
 %                 fprintf('MCOSFigure:set.AreUpdatesEnabled(): After update, self.DegreeOfEnablement_ = %d\n' , ...
