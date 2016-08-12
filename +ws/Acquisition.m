@@ -228,13 +228,14 @@ classdef Acquisition < ws.AcquisitionSubsystem
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
             
+            self.updateActiveChannelIndexFromChannelIndex_() ;
             %self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
         
-        function channelNamesToDelete = deleteMarkedDigitalChannels_(self)
+        function wasDeleted = deleteMarkedDigitalChannels_(self)
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
+            %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case so things stay row vectors
                 %self.DigitalDeviceNames_ = cell(1,0) ;
@@ -250,7 +251,8 @@ classdef Acquisition < ws.AcquisitionSubsystem
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             end
-            
+            self.updateActiveChannelIndexFromChannelIndex_() ;
+            wasDeleted = isToBeDeleted ;
 %             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
@@ -273,8 +275,29 @@ classdef Acquisition < ws.AcquisitionSubsystem
     end
 
     methods (Access=protected)
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.Coding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
+    
+    methods (Access=protected)
         function result = getAnalogScalingCoefficients_(self)
             result = self.AnalogScalingCoefficientsCache_ ;
+        end
+    end  % protected methods block
+    
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
         end
     end  % protected methods block
     

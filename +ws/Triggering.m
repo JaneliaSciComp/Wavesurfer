@@ -196,6 +196,16 @@ classdef Triggering < ws.TriggeringSubsystem
         end  % function
     end  % protected methods block
     
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
+        end
+    end  % protected methods block
+    
 %     methods (Access = protected)
 %         function result = getUniqueInternalSweepBasedTriggersInOrderForStarting_(self)
 %             % Just what it says on the tin.  For starting, want the acq

@@ -8,18 +8,11 @@ classdef ExampleUserClass < ws.UserClass
     % object.
     properties
         Greeting = 'Hello, there!'
-    end  % properties
-
-    % Information that you want to stick around between calls to the
-    % functions below, but that only the methods themselves need access to.
-    % (The underscore in the name is to help remind you that it's
-    % protected.)
-    properties (Access=protected)
-        TimeAtStartOfLastRunAsString_ = ''
+        TimeAtStartOfLastRunAsString_ = ''  % should only be accessed from the methods below, but making it protected is a pain.
     end
     
     methods        
-        function self = ExampleUserClass(rootModel)
+        function self = ExampleUserClass(parent)
             % creates the "user object"
             fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
                     self.Greeting);

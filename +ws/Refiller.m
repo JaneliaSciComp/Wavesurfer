@@ -907,15 +907,22 @@ classdef Refiller < ws.RootModel
         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
             % Get everything set up for the Refiller to run a sweep, but
             % don't pulse the master trigger yet.
-            
-            if ~self.IsPerformingRun_ ,
-                error('ws:Refiller:askedToPrepareForSweepWhileNotInRun', ...
-                      'The refiller was asked to prepare for a sweep while not in a run') ;
+
+            if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
+                % If we're not in the right mode, ignore this message.
+                % This can now happen in normal operation, so we want to
+                % just ignore it silently.
+                result = [] ;
+                return
             end
-            if self.IsPerformingSweep_ ,
-                error('ws:Refiller:askedToPrepareForSweepWhileInSweep', ...
-                      'The refiller was asked to prepare for a sweep while already in a sweep') ;
-            end
+%             if ~self.IsPerformingRun_ ,
+%                 error('ws:Refiller:askedToPrepareForSweepWhileNotInRun', ...
+%                       'The refiller was asked to prepare for a sweep while not in a run') ;
+%             end
+%             if self.IsPerformingSweep_ ,
+%                 error('ws:Refiller:askedToPrepareForSweepWhileInSweep', ...
+%                       'The refiller was asked to prepare for a sweep while already in a sweep') ;
+%             end
             
             % Reset the sample count for the sweep
             %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');

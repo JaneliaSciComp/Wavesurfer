@@ -37,6 +37,7 @@ classdef WavesurferModel < ws.RootModel
         State
         VersionString
         %DeviceName
+        IsITheOneTrueWavesurferModel
     end
     
     %
@@ -130,7 +131,7 @@ classdef WavesurferModel < ws.RootModel
         UpdateIsYokedToScanImage
         %DidSetAbsoluteProtocolFileName
         %DidSetAbsoluteUserSettingsFileName        
-        DidLoadProtocolFile
+        %DidLoadProtocolFile
         WillSetState
         DidSetState
         %DidSetAreSweepsFiniteDurationOrContinuous
@@ -760,12 +761,14 @@ classdef WavesurferModel < ws.RootModel
         
         function didSetAnalogInputTerminalID(self)
             self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.Display.didSetAnalogInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
         end
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.Display.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
                 %value = self.Acquisition.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
@@ -833,6 +836,7 @@ classdef WavesurferModel < ws.RootModel
         
         function didSetIsInputChannelActive(self) 
             self.Ephys.didSetIsInputChannelActive() ;
+            self.Display.didSetIsInputChannelActive() ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -867,6 +871,10 @@ classdef WavesurferModel < ws.RootModel
 
         function value=get.IsYokedToScanImage(self)
             value = self.IsYokedToScanImage_ ;
+        end  % function        
+        
+        function value=get.IsITheOneTrueWavesurferModel(self)
+            value = self.IsITheOneTrueWavesurferModel_ ;
         end  % function        
         
         function willPerformTestPulse(self)
@@ -1055,28 +1063,11 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('WillSetState');
             if ws.isAnApplicationState(newValue) ,
                 if ~isequal(self.State_,newValue) ,
-%                     oldValue = self.State_ ;
                     self.State_ = newValue ;
-%                     if isequal(oldValue,'no_device') && ~isequal(newValue,'no_device') ,
-%                         self.broadcast('DidSetStateAwayFromNoDevice');
-%                     end
                 end
             end
-%             if isequal(newValue,'running') ,
-%                 keyboard
-%             end
             self.broadcast('DidSetState');
         end  % function
-        
-%         function runWithGuards_(self)
-%             % Start a run.
-%             
-%             if isequal(self.State,'idle') ,
-%                 self.run_();
-%             else
-%                 % ignore
-%             end
-%         end
         
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
@@ -2161,13 +2152,14 @@ classdef WavesurferModel < ws.RootModel
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
-            self.broadcast('Update');  
+            %self.broadcast('Update');  
+            self.updateEverythingDammit_() ;  % Calls .broadcast('Update') for self and all subsystems
                 % have to do this before setting state, b/c at this point view could be badly out-of-sync w/ model, and setState_() doesn't do a full Update
-            self.setState_('idle');
+            %self.setState_('idle');
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
-            self.broadcast('DidLoadProtocolFile');
+            %self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);
             %self.broadcast('Update');
         end  % function
@@ -2381,18 +2373,27 @@ classdef WavesurferModel < ws.RootModel
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
         
-        function didDeleteAnalogInputChannels(self, nameOfRemovedChannels)
+%         function didDeleteAnalogInputChannels(self, wasDeleted)
+%             self.syncIsAIChannelTerminalOvercommitted_() ;            
+%             self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
+%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+%         end
+        
+        function deleteMarkedAIChannels(self)
+            wasDeleted = self.Acquisition.deleteMarkedAnalogChannels_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
-            self.Display.didDeleteAnalogInputChannels(nameOfRemovedChannels) ;
+            self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
             self.Ephys.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
         function deleteMarkedDIChannels(self)
-            namesOfDeletedChannels = self.Acquisition.deleteMarkedDigitalChannels_() ;
+            wasDeleted = self.Acquisition.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Display.didDeleteDigitalInputChannels(namesOfDeletedChannels) ;
+            self.Display.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
@@ -2472,10 +2473,24 @@ classdef WavesurferModel < ws.RootModel
                                     isTerminalOvercommittedForEachDOChannel) ;
         end
         
-        function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
+%         function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
+%             self.syncIsAOChannelTerminalOvercommitted_() ;            
+%             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+%         end
+
+        function deleteMarkedAOChannels(self)
+            self.Stimulation.deleteMarkedAnalogChannels_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfOutputChannels();
+            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
+              % we might be able to call this from within
+              % self.Stimulation.deleteMarkedAnalogChannels, and that would
+              % generally be better, but I'm afraid of introducing new
+              % bugs...
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
@@ -2681,6 +2696,12 @@ classdef WavesurferModel < ws.RootModel
             %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
         end
         
+        function propNames = listPropertiesForCheckingIndependence(self)
+            % Define a helper function
+            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
+            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
+        end
+        
         function debug(self) %#ok<MANU>
             keyboard
         end
@@ -2699,8 +2720,9 @@ classdef WavesurferModel < ws.RootModel
             
             % Don't want to do broadcasts while we're in a
             % possibly-inconsistent state
-            self.disableBroadcasts() ;
-
+            %self.disableBroadcasts() ;
+            self.disableAllBroadcastsDammit_() ;  % want to disable *all* broadcasts, in *all* subsystems
+            
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
@@ -2732,7 +2754,8 @@ classdef WavesurferModel < ws.RootModel
 %             %self.Display.didSetDeviceName() ;
 
             % Safe to do broadcasts again
-            self.enableBroadcastsMaybe() ;
+            %self.enableBroadcastsMaybe() ;
+            self.enableBroadcastsMaybeDammit_() ;
             
             % Make sure the looper knows which output channels are timed vs
             % on-demand
@@ -2804,6 +2827,44 @@ classdef WavesurferModel < ws.RootModel
             end
             self.broadcast('Update');
         end  % function        
+    end  % protected methods block
+    
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+            self.Triggering_.disableBroadcasts() ;
+            self.Acquisition_.disableBroadcasts() ;
+            self.Stimulation_.disableBroadcasts() ;
+            self.Display_.disableBroadcasts() ;
+            self.Ephys_.TestPulser.disableBroadcasts() ;
+            self.Ephys_.ElectrodeManager.disableBroadcasts() ;
+            self.UserCodeManager_.disableBroadcasts() ;
+            self.Logging_.disableBroadcasts() ;            
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.Logging_.enableBroadcastsMaybe() ;                        
+            self.UserCodeManager_.enableBroadcastsMaybe() ;
+            self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
+            self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
+            self.Display_.enableBroadcastsMaybe() ;
+            self.Stimulation_.enableBroadcastsMaybe() ;
+            self.Acquisition_.enableBroadcastsMaybe() ;            
+            self.Triggering_.enableBroadcastsMaybe() ;
+            self.enableBroadcastsMaybe() ;
+        end
+        
+        function updateEverythingDammit_(self)
+            self.Logging_.broadcast('Update') ;                        
+            self.UserCodeManager_.broadcast('Update') ;
+            self.Ephys_.ElectrodeManager.broadcast('Update') ;
+            self.Ephys_.TestPulser.broadcast('Update') ;
+            self.Display_.broadcast('Update') ;
+            self.Stimulation_.broadcast('Update') ;
+            self.Acquisition_.broadcast('Update') ;            
+            self.Triggering_.broadcast('Update') ;
+            self.broadcast('Update') ;            
+        end
     end  % protected methods block
     
     methods (Static)

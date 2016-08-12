@@ -1049,14 +1049,22 @@ classdef Looper < ws.RootModel
             % goes wrong
             %err = [] ;
             
-            if ~self.IsPerformingRun_ ,
-                error('ws:Looper:askedToPrepareForSweepWhileNotInRun', ...
-                      'The looper was asked to prepare for a sweep while not in a run') ;
+            if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
+                % If we're not in the right mode for this message, ignore
+                % it.  This now happens in the normal course of things (b/c
+                % we have two incomming sockets, basically), so we need to
+                % just ignore the message quietly.
+                result = [] ;
+                return
             end
-            if self.IsPerformingSweep_ ,
-                error('ws:Looper:askedToPrepareForSweepWhileInSweep', ...
-                      'The looper was asked to prepare for a sweep while already in a sweep') ;
-            end
+%             if ~self.IsPerformingRun_ ,   
+%                 error('ws:Looper:askedToPrepareForSweepWhileNotInRun', ...
+%                       'The looper was asked to prepare for a sweep while not in a run') ;
+%             end
+%             if self.IsPerformingSweep_ ,
+%                 error('ws:Looper:askedToPrepareForSweepWhileInSweep', ...
+%                       'The looper was asked to prepare for a sweep while already in a sweep') ;
+%             end
             
             % Reset the sample count for the sweep
             %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');

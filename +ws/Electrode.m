@@ -58,10 +58,10 @@ classdef Electrode < ws.Model % & ws.Mimic
     end
     
     methods        
-        function self=Electrode(parent,varargin)
+        function self=Electrode(parent)
             % Set the defaults
             self@ws.Model(parent);
-            self.Name_ = '';
+            self.Name_ = '' ;
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';
             self.VoltageCommandChannelName_ = '';
@@ -79,23 +79,23 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.IndexWithinType_=[];  % e.g. 2 means this is the second electrode of the current type
             self.IsCommandEnabled=true;
             
-            % Process args
-            validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
-            mandatoryPropNames=cell(1,0);
-            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
-            propNamesRaw = pvArgs(1:2:end);
-            propValsRaw = pvArgs(2:2:end);
-            nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
-            propNames=propNamesRaw(1:nPVs);
-            propVals=propValsRaw(1:nPVs);            
+%             % Process args
+%             validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
+%             mandatoryPropNames=cell(1,0);
+%             pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+%             propNamesRaw = pvArgs(1:2:end);
+%             propValsRaw = pvArgs(2:2:end);
+%             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
+%             propNames=propNamesRaw(1:nPVs);
+%             propVals=propValsRaw(1:nPVs);            
             
-            % Set the properties
-            for idx = 1:nPVs
-                self.(propNames{idx}) = propVals{idx};
-            end
+%             % Set the properties
+%             for idx = 1:nPVs
+%                 self.(propNames{idx}) = propVals{idx};
+%             end
             
-            % Notify other parts of the model
-            self.mayHaveChanged();
+            % % Notify other parts of the model
+            % self.mayHaveChanged();
         end  % function
         
 %         function out = get.Parent(self)
@@ -489,8 +489,8 @@ classdef Electrode < ws.Model % & ws.Mimic
             % Note that currently this only sets public properties, with
             % all that that implies.
             
-            % Disable broadcasts for speed
-            self.disableBroadcasts();
+%             % Disable broadcasts for speed
+%             self.disableBroadcasts();
             
 % %             self.Name=other.Name;
 % %             self.IndexWithinType=other.IndexWithinType;
@@ -534,11 +534,11 @@ classdef Electrode < ws.Model % & ws.Mimic
 %                 'TestPulseAmplitudeInVC', 'TestPulseAmplitudeInCC', 'VoltageCommandScaling',...
 %                  'CurrentMonitorScaling', 'CurrentCommandScaling', 'VoltageMonitorScaling', 'IsCommandEnabled','Type'});
              
-             % Re-enable broadcasts
-             self.enableBroadcastsMaybe();
-    
-             % Broadcast update
-             self.broadcast('Update');
+%              % Re-enable broadcasts
+%              self.enableBroadcastsMaybe();
+%     
+%              % Broadcast update
+%              self.broadcast('Update');
         end  % function
 
 %         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable

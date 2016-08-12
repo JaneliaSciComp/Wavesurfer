@@ -7,11 +7,11 @@ ws.clear() ;
 
 % delete all pre-existing channels
 wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(:) = true ;
-wsModel.Acquisition.deleteMarkedAnalogChannels() ;
+wsModel.deleteMarkedAIChannels() ;
 wsModel.Acquisition.IsDigitalChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDIChannels() ;
 wsModel.Stimulation.IsAnalogChannelMarkedForDeletion(:) = true ;
-wsModel.Stimulation.deleteMarkedAnalogChannels() ;
+wsModel.deleteMarkedAOChannels() ;
 wsModel.Stimulation.IsDigitalChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDOChannels() ;
 
@@ -131,14 +131,12 @@ wsModel.Stimulation.StimulusLibrary.SelectedOutputable = stimulusMap1 ;
 
 wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
 
-scope = wsModel.Display.Scopes{1} ;
-scope.YLim = [-55 +25] ;
-scope = wsModel.Display.Scopes{2} ;
-scope.YLim = [-10 +60] ;
-scope = wsModel.Display.Scopes{3} ;
-scope.YLim = [-0.1 +1.1] ;
-scope = wsModel.Display.Scopes{4} ;
-scope.YLim = [-0.1 +1.1] ;
+%scope = wsModel.Display.Scopes{1} ;
+%scope.YLim = [-55 +25] ;
+wsModel.Display.setYLimitsForSingleAnalogChannel(1, [-55 +25]) ;
+wsModel.Display.setYLimitsForSingleAnalogChannel(2, [-10 +60]) ;
+%wsModel.Display.setYLimitsForSingleAnalogChannel(3, [-0.1 +1.1]) ;
+%wsModel.Display.setYLimitsForSingleAnalogChannel(4, [-0.1 +1.1]) ;
 
 wsModel.Display.XSpan=10 ;  % s
 

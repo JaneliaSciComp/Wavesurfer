@@ -88,17 +88,18 @@ classdef (Abstract) Subsystem < ws.Model
         end
         
         function setIsEnabledImplementation_(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.IsEnabled_ = logical(newValue);
-                else
-                    self.broadcast('DidSetIsEnabled');
-                    error('most:Model:invalidPropVal', ...
-                          'IsEnabled must be a scalar, and must be logical, 0, or 1');
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.IsEnabled_ = logical(newValue) ;
+                didSucceed = true ;
+            else
+                didSucceed = false ;
             end
-            self.broadcast('DidSetIsEnabled');
-        end
-    end            
+            self.broadcast('DidSetIsEnabled') ;
+            if ~didSucceed ,
+                error('most:Model:invalidPropVal', ...
+                      'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
+            end
+        end  % function
+    end  % protected methods block            
     
-end
+end  % classdef

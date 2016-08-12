@@ -246,38 +246,24 @@ classdef Ephys < ws.Subsystem
         end
     end  % protected methods block
     
-    %%
-    methods (Access=public)
-%         %%
-%         function resetProtocol(self)  % has to be public so WavesurferModel can call it
-%             % Clears all aspects of the current protocol (i.e. the stuff
-%             % that gets saved/loaded to/from the config file.  Idea here is
-%             % to return the protocol properties stored in the model to a
-%             % blank slate, so that we're sure no aspects of the old
-%             % protocol get carried over when loading a new .cfg file.            
-% %             self.IsEnabled=false;  % this doesn't seem right...
-% %             self.TestPulser_=ws.TestPulser('Parent',self);
-% %             self.ElectrodeManager_.resetProtocol();
-%         end  % function
-    end % methods
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct() ;
-%         mdlHeaderExcludeProps = {};
-%     end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = ws.Subsystem.propertyAttributes();
-%         end  % function
-%     end  % class methods block
-    
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.TestPulser_.disableBroadcasts() ;
+            self.ElectrodeManager_.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.ElectrodeManager_.enableBroadcastsMaybe() ;
+            self.TestPulser_.enableBroadcastsMaybe() ;
+        end
+    end  % protected methods block
+
     methods
         function mimic(self, other)
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             self.ElectrodeManager.disableBroadcasts();
             self.TestPulser.disableBroadcasts();
             % Get the list of property names for this file type
@@ -303,13 +289,13 @@ classdef Ephys < ws.Subsystem
             % Re-enable broadcasts
             self.TestPulser.enableBroadcastsMaybe();
             self.ElectrodeManager.enableBroadcastsMaybe();
-            self.enableBroadcastsMaybe();
+            %self.enableBroadcastsMaybe();
             
             % Broadcast updates for sub-models and self, now that
             % everything is in sync, and should be self-consistent
             self.TestPulser.broadcast('Update');
             self.ElectrodeManager.broadcast('Update');
-            self.broadcast('Update');  % is this necessary?
+            %self.broadcast('Update');  % is this necessary?
         end  % function
     end  % public methods block
 

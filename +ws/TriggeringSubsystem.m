@@ -453,7 +453,11 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
+                if any(strcmp(thisPropertyName,{'BuiltinTrigger_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = self.(thisPropertyName) ;
+                    target.mimic(source) ;
+                elseif any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
                     target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
                     self.(thisPropertyName) = target ;
