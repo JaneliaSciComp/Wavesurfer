@@ -373,3 +373,8 @@ Version History
                          weird, unusable state.
 
 0.921    Jul 26, 2016    Fixed another bug with manual stopping.
+
+0.93     Aug 12, 2016    New chart-recorder-like display of traces.
+                         Improvements to user class handling.
+                         Includes two more custom user classes.
+                         
