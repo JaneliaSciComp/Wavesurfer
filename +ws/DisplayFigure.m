@@ -15,6 +15,10 @@ classdef DisplayFigure < ws.MCOSFigure
         DoColorTracesMenuItem_
         PlotArrangementMenuItem_
 
+        % The (downsampled for display) data currently being shown.
+        XData_
+        YData_
+        
         % Stuff below are cached resources that we use in all the
         % ScopePlots
         NormalYScrollUpIcon_ 
@@ -31,6 +35,9 @@ classdef DisplayFigure < ws.MCOSFigure
             % Call the superclass constructor
             self = self@ws.MCOSFigure(model,controller) ;
             
+            % Set up XData_ and YData_
+            self.clearXDataAndYData_() ;
+            
             % Set properties of the figure
             set(self.FigureGH, ...
                 'Name', 'Display', ...
@@ -41,7 +48,7 @@ classdef DisplayFigure < ws.MCOSFigure
                 'Menubar','none', ...
                 'Toolbar','none', ...
                 'CloseRequestFcn', @(source,event)(self.closeRequested(source,event)), ...
-                'ResizeFcn', @(source,event)(self.layout_()) );
+                'ResizeFcn', @(source,event)(self.resize()) );
             
             % Load in the needed icons from disk
             wavesurferDirName=fileparts(which('wavesurfer'));
@@ -63,13 +70,13 @@ classdef DisplayFigure < ws.MCOSFigure
             
             % Create the widgets that will persist through the life of the
             % figure
-            self.createFixedControls_();
+            self.createFixedControls_() ;
             
             % Set the initial figure position
-            self.setInitialFigureSize_();
+            self.setInitialFigureSize_() ;
                         
             % sync up self to model
-            self.update();
+            self.update() ;
             
             % position next to main window
             mainFigure = controller.Parent.Figure ;
@@ -77,22 +84,24 @@ classdef DisplayFigure < ws.MCOSFigure
 
             % Subscribe to events
             if ~isempty(model) ,
-               model.subscribeMe(self,'Update','','update');
+               model.subscribeMe(self,'Update','','update') ;
                %model.subscribeMe(self,'NScopesMayHaveChanged','','update');
-               model.subscribeMe(self,'DidSetIsEnabled','','update');
-               model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
+               model.subscribeMe(self,'DidSetIsEnabled','','update') ;
+               model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
                %model.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                %model.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
-               model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits');
-               model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits');
-               model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits');
-               model.subscribeMe(self,'UpdateData','','updateData');
+               model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits') ;
+               model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits') ;
+               model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
+               %model.subscribeMe(self,'UpdateData','','updateData') ;
+               model.subscribeMe(self,'ClearData','','clearData') ;
                %model.subscribeMe(self,'DataAdded','','modelDataAdded');
                %model.subscribeMe(self,'DataCleared','','modelDataCleared');
-               model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
+               model.subscribeMe(self, 'AddData', '', 'addData') ;
+               %model.subscribeMe(self,'ItWouldBeNiceToKnowXSpanInPixels','','tellModelXSpanInPixels') ;
                wavesurferModel=model.Parent;
                if ~isempty(wavesurferModel) ,
-                   wavesurferModel.subscribeMe(self,'DidSetState','','update');
+                   wavesurferModel.subscribeMe(self,'DidSetState','','update') ;
                end
             end
             
@@ -102,14 +111,20 @@ classdef DisplayFigure < ws.MCOSFigure
             self.ScopePlots_ = [] ;  % not really necessary
         end  % function
         
-        function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            if isempty(self.ScopePlots_) ,
-                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
-            else
-                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
-            end
-            self.Model.hereIsXSpanInPixels(xSpanInPixels) ;
+        function resize(self)
+            self.clearXDataAndYData_() ;
+            self.syncLineXDataAndYData_() ;
+            self.layout_() ;            
         end
+        
+%         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+%             if isempty(self.ScopePlots_) ,
+%                 xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+%             else
+%                 xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
+%             end
+%             self.Model.hereIsXSpanInPixels(xSpanInPixels) ;
+%         end
         
 %         function set(self,propName,value)
 %             % Override MCOSFigure set to catch XLim, YLim
@@ -352,15 +367,15 @@ end  % public methods block
 %         end
 
         function updateData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.updateLineXDataAndYData_();
+            self.syncLineXDataAndYData_();
         end  % function
 
 %         function modelDataAdded(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             self.updateLineXDataAndYData_();
+%             self.syncLineXDataAndYData_();
 %         end  % function
 %         
 %         function modelDataCleared(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-%             self.updateLineXDataAndYData_();                      
+%             self.syncLineXDataAndYData_();                      
 %         end  % function
         
 %         function modelChannelUnitsSet(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
@@ -412,7 +427,7 @@ end  % public methods block
 %             
 %             % Update the graphics objects to match the model
 %             self.updateYAxisLabel_();
-%             self.updateLineXDataAndYData_();
+%             self.syncLineXDataAndYData_();
 %             
 %             % Update the enablement of controls
 %             %import ws.onIff
@@ -839,7 +854,7 @@ end  % public methods block
 
             % Do this separately, although we could do it at same time if
             % speed is an issue...
-            self.updateLineXDataAndYData_();
+            self.syncLineXDataAndYData_();
         end  % function
         
         function updateControlEnablementImplementation_(self)
@@ -866,6 +881,11 @@ end  % public methods block
         function layout_(self)
             % This method should make sure all the controls are sized and placed
             % appropraitely given the current model state.
+            
+%             % Clear our internal data cache, since we're too dumb to do
+%             % anything else
+%             self.clearXDataAndYData_() ;
+%             self.syncLineXDataAndYData_() ;
             
             %figureSize=self.layoutFixedControls_();
             figurePosition = get(self.FigureGH, 'Position') ;
@@ -894,14 +914,132 @@ end  % public methods block
         end  % function
     end  % protected methods block
     
-    methods (Access = protected)
-%         function modelGenericVisualPropertyWasSet_(self)
-%             self.update();
-%         end  % function 
+    methods
+        function addData(self, broadcaster, eventName, propertyName, source, event) %#ok<INUSL>
+            args = event.Args ;
+            t = args{1} ;
+            recentScaledAnalogData = args{2} ;
+            recentRawDigitalData = args{3} ;
+            sampleRate = args{4} ;
+            self.addData_(t, recentScaledAnalogData, recentRawDigitalData, sampleRate) ;
+        end
         
-        function updateLineXDataAndYData_(self)
-            xData = self.Model.XData ;
-            yData = self.Model.YData ;
+        function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+            self.clearXDataAndYData_() ;
+            self.syncLineXDataAndYData_() ;
+        end        
+    end
+    
+    methods (Access=protected)
+        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            model = self.Model ;
+            nActiveDigitalChannels = model.Parent.Acquisition.NActiveDigitalChannels ;
+            if nActiveDigitalChannels==0 ,
+                yRecent = recentScaledAnalogData ;
+            else
+                % Might need to write a mex function to quickly translate
+                % recentRawDigitalData to recentDigitalData.
+                nScans = size(recentRawDigitalData,1) ;                
+                recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
+                for j = 1:nActiveDigitalChannels ,
+                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
+                end
+                % End of code that might need to mex-ify
+                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
+            end
+            
+            % Compute a timeline for the new data            
+            nNewScans = size(yRecent, 1) ;
+            dt = 1/sampleRate ;  % s
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
+            
+            % Figure out the downsampling ratio
+            if isempty(self.ScopePlots_) ,
+                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+            else
+                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
+            end            
+%             self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
+%               % At this point, self.XSpanPixels_ should be set to the
+%               % correct value, or the fallback value if there's no view
+%             %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+%             xSpanInPixels = self.XSpanInPixels_ ;
+            xSpan = model.XSpan ;
+            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
+            
+            % deal with XData
+            xAllOriginal = self.XData_ ;  % these are already downsampled
+            yAllOriginal = self.YData_ ;            
+            
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (model.XOffset<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan,:) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the line graphics objects to reflect XData_, YData_
+            self.syncLineXDataAndYData_();
+%             % Update the x offset in the scope to match that in the Display
+%             % subsystem
+%             fprintf('xOffset: %20g     self.XOffset: %20g\n', xOffset, self.XOffset) ;
+%             if xOffset ~= self.XOffset , 
+%                 fprintf('About to change x offset\n') ;
+%                 self.XOffset = xOffset ;
+%             end
+            
+%             % Change the y limits to match the data, if appropriate
+%             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
+        end        
+        
+%         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
+%             model = self.Model ;
+%             areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel_ ;
+%             nAIChannels = model.Parent.Acquisition.NAnalogChannels ;
+%             doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
+%             for i = 1:nAIChannels ,                
+%                 if areYLimitsLockedTightToData(i) ,
+%                     doesAIChannelNeedYLimitUpdate(i) = true ;
+%                     self.setYAxisLimitsTightToData_(i) ;
+%                 end
+%             end
+%             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+%         end  % function
+    end
+
+    methods (Access = protected)
+        function clearXDataAndYData_(self)
+            self.XData_ = zeros(0,1) ;
+            acquisition = self.Model.Parent.Acquisition ;
+            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+            self.YData_ = zeros(0,nActiveChannels) ;
+        end
+
+        function syncLineXDataAndYData_(self)
+            if isempty(self.YData_) ,
+                % Make sure it's the right kind of empty
+                self.clearXDataAndYData_() ;
+            end
+            xData = self.XData_ ;
+            yData = self.YData_ ;
             acq = self.Model.Parent.Acquisition ;
             activeChannelIndexFromChannelIndex = acq.ActiveChannelIndexFromChannelIndex ;            
             %isActiveFromChannelIndex = acq.IsChannelActive ;
