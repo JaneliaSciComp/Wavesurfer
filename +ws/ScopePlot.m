@@ -1,7 +1,7 @@
 classdef ScopePlot < handle
     
     properties (Dependent=true)
-        IsVisible
+        %IsVisible
         IsGridOn
     end
     
@@ -146,23 +146,23 @@ classdef ScopePlot < handle
             result = isequal(onOrOff, 'on') ;
         end
         
-        function set.IsVisible(self, newValue)
-            set(self.AxesGH_, 'Visible', ws.onIff(newValue));
-            set(self.LineGH_, 'Visible', ws.onIff(newValue));
-            set(self.SetYLimTightToDataButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.SetYLimTightToDataLockedButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.SetYLimButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.YZoomInButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.YZoomOutButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.YScrollUpButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.YScrollDownButtonGH_, 'Visible', ws.onIff(newValue));
-            set(self.YAxisLabelGH_, 'Visible', ws.onIff(newValue));
-        end
-           
-        function result = get.IsVisible(self)
-            onOrOff = get(self.AxesGH_, 'Visible') ;
-            result = isequal(onOrOff, 'on') ;
-        end
+%         function set.IsVisible(self, newValue)
+%             set(self.AxesGH_, 'Visible', ws.onIff(newValue));
+%             set(self.LineGH_, 'Visible', ws.onIff(newValue));
+%             set(self.SetYLimTightToDataButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.SetYLimTightToDataLockedButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.SetYLimButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.YZoomInButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.YZoomOutButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.YScrollUpButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.YScrollDownButtonGH_, 'Visible', ws.onIff(newValue));
+%             set(self.YAxisLabelGH_, 'Visible', ws.onIff(newValue));
+%         end
+%            
+%         function result = get.IsVisible(self)
+%             onOrOff = get(self.AxesGH_, 'Visible') ;
+%             result = isequal(onOrOff, 'on') ;
+%         end
         
         function setPositionAndLayout(self, figureSize, xAxisLabelAreaHeight, ...
                                       normalizedPlotHeight, totalNormalizedHeightOfPreviousPlots , ...            
