@@ -344,6 +344,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function didSetAnalogChannelUnitsOrScales(self)
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;
         end       
         
@@ -374,7 +375,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
             self.RowIndexFromAnalogChannelIndex_ = horzcat(self.RowIndexFromAnalogChannelIndex_, nRowsBefore+1) ;
             self.updateMappingsFromPlotIndices_() ;
-            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;
         end
         
@@ -385,6 +386,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.RowIndexFromDigitalChannelIndex_ = horzcat(self.RowIndexFromDigitalChannelIndex_, nRowsBefore+1) ;
             self.updateMappingsFromPlotIndices_() ;
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
 
@@ -399,6 +401,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
             self.updateMappingsFromPlotIndices_() ;
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
@@ -411,21 +414,25 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
             self.updateMappingsFromPlotIndices_() ;
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
         function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
         function didSetIsInputChannelActive(self) 
             %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         

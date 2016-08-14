@@ -113,7 +113,8 @@ classdef DisplayFigure < ws.MCOSFigure
         
         function resize(self)
             self.clearXDataAndYData_() ;
-            self.syncLineXDataAndYData_() ;
+            %self.syncLineXDataAndYData_() ;
+            self.clearTraceData_() ;
             self.layout_() ;            
         end
         
@@ -926,7 +927,8 @@ end  % public methods block
         
         function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
             self.clearXDataAndYData_() ;
-            self.syncLineXDataAndYData_() ;
+            %self.syncLineXDataAndYData_() ;
+            self.clearTraceData_() ;
         end        
     end
     
@@ -1026,6 +1028,15 @@ end  % public methods block
             acquisition = self.Model.Parent.Acquisition ;
             nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
             self.YData_ = zeros(0,nActiveChannels) ;
+        end
+        
+        function clearTraceData_(self)
+            % Also clear the lines in the plots
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot = 1:nPlots ,
+                thisPlot = self.ScopePlots_(iPlot) ;
+                thisPlot.setLineXDataAndYData([],[]) ;
+            end            
         end
 
         function [channelIndexFromPlotIndex, activeChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
