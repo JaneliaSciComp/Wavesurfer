@@ -349,8 +349,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function startingRun(self)
             self.XOffset = 0;
-            self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
+            %self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
+            %self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
+            self.XAutoScroll_ = (self.XSpan<self.Parent.Acquisition.Duration) ;
         end  % function
         
         function completingRun(self)
