@@ -8,15 +8,23 @@ classdef ScopePlot < handle
     properties (Access = protected)
         AxesGH_  % HG handle to axes
         LineGH_ % HG handle to trace line in the axes
+        YScrollUpButtonGH_
+        YScrollDownButtonGH_
         SetYLimTightToDataButtonGH_
         SetYLimTightToDataLockedButtonGH_
         SetYLimButtonGH_
         YZoomInButtonGH_
         YZoomOutButtonGH_
-        YScrollUpButtonGH_
-        YScrollDownButtonGH_
         XAxisLabelGH_
         YAxisLabelGH_
+        ContextMenuGH_
+        YScrollUpMenuItemGH_
+        YScrollDownMenuItemGH_
+        SetYLimTightToDataMenuItemGH_
+        SetYLimTightToDataLockedMenuItemGH_
+        SetYLimMenuItemGH_
+        YZoomInMenuItemGH_
+        YZoomOutMenuItemGH_        
     end
     
     methods
@@ -80,11 +88,52 @@ classdef ScopePlot < handle
                              'Style','pushbutton', ...
                              'TooltipString', 'Set y-axis limits', ....
                              'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH',source,event,plotIndex)));                      
+                         
+            % Make context menu
+            self.ContextMenuGH_ = uicontextmenu('Parent', parent.FigureGH) ;
+                                                
+            % Populate context menu items
+            self.YScrollUpMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Label', 'Scroll Up', ...
+                       'Callback',@(source,event)(parent.controlActuated('YScrollUpButtonGH', source, event, plotIndex))) ;
+                   
+            self.YScrollDownMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Label', 'Scroll Down', ...
+                       'Callback',@(source,event)(parent.controlActuated('YScrollDownButtonGH', source, event, plotIndex))) ;
+                   
+            self.SetYLimTightToDataMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Separator', 'on', ...
+                       'Label', 'Limits Tight to Data', ...
+                       'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataButtonGH', source, event, plotIndex))) ;
+                   
+            self.SetYLimTightToDataLockedMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Label', 'Lock Limits Tight to Data', ...
+                       'Callback',@(source,event)(parent.controlActuated('SetYLimTightToDataLockedButtonGH', source, event, plotIndex))) ;
+            self.SetYLimMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Label', 'Set Limits...', ....
+                       'Callback',@(source,event)(parent.controlActuated('SetYLimButtonGH', source, event, plotIndex))) ;                      
+                
+            self.YZoomInMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Separator', 'on', ...
+                       'Label', 'Zoom In', ...
+                       'Callback',@(source,event)(parent.controlActuated('YZoomInButtonGH', source, event, plotIndex))) ;
+                   
+            self.YZoomOutMenuItemGH_ = ...
+                uimenu(self.ContextMenuGH_, ...
+                       'Label', 'Zoom Out', ...
+                       'Callback',@(source,event)(parent.controlActuated('YZoomOutButtonGH', source, event, plotIndex))) ;
+            
+            % Add the context menu to the axes
+            set(self.AxesGH_, 'UIContextMenu', self.ContextMenuGH_) ;                       
         end  % constructor
         
         function delete(self)
-            ws.deleteIfValidHGHandle(self.LineGH_) ;
-            ws.deleteIfValidHGHandle(self.AxesGH_) ;            
             ws.deleteIfValidHGHandle(self.SetYLimTightToDataButtonGH_) ;
             ws.deleteIfValidHGHandle(self.SetYLimTightToDataLockedButtonGH_) ;
             ws.deleteIfValidHGHandle(self.SetYLimButtonGH_) ;
@@ -92,8 +141,23 @@ classdef ScopePlot < handle
             ws.deleteIfValidHGHandle(self.YZoomOutButtonGH_) ;
             ws.deleteIfValidHGHandle(self.YScrollUpButtonGH_) ;
             ws.deleteIfValidHGHandle(self.YScrollDownButtonGH_) ;
+            
+            ws.deleteIfValidHGHandle(self.SetYLimTightToDataMenuItemGH_) ;
+            ws.deleteIfValidHGHandle(self.SetYLimTightToDataLockedMenuItemGH_) ;
+            ws.deleteIfValidHGHandle(self.SetYLimMenuItemGH_) ;
+            ws.deleteIfValidHGHandle(self.YZoomInMenuItemGH_) ;
+            ws.deleteIfValidHGHandle(self.YZoomOutMenuItemGH_) ;
+            ws.deleteIfValidHGHandle(self.YScrollUpMenuItemGH_) ;
+            ws.deleteIfValidHGHandle(self.YScrollDownMenuItemGH_) ;
+            
+            ws.deleteIfValidHGHandle(self.ContextMenuGH_) ;            
+            
+            ws.deleteIfValidHGHandle(self.LineGH_) ;
+
             ws.deleteIfValidHGHandle(self.XAxisLabelGH_) ;
             ws.deleteIfValidHGHandle(self.YAxisLabelGH_) ;
+            
+            ws.deleteIfValidHGHandle(self.AxesGH_) ;                        
         end  % function        
                 
         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
@@ -108,7 +172,8 @@ classdef ScopePlot < handle
         function setColorsAndIcons(self, controlForegroundColor, controlBackgroundColor, ...
                                          axesForegroundColor, axesBackgroundColor, ...
                                          traceLineColor, ...
-                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedOrUnlockedIcon, yCaretIcon)            
+                                         yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yTightToDataUnlockedIcon, yCaretIcon, ...
+                                         areYLimitsLockedTightToData)            
             % Update the colors
             set(self.AxesGH_,'Color',axesBackgroundColor);
             set(self.AxesGH_,'XColor',axesForegroundColor);
@@ -131,8 +196,16 @@ classdef ScopePlot < handle
             set(self.YScrollUpButtonGH_,'CData',yScrollUpIcon);
             set(self.YScrollDownButtonGH_,'CData',yScrollDownIcon);
             set(self.SetYLimTightToDataButtonGH_,'CData',yTightToDataIcon);
-            set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedOrUnlockedIcon);            
+            if areYLimitsLockedTightToData ,
+                set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataLockedIcon);
+            else
+                set(self.SetYLimTightToDataLockedButtonGH_,'CData',yTightToDataUnlockedIcon);
+            end                                
             set(self.SetYLimButtonGH_,'CData',yCaretIcon);            
+            
+            % Set the check mark in that one context menu, even though it's
+            % not a color or an icon
+            set(self.SetYLimTightToDataLockedMenuItemGH_, 'Checked', ws.onIff(areYLimitsLockedTightToData) ) ;
         end  % function
 
         function set.IsGridOn(self, newValue)
@@ -412,6 +485,10 @@ classdef ScopePlot < handle
         end  % function                
         
         function setControlEnablement(self, isAnalog, areYLimitsLockedTightToData)
+            set(self.YScrollUpButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YScrollDownButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
             set(self.SetYLimTightToDataButtonGH_, ...
                 'Enable', ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
             set(self.SetYLimTightToDataLockedButtonGH_, ...
@@ -422,10 +499,22 @@ classdef ScopePlot < handle
                 'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
             set(self.YZoomOutButtonGH_, ...
                 'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
-            set(self.YScrollUpButtonGH_, ...
+            
+            set(self.YScrollUpMenuItemGH_, ...
                 'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
-            set(self.YScrollDownButtonGH_, ...
+            set(self.YScrollDownMenuItemGH_, ...
                 'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.SetYLimTightToDataMenuItemGH_, ...
+                'Enable', ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.SetYLimTightToDataLockedMenuItemGH_, ...
+                'Enable',ws.onIff(isAnalog));
+            set(self.SetYLimMenuItemGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YZoomInMenuItemGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YZoomOutMenuItemGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            
         end  % function        
     end  % public methods block
     
