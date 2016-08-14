@@ -998,31 +998,26 @@ end  % public methods block
             
             % Update the line graphics objects to reflect XData_, YData_
             self.syncLineXDataAndYData_();
-%             % Update the x offset in the scope to match that in the Display
-%             % subsystem
-%             fprintf('xOffset: %20g     self.XOffset: %20g\n', xOffset, self.XOffset) ;
-%             if xOffset ~= self.XOffset , 
-%                 fprintf('About to change x offset\n') ;
-%                 self.XOffset = xOffset ;
-%             end
             
-%             % Change the y limits to match the data, if appropriate
-%             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
+            % Change the y limits to match the data, if appropriate
+            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+            plotIndicesNeedingYLimitUpdate = self.Model.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
         end        
         
-%         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
-%             model = self.Model ;
-%             areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel_ ;
-%             nAIChannels = model.Parent.Acquisition.NAnalogChannels ;
-%             doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
-%             for i = 1:nAIChannels ,                
-%                 if areYLimitsLockedTightToData(i) ,
-%                     doesAIChannelNeedYLimitUpdate(i) = true ;
-%                     self.setYAxisLimitsTightToData_(i) ;
-%                 end
-%             end
-%             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
-%         end  % function
+        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
+            model = self.Model ;
+            areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
+            nAIChannels = model.Parent.Acquisition.NAnalogChannels ;
+            doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
+            for i = 1:nAIChannels ,                
+                if areYLimitsLockedTightToData(i) ,
+                    doesAIChannelNeedYLimitUpdate(i) = true ;
+                    self.setYAxisLimitsInModelTightToData_(i) ;
+                end
+            end
+            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+        end  % function
     end
 
     methods (Access = protected)
@@ -1033,7 +1028,7 @@ end  % public methods block
             self.YData_ = zeros(0,nActiveChannels) ;
         end
 
-        function syncLineXDataAndYData_(self)
+        function [channelIndexFromPlotIndex, activeChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
             if isempty(self.YData_) ,
                 % Make sure it's the right kind of empty
                 self.clearXDataAndYData_() ;
@@ -1255,4 +1250,68 @@ end  % public methods block
         end  % function        
     end  % protected methods block
     
+    methods
+        function setYAxisLimitsTightToData(self, plotIndex)            
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+                    self.setYAxisLimitsInModelTightToData_(channelIndex) ;
+                end
+            end
+            self.updateYAxisLimits_(plotIndex, channelIndex) ;
+            %self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+        end  % function        
+        
+        function toggleAreYLimitsLockedTightToData(self, plotIndex)
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+                    currentValue = self.Model.AreYLimitsLockedTightToDataForAnalogChannel(channelIndex) ;
+                    newValue = ~currentValue ;
+                    self.Model.setAreAreYLimitsLockedTightToDataForSingleChannel_(channelIndex, newValue) ;
+                    if newValue ,
+                        self.setYAxisLimitsInModelTightToData_(channelIndex) ;
+                    end
+                end
+            end
+            self.update() ;  % update the button
+        end                
+    end  % public methods block
+    
+    methods (Access=protected)
+        function setYAxisLimitsInModelTightToData_(self, aiChannelIndex)            
+            % this core function does no arg checking and doesn't call
+            % .broadcast.  It just mutates the state.
+            yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
+            if any(~isfinite(yMinAndMax)) ,
+                return
+            end
+            yCenter=mean(yMinAndMax);
+            yRadius=0.5*diff(yMinAndMax);
+            if yRadius==0 ,
+                yRadius=0.001;
+            end
+            newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
+            %self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;            
+            self.Model.setYLimitsForSingleAnalogChannel_(aiChannelIndex, newYLimits)
+        end
+        
+        function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
+            % Min and max of the data, across all plotted channels.
+            % Returns a 1x2 array.
+            % If all channels are empty, returns [+inf -inf].
+            activeChannelIndexFromChannelIndex = self.Model.Parent.Acquisition.ActiveChannelIndexFromChannelIndex ;
+            indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
+            y = self.YData_(:,indexWithinData) ;
+            yMinRaw=min(y);
+            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
+            yMaxRaw=max(y);
+            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
+            yMinAndMax=double([yMin yMax]);
+        end        
+    end  % protected methods block    
 end

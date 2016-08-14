@@ -84,11 +84,11 @@ classdef DisplayController < ws.Controller
         end
                 
         function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.setYAxisLimitsTightToData(plotIndex);
+            self.Figure.setYAxisLimitsTightToData(plotIndex);
         end  % method       
         
         function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.toggleAreYLimitsLockedTightToData(plotIndex);
+            self.Figure.toggleAreYLimitsLockedTightToData(plotIndex);
         end  % method       
 
         function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
