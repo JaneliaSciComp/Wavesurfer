@@ -903,14 +903,17 @@ end  % public methods block
             %isDigitalChannelDisplayed = self.Model.IsDigitalChannelDisplayed ;
             %nScopesVisible = sum(isAnalogChannelDisplayed) + sum(isDigitalChannelDisplayed) ;
             %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;            
+            isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
             nPlots = length(self.ScopePlots_) ;
             for iPlot=1:nPlots ,
                 %channelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
+                isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
                 self.ScopePlots_(iPlot).setPositionAndLayout(figureSize, ...
                                                              xAxisLabelAreaHeight, ...
                                                              normalizedPlotHeightFromPlotIndex(iPlot) , ...
-                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...
-                                                             doesUserWantToSeeButtons) ;
+                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...                                                             
+                                                             doesUserWantToSeeButtons, ...
+                                                             isThisPlotAnalog) ;
             end
         end  % function
     end  % protected methods block

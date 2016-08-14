@@ -166,7 +166,8 @@ classdef ScopePlot < handle
         
         function setPositionAndLayout(self, figureSize, xAxisLabelAreaHeight, ...
                                       normalizedPlotHeight, totalNormalizedHeightOfPreviousPlots , ...            
-                                      doesUserWantToSeeButtons)
+                                      doesUserWantToSeeButtons, ...
+                                      isAnalog)
             % This method should make sure all the controls are sized and placed
             % appropriately given the current model state.  
             
@@ -243,7 +244,7 @@ classdef ScopePlot < handle
             else
                 isEnoughHeightForButtons = true ;
             end
-            doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons ;
+            doShowButtons = doesUserWantToSeeButtons && isEnoughHeightForButtons && isAnalog ;
             
             % If the axes-and-buttons-area is too small, make it larger,
             % and change the right margin and/or bottom margin to accomodate
@@ -411,13 +412,20 @@ classdef ScopePlot < handle
         end  % function                
         
         function setControlEnablement(self, isAnalog, areYLimitsLockedTightToData)
-            set(self.SetYLimTightToDataButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
-            set(self.SetYLimTightToDataLockedButtonGH_,'Enable',ws.onIff(isAnalog));
-            set(self.SetYLimButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
-            set(self.YZoomInButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
-            set(self.YZoomOutButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
-            set(self.YScrollUpButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
-            set(self.YScrollDownButtonGH_,'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData));
+            set(self.SetYLimTightToDataButtonGH_, ...
+                'Enable', ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.SetYLimTightToDataLockedButtonGH_, ...
+                'Enable',ws.onIff(isAnalog));
+            set(self.SetYLimButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YZoomInButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YZoomOutButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YScrollUpButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
+            set(self.YScrollDownButtonGH_, ...
+                'Enable',ws.onIff(isAnalog&&~areYLimitsLockedTightToData) );
         end  % function        
     end  % public methods block
     
