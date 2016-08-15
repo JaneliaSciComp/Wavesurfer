@@ -1,6 +1,6 @@
 classdef RasterTreadMill < ws.UserClass
 
-    % public parameters
+    % public, persistent parameters
     properties
         SpikeThreshold = -15  % mV
         %LaserOnThreshold = -15  % mV
@@ -14,72 +14,77 @@ classdef RasterTreadMill < ws.UserClass
           % with this version, must set the velocity AO to 1 V/V, the
           % velocity AI to 0.01 V/(cm/s)        
         MaxNumberOfSpikesToKeep = 100
-        LaserDigitalInputChannelIndex = 2
+        LaserDigitalInputChannelIndex = 2        
     end
 
-    % local variables
-    properties (Access = protected, Transient = true)
-        BinWidth
-        BinCenters
+    properties (Dependent)
         SampleRate
-        
-        RasterFig
-        RasterAxes
-        NSpikesAxes
-        NSpikesBars
-        VelocityAxes
-        VelocityAverageLine
-        SpikeRateAxes
-        SpikeRateAverageLine
-        SubthresholdAxes
-        SubthresholdAverageLine
-        
-        LatencyFig
-        ElectrodeAxes
-        ElectrodeLines
-        LaserAxes
-        LaserLines
-        
-        Lap
-        InitialPosition
-        PositionAtSpike
-        BinVelocities
-        AllBinVelocities
-        BinDwellTimes
-        AllBinDwellTimes
-        BinSubthresholds
-        AllBinSubthresholds
-        LastLED
     end
     
-    methods
+    % protected, transient variables
+    properties (Access = protected, Transient = true)
+        Parent_
+        BinWidth_
+        BinCenters_
+        SampleRate_
         
-        function self = RasterTreadMill(wsModel)
-            if isa(wsModel,'ws.WavesurferModel') ,
-                % Only want this to happen in the frontend, not the looper
-                % or refiller
-                self.SampleRate = wsModel.Acquisition.SampleRate;
-                self.BinWidth = self.TreadMillLength / self.NBins;
-                self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
-                self.syncRasterFigAndAxes_(wsModel) ;
-                self.syncLatencyFigAndAxes_() ;
-            end
+        RasterFig_
+        RasterAxes_
+        NSpikesAxes_
+        NSpikesBars_
+        VelocityAxes_
+        VelocityAverageLine_
+        SpikeRateAxes_
+        SpikeRateAverageLine_
+        SubthresholdAxes_
+        SubthresholdAverageLine_
+        
+        LatencyFig_
+        ElectrodeAxes_
+        ElectrodeLines_
+        LaserAxes_
+        LaserLines_
+        
+        LapIndex_
+        InitialPosition_
+        PositionAtSpike_
+        BinVelocities_
+        AllBinVelocities_
+        BinDwellTimes_
+        AllBinDwellTimes_
+        BinSubthresholds_
+        AllBinSubthresholds_
+        LastLEDValue_  
+          % the last led value from the previous call to dataAvailable().
+          % Used when calculating edges in the led signal.
+    end
+    
+    methods        
+        function self = RasterTreadMill(userCodeManager)
+            %fprintf('RasterTreadMill::RasterTreadMill()\n') ;
+            self.Parent_ = userCodeManager ;
+            self.synchronizeTransientStateToPersistentState_() ;
         end
         
         function delete(self)
             %fprintf('RasterTreadMill::delete()\n') ;
-            if ~isempty(self.RasterFig) ,
-                if ishghandle(self.RasterFig) ,
-                    close(self.RasterFig) ;
+            if ~isempty(self.RasterFig_) ,
+                if ishghandle(self.RasterFig_) ,
+                    close(self.RasterFig_) ;
                 end
-                self.RasterFig = [] ;
+                self.RasterFig_ = [] ;
             end                
-            if ~isempty(self.LatencyFig) ,
-                if ishghandle(self.LatencyFig) ,
-                    close(self.LatencyFig) ;
+            if ~isempty(self.LatencyFig_) ,
+                if ishghandle(self.LatencyFig_) ,
+                    close(self.LatencyFig_) ;
                 end
-                self.LatencyFig = [] ;
+                self.LatencyFig_ = [] ;
             end                
+            self.Parent_ = [] ;
+        end
+        
+        function result = get.SampleRate(self) 
+            result = self.SampleRate_ ;
         end
         
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
@@ -95,23 +100,19 @@ classdef RasterTreadMill < ws.UserClass
         end
         
         function startingRun(self,wsModel,eventName) %#ok<INUSD>
-            self.SampleRate = wsModel.Acquisition.SampleRate;
-            self.BinWidth = self.TreadMillLength / self.NBins;
-            self.BinCenters = self.BinWidth/2 : self.BinWidth : self.TreadMillLength;
-            self.syncRasterFigAndAxes_(wsModel) ;
-            self.syncLatencyFigAndAxes_() ;            
+            self.synchronizeTransientStateToPersistentState_() ;
             
             % Initialize the pre-run variables
-            self.Lap=1;
-            self.InitialPosition=0;
-            self.PositionAtSpike=[];
-            self.BinDwellTimes=zeros(1,self.NBins);
-            self.AllBinDwellTimes=zeros(1,self.NBins);
-            self.BinVelocities=cell(1,self.NBins);
-            self.AllBinVelocities=cell(1,self.NBins);
-            self.BinSubthresholds=cell(1,self.NBins);
-            self.AllBinSubthresholds=cell(1,self.NBins);
-            self.LastLED = 0 ;
+            self.LapIndex_=1;
+            self.InitialPosition_=0;
+            self.PositionAtSpike_=[];
+            self.BinDwellTimes_=zeros(1,self.NBins);
+            self.AllBinDwellTimes_=zeros(1,self.NBins);
+            self.BinVelocities_=cell(1,self.NBins);
+            self.AllBinVelocities_=cell(1,self.NBins);
+            self.BinSubthresholds_=cell(1,self.NBins);
+            self.AllBinSubthresholds_=cell(1,self.NBins);
+            self.LastLEDValue_ = 0 ;
         end
         
         function completingRun(self,wsModel,eventName) %#ok<INUSD>
@@ -142,7 +143,7 @@ classdef RasterTreadMill < ws.UserClass
             % A falling edge of led indicates position==0, i.e. the start
             % of a new lap.  A rising edge we ignore
             led = bitget(digitalData,self.LEDChannel) ;
-            ledOneSampleInPast = [self.LastLED;led(1:end-1)] ;
+            ledOneSampleInPast = [self.LastLEDValue_;led(1:end-1)] ;
             isLapStart = ~led & ledOneSampleInPast ;
             indexOfNewLapStart = find(isLapStart, 1) ;  % the index where the animal started a new lap, at position = 0
             didCompleteALap = isscalar(indexOfNewLapStart) ;
@@ -154,13 +155,13 @@ classdef RasterTreadMill < ws.UserClass
             v = analogData(:,self.ElectrodeChannel) ;
             isSpiking = (v>self.SpikeThreshold) ;
             isSpikeStart = diff(isSpiking)==1 ;
-            dt = 1/self.SampleRate ;   % s
+            dt = 1/self.SampleRate_ ;   % s
             isSpikeStartFiltered = ws.examples.RasterTreadMill.filterSpikeStarts(isSpikeStart,dt) ;
             indicesOfSpikes = find(isSpikeStartFiltered);
             velocity = analogData(:,self.VelocityChannel) ;
             %velocity = rawVelocity*self.VelocityScale ;
             deltaPosition = cumsum(velocity*dt);  % cm
-            position = self.InitialPosition+deltaPosition ;
+            position = self.InitialPosition_+deltaPosition ;
             %maxPosition = max(position)
             if didCompleteALap ,
                 isSpikeInCurrentLap = (indicesOfSpikes<indexOfNewLapStart) ;
@@ -169,81 +170,81 @@ classdef RasterTreadMill < ws.UserClass
             end
                 
             indicesOfSpikeStartsBeforeLapReset = indicesOfSpikes(isSpikeInCurrentLap) ;
-            self.PositionAtSpike = [self.PositionAtSpike; ...
+            self.PositionAtSpike_ = [self.PositionAtSpike_; ...
                                     position(indicesOfSpikeStartsBeforeLapReset)];
-            self.BinDwellTimes = self.BinDwellTimes + dt*hist(position, self.BinCenters) ;
-            for i=1:length(self.BinCenters) ,
-                isPositionInThisBin = abs(position-self.BinCenters(i))<self.BinWidth ;
-                self.BinVelocities{i} = [self.BinVelocities{i}; ...
+            self.BinDwellTimes_ = self.BinDwellTimes_ + dt*hist(position, self.BinCenters_) ;
+            for i=1:length(self.BinCenters_) ,
+                isPositionInThisBin = abs(position-self.BinCenters_(i))<self.BinWidth_ ;
+                self.BinVelocities_{i} = [self.BinVelocities_{i}; ...
                                          velocity(isPositionInThisBin)];
-                self.BinSubthresholds{i} = [self.BinSubthresholds{i}; ...
+                self.BinSubthresholds_{i} = [self.BinSubthresholds_{i}; ...
                                             v(isPositionInThisBin)];
             end
 
             % plot data if a lap completed
             if didCompleteALap ,
-                nSpikes = length(self.PositionAtSpike);
-                plot(self.RasterAxes, ...
-                        reshape([repmat(self.PositionAtSpike,1,2) nan(nSpikes,1)]',3*nSpikes,1), ...
-                        reshape([repmat(self.Lap+0.5,nSpikes,1) repmat(self.Lap-0.5,nSpikes,1) nan(nSpikes,1)]',3*nSpikes,1), ...
+                nSpikes = length(self.PositionAtSpike_);
+                plot(self.RasterAxes_, ...
+                        reshape([repmat(self.PositionAtSpike_,1,2) nan(nSpikes,1)]',3*nSpikes,1), ...
+                        reshape([repmat(self.LapIndex_+0.5,nSpikes,1) repmat(self.LapIndex_-0.5,nSpikes,1) nan(nSpikes,1)]',3*nSpikes,1), ...
                         'k-');
-                set(self.RasterAxes,'XLim',[0 self.TreadMillLength]);
-                set(self.RasterAxes,'YLim',[0.5 self.Lap+0.5+eps]);
-                set(self.RasterAxes,'YTick',1:self.Lap);
+                set(self.RasterAxes_,'XLim',[0 self.TreadMillLength]);
+                set(self.RasterAxes_,'YLim',[0.5 self.LapIndex_+0.5+eps]);
+                set(self.RasterAxes_,'YTick',1:self.LapIndex_);
 
-                nSpikesPerBinInCurrentLap = hist(self.PositionAtSpike, self.BinCenters);  % current lap == just-completed lap
-                nSpikesPerBinOverall = get(self.NSpikesBars, 'YData') + nSpikesPerBinInCurrentLap;
-                set(self.NSpikesBars, 'YData', nSpikesPerBinOverall);
-                axis(self.NSpikesAxes, [0 self.TreadMillLength 0 max([nSpikesPerBinOverall 0])+eps]);
+                nSpikesPerBinInCurrentLap = hist(self.PositionAtSpike_, self.BinCenters_);  % current lap == just-completed lap
+                nSpikesPerBinOverall = get(self.NSpikesBars_, 'YData') + nSpikesPerBinInCurrentLap;
+                set(self.NSpikesBars_, 'YData', nSpikesPerBinOverall);
+                axis(self.NSpikesAxes_, [0 self.TreadMillLength 0 max([nSpikesPerBinOverall 0])+eps]);
 
-                for i=1:length(self.BinCenters)
-                    self.AllBinVelocities{i} = [self.AllBinVelocities{i}; self.BinVelocities{i}];
+                for i=1:length(self.BinCenters_)
+                    self.AllBinVelocities_{i} = [self.AllBinVelocities_{i}; self.BinVelocities_{i}];
                 end
-                allMeanVelocities = cellfun(@(x) mean(x),self.AllBinVelocities);
-                set(self.VelocityAverageLine, 'ydata', allMeanVelocities);
-                velocityLines=get(self.VelocityAxes,'children');
-                arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(velocityLines,self.VelocityAverageLine));
-                meanVelocities = cellfun(@(x) mean(x),self.BinVelocities);
-                plot(self.VelocityAxes,self.BinCenters,meanVelocities,'k.-');
-                uistack(self.VelocityAverageLine,'top');
-                lim = axis(self.VelocityAxes);
-                axis(self.VelocityAxes, [0 self.TreadMillLength 0 max([lim(4) allMeanVelocities meanVelocities])+eps]);
+                allMeanVelocities = cellfun(@(x) mean(x),self.AllBinVelocities_);
+                set(self.VelocityAverageLine_, 'ydata', allMeanVelocities);
+                velocityLines=get(self.VelocityAxes_,'children');
+                arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(velocityLines,self.VelocityAverageLine_));
+                meanVelocities = cellfun(@(x) mean(x),self.BinVelocities_);
+                plot(self.VelocityAxes_,self.BinCenters_,meanVelocities,'k.-');
+                uistack(self.VelocityAverageLine_,'top');
+                lim = axis(self.VelocityAxes_);
+                axis(self.VelocityAxes_, [0 self.TreadMillLength 0 max([lim(4) allMeanVelocities meanVelocities])+eps]);
 
-                self.AllBinDwellTimes = self.AllBinDwellTimes + self.BinDwellTimes;
-                set(self.SpikeRateAverageLine, 'ydata', nSpikesPerBinOverall./self.AllBinDwellTimes);
-                spikeRateLines=get(self.SpikeRateAxes,'children');
-                arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(spikeRateLines,self.SpikeRateAverageLine));
-                plot(self.SpikeRateAxes,self.BinCenters,nSpikesPerBinInCurrentLap./self.BinDwellTimes,'k.-');
-                uistack(self.SpikeRateAverageLine,'top');
-                lim = axis(self.SpikeRateAxes);
-                axis(self.SpikeRateAxes, [0 self.TreadMillLength 0 max([lim(4) nSpikesPerBinOverall./self.AllBinDwellTimes nSpikesPerBinInCurrentLap./self.BinDwellTimes])+eps]);
+                self.AllBinDwellTimes_ = self.AllBinDwellTimes_ + self.BinDwellTimes_;
+                set(self.SpikeRateAverageLine_, 'ydata', nSpikesPerBinOverall./self.AllBinDwellTimes_);
+                spikeRateLines=get(self.SpikeRateAxes_,'children');
+                arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(spikeRateLines,self.SpikeRateAverageLine_));
+                plot(self.SpikeRateAxes_,self.BinCenters_,nSpikesPerBinInCurrentLap./self.BinDwellTimes_,'k.-');
+                uistack(self.SpikeRateAverageLine_,'top');
+                lim = axis(self.SpikeRateAxes_);
+                axis(self.SpikeRateAxes_, [0 self.TreadMillLength 0 max([lim(4) nSpikesPerBinOverall./self.AllBinDwellTimes_ nSpikesPerBinInCurrentLap./self.BinDwellTimes_])+eps]);
 
-                for i=1:length(self.BinCenters)
-                    self.AllBinSubthresholds{i} = [self.AllBinSubthresholds{i}; self.BinSubthresholds{i}];
+                for i=1:length(self.BinCenters_)
+                    self.AllBinSubthresholds_{i} = [self.AllBinSubthresholds_{i}; self.BinSubthresholds_{i}];
                 end
-                allMeanSubthresholds = cellfun(@(x) median(x),self.AllBinSubthresholds);
-                set(self.SubthresholdAverageLine, 'ydata', allMeanSubthresholds);
-                subthresholdLines=get(self.SubthresholdAxes,'children');
-                arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(subthresholdLines,self.SubthresholdAverageLine));
-                meanSubthresholds = cellfun(@(x) median(x),self.BinSubthresholds);
-                plot(self.SubthresholdAxes,self.BinCenters,meanSubthresholds,'k.-');
-                uistack(self.SubthresholdAverageLine,'top');
-                lim = axis(self.SubthresholdAxes) ;
-                axis(self.SubthresholdAxes, [0 self.TreadMillLength ...
+                allMeanSubthresholds = cellfun(@(x) median(x),self.AllBinSubthresholds_);
+                set(self.SubthresholdAverageLine_, 'ydata', allMeanSubthresholds);
+                subthresholdLines=get(self.SubthresholdAxes_,'children');
+                arrayfun(@(x) set(x,'color',[0.75 0.75 0.75]), setdiff(subthresholdLines,self.SubthresholdAverageLine_));
+                meanSubthresholds = cellfun(@(x) median(x),self.BinSubthresholds_);
+                plot(self.SubthresholdAxes_,self.BinCenters_,meanSubthresholds,'k.-');
+                uistack(self.SubthresholdAverageLine_,'top');
+                lim = axis(self.SubthresholdAxes_) ;
+                axis(self.SubthresholdAxes_, [0 self.TreadMillLength ...
                     min([lim(4) allMeanSubthresholds meanSubthresholds]) max([lim(4) allMeanSubthresholds meanSubthresholds])+eps]);
 
-                self.Lap = self.Lap + 1;
-                self.InitialPosition = deltaPosition(end) - deltaPosition(indexOfNewLapStart) ;
-                self.BinDwellTimes=zeros(1,self.NBins);
-                self.BinVelocities=cell(1,self.NBins);
-                self.BinSubthresholds=cell(1,self.NBins);
-                %self.PositionAtSpike = self.InitialPosition + deltaPosition(find(indicesOfSpikeStarts>=indexOfLapReset));
+                self.LapIndex_ = self.LapIndex_ + 1;
+                self.InitialPosition_ = deltaPosition(end) - deltaPosition(indexOfNewLapStart) ;
+                self.BinDwellTimes_=zeros(1,self.NBins);
+                self.BinVelocities_=cell(1,self.NBins);
+                self.BinSubthresholds_=cell(1,self.NBins);
+                %self.PositionAtSpike_ = self.InitialPosition_ + deltaPosition(find(indicesOfSpikeStarts>=indexOfLapReset));
                 
                 isSpikeInNewLap = (indicesOfSpikes>=indexOfNewLapStart) ;
                 indicesOfSpikesInNewLap = indicesOfSpikes(isSpikeInNewLap) ;
-                self.PositionAtSpike = position(indicesOfSpikesInNewLap) ;
+                self.PositionAtSpike_ = position(indicesOfSpikesInNewLap) ;
             else
-                self.InitialPosition = position(end);
+                self.InitialPosition_ = position(end);
             end
             
             % Add laser-triggered traces to the latency figure
@@ -269,12 +270,12 @@ classdef RasterTreadMill < ws.UserClass
                 if all(~laserPeri(1:nPre)) ,
                     nNewSpikesSoFar = nNewSpikesSoFar + 1 ;
                     newElectrodeLines(nNewSpikesSoFar) = ...
-                        line('Parent',self.ElectrodeAxes, ...
+                        line('Parent',self.ElectrodeAxes_, ...
                              'XData',t, ...
                              'YData',vPeri, ...
                              'Color',gray) ;
                     newLaserLines(nNewSpikesSoFar) = ...
-                        line('Parent',self.LaserAxes, ...
+                        line('Parent',self.LaserAxes_, ...
                              'XData',t, ...
                              'YData',laserPeri, ...
                              'Color',gray) ;
@@ -283,19 +284,19 @@ classdef RasterTreadMill < ws.UserClass
             nNewSpikes = nNewSpikesSoFar ;             
             newElectrodeLines = newElectrodeLines(1:nNewSpikes) ;  % trim the unused spaces off
             newLaserLines = newLaserLines(1:nNewSpikes) ;  % trim the unused spaces off
-            nOldSpikes = length(self.ElectrodeLines) ;
+            nOldSpikes = length(self.ElectrodeLines_) ;
             if nNewSpikes>0 ,
                 if nOldSpikes>0 ,
                     % turn what used to be that latest spike gray
-                    set(self.ElectrodeLines(end),'Color',gray,'LineWidth',0.5);  % 0.5 is the default
-                    set(self.LaserLines(end),'Color',gray,'LineWidth',0.5);  % 0.5 is the default
+                    set(self.ElectrodeLines_(end),'Color',gray,'LineWidth',0.5);  % 0.5 is the default
+                    set(self.LaserLines_(end),'Color',gray,'LineWidth',0.5);  % 0.5 is the default
                 end
                 % turn the now-latest spike black
                 set(newElectrodeLines(end),'Color','k','LineWidth',1);
                 set(newLaserLines(end),'Color','k','LineWidth',1);
             end                
-            newAndOldElectrodeLines = [self.ElectrodeLines newElectrodeLines] ;
-            newAndOldLaserLines = [self.LaserLines newLaserLines] ;
+            newAndOldElectrodeLines = [self.ElectrodeLines_ newElectrodeLines] ;
+            newAndOldLaserLines = [self.LaserLines_ newLaserLines] ;
             nNewAndOldSpikes = length(newAndOldElectrodeLines) ;
             if nNewAndOldSpikes > self.MaxNumberOfSpikesToKeep ,
                 nSpikesToDelete = nNewAndOldSpikes - self.MaxNumberOfSpikesToKeep ;
@@ -304,11 +305,11 @@ classdef RasterTreadMill < ws.UserClass
                 delete(newAndOldLaserLines(1:nSpikesToDelete)) ;
                 newAndOldLaserLines(1:nSpikesToDelete) = [] ;
             end
-            self.ElectrodeLines = newAndOldElectrodeLines ;
-            self.LaserLines = newAndOldLaserLines ;
+            self.ElectrodeLines_ = newAndOldElectrodeLines ;
+            self.LaserLines_ = newAndOldLaserLines ;
             
             % Prepare for next iteration
-            self.LastLED = led(end) ;
+            self.LastLEDValue_ = led(end) ;
         end
         
         % this one is called in the looper process
@@ -337,81 +338,96 @@ classdef RasterTreadMill < ws.UserClass
     
     methods
         function syncRasterFigAndAxes_(self, wsModel)
-            if isempty(self.RasterFig) || ~ishghandle(self.RasterFig) ,
-                self.RasterFig = figure('Name','Spike Raster','NumberTitle','off','Units','pixels');
-                %position = get(self.RasterFig,'position');
-                set(self.RasterFig,'position',[807    85   542   901]);
+            if isempty(self.RasterFig_) || ~ishghandle(self.RasterFig_) ,
+                self.RasterFig_ = figure('Name','Spike Raster','NumberTitle','off','Units','pixels');
+                %position = get(self.RasterFig_,'position');
+                set(self.RasterFig_,'position',[807    85   542   901]);
             end
 
-            clf(self.RasterFig);
+            clf(self.RasterFig_);
 
-            self.RasterAxes = subplot(10,1,[1 2 3],'parent',self.RasterFig);
-            hold(self.RasterAxes, 'on');
-            axis(self.RasterAxes, 'ij');
-            ylabel(self.RasterAxes, 'lap #');
-            title(self.RasterAxes, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);
-            set(self.RasterAxes,'XTickLabel',{});
-            set(self.RasterAxes,'YLim',[0.5 1.5+eps]);
-            set(self.RasterAxes,'YTick',1);
+            self.RasterAxes_ = subplot(10,1,[1 2 3],'parent',self.RasterFig_);
+            hold(self.RasterAxes_, 'on');
+            axis(self.RasterAxes_, 'ij');
+            ylabel(self.RasterAxes_, 'lap #');
+            title(self.RasterAxes_, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);
+            set(self.RasterAxes_,'XTickLabel',{});
+            set(self.RasterAxes_,'YLim',[0.5 1.5+eps]);
+            set(self.RasterAxes_,'YTick',1);
             
-            self.NSpikesAxes = subplot(10,1,4,'parent',self.RasterFig);
-            hold(self.NSpikesAxes, 'on');
-            self.NSpikesBars = bar(self.NSpikesAxes,self.BinCenters,zeros(1,self.NBins),1);
-            set(self.NSpikesBars,'EdgeColor','none','facecolor',[1 0 0]);
-            ylabel(self.NSpikesAxes, '# spikes');
-            set(self.NSpikesAxes,'XTickLabel',{});
+            self.NSpikesAxes_ = subplot(10,1,4,'parent',self.RasterFig_);
+            hold(self.NSpikesAxes_, 'on');
+            self.NSpikesBars_ = bar(self.NSpikesAxes_,self.BinCenters_,zeros(1,self.NBins),1);
+            set(self.NSpikesBars_,'EdgeColor','none','facecolor',[1 0 0]);
+            ylabel(self.NSpikesAxes_, '# spikes');
+            set(self.NSpikesAxes_,'XTickLabel',{});
 
-            self.VelocityAxes = subplot(10,1,[5 6],'parent',self.RasterFig);
-            hold(self.VelocityAxes, 'on');
-            self.VelocityAverageLine = plot(self.VelocityAxes,self.BinCenters,nan(1,length(self.BinCenters)),'ro-');
-            ylabel(self.VelocityAxes, 'velocity (cm/s)');
-            set(self.VelocityAxes,'XTickLabel',{});
+            self.VelocityAxes_ = subplot(10,1,[5 6],'parent',self.RasterFig_);
+            hold(self.VelocityAxes_, 'on');
+            self.VelocityAverageLine_ = plot(self.VelocityAxes_,self.BinCenters_,nan(1,length(self.BinCenters_)),'ro-');
+            ylabel(self.VelocityAxes_, 'velocity (cm/s)');
+            set(self.VelocityAxes_,'XTickLabel',{});
 
-            self.SpikeRateAxes = subplot(10,1,[7 8],'parent',self.RasterFig);
-            hold(self.SpikeRateAxes, 'on');
-            self.SpikeRateAverageLine = plot(self.SpikeRateAxes,self.BinCenters,nan(1,length(self.BinCenters)),'ro-');
-            ylabel(self.SpikeRateAxes, 'spike rate (/s)');
-            set(self.SpikeRateAxes,'XTickLabel',{});
+            self.SpikeRateAxes_ = subplot(10,1,[7 8],'parent',self.RasterFig_);
+            hold(self.SpikeRateAxes_, 'on');
+            self.SpikeRateAverageLine_ = plot(self.SpikeRateAxes_,self.BinCenters_,nan(1,length(self.BinCenters_)),'ro-');
+            ylabel(self.SpikeRateAxes_, 'spike rate (/s)');
+            set(self.SpikeRateAxes_,'XTickLabel',{});
 
-            self.SubthresholdAxes = subplot(10,1,[9 10],'parent',self.RasterFig);
-            hold(self.SubthresholdAxes, 'on');
-            self.SubthresholdAverageLine = plot(self.SubthresholdAxes,self.BinCenters,nan(1,length(self.BinCenters)),'ro-');
-            ylabel(self.SubthresholdAxes, 'subthreshold (mV)');
-            xlabel(self.SubthresholdAxes, 'position on treadmill (cm)');
+            self.SubthresholdAxes_ = subplot(10,1,[9 10],'parent',self.RasterFig_);
+            hold(self.SubthresholdAxes_, 'on');
+            self.SubthresholdAverageLine_ = plot(self.SubthresholdAxes_,self.BinCenters_,nan(1,length(self.BinCenters_)),'ro-');
+            ylabel(self.SubthresholdAxes_, 'subthreshold (mV)');
+            xlabel(self.SubthresholdAxes_, 'position on treadmill (cm)');
 
-            linkaxes([self.RasterAxes self.NSpikesAxes self.SpikeRateAxes],'x');            
+            linkaxes([self.RasterAxes_ self.NSpikesAxes_ self.SpikeRateAxes_],'x');            
             
-            hold(self.RasterAxes, 'on');
-            axis(self.RasterAxes, 'ij');
-            ylabel(self.RasterAxes, 'lap #');
-            title(self.RasterAxes, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);            
+            hold(self.RasterAxes_, 'on');
+            axis(self.RasterAxes_, 'ij');
+            ylabel(self.RasterAxes_, 'lap #');
+            title(self.RasterAxes_, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);            
         end
         
         function syncLatencyFigAndAxes_(self)
-            if isempty(self.LatencyFig) || ~ishghandle(self.LatencyFig) ,
-                self.LatencyFig = figure('Name','Latency','NumberTitle','off','Units','pixels');
-                %position = get(self.LatencyFig,'position');
-                set(self.LatencyFig,'position',[  1384         85         504         897]);
+            if isempty(self.LatencyFig_) || ~ishghandle(self.LatencyFig_) ,
+                self.LatencyFig_ = figure('Name','Latency','NumberTitle','off','Units','pixels');
+                %position = get(self.LatencyFig_,'position');
+                set(self.LatencyFig_,'position',[  1384         85         504         897]);
             end
             
-            clf(self.LatencyFig);            
+            clf(self.LatencyFig_);            
 
-            self.ElectrodeAxes = subplot(2,1,1,'Parent',self.LatencyFig,'Box','on');
-            %xlabel(self.ElectrodeAxes,'Time (ms)') ;
-            ylabel(self.ElectrodeAxes,'Electrode (mV)');
+            self.ElectrodeAxes_ = subplot(2,1,1,'Parent',self.LatencyFig_,'Box','on');
+            %xlabel(self.ElectrodeAxes_,'Time (ms)') ;
+            ylabel(self.ElectrodeAxes_,'Electrode (mV)');
             xlim([-20 +20]);  % ms
             ylim([-55 +25]);  % mV
-            set(self.ElectrodeAxes,'XTickLabel',{});
+            set(self.ElectrodeAxes_,'XTickLabel',{});
 
-            self.LaserAxes = subplot(2,1,2,'Parent',self.LatencyFig,'Box','on');
-            xlabel(self.LaserAxes,'Time (ms)') ;
-            ylabel(self.LaserAxes,'Laser (binary)');
+            self.LaserAxes_ = subplot(2,1,2,'Parent',self.LatencyFig_,'Box','on');
+            xlabel(self.LaserAxes_,'Time (ms)') ;
+            ylabel(self.LaserAxes_,'Laser (binary)');
             xlim([-20 +20]);  % ms
             ylim([-0.05 +1.05]);  % pure
             
-            self.ElectrodeLines = zeros(1,0) ; 
-            self.LaserLines = zeros(1,0) ;             
+            self.ElectrodeLines_ = zeros(1,0) ; 
+            self.LaserLines_ = zeros(1,0) ;             
         end        
+    end
+    
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistentState_(self)
+            rootModel = self.Parent_.Parent ;
+            if isa(rootModel,'ws.WavesurferModel') ,
+                self.SampleRate_ = rootModel.Acquisition.SampleRate ;
+                self.BinWidth_ = self.TreadMillLength / self.NBins;
+                self.BinCenters_ = self.BinWidth_/2 : self.BinWidth_ : self.TreadMillLength;
+                if rootModel.IsITheOneTrueWavesurferModel ,
+                    self.syncRasterFigAndAxes_(rootModel) ;
+                    self.syncLatencyFigAndAxes_() ;
+                end
+            end
+        end
     end
     
     methods (Static=true)

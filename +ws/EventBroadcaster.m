@@ -139,7 +139,8 @@ classdef (Abstract=true) EventBroadcaster < handle
             % Don't need to have a propertyName arg, b/c property
             % modifications automatically generate the relevant events.
             if self.BroadcastEnablement_.IsEnabled ,
-                self.notify(eventName,varargin{:});
+                eventData = ws.EventDataWithArgs(varargin{:}) ;
+                self.notify(eventName, eventData) ;
             end
         end
         

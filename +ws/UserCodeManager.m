@@ -7,25 +7,19 @@ classdef UserCodeManager < ws.Subsystem
     
     properties (Dependent = true, SetAccess = immutable)
         TheObject  % an instance of ClassName, or []
-        IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, tells whether the ClassName is valid.
+        IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, true iff self.TheObject is a scalar of class self.ClassName
     end
     
     properties (Access = protected)
         ClassName_ = '' 
         %AbortCallsComplete_ = true  % If true and the equivalent abort function is empty, complete will be called when abort happens.
-        IsClassNameValid_ = true  % an empty classname counts as a valid one.
-    end
-
-    properties (Access = protected, Transient=true)
-        TheObject_ = []
-            % Making this transient makes things easier: Don't have to
-            % either a) worry about a classdef being missing or having
-            % changed, or b) make TheObject_ an instance of ws.Model, which
-            % would mean making them include some opaque boilerplate code
-            % in all their user classdefs.  This means we don't store the
-            % current parameters in the protocol file, but we still get the
-            % main benefit of an object: state that persists across the
-            % different user event "callbacks".
+        %IsClassNameValid_ = true  % an empty classname counts as a valid one.
+        TheObject_ = []   
+            % This is now persisted to the protocol file, and also when we
+            % send the WavesurferModel to the satellites at the start of a
+            % run. If the user class is missing on protocol file load, we
+            % just leave it empty and proceed with loading the rest of the
+            % protocol file.
     end
     
     methods
@@ -34,12 +28,18 @@ classdef UserCodeManager < ws.Subsystem
             self.IsEnabled=true;            
         end  % function
 
+        function delete(self) %#ok<INUSD>
+            %keyboard
+        end
+        
         function result = get.ClassName(self)
             result = self.ClassName_;
         end
                 
         function result = get.IsClassNameValid(self)
-            result = self.IsClassNameValid_ ;
+            result = ( isempty(self.ClassName_) || ...
+                       ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ) ;
+            %result = self.IsClassNameValid_ ;
         end
                 
 %         function result = get.AbortCallsComplete(self)
@@ -69,7 +69,7 @@ classdef UserCodeManager < ws.Subsystem
             end
         end  % function
         
-        function reinstantiateUserObject(self)
+        function instantiateUserObject(self)
             err = self.tryToInstantiateObject_() ;
             self.broadcast('Update');
             if ~isempty(err) ,
@@ -92,24 +92,24 @@ classdef UserCodeManager < ws.Subsystem
 %             self.broadcast('Update');
 %         end  % function
 
-        function startingRun(self)
-            % Instantiate a user object, if one doesn't already exist
-            if isempty(self.TheObject_) ,
-                exception = self.tryToInstantiateObject_() ;
-                if ~isempty(exception) ,
-                    throw(exception);
-                end
-            end            
+        function startingRun(self) %#ok<MANU>
+%             % Instantiate a user object, if one doesn't already exist
+%             if isempty(self.TheObject_) ,
+%                 exception = self.tryToInstantiateObject_() ;
+%                 if ~isempty(exception) ,
+%                     throw(exception);
+%                 end
+%             end            
         end  % function
 
         function invoke(self, rootModel, eventName, varargin)
             try
-                if isempty(self.TheObject_) ,
-                    exception = self.tryToInstantiateObject_() ;
-                    if ~isempty(exception) ,
-                        throw(exception);
-                    end
-                end
+%                 if isempty(self.TheObject_) ,
+%                     exception = self.tryToInstantiateObject_() ;
+%                     if ~isempty(exception) ,
+%                         throw(exception);
+%                     end
+%                 end
                 
                 if ~isempty(self.TheObject_) ,
                     self.TheObject_.(eventName)(rootModel, eventName, varargin{:});
@@ -146,6 +146,10 @@ classdef UserCodeManager < ws.Subsystem
             end            
         end
         
+        function quittingWavesurfer(self)
+            ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
+        end
+        
         % You might thing user methods would get invoked inside the
         % UserCodeManager methods startingRun, startingSweep,
         % dataAvailable, etc.  But we don't do it that way, because it
@@ -157,37 +161,80 @@ classdef UserCodeManager < ws.Subsystem
 %        function samplesAcquired(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
 %             self.invoke(self.Parent,'samplesAcquired');
 %        end
-    end  % methods
+
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Disable broadcasts for speed
+            self.disableBroadcasts();
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence();
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if isequal(thisPropertyName,'TheObject_') ,                    
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
+                    target = self.(thisPropertyName) ;
+                    if ~isempty(target)
+                        target.delete() ;  % want to explicitly delete the old user object                        
+                    end
+                    if isempty(source) ,
+                        newUserObject = [] ;
+                    else
+                        newUserObject = source.copyGivenParent(self) ;
+                    end
+                    self.setPropertyValue_(thisPropertyName, newUserObject) ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Re-enable broadcasts
+            self.enableBroadcastsMaybe();
+            
+            % Broadcast update
+            self.broadcast('Update');
+        end  % function
+    end  % public methods block
        
     methods (Access=protected)
         function exception = tryToInstantiateObject_(self)
-            % This method syncs self.TheObject_ and
-            % self.IsClassNameValid_, given the value of self.ClassName_ .
-            % If object creation is attempted and fails, exception will be
-            % nonempty, and will be an MException.  But the object should
-            % nevertheless be left in a self-consistent state, natch.
+            % This method syncs self.TheObject_ given the value of
+            % self.ClassName_ . If object creation is attempted and fails,
+            % exception will be nonempty, and will be an MException.  But
+            % the object should nevertheless be left in a self-consistent
+            % state, natch.
+            
+            % First clear out the old one, if there is one
+            ws.deleteIfValidHandle(self.TheObject_) ;  % explicit delete to delete figs, listeners, etc.
+            self.TheObject_ = [] ;
+
+            % Now try to create a new one
             className = self.ClassName_ ;
             if isempty(className) ,
                 % this is ok, and in this case we just don't
                 % instantiate an object
-                self.IsClassNameValid_ = true ;
-                self.TheObject_ = [] ;
                 exception = [] ;
             else
-                % value is non-empty
+                % className is non-empty
                 try 
-                    newObject = feval(className,self.Parent) ;  % if this fails, self will still be self-consistent
+                    newObject = feval(className,self) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
                 catch exception
                     didSucceed = false ;
                 end
                 if didSucceed ,                    
+                    % Store the new object in self, and set exception to
+                    % empty
                     exception = [] ;
-                    self.IsClassNameValid_ = true ;
-                    self.TheObject_ = newObject ;
+                    self.TheObject_ = newObject ;                    
                 else
-                    self.IsClassNameValid_ = false ;
-                    self.TheObject_ = [] ;
+                    % do nothing
                 end
             end
         end  % function
@@ -204,6 +251,16 @@ classdef UserCodeManager < ws.Subsystem
         end  % function
     end
         
+    methods (Access=protected)    
+        function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
+        end
+        
+        function enableBroadcastsMaybeDammit_(self)
+            self.enableBroadcastsMaybe() ;
+        end
+    end  % protected methods block
+    
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct();        
 %         mdlHeaderExcludeProps = {};

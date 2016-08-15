@@ -13,7 +13,7 @@ classdef ElectrodeManagerController < ws.Controller
             self.Figure_ = fig ;
         end
         
-        function controlActuated(self,controlName,source,event) %#ok<INUSD,INUSL>
+        function controlActuated(self,controlName,source,event,varargin) %#ok<INUSD,INUSL>
             figureObject=self.Figure;
             self.Parent_.setAreUpdatesEnabledForAllFigures(false);
             %figureObject.AreUpdatesEnabled=false;

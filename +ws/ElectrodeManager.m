@@ -221,37 +221,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % At this point, name is a valid electrode name
             
             % Make an electrode
-            electrode= ...
-                ws.Electrode(self, ...
-                             'Name',name);
-            
-            % We now leave the channel names blank until the user selects them.                      
-%             % Get initial values for the channel names, set them in the
-%             % trode
-%             ephys=self.Parent_;
-%             if isempty(ephys) ,
-%                 wavesurferModel=[];
-%             else
-%                 wavesurferModel=ephys.Parent;
-%             end
-%             if isempty(wavesurferModel) ,
-%                 channelNames=cell(1,0);
-%             else
-%                 channelNames=wavesurferModel.Stimulation.ChannelNames;
-%             end
-%             if ~isempty(channelNames) ,
-%                 electrode.VoltageCommandChannelName=channelNames{1};
-%                 electrode.CurrentCommandChannelName=channelNames{1};
-%             end
-%             if isempty(wavesurferModel) ,
-%                 channelNames=cell(1,0);
-%             else
-%                 channelNames=wavesurferModel.Acquisition.ChannelNames;
-%             end
-%             if ~isempty(channelNames) ,
-%                 electrode.VoltageMonitorChannelName=channelNames{1};
-%                 electrode.CurrentMonitorChannelName=channelNames{1};
-%             end
+            electrode = ws.Electrode(self) ;
+            electrode.Name = name ;           
             
             % Add the electrode        
             self.Electrodes_{end+1}=electrode;  

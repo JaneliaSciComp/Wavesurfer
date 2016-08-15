@@ -41,10 +41,7 @@ classdef Logging < ws.Subsystem
             % during acquisition, the index of the next "scan" to be written (one-based)
             % "scan" is an NI-ism meaning all the samples acquired for a
             % single time stamp
-        ExpectedSweepSize_  
-            % if all the acquired data for one sweep were put into an array, this
-            % would be the size of that array.  
-            % I.e. [nScans nActiveChannels]        
+        ExpectedSweepSizeForWritingHDF5_
         WriteToSweepId_  % During the acquisition of a run, the current sweep index being written to
         ChunkSize_
         FirstSweepIndex_  % index of the first sweep in the ongoing run
@@ -266,18 +263,19 @@ classdef Logging < ws.Subsystem
             
             % Set the chunk size for writing data to disk
             nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
+            
+            % For h5create() it is useful to set
+            % ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels] since
+            % that enables proper writing of data from an aborted sweep
+            % (otherwise, all values are set to 0 from when the sweep is aborted up to
+            % wavesurferModel.Acquisition.SampleRate * wavesurferModel.Acquisiton.Duration)
+            self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
             if wavesurferModel.AreSweepsFiniteDuration ,
-                self.ExpectedSweepSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
-                if any(isinf(self.ExpectedSweepSize_))
-                    self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
-                else
-                    self.ChunkSize_ = self.ExpectedSweepSize_;
-                end
+                self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
             else
-                self.ExpectedSweepSize_ = [Inf nActiveAnalogChannels];
                 self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
             end
-            
+                
             % Determine the absolute file names
             %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
             self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
@@ -345,7 +343,7 @@ classdef Logging < ws.Subsystem
 %                     h5create(self.CurrentRunAbsoluteFileName_, ...
 %                              sprintf('/sweep_%04d', ...
 %                                      self.WriteToSweepId_ + (indexOfSweepWithinSet-1)), ...
-%                              self.ExpectedSweepSize_, ...
+%                              self.ExpectedSweepSizeActual_, ...
 %                              'ChunkSize', chunkSize, ...
 %                              'DataType','int16');
 %                 end
@@ -364,35 +362,7 @@ classdef Logging < ws.Subsystem
         
         function startingSweep(self)
             %profile resume
-            thisSweepIndex = self.NextSweepIndex ;
-            timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
-            h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
-            nActiveAnalogChannels = self.Parent.Acquisition.NActiveAnalogChannels ;
-            if nActiveAnalogChannels>0 ,
-                analogScansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
-                h5create(self.CurrentRunAbsoluteFileName_, ...
-                         analogScansDatasetName, ...
-                         self.ExpectedSweepSize_, ...
-                         'ChunkSize', self.ChunkSize_, ...
-                         'DataType','int16');
-            end
-            nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
-            if nActiveDigitalChannels>0 ,
-                if nActiveDigitalChannels<=8
-                    dataType = 'uint8';
-                elseif nActiveDigitalChannels<=16
-                    dataType = 'uint16';
-                else %NActiveDigitalChannels<=32
-                    dataType = 'uint32';
-                end
-                digitalScansDatasetName = sprintf('/sweep_%04d/digitalScans',thisSweepIndex) ;
-                h5create(self.CurrentRunAbsoluteFileName_, ...
-                         digitalScansDatasetName, ...
-                         [self.ExpectedSweepSize_(1) 1], ...
-                         'ChunkSize', [self.ChunkSize_(1) 1], ...
-                         'DataType',dataType);
-            end
-            self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;                     
+            % No data written at the start of the sweep
             self.DidWriteSomeDataForThisSweep_ = false ;
             %profile off
         end
@@ -518,7 +488,8 @@ classdef Logging < ws.Subsystem
             self.CurrentRunAbsoluteFileName_ = [];
             self.FirstSweepIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
-            self.ExpectedSweepSize_ = [];
+  %          self.ExpectedSweepSizeActual_ = [];
+            self.ExpectedSweepSizeForWritingHDF5_ = [];
             self.WriteToSweepId_ = [];
             self.ChunkSize_ = [];
             self.DidCreateCurrentDataFile_ = [] ;
@@ -540,6 +511,39 @@ classdef Logging < ws.Subsystem
             %inputChannelNames=self.Parent.Acquisition.ActiveChannelNames;
             %nActiveChannels=self.Parent.Acquisition.NActiveChannels;
             if ~self.DidWriteSomeDataForThisSweep_ ,
+                % Moved creation of h5 Group "sweep_%04d" from
+                % startingSweep() to here, preventing a sweep Group from
+                % being created until it has data.
+                thisSweepIndex = self.NextSweepIndex ;
+                timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
+                h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
+                nActiveAnalogChannels = self.Parent.Acquisition.NActiveAnalogChannels ;
+                if nActiveAnalogChannels>0 ,
+                    analogScansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
+                    h5create(self.CurrentRunAbsoluteFileName_, ...
+                        analogScansDatasetName, ...
+                        self.ExpectedSweepSizeForWritingHDF5_, ...
+                        'ChunkSize', self.ChunkSize_, ...
+                        'DataType','int16');
+                end
+                nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
+                if nActiveDigitalChannels>0 ,
+                    if nActiveDigitalChannels<=8
+                        dataType = 'uint8';
+                    elseif nActiveDigitalChannels<=16
+                        dataType = 'uint16';
+                    else %NActiveDigitalChannels<=32
+                        dataType = 'uint32';
+                    end
+                    digitalScansDatasetName = sprintf('/sweep_%04d/digitalScans',thisSweepIndex) ;
+                    h5create(self.CurrentRunAbsoluteFileName_, ...
+                        digitalScansDatasetName, ...
+                        [self.ExpectedSweepSizeForWritingHDF5_(1) 1], ...
+                        'ChunkSize', [self.ChunkSize_(1) 1], ...
+                        'DataType',dataType);
+                end
+                self.LastSweepIndexForWhichDatasetCreated_ =  thisSweepIndex;           
+                
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',self.WriteToSweepId_) ;
                 h5write(self.CurrentRunAbsoluteFileName_, timestampDatasetName, timeSinceRunStartAtStartOfData);
                 self.DidWriteSomeDataForThisSweep_ = true ;  % will be true momentarily...
@@ -566,7 +570,8 @@ classdef Logging < ws.Subsystem
             
             self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
-            if self.CurrentDatasetOffset_ > self.ExpectedSweepSize_(1) ,
+            wavesurferModel = self.Parent ;
+            if self.CurrentDatasetOffset_ > wavesurferModel.Acquisition.ExpectedScanCount ,
                 self.CurrentDatasetOffset_ = 1;
                 self.WriteToSweepId_ = self.WriteToSweepId_ + 1;
             end
