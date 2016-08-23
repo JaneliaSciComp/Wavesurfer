@@ -18,7 +18,10 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
 
             wsModel.play() ;  % this blocks
 
-            inv([1 1; 1 1+1e-16]) ;  % this sets lastwarn() to a known state
+            warningState = warning('query', 'MATLAB:singularMatrix') ;
+            warning('off', 'MATLAB:singularMatrix') ;  % suppress display of the warning, but if a a warnign occurs it will still be returned by lastwarn() 
+            inv([1 1; 1 1+1e-16]) ;  % this sets lastwarn() to a known state, with id 'MATLAB:singularMatrix'
+            warning(warningState) ;
             
             wsController.openProtocolFileGivenFileName(protocolFileName) ;
 
