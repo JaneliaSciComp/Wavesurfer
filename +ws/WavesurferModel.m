@@ -2166,7 +2166,7 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+        function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForPersistence();
