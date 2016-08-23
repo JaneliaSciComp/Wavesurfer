@@ -477,8 +477,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
             shouldStayPut=~shouldClose;
         end  % function
-        
-        function openProtocolFileGivenFileName_(self, fileName)
+    end % protected methods block        
+    
+    methods
+        function openProtocolFileGivenFileName(self, fileName)
             % Actually loads the named config file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -507,7 +509,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.Model.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             %self.Figure.changeReadiness(+1);
         end  % function
-    end  % protected methods block        
+    end  % public methods block
         
     methods
 %         function saveConfig(self, varargin)
@@ -567,7 +569,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     fileChooserInitialFileName);
             
             if ~isempty(absoluteFileName)
-                self.saveProtocolFileForRealsSrsly(absoluteFileName);
+                self.saveProtocolFileGivenFileName(absoluteFileName);
             end
             
         end  % method
@@ -737,29 +739,27 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                 self.saveProtocolFileForRealsSrsly(absoluteFileName);
 %             end
 %         end  % function
-        
-        function saveProtocolFileForRealsSrsly(self,absoluteFileName)
+    end
+    
+    methods
+        function saveProtocolFileGivenFileName(self, fileName)
             %self.Figure.changeReadiness(-1);
 
-            %ephusModelSettings=self.Model.encodeConfigurablePropertiesForFileType('cfg');
-            %ephusModelSettingsVariableName=self.Model.encodedVariableName();
+            if ws.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end
+            
             layoutForAllWindows=self.encodeAllWindowLayouts();
             
-            self.Model.saveProtocolFileForRealsSrsly(absoluteFileName,layoutForAllWindows);
+            self.Model.saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(absoluteFileName,layoutForAllWindows);
             
-            %layoutVariableName='layoutForAllWindows';            
-            %saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-            %                  layoutVariableName,layoutForAllWindows);  %#ok<NASGU>
-            %save('-mat',absoluteFileName,'-struct','saveStruct');     
-            %self.AbsoluteProtocolFileName=absoluteFileName;
-            %self.HasUserSpecifiedProtocolFileName=true;
-            %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            %self.updateProtocolFileNameInMenu();
-            %self.Model.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
-
             %self.Figure.changeReadiness(+1);            
         end
-        
+    end
+    
+    methods (Access = protected)
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  
@@ -792,7 +792,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 fileName=fastProtocol.ProtocolFileName;
                 if ~isempty(fileName) , ...                        
                     if exist(fileName, 'file') ,
-                        self.openProtocolFileGivenFileName_(fileName);
+                        self.openProtocolFileGivenFileName(fileName);
                     else
                         errorMessage=sprintf('The protocol file %s is missing.', ...
                                              fileName);
@@ -1878,7 +1878,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', actualFileName);
                 %feval(replyFcn, actualFileName);
-                self.openProtocolFileGivenFileName_(actualFileName)
+                self.openProtocolFileGivenFileName(actualFileName)
                 %out = true;
             end
             %end  % function
@@ -1886,7 +1886,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         function OpenProtocolGivenFileNameFauxControlActuated(self,source,event)  %#ok<INUSL>
             fileName = event.fileName ;
-            self.openProtocolFileGivenFileName_(fileName) ;
+            self.openProtocolFileGivenFileName(fileName) ;
         end
 
         function SaveProtocolMenuItemActuated(self,source,event) %#ok<INUSD>

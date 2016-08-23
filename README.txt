@@ -378,3 +378,6 @@ Version History
                          Improvements to user class handling.
                          Includes two more custom user classes.
                          
+0.931    Aug 23, 2016    Fixed bug with loading protocol file with
+                         fewer input channels after taking data.
+                       
