@@ -665,23 +665,37 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % Typically called by ws.PlotArrangementDialogFigure after OK
             % button is pressed.  Does no argument checking.
             nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
-            %nDIChannels = length(self.IsDigitalChannelDisplayed_) ;
-            %nChannels = nAIChannels + nDIChannels ;
-%             if islogical(isDisplayed) && isequal(size(isDisplayed),[1 nChannels]) && ...
-%                isdouble(plotHeights) && isreal(plotHeights) && isequal(size(plotHeights),[1 nChannels]) && all(plotHeights>=0.1)&& ...     
-%                isdouble(rowIndexFromChannelIndex) && isreal(rowIndexFromChannelIndex) && isequal(size(rowIndexFromChannelIndex),[1 nChannels]) ,
-%                 % Normalize plotHeights, rowIndexFromChannelIndex
-%                 plotHeights = round(10*plotHeights)/10 ;
-%                 [~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex,'stable') ;
-%                 rowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
             % Set properties
-            self.IsAnalogChannelDisplayed_ = isDisplayed(1:nAIChannels) ;
-            self.IsDigitalChannelDisplayed_ = isDisplayed(nAIChannels+1:end) ;
-            self.PlotHeightFromAnalogChannelIndex_ = plotHeights(1:nAIChannels) ;
-            self.PlotHeightFromDigitalChannelIndex_ = plotHeights(nAIChannels+1:end) ;
+            
+            % We'll need to decide whether to clear the displayed traces or
+            % not.  We do this only if the height of one or more plots is
+            % changing.  To determine whether this is the case, we need to
+            % cache the original values of some things, and compare them to
+            % the new values.
+            oldIsAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
+            oldIsDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
+            oldPlotHeightFromAnalogChannelIndex = self.PlotHeightFromAnalogChannelIndex_ ;
+            oldPlotHeightFromDigitalChannelIndex = self.PlotHeightFromDigitalChannelIndex_ ;
+            newIsAnalogChannelDisplayed = isDisplayed(1:nAIChannels) ;
+            newIsDigitalChannelDisplayed = isDisplayed(nAIChannels+1:end) ;
+            newPlotHeightFromAnalogChannelIndex = plotHeights(1:nAIChannels) ;
+            newPlotHeightFromDigitalChannelIndex = plotHeights(nAIChannels+1:end) ;
+            doNeedToClearData = ~isequal(newIsAnalogChannelDisplayed, oldIsAnalogChannelDisplayed) || ...
+                                ~isequal(newIsDigitalChannelDisplayed, oldIsDigitalChannelDisplayed) || ...
+                                ~isequal(newPlotHeightFromAnalogChannelIndex, oldPlotHeightFromAnalogChannelIndex) || ...
+                                ~isequal(newPlotHeightFromDigitalChannelIndex, oldPlotHeightFromDigitalChannelIndex) ;
+                            
+            % OK, now we can actually set instance variables                
+            self.IsAnalogChannelDisplayed_ = newIsAnalogChannelDisplayed ;
+            self.IsDigitalChannelDisplayed_ = newIsDigitalChannelDisplayed ;
+            self.PlotHeightFromAnalogChannelIndex_ = newPlotHeightFromAnalogChannelIndex ;
+            self.PlotHeightFromDigitalChannelIndex_ = newPlotHeightFromDigitalChannelIndex ;
             self.RowIndexFromAnalogChannelIndex_ = rowIndexFromChannelIndex(1:nAIChannels) ;
             self.RowIndexFromDigitalChannelIndex_ = rowIndexFromChannelIndex(nAIChannels+1:end) ;
             self.updateMappingsFromPlotIndices_() ;
+            if doNeedToClearData ,
+                self.broadcast('ClearData') ;
+            end
             self.broadcast('Update') ;            
         end
     end  % public methods block
