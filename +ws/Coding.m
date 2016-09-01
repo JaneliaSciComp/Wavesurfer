@@ -300,6 +300,10 @@ classdef (Abstract) Coding < handle
             %    keyboard
             %end
 
+            % Check for certain legacy classNames, and use their modern
+            % equivalent.
+            className = ws.Coding.modernizeLegacyClassNameIfNeeded(className) ;
+            
             % Create the object to be returned
             if ws.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
                 result = encoding ;
@@ -321,28 +325,10 @@ classdef (Abstract) Coding < handle
                             % parent
                     end
                 end
-            elseif length(className)>=3 && isequal(className(1:3),'ws.') ,
-                % One of our custom classes
-                
-                % For backwards-compatibility with older files
-                prefixesToFix = {'ws.system.' 'ws.stimulus.' 'ws.mixin.'} ;
-                for i = 1:length(prefixesToFix) ,
-                    prefix = prefixesToFix{i} ;
-                    prefixLength = length(prefix) ;
-                    if strncmp(className,prefix,prefixLength) ,
-                        suffix = className(prefixLength+1:end) ;
-                        className = ['ws.' suffix] ;
-                        break
-                    end
-                end
-
-                % More backwards-compatibility code
-                if isequal(className,'ws.TriggerDestination') ,
-                    className = 'ws.ExternalTrigger' ;
-                elseif isequal(className,'ws.TriggerSource') ,
-                    className = 'ws.CounterTrigger' ;
-                end
-                                
+            elseif ws.isaByName(className, 'ws.Model') || ws.isaByName(className, 'ws.UserClass') ,
+            %elseif length(className)>=3 && isequal(className(1:3),'ws.') ,
+                % One of our custom classes, or a user class
+                                                
                 % Make sure the encoded object is a scalar
                 if isscalar(encoding) ,
                     % The in-my-head spec states that the encoding of a ws.
@@ -608,7 +594,27 @@ classdef (Abstract) Coding < handle
             end
         end  % function
         
-        
+        function className = modernizeLegacyClassNameIfNeeded(className)
+            % For backwards-compatibility with older files
+            prefixesToFix = {'ws.system.' 'ws.stimulus.' 'ws.mixin.'} ;
+            for i = 1:length(prefixesToFix) ,
+                prefix = prefixesToFix{i} ;
+                prefixLength = length(prefix) ;
+                if strncmp(className,prefix,prefixLength) ,
+                    suffix = className(prefixLength+1:end) ;
+                    className = ['ws.' suffix] ;
+                    break
+                end
+            end
+
+            % More backwards-compatibility code
+            if isequal(className,'ws.TriggerDestination') ,
+                className = 'ws.ExternalTrigger' ;
+            elseif isequal(className,'ws.TriggerSource') ,
+                className = 'ws.CounterTrigger' ;
+            end            
+        end  % function
+            
     end  % public static methods block
     
 end
