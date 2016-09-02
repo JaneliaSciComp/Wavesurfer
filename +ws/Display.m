@@ -20,8 +20,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         AreYLimitsLockedTightToDataForAnalogChannel  % 1 x nAIChannels
         YLimitsPerAnalogChannel  % 2 x nAIChannels, 1st row is the lower limit, 2nd is the upper limit
         NPlots
-        XData
-        YData
+        %XData
+        %YData
         PlotHeightFromAnalogChannelIndex  % 1 x nAIChannels
         PlotHeightFromDigitalChannelIndex  % 1 x nDIChannels
         PlotHeightFromChannelIndex  % 1 x nChannels
@@ -60,8 +60,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         ClearOnNextData_
         CachedDisplayXSpan_
         XSpanInPixels_
-        XData_
-        YData_  % analog and digital together, all as doubles, but only for the *active* channels
+        %XData_
+        %YData_  % analog and digital together, all as doubles, but only for the *active* channels
         ChannelIndexWithinTypeFromPlotIndex_  % 1 x NPlots
         IsAnalogFromPlotIndex_  % 1 x NPlots
         ChannelIndexFromPlotIndex_  % 1 x NPlots (the channel index is in the list of all analog, then all digital, channels)
@@ -73,10 +73,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         UpdateXSpan
         UpdateXOffset
         UpdateYAxisLimits
-        UpdateData
-        %DataAdded
-        %DataCleared
-        ItWouldBeNiceToKnowXSpanInPixels
+        %UpdateData
+        ClearData
+        %ItWouldBeNiceToKnowXSpanInPixels
+        AddData
     end
 
     methods
@@ -106,13 +106,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = length(self.IsAnalogChannelDisplayed_) + length(self.IsDigitalChannelDisplayed_) ;
         end
         
-        function result = get.XData(self)
-            result = self.XData_ ;
-        end
-        
-        function result = get.YData(self)
-            result = self.YData_ ;
-        end
+%         function result = get.XData(self)
+%             result = self.XData_ ;
+%         end
+%         
+%         function result = get.YData(self)
+%             result = self.YData_ ;
+%         end
         
         function result = get.AreYLimitsLockedTightToDataForAnalogChannel(self)
             result = self.AreYLimitsLockedTightToDataForAnalogChannel_ ;
@@ -232,38 +232,38 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function value = get.XSpan(self)
-            import ws.*
             if self.IsXSpanSlavedToAcquistionDuration ,
-                value=1;  % s, fallback value
-                wavesurferModel=self.Parent;
+                wavesurferModel = self.Parent ;
                 if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
-                    return
+                    value = 1 ;  % s, fallback value
+                else
+                    sweepDuration = wavesurferModel.SweepDuration ;
+                    value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
                 end
-                duration=wavesurferModel.SweepDuration;
-                value=fif(isfinite(duration),duration,1);
             else
-                value = self.XSpan_;
+                value = self.XSpan_ ;
             end
         end
         
         function set.XSpan(self, newValue)            
-            if ws.isASettableValue(newValue) ,
-                if self.IsXSpanSlavedToAcquistionDuration ,
-                    % don't set anything
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                % don't set anything
+                didSucceed = true ;  % this is by convention
+            else
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                    self.XSpan_ = double(newValue);
+                    %self.clearData_() ;
+                    self.broadcast('ClearData') ;
+                    didSucceed = true ;
                 else
-                    if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                        self.XSpan_ = double(newValue);
-                        % for idx = 1:numel(self.Scopes) ,
-                        %     self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                        % end
-                    else
-                        self.broadcast('UpdateXSpan');
-                        error('most:Model:invalidPropVal', ...
-                              'XSpan must be a scalar finite positive number') ;
-                    end
+                    didSucceed = false ;
                 end
             end
-            self.broadcast('UpdateXSpan');            
+            self.broadcast('UpdateXSpan');
+            if ~didSucceed ,
+                error('most:Model:invalidPropVal', ...
+                      'XSpan must be a scalar finite positive number') ;
+            end                
         end  % function
                 
         function value = get.XOffset(self)
@@ -304,6 +304,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
         
+        function setYLimitsForSingleAnalogChannel_(self, i, newValue)
+            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
+                self.YLimitsPerAnalogChannel_(:,i) = double(newValue') ;
+            end
+        end
+        
         function value = get.IsXSpanSlavedToAcquistionDuration(self)
             if self.Parent.AreSweepsContinuous ,
                 value = false ;
@@ -315,17 +321,21 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
             if self.IsXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                    isNewValueAllowed = true ;
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
-                    % for idx = 1:numel(self.Scopes) ,
-                    %     self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-                    % end
+                    %self.clearData_() ; 
+                    self.broadcast('ClearData');
                 else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
+                    isNewValueAllowed = false ;
                 end
+            else
+                isNewValueAllowed = true ;  % sort of in a trivial sense...
             end
             self.broadcast('Update');            
+            if ~isNewValueAllowed ,
+                error('most:Model:invalidPropVal', ...
+                      'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
+            end                
         end
         
         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
@@ -333,14 +343,16 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end  % function       
         
         function didSetAnalogChannelUnitsOrScales(self)
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;
         end       
         
         function startingRun(self)
             self.XOffset = 0;
-            self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
-            self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
+            %self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
+            %self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
+            self.XAutoScroll_ = (self.XSpan<self.Parent.Acquisition.Duration) ;
         end  % function
         
         function completingRun(self)
@@ -363,7 +375,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
             self.RowIndexFromAnalogChannelIndex_ = horzcat(self.RowIndexFromAnalogChannelIndex_, nRowsBefore+1) ;
             self.updateMappingsFromPlotIndices_() ;
-            self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;
         end
         
@@ -373,7 +385,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             nRowsBefore = length(self.RowIndexFromAnalogChannelIndex_) + length(self.RowIndexFromDigitalChannelIndex_) ;
             self.RowIndexFromDigitalChannelIndex_ = horzcat(self.RowIndexFromDigitalChannelIndex_, nRowsBefore+1) ;
             self.updateMappingsFromPlotIndices_() ;
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
 
@@ -387,7 +400,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
                 ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
             self.updateMappingsFromPlotIndices_() ;
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
@@ -399,22 +413,26 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
                 ws.Display.renormalizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_) ;            
             self.updateMappingsFromPlotIndices_() ;
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
         function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
         function didSetIsInputChannelActive(self) 
-            self.clearData_() ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('Update') ;            
         end
         
@@ -604,110 +622,114 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end                
         end  % function
                 
-        function setYAxisLimitsTightToData(self, plotIndex)            
-            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
-                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
-                nPlots = length(isAnalogFromPlotIndex) ;
-                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
-                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
-                    self.setYAxisLimitsTightToData_(channelIndex) ;
-                    isValid = true ;
-                else
-                    isValid = false ;
-                end
-            else
-                isValid = false ;
-            end
-            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
-            if ~isValid ,
-                error('most:Model:invalidPropVal', ...
-                      'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
-            end                
-        end  % function
+%         function setYAxisLimitsTightToData(self, plotIndex)            
+%             if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+%                 isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+%                 nPlots = length(isAnalogFromPlotIndex) ;
+%                 if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+%                     channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+%                     self.setYAxisLimitsTightToData_(channelIndex) ;
+%                     isValid = true ;
+%                 else
+%                     isValid = false ;
+%                 end
+%             else
+%                 isValid = false ;
+%             end
+%             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+%             if ~isValid ,
+%                 error('most:Model:invalidPropVal', ...
+%                       'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
+%             end                
+%         end  % function
 
-        function toggleAreYLimitsLockedTightToData(self, plotIndex)
-            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
-                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
-                nPlots = length(isAnalogFromPlotIndex) ;
-                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
-                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
-                    currentValue = self.AreYLimitsLockedTightToDataForAnalogChannel_(channelIndex) ;
-                    self.AreYLimitsLockedTightToDataForAnalogChannel_(channelIndex) = ~currentValue ;
-                    self.setYAxisLimitsTightToData_(channelIndex) ;  % this doesn't call .broadcast()
-                end
-            end
-            self.broadcast('Update') ;  % Would be nice to be more surgical about this...
+        function setAreAreYLimitsLockedTightToDataForSingleChannel_(self, channelIndex, newValue)            
+            self.AreYLimitsLockedTightToDataForAnalogChannel_(channelIndex) = newValue ;
         end        
         
         function didSetAnalogInputTerminalID_(self)
             % This should only be called by the parent, hence the
             % underscore.
-            self.clearData_() ;
-            self.broadcast('UpdateData') ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
         end        
         
         function didSetDigitalInputTerminalID_(self)
             % This should only be called by the parent, hence the
             % underscore.
-            self.clearData_() ;
-            self.broadcast('UpdateData') ;
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
         end
         
         function setPlotHeightsAndOrder_(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             % Typically called by ws.PlotArrangementDialogFigure after OK
             % button is pressed.  Does no argument checking.
             nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
-            %nDIChannels = length(self.IsDigitalChannelDisplayed_) ;
-            %nChannels = nAIChannels + nDIChannels ;
-%             if islogical(isDisplayed) && isequal(size(isDisplayed),[1 nChannels]) && ...
-%                isdouble(plotHeights) && isreal(plotHeights) && isequal(size(plotHeights),[1 nChannels]) && all(plotHeights>=0.1)&& ...     
-%                isdouble(rowIndexFromChannelIndex) && isreal(rowIndexFromChannelIndex) && isequal(size(rowIndexFromChannelIndex),[1 nChannels]) ,
-%                 % Normalize plotHeights, rowIndexFromChannelIndex
-%                 plotHeights = round(10*plotHeights)/10 ;
-%                 [~,channelIndexFromRowIndex] = sort(rowIndexFromChannelIndex,'stable') ;
-%                 rowIndexFromChannelIndex(channelIndexFromRowIndex) = 1:nChannels ;
             % Set properties
-            self.IsAnalogChannelDisplayed_ = isDisplayed(1:nAIChannels) ;
-            self.IsDigitalChannelDisplayed_ = isDisplayed(nAIChannels+1:end) ;
-            self.PlotHeightFromAnalogChannelIndex_ = plotHeights(1:nAIChannels) ;
-            self.PlotHeightFromDigitalChannelIndex_ = plotHeights(nAIChannels+1:end) ;
+            
+            % We'll need to decide whether to clear the displayed traces or
+            % not.  We do this only if the height of one or more plots is
+            % changing.  To determine whether this is the case, we need to
+            % cache the original values of some things, and compare them to
+            % the new values.
+            oldIsAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
+            oldIsDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
+            oldPlotHeightFromAnalogChannelIndex = self.PlotHeightFromAnalogChannelIndex_ ;
+            oldPlotHeightFromDigitalChannelIndex = self.PlotHeightFromDigitalChannelIndex_ ;
+            newIsAnalogChannelDisplayed = isDisplayed(1:nAIChannels) ;
+            newIsDigitalChannelDisplayed = isDisplayed(nAIChannels+1:end) ;
+            newPlotHeightFromAnalogChannelIndex = plotHeights(1:nAIChannels) ;
+            newPlotHeightFromDigitalChannelIndex = plotHeights(nAIChannels+1:end) ;
+            doNeedToClearData = ~isequal(newIsAnalogChannelDisplayed, oldIsAnalogChannelDisplayed) || ...
+                                ~isequal(newIsDigitalChannelDisplayed, oldIsDigitalChannelDisplayed) || ...
+                                ~isequal(newPlotHeightFromAnalogChannelIndex, oldPlotHeightFromAnalogChannelIndex) || ...
+                                ~isequal(newPlotHeightFromDigitalChannelIndex, oldPlotHeightFromDigitalChannelIndex) ;
+                            
+            % OK, now we can actually set instance variables                
+            self.IsAnalogChannelDisplayed_ = newIsAnalogChannelDisplayed ;
+            self.IsDigitalChannelDisplayed_ = newIsDigitalChannelDisplayed ;
+            self.PlotHeightFromAnalogChannelIndex_ = newPlotHeightFromAnalogChannelIndex ;
+            self.PlotHeightFromDigitalChannelIndex_ = newPlotHeightFromDigitalChannelIndex ;
             self.RowIndexFromAnalogChannelIndex_ = rowIndexFromChannelIndex(1:nAIChannels) ;
             self.RowIndexFromDigitalChannelIndex_ = rowIndexFromChannelIndex(nAIChannels+1:end) ;
             self.updateMappingsFromPlotIndices_() ;
+            if doNeedToClearData ,
+                self.broadcast('ClearData') ;
+            end
             self.broadcast('Update') ;            
         end
     end  % public methods block
     
     methods (Access=protected)        
-        function setYAxisLimitsTightToData_(self, aiChannelIndex)            
-            % this core function does no arg checking and doesn't call
-            % .broadcast.  It just mutates the state.
-            yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
-            if any(~isfinite(yMinAndMax)) ,
-                return
-            end
-            yCenter=mean(yMinAndMax);
-            yRadius=0.5*diff(yMinAndMax);
-            if yRadius==0 ,
-                yRadius=0.001;
-            end
-            newYLimits = yCenter + 1.05*yRadius*[-1 +1]' ;
-            self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;            
-        end
-        
-        function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
-            % Min and max of the data, across all plotted channels.
-            % Returns a 1x2 array.
-            % If all channels are empty, returns [+inf -inf].
-            activeChannelIndexFromChannelIndex = self.Parent.Acquisition.ActiveChannelIndexFromChannelIndex ;
-            indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
-            y = self.YData(:,indexWithinData) ;
-            yMinRaw=min(y);
-            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
-            yMaxRaw=max(y);
-            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
-            yMinAndMax=double([yMin yMax]);
-        end
+%         function setYAxisLimitsTightToData_(self, aiChannelIndex)            
+%             % this core function does no arg checking and doesn't call
+%             % .broadcast.  It just mutates the state.
+%             yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
+%             if any(~isfinite(yMinAndMax)) ,
+%                 return
+%             end
+%             yCenter=mean(yMinAndMax);
+%             yRadius=0.5*diff(yMinAndMax);
+%             if yRadius==0 ,
+%                 yRadius=0.001;
+%             end
+%             newYLimits = yCenter + 1.05*yRadius*[-1 +1]' ;
+%             self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = newYLimits ;            
+%         end
+%         
+%         function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
+%             % Min and max of the data, across all plotted channels.
+%             % Returns a 1x2 array.
+%             % If all channels are empty, returns [+inf -inf].
+%             activeChannelIndexFromChannelIndex = self.Parent.Acquisition.ActiveChannelIndexFromChannelIndex ;
+%             indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
+%             y = self.YData(:,indexWithinData) ;
+%             yMinRaw=min(y);
+%             yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
+%             yMaxRaw=max(y);
+%             yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
+%             yMinAndMax=double([yMin yMax]);
+%         end
         
         function completingOrStoppingOrAbortingRun_(self)
             if ~isempty(self.CachedDisplayXSpan_)
@@ -715,97 +737,84 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.CachedDisplayXSpan_ = [];
         end        
-        
-        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_(self)
-            areYLimitsLockedTightToData = self.AreYLimitsLockedTightToDataForAnalogChannel_ ;
-            nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
-            doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
-            for i = 1:nAIChannels ,                
-                if areYLimitsLockedTightToData(i) ,
-                    doesAIChannelNeedYLimitUpdate(i) = true ;
-                    self.setYAxisLimitsTightToData_(i) ;
-                end
-            end
-            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
-        end  % function
-        
-        function clearData_(self)
-            self.XData_ = zeros(0,1) ;
-            acquisition = self.Parent.Acquisition ;
-            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
-            self.YData_ = zeros(0,nActiveChannels) ;
-        end
-        
-        function indicesOfAIChannelsNeedingYLimitUpdate = addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate)
-            % t is a scalar, the time stamp of the scan *just after* the
-            % most recent scan.  (I.e. it is one dt==1/fs into the future.
-            % Queue Doctor Who music.)
-
-            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
-            % into a matrix of logical data, then convert it to doubles and
-            % concat it with the recentScaledAnalogData, storing the result
-            % in yRecent.
-            nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
-            if nActiveDigitalChannels==0 ,
-                yRecent = recentScaledAnalogData ;
-            else
-                % Might need to write a mex function to quickly translate
-                % recentRawDigitalData to recentDigitalData.
-                nScans = size(recentRawDigitalData,1) ;                
-                recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
-                for j = 1:nActiveDigitalChannels ,
-                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
-                end
-                % End of code that might need to mex-ify
-                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
-            end
-            
-            % Compute a timeline for the new data            
-            nNewScans = size(yRecent, 1) ;
-            dt = 1/sampleRate ;  % s
-            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
-            xRecent = t0 + dt*(0:(nNewScans-1))' ;
-            
-            % Figure out the downsampling ratio
-            self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
-              % At this point, self.XSpanPixels_ should be set to the
-              % correct value, or the fallback value if there's no view
-            %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
-            xSpanInPixels = self.XSpanInPixels_ ;
-            xSpan = self.XSpan ;
-            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
-            
-            % Downsample the new data
-            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
-            
-            % deal with XData
-            xAllOriginal = self.XData ;  % these are already downsampled
-            yAllOriginal = self.YData ;            
-            
-            % Concatenate the old data that we're keeping with the new data
-            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
-            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
-            
-            % Trim off scans that would be off the screen anyway
-            doKeepScan = (self.XOffset_<=xAllProto) ;
-            xNew = xAllProto(doKeepScan) ;
-            yNew = yAllProto(doKeepScan,:) ;
-
-            % Commit the data to self
-            self.XData_ = xNew ;
-            self.YData_ = yNew ;
-            
-%             % Update the x offset in the scope to match that in the Display
-%             % subsystem
-%             fprintf('xOffset: %20g     self.XOffset: %20g\n', xOffset, self.XOffset) ;
-%             if xOffset ~= self.XOffset , 
-%                 fprintf('About to change x offset\n') ;
-%                 self.XOffset = xOffset ;
+                
+%         function clearData_(self)
+%             self.XData_ = zeros(0,1) ;
+%             acquisition = self.Parent.Acquisition ;
+%             nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+%             self.YData_ = zeros(0,nActiveChannels) ;
+%         end
+%         
+%         function indicesOfAIChannelsNeedingYLimitUpdate = addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate)
+%             % t is a scalar, the time stamp of the scan *just after* the
+%             % most recent scan.  (I.e. it is one dt==1/fs into the future.
+%             % Queue Doctor Who music.)
+% 
+%             % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+%             % into a matrix of logical data, then convert it to doubles and
+%             % concat it with the recentScaledAnalogData, storing the result
+%             % in yRecent.
+%             nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
+%             if nActiveDigitalChannels==0 ,
+%                 yRecent = recentScaledAnalogData ;
+%             else
+%                 % Might need to write a mex function to quickly translate
+%                 % recentRawDigitalData to recentDigitalData.
+%                 nScans = size(recentRawDigitalData,1) ;                
+%                 recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
+%                 for j = 1:nActiveDigitalChannels ,
+%                     recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
+%                 end
+%                 % End of code that might need to mex-ify
+%                 yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
 %             end
-            
-            % Change the y limits to match the data, if appropriate
-            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
-        end        
+%             
+%             % Compute a timeline for the new data            
+%             nNewScans = size(yRecent, 1) ;
+%             dt = 1/sampleRate ;  % s
+%             t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+%             xRecent = t0 + dt*(0:(nNewScans-1))' ;
+%             
+%             % Figure out the downsampling ratio
+%             self.broadcast('ItWouldBeNiceToKnowXSpanInPixels') ;
+%               % At this point, self.XSpanPixels_ should be set to the
+%               % correct value, or the fallback value if there's no view
+%             %xSpanInPixels=ws.ScopeFigure.getWidthInPixels(self.AxesGH_);
+%             xSpanInPixels = self.XSpanInPixels_ ;
+%             xSpan = self.XSpan ;
+%             r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+%             
+%             % Downsample the new data
+%             [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
+%             
+%             % deal with XData
+%             xAllOriginal = self.XData ;  % these are already downsampled
+%             yAllOriginal = self.YData ;            
+%             
+%             % Concatenate the old data that we're keeping with the new data
+%             xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+%             yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+%             
+%             % Trim off scans that would be off the screen anyway
+%             doKeepScan = (self.XOffset_<=xAllProto) ;
+%             xNew = xAllProto(doKeepScan) ;
+%             yNew = yAllProto(doKeepScan,:) ;
+% 
+%             % Commit the data to self
+%             self.XData_ = xNew ;
+%             self.YData_ = yNew ;
+%             
+% %             % Update the x offset in the scope to match that in the Display
+% %             % subsystem
+% %             fprintf('xOffset: %20g     self.XOffset: %20g\n', xOffset, self.XOffset) ;
+% %             if xOffset ~= self.XOffset , 
+% %                 fprintf('About to change x offset\n') ;
+% %                 self.XOffset = xOffset ;
+% %             end
+%             
+%             % Change the y limits to match the data, if appropriate
+%             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsTightToDataIfAreYLimitsLockedTightToData_() ;
+%         end        
     end
         
     methods    
@@ -820,8 +829,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             if self.IsEnabled , 
                 if self.ClearOnNextData_ ,
-                    self.clearData_() ;
-                    self.broadcast('UpdateData') ;
+                    %self.clearData_() ;
+                    self.broadcast('ClearData') ;
                 end            
                 self.ClearOnNextData_ = false;
 
@@ -837,10 +846,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 end
 
                 % Add the data
-                indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, self.Parent.Acquisition.SampleRate) ;
-                plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex_(indicesOfAIChannelsNeedingYLimitUpdate) ;
-                self.broadcast('UpdateData');       
-                self.broadcast('UpdateYAxisLimits', plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
+                fs = self.Parent.Acquisition.SampleRate ;
+                self.broadcast('AddData', t, scaledAnalogData, rawDigitalData, fs) ;
+%                 indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, fs) ;
+%                 plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex_(indicesOfAIChannelsNeedingYLimitUpdate) ;
+%                 self.broadcast('UpdateData');       
+%                 self.broadcast('UpdateYAxisLimits', plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
             else
                 % if not active, do nothing
             end
@@ -891,16 +902,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function didSetSweepDurationIfFinite(self)
             % Called by the parent to notify of a change to the acquisition
-            % duration
-            
-            % Want any listeners on XSpan set to get called
-            %if self.IsXSpanSlavedToAcquistionDuration ,
-%             for idx = 1:numel(self.Scopes) ,
-%                 self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-%             end
+            % duration.            
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                %self.clearData_() ;
+                self.broadcast('ClearData') ;
+            end                
             self.broadcast('UpdateXSpan');
-            %end    
-            %self.XSpan = nan;
         end
         
 %         function out = get.NPlots(self)
@@ -989,7 +996,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function synchronizeTransientStateToPersistedState_(self)
             self.updateMappingsFromPlotIndices_() ;            
-            self.clearData_() ;  % This will ensure that the size of YData is appropriate
+            %self.clearData_() ;  % This will ensure that the size of YData is appropriate
+            %self.broadcast('ClearData') ;
         end        
         
     end  % protected methods block
@@ -1009,7 +1017,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.IsEnabled_ = logical(newValue) ;
                 if ~self.IsEnabled_ ,
-                    self.clearData_() ;  % if we just disabled Display, clear the data
+                    %self.clearData_() ;  % if we just disabled Display, clear the data
+                    self.broadcast('ClearData') ;
                 end
                 didSucceed = true ;
             else

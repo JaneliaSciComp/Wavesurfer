@@ -1135,9 +1135,13 @@ classdef WavesurferModel < ws.RootModel
             [acquisitionKeystoneTask, stimulationKeystoneTask] = self.determineKeystoneTasks() ;
             
             % Tell the Looper & Refiller to prepare for the run
+            currentFrontendPath = path() ;
+            currentFrontendPwd = pwd() ;
             wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
             self.LooperIPCRequester_.send('startingRun', ...
+                                          currentFrontendPath, ...
+                                          currentFrontendPwd, ...
                                           wavesurferModelSettings, ...
                                           acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                           self.IsAIChannelTerminalOvercommitted, ...
@@ -1145,6 +1149,8 @@ classdef WavesurferModel < ws.RootModel
                                           self.IsAOChannelTerminalOvercommitted, ...
                                           self.IsDOChannelTerminalOvercommitted) ;
             self.RefillerIPCRequester_.send('startingRun', ...
+                                            currentFrontendPath, ...
+                                            currentFrontendPwd, ...
                                             wavesurferModelSettings, ...
                                             acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                             self.IsAIChannelTerminalOvercommitted, ...
@@ -2153,7 +2159,7 @@ classdef WavesurferModel < ws.RootModel
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             %self.broadcast('Update');  
-            self.updateEverythingDammit_() ;  % Calls .broadcast('Update') for self and all subsystems
+            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
                 % have to do this before setting state, b/c at this point view could be badly out-of-sync w/ model, and setState_() doesn't do a full Update
             %self.setState_('idle');
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
@@ -2166,7 +2172,7 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function saveProtocolFileForRealsSrsly(self,absoluteFileName,layoutForAllWindows)
+        function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForPersistence();
@@ -2854,11 +2860,12 @@ classdef WavesurferModel < ws.RootModel
             self.enableBroadcastsMaybe() ;
         end
         
-        function updateEverythingDammit_(self)
+        function updateEverythingAfterProtocolFileOpen_(self)
             self.Logging_.broadcast('Update') ;                        
             self.UserCodeManager_.broadcast('Update') ;
             self.Ephys_.ElectrodeManager.broadcast('Update') ;
             self.Ephys_.TestPulser.broadcast('Update') ;
+            self.Display_.broadcast('ClearData') ;
             self.Display_.broadcast('Update') ;
             self.Stimulation_.broadcast('Update') ;
             self.Acquisition_.broadcast('Update') ;            

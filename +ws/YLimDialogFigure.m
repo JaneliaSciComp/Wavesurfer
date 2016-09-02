@@ -11,6 +11,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
         CancelButton_
         % Other things
         YLimits_
+        AreYLimitsAcceptable_
         YUnits_
         CallbackFunction_
     end
@@ -24,6 +25,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
             self.YLimits_ = yLimits ;
             self.YUnits_ = yUnits ;
             self.CallbackFunction_ = callbackFunction ;
+            self.AreYLimitsAcceptable_ = ws.YLimDialogFigure.areYLimitsAcceptable(yLimits) ;
             
             % Set the relevant properties of the figure itself
             set(self.FigureGH_, 'Tag', 'YLimDialogFigure', ...
@@ -42,12 +44,15 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
             
             % sync up self to 'model', which is basically self.YLimits_ and
             % self.YUnits_
-            self.updateControlProperties_() ;
+            self.update_() ;
             self.layout_() ;
             
             % Do stuff specific to dialog boxes
             self.centerOnParentPosition_(parentFigurePosition) ;
             self.show() ;
+            
+            % Give the top edit keyboard focus
+            uicontrol(self.YMaxEdit_) ;
         end  % constructor
     end
     
@@ -67,6 +72,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
                 ws.uiedit('Parent',self.FigureGH_, ...
                           'HorizontalAlignment','right', ...
                           'Tag','YMaxEdit_', ...
+                          'KeypressFcn',@(source,event)(self.keyPressedOnEdit('yMaxEdit',source,event)), ...
                           'Callback',@(source,event)(self.controlActuated('yMaxEdit',source,event)));
             self.YMaxUnitsText_=...
                 ws.uicontrol('Parent',self.FigureGH_, ...
@@ -86,6 +92,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
                 ws.uiedit('Parent',self.FigureGH_, ...
                           'HorizontalAlignment','right', ...
                           'Tag','YMinEdit_', ...
+                          'KeypressFcn',@(source,event)(self.keyPressedOnEdit('yMinEdit',source,event)), ...
                           'Callback',@(source,event)(self.controlActuated('yMinEdit',source,event)));
             self.YMinUnitsText_=...
                 ws.uicontrol('Parent',self.FigureGH_, ...
@@ -185,57 +192,105 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
     end % protected methods block
     
     methods        
-        function controlActuated(self, methodNameStem, source, event, varargin)
-            if isequal(source, self.YMaxEdit_) || isequal(source, self.YMinEdit_) ,
-                self.syncOKButtonEnablementFromEditContents_() ;
-            else
-                controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
-            end
-        end  % function
+%         function controlActuated(self, methodNameStem, source, event, varargin)
+%             controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
+%         end  % function
        
+        function keyPressedOnEdit(self, methodNameStem, source, event) %#ok<INUSL>
+            %self.setYLimitsGivenEditContents_() ;
+            %self.syncAreYLimitsAcceptableGivenYLimits_() ;
+            %self.updateControlEnablement_() ;
+            if isequal(event.Key,'return') ,
+                uicontrol(source) ;  % Have to do this so the edit's String property reflects the value the user is currently seeing
+                self.controlActuated('okButton', source, event);
+            end            
+        end
+
         function keyPressedOnButton(self, methodNameStem, source, event)
-            % This makes it so the user can press "Enter" when a button has keyboard focus to "press" the button.
+            % This makes it so the user can press "Enter" when a control
+            % has keyboard focus to press the OK button.  Unless the
+            % control is the Cancel Button, in which case it's like pressig
+            % the Cancel button.
+            %fprintf('keyPressedOnControl()\n') ;
+            %key = event.Key
             if isequal(event.Key,'return') ,
                 self.controlActuated(methodNameStem, source, event);
             end
         end  % function
     end  % public methods block
     
+    methods (Static)
+        function result = areYLimitsAcceptable(yLimits)
+            yMin = yLimits(1) ;
+            yMax = yLimits(2) ;
+            result = isfinite(yMax) && isfinite(yMin) && (yMin~=yMax) ;
+        end
+    end 
+
     methods (Access=protected)
-        function syncOKButtonEnablementFromEditContents_(self)
-            yMaxAsString=get(self.YMaxEdit_,'String');
-            yMinAsString=get(self.YMinEdit_,'String');
+        function syncAreYLimitsAcceptableGivenYLimits_(self)
+            self.AreYLimitsAcceptable_ = ws.YLimDialogFigure.areYLimitsAcceptable(self.YLimits_) ;
+        end
+        
+        function setYLimitsGivenEditContents_(self)
+            yMaxAsString=get(self.YMaxEdit_,'String') ;
+            yMinAsString=get(self.YMinEdit_,'String') ;
             yMax=str2double(yMaxAsString);
             yMin=str2double(yMinAsString);
-            isEnabled= isfinite(yMax) && isfinite(yMin) && (yMin~=yMax);
-            set(self.OKButton_,'Enable',ws.onIff(isEnabled));
+            self.YLimits_ = [yMin yMax] ;
+        end
+        
+        function syncOKButtonEnablementFromEditContents_(self)
+            self.setYLimitsGivenEditContents_() ;
+            self.syncAreYLimitsAcceptableGivenYLimits_() ;
+            self.updateControlEnablement_() ;
         end
     end 
         
     methods
         function okButtonActuated(self,source,event) 
-            yMaxAsString=get(self.YMaxEdit_,'String');
-            yMinAsString=get(self.YMinEdit_,'String');
-            yMax=str2double(yMaxAsString);
-            yMin=str2double(yMinAsString);
-            if isfinite(yMax) && isfinite(yMin) ,
-                if yMin>yMax ,
-                    temp=yMax;
-                    yMax=yMin;
-                    yMin=temp;
+            self.setYLimitsGivenEditContents_() ;
+            self.syncAreYLimitsAcceptableGivenYLimits_() ;
+            %self.updateControlEnablement_() ;
+            if self.AreYLimitsAcceptable_ ,
+                %fprintf('YLimits are acceptable\n') ;
+                %yLimits = self.YLimits_
+                yMin = self.YLimits_(1) ;
+                yMax = self.YLimits_(2) ;
+                if isfinite(yMax) && isfinite(yMin) ,
+                    if yMin>yMax ,
+                        temp=yMax;
+                        yMax=yMin;
+                        yMin=temp;
+                    end
+                    if yMin~=yMax ,
+                        callbackFunction = self.CallbackFunction_ ;
+                        feval(callbackFunction,[yMin yMax]) ;
+                    end
                 end
-                if yMin~=yMax ,
-                    callbackFunction = self.CallbackFunction_ ;
-                    feval(callbackFunction,[yMin yMax]) ;
-                    %self.Model.(callbackFunction) = [yMin yMax] ;
-                end
+                self.closeRequested_(source, event) ;
+            else
+                %fprintf('YLimits are *not* acceptable\n') ;
+                self.updateControlEnablement_() ;
             end
-            self.closeRequested_(source, event) ;
         end  % function
         
         function cancelButtonActuated(self,source,event)
             self.closeRequested_(source, event) ;
-        end        
+        end
+        
+        function yMinEditActuated(self, source, event)  %#ok<INUSD>
+            self.setYLimitsGivenEditContents_() ;
+            self.syncAreYLimitsAcceptableGivenYLimits_() ;
+            self.updateControlEnablement_() ;
+        end
+
+        function yMaxEditActuated(self, source, event)  %#ok<INUSD>
+            self.setYLimitsGivenEditContents_() ;
+            self.syncAreYLimitsAcceptableGivenYLimits_() ;
+            self.updateControlEnablement_() ;
+        end
+
     end  % methods
 
     methods (Access=protected)
@@ -243,6 +298,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
             % Syncs self with model, making no prior assumptions about what
             % might have changed or not changed in the model.
             self.updateControlPropertiesImplementation_();
+            self.updateControlEnablementImplementation_();
             %self.layout();
         end
         
@@ -255,5 +311,10 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
             set(self.YMinEdit_     ,'String',sprintf('%0.3g',yl(1)));
             set(self.YMinUnitsText_,'String',unitsString);            
         end
+        
+        function self=updateControlEnablementImplementation_(self, varargin)
+            % Update the relevant controls
+            set(self.OKButton_,'Enable',ws.onIff(self.AreYLimitsAcceptable_));
+        end        
     end
 end  % classdef
