@@ -157,6 +157,9 @@ classdef FiniteOutputTask < handle
         end  % function
         
         function clearChannelData(self)
+            % This is used to just get rid of any pre-existing channel
+            % data.  Typically used at the start of a run, to clear out any
+            % old channel data.              
             nChannels=length(self.TerminalIDs);
             if self.IsAnalog ,
                 self.ChannelData_ = zeros(0,nChannels);  
@@ -165,6 +168,18 @@ classdef FiniteOutputTask < handle
             end                
             self.IsOutputBufferSyncedToChannelData_ = false ;  % we don't sync up the output buffer to no data
         end  % function
+        
+        function zeroChannelData(self)
+            % This is used to replace the channel data with a small number
+            % of all-zero scans.
+            nChannels = length(self.TerminalIDs) ;
+            nScans = 2 ;  % Need at least 2...
+            if self.IsAnalog ,
+                self.ChannelData = zeros(nScans,nChannels) ;  % N.B.: Want to use public setter, so output gets sync'ed                
+            else
+                self.ChannelData = false(nScans,nChannels) ;  % N.B.: Want to use public setter, so output gets sync'ed
+            end
+        end  % function       
         
         function value = get.ChannelData(self)
             value = self.ChannelData_;
