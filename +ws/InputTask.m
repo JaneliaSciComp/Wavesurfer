@@ -327,6 +327,7 @@ classdef InputTask < handle
             else
                 data = self.DabsDaqTask_.readDigitalData([],'uint32');
             end
+            fprintf('n scans: %d\n', size(data,1)) ;
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
     end  % protected methods block
