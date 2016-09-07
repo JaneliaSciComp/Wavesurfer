@@ -133,7 +133,7 @@ wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
 
 %scope = wsModel.Display.Scopes{1} ;
 %scope.YLim = [-55 +25] ;
-wsModel.Display.setYLimitsForSingleAnalogChannel(1, [-55 +25]) ;
+wsModel.Display.setYLimitsForSingleAnalogChannel(1, [-75 +25]) ;
 wsModel.Display.setYLimitsForSingleAnalogChannel(2, [-10 +60]) ;
 %wsModel.Display.setYLimitsForSingleAnalogChannel(3, [-0.1 +1.1]) ;
 %wsModel.Display.setYLimitsForSingleAnalogChannel(4, [-0.1 +1.1]) ;
