@@ -482,6 +482,45 @@ classdef RefillerStimulation < ws.StimulationSubsystem   % & ws.DependentPropert
             % Disarm the tasks
             self.TheFiniteAnalogOutputTask_.disarm();
             self.TheFiniteDigitalOutputTask_.disarm();            
+
+            % The tasks should already be stopped, but they might have
+            % non-zero outputs.  So we fill the output buffers with a short
+            % run of zeros, then start the task again.
+            self.TheFiniteAnalogOutputTask_.zeroChannelData();
+            self.TheFiniteDigitalOutputTask_.zeroChannelData();            
+
+            self.TheFiniteAnalogOutputTask_.TriggerTerminalName = '' ;  % this will make it start w/o waiting for a trigger
+            self.TheFiniteDigitalOutputTask_.TriggerTerminalName = '' ;  % this will make it start w/o waiting for a trigger
+            
+            self.TheFiniteAnalogOutputTask_.arm();
+            self.TheFiniteDigitalOutputTask_.arm();            
+            
+            self.TheFiniteAnalogOutputTask_.start();
+            self.TheFiniteDigitalOutputTask_.start();            
+
+            % Wait for the tasks to stop, but don't wait forever...
+            % The idea here is to make a good faith effort to zero the
+            % outputs, but not to ever go into an infinite loop that brings
+            % everything crashing to a halt.
+            for i=1:100 ,
+                if self.TheFiniteAnalogOutputTask_.isDone() ,
+                    break
+                end
+                pause(0.01) ;  % This is OK since it's running in the refiller.
+            end
+            for i=1:100 ,
+                if self.TheFiniteDigitalOutputTask_.isDone() ,
+                    break
+                end
+                pause(0.01) ;  % This is OK since it's running in the refiller.
+            end
+            
+            self.TheFiniteAnalogOutputTask_.stop();
+            self.TheFiniteDigitalOutputTask_.stop();            
+            
+            % Disarm the tasks (again)
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();                        
             
             % Clear the NI daq tasks
             self.releaseHardwareResources() ;

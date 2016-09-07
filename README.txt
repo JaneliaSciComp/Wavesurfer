@@ -26,42 +26,45 @@ Matlab R2013b or later (64-bit)
 Installation
 ------------
 
-1.  Download the .zip file for the latest release from here:
+1.  If you have a previous version of WaveSurfer installed, delete the
+    entries for it from your Matlab path.
+
+2.  Download the .zip file for the latest release from here:
 
         http://wavesurfer.janelia.org/releases/index.html
 
-2.  Extract the .zip file contents to a convenient location.
+3.  Extract the .zip file contents to a convenient location.
 
-3.  In Matlab, cd to this just-created directory.
+4.  In Matlab, cd to this just-created directory.
 
-4.  At the Matlab command line, execute "installWavesurfer".  This
+5.  At the Matlab command line, execute "installWavesurfer".  This
     will permanently modify your Matlab path so that all components
     needed by WaveSurfer are on it.  (If you don't want to permanently
     modify the path, execute "installWavesurferForNow" instead of the
     above.  This modifies the path only for the current Matlab
     session.)
 
-5.  At the Matlab command line, execute "wavesurfer".  You should now
+6.  At the Matlab command line, execute "wavesurfer".  You should now
     be presented with the WaveSurfer user interface.
 
-6.  Go to Tools > Device & Channels... to specify what DAQ board you
+7.  Go to Tools > Device & Channels... to specify what DAQ board you
     want to use, what channels you want to use, and to set channel
     units and scales, if desired.
 
-7.  In the main window, click the Stimulation > Enabled checkbox to
+8.  In the main window, click the Stimulation > Enabled checkbox to
     turn on stmulation.  Click the Display > Enabled checkbox to show
     the "oscilloscope" windows where acquired data will be displayed.
 
-8.  In the main window, click the play button (the one with the black
+9.  In the main window, click the play button (the one with the black
     righward-pointing arrow) to acquire data without saving to disk.
     Click the record button (the one with the red circle) to acquire
     data and save it to disk.
 
-9.  To save your device settings, channel settings, and window
+10  To save your device settings, channel settings, and window
     positions, go to File > Save Protocol.  These can then be loaded
     in a new WaveSurfer sessions by going to File > Open Protocol...
 
-10.  If you have questions, please contact the WaveSurfer developers.
+11.  If you have questions, please contact the WaveSurfer developers.
 
 
 Copyright
@@ -381,3 +384,8 @@ Version History
 0.931    Aug 23, 2016    Fixed bug with loading protocol file with
                          fewer input channels after taking data.
                        
+0.932    Sep 6, 2016     Fixed bug where outputs didn't get zeroed
+                         after a user-initiated stop.
+
+0.933    Sep 6, 2016     README bug fix.
+
