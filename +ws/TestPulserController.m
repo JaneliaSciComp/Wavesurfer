@@ -74,13 +74,8 @@ classdef TestPulserController < ws.Controller
                         self.Model.start();
                     end                
                 end
-            catch me
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-                    ws.errordlg(me.message,'Error','modal');
-%                 end
+            catch exception
+                self.raiseDialogOnException_(exception) ;
             end
         end  % function
         

@@ -17,7 +17,7 @@ classdef February4TestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer([],true) ;
+            wsModel = wavesurfer('--nogui') ;
             wsModel.Acquisition.addAnalogChannel() ;  % need at least one input channel to do a run
             wsModel.Stimulation.IsEnabled = true ;
             wsModel.addDOChannel() ;

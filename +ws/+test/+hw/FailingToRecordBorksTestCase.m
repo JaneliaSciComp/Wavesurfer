@@ -19,7 +19,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly=true;
+            isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'), ...
                                isCommandLineOnly);

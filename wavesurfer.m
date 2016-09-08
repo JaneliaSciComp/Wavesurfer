@@ -118,18 +118,23 @@ end  % function
 
 
 function [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(args)
+    % Deal with --debug, --nodebug
     isDebugMatch = strcmp('--debug', args) ;
-    doRunInDebugMode = any(isDebugMatch) ;
-    
-    argsWithoutDebug = args(~isDebugMatch) ;
+    isNoDebugMatch = strcmp('--nodebug', args) ;
+    doRunInDebugMode = any(isDebugMatch) ;    
+    argsWithoutDebug = args(~(isDebugMatch|isNoDebugMatch)) ;
+
+    % Deal with --gui, --nogui
+    isGuiMatch = strcmp('--gui', argsWithoutDebug) ;
     isNoguiMatch = strcmp('--nogui', argsWithoutDebug) ;
     isCommandLineOnly = any(isNoguiMatch) ;
+    argsLeft = argsWithoutDebug(~(isGuiMatch|isNoguiMatch)) ;
     
-    argsLeft = argsWithoutDebug(~isNoguiMatch) ;
+    % Deal with the rest of the args
     if isempty(argsLeft) ,
         wasProtocolOrMDFFileNameGivenAtCommandLine = false ;
         protocolOrMDFFileName = '' ;
-    elseif isscalar(argsLeft)
+    elseif isscalar(argsLeft) ,
         wasProtocolOrMDFFileNameGivenAtCommandLine = true ;
         protocolOrMDFFileName = argsLeft{1} ;        
     else
@@ -137,5 +142,5 @@ function [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCo
         error('ws:tooManyArgsToWavesurfer', ...
               'Too many arguments to wavesurfer()') ;
     end
-end
+end  % function
 

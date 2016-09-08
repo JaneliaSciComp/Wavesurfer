@@ -28,9 +28,7 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTest(self)
             lastwarn('');  % clear lastwarn
-            protocolOrMDFFileName = [] ;
-            isCommandLineOnly = false ;
-            [wsModel,wsController] = wavesurfer(protocolOrMDFFileName,isCommandLineOnly) ;            
+            [wsModel,wsController] = wavesurfer() ;            
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'SW-new-test-3.cfg') ;
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;

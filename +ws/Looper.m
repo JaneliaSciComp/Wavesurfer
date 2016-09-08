@@ -70,7 +70,6 @@ classdef Looper < ws.RootModel
         IsPerformingSweep_ = false
         IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
         AcquisitionKeystoneTaskCache_
-        NMainLoopIterationsDuringSweepWithNoScans_
     end
     
 %     events
@@ -223,17 +222,7 @@ classdef Looper < ws.RootModel
                         else
                             % This is the block that runs time after time
                             % during an ongoing sweep
-                            didAcquireNonzeroScans = self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart) ;
-                            if didAcquireNonzeroScans ,
-                                self.NMainLoopIterationsDuringSweepWithNoScans_ = 0 ;
-                            else
-                                self.NMainLoopIterationsDuringSweepWithNoScans_ = self.NMainLoopIterationsDuringSweepWithNoScans_ + 1 ;
-                            end
-                            if self.NMainLoopIterationsDuringSweepWithNoScans_>=100 ,
-                                self.abortTheOngoingRun_() ;
-                                error('ws:tooManyLooperIterationsWithNoScans', ...
-                                      'Something seems to be wrong.  Have performed many iterations with no data being acquired.') ;
-                            end
+                            self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart) ;
 %                             %fprintf('Looper: ~self.DoesFrontendWantToStopRun_\n');
 %                             % Check for messages, but don't wait for them
 %                             self.IPCSubscriber_.processMessagesIfAvailable() ;
@@ -1115,7 +1104,6 @@ classdef Looper < ws.RootModel
             % start.                
                 
             % Final preparations...
-            self.NMainLoopIterationsDuringSweepWithNoScans_ = 0 ;
             self.IsPerformingSweep_ = true ;
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             %profile on

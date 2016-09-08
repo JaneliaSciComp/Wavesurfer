@@ -41,14 +41,14 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
                 end
             end
             
-            isCommandLineOnly=true;
+            %isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));
         
             % Try to start WaveSurfer. It will fail if it uses the default
             % ports and does not check for open ports.
             try
                 wsModel = wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                    isCommandLineOnly);  %#ok<NASGU>
+                                     '--nogui');  %#ok<NASGU>
                 ableToBindWavesurfer=true;
             catch                
                 ableToBindWavesurfer=false;

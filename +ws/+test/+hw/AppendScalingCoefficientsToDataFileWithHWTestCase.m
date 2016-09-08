@@ -21,7 +21,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             % Now create a new data file, read it in, and make sure the
             % shape of the scaling coefficients array is correct.  Also do
             % a few checks on the values
-            wsModel = wavesurfer([],true) ;  % the true means command-line only
+            wsModel = wavesurfer('--nogui') ;
             wsModel.DeviceName = 'Dev1' ;
             nCoeffs = 4 ;  % this holds for all x-series boards
             nAnalogChannels = 7 ;

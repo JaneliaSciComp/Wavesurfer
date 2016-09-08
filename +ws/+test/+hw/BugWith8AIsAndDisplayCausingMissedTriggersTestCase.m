@@ -19,7 +19,7 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
 
     methods (Test)
         function theTestWithoutUI(self)
-            isCommandLineOnly=true;
+            isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_8_AIs.m'), ...
                                isCommandLineOnly);

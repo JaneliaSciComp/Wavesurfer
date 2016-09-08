@@ -19,7 +19,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testWithOneTimedOneUntimed(self)
-            isCommandLineOnly=true;
+            isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_4_AIs_0_DIs_2_AOs_2_DOs.m'), ...
                                isCommandLineOnly);

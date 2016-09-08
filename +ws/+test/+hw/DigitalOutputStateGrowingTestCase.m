@@ -16,9 +16,8 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            protocolOrMDFFileName = [] ;
-            isCommandLineOnly = true ;             
-            wsModel=wavesurfer(protocolOrMDFFileName, isCommandLineOnly) ;
+            isCommandLineOnly = '--nogui' ;             
+            wsModel=wavesurfer(isCommandLineOnly) ;
 
             wsModel.Stimulation.IsEnabled=true;
             self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 0);

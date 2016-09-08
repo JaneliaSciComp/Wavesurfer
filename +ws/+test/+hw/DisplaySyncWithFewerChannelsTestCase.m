@@ -4,8 +4,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function theTest(self)
-            isCommandLineOnly = false ;
-            [wsModel,wsController] = wavesurfer([],isCommandLineOnly) ;
+            [wsModel,wsController] = wavesurfer() ;
 
             wsModel.Acquisition.addAnalogChannel() ;
             wsModel.Acquisition.addAnalogChannel() ;

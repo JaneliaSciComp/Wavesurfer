@@ -18,10 +18,8 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function testCorrectNumberOfElectrodes(self)
-            isCommandLineOnly=false;
             thisDirName=fileparts(mfilename('fullpath'));
-            [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                isCommandLineOnly);
+            [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'));
             
             % Load a fast protocol with 2 electrodes and one with 6
             % electrodes

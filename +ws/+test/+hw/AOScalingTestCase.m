@@ -4,8 +4,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function theTest(self)
-            isCommandLineOnly = true ;
-            wsModel = wavesurfer([],isCommandLineOnly) ;
+            wsModel = wavesurfer('--nogui') ;
 
             wsModel.Ephys.ElectrodeManager.addNewElectrode() ;
             electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1} ;

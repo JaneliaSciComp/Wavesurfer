@@ -75,11 +75,11 @@ classdef InputTask < handle
             self.IsAnalog_ = ~isequal(taskType,'digital') ;
             
             % Create the task, channels
-            nChannels=length(terminalIDs);            
+            nChannels=length(terminalIDs) ;            
             if nChannels==0 ,
-                self.DabsDaqTask_ = [];
+                self.DabsDaqTask_ = [] ;
             else
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
             end            
             
             % Create a tic id
@@ -118,11 +118,23 @@ classdef InputTask < handle
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-                catch me
-                    error('There was a problem setting up the input task');
+                catch cause
+                    rawException = MException('ws:daqmx:taskFailedVerification', ...
+                                              'There was a problem with the parameters of the input task, and it failed verification') ;
+                    exception = addCause(rawException, cause) ;
+                    throw(exception) ;
                 end
-                if self.DabsDaqTask_.sampClkRate~=sampleRate ,
-                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                try
+                    taskSampleClockRate = self.DabsDaqTask_.sampClkRate ;
+                catch cause
+                    rawException = MException('ws:daqmx:errorGettingTaskSampleClockRate', ...
+                                              'There was a problem getting the sample clock rate of the DAQmx task in order to check it') ;
+                    exception = addCause(rawException, cause) ;
+                    throw(exception) ;
+                end                    
+                if taskSampleClockRate~=sampleRate ,
+                    error('ws:sampleClockRateNotEqualToDesiredClockRate', ...
+                          'Unable to set the DAQmx sample rate to the desired sampling rate');
                 end
                 
                 % If analog, get the scaling coefficients

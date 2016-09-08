@@ -19,10 +19,10 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testWithExistingFile(self)
-            isCommandLineOnly=true;
+            %isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
+                               '--nogui');
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
@@ -71,10 +71,10 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testWithNonexistantFile(self)
-            isCommandLineOnly=true;
+            %isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
+                               '--nogui');
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
@@ -123,10 +123,10 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testWithTemplateFileName(self)
-            isCommandLineOnly=true;
+            %isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
+                               '--nogui');
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;

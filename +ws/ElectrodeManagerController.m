@@ -71,12 +71,7 @@ classdef ElectrodeManagerController < ws.Controller
                 end  % switch
             catch me
                 self.Parent_.setAreUpdatesEnabledForAllFigures(true);
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-                    ws.errordlg(me.message,'Error','modal');
-%                 end
+                self.raiseDialogOnException_(exception) ;
             end
             self.Parent_.setAreUpdatesEnabledForAllFigures(true);
             %figureObject.AreUpdatesEnabled=true;

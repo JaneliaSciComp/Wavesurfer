@@ -18,10 +18,9 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testAnalogOnly(self)
-            isCommandLineOnly=true;
             thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', ...
+                               fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m') ) ;
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
@@ -80,11 +79,11 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testDigitalOnly(self)
-            isCommandLineOnly=true;
+            %isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
             wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
-
+                               '--nogui');
+                           
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
@@ -143,10 +142,10 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testAnalogAndDigital(self)
-            isCommandLineOnly=true;
+            %isCommandLineOnly='--nogui';
             thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', ...
+                               fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m') ) ;
 
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;

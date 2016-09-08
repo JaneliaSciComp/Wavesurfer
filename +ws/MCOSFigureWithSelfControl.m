@@ -383,20 +383,33 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
                         % odd --- just ignore
                     end
                 end
-            catch me
-                if ~isempty(self.Model_) ,
-                    self.Model_.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
-                end
-                if isempty(me.cause) 
-                    ws.errordlg(me.message,'Error','modal');
-                else
-                    firstCause = me.cause{1} ;
-                    errorString = sprintf('%s:\n%s',me.message,firstCause.message) ;
-                    ws.errordlg(errorString, 'Error', 'modal');
-                end
+            catch exception
+                self.raiseDialogOnException_(exception) ;
             end
         end  % function       
-    end
+    end  % public methods block
+    
+    methods (Access=protected)
+        function raiseDialogOnException_(self, exception)
+            model = self.Model ;
+            if ~isempty(model) ,
+                model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
+            end
+            if isempty(exception.cause)
+                ws.errordlg(exception.message, 'Error', 'modal') ;
+            else
+                primaryCause = exception.cause{1} ;
+                if isempty(primaryCause.cause) ,
+                    errorString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
+                    ws.errordlg(errorString, 'Error', 'modal') ;
+                else
+                    secondaryCause = primaryCause.cause{1} ;
+                    errorString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
+                    ws.errordlg(errorString, 'Error', 'modal') ;
+                end
+            end            
+        end  % method
+    end  % protected methods block
     
     methods
         function constrainPositionToMonitors(self, monitorPositions)
