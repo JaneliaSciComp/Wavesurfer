@@ -268,13 +268,16 @@ classdef (Abstract) Coding < handle
             end
         end  % function                
 
-        function result = decodeEncodingContainer(encodingContainer)
-            result = ws.Coding.decodeEncodingContainerGivenParent(encodingContainer,[]) ;  % parent is empty
+        function result = decodeEncodingContainer(encodingContainer, warningLogger)
+            if nargin<2 ,
+                warningLogger = [] ;
+            end
+            result = ws.Coding.decodeEncodingContainerGivenParent(encodingContainer,[], warningLogger) ;  % parent is empty
         end
     
-        function result = decodeEncodingContainerGivenParent(encodingContainer, parent)
+        function result = decodeEncodingContainerGivenParent(encodingContainer, parent, warningLogger)
             % Unpack the encoding container, or try to deal with it if
-            % encodingContainer is not actually an encoding container.
+            % encodingContainer is not actually an encoding container.            
             if ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
                 % Unpack the fields of the encodingContainer
                 className = encodingContainer.className ;
@@ -310,7 +313,7 @@ classdef (Abstract) Coding < handle
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;
                 for i=1:numel(result) ,
-                    result{i} = ws.Coding.decodeEncodingContainerGivenParent(encoding{i},parent) ;
+                    result{i} = ws.Coding.decodeEncodingContainerGivenParent(encoding{i},parent, warningLogger) ;
                       % A cell array can't be a parent, so we just use
                       % parent
                 end
@@ -320,7 +323,7 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(encoding) ,
                     for j=1:length(fieldNames) ,
                         fieldName = fieldNames{j} ;
-                        result(i).(fieldName) = ws.Coding.decodeEncodingContainerGivenParent(encoding(i).(fieldName),parent) ;
+                        result(i).(fieldName) = ws.Coding.decodeEncodingContainerGivenParent(encoding(i).(fieldName),parent, warningLogger) ;
                             % A struct array can't be a parent, so we just use
                             % parent
                     end
@@ -458,7 +461,7 @@ classdef (Abstract) Coding < handle
                                           ( isequal(fieldName, 'XUnits_') && isequal(propertyName, 'XUnits_')) ) ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -473,7 +476,7 @@ classdef (Abstract) Coding < handle
                                        isequal(fieldName, 'ChannelNames_') && isequal(propertyName, 'ChannelName_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
                                     % rawSubresult is always a one-element cellstring.  Just
                                     % want the string.
                                     if isempty(rawSubresult) ,
@@ -486,7 +489,7 @@ classdef (Abstract) Coding < handle
                                 elseif isa(result,'ws.Electrode') && isequal(fieldName,'Mode_') && isequal(propertyName,'Mode_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -501,7 +504,7 @@ classdef (Abstract) Coding < handle
                                        && ...
                                        isequal(fieldName,'Edge_') && isequal(propertyName,'Edge_') ,
                                     % BC hack 
-                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
                                     % sometimes subresult is empty.  If
                                     % so, don't set it.
                                     doSetPropertyValue = ~isempty(subresult) ;
@@ -512,7 +515,7 @@ classdef (Abstract) Coding < handle
                                     % file is missing.
                                     doSetPropertyValue = true ;
                                     try 
-                                        subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result) ;
+                                        subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result, warningLogger) ;
                                     catch me 
                                         if isequal(me.identifier, 'MATLAB:UndefinedFunction') ,
                                             % The class being missing
@@ -527,24 +530,30 @@ classdef (Abstract) Coding < handle
                                 else                                    
                                     % the usual case
                                     doSetPropertyValue = true ;
-                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result) ;
+                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
                                 end
                                 if doSetPropertyValue ,
                                     try
                                         result.setPropertyValue_(propertyName,subresult) ;
                                     catch me
-                                        warning('Ignoring error when attempting to set property %s a thing of class %s: %s', ...
-                                                propertyName, ...
-                                                className, ...
-                                                me.message) ;
+                                        if ~isempty(warningLogger) ,
+                                            warningLogger.logWarning('Coding:errSettingProp', ...
+                                                                     sprintf('Ignoring error when attempting to set property %s a thing of class %s: %s', ...
+                                                                             propertyName, ...
+                                                                             className, ...
+                                                                             me.message), ...
+                                                                     me) ;
+                                        end
                                     end
                                 end
                             else
-                                warning('Coding:errSettingProp', ...
-                                        'Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
-                                        fieldName, ...
-                                        propertyName, ...
-                                        class(result));
+                                if ~isempty(warningLogger) ,
+                                    warningLogger.logWarning('Coding:errSettingProp', ...
+                                                             sprintf('Ignoring field ''%s'' from the file, because the corresponding property %s is not present in the %s object.', ...
+                                                                     fieldName, ...
+                                                                     propertyName, ...
+                                                                     class(result))) ;
+                                end
                             end
                         end  % for            
 
@@ -563,7 +572,7 @@ classdef (Abstract) Coding < handle
                     result = cell(1,n) ;
                     for i=1:n ,
                         hackedContainer = struct('className', className, 'encoding', encoding(i)) ;
-                        result{i} = ws.Coding.decodeEncodingContainerGivenParent(hackedContainer,parent) ;
+                        result{i} = ws.Coding.decodeEncodingContainerGivenParent(hackedContainer,parent, warningLogger) ;
                         % A cell array can't be a parent, so we just use
                         % parent
                     end
@@ -578,7 +587,7 @@ classdef (Abstract) Coding < handle
                       className);
                 
             end            
-        end  % function
+        end  % function decodeEncodingContainerGivenParent()
         
         function result = isAnEncodingContainer(thing)
             result = isstruct(thing) && isscalar(thing) && isfield(thing,'className') && isfield(thing,'encoding') ;

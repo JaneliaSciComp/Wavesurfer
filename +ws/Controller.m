@@ -358,19 +358,27 @@ classdef Controller < handle
             if ~isempty(model) ,
                 model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
             end
-            if isempty(exception.cause)
-                ws.errordlg(exception.message, 'Error', 'modal') ;
+            indicesOfWarningPhrase = strfind(me.identifier,'ws:warningsOccurred') ;
+            isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+            if isWarning ,
+                dialogContentString = me.message ;
+                dialogTitleString = ws.fif(length(me.cause)<=1, 'Warning', 'Warnings') ;
             else
-                primaryCause = exception.cause{1} ;
-                if isempty(primaryCause.cause) ,
-                    errorString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
-                    ws.errordlg(errorString, 'Error', 'modal') ;
+                if isempty(exception.cause)
+                    ws.errordlg(exception.message, 'Error', 'modal') ;
                 else
-                    secondaryCause = primaryCause.cause{1} ;
-                    errorString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
-                    ws.errordlg(errorString, 'Error', 'modal') ;
-                end
-            end            
+                    primaryCause = exception.cause{1} ;
+                    if isempty(primaryCause.cause) ,
+                        dialogContentString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
+                        dialogTitleString = 'Error' ;
+                    else
+                        secondaryCause = primaryCause.cause{1} ;
+                        dialogContentString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
+                        dialogTitleString = 'Error' ;
+                    end
+                end            
+            end
+            ws.errordlg(dialogContentString, dialogTitleString, 'modal') ;                
         end  % method
     end  % protected methods block
     

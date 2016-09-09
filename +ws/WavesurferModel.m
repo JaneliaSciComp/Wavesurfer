@@ -38,6 +38,7 @@ classdef WavesurferModel < ws.RootModel
         VersionString
         %DeviceName
         IsITheOneTrueWavesurferModel
+        %WarningLog
     end
     
     %
@@ -108,6 +109,8 @@ classdef WavesurferModel < ws.RootModel
         IsPerformingSweep_ = false
         %IsDeeplyIntoPerformingSweep_ = false
         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
+        DoLogWarnings_ = false
+        WarningLog_ = MException.empty(0,1)   % N.B.: a col vector
     end
     
 %     events
@@ -2154,7 +2157,7 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
             %self.decodeProperties(wavesurferModelSettings);
             %keyboard
-            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
@@ -2215,7 +2218,7 @@ classdef WavesurferModel < ws.RootModel
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
             
             %self.decodeProperties(wavesurferModelSettings);
-            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicUserSettings_(newModel) ;
             
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
@@ -2925,6 +2928,79 @@ classdef WavesurferModel < ws.RootModel
         end
     end  % static methods block
     
+    methods
+%         function varargout = execute(methodName, varargin)
+%             % A method call, but with logging of warnings
+%             self.clearWarningLog_() ;
+%             self.startWarningLogging_() ;
+%             varargout = self.(methodName)(varargin{:}) ;
+%             self.stopWarningLogging_() ;            
+%         end  % method
+%         
+%         function result = didWarningsOccur(self) 
+%             result = ~isempty(self.WarningLog_) ;
+%         end
+%         
+%         function result = getWarningLog(self)
+%             result = self.WarningLog_ ;
+%         end  % method
+        
+        function logWarning(self, identifier, message, causeOrEmpty)
+            % This is public b/c subsystem need to call it, but it should
+            % only be called by subsystems.
+            if nargin<4 ,
+                causeOrEmpty = [] ;
+            end
+            warningException = MException(identifier, message) ;
+            if ~isempty(causeOrEmpty) ,
+                warningException = warningException.addCause(causeOrEmpty) ;
+            end
+            if self.DoLogWarnings_ ,
+                self.WarningLog_ = vertcat(self.WarningLog_, ...
+                                           warningException) ;            
+            else
+                % Just issue a normal warning
+                warning(identifier, message) ;
+                if ~isempty(causeOrEmpty) ,
+                    fprintf('Cause of warning:\n');
+                    display(causeOrEmpty.getReport());
+                end
+            end
+        end  % method
+    end  % public methods block
+    
+    methods 
+        function startLoggingWarnings(self)
+            self.WarningLog_ = MException.empty(0, 1) ;
+            self.DoLogWarnings_ = true ;
+        end        
+        
+        function maybeException = stopLoggingWarnings(self)
+            % Get the warnings, if any
+            self.DoLogWarnings_ = false ;
+            warnings = self.WarningLog_ ;
+            % Process them, summarizing them in a maybe (a list of length
+            % zero or one) of exceptions.  The individual warnings are
+            % stored in the causes of the exception, if it exists.
+            nWarnings = length(warnings) ;
+            if nWarnings==0 ,
+                maybeException = MException.empty(1,0) ;                
+            else
+                if nWarnings==1 ,
+                    exceptionMessage = warnings(1).message ;
+                else
+                    exceptionMessage = sprintf('%d warnings occurred.\nThe first one was: %s', ...
+                                               nWarnings, ...
+                                               warnings(1).message) ;
+                end                                           
+                maybeException = MException('ws:warningsOccurred', exceptionMessage) ;
+                for i = 1:nWarnings ,
+                    maybeException = maybeException.addCause(warnings(i)) ;
+                end
+            end
+            % Clear the warning log before returning
+            self.WarningLog_ = MException.empty(0, 1) ;
+        end
+    end  % protected methods block
+    
 end  % classdef
-
-

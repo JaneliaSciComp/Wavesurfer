@@ -126,9 +126,11 @@ classdef UserCodeManager < ws.Subsystem
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                 %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
-                warning('wavesurfer:usercodemanager:codeerror', 'Error in user class method %s',eventName);
-                fprintf('Stack trace for user class method error:\n');
-                display(me.getReport());
+                self.Parent.logWarning('ws:warningsOccurred:userCodeError', ...
+                                       sprintf('Error in user class method %s',eventName), ...
+                                       me) ;
+                %fprintf('Stack trace for user class method error:\n');
+                %display(me.getReport());
             end
         end  % function
         
@@ -140,9 +142,14 @@ classdef UserCodeManager < ws.Subsystem
                     self.TheObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
                 end
             catch me
-                warning('wavesurfer:usercodemanager:codeerror', 'Error in user class method samplesAcquired');
-                fprintf('Stack trace for user class method error:\n');
-                display(me.getReport());
+                %warningException = MException('wavesurfer:usercodemanager:codeerror', ...
+                %                              'Error in user class method samplesAcquired') ;
+                %warningException = warningException.addCause(me) ;                                          
+                self.Parent.logWarning('ws:warningsOccurred:userCodeError', ...
+                                       'Error in user class method samplesAcquired', ...
+                                       me) ;
+                %fprintf('Stack trace for user class method error:\n');
+                %display(me.getReport());
             end            
         end
         
