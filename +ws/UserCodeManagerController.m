@@ -2,9 +2,6 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     
     methods
         function self = UserCodeManagerController(wavesurferController,wavesurferModel)
-%             userFunctionsModel=wavesurferModel.UserCodeManager;
-%             self = self@ws.Controller(wavesurferController, userFunctionsModel, {'userFunctionsFigureWrapper'});
-            
             % Call the superclass constructor
             userFunctionsModel=wavesurferModel.UserCodeManager;
             self = self@ws.Controller(wavesurferController,userFunctionsModel);

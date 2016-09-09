@@ -1,129 +1,115 @@
 classdef ElectrodeManagerController < ws.Controller
     methods
         function self=ElectrodeManagerController(wavesurferController,wavesurferModel)
-%             electrodeManager=wavesurferModel.Ephys.ElectrodeManager;
-%             self = self@ws.Controller(wavesurferController, electrodeManager, {'electrodeManagerFigureWrapper'});            
-            
             % Call superclass constructor
-            electrodeManager=wavesurferModel.Ephys.ElectrodeManager;
-            self = self@ws.Controller(wavesurferController,electrodeManager); 
+            electrodeManager = wavesurferModel.Ephys.ElectrodeManager ;
+            self = self@ws.Controller(wavesurferController,electrodeManager) ; 
 
             % Create the figure, store a pointer to it
             fig = ws.ElectrodeManagerFigure(electrodeManager,self) ;
             self.Figure_ = fig ;
         end
         
-        function controlActuated(self,controlName,source,event,varargin) %#ok<INUSD,INUSL>
-            figureObject=self.Figure;
-            self.Parent_.setAreUpdatesEnabledForAllFigures(false);
-            %figureObject.AreUpdatesEnabled=false;
-            try
-                if source==figureObject.AddButton ,
-                    self.addButtonPressed();
-                elseif source==figureObject.RemoveButton ,
-                    self.removeButtonPressed();
-                elseif source==figureObject.UpdateButton ,
-                    self.updateButtonPressed();
-                elseif source==figureObject.ReconnectButton ,
-                    self.reconnectButtonPressed();
-                elseif source==figureObject.DoTrodeUpdateBeforeRunCheckbox ,
-                    self.doTrodeUpdateBeforeRunClicked(source);
-                elseif source==figureObject.SoftpanelButton ,
-                    self.softpanelButtonPressed();
-                elseif any(source==figureObject.IsCommandEnabledCheckboxes) , 
-                    self.isCommandEnabledCheckboxClicked(source);
-                elseif any(source==figureObject.TestPulseQCheckboxes) , 
-                    self.testPulseQCheckboxClicked(source);
-                elseif any(source==figureObject.RemoveQCheckboxes) ,
-                    self.removeQCheckboxClicked(source);
-                elseif any(source==figureObject.MonitorPopups) , 
-                    self.monitorPopupActuated(source);
-                elseif any(source==figureObject.CommandPopups) , 
-                    self.commandPopupActuated(source);
-%                 elseif any(source==figureObject.CurrentMonitorPopups) , 
-%                     self.currentMonitorPopupActuated(source);
-%                 elseif any(source==figureObject.VoltageCommandPopups) , 
-%                     self.voltageCommandPopupActuated(source);
-%                 elseif any(source==figureObject.VoltageMonitorPopups) , 
-%                     self.voltageMonitorPopupActuated(source);
-%                 elseif any(source==figureObject.CurrentCommandPopups) , 
-%                     self.currentCommandPopupActuated(source);
-                elseif any(source==figureObject.ModePopups) ,
-                    self.modePopupActuated(source);
-                elseif any(source==figureObject.LabelEdits) ,
-                    self.labelEditEdited(source);
-                elseif any(source==figureObject.MonitorScaleEdits) ,
-                    self.monitorScaleEditEdited(source);
-                elseif any(source==figureObject.CommandScaleEdits) ,
-                    self.commandScaleEditEdited(source);
-%                 elseif any(source==figureObject.CurrentMonitorScaleEdits) ,
-%                     self.currentMonitorScaleEditEdited(source);
-%                 elseif any(source==figureObject.VoltageCommandScaleEdits) ,
-%                     self.voltageCommandScaleEditEdited(source);
-%                 elseif any(source==figureObject.VoltageMonitorScaleEdits) ,
-%                     self.voltageMonitorScaleEditEdited(source);
-%                 elseif any(source==figureObject.CurrentCommandScaleEdits) ,
-%                     self.currentCommandScaleEditEdited(source);                
-                elseif any(source==figureObject.TypePopups) ,
-                    self.typePopupActuated(source);
-                elseif any(source==figureObject.IndexWithinTypeEdits) ,
-                    self.indexWithinTypeEditEdited(source);
-                end  % switch
-            catch me
-                self.Parent_.setAreUpdatesEnabledForAllFigures(true);
-                self.raiseDialogOnException_(exception) ;
-            end
-            self.Parent_.setAreUpdatesEnabledForAllFigures(true);
-            %figureObject.AreUpdatesEnabled=true;
+%         function controlActuated(self,controlName,source,event,varargin) %#ok<INUSD,INUSL>
+%             figureObject=self.Figure;
+%             self.Parent_.setAreUpdatesEnabledForAllFigures(false);
+%             try
+%                 if source==figureObject.AddButton ,
+%                     self.AddButtonActuated();
+%                 elseif source==figureObject.RemoveButton ,
+%                     self.RemoveButtonActuated();
+%                 elseif source==figureObject.UpdateButton ,
+%                     self.UpdateButtonActuated();
+%                 elseif source==figureObject.ReconnectButton ,
+%                     self.ReconnectButtonActuated();
+%                 elseif source==figureObject.DoTrodeUpdateBeforeRunCheckbox ,
+%                     self.DoTrodeUpdateBeforeRunCheckboxActuated(source);
+%                 elseif source==figureObject.SoftpanelButton ,
+%                     self.SoftpanelButtonActuated();
+%                 elseif any(source==figureObject.IsCommandEnabledCheckboxes) , 
+%                     self.IsCommandEnabledCheckboxActuated(source);
+%                 elseif any(source==figureObject.TestPulseQCheckboxes) , 
+%                     self.TestPulseQCheckboxActuated(source);
+%                 elseif any(source==figureObject.RemoveQCheckboxes) ,
+%                     self.RemoveQCheckboxActuated(source);
+%                 elseif any(source==figureObject.MonitorPopups) , 
+%                     self.MonitorPopupActuated(source);
+%                 elseif any(source==figureObject.CommandPopups) , 
+%                     self.CommandPopupActuated(source);
+%                 elseif any(source==figureObject.ModePopups) ,
+%                     self.ModePopupActuated(source);
+%                 elseif any(source==figureObject.LabelEdits) ,
+%                     self.LabelEditActuated(source);
+%                 elseif any(source==figureObject.MonitorScaleEdits) ,
+%                     self.MonitorScaleEditActuated(source);
+%                 elseif any(source==figureObject.CommandScaleEdits) ,
+%                     self.CommandScaleEditActuated(source);
+%                 elseif any(source==figureObject.TypePopups) ,
+%                     self.TypePopupActuated(source);
+%                 elseif any(source==figureObject.IndexWithinTypeEdits) ,
+%                     self.IndexWithinTypeEditActuated(source);
+%                 end  % switch
+%             catch exception
+%                 self.Parent_.setAreUpdatesEnabledForAllFigures(true);
+%                 self.raiseDialogOnException_(exception) ;
+%             end
+%             self.Parent_.setAreUpdatesEnabledForAllFigures(true);
+%             %figureObject.AreUpdatesEnabled=true;
+%         end  % method
+
+        function controlActuated(self, controlName, source, event, varargin)
+            self.Parent_.setAreUpdatesEnabledForAllFigures(false) ;
+            controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
+            self.Parent_.setAreUpdatesEnabledForAllFigures(true) ;
         end  % method
         
-        function addButtonPressed(self)
+        function AddButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.addNewElectrode();
         end
         
-        function removeButtonPressed(self)
+        function RemoveButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.removeMarkedElectrodes();
         end
         
-        function updateButtonPressed(self)
+        function UpdateButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             %self.Figure.changeReadiness(-1);
             self.Model.updateSmartElectrodeGainsAndModes();
             %self.Figure.changeReadiness(+1);
         end
         
-        function reconnectButtonPressed(self)
+        function ReconnectButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             %self.Figure.changeReadiness(-1);
             self.Model.reconnectWithSmartElectrodes();
             self.Model.updateSmartElectrodeGainsAndModes();
             %self.Figure.changeReadiness(+1);
         end
         
-        function doTrodeUpdateBeforeRunClicked(self, source)
+        function DoTrodeUpdateBeforeRunCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
            self.Model.DoTrodeUpdateBeforeRun=get(source,'Value');
         end
         
-        function softpanelButtonPressed(self)
+        function SoftpanelButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.toggleSoftpanelEnablement();
         end
 
-        function isCommandEnabledCheckboxClicked(self,source)
+        function IsCommandEnabledCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.IsCommandEnabledCheckboxes);
             newValue=get(source,'Value');
             electrodeIndex=find(isTheElectrode);
             self.Model.setElectrodeModeOrScaling(electrodeIndex,'IsCommandEnabled',newValue);  %#ok<FNDSB>        
         end               
         
-        function testPulseQCheckboxClicked(self,source)
+        function TestPulseQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.TestPulseQCheckboxes);
             self.Model.IsElectrodeMarkedForTestPulse(isTheElectrode)=get(source,'Value');            
         end        
         
-        function removeQCheckboxClicked(self,source)
+        function RemoveQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.RemoveQCheckboxes);
             self.Model.IsElectrodeMarkedForRemoval(isTheElectrode)=get(source,'Value');            
         end        
 
-        function monitorPopupActuated(self,source)
+        function MonitorPopupActuated(self, source, event, varargin)  %#ok<INUSD>
             % Get the list of valid choices, if we can
             electrodeManager=self.Model;
             ephys=electrodeManager.Parent;
@@ -162,7 +148,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             electrode.VoltageMonitorChannelName=choice;
 %         end
         
-        function commandPopupActuated(self,source)
+        function CommandPopupActuated(self, source, event, varargin)  %#ok<INUSD>
             % Get the list of valid choices, if we can
             electrodeManager=self.Model;
             ephys=electrodeManager.Parent;
@@ -201,7 +187,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             electrode.CurrentCommandChannelName=choice;
 %         end
         
-        function modePopupActuated(self,source)
+        function ModePopupActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.ModePopups);
             electrodeIndex=find(isTheElectrode);
             electrode=self.Model.Electrodes{electrodeIndex};
@@ -215,14 +201,14 @@ classdef ElectrodeManagerController < ws.Controller
             end
         end  % function
         
-        function labelEditEdited(self,source)
+        function LabelEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.LabelEdits);
             newLabel=get(source,'String');
             electrode=self.Model.Electrodes{isTheElectrode};
             electrode.Name=newLabel;            
         end  % function
 
-        function monitorScaleEditEdited(self,source)
+        function MonitorScaleEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.MonitorScaleEdits);
             newValue=str2double(get(source,'String'));
             %electrode=self.Model.Electrodes{isTheElectrode};
@@ -231,7 +217,7 @@ classdef ElectrodeManagerController < ws.Controller
             self.Model.setElectrodeMonitorScaling(electrodeIndex,newValue);  %#ok<FNDSB>
         end  % function
         
-%         function currentMonitorScaleEditEdited(self,source)
+%         function currentMonitorScaleEditActuated(self,source)
 %             isTheElectrode=(source==self.Figure.CurrentMonitorScaleEdits);
 %             newValue=str2double(get(source,'String'));
 %             %electrode=self.Model.Electrodes{isTheElectrode};
@@ -240,7 +226,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             self.Model.setElectrodeModeOrScaling(electrodeIndex,'CurrentMonitorScaling',newValue);  %#ok<FNDSB>
 %         end  % function
 
-        function commandScaleEditEdited(self,source)
+        function CommandScaleEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.CommandScaleEdits);
             newValue=str2double(get(source,'String'));
             %electrode=self.Model.Electrodes{isTheElectrode};
@@ -249,7 +235,7 @@ classdef ElectrodeManagerController < ws.Controller
             self.Model.setElectrodeCommandScaling(electrodeIndex,newValue);  %#ok<FNDSB>
         end  % function
         
-%         function voltageMonitorScaleEditEdited(self,source)
+%         function voltageMonitorScaleEditActuated(self,source)
 %             isTheElectrode=(source==self.Figure.VoltageMonitorScaleEdits);
 %             newValue=str2double(get(source,'String'));
 %             %electrode=self.Model.Electrodes{isTheElectrode};
@@ -258,7 +244,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             self.Model.setElectrodeModeOrScaling(electrodeIndex,'VoltageMonitorScaling',newValue);  %#ok<FNDSB>
 %         end  % function
 
-%         function voltageCommandScaleEditEdited(self,source)
+%         function voltageCommandScaleEditActuated(self,source)
 %             isTheElectrode=(source==self.Figure.VoltageCommandScaleEdits);
 %             newValue=str2double(get(source,'String'));
 %             %electrode=self.Model.Electrodes{isTheElectrode};
@@ -267,7 +253,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             self.Model.setElectrodeModeOrScaling(electrodeIndex,'VoltageCommandScaling',newValue);  %#ok<FNDSB>
 %         end  % function        
 
-        function typePopupActuated(self,source)
+        function TypePopupActuated(self, source, event, varargin)  %#ok<INUSD>
             %self.Figure.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             choice=ws.getPopupMenuSelection(source,ws.Electrode.Types);
             isTheElectrode=(source==self.Figure.TypePopups);
@@ -278,7 +264,7 @@ classdef ElectrodeManagerController < ws.Controller
             %self.Figure.changeReadiness(+1);
         end  % function
         
-        function indexWithinTypeEditEdited(self,source)
+        function IndexWithinTypeEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.IndexWithinTypeEdits);
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
@@ -289,34 +275,4 @@ classdef ElectrodeManagerController < ws.Controller
         end  % function
 
     end  % methods
-    
-    methods (Access=protected)
-%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-%             % This method is inhierited from AbstractController, and is
-%             % called after the user indicates she wants to close the
-%             % window.  Returns true if the window should _not_ close, false
-%             % if it should go ahead and close.
-%             shouldStayPut=false;
-%             
-%             % If acquisition is happening, ignore the close window request
-%             model=self.Model;
-%             if ~isempty(model) && isvalid(model) ,
-%                 ephys=model.Parent;
-%                 if ~isempty(ephys) && isvalid(ephys) ,                
-%                     wavesurferModel=ephys.Parent;
-%                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                         isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
-%                         if ~isIdle ,
-%                             shouldStayPut=true;
-%                             return
-%                         end
-%                     end
-%                 end
-%             end
-%         end  % function
-    end % protected methods block
-    
-    properties (SetAccess=protected)
-       propBindings = struct()
-    end    
 end  % classdef
