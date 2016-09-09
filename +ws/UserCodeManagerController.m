@@ -16,24 +16,24 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     end  % methods block
     
     methods
-        function controlActuated(self,controlName,source,event,varargin)            
-            try
-                type=get(source,'Type');
-                if isequal(type,'uicontrol') ,
-                    methodName=[controlName 'Actuated'];
-                    if ismethod(self,methodName) ,
-                        self.(methodName)(source,event);
-                    end
-                end
-            catch me
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-                    ws.errordlg(me.message,'Error','modal');
+%         function controlActuated(self,controlName,source,event,varargin)            
+%             try
+%                 type=get(source,'Type');
+%                 if isequal(type,'uicontrol') ,
+%                     methodName=[controlName 'Actuated'];
+%                     if ismethod(self,methodName) ,
+%                         self.(methodName)(source,event);
+%                     end
 %                 end
-            end
-        end  % function       
+%             catch me
+% %                 isInDebugMode=~isempty(dbstatus());
+% %                 if isInDebugMode ,
+% %                     rethrow(me);
+% %                 else
+%                     ws.errordlg(me.message,'Error','modal');
+% %                 end
+%             end
+%         end  % function       
         
         function quittingWavesurfer(self)   
             quittingWavesurfer@ws.Controller(self) ;
