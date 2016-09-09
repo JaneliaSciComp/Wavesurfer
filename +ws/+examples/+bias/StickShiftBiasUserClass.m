@@ -1,52 +1,49 @@
-classdef BiasUserClass < ws.UserClass
+classdef StickShiftBiasUserClass < ws.UserClass
 
-    properties
+    properties(Access=private)
         enabled = 1;                          % Enable/Disable Camera
         
         %% PointGrey/Flea3 properties
+        bias;                                 % cell array of handles to biasInterface objects
         bias_nCams = 2;                       % number of cameras controlled through bias
         bias_ip = '127.0.0.1';                % bias listens on this ip
         bias_port = 5010:10:5040;             % bias listens at this port; for camera i, port  = 5000 + 10*i;
-        bias_cfgFiles = {'Camera0_config_Jay20160726.json' 'Camera1_config_Jay20160726.json'};  % specify json cfg file for bias to use
-        cameraOn = 1;
-        hardTrig = 1;
-        frameRate = 500;
-        camTrigCOChan = 2;
-        boardID = 'Dev1';
-        hCamTrig;                             % Handle to counter out channel
-        cameraStartEvent = 'Start';           % One of 'TTL' or 'Start'. Starts camera acq when either TTL button is pressed or Start btn is pressed
-        ttlPulseChan = 3;                     % TTL output channel; Should be same as TTL pulse chan in ReachTask.m
+        %bias_cfgFiles = {'Camera0_config_Jay20160726.json' 'Camera1_config_Jay20160726.json'};  % specify json cfg file for bias to use
+        %cameraOn = 1;
+        %hardTrig = 1;
+        %frameRate = 500;
+        %camTrigCOChan = 2;
+        %boardID = 'Dev1';
+        %hCamTrig;                             % Handle to counter out channel
+        %cameraStartEvent = 'Start';           % One of 'TTL' or 'Start'. Starts camera acq when either TTL button is pressed or Start btn is pressed
+        %ttlPulseChan = 3;                     % TTL output channel; Should be same as TTL pulse chan in ReachTask.m
         
-        %% BIAS Properties (frameRate, movieFormat, ROI, triggerMode)
-        %Camera 1
-        bias_cam1_frameRate = 500;
-        bias_cam1_movieFormat = 'avi';
-        bias_cam1_ROI = [504,418,384,260];
-        bias_cam1_triggerMode = 'External';
-        bias_cam1_shutterValue = 157;
-        
-        %Camera 2
-        bias_cam2_frameRate = 500;
-        bias_cam2_movieFormat = 'avi';
-        bias_cam2_ROI = [312,318,384,260];
-        bias_cam2_triggerMode = 'External';
-        bias_cam2_shutterValue = 157;
+%         %% BIAS Properties (frameRate, movieFormat, ROI, triggerMode)
+%         %Camera 1
+%         bias_cam1_frameRate = 500;
+%         bias_cam1_movieFormat = 'avi';
+%         bias_cam1_ROI = [504,418,384,260];
+%         bias_cam1_triggerMode = 'External';
+%         bias_cam1_shutterValue = 157;
+%         
+%         %Camera 2
+%         bias_cam2_frameRate = 500;
+%         bias_cam2_movieFormat = 'avi';
+%         bias_cam2_ROI = [312,318,384,260];
+%         bias_cam2_triggerMode = 'External';
+%         bias_cam2_shutterValue = 157;
         
         % Bookkeeping
+        IsIInFrontend
         %HasRunStart = false
     end  % properties
             
-    properties (Access=protected, Transient=true)
-        bias                                 % handle to bias object(s)
-        IsIInFrontend        
-    end
-    
     methods
         %% User functions    
-        function self = BiasUserClass(userCodeManager)
-            if isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ,
+        function self = StickShiftBiasUserClass(rootModel)
+            if isa(rootModel,'ws.WavesurferModel') ,
                 self.IsIInFrontend = true ;
-                self.initialize();
+                self.initializeBiasInterface();
             else
                 self.IsIInFrontend = false ;
             end
@@ -60,7 +57,7 @@ classdef BiasUserClass < ws.UserClass
         
         function startingRun(self,~,~)
             fprintf('Starting a run.\n');
-            self.configure();
+            self.configureForRun();
             self.start();
         end
         
@@ -134,31 +131,32 @@ classdef BiasUserClass < ws.UserClass
 
     methods(Access=private)
         %% Bias Operations
-        function initialize(obj)
+        function initializeBiasInterface(obj)
             disp('Calling BIAS init.');
             fprintf('Number of cameras found: %d\n', obj.bias_nCams) ;
             for i=1:obj.bias_nCams
-                obj.bias{i} = ws.examples.bias.BiasInterface(obj.bias_ip,obj.bias_port(i));
-                obj.bias{i}.initializeCamera(...
-                    obj.(sprintf('bias_cam%d_frameRate',i)),...
-                    obj.(sprintf('bias_cam%d_movieFormat',i)),...
-                    obj.(sprintf('bias_cam%d_ROI',i)),...
-                    obj.(sprintf('bias_cam%d_triggerMode',i)),...
-                    obj.(sprintf('bias_cam%d_shutterValue',i))...
-                );
+                obj.bias{i} = biasws.biasInterface(obj.bias_ip,obj.bias_port(i));
+                obj.bias{i}.justConnectToCamera() ;
+%                 obj.bias{i}.initializeCamera(...
+%                     obj.(sprintf('bias_cam%d_frameRate',i)),...
+%                     obj.(sprintf('bias_cam%d_movieFormat',i)),...
+%                     obj.(sprintf('bias_cam%d_ROI',i)),...
+%                     obj.(sprintf('bias_cam%d_triggerMode',i)),...
+%                     obj.(sprintf('bias_cam%d_shutterValue',i))...
+%                 );
             end
             for i=1:obj.bias_nCams
                 obj.bias{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
             end
         end
 
-        function configure(obj)
+        function configureForRun(obj)
             disp('Calling BIAS config.');            
-            for i=1:obj.bias_nCams
-                if exist(obj.bias_cfgFiles{i},'file');
-                    obj.bias{i}.loadConfiguration(obj.bias_cfgFiles{i});
-                end
-            end
+%             for i=1:obj.bias_nCams
+%                 if exist(obj.bias_cfgFiles{i},'file');
+%                     obj.bias{i}.loadConfiguration(obj.bias_cfgFiles{i});
+%                 end
+%             end
             for i=1:obj.bias_nCams
                 obj.bias{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
             end
@@ -178,7 +176,27 @@ classdef BiasUserClass < ws.UserClass
 %             if ~obj.HasRunStart ,
 %                 obj.HasRunStart = true ;
 %             end
-        end
+
+            % wait for bias to be ready
+            checkInterval = 0.1 ;  % s
+            maxNumberOfChecks = 1000 ;
+            for i=1:maxNumberOfChecks ,
+                areAllCamerasCapturing = true ;
+                for j=1:obj.bias_nCams ,
+                    response = obj.bias{j}.getStatus() ;   % call this just to make sure BIAS is capturing
+                    if ~response.value.capturing ,
+                        areAllCamerasCapturing = false ;
+                        break ;
+                    end
+                end
+                if areAllCamerasCapturing ,
+                    break ;
+                else
+                    pause(checkInterval) ;    % have to wait a bit for both cams to be capturing
+                end
+            end
+        end  % method
+        
                 
         function stop(obj)
             % wait for bias to be done

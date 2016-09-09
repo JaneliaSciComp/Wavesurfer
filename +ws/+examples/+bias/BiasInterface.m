@@ -2,7 +2,7 @@
 % Author: Arunesh Mittal mittala@janelia.org (Adapted from code written by 
 % Jinyang Liu)
 
-classdef BiasInterface < handle
+classdef biasInterface < handle
     
     properties
         address = '';
@@ -18,7 +18,7 @@ classdef BiasInterface < handle
     end
     
     methods
-        function self = BiasInterface(address, port)
+        function self = biasInterface(address, port)
             self.address = address;
             self.port = port;
             [~,cmdout] = system(sprintf('tasklist /fo LIST /fi "Imagename eq %s"',self.biasExeFile));
@@ -237,9 +237,89 @@ classdef BiasInterface < handle
             else
                 fprintf('Error setting ROI %s\n',rsp.message);
             end
-        end
+        end  % method
         
-    end
+        function rsp = justConnectToCamera(self)
+            %property list: frameRate, movieFormat, ROI, triggerMode
+            %nVarargs = length(varargin);
+            
+%            switch nVarargs
+%                 case 0
+%                     frameRate = 50;
+%                     movieFormat = 'ufmf';
+%                     ROI = [0,0,1280,960];
+%                     triggerMode = 'Internal';
+%                 case 1
+%                     frameRate = varargin{1};
+%                     movieFormat = 'ufmf';
+%                     ROI = [0,0,1280,960];
+%                     triggerMode = 'Internal';
+%                 case 2
+%                     frameRate = varargin{1};
+%                     movieFormat = varargin{2};
+%                     ROI = [0,0,1280,960];
+%                     triggerMode = 'Internal';
+%                 case 3
+%                     frameRate = varargin{1};
+%                     movieFormat = varargin{2};
+%                     ROI = varargin{3};
+%                     triggerMode = 'Internal';
+%                case 4
+%                     frameRate = varargin{1};
+%                     movieFormat = varargin{2};
+%                     ROI = varargin{3};
+%                     triggerMode = varargin{4};
+%                case 5
+%                    frameRate = varargin{1};
+%                     movieFormat = varargin{2};
+%                     ROI = varargin{3};
+%                     triggerMode = varargin{4};
+%                     shutterValue = varargin{5};
+%             end
+            
+            %connect to the server
+            self.connect();
+            
+            % Get current configuration
+            rsp = self.getConfiguration();
+%             config = rsp(1).value;
+%             
+%             % Set frame rate if configuration structure - note to use absolute value
+%             % asbolute control must be enabled (set to true).
+%             config.camera.properties.frameRate.absoluteControl = 1;
+%             config.camera.properties.frameRate.autoActive = 0;
+%             config.camera.properties.frameRate.absoluteValue = frameRate;
+%             config.camera.properties.shutter.value = shutterValue;
+%             
+%             %set movie format
+%             if strcmp(movieFormat, 'avi')
+%                 config.logging.format = 'avi';
+%                 config.logging.settings.avi.frameSkip = 1;
+%             elseif strcmp(movieFormat, 'ufmf')
+%             end
+%             
+%             % Set ROI in configuration
+%             config.camera.format7Settings.roi.offsetX = ROI(1)-rem(ROI(1),8);  %step 8
+%             config.camera.format7Settings.roi.offsetY = ROI(2)-rem(ROI(2),2);  %step 2
+%             config.camera.format7Settings.roi.width = ROI(3)-rem(ROI(3),16);   %step 16
+%             config.camera.format7Settings.roi.height = ROI(4)-rem(ROI(4),2);   %step 2
+%             
+%             %trigger mode is either internal or external
+%             if strncmpi(triggerMode, 'ex', 2)
+%                 config.camera.triggerType = 'External';
+%             else
+%                 config.camera.triggerType = 'Internal';
+%             end
+%             
+%             % Set new configuration
+%             rsp = self.setConfiguration(config);
+%             if rsp(1).success
+%                 fprintf('ROI set successfully\n');
+%             else
+%                 fprintf('Error setting ROI %s\n',rsp.message);
+%             end
+        end  % method
+    end  % public methods block
     
     methods (Access=protected)        
         function rsp = sendCmd(self, cmd)  %#ok<INUSL>
