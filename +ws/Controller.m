@@ -317,37 +317,46 @@ classdef Controller < handle
     end  % protected methods that are designed to be optionally overridden
     
     methods
-        function controlActuated(self,controlName,source,event,varargin)            
+        function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)            
+            % The gateway for all UI-initiated commands.  exceptionMaybe is
+            % an empty cell array if all goes well.  If something goes
+            % awry, we raise a dialog, and then return the exception in a
+            % length-one cell array.  But note that upon return, the user
+            % has already been notified that an exception occurred.  Still,
+            % subclasses may want to call this method, and may want to know
+            % if anything went wrong during execution.
             try
                 %controlName
                 if isempty(source) ,
                     % this means the control actuated was a 'faux' control
                     methodName=[controlName 'Actuated'] ;
                     if ismethod(self,methodName) ,
-                        self.(methodName)(source,event,varargin{:});
+                        self.(methodName)(source,event,varargin{:}) ;
                     end
                 else
-                    type=get(source,'Type');
+                    type=get(source,'Type') ;
                     if isequal(type,'uitable') ,
                         if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
-                            methodName=[controlName 'CellEdited'];
+                            methodName=[controlName 'CellEdited'] ;
                         else
-                            methodName=[controlName 'CellSelected'];
+                            methodName=[controlName 'CellSelected'] ;
                         end
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:});
+                            self.(methodName)(source,event,varargin{:}) ;
                         end                    
                     elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
                         methodName=[controlName 'Actuated'] ;
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:});
+                            self.(methodName)(source,event,varargin{:}) ;
                         end
                     else
                         % odd --- just ignore
                     end
                 end
+                exceptionMaybe = {} ;
             catch exception
                 self.raiseDialogOnException_(exception) ;
+                exceptionMaybe = { exception } ;
             end
         end  % function       
     end
@@ -358,14 +367,15 @@ classdef Controller < handle
             if ~isempty(model) ,
                 model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
             end
-            indicesOfWarningPhrase = strfind(me.identifier,'ws:warningsOccurred') ;
+            indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
             isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
             if isWarning ,
-                dialogContentString = me.message ;
-                dialogTitleString = ws.fif(length(me.cause)<=1, 'Warning', 'Warnings') ;
+                dialogContentString = exception.message ;
+                dialogTitleString = ws.fif(length(exception.cause)<=1, 'Warning', 'Warnings') ;
             else
                 if isempty(exception.cause)
-                    ws.errordlg(exception.message, 'Error', 'modal') ;
+                    dialogContentString = exception.message ;
+                    dialogTitleString = 'Error' ;
                 else
                     primaryCause = exception.cause{1} ;
                     if isempty(primaryCause.cause) ,

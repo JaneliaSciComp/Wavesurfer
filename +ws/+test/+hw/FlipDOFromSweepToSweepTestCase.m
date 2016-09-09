@@ -36,13 +36,14 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             % Play, logging warnings
             wsModel.startLoggingWarnings() ;
             wsModel.play() ;  % blocks
-            maybeException = wsModel.stopLoggingWarnings() ;
+            exceptionMaybe = wsModel.stopLoggingWarnings() ;
             
             % If there were warnings, print them now
-            if ~isempty(maybeException) ,
+            if ~isempty(exceptionMaybe) ,
+                exception = exceptionMaybe{1} ;
                 fprintf('Warning report:\n') ;
-                display(maybeException.getReport()) ;
-                causes = maybeException.cause ;  % a cell array
+                display(exception.getReport()) ;
+                causes = exception.cause ;  % a cell array
                 if ~isempty(causes) ,
                     firstCause = causes{1} ;
                     fprintf('First cause report:\n') ;
@@ -53,7 +54,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             % Release the WavesurferModel, even though it's a little stilly
             wsModel = [] ;  %#ok<NASGU>    
             
-            self.verifyEmpty(maybeException, 'wsModel.play() threw one or more warnings') ;
+            self.verifyEmpty(exceptionMaybe, 'wsModel.play() threw one or more warnings') ;
         end  % function
     end  % test methods
 

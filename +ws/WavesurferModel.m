@@ -2975,7 +2975,7 @@ classdef WavesurferModel < ws.RootModel
             self.DoLogWarnings_ = true ;
         end        
         
-        function maybeException = stopLoggingWarnings(self)
+        function exceptionMaybe = stopLoggingWarnings(self)
             % Get the warnings, if any
             self.DoLogWarnings_ = false ;
             warnings = self.WarningLog_ ;
@@ -2984,7 +2984,7 @@ classdef WavesurferModel < ws.RootModel
             % stored in the causes of the exception, if it exists.
             nWarnings = length(warnings) ;
             if nWarnings==0 ,
-                maybeException = MException.empty(1,0) ;                
+                exceptionMaybe = {} ;                
             else
                 if nWarnings==1 ,
                     exceptionMessage = warnings(1).message ;
@@ -2993,10 +2993,11 @@ classdef WavesurferModel < ws.RootModel
                                                nWarnings, ...
                                                warnings(1).message) ;
                 end                                           
-                maybeException = MException('ws:warningsOccurred', exceptionMessage) ;
+                exception = MException('ws:warningsOccurred', exceptionMessage) ;
                 for i = 1:nWarnings ,
-                    maybeException = maybeException.addCause(warnings(i)) ;
+                    exception = exception.addCause(warnings(i)) ;
                 end
+                exceptionMaybe = {exception} ;
             end
             % Clear the warning log before returning
             self.WarningLog_ = MException.empty(0, 1) ;

@@ -57,9 +57,9 @@ classdef ElectrodeManagerController < ws.Controller
 %             %figureObject.AreUpdatesEnabled=true;
 %         end  % method
 
-        function controlActuated(self, controlName, source, event, varargin)
+        function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             self.Parent_.setAreUpdatesEnabledForAllFigures(false) ;
-            controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
+            exceptionMaybe = controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
             self.Parent_.setAreUpdatesEnabledForAllFigures(true) ;
         end  % method
         

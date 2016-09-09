@@ -5,9 +5,6 @@ classdef TestPulserController < ws.Controller
     
     methods            
         function self=TestPulserController(wavesurferController,wavesurferModel)
-%             testPulser=wavesurferModel.Ephys.TestPulser;
-%             self = self@ws.Controller(wavesurferController, testPulser, {'testPulserFigureWrapper'});            
-            
             % Call the superclass constructor
             testPulser=wavesurferModel.Ephys.TestPulser;
             self = self@ws.Controller(wavesurferController,testPulser);  
@@ -17,75 +14,45 @@ classdef TestPulserController < ws.Controller
             self.Figure_ = fig ;            
         end
         
-        function controlActuated(self,controlName,source,event,varargin) %#ok<INUSD,INUSL>
-            %fprintf('controller.controlActuated!\n');            
+        function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             try
-                fig=self.Figure;
-                if source==fig.StartStopButton ,
-                    %profile resume
-                    self.startStopButtonPressed();
-                    %profile off
+                if strcmp(controlName, 'StartStopButton') ,
+                    self.StartStopButtonActuated() ;
+                    exceptionMaybe = {} ;
                 else
                     % If the model is running, stop it (have to disable broadcast so we don't lose the new setting)
-                    wasRunningOnEntry=self.Model.IsRunning;
+                    wasRunningOnEntry = self.Model.IsRunning ;
                     if wasRunningOnEntry ,
-                        self.Figure.AreUpdatesEnabled=false;
-                        % doBroadcast=false;
-                        % self.Model.stop(doBroadcast);
-                        %fprintf('about to stop...\n');
-                        self.Model.stop();
-                        %fprintf('done stopping...\n');
+                        self.Figure.AreUpdatesEnabled = false ;
+                        self.Model.stop() ;
                     end
                     
                     % Act on the control
-                    switch source ,
-                        case fig.ElectrodePopupMenu ,
-                            self.electrodePopupMenuTouched();
-                        case fig.SubtractBaselineCheckbox ,
-                            self.subtractBaselineCheckboxTouched();
-                        case fig.AutoYCheckbox ,
-                            self.autoYCheckboxTouched();
-                        case fig.AutoYRepeatingCheckbox ,
-                            self.autoYRepeatingCheckboxTouched();
-                        case fig.AmplitudeEdit ,
-                            self.amplitudeEditTouched();
-                        case fig.DurationEdit ,
-                            self.durationEditTouched();
-                        case fig.ZoomInButton ,
-                            self.zoomInButtonPressed();
-                        case fig.ZoomOutButton ,
-                            self.zoomOutButtonPressed();
-                        case fig.YLimitsButton ,
-                            self.YLimitsButtonPressed();
-                        case fig.ScrollUpButton ,
-                            self.scrollUpButtonPressed();
-                        case fig.ScrollDownButton ,
-                            self.scrollDownButtonPressed();
-                        case fig.VCToggle ,
-                            self.vcTogglePressed();
-                        case fig.CCToggle ,
-                            self.ccTogglePressed();
-                    end  % switch
+                    exceptionMaybe = controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
+                    % if exceptionMaybe is nonempty, a dialog has already
+                    % been shown to the user.
 
-                    % Start running again, if needed
-                    if wasRunningOnEntry,
-                        self.Figure.AreUpdatesEnabled=true;
-                        self.Figure.updateControlProperties();
-                        self.Model.start();
-                    end                
+                    % Start running again, if needed, and if there was no
+                    % exception.
+                    if wasRunningOnEntry ,
+                        self.Figure.AreUpdatesEnabled = true ;
+                        self.Figure.updateControlProperties() ;
+                        if isempty(exceptionMaybe) ,
+                            self.Model.start() ;
+                        end
+                    end
                 end
             catch exception
                 self.raiseDialogOnException_(exception) ;
+                exceptionMaybe = { exception } ;
             end
         end  % function
         
-        function startStopButtonPressed(self)
-            %self.Figure.changeReadiness(-1);
+        function StartStopButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.toggleIsRunning();
-            %self.Figure.changeReadiness(+1);
         end
         
-        function electrodePopupMenuTouched(self)
+        function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>
             electrodeNames=self.Model.ElectrodeNames;
             menuItem=ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
                                                       electrodeNames);
@@ -97,40 +64,40 @@ classdef TestPulserController < ws.Controller
             end
         end
         
-        function subtractBaselineCheckboxTouched(self)
+        function SubtractBaselineCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             value=logical(get(self.Figure.SubtractBaselineCheckbox,'Value'));
             self.Model.DoSubtractBaseline=value;
         end
         
-        function autoYCheckboxTouched(self)
+        function AutoYCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             value=logical(get(self.Figure.AutoYCheckbox,'Value'));
             self.Model.IsAutoY=value;
         end
         
-        function autoYRepeatingCheckboxTouched(self)
+        function AutoYRepeatingCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             value=logical(get(self.Figure.AutoYRepeatingCheckbox,'Value'));
             self.Model.IsAutoYRepeating=value;
         end
         
-        function amplitudeEditTouched(self)
+        function AmplitudeEditActuated(self, source, event, varargin)  %#ok<INUSD>
             value=get(self.Figure.AmplitudeEdit,'String');
             self.Model.Amplitude=value;  % Amplitude is a double-string
         end
         
-        function durationEditTouched(self)
+        function DurationEditActuated(self, source, event, varargin)  %#ok<INUSD>
             value=get(self.Figure.DurationEdit,'String');
             self.Model.PulseDurationInMsAsString=value;
         end
         
-        function zoomInButtonPressed(self)
+        function ZoomInButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.zoomIn();
         end
         
-        function zoomOutButtonPressed(self)
+        function ZoomOutButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.zoomOut();
         end
         
-        function YLimitsButtonPressed(self)
+        function YLimitsButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
             
             function setModelYLimits(newYLimits)
@@ -145,15 +112,15 @@ classdef TestPulserController < ws.Controller
                                     @setModelYLimits);
         end
         
-        function scrollUpButtonPressed(self)
+        function ScrollUpButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.scrollUp();
         end
         
-        function scrollDownButtonPressed(self)
+        function ScrollDownButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.Model.scrollDown();
         end
         
-        function vcTogglePressed(self)
+        function VCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
             % update the other toggle
             set(self.Figure.CCToggle,'Value',0);  % Want this to be fast
             drawnow('update');
@@ -162,7 +129,7 @@ classdef TestPulserController < ws.Controller
             self.Model.ElectrodeMode='vc';
         end  % function
         
-        function ccTogglePressed(self)
+        function CCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
             % update the other toggle
             set(self.Figure.VCToggle,'Value',0);  % Want this to be fast
             drawnow('update');
@@ -173,31 +140,6 @@ classdef TestPulserController < ws.Controller
     end  % methods
     
     methods (Access=protected)
-%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-%             % This method is inhierited from AbstractController, and is
-%             % called after the user indicates she wants to close the
-%             % window.  Returns true if the window should _not_ close, false
-%             % if it should go ahead and close.
-% 
-%             % If acquisition is happening, ignore the close window request
-%             testPulser=self.Model;
-%             if ~isempty(testPulser) && isvalid(testPulser) ,
-%                 ephys=testPulser.Parent;            
-%                 if ~isempty(ephys) && isvalid(ephys) ,
-%                     wavesurferModel=ephys.Parent;
-%                     if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                         isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
-%                         if ~isIdle ,
-%                             shouldStayPut=true;
-%                             return
-%                         end
-%                     end
-%                 end
-%             end
-% 
-%             shouldStayPut=(self.Model.IsRunning);  % If the Test Pulser is running, ignore the close request
-%         end  % function
-
         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
             % This is called after the user indicates she wants to close
             % the window.  Returns true if the window should _not_ close,
@@ -209,16 +151,6 @@ classdef TestPulserController < ws.Controller
                 shouldStayPut = ~model.isRootIdleSensuLato() || model.IsRunning;
             end
         end
-    end % protected methods block
-    
-    properties (SetAccess=protected)
-       propBindings = ws.TestPulserController.initialPropertyBindings(); 
-    end
-    
-    methods (Static=true)
-        function s=initialPropertyBindings()
-            s = struct();
-        end
-    end  % class methods
+    end % protected methods block    
     
 end  % classdef

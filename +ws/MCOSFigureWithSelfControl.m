@@ -348,7 +348,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
     end  % methods    
         
     methods
-        function controlActuated(self, methodNameStem, source, event, varargin)  % public so that control actuation can be easily faked          
+        function exceptionMaybe = controlActuated(self, methodNameStem, source, event, varargin)  % public so that control actuation can be easily faked          
             % E.g. self.CancelButton_ would typically have the method name stem 'cancelButton'.
             % The advantage of passing in the methodNameStem, rather than,
             % say always storing it in the tag of the graphics object, and
@@ -383,8 +383,10 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
                         % odd --- just ignore
                     end
                 end
+                exceptionMaybe = {} ;
             catch exception
                 self.raiseDialogOnException_(exception) ;
+                exceptionMaybe = { exception } ;
             end
         end  % function       
     end  % public methods block
