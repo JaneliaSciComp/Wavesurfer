@@ -148,20 +148,20 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
     end
     
     methods
-        function controlActuated(self,controlName,source,event,varargin)
-            try
-                type=get(source,'Type');
-                if isequal(type,'uicontrol') || isequal(type,'uitable') ,
-                    %style=get(source,'Style');
-                    methodName=[controlName 'Actuated'];
-                    if ismethod(self,methodName) ,
-                        self.(methodName)(source,event);
-                    end
-                end
-            catch exception
-                self.raiseDialogOnException_(exception) ;
-            end
-        end  % function       
+%         function controlActuated(self,controlName,source,event,varargin)
+%             try
+%                 type=get(source,'Type');
+%                 if isequal(type,'uicontrol') || isequal(type,'uitable') ,
+%                     %style=get(source,'Style');
+%                     methodName=[controlName 'Actuated'];
+%                     if ismethod(self,methodName) ,
+%                         self.(methodName)(source,event);
+%                     end
+%                 end
+%             catch exception
+%                 self.raiseDialogOnException_(exception) ;
+%             end
+%         end  % function       
 
         function AcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
@@ -184,7 +184,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
 %         end
         
-        function CounterTriggersTableActuated(self, source, event)  %#ok<INUSL>
+        function CounterTriggersTableCellEdited(self, source, event)  %#ok<INUSL>
             % Called when a cell of CounterTriggersTable is edited
             indices = event.Indices ;
             newThang = event.EditData ;
@@ -232,7 +232,7 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             self.Model.deleteMarkedCounterTriggers() ;
         end
         
-        function ExternalTriggersTableActuated(self, source, event)
+        function ExternalTriggersTableCellEdited(self, source, event)
             % Called when a cell of CounterTriggersTable is edited
             indices = event.Indices ;
             newThang = event.EditData ;
