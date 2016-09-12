@@ -9,11 +9,11 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     properties
         IsEnabled
         InputAIChannelIndex
+        BlankingAIChannelIndex
         OutputDOChannelIndex
-        BlankingDIChannelIndex
         InputThreshold  % In native units of the AI input channel
         MaximumNumberOfTriggersPerSweep
-        BlankingEdgeSign  % Either -1 (falling) or +1 (rising), indicating which edge sign starts the blanking interval
+        RectifiedBlankingEdgeSign   % Either -1 (falling) or +1 (rising), indicating which edge sign starts the blanking interval
         NScansToBlank  % After a rising edge on the blanking channel
     end  % properties
 
@@ -35,11 +35,11 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             % creates the "user object"
             self.IsEnabled = true ;
             self.InputAIChannelIndex = 1 ;
+            self.BlankingAIChannelIndex = 2 ;
             self.OutputDOChannelIndex = 1 ;
-            self.BlankingDIChannelIndex = 1 ;
             self.InputThreshold = 1 ;
             self.MaximumNumberOfTriggersPerSweep = 1 ;  % only trigger once per sweep by default
-            self.BlankingEdgeSign = -1 ;  % falling edge by default
+            self.RectifiedBlankingEdgeSign = -1 ;  % falling edge by default
             self.NScansToBlank = 40000 ;  % 2 sec at normal sampling freq
             self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
         end
@@ -91,7 +91,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSL>
+        function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSD,INUSL>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             
@@ -119,11 +119,15 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             
             % Determine how many scans have passed since the most-recent
             % rising/falling edge of the blanking TTL
-            nScans = size(digitalData,1) ;
-            blanking = logical(bitget(digitalData, self.BlankingDIChannelIndex)) ;
+            %nScans = size(digitalData,1) ;
+            nScans = size(analogData,1) ;
+            %blanking = logical(bitget(digitalData, self.BlankingAIChannelIndex)) ;
+            analogBlanking = analogData(end, self.BlankingAIChannelIndex) ;  % V
+            rectifiedAnalogBlanking = abs(analogBlanking) ;  % V
+            blanking = (rectifiedAnalogBlanking>2.5) ;
             blankingPadded = vertcat(self.FinalBlankingValue_, blanking) ;
             blankingChange = diff(double(blankingPadded)) ;
-            isBlankingEdge = (blankingChange==self.BlankingEdgeSign) ;
+            isBlankingEdge = (blankingChange==self.RectifiedBlankingEdgeSign) ;
             indexOfLastBlankingEdge = find(isBlankingEdge, 1, 'last') ;
             if isempty(indexOfLastBlankingEdge) , 
                 nScansSinceBlankingEdge = self.NScansSinceBlankingEdge_ + nScans ;
@@ -132,23 +136,25 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             end
             
             % Determine the output value
+            %fprintf('nScansSinceBlankingEdge: %8d\n', nScansSinceBlankingEdge) ;
             if self.IsEnabled ,
                 if nScansSinceBlankingEdge>self.NScansToBlank && self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,                    
                     lastInputValue = analogData(end, self.InputAIChannelIndex) ;
                     rectifiedLastInputValue = abs(lastInputValue) ;
                     if rectifiedLastInputValue > self.InputThreshold ,
                         newValueForRTOutput = 1 ;
+                        %fprintf('true option 1\n') ;
                     else
                         newValueForRTOutput = 0 ;
-                        %fprintf('option 1\n') ;
+                        %fprintf('false option 1\n') ;
                     end
                 else
                     newValueForRTOutput = 0 ;
-                    %fprintf('option 2\n') ;
+                    %fprintf('false option 2\n') ;
                 end
             else
                 newValueForRTOutput = 0 ;
-                %fprintf('option 3\n') ;
+                %fprintf('false option 3\n') ;
             end
             %fprintf('newValueForRTOutput: %d\n', newValueForRTOutput) ;
             
