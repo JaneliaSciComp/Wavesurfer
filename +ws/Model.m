@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
+classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster & matlab.mixin.SetGet
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         Parent  
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
@@ -53,6 +53,27 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
             self.broadcast('Update');
         end
 
+        function do(self, methodName, varargin)
+            % This is intended to be the usual way of calling model
+            % methods.  For instance, a call to a ws.Controller
+            % controlActuated() method should generally result in a single
+            % call to .do() on it's model object, and zero direct calls to
+            % model methods.  This gives us a
+            % good way to implement functionality that is common to all
+            % model method calls, when they are called as the main "thing"
+            % the user wanted to accomplish.  For instance, we start
+            % warning logging near the beginning of the .do() method, and turn
+            % it off near the end.  That way we don't have to do it for
+            % each model method, and we only do it once per user command.
+            self.startWarningLogging_() ;
+            self.(methodName)(varargin{:}) ;
+            warningExceptionMaybe = self.stopWarningLogging_() ;
+            if ~isempty(warningExceptionMaybe) ,
+                warningException = warningExceptionMaybe{1} ;
+                throw(warningException) ;
+            end
+        end
+        
 %         function set.Parent(self, newValue)
 %             self.setParent_(newValue) ;
 %         end
