@@ -9,12 +9,13 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     properties
         IsEnabled
         InputAIChannelIndex
-        BlankingAIChannelIndex
+        BlankingDIChannelIndex
         OutputDOChannelIndex
         InputThreshold  % In native units of the AI input channel
         MaximumNumberOfTriggersPerSweep
         RectifiedBlankingEdgeSign   % Either -1 (falling) or +1 (rising), indicating which edge sign starts the blanking interval
-        NScansToBlank  % After a rising edge on the blanking channel
+        DurationToBlankAfterRisingEdge  % s
+        DurationToBlankAfterFallingEdge  % s        
     end  % properties
 
     % Information that you want to stick around between calls to the
@@ -23,11 +24,14 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     % protected.)
     properties (Transient, Access=protected)        
         LastRTOutput_
-        NScansSinceBlankingEdge_
+        NScansSinceBlankingRisingEdge_
+        NScansSinceBlankingFallingEdge_
         FinalBlankingValue_  % the last value of the blanking signal from the previous call to samplesAcquired
         NSweepsCompletedInThisRunAtLastCheck_
         NTriggersStartedThisSweep_
         NTriggersCompletedThisSweep_
+        NScansToBlankAfterRisingEdge_
+        NScansToBlankAfterFallingEdge_        
     end
     
     methods
@@ -35,12 +39,13 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             % creates the "user object"
             self.IsEnabled = true ;
             self.InputAIChannelIndex = 1 ;
-            self.BlankingAIChannelIndex = 2 ;
+            self.BlankingDIChannelIndex = 1 ;
             self.OutputDOChannelIndex = 1 ;
             self.InputThreshold = 1 ;
             self.MaximumNumberOfTriggersPerSweep = 1 ;  % only trigger once per sweep by default
             self.RectifiedBlankingEdgeSign = -1 ;  % falling edge by default
-            self.NScansToBlank = 40000 ;  % 2 sec at normal sampling freq
+            self.DurationToBlankAfterRisingEdge = 2 ;  % s
+            self.DurationToBlankAfterFallingEdge = 4 ;  % s
             self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
         end
         
@@ -91,7 +96,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSD,INUSL>
+        function samplesAcquired(self, looper, eventName, analogData, digitalData) %#ok<INUSL>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             
@@ -104,8 +109,12 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 % Initialize things that should be initialized at the
                 % start of a sweep.
                 %self.HasRTOutputBeenInitializedInThisSweep_ = false ;
+                fs = looper.Acquisition.SampleRate ;  % Hz
+                self.NScansToBlankAfterRisingEdge_ = self.DurationToBlankAfterRisingEdge*fs ;
+                self.NScansToBlankAfterFallingEdge_ = self.DurationToBlankAfterFallingEdge*fs ;
                 self.LastRTOutput_ = [] ;
-                self.NScansSinceBlankingEdge_ = inf ;
+                self.NScansSinceBlankingRisingEdge_ = inf ;
+                self.NScansSinceBlankingFallingEdge_ = inf ;
                 self.FinalBlankingValue_ = false ;
                 self.NTriggersStartedThisSweep_ = 0 ;
                 self.NTriggersCompletedThisSweep_ = 0 ;
@@ -121,24 +130,33 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             % rising/falling edge of the blanking TTL
             %nScans = size(digitalData,1) ;
             nScans = size(analogData,1) ;
-            %blanking = logical(bitget(digitalData, self.BlankingAIChannelIndex)) ;
-            analogBlanking = analogData(end, self.BlankingAIChannelIndex) ;  % V
-            rectifiedAnalogBlanking = abs(analogBlanking) ;  % V
-            blanking = (rectifiedAnalogBlanking>2.5) ;
+            blanking = logical(bitget(digitalData, self.BlankingDIChannelIndex)) ;
+            %analogBlanking = analogData(end, self.BlankingDIChannelIndex) ;  % V
+            %rectifiedAnalogBlanking = abs(analogBlanking) ;  % V
+            %blanking = (rectifiedAnalogBlanking>2.5) ;
             blankingPadded = vertcat(self.FinalBlankingValue_, blanking) ;
             blankingChange = diff(double(blankingPadded)) ;
-            isBlankingEdge = (blankingChange==self.RectifiedBlankingEdgeSign) ;
-            indexOfLastBlankingEdge = find(isBlankingEdge, 1, 'last') ;
-            if isempty(indexOfLastBlankingEdge) , 
-                nScansSinceBlankingEdge = self.NScansSinceBlankingEdge_ + nScans ;
+            isBlankingRisingEdge = (blankingChange==1) ;
+            isBlankingFallingEdge = (blankingChange==(-1)) ;            
+            indexOfLastBlankingRisingEdge = find(isBlankingRisingEdge, 1, 'last') ;
+            indexOfLastBlankingFallingEdge = find(isBlankingFallingEdge, 1, 'last') ;
+            if isempty(indexOfLastBlankingRisingEdge) , 
+                nScansSinceBlankingRisingEdge = self.NScansSinceBlankingRisingEdge_ + nScans ;
             else
-                nScansSinceBlankingEdge = nScans - indexOfLastBlankingEdge ;
+                nScansSinceBlankingRisingEdge = nScans - indexOfLastBlankingRisingEdge ;
+            end
+            if isempty(indexOfLastBlankingFallingEdge) , 
+                nScansSinceBlankingFallingEdge = self.NScansSinceBlankingFallingEdge_ + nScans ;
+            else
+                nScansSinceBlankingFallingEdge = nScans - indexOfLastBlankingFallingEdge ;
             end
             
             % Determine the output value
             %fprintf('nScansSinceBlankingEdge: %8d\n', nScansSinceBlankingEdge) ;
             if self.IsEnabled ,
-                if nScansSinceBlankingEdge>self.NScansToBlank && self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,                    
+                if nScansSinceBlankingRisingEdge>self.NScansToBlankAfterRisingEdge && ...
+                   nScansSinceBlankingFallingEdge>self.NScansToBlankAfterFallingEdge && ...
+                   self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,                    
                     lastInputValue = analogData(end, self.InputAIChannelIndex) ;
                     rectifiedLastInputValue = abs(lastInputValue) ;
                     if rectifiedLastInputValue > self.InputThreshold ,
@@ -184,7 +202,8 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             
             % Update the things that need to be updated after each call to
             % this function
-            self.NScansSinceBlankingEdge_ = nScansSinceBlankingEdge ;
+            self.NScansSinceBlankingRisingEdge_ = nScansSinceBlankingRisingEdge ;
+            self.NScansSinceBlankingFallingEdge_ = nScansSinceBlankingFallingEdge ;
             self.FinalBlankingValue_ = blanking(end) ;                        
         end
         
