@@ -484,7 +484,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         function setSingleAnalogChannelScale(self,i,newValue)
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            if isChangeable ,
+            if isChangeable && isfinite(newValue) && newValue>0 ,
                 self.AnalogChannelScales_(i)=newValue;
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            

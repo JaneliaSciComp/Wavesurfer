@@ -46,7 +46,7 @@ classdef IPCRequester < ws.ZMQConnecter
                 elseif isequal(me.identifier,'zmq:core:recv:bufferTooSmall') ,
                     % serializedMessage will be truncated, and thus not
                     % unserializable, and thus useless
-                    warning('Got a message too long for the buffer in IPCSubscriber');
+                    warning('Got a message too long for the buffer in IPCRequester');
                     isMessageAvailable = false;
                     %methodName = '' ;
                     %methodError = [] ;

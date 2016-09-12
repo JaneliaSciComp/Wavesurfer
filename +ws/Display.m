@@ -661,7 +661,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('ClearData') ;
         end
         
-        function setPlotHeightsAndOrder_(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
+        function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             % Typically called by ws.PlotArrangementDialogFigure after OK
             % button is pressed.  Does no argument checking.
             nAIChannels = length(self.IsAnalogChannelDisplayed_) ;

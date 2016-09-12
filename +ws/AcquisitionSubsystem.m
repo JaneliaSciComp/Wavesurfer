@@ -418,30 +418,29 @@ classdef AcquisitionSubsystem < ws.Subsystem
         end  % function
         
         function setAnalogChannelUnitsAndScales(self,newUnitsRaw,newScales)
-            import ws.*            
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
-            self.AnalogChannelUnits_=fif(isChangeable,newUnits,self.AnalogChannelUnits_);
-            self.AnalogChannelScales_=fif(isChangeable,newScales,self.AnalogChannelScales_);
+            self.AnalogChannelUnits_ = ws.fif(isChangeable,newUnits,self.AnalogChannelUnits_);
+            self.AnalogChannelScales_ = ws.fif(isChangeable,newScales,self.AnalogChannelScales_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelUnits(self,i,newValueRaw)
-            import ws.*
-            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            isChangeable= ~isChangeableFull(i);
+            isChangeableFull = (self.getNumberOfElectrodesClaimingAnalogChannel()==1) ;
+            isChangeable = ~isChangeableFull(i) ;
             newValue = strtrim(newValueRaw) ;
-            self.AnalogChannelUnits_{i}=fif(isChangeable,newValue,self.AnalogChannelUnits_{i});
+            self.AnalogChannelUnits_{i} = ws.fif(isChangeable,newValue,self.AnalogChannelUnits_{i}) ;
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelScale(self,i,newValue)
-            import ws.*
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            self.AnalogChannelScales_(i)=fif(isChangeable,newValue,self.AnalogChannelScales_(i));
+            if isfinite(newValue) && newValue>0 ,
+                self.AnalogChannelScales_(i) = ws.fif(isChangeable,newValue,self.AnalogChannelScales_(i)) ;
+            end
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function

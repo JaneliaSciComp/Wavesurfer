@@ -35,10 +35,11 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         
         function ClearLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
             choice = ws.questdlg('Are you sure you want to clear the library?', ...
-                              'Clear Library?', 'Clear', 'Don''t Clear', 'Don''t Clear');
+                                 'Clear Library?', 'Clear', 'Don''t Clear', 'Don''t Clear');
             
             if isequal(choice,'Clear') ,
-                self.Model.clear();
+                %self.Model.clear();
+                self.Model.do('clear') ;
             end
         end        
         

@@ -2945,6 +2945,27 @@ classdef WavesurferModel < ws.RootModel
 %             result = self.WarningLog_ ;
 %         end  % method
         
+        function do(self, methodName, varargin)
+            % This is intended to be the usual way of calling model
+            % methods.  For instance, a call to a ws.Controller
+            % controlActuated() method should generally result in a single
+            % call to .do() on it's model object, and zero direct calls to
+            % model methods.  This gives us a
+            % good way to implement functionality that is common to all
+            % model method calls, when they are called as the main "thing"
+            % the user wanted to accomplish.  For instance, we start
+            % warning logging near the beginning of the .do() method, and turn
+            % it off near the end.  That way we don't have to do it for
+            % each model method, and we only do it once per user command.            
+            self.startLoggingWarnings() ;
+            self.(methodName)(varargin{:}) ;
+            warningExceptionMaybe = self.stopLoggingWarnings() ;
+            if ~isempty(warningExceptionMaybe) ,
+                warningException = warningExceptionMaybe{1} ;
+                throw(warningException) ;
+            end
+        end
+
         function logWarning(self, identifier, message, causeOrEmpty)
             % This is public b/c subsystem need to call it, but it should
             % only be called by subsystems.

@@ -13,7 +13,6 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         OutputDOChannelIndex
         InputThreshold  % In native units of the AI input channel
         MaximumNumberOfTriggersPerSweep
-        RectifiedBlankingEdgeSign   % Either -1 (falling) or +1 (rising), indicating which edge sign starts the blanking interval
         DurationToBlankAfterRisingEdge  % s
         DurationToBlankAfterFallingEdge  % s        
     end  % properties
@@ -43,7 +42,6 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             self.OutputDOChannelIndex = 1 ;
             self.InputThreshold = 1 ;
             self.MaximumNumberOfTriggersPerSweep = 1 ;  % only trigger once per sweep by default
-            self.RectifiedBlankingEdgeSign = -1 ;  % falling edge by default
             self.DurationToBlankAfterRisingEdge = 2 ;  % s
             self.DurationToBlankAfterFallingEdge = 4 ;  % s
             self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()

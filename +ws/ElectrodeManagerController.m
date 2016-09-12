@@ -64,49 +64,60 @@ classdef ElectrodeManagerController < ws.Controller
         end  % method
         
         function AddButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.addNewElectrode();
+            %self.Model.addNewElectrode();
+            self.Model.do('addNewElectrode') ;
         end
         
         function RemoveButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.removeMarkedElectrodes();
+            %self.Model.removeMarkedElectrodes();
+            self.Model.do('removeMarkedElectrodes') ;
         end
         
         function UpdateButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            %self.Figure.changeReadiness(-1);
-            self.Model.updateSmartElectrodeGainsAndModes();
-            %self.Figure.changeReadiness(+1);
+            %self.Model.updateSmartElectrodeGainsAndModes();
+            self.Model.do('updateSmartElectrodeGainsAndModes') ;
         end
         
         function ReconnectButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            %self.Figure.changeReadiness(-1);
-            self.Model.reconnectWithSmartElectrodes();
-            self.Model.updateSmartElectrodeGainsAndModes();
-            %self.Figure.changeReadiness(+1);
+            %self.Model.reconnectWithSmartElectrodes() ;
+            self.Model.do('reconnectWithSmartElectrodes') ;
         end
         
         function DoTrodeUpdateBeforeRunCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-           self.Model.DoTrodeUpdateBeforeRun=get(source,'Value');
+            newValue = get(source,'Value') ;
+            %self.Model.DoTrodeUpdateBeforeRun = newValue ;
+            self.Model.do('set', 'DoTrodeUpdateBeforeRun', newValue) ;
         end
         
         function SoftpanelButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.toggleSoftpanelEnablement();
+            %self.Model.toggleSoftpanelEnablement();
+            self.Model.do('toggleSoftpanelEnablement');
         end
 
         function IsCommandEnabledCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.IsCommandEnabledCheckboxes);
             newValue=get(source,'Value');
             electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeModeOrScaling(electrodeIndex,'IsCommandEnabled',newValue);  %#ok<FNDSB>        
+            %self.Model.setElectrodeModeOrScaling(electrodeIndex,'IsCommandEnabled',newValue);  %#ok<FNDSB>        
+            self.Model.do('setElectrodeModeOrScaling', electrodeIndex, 'IsCommandEnabled', newValue) ;  %#ok<FNDSB>        
         end               
         
         function TestPulseQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            isTheElectrode=(source==self.Figure.TestPulseQCheckboxes);
-            self.Model.IsElectrodeMarkedForTestPulse(isTheElectrode)=get(source,'Value');            
+            indexOfElectrode = find((source==self.Figure.TestPulseQCheckboxes),1) ;
+            newValue = get(source,'Value') ;
+            originalArray = self.Model.IsElectrodeMarkedForTestPulse ;
+            newArray = ws.replace(originalArray, indexOfElectrode, newValue) ;
+            %self.Model.IsElectrodeMarkedForTestPulse = newArray ;     
+            self.Model.do('set', 'IsElectrodeMarkedForTestPulse', newArray) ;
         end        
         
         function RemoveQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            isTheElectrode=(source==self.Figure.RemoveQCheckboxes);
-            self.Model.IsElectrodeMarkedForRemoval(isTheElectrode)=get(source,'Value');            
+            indexOfElectrode = find((source==self.Figure.RemoveQCheckboxes),1) ;
+            newValue = get(source,'Value') ;
+            originalArray = self.Model.IsElectrodeMarkedForRemoval ;
+            newArray = ws.replace(originalArray, indexOfElectrode, newValue) ;            
+            %self.Model.IsElectrodeMarkedForRemoval(indexOfElectrode)=get(source,'Value');            
+            self.Model.do('set', 'IsElectrodeMarkedForRemoval', newArray) ;
         end        
 
         function MonitorPopupActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -157,8 +168,10 @@ classdef ElectrodeManagerController < ws.Controller
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CommandPopups);
+            indexO
             electrode=self.Model.Electrodes{isTheElectrode};
             electrode.CommandChannelName=choice;
+            self.setElectrodeCommandChannelName(indexOfElectrode, choice) ;
         end
         
 %         function voltageCommandPopupActuated(self,source)
@@ -202,17 +215,14 @@ classdef ElectrodeManagerController < ws.Controller
         end  % function
         
         function LabelEditActuated(self, source, event, varargin)  %#ok<INUSD>
-            isTheElectrode=(source==self.Figure.LabelEdits);
-            newLabel=get(source,'String');
-            electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.Name=newLabel;            
+            indexOfElectrode = find((source==self.Figure.LabelEdits),1) ;
+            newLabel = get(source,'String') ;
+            self.Model.setElectrodeName(indexOfElectrode, newLabel) ;
         end  % function
 
         function MonitorScaleEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.MonitorScaleEdits);
             newValue=str2double(get(source,'String'));
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.MonitorScaling=newValue;
             electrodeIndex=find(isTheElectrode);
             self.Model.setElectrodeMonitorScaling(electrodeIndex,newValue);  %#ok<FNDSB>
         end  % function
