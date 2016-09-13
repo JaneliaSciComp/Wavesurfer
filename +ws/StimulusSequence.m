@@ -193,11 +193,13 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %         end
 
         function addMap(self, map)
-            indexOfMapInLibrary = self.Parent.getMapIndex(map) ;
-            if ~isempty(indexOfMapInLibrary) ,
-                self.IndexOfEachMapInLibrary_{end + 1} = indexOfMapInLibrary;
-                self.IsMarkedForDeletion_(end+1) = false ;
+            if exist('map', 'var') ,
+                indexOfMapInLibrary = self.Parent.getMapIndex(map) ;
+            else
+                indexOfMapInLibrary = [] ;
             end
+            self.IndexOfEachMapInLibrary_{end + 1} = indexOfMapInLibrary;
+            self.IsMarkedForDeletion_(end+1) = false ;
             if ~isempty(self.Parent) ,
                 self.Parent.childMayHaveChanged(self);
             end

@@ -1721,18 +1721,24 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end  % protected methods block
     
     methods
-        function addMapToSequence(self)
-            selectedSequence = self.SelectedSequence ;
-            if ~isempty(selectedSequence) ,
-                selectedItem = self.SelectedItem ;
-                if ~isempty(selectedItem) ,
-                    if selectedSequence==selectedItem ,
-                        if ~isempty(self.Maps) ,
-                            map = self.Maps{1} ;  % just add the first map to the sequence.  User can change it subsequently.
-                            selectedSequence.addMap(map) ;
-                        end
-                    end
-                end
+        function addMapToSelectedItem(self)
+%             selectedSequence = self.SelectedSequence ;
+%             if ~isempty(selectedSequence) ,
+%                 selectedItem = self.SelectedItem ;
+%                 if ~isempty(selectedItem) ,
+%                     if selectedSequence==selectedItem ,
+%                         if ~isempty(self.Maps) ,
+%                             map = self.Maps{1} ;  % just add the first map to the sequence.  User can change it subsequently.
+%                             selectedSequence.addMap(map) ;
+%                         end
+%                     end
+%                 end
+%             end
+            selectedItem = self.SelectedItem ;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
+                selectedItem.addMap() ;
+            else
+                % Can't add a map to anything but a sequence, so do nothing
             end
         end  % method
         
@@ -1743,19 +1749,179 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % method
         
-        function addChannelToMap(self)
-            selectedMap = self.SelectedMap ;
-            if ~isempty(selectedMap) ,
-                selectedItem = self.SelectedItem ;
-                if ~isempty(selectedItem) ,
-                    if selectedMap==selectedItem ,
-                        if ~isempty(self.Stimuli) ,
-                            selectedMap.addBinding('');                            
-                        end
-                    end
-                end
+        function addChannelToSelectedItem(self)
+%             selectedMap = self.SelectedMap ;
+%             if ~isempty(selectedMap) ,
+%                 selectedItem = self.SelectedItem ;
+%                 if ~isempty(selectedItem) ,
+%                     if selectedMap==selectedItem ,
+%                         if ~isempty(self.Stimuli) ,
+%                             selectedMap.addBinding('');                            
+%                         end
+%                     end
+%                 end
+%             end
+            selectedItem = self.SelectedItem ;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
+                selectedItem.addBinding() ;
+            else
+                % Can't add a channel/binding to anything but a map, so do nothing
             end
         end  % function        
+        
+        function deleteMarkedChannelsFromSelectedItem(self)
+            selectedItem = self.SelectedItem ;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
+                selectedItem.deleteMarkedBindings();
+            else
+                % Can't delete bindings from anything but a map, so do nothing
+            end
+        end  % function
+        
+        function setSelectedItemName(self, newName)
+            selectedItem = self.SelectedItem ;
+            if isempty(selectedItem) ,
+                self.broadcast('Update') ;
+            else                
+                selectedItem.Name = newName ;
+            end
+        end  % method        
+
+        function setSelectedItemDuration(self, newValue)
+            selectedItem=self.SelectedItem;
+            if isempty(selectedItem) ,
+                self.broadcast('Update') ;
+            else
+                selectedItem.Duration = newValue ;
+            end
+        end  % method        
+        
+        function setSelectedStimulusProperty(self, propertyName, newValue)
+            selectedStimulus = self.SelectedStimulus ;
+            if isempty(selectedStimulus) ,
+                self.broadcast('Update') ;
+            else
+                selectedStimulus.(propertyName) = newValue ;  % this will do the broadcast
+            end
+        end  % method        
+        
+        function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
+            % This means one of the additional parameter edits was actuated
+            selectedStimulus = self.SelectedStimulus ;  
+            if isempty(selectedStimulus) ,
+                self.broadcast('Update') ;
+            else
+                additionalParameterNames = selectedStimulus.Delegate.AdditionalParameterNames ;
+                if ws.isIndex(iParameter) && 1<=iParameter && iParameter<=length(additionalParameterNames) ,
+                    propertyName = additionalParameterNames{iParameter} ;
+                    selectedStimulus.Delegate.(propertyName) = newString ;  % delegate will check validity
+                else
+                    self.broadcast('Update') ;
+                end
+            end
+        end  % function
+
+        function setElementOfSelectedSequenceToNamedMap(self, indexOfSequenceElement, mapName) 
+            selectedSequence = self.SelectedSequence ;  
+            if isempty(selectedSequence) ,
+                self.broadcast('Update') ;
+            else                
+                if ws.isString(mapName) ,
+                    map = self.mapWithName(mapName) ;
+                    if isempty(map) ,
+                        self.broadcast('Update') ;
+                    else
+                        selectedSequence.setMap(indexOfSequenceElement, map) ;
+                    end
+                else
+                    self.broadcast('Update') ;
+                end                    
+            end
+        end  % method
+
+        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
+            selectedSequence = self.SelectedSequence ;  
+            if isempty(selectedSequence) ,
+                self.broadcast('Update') ;
+            else                
+                if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && isfinite(newValue) ,
+                    newValueAsLogical = logical(newValue) ;
+                    if ws.isIndex(indexOfElementWithinSequence) && ...
+                            1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps) ,
+                        selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValueAsLogical ;
+                    else
+                        self.broadcast('Update') ;
+                    end
+                else
+                    self.broadcast('Update') ;
+                end                    
+            end
+        end  % method
+        
+        function setChannelNameForElementOfSelectedMap(self, indexOfElementWithinMap, newValue) 
+            selectedMap = self.SelectedMap ;  
+            if isempty(selectedMap) ,
+                self.broadcast('Update') ;
+            else                
+                if ws.isString(newValue) ,
+                    if ws.isIndex(indexOfElementWithinMap) && ...
+                            1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
+                        selectedMap.ChannelName(indexOfElementWithinMap) = newValue ;
+                    else
+                        self.broadcast('Update') ;
+                    end
+                else
+                    self.broadcast('Update') ;
+                end                    
+            end
+        end  % method
+
+        function setStimulusByNameForElementOfSelectedMap(self, indexOfElementWithinMap, stimulusName) 
+            selectedMap = self.SelectedMap ;  
+            if isempty(selectedMap) ,
+                self.broadcast('Update') ;
+            else                
+                if ws.isString(stimulusName) ,
+                    if ws.isIndex(indexOfElementWithinMap) && ...
+                            1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
+                        selectedMap.setStimulusByName(indexOfElementWithinMap, stimulusName) ;
+                    else
+                        self.broadcast('Update') ;
+                    end
+                else
+                    self.broadcast('Update') ;
+                end                    
+            end
+        end  % method
+        
+        function setMultiplierForElementOfSelectedMap(self, indexOfElementWithinMap, newValue) 
+            selectedMap = self.SelectedMap ;  
+            if isempty(selectedMap) ,
+                self.broadcast('Update') ;
+            else                
+                if ws.isIndex(indexOfElementWithinMap) && ...
+                        1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
+                    selectedMap.Multipliers(indexOfElementWithinMap) = newValue ;
+                else
+                    self.broadcast('Update') ;
+                end
+            end
+        end  % method
+        
+        function setIsMarkedForDeletionForElementOfSelectedMap(self, indexOfElementWithinMap, newValue) 
+            selectedMap = self.SelectedMap ;  
+            if isempty(selectedMap) ,
+                self.broadcast('Update') ;
+            else                
+                if ws.isIndex(indexOfElementWithinMap) && ...
+                        1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
+                    selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
+                else
+                    self.broadcast('Update') ;
+                end
+            end
+        end  % method
+        
     end  % public methods block
     
 %     methods (Access=protected)

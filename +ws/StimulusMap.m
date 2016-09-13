@@ -524,7 +524,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
                 library = self.Parent ;
                 stimulusIndexInLibrary = library.indexOfStimulusWithName(stimulusName) ;
-                if ~isempty(stimulusIndexInLibrary) ,
+                if isempty(stimulusIndexInLibrary) ,
+                    self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;  % "null" the stimulus
+                else
                     self.IndexOfEachStimulusInLibrary_{bindingIndex} = stimulusIndexInLibrary ;
                 end
             end
