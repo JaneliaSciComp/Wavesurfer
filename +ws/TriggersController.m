@@ -163,22 +163,25 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %             end
 %         end  % function       
 
-        function AcquisitionSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+        function AcquisitionSchemePopupmenuActuated(self, source, event)  %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
-            selectionIndex = get(source,'Value');
-            self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
+            selectionIndex = get(source,'Value') ;
+            %self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
+            self.Model.do('set', 'AcquisitionTriggerSchemeIndex', selectionIndex) ;            
         end  % function
         
         function UseAcquisitionTriggerCheckboxActuated(self,source,event)  %#ok<INUSD>
-            value=logical(get(source,'Value'));
-            self.Model.StimulationUsesAcquisitionTriggerScheme=value;
+            value = logical(get(source,'Value')) ;
+            %self.Model.StimulationUsesAcquisitionTriggerScheme=value;
+            self.Model.do('StimulationUsesAcquisitionTriggerScheme', value) ;
         end  % function
 
         function StimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
-            selectionIndex = get(source,'Value');
-            self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
-        end
+            selectionIndex = get(source,'Value') ;
+            %self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
+            self.Model.do('StimulationTriggerSchemeIndex', selectionIndex) ;
+        end  % function
         
 %         function ContinuousSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
 %             acquisitionSchemePopupmenuActuated_(self, source, self.Model.ContinuousModeTriggerScheme);
@@ -222,17 +225,17 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             end
         end  % function
         
-        function AddCounterTriggerButtonActuated(self,source,event)
-            %profile resume
-            self.Model.addCounterTrigger() ;
-            %profile off
+        function AddCounterTriggerButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model.addCounterTrigger() ;
+            self.Model.do('addCounterTrigger') ;
         end
 
-        function DeleteCounterTriggersButtonActuated(self,source,event)
-            self.Model.deleteMarkedCounterTriggers() ;
+        function DeleteCounterTriggersButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model.deleteMarkedCounterTriggers() ;
+            self.Model.do('deleteMarkedCounterTriggers') ;
         end
         
-        function ExternalTriggersTableCellEdited(self, source, event)
+        function ExternalTriggersTableCellEdited(self, source, event)  %#ok<INUSL>
             % Called when a cell of CounterTriggersTable is edited
             indices = event.Indices ;
             newThang = event.EditData ;
@@ -258,12 +261,14 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             end
         end  % function
 
-        function AddExternalTriggerButtonActuated(self,source,event)
-            self.Model.addExternalTrigger() ;
+        function AddExternalTriggerButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model.addExternalTrigger() ;
+            self.Model.do('addExternalTrigger') ;
         end
 
-        function DeleteExternalTriggersButtonActuated(self,source,event)
-            self.Model.deleteMarkedExternalTriggers() ;
+        function DeleteExternalTriggersButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model.deleteMarkedExternalTriggers() ;
+            self.Model.do('deleteMarkedExternalTriggers') ;
         end
         
     end  % methods block    
@@ -285,9 +290,9 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
 %         end  % function
 %     end
     
-    properties (SetAccess=protected)
-       propBindings = struct()
-    end
+%     properties (SetAccess=protected)
+%        propBindings = struct()
+%     end
     
 %     methods (Static=true)
 %         function s=initialPropertyBindings()
