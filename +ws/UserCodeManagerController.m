@@ -38,7 +38,8 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
             % get deleted.  Hopefully user does this in the user class
             % delete() method, so we notify the model that we're quitting,
             % which will prompt it to manually delete the user object.
-            self.Model.quittingWavesurfer() ;            
+            %self.Model.quittingWavesurfer() ;            
+            self.Model.do('quittingWavesurfer') ;
         end  % function
         
     end
@@ -66,26 +67,28 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
 %         end  % function
 %     end % protected methods block    
 
-    properties (SetAccess=protected)
-       propBindings = struct(); 
-    end
+%     properties (SetAccess=protected)
+%        propBindings = struct(); 
+%     end
     
     methods
         function ClassNameEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
+            newString = get(source,'String') ;
+            %ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
+            self.Model.do('set', 'ClassName', newString) ;
         end
 
         function InstantiateButtonActuated(self,source,event) %#ok<INUSD>
-            self.Model.instantiateUserObject();
+            %self.Model.instantiateUserObject();
+            self.Model.do('instantiateUserObject') ;            
         end
         
-        function ChooseButtonActuated(self,source,event) %#ok<INUSD>
-            mAbsoluteFileName = uigetdir(self.Model.Logging.FileLocation, 'Choose User Class M-file...');
-            if ~isempty(mAbsoluteFileName) ,
-                self.Model.Logging.FileLocation = mAbsoluteFileName;
-            end
-        end
+%         function ChooseButtonActuated(self,source,event) %#ok<INUSD>
+%             mAbsoluteFileName = uigetdir(self.Model.Logging.FileLocation, 'Choose User Class M-file...');
+%             if ~isempty(mAbsoluteFileName) ,
+%                 self.Model.Logging.FileLocation = mAbsoluteFileName;
+%             end            
+%         end
     end
     
 end
